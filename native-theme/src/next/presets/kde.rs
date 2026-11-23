@@ -28,7 +28,11 @@
 //! The groups: the button's body, the link's label and the slider's handle
 //! `DISABLED, PRESSED, HOVER`; the check box's and the radio button's
 //! indicator and the text field's frame `DISABLED, HOVER`; the list's header
-//! and the scroll bar's handle `PRESSED, HOVER`; every other part none.
+//! and the scroll bar's handle `PRESSED, HOVER`; the combo box's field
+//! `DISABLED, OPEN, HOVER`, as the button's with the open field, "a pressed
+//! button frame whatever the pointer does" (`combo_box.open_background`:
+//! platform-facts.md (§2.24)), in the pressed one's place; every other part
+//! none.
 //!
 //! Where two rules can both match, the later one wins (spec §3, "State
 //! combinations a source does not state"); the precedences, each with its
@@ -89,7 +93,11 @@
 //! - the switch's track: the disabled on track (`DISABLED | CHECKED`), whose
 //!   colours 0.7.2 states apart (`switch.disabled_checked_background`,
 //!   `disabled_checked_track_border_color`), over the disabled and the
-//!   checked track, its rule last.
+//!   checked track, its rule last;
+//! - the segmented control's segment: the selected segment's fill over the
+//!   hovered segment's, as 0.7.2's egui widgets lay `hover_background` over
+//!   an unselected segment and `active_background` over the selected one
+//!   (`connectors/native-theme-egui-widgets/src/segmented_control.rs`).
 //!
 //! An inactive window (`ThemeContext::window_active` false) has the `[WM]`
 //! inactive title bar and title colours.
@@ -292,6 +300,7 @@ struct SchemeColors {
     switch_disabled_on: Color,
     switch_disabled_frame: Color,
     switch_disabled_on_frame: Color,
+    segment_hover: Color,
 }
 
 /// The light scheme's constants.
@@ -341,6 +350,12 @@ const LIGHT: SchemeColors = SchemeColors {
     // focused or pressed flat button (breezehelper.cpp:710-712 at breeze f0b1d75)
     // `switch.checked_track_border_color`: platform-facts.md (§2.21): highlightColor,
     // [Colors:Selection] BackgroundNormal 61,174,233 (SwitchIndicator.qml:27; BreezeLight.colors:87)
+    // `combo_box.hover_border_color`: platform-facts.md (§2.24): [Colors:Selection]
+    // BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5), Highlight, the pen of a
+    // hovered button frame (breezehelper.cpp:710-712 at breeze f0b1d75)
+    // `combo_box.open_border_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `segmented_control.active_background`: platform-facts.md (§2.25): [Colors:Selection]
+    // BackgroundNormal 61,174,233
     selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze
@@ -415,6 +430,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // breezehelper.cpp:1191-1195; BreezeLight.colors:31, breeze v6.7.5)
     // `switch.thumb_background`: platform-facts.md (§2.21): [Colors:Button] BackgroundNormal
     // 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
+    // `combo_box.background_color`: platform-facts.md (§2.24): [Colors:Button] BackgroundNormal
+    // 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
     button_background: srgb8(0xfcfc_fcff),
     // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 35,38,41
     // (BreezeLight.colors:39, breeze v6.7.5)
@@ -425,6 +442,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // 35,38,41 (BreezeLight.colors:39, breeze v6.7.5): Qt letters a QHeaderView section in
     // QPalette::ButtonText (qcommonstyle.cpp:1659-1660; Breeze does not override CE_HeaderLabel;
     // measured)
+    // `combo_box.font.color`: platform-facts.md (§2.24): [Colors:Button] ForegroundNormal
+    // 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
     button_foreground: srgb8(0x2326_29ff),
     // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
     // mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button]
@@ -453,6 +472,12 @@ const LIGHT: SchemeColors = SchemeColors {
     // KColorUtils::mix(Button, Highlight, Blend_Value 0.3) (breezehelper.cpp:694,
     // breezemetrics.h:176 at breeze f0b1d75); its text inherits font.color, ButtonText in every
     // state (platform-facts.md, breezestyle.cpp:5350-5362)
+    // `combo_box.open_background`: platform-facts.md (§2.24): open_background,
+    // open_border_color, an open combo box is a pressed button frame whatever the pointer does:
+    // KColorUtils::mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31),
+    // [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87), 0.3), framed in
+    // that Highlight (breezestyle.cpp:7823-7853, breezehelper.cpp:693-712 at breeze f0b1d75;
+    // measured)
     button_pressed: srgb8(0xc3e5_f6ff),
     // `button.default_button_background`: platform-facts.md (§2.3): default_button_background,
     // KColorUtils::mix(Button #fcfcfc, Highlight #3daee9, 0.2), an active window's default
@@ -469,8 +494,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // 6.31.0
     // `switch.disabled_thumb_color`: platform-facts.md (§2.21): the handle in the Disabled group,
     // Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0
+    // `combo_box.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
+    // BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
     button_disabled_background: srgb8(0xf0f0_f0ff),
     // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `combo_box.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     button_disabled_foreground: srgb8(0xa8a9_aaff),
     // `checkbox.checked_background`: platform-facts.md (§2.5): Button #fcfcfc under Selection
     // #3daee9 at alpha 0.3
@@ -685,6 +713,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // `switch.disabled_checked_track_border_color`: platform-facts.md (§2.21): highlightColor in
     // the Disabled group, Disabled Selection
     switch_disabled_on_frame: srgb8(0xe3e5_e7ff),
+    // `segmented_control.hover_background`: 0.7.2 kde-breeze.toml (uncited)
+    segment_hover: srgb8(0xdee0_e2ff),
 };
 
 /// The dark scheme's constants.
@@ -735,6 +765,12 @@ const DARK: SchemeColors = SchemeColors {
     // focused or pressed flat button (breezehelper.cpp:710-712 at breeze f0b1d75)
     // `switch.checked_track_border_color`: platform-facts.md (§2.21): highlightColor,
     // [Colors:Selection] BackgroundNormal 61,174,233 (SwitchIndicator.qml:27; BreezeDark.colors:88)
+    // `combo_box.hover_border_color`: platform-facts.md (§2.24): [Colors:Selection]
+    // BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5), Highlight, the pen of a
+    // hovered button frame (breezehelper.cpp:710-712 at breeze f0b1d75)
+    // `combo_box.open_border_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `segmented_control.active_background`: platform-facts.md (§2.25): [Colors:Selection]
+    // BackgroundNormal 61,174,233
     selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze
@@ -809,6 +845,8 @@ const DARK: SchemeColors = SchemeColors {
     // breezehelper.cpp:1191-1195; BreezeDark.colors:32, breeze v6.7.5)
     // `switch.thumb_background`: platform-facts.md (§2.21): [Colors:Button] BackgroundNormal
     // 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
+    // `combo_box.background_color`: platform-facts.md (§2.24): [Colors:Button] BackgroundNormal
+    // 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
     button_background: srgb8(0x292c_30ff),
     // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 252,252,252
     // (BreezeDark.colors:40, breeze v6.7.5)
@@ -819,6 +857,8 @@ const DARK: SchemeColors = SchemeColors {
     // 252,252,252 (BreezeDark.colors:40, breeze v6.7.5): Qt letters a QHeaderView section in
     // QPalette::ButtonText (qcommonstyle.cpp:1659-1660; Breeze does not override CE_HeaderLabel;
     // measured)
+    // `combo_box.font.color`: platform-facts.md (§2.24): [Colors:Button] ForegroundNormal
+    // 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
     button_foreground: srgb8(0xfcfc_fcff),
     // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
     // mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button]
@@ -847,6 +887,12 @@ const DARK: SchemeColors = SchemeColors {
     // KColorUtils::mix(Button, Highlight, Blend_Value 0.3) (breezehelper.cpp:694,
     // breezemetrics.h:176 at breeze f0b1d75); its text inherits font.color, ButtonText in every
     // state (platform-facts.md, breezestyle.cpp:5350-5362)
+    // `combo_box.open_background`: platform-facts.md (§2.24): open_background,
+    // open_border_color, an open combo box is a pressed button frame whatever the pointer does:
+    // KColorUtils::mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32),
+    // [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88), 0.3), framed in
+    // that Highlight (breezestyle.cpp:7823-7853, breezehelper.cpp:693-712 at breeze f0b1d75;
+    // measured)
     button_pressed: srgb8(0x2f53_68ff),
     // `button.default_button_background`: platform-facts.md (§2.3): default_button_background,
     // KColorUtils::mix(Button #292c30, Highlight #3daee9, 0.2), an active window's default
@@ -863,8 +909,11 @@ const DARK: SchemeColors = SchemeColors {
     // 6.31.0
     // `switch.disabled_thumb_color`: platform-facts.md (§2.21): the handle in the Disabled group,
     // Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0
+    // `combo_box.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
+    // BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
     button_disabled_background: srgb8(0x272a_2eff),
     // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `combo_box.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     button_disabled_foreground: srgb8(0x6d6f_72ff),
     // `checkbox.checked_background`: platform-facts.md (§2.5): Button #292c30 under Selection
     // #3daee9 at alpha 0.3
@@ -1083,6 +1132,8 @@ const DARK: SchemeColors = SchemeColors {
     // `switch.disabled_checked_track_border_color`: platform-facts.md (§2.21): highlightColor in
     // the Disabled group, Disabled Selection
     switch_disabled_on_frame: srgb8(0x1f21_24ff),
+    // `segmented_control.hover_background`: 0.7.2 kde-breeze.toml (uncited)
+    segment_hover: srgb8(0x3136_3bff),
 };
 
 /// The UI font's family.
@@ -1648,6 +1699,50 @@ const DIALOG_PADDING_HORIZONTAL: f32 = 10.0;
 // `dialog.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
 const DIALOG_PADDING_VERTICAL: f32 = 10.0;
 
+/// A combo box's least width.
+// `combo_box.min_width`: 0.7.2 kde-breeze.toml (uncited)
+const COMBO_BOX_MIN_WIDTH: f32 = 120.0;
+
+/// A combo box's least height.
+// `combo_box.min_height`: 0.7.2 kde-breeze.toml (uncited)
+const COMBO_BOX_MIN_HEIGHT: f32 = 32.0;
+
+/// The size of a combo box's arrow.
+// `combo_box.arrow_icon_size`: platform-facts.md (§2.24): renderArrow draws min(w, h, ArrowSize =
+// 10) in the 20px arrow column
+const COMBO_BOX_ARROW_SIZE: f32 = 10.0;
+
+/// The width of a combo box's arrow column.
+// `combo_box.arrow_area_width`: 0.7.2 kde-breeze.toml (uncited)
+const COMBO_BOX_ARROW_AREA_WIDTH: f32 = 20.0;
+
+/// A combo box's padding above and below.
+// `combo_box.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const COMBO_BOX_PADDING_VERTICAL: f32 = 6.0;
+
+/// A combo box's padding on its trailing side.
+// `combo_box.border.padding.right`: 0.7.2 kde-breeze.toml (uncited)
+const COMBO_BOX_PADDING_RIGHT: f32 = 0.0;
+
+/// A combo box's padding on its leading side.
+// `combo_box.border.padding.left`: platform-facts.md (§2.24): ComboBox_FrameWidth = 6 left, top
+// and bottom; 0 right, where the edit field meets the 20px arrow column
+const COMBO_BOX_PADDING_LEFT: f32 = 6.0;
+
+/// A segment's least height.
+// `segmented_control.segment_height`: 0.7.2 kde-breeze.toml (uncited)
+const SEGMENT_MIN_HEIGHT: f32 = 30.0;
+
+/// The width of the line between two segments.
+// `segmented_control.separator_width`: 0.7.2 kde-breeze.toml (uncited)
+const SEGMENT_SEPARATOR_WIDTH: f32 = 1.0;
+
+/// The state precedence of the combo box's field: disabled over open over
+/// hover, as the button's (an open combo box is "a pressed button frame
+/// whatever the pointer does": `combo_box.open_background`'s citation).
+const DISABLED_OPEN_HOVER: &[&[WidgetState]] =
+    &[&[WidgetState::DISABLED, WidgetState::OPEN, WidgetState::HOVER]];
+
 /// The state precedence of a part with rules for disabled, pressed and
 /// hover: disabled over pressed over hover (spec §3's example; 0.7.2's
 /// pressed colours win over its hover colours).
@@ -2188,9 +2283,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         popover: popover(c, &colors, &typography, &layout),
         switch: switch(c, &colors),
         dialog: dialog(&colors, &typography, &layout),
+        combo_box: combo_box(c, &colors, &typography, &layout),
+        segmented_control: segmented_control(c, &colors, &typography, &layout),
         // Stated by the plan's M2, KDE unit ("the rest of `kde-breeze`"): nothing yet.
-        combo_box: ComboBoxWidget::unstated(WidgetOrigin::Native),
-        segmented_control: SegmentedControlWidget::unstated(WidgetOrigin::Native),
         card: CardWidget::unstated(WidgetOrigin::Native),
         expander: ExpanderWidget::unstated(WidgetOrigin::Native),
         custom_colors: BTreeMap::new(),
@@ -3619,6 +3714,129 @@ fn dialog(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -
         DIALOG_BUTTON_GAP,
         Some(DIALOG_BUTTON_ORDER),
         Some(DIALOG_ENTRANCE),
+    )
+}
+
+/// The combo box: a field of a least size in the Button set's background,
+/// in the default line and radius (0.7.2: `combo_box.border`'s colour,
+/// width and radius are `defaults.border`'s where unstated), no shadow and
+/// ComboBox_FrameWidth's padding; hovered, outlined in Highlight; open, a
+/// pressed button frame in Highlight whatever the pointer does; disabled,
+/// the disabled button's background. The label in the UI font in ButtonText
+/// (0.7.2: `combo_box.font` is `defaults.font` where unstated), the disabled
+/// button's text when disabled; the arrow at ArrowSize in its column (0.7.2:
+/// `combo_box.disabled_opacity` is `defaults.disabled_opacity` where
+/// unstated).
+fn combo_box(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> ComboBoxWidget {
+    let field = RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_OPEN_HOVER)
+        .base([fill(c.button_background)])
+        .base(roles.window.border.map(|border| outline(layout, border)))
+        .base([
+            corners(layout),
+            // `combo_box.border.shadow_enabled`: platform-facts.md (§2.24): no shadow
+            PartProp::Shadows(None),
+            PartProp::Padding(Edges::new(
+                COMBO_BOX_PADDING_VERTICAL,
+                COMBO_BOX_PADDING_RIGHT,
+                COMBO_BOX_PADDING_VERTICAL,
+                COMBO_BOX_PADDING_LEFT,
+            )),
+            PartProp::MinSize([Some(COMBO_BOX_MIN_WIDTH), Some(COMBO_BOX_MIN_HEIGHT)]),
+        ])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [outline(layout, c.selection_background)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::OPEN),
+            [
+                fill(c.button_pressed),
+                outline(layout, c.selection_background),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.button_disabled_background)],
+        )
+        .build();
+    let label = RuleBuilder::new(label(&typography.body, Some(c.button_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(c.button_disabled_foreground)],
+        )
+        .build();
+    let chevron = RuleBuilder::new(IconStyle::default())
+        .base([IconProp::Size(COMBO_BOX_ARROW_SIZE)])
+        .build();
+    ComboBoxWidget::new(
+        WidgetOrigin::Native,
+        field,
+        label,
+        chevron,
+        Some(COMBO_BOX_ARROW_AREA_WIDTH),
+        // 0.7.2: `combo_box.disabled_opacity` is `defaults.disabled_opacity` where unstated.
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The segmented control: the track in the window's background in the
+/// default line and radius (0.7.2: `segmented_control.background_color` is
+/// `defaults.background_color`, and `border`'s colour, width and radius
+/// `defaults.border`'s, where unstated) with no shadow; segments of a least
+/// height, hovered in the preset's hover fill, the selected one in Highlight
+/// lettered in the accent's text (0.7.2: `active_text_color` is
+/// `defaults.accent_text_color` where unstated); the UI font (0.7.2:
+/// `segmented_control.font` is `defaults.font` where unstated); the line
+/// between segments of the preset's width (0.7.2:
+/// `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
+/// unstated).
+fn segmented_control(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> SegmentedControlWidget {
+    let track = RuleBuilder::new(PartStyle::default())
+        .base(roles.window.background.map(fill))
+        .base(roles.window.border.map(|border| outline(layout, border)))
+        .base([
+            corners(layout),
+            // `segmented_control.border.shadow_enabled`: platform-facts.md (§2.25): no shadow
+            PartProp::Shadows(None),
+        ])
+        .build();
+    let segment = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::MinSize([None, Some(SEGMENT_MIN_HEIGHT)])])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.segment_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [fill(c.selection_background)],
+        )
+        .build();
+    let label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [TextProp::Color(roles.accent.foreground)],
+        )
+        .build();
+    SegmentedControlWidget::new(
+        WidgetOrigin::Native,
+        track,
+        segment,
+        label,
+        RuleBuilder::new(PartStyle::default()).build(),
+        SEGMENT_SEPARATOR_WIDTH,
+        // 0.7.2: `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
+        // unstated.
+        Some(roles.disabled_opacity),
     )
 }
 

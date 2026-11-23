@@ -430,6 +430,54 @@ fn a_hovered_selected_sidebar_item_is_the_selected_item() {
     }
 }
 
+#[test]
+fn an_open_combo_box_ignores_the_pointer_and_a_disabled_one_both() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let open = theme.combo_box.field(WidgetState::OPEN);
+        assert_ne!(
+            open,
+            theme.combo_box.field(WidgetState::HOVER),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .combo_box
+                .field(WidgetState::OPEN.union(WidgetState::HOVER)),
+            open,
+            "{scheme:?}"
+        );
+        let disabled = theme.combo_box.field(WidgetState::DISABLED);
+        for state in [WidgetState::HOVER, WidgetState::OPEN] {
+            assert_eq!(
+                theme.combo_box.field(state.union(WidgetState::DISABLED)),
+                disabled,
+                "{scheme:?} {state:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_hovered_selected_segment_is_the_selected_segment() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let selected = WidgetState::SELECTED;
+        assert_ne!(
+            theme.segmented_control.segment(WidgetState::HOVER),
+            theme.segmented_control.segment(selected),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .segmented_control
+                .segment(selected.union(WidgetState::HOVER)),
+            theme.segmented_control.segment(selected),
+            "{scheme:?}"
+        );
+    }
+}
+
 /// The colour of a solid fill.
 fn solid(paint: &Paint) -> Option<Color> {
     match paint {
