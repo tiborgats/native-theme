@@ -357,19 +357,6 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "geometry::group_box_content",
-        presets: &["material-3"],
-        reason: "0.7.2's material-3.toml states no card.border.color or line_width, and 0.7.2's \
-                 validation fills a card border's unstated fields with transparent and 0 \
-                 (`BorderKind::None`, native-theme/src/resolve/validate_helpers.rs), a value no \
-                 source gives; the 0.8.0 material-3 leaves card.container(NONE).stroke \
-                 unstated (native-theme/tests/next_homes.toml, rows card.border.color and \
-                 card.border.line_width, unstated_if_unset), so the 0.8.0 refinement sets no \
-                 border width and no border colour and the group box keeps gpui-component's \
-                 own (docs/v0.8.0-spec.md §10, rule 0); every other field of the refinement \
-                 is equal",
-    },
-    Difference {
-        leaf: "geometry::group_box_content",
         presets: &["ios-13"],
         reason: "0.7.2's ios-13.toml states no card.border.color, line_width or corner_radius \
                  (its [light.card] and [dark.card] tables are empty; docs/platform-facts.md \
@@ -418,6 +405,18 @@ const DIFFERENCES: &[Difference] = &[
                  sets nothing else",
     },
     Difference {
+        leaf: "geometry::accordion_hover",
+        presets: &["material-3"],
+        reason: "0.7.2's material-3 states expander.hover_background #1c1b1f14 / #e6e1e514, \
+                 uncited and not v0_192's on-surface; the 0.8.0 preset states on-surface at \
+                 the hover opacity 0.08, #1d1b2014 / #e6e0e914, a full-width row's hover layer, \
+                 Material 3 having no expander (docs/platform-facts.md §2.27; \
+                 _md-comp-list.scss:85-88, v0_192 at material-web cbd34a8; \
+                 native-theme/tests/next_homes.toml, row expander.hover_background, a listed \
+                 difference), so the refinement's background is that layer; it sets nothing \
+                 else",
+    },
+    Difference {
         leaf: "variants::bordered_button",
         presets: &["adwaita", "windows-11"],
         reason: "0.7.2 states no button.hover_border_color, so the bordered variant gets no \
@@ -447,6 +446,18 @@ const DIFFERENCES: &[Difference] = &[
                  outline is button.body(NONE)'s stroke colour, on macos-tahoe transparent, \
                  its push button drawing no stroke (docs/facts/macos/button.toml on \
                  v0.8.0-rc1 at 78ee0efd, `button.body.stroke` absent)",
+    },
+    Difference {
+        leaf: "variants::bordered_button",
+        presets: &["material-3"],
+        reason: "0.7.2 states no button.hover_border_color, so the bordered variant gets no \
+                 hover border (`None`) and the caller keeps gpui-component's Default variant; \
+                 the 0.8.0 material-3 states the push button's stroke for HOVER as none, the \
+                 filled tonal button having no outline token in any state \
+                 (_md-comp-filled-tonal-button.scss, its tokens :37-99, v0_192 at material-web \
+                 cbd34a8; native-theme/tests/next_homes.toml, row button.hover_border_color, a \
+                 listed difference), so the hover outline is transparent (crate::next's \
+                 stroke colour of a stroke stated as none)",
     },
     Difference {
         leaf: BUTTON_STATES,
@@ -534,6 +545,14 @@ const PRESSED_STANDS_IN: &[&str] = &["macos-monterey"];
 /// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
 /// button the 0.8.0 preset strokes as none.
 const UNSTROKED_BUTTON: &[&str] = &["macos-tahoe"];
+
+/// The presets of [`DIFFERENCES`]' `variants::bordered_button` entries
+/// whose hovered push button the 0.8.0 preset strokes as none.
+const UNSTROKED_HOVER: &[&str] = &["material-3"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::accordion_hover` entries on
+/// which 0.7.2 states an expander hover fill the 0.8.0 preset replaces.
+const RESTATED_ACCORDION_HOVER: &[&str] = &["material-3"];
 
 /// The leaf of [`DIFFERENCES`]' entry for the push button's hovered and
 /// pressed fills: the `ThemeColor` slots of [`STATE_SLOTS`], their tokens
@@ -1421,7 +1440,9 @@ fn compare_builders(
                 report.count(accordion_hover);
                 let o = crate::geometry::accordion_hover(Native::unscaled(old));
                 let stated = super::state_fill_of(&new.expander.header(WidgetState::HOVER));
-                if old.expander.hover_background.is_some()
+                let restated = RESTATED_ACCORDION_HOVER.contains(&report.preset);
+                if old.expander.hover_background.is_some() != restated
+                    || n == o
                     || stated.is_none()
                     || n != crate::geometry::accordion_hover_from(stated)
                 {
@@ -1553,11 +1574,20 @@ fn compare_builders(
             if let Some(n) = report.mapped(bordered, super::builders::hover_border(new)) {
                 use native_theme::next::WidgetState;
                 report.count(bordered);
+                use native_theme::next::{PartStated, Stroke};
                 let o = crate::variants::hover_border(Native::unscaled(old));
-                let rest =
+                // The outline the entry names: the hovered body's, stated as none, or the rest one.
+                let hovered = new.button.body(WidgetState::HOVER);
+                let named = if UNSTROKED_HOVER.contains(&report.preset) {
+                    (hovered.from_state.contains(PartStated::STROKE)
+                        && matches!(hovered.stroke, Stroke::None))
+                    .then(|| super::stroke_color(&hovered, "button.body(HOVER)").ok())
+                    .flatten()
+                } else {
                     super::stroke_color(&new.button.body(WidgetState::NONE), "button.body(NONE)")
-                        .ok();
-                if o.is_some() || n.is_none() || n != rest {
+                        .ok()
+                };
+                if o.is_some() || n.is_none() || n != named {
                     report.failures.push(format!(
                         "{}: {bordered}: the listed difference ({}) no longer describes \
                          it: 0.7.2 {o:?}, 0.8.0 {n:?}",

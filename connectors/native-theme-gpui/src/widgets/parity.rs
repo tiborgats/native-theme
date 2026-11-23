@@ -60,12 +60,58 @@ const DIFFERENCES: &[Difference] = &[
             "windows-11",
             "macos-monterey",
             "macos-tahoe",
-            "material-3",
             "ios-13",
         ],
-        reason: "no 0.8.0 preset states switch.label, so a disabled switch's label is \
-                 gpui-component's own, muted_foreground, colors.window.foreground_muted \
-                 (spec §10, rule 0), where the 0.7.2 look took defaults.disabled_text_color",
+        reason: "the 0.8.0 preset states no disabled colour of switch.label, so a disabled \
+                 switch's label is gpui-component's own, muted_foreground, \
+                 colors.window.foreground_muted (spec §10, rule 0), where the 0.7.2 look took \
+                 defaults.disabled_text_color",
+    },
+    Difference {
+        leaf: "SwitchLook::label disabled",
+        presets: &["material-3"],
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color, \
+                 on-surface at 0.38; the 0.8.0 material-3 states Android's MaterialSwitch \
+                 text, on-background at material_emphasis_medium 0.6 when disabled \
+                 (#1d1b2099 / #e6e0e999: android:Widget.CompoundButton's textColor \
+                 ?attr/textColorPrimaryDisableOnly, AOSP core/res/res/values/styles.xml:386 at \
+                 android-15.0.0_r1; m3_primary_text_disable_only.xml:19, dimens.xml:21, \
+                 materialswitch/res/values/styles.xml:17-29 at material-components-android \
+                 66c334b)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of label disabled",
+        presets: &["material-3"],
+        reason: "0.7.2's disabled check box label is defaults.disabled_text_color, on-surface \
+                 at 0.38, an inheritance no source states for it (no M3 token for the label); \
+                 the 0.8.0 material-3 states Android's, the label's colour at \
+                 material_emphasis_medium 0.6 (#1d1b2099 / #e6e0e999: \
+                 android:Widget.CompoundButton's textColor ?attr/textColorPrimaryDisableOnly, \
+                 AOSP core/res/res/values/styles.xml:386 at android-15.0.0_r1; \
+                 checkbox/res/values/styles.xml:26-28, m3_primary_text_disable_only.xml:19, \
+                 dimens.xml:21 at material-components-android 66c334b; \
+                 native-theme/tests/next_homes.toml, row checkbox.disabled_text_color, a listed \
+                 difference); the look draws a disabled box's mark in that colour too, where \
+                 a disabled fill is stated (CheckboxLook::next_of, 0.7.2's reading of \
+                 disabled_text_color), so the mark moves with it",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio label disabled",
+        presets: &["material-3"],
+        reason: "as the check box's (CheckboxLook::of label disabled): the radio button's \
+                 label inherits the same textColor (radiobutton/res/values/styles.xml:19-33 at \
+                 material-components-android 66c334b sets none), so 0.6 where 0.7.2 has 0.38, \
+                 the disabled dot with it",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_border",
+        presets: &["material-3"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; the 0.8.0 material-3 states an unchecked check box's outline for \
+                 HOVER, on-surface (unselected-hover-outline-color, _md-comp-checkbox.scss:111-112, \
+                 v0_192 at material-web cbd34a8; native-theme/tests/next_homes.toml, row \
+                 checkbox.hover_border_color, a listed difference); so an enabled box hovers in \
+                 on-surface, a checked one in its checked outline",
     },
     Difference {
         leaf: "TabLook::hover",
@@ -281,9 +327,28 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             );
             // The hover outline apart, so a listed difference of it leaves the rest of the look
             // compared.
+            // The label apart too, so a listed difference of the disabled label leaves the rest
+            // of the look compared; disabled with it the mark, which the look draws in the
+            // label's disabled colour where a disabled fill is stated (`CheckboxLook::next_of`).
             let unframed = |look: CheckboxLook| CheckboxLook {
                 hover_border: None,
+                label: gpui::transparent_black(),
+                mark: if disabled {
+                    gpui::transparent_black()
+                } else {
+                    look.mark
+                },
                 ..look
+            };
+            let text = |look: CheckboxLook| {
+                (
+                    if disabled {
+                        look.mark
+                    } else {
+                        gpui::transparent_black()
+                    },
+                    look.label,
+                )
             };
             let (old_box, new_box) = (
                 CheckboxLook::of(&old, checked, disabled),
@@ -294,6 +359,16 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 &state,
                 old_box.map(unframed),
                 new_box.map(unframed),
+            );
+            r.leaf(
+                if disabled {
+                    "CheckboxLook::of label disabled"
+                } else {
+                    "CheckboxLook::of label"
+                },
+                &state,
+                old_box.map(text),
+                new_box.map(text),
             );
             r.leaf(
                 "CheckboxLook::of hover_border",
@@ -310,6 +385,16 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 &state,
                 old_radio.map(unframed),
                 new_radio.map(unframed),
+            );
+            r.leaf(
+                if disabled {
+                    "CheckboxLook::radio label disabled"
+                } else {
+                    "CheckboxLook::radio label"
+                },
+                &state,
+                old_radio.map(text),
+                new_radio.map(text),
             );
             r.leaf(
                 "CheckboxLook::radio hover_border",
