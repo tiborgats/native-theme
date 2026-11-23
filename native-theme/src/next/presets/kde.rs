@@ -154,7 +154,7 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
+use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::platform::KdeRoleKind;
@@ -301,6 +301,7 @@ struct SchemeColors {
     switch_disabled_frame: Color,
     switch_disabled_on_frame: Color,
     segment_hover: Color,
+    card_border: Color,
 }
 
 /// The light scheme's constants.
@@ -318,6 +319,7 @@ const LIGHT: SchemeColors = SchemeColors {
     // `menu.hover_text_color`: platform-facts.md (§2.6): [Colors:Window] ForegroundNormal
     // 35,38,41 (BreezeLight.colors:137, breeze v6.7.5): a hovered item keeps the window text;
     // only a pressed one is HighlightedText (breezestyle.cpp:6155 at breeze f0b1d75; measured)
+    // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     window_foreground: srgb8(0x2326_29ff),
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 112,125,138 (BreezeLight.colors:133, breeze v6.7.5)
@@ -715,6 +717,10 @@ const LIGHT: SchemeColors = SchemeColors {
     switch_disabled_on_frame: srgb8(0xe3e5_e7ff),
     // `segmented_control.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     segment_hover: srgb8(0xdee0_e2ff),
+    // `card.border.color`: platform-facts.md §2.26 border.color: linearInterpolation(backgroundColor,
+    // textColor, frameContrast 0.2) of the View set (DefaultCardBackground.qml:70, :86-89;
+    // colorutils.cpp:61-80), #ced1d4
+    card_border: srgb8(0xced1_d4ff),
 };
 
 /// The dark scheme's constants.
@@ -732,6 +738,7 @@ const DARK: SchemeColors = SchemeColors {
     // `menu.hover_text_color`: platform-facts.md (§2.6): [Colors:Window] ForegroundNormal
     // 252,252,252 (BreezeDark.colors:138, breeze v6.7.5): a hovered item keeps the window text;
     // only a pressed one is HighlightedText (breezestyle.cpp:6155 at breeze f0b1d75; measured)
+    // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     window_foreground: srgb8(0xfcfc_fcff),
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 161,169,177 (BreezeDark.colors:134, breeze v6.7.5)
@@ -1134,6 +1141,10 @@ const DARK: SchemeColors = SchemeColors {
     switch_disabled_on_frame: srgb8(0x1f21_24ff),
     // `segmented_control.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     segment_hover: srgb8(0x3136_3bff),
+    // `card.border.color`: platform-facts.md §2.26 border.color: linearInterpolation(backgroundColor,
+    // textColor, frameContrast 0.2) of the View set (DefaultCardBackground.qml:70, :86-89;
+    // colorutils.cpp:61-80), #3c4146
+    card_border: srgb8(0x3c41_46ff),
 };
 
 /// The UI font's family.
@@ -1737,6 +1748,56 @@ const SEGMENT_MIN_HEIGHT: f32 = 30.0;
 // `segmented_control.separator_width`: 0.7.2 kde-breeze.toml (uncited)
 const SEGMENT_SEPARATOR_WIDTH: f32 = 1.0;
 
+/// The radius of a card's corners.
+// `card.border.corner_radius`: platform-facts.md §2.26 border.corner_radius: Units.cornerRadius,
+// 5 (DefaultCardBackground.qml:84, units.cpp:46)
+const CARD_CORNER_RADIUS: f32 = 5.0;
+
+/// The width of a card's line.
+// `card.border.line_width`: platform-facts.md §2.26 border.line_width: borderWidth: 1
+// (DefaultCardBackground.qml:65)
+const CARD_BORDER_WIDTH: f32 = 1.0;
+
+/// Whether a card casts a shadow.
+// `card.border.shadow_enabled`: platform-facts.md §2.26 border.shadow_enabled: a gridUnit shadow
+// in rgba(0, 0, 0, 0.05), 2 down (DefaultCardBackground.qml:90-94)
+const CARD_SHADOW_ENABLED: bool = true;
+
+/// A card's padding left and right.
+// `card.border.padding.left`: platform-facts.md (§2.26): 7 inside the border line on all four
+// sides: padding: Units.largeSpacing, 8, from the card's outer edge (templates/AbstractCard.qml:96,
+// :100-108, units.cpp:39), less the 1px border drawn inside it
+const CARD_PADDING_HORIZONTAL: f32 = 7.0;
+
+/// A card's padding above and below.
+// `card.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const CARD_PADDING_VERTICAL: f32 = 7.0;
+
+/// An expander header's least height.
+// `expander.header_height`: 0.7.2 kde-breeze.toml (uncited)
+const EXPANDER_HEADER_MIN_HEIGHT: f32 = 40.0;
+
+/// The size of an expander's arrow.
+// `expander.arrow_icon_size`: 0.7.2 kde-breeze.toml (uncited)
+const EXPANDER_ARROW_SIZE: f32 = 10.0;
+
+/// The side of the title an expander's arrow is on.
+// `expander.arrow_side`: platform-facts.md (§2.27): KCollapsibleGroupBox, the arrow in the
+// indicator before the title, 9 from it, the content 20 in (PM_IndicatorWidth), no frame
+const EXPANDER_ARROW_SIDE: ArrowSide = ArrowSide::Leading;
+
+/// The gap between an expander's arrow and its title.
+// `expander.arrow_gap`: 0.7.2 kde-breeze.toml (uncited)
+const EXPANDER_ARROW_GAP: f32 = 9.0;
+
+/// How far an expander's content is indented.
+// `expander.content_indent`: 0.7.2 kde-breeze.toml (uncited)
+const EXPANDER_CONTENT_INDENT: f32 = 20.0;
+
+/// Whether an expander draws its frame.
+// `expander.frame_enabled`: 0.7.2 kde-breeze.toml (uncited)
+const EXPANDER_FRAME_ENABLED: bool = false;
+
 /// The state precedence of the combo box's field: disabled over open over
 /// hover, as the button's (an open combo box is "a pressed button frame
 /// whatever the pointer does": `combo_box.open_background`'s citation).
@@ -2285,9 +2346,8 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         dialog: dialog(&colors, &typography, &layout),
         combo_box: combo_box(c, &colors, &typography, &layout),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
-        // Stated by the plan's M2, KDE unit ("the rest of `kde-breeze`"): nothing yet.
-        card: CardWidget::unstated(WidgetOrigin::Native),
-        expander: ExpanderWidget::unstated(WidgetOrigin::Native),
+        card: card(c, &colors),
+        expander: expander(c, &colors, &typography, &layout),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
@@ -3837,6 +3897,70 @@ fn segmented_control(
         // 0.7.2: `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
         // unstated.
         Some(roles.disabled_opacity),
+    )
+}
+
+/// The card: Kirigami's card in the view's background (0.7.2:
+/// `card.background_color` is `defaults.surface_color` where unstated) with
+/// its own line, radius and padding; its shadow, which 0.7.2 states as
+/// `shadow_enabled` without its geometry, is left to the connector (spec §5,
+/// notes to the table).
+fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
+    let container = RuleBuilder::new(PartStyle::default())
+        .base(roles.view.background.map(fill))
+        .base([
+            PartProp::Stroke(Stroke::uniform(CARD_BORDER_WIDTH, c.card_border)),
+            PartProp::Corners(Corners::uniform(CARD_CORNER_RADIUS)),
+            PartProp::Padding(Edges::symmetric(
+                CARD_PADDING_VERTICAL,
+                CARD_PADDING_HORIZONTAL,
+            )),
+        ])
+        .base((!CARD_SHADOW_ENABLED).then_some(PartProp::Shadows(None)))
+        .build();
+    CardWidget::new(WidgetOrigin::Native, container)
+}
+
+/// The expander: KCollapsibleGroupBox, its frame (drawn where
+/// `frame_enabled`, which Breeze's is not) in the default line and radius
+/// (0.7.2: `expander.border`'s colour, width and radius are
+/// `defaults.border`'s where unstated) with no shadow; a header of a least
+/// height, no hover fill; the title in the UI font (0.7.2: `expander.font`
+/// is `defaults.font` where unstated); the arrow before the title, of the
+/// preset's size and colour, at its gap; the content indented.
+fn expander(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> ExpanderWidget {
+    let container = RuleBuilder::new(PartStyle::default())
+        .base(roles.window.border.map(|border| outline(layout, border)))
+        .base([
+            corners(layout),
+            // `expander.border.shadow_enabled`: platform-facts.md (§2.27): no shadow
+            PartProp::Shadows(None),
+        ])
+        .build();
+    let header = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::MinSize([None, Some(EXPANDER_HEADER_MIN_HEIGHT)])])
+        .build();
+    let arrow = RuleBuilder::new(IconStyle::default())
+        .base([
+            IconProp::Size(EXPANDER_ARROW_SIZE),
+            IconProp::Color(c.window_foreground),
+        ])
+        .build();
+    ExpanderWidget::new(
+        WidgetOrigin::Native,
+        container,
+        header,
+        RuleBuilder::new(label(&typography.body, None)).build(),
+        arrow,
+        Some(EXPANDER_ARROW_SIDE),
+        Some(EXPANDER_ARROW_GAP),
+        Some(EXPANDER_CONTENT_INDENT),
+        Some(EXPANDER_FRAME_ENABLED),
     )
 }
 
