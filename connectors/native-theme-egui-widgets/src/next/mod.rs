@@ -77,17 +77,17 @@ pub(crate) fn stroke_width(part: &PartStyle) -> Option<f32> {
     }
 }
 
-/// A part's corner radius on a box of `size`, where stated as one circular radius, square
-/// corners (no radius) or a pill (half the shorter side); `None` where it is not stated or
-/// stated in a form egui cannot draw as one radius.
-pub(crate) fn radius(part: &PartStyle, width: f32, height: f32) -> Option<f32> {
+/// A part's corner radius on a box `width` × `height`, where stated as one circular radius,
+/// square corners (no radius) or a pill (half the shorter side, of a box whose size is known);
+/// `None` where it is not stated or stated in a form egui cannot draw as one radius.
+pub(crate) fn radius(part: &PartStyle, width: Option<f32>, height: Option<f32>) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return None;
     }
     match (part.corners.radius, part.corners.curve) {
         (CornerRadius::None, _) => Some(0.0),
         (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
-        (CornerRadius::Pill, CornerCurve::Circular) => Some(0.5 * width.min(height)),
+        (CornerRadius::Pill, CornerCurve::Circular) => Some(0.5 * width?.min(height?)),
         _ => None,
     }
 }

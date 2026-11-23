@@ -3,10 +3,11 @@
 use native_theme_egui::convert::{clamp_length, to_color32};
 use native_theme_egui::egui;
 use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
 use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
 use crate::parts::Parts;
-use crate::scope;
+use crate::{next, scope};
 
 /// egui's radio dot is a circle of radius `small_icon_rect.width() / 3.0`
 /// (`egui/src/widgets/radio_button.rs:101`), `small_icon_rect` being `Spacing::icon_width_inner`
@@ -112,14 +113,57 @@ fn radio_parts(
 /// colour-leaf coverage test sees the widget's reads.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
-    /// `defaults.background_color`: the colour faded over where no backdrop is given.
-    pub(crate) background: Rgba,
+    /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
+    /// egui's own fade of a disabled widget.
+    pub(crate) background: Option<Rgba>,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            background: t.defaults.background_color,
+            background: Some(t.defaults.background_color),
+        }
+    }
+
+    /// The colours of a radio button of a 0.8.0 theme: the window's background
+    /// (`colors.window.background`), where stated.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        Self {
+            background: next::window_background(r),
+        }
+    }
+}
+
+/// The sizes a radio button reads of a theme, each `None` where egui's own stays.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Geometry {
+    /// `checkbox.radio_dot_diameter`: the dot.
+    pub(crate) dot: Option<f32>,
+    /// `checkbox.radio_indicator_width`: the circle.
+    pub(crate) width: Option<f32>,
+    /// The space between the circle and the label; `None`, the cell's `icon_spacing`.
+    pub(crate) label_gap: Option<f32>,
+}
+
+impl Geometry {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        let checkbox = &t.checkbox;
+        Self {
+            dot: checkbox.radio_dot_diameter.and_then(scope::length),
+            width: checkbox.radio_indicator_width.and_then(scope::length),
+            label_gap: None,
+        }
+    }
+
+    /// The sizes of a radio button of a 0.8.0 theme: `radio.dot` and `radio.indicator`'s
+    /// minimum widths at rest and `radio.label_gap`, each where stated and finite.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        let [dot, _] = r.radio.dot(WidgetState::NONE).min_size;
+        let [width, _] = r.radio.indicator(WidgetState::NONE).min_size;
+        Self {
+            dot: dot.and_then(scope::length),
+            width: width.and_then(scope::length),
+            label_gap: scope::length(r.radio.label_gap),
         }
     }
 }
@@ -135,17 +179,28 @@ impl egui::Widget for RadioButton {
         let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
             return ui.add_enabled(enabled, egui::RadioButton::new(checked, text));
         };
-        // An atlas of the 0.8.0 model: egui's own radio button in the role's cell.
-        let Some(resolved) = atlas.resolved_for(ui.ctx().theme()) else {
+        let theme = ui.ctx().theme();
+        let read = match atlas.resolved_for(theme) {
+            Some(t) => Some((Look::of(t), Geometry::of(t))),
+            None => atlas
+                .next_resolved_for(theme)
+                .map(|r| (Look::next_of(r), Geometry::next_of(r))),
+        };
+        let Some((look, geometry)) = read else {
             return scope::open_faded(ui, Role::Checkbox, checked, enabled, None, |ui| {
                 ui.add(egui::RadioButton::new(checked, text))
             });
         };
-        let checkbox = &resolved.checkbox;
-        let dot = checkbox.radio_dot_diameter.and_then(scope::length);
-        let width = checkbox.radio_indicator_width.and_then(scope::length);
-        let ground = backdrop.unwrap_or_else(|| to_color32(Look::of(resolved).background));
-        scope::open_faded(ui, Role::Checkbox, checked, enabled, Some(ground), |ui| {
+        let Geometry {
+            dot,
+            width,
+            label_gap,
+        } = geometry;
+        let ground = backdrop.or_else(|| look.background.map(to_color32));
+        scope::open_faded(ui, Role::Checkbox, checked, enabled, ground, |ui| {
+            if let Some(gap) = label_gap {
+                ui.spacing_mut().icon_spacing = gap;
+            }
             if let Some(width) = width {
                 ui.spacing_mut().icon_width = clamp_length(width);
             }

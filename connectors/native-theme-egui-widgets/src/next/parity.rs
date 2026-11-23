@@ -21,6 +21,9 @@ use native_theme_egui::ResolvedTheme;
 use native_theme_egui::native_theme;
 use native_theme_egui::native_theme::next::{Preset, ThemeContext};
 
+use crate::progress_bar::Bar;
+use crate::radio_button::{Geometry as RadioGeometry, Look as RadioLook};
+use crate::spinner::Look as SpinnerLook;
 use crate::switch::{Geometry as SwitchGeometry, Look as SwitchLook};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -44,7 +47,39 @@ struct Difference {
 }
 
 /// The listed differences.
-const DIFFERENCES: &[Difference] = &[];
+const DIFFERENCES: &[Difference] = &[
+    Difference {
+        leaf: "radio_button::Geometry.width",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "ios-13",
+        ],
+        reason: "0.7.2 leaves checkbox.radio_indicator_width unstated, so the radio keeps its \
+                 Checkbox cell's icon_width (checkbox.indicator_width); the 0.8.0 theme states \
+                 radio.indicator(NONE).min_size, the same width (the table of homes: if_null \
+                 checkbox.indicator_width): drawn alike, \
+                 next_drawn::the_radio_button_draws_alike_from_both_models",
+    },
+    Difference {
+        leaf: "radio_button::Geometry.label_gap",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ],
+        reason: "0.7.2 has no radio label gap, so the radio keeps its Checkbox cell's \
+                 icon_spacing; the 0.8.0 theme states radio.label_gap, the same space: drawn \
+                 alike, next_drawn::the_radio_button_draws_alike_from_both_models",
+    },
+];
 
 /// The leaves compared and the differences found, for one preset and scheme.
 struct Report {
@@ -159,6 +194,38 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
             thumb_border,
             label_gap,
         ]
+    );
+    compare!(
+        report,
+        "radio_button::Look",
+        RadioLook,
+        Some(RadioLook::of(old)),
+        Some(RadioLook::next_of(new)),
+        [background]
+    );
+    compare!(
+        report,
+        "radio_button::Geometry",
+        RadioGeometry,
+        Some(RadioGeometry::of(old)),
+        Some(RadioGeometry::next_of(new)),
+        [dot, width, label_gap]
+    );
+    compare!(
+        report,
+        "progress_bar::Bar",
+        Bar,
+        Some(Bar::of(old)),
+        Some(Bar::next_of(new)),
+        [min_width, frame]
+    );
+    compare!(
+        report,
+        "spinner::Look",
+        SpinnerLook,
+        Some(SpinnerLook::of(old)),
+        Some(SpinnerLook::next_of(new)),
+        [fill_color, text_color, diameter, stroke_width]
     );
 }
 

@@ -22,7 +22,34 @@ struct Difference {
 }
 
 /// The listed differences.
-const DIFFERENCES: &[Difference] = &[];
+const DIFFERENCES: &[Difference] = &[
+    Difference {
+        case: "radio off",
+        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        reason: RADIO_CELL,
+    },
+    Difference {
+        case: "radio on",
+        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        reason: RADIO_CELL,
+    },
+    Difference {
+        case: "radio off disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: RADIO_CELL,
+    },
+    Difference {
+        case: "radio on disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: RADIO_CELL,
+    },
+];
+
+/// The radio's circle is egui's, outlined in its Checkbox cell's stroke.
+const RADIO_CELL: &str = "the circle's outline colour alone differs: it is the connector's \
+     Checkbox cell's bg_stroke, whose translucent border lies inside the part in the 0.8.0 theme \
+     and is composited over its fill (native-theme-egui, next::parity, the Checkbox entry of \
+     its differences)";
 
 /// A context with the atlas of each model of `key` installed, drawn in its scheme: the 0.7.2
 /// theme resolved as `crate::next::parity::resolve` resolves it, and the 0.8.0 preset as
@@ -34,17 +61,11 @@ fn both_installed(
     preset: Preset,
     is_dark: bool,
 ) -> Result<(egui::Context, egui::Context), Box<dyn std::error::Error>> {
-    let (light, _) = crate::next::parity::resolve(key, preset, false)?;
-    let (dark, _) = crate::next::parity::resolve(key, preset, true)?;
     let scheme = if is_dark {
         egui::Theme::Dark
     } else {
         egui::Theme::Light
     };
-    let old = egui::Context::default();
-    ThemeAtlas::builder(key, &light, &dark)
-        .build()
-        .install(&old);
     let theme = NextTheme::preset(preset);
     let [light, light_inactive, dark, dark_inactive] = [
         ThemeContext::light(),
@@ -53,10 +74,22 @@ fn both_installed(
         ThemeContext::dark().with_window_active(false),
     ]
     .map(|ctx| theme.resolve(&ctx));
+    let new_atlas =
+        ThemeAtlas::next_builder(&light, &light_inactive, &dark, &dark_inactive).build()?;
+    // The 0.7.2 atlas takes the 0.8.0 one's icon set and themes, so both spinners draw the
+    // same set's indicator: the connector's parity compares the icon sets.
+    let (light, _) = crate::next::parity::resolve(key, preset, false)?;
+    let (dark, _) = crate::next::parity::resolve(key, preset, true)?;
+    let mut old_builder = ThemeAtlas::builder(key, &light, &dark).icon_set(new_atlas.icon_set());
+    for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+        if let Some(name) = new_atlas.icon_theme(scheme) {
+            old_builder = old_builder.icon_theme(scheme, name);
+        }
+    }
+    let old = egui::Context::default();
+    old_builder.build().install(&old);
     let new = egui::Context::default();
-    ThemeAtlas::next_builder(&light, &light_inactive, &dark, &dark_inactive)
-        .build()?
-        .install(&new);
+    new_atlas.install(&new);
     for ctx in [&old, &new] {
         ctx.set_theme(scheme);
         ctx.enable_accesskit();
@@ -174,6 +207,32 @@ fn the_switch_draws_alike_from_both_models() -> TestResult {
     ])
 }
 
+#[test]
+fn the_radio_button_draws_alike_from_both_models() -> TestResult {
+    let radio = |checked: bool, enabled: bool| {
+        move |ui: &mut egui::Ui| ui.add(RadioButton::new(checked, "Radio").enabled(enabled))
+    };
+    let (off, on, off_disabled, on_disabled) = (
+        radio(false, true),
+        radio(true, true),
+        radio(false, false),
+        radio(true, false),
+    );
+    assert_drawn_alike(&[
+        ("radio off", &off),
+        ("radio on", &on),
+        ("radio off disabled", &off_disabled),
+        ("radio on disabled", &on_disabled),
+    ])
+}
+
+#[test]
+fn the_progress_bar_and_the_spinner_draw_alike_from_both_models() -> TestResult {
+    let bar = |ui: &mut egui::Ui| ui.add(ProgressBar::new(0.4));
+    let spinner = |ui: &mut egui::Ui| ui.add(Spinner::new());
+    assert_drawn_alike(&[("progress bar", &bar), ("spinner", &spinner)])
+}
+
 // ---- patched themes: the branches no preset reaches ---------------------------------------------
 
 /// `preset` with `patch` laid over it, resolved light.
@@ -280,5 +339,61 @@ fn a_pill_switch_track_is_rounded_by_half_its_height() -> TestResult {
     let patch = "[[widgets.switch.rules]]\nstates = []\ntrack.corners = \"pill\"\ntrack.min_size = [40.0, 30.0]\n";
     let g = Geometry::next_of(&patched(Preset::Windows11, patch)?).ok_or("no geometry")?;
     assert_eq!((g.track, g.radius), (egui::vec2(40.0, 30.0), 15.0));
+    Ok(())
+}
+
+/// The radio's label lies `radio.label_gap` after its circle, where the stated gap is not its
+/// cell's own.
+#[test]
+fn a_radio_label_is_at_the_stated_gap() -> TestResult {
+    let label_x = |ctx: &egui::Context| -> Option<(f32, f32)> {
+        let add = |ui: &mut egui::Ui| ui.add(RadioButton::new(true, "Radio"));
+        let _ = response(ctx, at(1.0), add);
+        let (out, r) = response(ctx, at(1.0), add);
+        let circle = Parts::of(&r)?.get("indicator")?;
+        let text = flat(&out.shapes).into_iter().find_map(|s| match s {
+            egui::Shape::Text(t) => Some(t.pos.x),
+            _ => None,
+        })?;
+        Some((circle.right(), text))
+    };
+    let (right, own) = label_x(&patched_installed(Preset::KdeBreeze, "")?).ok_or("stock")?;
+    assert!(
+        own - right != 23.0,
+        "the stated gap is the cell's: the test proves nothing"
+    );
+    let patch = "[widgets.radio]\nlabel_gap = 23.0\n";
+    let (right, text) = label_x(&patched_installed(Preset::KdeBreeze, patch)?).ok_or("patched")?;
+    assert_eq!(text - right, 23.0);
+    Ok(())
+}
+
+/// A progress bar's track stroke stated as none is no outline, on every preset whose bar has
+/// one; its pill corners are half its stated height.
+#[test]
+fn a_progress_bar_track_stated_as_none_has_no_outline() -> TestResult {
+    use crate::progress_bar::Bar;
+    let none = "[[widgets.progress_bar.rules]]\nstates = []\ntrack.stroke = \"none\"\n";
+    let mut outlined = 0;
+    for &(_, preset) in crate::next::parity::PRESETS {
+        let stock = Bar::next_of(&patched(preset, "")?);
+        if !matches!(stock.frame, Some((_, Some(_)))) {
+            continue;
+        }
+        outlined += 1;
+        let bar = Bar::next_of(&patched(preset, none)?);
+        let (radius, outline) = bar.frame.ok_or("no frame")?;
+        assert_eq!(outline, None, "{preset:?}");
+        assert_eq!(Some(radius), stock.frame.map(|(r, _)| r), "{preset:?}");
+    }
+    assert!(
+        outlined > 0,
+        "no preset outlines its bar: the test proves nothing"
+    );
+    let pill = "[[widgets.progress_bar.rules]]\nstates = []\ntrack.corners = \"pill\"\n\
+                track.min_size = [100.0, 6.0]\n";
+    let bar = Bar::next_of(&patched(Preset::KdeBreeze, pill)?);
+    assert_eq!(bar.frame.map(|(r, _)| r), Some(3.0));
+    assert_eq!(bar.min_width, Some(100.0));
     Ok(())
 }

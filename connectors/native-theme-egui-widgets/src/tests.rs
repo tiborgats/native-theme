@@ -373,25 +373,6 @@ fn under_a_next_atlas_every_widget_is_its_egui_counterpart() {
             }),
         ),
         (
-            "spinner",
-            disabled_by_ui(|ui| ui.add(Spinner::new())),
-            disabled_by_ui(|ui| ui.add(egui::Spinner::new())),
-        ),
-        (
-            "progress bar",
-            disabled_by_ui(|ui| ui.add(ProgressBar::new(0.4))),
-            disabled_by_ui(|ui| ui.add(egui::ProgressBar::new(0.4))),
-        ),
-        (
-            "radio button",
-            Box::new(|ui, enabled| ui.add(RadioButton::new(true, "Radio").enabled(enabled))),
-            Box::new(|ui, enabled| {
-                in_scope(ui, Some(Role::Checkbox), true, enabled, |ui| {
-                    ui.add(egui::RadioButton::new(true, "Radio"))
-                })
-            }),
-        ),
-        (
             "segmented control",
             disabled_by_ui(|ui| ui.add(SegmentedControl::new(&mut 1, ["Day", "Week"]))),
             disabled_by_ui(|ui| {

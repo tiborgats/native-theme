@@ -143,7 +143,7 @@ impl Geometry {
         };
         Some(Self {
             track: egui::vec2(width, height),
-            radius: scope::length(next::radius(&track, width, height)?)?,
+            radius: scope::length(next::radius(&track, Some(width), Some(height))?)?,
             thumb,
             unchecked_thumb,
             track_border: border(next::stroke_width(&track))?,
