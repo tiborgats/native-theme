@@ -657,7 +657,7 @@ impl PanelLook {
     /// showcase keeps it from one install to the next
     /// (`Showcase::panel_look`).
     pub(crate) fn of(showcase: &Showcase, cx: &gpui::App) -> Option<Self> {
-        let n = cx.native()?;
+        let n = crate::support::old_native(cx)?;
         let r = n.resolved;
         let layout = showcase.layout.clone();
         let size = native_theme_gpui::scaled_text_size(r.sidebar.font.size, n.accessibility);

@@ -728,7 +728,7 @@ pub fn side_panel(
         )
         .instance(
             "holds",
-            "from the top: the theme settings, a Separator, then the inspector -- its TabBar, and below it its content, which fills the rest of the panel's height and scrolls, the bar kept clear of it by geometry::scrollbar_gutter as on the content panel",
+            "from the top: the theme settings, a Separator, then the inspector -- its TabBar, and below it its content, which fills the rest of the panel's height and scrolls, the bar kept clear of it by geometry::scrollbar_gutter as on the content panel. Where the three are taller than the panel (a large text scale), they scroll as one, the inspector its TabBar's height, so every control stays reachable in the fixed window",
         )
         .instance(
             "padding",
@@ -1157,6 +1157,24 @@ pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInf
         .instance(
             "shows",
             "the mode chosen, whichever way it was chosen: here, from the Theme menu, from the command palette or by the --variant flag (Showcase::show_color_mode)",
+        )
+        .instance(
+            "width",
+            "the settings': the trigger takes it and truncates its text (gpui-component/select.rs, SelectState::render), so its text never widens it past the side panel",
+        )
+}
+
+/// The theme settings' palette Select: the Inputs page's Select, choosing
+/// the palette laid over the installed theme.
+pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    super::inputs::select(t, native)
+        .instance(
+            "palettes",
+            "none, the theme's own colours, then the palettes native_theme::next::Palette::BUNDLED_NAMES names; choosing one installs the chosen theme again with it laid over (next::Theme::with_palette), which locks the scheme to the palette's, so the colour mode chosen does not change it while the palette is chosen (Showcase::choose_palette)",
+        )
+        .instance(
+            "old model",
+            "the pages not yet on the 0.8.0 model read the 0.7.2 theme of the same choice, which has no palettes: under a palette they show the preset alone, in the palette's scheme (support::OldModel); the tooltip says so",
         )
         .instance(
             "width",

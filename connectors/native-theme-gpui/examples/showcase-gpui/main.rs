@@ -313,6 +313,11 @@ pub(crate) const CHROME_TOOLBAR: &str = "chrome-toolbar";
 /// Separator and the inspector, the body's first panel.
 pub(crate) const CHROME_SIDE_PANEL: &str = "chrome-side-panel";
 
+/// The id of the side panel's scroll area, and the debug selector of the
+/// content it scrolls: the theme settings, the Separator and the inspector.
+pub(crate) const CHROME_SIDE_PANEL_SCROLL: &str = "chrome-side-panel-scroll";
+pub(crate) const CHROME_SIDE_PANEL_CONTENT: &str = "chrome-side-panel-content";
+
 /// The debug selector the status bar's side-panel toggle carries, the
 /// status bar's first item.
 pub(crate) const CHROME_SIDE_PANEL_TOGGLE: &str = "chrome-side-panel-toggle";
@@ -321,9 +326,10 @@ pub(crate) const CHROME_SIDE_PANEL_TOGGLE: &str = "chrome-side-panel-toggle";
 /// panel, one labelled row each.
 pub(crate) const CHROME_THEME_SETTINGS: &str = "chrome-theme-settings";
 
-/// The ids and debug selectors of the theme settings' three labels, in
-/// their order: Theme, Mode, Icon theme.
+/// The ids and debug selectors of the theme settings' four labels, in
+/// their order: Theme, Palette, Mode, Icon theme.
 pub(crate) const CHROME_LABEL_THEME: &str = "chrome-label-theme";
+pub(crate) const CHROME_LABEL_PALETTE: &str = "chrome-label-palette";
 pub(crate) const CHROME_LABEL_MODE: &str = "chrome-label-mode";
 pub(crate) const CHROME_LABEL_ICON_THEME: &str = "chrome-label-icon-theme";
 
@@ -622,6 +628,8 @@ pub(crate) const PROBE_NOTIFICATION: &str = "probe-notification";
 /// The theme settings' colour-mode Select, which
 /// `interactive_controls_respond` drives.
 pub(crate) const PROBE_COLOR_MODE: &str = "probe-color-mode";
+/// The theme settings' palette Select.
+pub(crate) const PROBE_PALETTE: &str = "probe-palette";
 /// The theme settings' icon-theme Select, which
 /// `the_theme_settings_switch_the_icon_theme` drives.
 pub(crate) const PROBE_ICON_THEME: &str = "probe-icon-theme";
@@ -1017,10 +1025,7 @@ fn apply_cli_args(
         .theme
         .as_deref()
         .and_then(|name| reported(cli::theme_key(name)))
-        .map(|key| match key {
-            ThemeKey::Default => "default".to_string(),
-            ThemeKey::Preset(preset) => preset,
-        });
+        .and_then(|key| reported(offered_theme(key)));
     match (theme, mode) {
         (theme, Some(mode)) => {
             let theme = theme.unwrap_or_else(|| s.current_theme_name.clone());
@@ -1066,6 +1071,23 @@ fn apply_cli_args(
             menus.open_named(name, cfg!(target_os = "macos"), window, cx)
         });
         reported(opened);
+    }
+}
+
+/// The theme settings' key of the theme `--theme` names: `default`, or a
+/// preset the preset switch offers (`support::preset_items`). A community
+/// preset of the 0.7.2 model, which `cli::theme_key` takes, is reported:
+/// the showcase offers its colours as a palette, in the theme settings.
+fn offered_theme(key: ThemeKey) -> Result<String, String> {
+    match key {
+        ThemeKey::Default => Ok("default".to_string()),
+        ThemeKey::Preset(preset) if native_theme::next::Preset::from_name(&preset).is_some() => {
+            Ok(preset)
+        }
+        ThemeKey::Preset(preset) => Err(format!(
+            "--theme {preset}: a community preset of the 0.7.2 model, which this showcase \
+             offers as a palette over a platform preset, chosen in the theme settings"
+        )),
     }
 }
 

@@ -11,6 +11,7 @@ use gpui::{
 use gpui_component::{
     ActiveTheme, IconName, IconNamed as _, IndexPath, Selectable as _, StyledExt,
     attachment::AttachmentStatus,
+    button::ButtonCustomVariant,
     list::{ListDelegate, ListState},
     searchable_list::{SearchableListDelegate, SearchableListItem},
     table::{Column, ColumnSort, TableDelegate, TableEvent, TableState},
@@ -22,9 +23,11 @@ use native_theme::icons::{
     FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
     SegoeFluentLoader, SfSymbolsLoader,
 };
+use native_theme::next::{Palette, Preset};
 use native_theme::theme::IconSet;
 use native_theme_gpui::icons::{IconUse, load_gpui_icon, mask_drawable};
-use native_theme_gpui::{ActiveNativeTheme, Native};
+use native_theme_gpui::next::Mapped;
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme, Native};
 use native_theme_showcase_support::rows;
 
 use crate::demo::{self, BodyRow, DataTableRow};
@@ -231,6 +234,57 @@ apply_system_theme(&system, cx);
 // Helpers
 // ---------------------------------------------------------------------------
 
+/// The 0.7.2 theme the theme settings' choice resolves to, beside the 0.8.0
+/// theme it installed (`Showcase::apply_theme_by_name`), for the pages not
+/// yet on the 0.8.0 model: `cx.native()` gives no 0.7.2 theme once a 0.8.0
+/// one is installed (`native_theme_gpui::next::apply`). Under a palette, which
+/// the 0.7.2 model has no equivalent of, it is the preset alone, in the
+/// scheme the palette resolved the 0.8.0 theme to.
+pub(crate) struct OldModel {
+    pub(crate) resolved: native_theme::theme::ResolvedTheme,
+    /// The preferences the theme was installed with.
+    pub(crate) accessibility: AccessibilityPreferences,
+}
+
+impl gpui::Global for OldModel {}
+
+/// The 0.8.0 theme of the installed choice resolved for an inactive window
+/// (`ThemeContext::window_active` false), beside the one installed, for the
+/// views of an inactive window (`native_theme_gpui::next::geometry::title_bar_inactive`).
+pub(crate) struct NextInactive(
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "the page groups read it as they move to the 0.8.0 model"
+        )
+    )]
+    pub(crate) native_theme::next::ResolvedTheme,
+);
+
+impl gpui::Global for NextInactive {}
+
+/// What the pages still on the 0.7.2 model read where they read
+/// `cx.native()`: the 0.7.2 theme installed, where one is
+/// (`native_theme_gpui::apply`), else the 0.7.2 theme of the choice the
+/// installed 0.8.0 theme was built from ([`OldModel`]); `None` before a
+/// theme was installed.
+pub(crate) fn old_native(cx: &App) -> Option<Native<'_>> {
+    cx.native().or_else(|| {
+        let installed = cx.native_theme()?;
+        installed.next_resolved(cx)?;
+        cx.try_global::<OldModel>().map(|old| Native {
+            resolved: &old.resolved,
+            accessibility: &old.accessibility,
+        })
+    })
+}
+
+/// The 0.7.2 resolved theme of [`old_native`].
+pub(crate) fn old_resolved(cx: &App) -> Option<&native_theme::theme::ResolvedTheme> {
+    old_native(cx).map(|n| n.resolved)
+}
+
 /// The geometry refinement a builder produces for the installed native theme,
 /// or `None` before `apply` ran (spec §9.1). Returns an owned value so the
 /// borrow of `cx` ends at once.
@@ -238,7 +292,104 @@ pub(crate) fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
     cx: &App,
     build: F,
 ) -> Option<StyleRefinement> {
-    cx.native().map(build)
+    old_native(cx).map(build)
+}
+
+/// The installed 0.8.0 theme for the styled theme's mode, or `None` before
+/// `native_theme_gpui::next::apply` ran.
+pub(crate) fn next_resolved(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
+    cx.native_theme()?.next_resolved(cx)
+}
+
+/// `variants::toolbar_button` for the installed theme. That builder reads
+/// the theme through `cx.native()`, which gives no 0.7.2 theme once a 0.8.0
+/// one is installed (`native_theme_gpui::next::apply`), so under a 0.8.0
+/// theme the variant is built from it (`next::variants::toolbar_button`,
+/// which the connector parity holds to the 0.7.2 builder's); where that
+/// theme lacks a source the builder reads, or a 0.7.2 theme is installed,
+/// the 0.7.2 builder's.
+pub(crate) fn toolbar_variant(cx: &App) -> ButtonCustomVariant {
+    next_resolved(cx)
+        .and_then(|r| native_theme_gpui::next::variants::toolbar_button(r, cx).ok())
+        .unwrap_or_else(|| native_theme_gpui::variants::toolbar_button(cx))
+}
+
+/// The installed 0.8.0 theme resolved for an inactive window
+/// ([`NextInactive`]), or `None` before `native_theme_gpui::next::apply` ran.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_inactive(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
+    next_resolved(cx)?;
+    cx.try_global::<NextInactive>().map(|inactive| &inactive.0)
+}
+
+/// [`native_value`] on the 0.8.0 model: the value `build` gives for the
+/// installed 0.8.0 theme, or `None` before `native_theme_gpui::next::apply`
+/// ran.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_value<T, F: FnOnce(&native_theme::next::ResolvedTheme) -> T>(
+    cx: &App,
+    build: F,
+) -> Option<T> {
+    next_resolved(cx).map(build)
+}
+
+/// [`native_geometry`] on the 0.8.0 model: the refinement a builder of
+/// `native_theme_gpui::next::geometry` produces for the installed 0.8.0
+/// theme, or the source it lacks (`Unmapped`); `None` before
+/// `native_theme_gpui::next::apply` ran.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_geometry<
+    F: FnOnce(&native_theme::next::ResolvedTheme) -> Mapped<StyleRefinement>,
+>(
+    cx: &App,
+    build: F,
+) -> Option<Mapped<StyleRefinement>> {
+    next_resolved(cx).map(build)
+}
+
+/// [`native_color`] on the 0.8.0 model: the colour `pick` gives for the
+/// installed 0.8.0 theme, as gpui paints it; `None` before
+/// `native_theme_gpui::next::apply` ran, or where the theme states no such
+/// colour (`pick` gives `None`).
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_color<
+    F: FnOnce(&native_theme::next::ResolvedTheme) -> Option<native_theme::next::Color>,
+>(
+    cx: &App,
+    pick: F,
+) -> Option<gpui::Hsla> {
+    next_value(cx, pick).flatten().map(|color| {
+        gpui::Hsla::from(gpui::Rgba {
+            r: color.r,
+            g: color.g,
+            b: color.b,
+            a: color.a,
+        })
+    })
 }
 
 /// Applies a geometry refinement when one is available; the widget keeps
@@ -257,6 +408,26 @@ pub(crate) fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
 pub(crate) trait NativeStyled: Styled + Sized {
     fn native(self, cx: &App, build: fn(Native<'_>) -> StyleRefinement) -> Self {
         refined(self, native_geometry(cx, build).as_ref())
+    }
+
+    /// `.next_native(cx, next::geometry::button)`: [`native`](Self::native)
+    /// on the 0.8.0 model, the builder's refinement when a 0.8.0 theme is
+    /// installed and states what the builder needs; nothing otherwise, so
+    /// the widget keeps upstream's geometry where the theme states none
+    /// (spec §10, rule 0).
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "the page groups call it as they move to the 0.8.0 model"
+        )
+    )]
+    fn next_native(
+        self,
+        cx: &App,
+        build: fn(&native_theme::next::ResolvedTheme) -> Mapped<StyleRefinement>,
+    ) -> Self {
+        refined(self, next_geometry(cx, build).and_then(Result::ok).as_ref())
     }
 
     /// `.demo_frame(cx)`: the one frame this showcase draws around a
@@ -329,7 +500,7 @@ pub(crate) fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> 
 /// The value a size or length builder gives for the installed native theme,
 /// or `None` before `apply` ran (spec §9.3, §9.4).
 pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) -> Option<T> {
-    cx.native().map(build)
+    old_native(cx).map(build)
 }
 
 /// A colour of the installed native theme, as gpui paints it, or `None`
@@ -1212,17 +1383,43 @@ pub(crate) struct PresetItem {
 /// The presets the showcase offers, in the order it offers them: the shared
 /// crate's rows (`rows::preset_rows`), the desktop's own theme first, keyed
 /// `default` and labelled with `default_preset`, the preset it builds on
-/// (`Showcase::default_preset`), then the presets meant for this platform.
-/// The theme settings' preset switch and the command palette both list
-/// these, so neither can offer a preset the other does not.
+/// (`Showcase::default_preset`), then the platform presets meant for this
+/// platform: those of the shared rows the 0.8.0 model has a [`Preset`] of.
+/// The ten community presets of the 0.7.2 model are not offered: their
+/// colours are palettes in the 0.8.0 model, chosen in the palette Select
+/// ([`palette_rows`]) over any preset. The theme settings' preset switch and
+/// the command palette both list these, so neither can offer a preset the
+/// other does not.
 pub(crate) fn preset_items(default_preset: &str) -> Vec<PresetItem> {
     rows::preset_rows(default_preset)
         .into_iter()
+        .filter(|row| row.key == "default" || Preset::from_name(&row.key).is_some())
         .map(|row| PresetItem {
             key: row.key.into(),
             display_name: row.display_name.into(),
         })
         .collect()
+}
+
+/// The palette Select's row for no palette: the preset's own colours.
+pub(crate) const NO_PALETTE: &str = "none";
+
+/// The palette Select's rows: [`NO_PALETTE`], then every bundled palette
+/// (`Palette::BUNDLED_NAMES`), by its name.
+pub(crate) fn palette_rows() -> Vec<SharedString> {
+    std::iter::once(NO_PALETTE)
+        .chain(Palette::BUNDLED_NAMES.iter().copied())
+        .map(SharedString::from)
+        .collect()
+}
+
+/// The bundled palette of the palette Select's row `row`: `None` for
+/// [`NO_PALETTE`] and for a name `Palette::BUNDLED_NAMES` does not hold.
+pub(crate) fn palette_of_row(row: &str) -> Option<&'static str> {
+    Palette::BUNDLED_NAMES
+        .iter()
+        .copied()
+        .find(|name| *name == row)
 }
 
 impl SearchableListItem for PresetItem {
