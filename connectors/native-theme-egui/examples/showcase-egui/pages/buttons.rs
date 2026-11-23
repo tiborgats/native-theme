@@ -3,7 +3,7 @@
 
 use egui::Button;
 use native_theme::icons::IconRole;
-use native_theme::theme::IconSet;
+use native_theme::icons::IconSet;
 use native_theme_egui::icons::{IconContext, icon_size};
 use native_theme_egui::{Role, RoleVariant};
 use native_theme_egui_widgets::segmented_control::SegmentedControl;

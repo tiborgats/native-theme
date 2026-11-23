@@ -7,8 +7,10 @@ use std::time::Duration;
 use iced_core::{Color, Element, Length, Radians, Rectangle, Rotation, Theme, mouse};
 use iced_widget::canvas::{self, Path, Stroke};
 use iced_widget::graphics::geometry;
-use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
-use native_theme::theme::{IconSet, ResolvedTheme};
+use native_theme::icons::{
+    AnimatedIcon, IconData, IconSet, TransformAnimation, load_icon_indicator,
+};
+use native_theme::theme::ResolvedTheme;
 
 use crate::icons::{
     animated_frames_to_svg_handles_for, set_svg_handle, spin_rotation_radians, to_image_handle,

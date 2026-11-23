@@ -19,12 +19,12 @@ use gpui_component::{
 
 #[cfg(target_os = "linux")]
 use native_theme::detect::system_icon_theme;
+use native_theme::icons::IconSet;
 use native_theme::icons::{
     FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
     SegoeFluentLoader, SfSymbolsLoader,
 };
 use native_theme::next::{Contrast, Palette, Preset};
-use native_theme::theme::IconSet;
 use native_theme_gpui::icons::{IconUse, load_gpui_icon, mask_drawable};
 use native_theme_gpui::next::Mapped;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme, Native};
@@ -372,7 +372,9 @@ pub(crate) fn old_native(cx: &App) -> Option<Native<'_>> {
     })
 }
 
-/// The 0.7.2 resolved theme of [`old_native`].
+/// The 0.7.2 resolved theme of [`old_native`], which only the tests still
+/// read.
+#[cfg(test)]
 pub(crate) fn old_resolved(cx: &App) -> Option<&native_theme::theme::ResolvedTheme> {
     old_native(cx).map(|n| n.resolved)
 }
@@ -430,6 +432,17 @@ pub(crate) fn next_value<T, F: FnOnce(&native_theme::next::ResolvedTheme) -> T>(
     next_resolved(cx).map(build)
 }
 
+/// One of the four layout metrics of the installed 0.8.0 theme, as `build`
+/// (`next::geometry::widget_gap`, `container_margin`, `window_margin` or
+/// `section_gap`) reads it: `None` where the platform specifies none
+/// (platform-facts §2.20), and before `native_theme_gpui::next::apply` ran.
+pub(crate) fn next_metric(
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> Mapped<Option<Pixels>>,
+) -> Option<Pixels> {
+    next_value(cx, build).and_then(Result::ok).flatten()
+}
+
 /// [`native_geometry`] on the 0.8.0 model: the refinement a builder of
 /// `native_theme_gpui::next::geometry` produces for the installed 0.8.0
 /// theme, or the source it lacks (`Unmapped`); `None` before
@@ -443,7 +456,7 @@ pub(crate) fn next_geometry<
     next_resolved(cx).map(build)
 }
 
-/// [`native_color`] on the 0.8.0 model: the colour `pick` gives for the
+/// `native_color` on the 0.8.0 model: the colour `pick` gives for the
 /// installed 0.8.0 theme, as gpui paints it; `None` before
 /// `native_theme_gpui::next::apply` ran, or where the theme states no such
 /// colour (`pick` gives `None`).
@@ -583,7 +596,8 @@ pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) ->
 
 /// A colour of the installed native theme, as gpui paints it, or `None`
 /// before `apply` ran: for a widget whose own setter or refinement takes a
-/// colour the connector's tokens do not carry.
+/// colour the connector's tokens do not carry. Only the tests still read it.
+#[cfg(test)]
 pub(crate) fn native_color<F: FnOnce(Native<'_>) -> native_theme::color::Rgba>(
     cx: &App,
     pick: F,

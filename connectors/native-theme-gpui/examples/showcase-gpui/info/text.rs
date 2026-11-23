@@ -5,7 +5,7 @@
 use gpui_component::theme::Theme;
 
 use super::{WidgetInfo, claim, px_text};
-use crate::demo::{LabelKind, TextSize};
+use crate::demo::{HeadingRole, LabelKind, TextSize};
 
 /// A `Label` of `variant`, with what every Label sets whatever it is asked
 /// for: the line height Label::render gives its text.
@@ -16,28 +16,50 @@ pub(super) fn label_of(variant: impl Into<String>) -> WidgetInfo {
     )
 }
 
-/// A section heading, built by `demo::heading`.
-pub fn heading(t: &Theme, native: bool) -> WidgetInfo {
+/// A section heading, built by `demo::heading` in `role`, the installed
+/// 0.8.0 theme's section-heading role (`demo::heading_role`), `None` where
+/// no 0.8.0 theme is installed.
+pub fn heading(t: &Theme, role: Option<Result<HeadingRole, &'static str>>) -> WidgetInfo {
     let info = label_of("heading").color(claim(
         "text",
         "foreground",
         t.foreground,
         "gpui-component/label.rs:248",
     ));
-    if native {
-        info.config(
+    let own = "semibold at text_base -- one rem, so it follows the platform's font, a step above the text_sm of the captions and labels -- in the foreground the Label paints itself (gpui-component/label.rs, Label::render)";
+    match role {
+        Some(Ok(role)) => {
+            let slot = if role.home == "typography.headline" {
+                "typography.headline, the platform's section heading (platform-facts §2.19)"
+            } else {
+                "typography.body: the theme states no typography.headline, and a role without a style of its own falls back to the body (spec §4, Typography)"
+            };
+            info.config(
+                "style",
+                format!(
+                    "{slot}: its size_px, {}px, which the theme's text scale has already scaled, its line box, {}px -- its line_height where stated, else its size by typography.line_height_multiplier (spec §4) --, and its weight, {}, in the foreground the Label paints itself (gpui-component/label.rs, Label::render)",
+                    px_text(role.size.as_f32()),
+                    px_text(role.line_height.as_f32()),
+                    role.weight.0
+                ),
+            )
+            .not_themeable(
+                "weight of a variable face",
+                "on Linux gpui-pre-wgpu picks a face by style and weight and sets no variation axis (gpui-pre-wgpu/cosmic_text_system.rs:992-1037), so a weight a variable face covers only through its wght axis draws at the face's default: adwaita's 700 over Adwaita Sans draws regular",
+            )
+        }
+        Some(Err(home)) => info.instance(
             "style",
-            "text_scale.section_heading: its size and line height, scaled by the text-scaling factor, and its weight -- the platform's section heading (platform-facts §2.19) -- in the foreground the Label paints itself (gpui-component/label.rs, Label::render)",
-        )
-        .not_themeable(
-            "weight of a variable face",
-            "on Linux gpui-pre-wgpu picks a face by style and weight and sets no variation axis (gpui-pre-wgpu/cosmic_text_system.rs:992-1037), so a weight a variable face covers only through its wght axis draws at the face's default: adwaita's 700 over Adwaita Sans draws regular",
-        )
-    } else {
-        info.instance(
+            format!(
+                "{own}: the theme states no value gpui can take at {home}, so the showcase's own heading style (spec §10, rule 0)"
+            ),
+        ),
+        None => info.instance(
             "style",
-            "semibold at text_base -- one rem, so it follows the platform's font, a step above the text_sm of the captions and labels -- in the foreground the Label paints itself (gpui-component/label.rs, Label::render): no native theme is installed, so the showcase's own heading style",
-        )
+            format!(
+                "{own}: no native theme is installed, so the showcase's own heading style"
+            ),
+        ),
     }
 }
 

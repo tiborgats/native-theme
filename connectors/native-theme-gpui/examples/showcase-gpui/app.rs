@@ -37,6 +37,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use native_theme::detect::{system_icon_set, system_icon_theme};
+use native_theme::icons::IconSet;
 use native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, TransformAnimation,
     default_icon_choice, list_freedesktop_themes, load_icon_indicator,
@@ -45,7 +46,6 @@ use native_theme::next::{
     Contrast, Direction, MotionPreference, Palette, Preset, Scheme, ThemeContext,
 };
 use native_theme::pipeline::platform_preset_name;
-use native_theme::theme::IconSet;
 #[cfg(feature = "svg-rasterize")]
 use native_theme_gpui::icons::{ThemeIcons, WidgetIcons, WidgetIconsReport};
 use native_theme_gpui::icons::{

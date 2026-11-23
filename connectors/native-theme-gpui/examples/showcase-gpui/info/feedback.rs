@@ -5,11 +5,13 @@ use std::time::Duration;
 use gpui::{Pixels, px, transparent_white};
 use gpui_base::TooltipDefaults;
 use gpui_component::{Colorize as _, Size, theme::Theme};
-use native_theme_gpui::ResolvedTheme;
-
+use native_theme::next::ResolvedTheme as NextTheme;
 #[cfg(feature = "widgets")]
-use super::edge_claim;
-use super::{ColorClaim, WidgetInfo, claim, px_text, stated};
+use native_theme_gpui::widgets::{ProgressBarLook, SpinnerLook};
+
+use super::{ColorClaim, WidgetInfo, claim, next_stated, px_text};
+#[cfg(feature = "widgets")]
+use super::{edge_claim, stated_claim};
 use crate::demo::{
     ButtonKind, CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind,
 };
@@ -118,7 +120,7 @@ pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
     info.not_themeable("tints", "the variant colour mixed toward transparent white in Oklab: 4% of it for the fill and 30% for the edge -- one token at three strengths, the swatches showing what is painted (alert.rs, AlertVariant)")
         .not_themeable("padding", "px literals per Size, but reachable: Alert is Styled and applies the caller's refinement after its own paddings (alert.rs, Alert::render). Its corner radius already comes from the theme (alert.rs, Alert::render radius). What is missing is a model -- native-theme states no alert widget, so there is nothing to carry. Our gap, not upstream's")
         .not_themeable("icon", format!("the {name} variant's default, not a fixed glyph: Alert::icon replaces it with any Icon (alert.rs, Alert::icon), and an Icon takes a path or raw SVG bytes (icon.rs, Icon::path, Icon::data), so a platform icon from this connector's loader can be handed to it"))
-        .not_themeable("icon size", "the Alert's text size: an Icon given no size takes the font size it inherits (icon.rs, Icon::into_svg), and the Alert sets text_sm (alert.rs, Alert::render) -- a rem, so it follows the platform font. defaults.icon_sizes is in absolute px and there is no alert in the model to hang it on")
+        .not_themeable("icon size", "the Alert's text size: an Icon given no size takes the font size it inherits (icon.rs, Icon::into_svg), and the Alert sets text_sm (alert.rs, Alert::render) -- a rem, so it follows the platform font. icons.sizes is in absolute px and there is no alert in the model to hang it on")
 }
 
 /// One of the Feedback page's Alerts, of `severity`, at the default Size,
@@ -189,27 +191,65 @@ fn loading(info: WidgetInfo, reduce_motion: bool, source: &str) -> WidgetInfo {
 }
 
 /// A theme-drawn `widgets::ProgressBar` at `value`, or loading where `value`
-/// is `None` (spec §2.5 of docs/archive/todo_gpui-widgets-spec.md), drawn
-/// while gpui's `reduce_motion` is as given.
+/// is `None` (spec §2.5 of docs/archive/todo_gpui-widgets-spec.md), under the
+/// installed 0.8.0 theme `r`, drawn while gpui's `reduce_motion` is as given:
+/// what `ProgressBarLook::next_of` gives it, or gpui-component's own `t`
+/// draws in its place where the theme states no value gpui can take at a
+/// home the look reads.
 #[cfg(feature = "widgets")]
 pub fn native_progress(
-    r: &ResolvedTheme,
+    r: &NextTheme,
+    t: &Theme,
     label: &str,
     value: Option<f32>,
     reduce_motion: bool,
 ) -> WidgetInfo {
-    let p = &r.progress_bar;
+    match ProgressBarLook::next_of(r) {
+        Ok(look) => progress_look(look, label, value, reduce_motion),
+        Err(unstated) => progress_by_upstream(t, unstated.home(), label, value, reduce_motion),
+    }
+}
+
+/// The `Progress` gpui-component draws where `widgets::ProgressBar` cannot
+/// draw its own, the theme stating no value gpui can take at `home`
+/// (native-theme-gpui/widgets/progress.rs, `ProgressBar::fallback`).
+#[cfg(feature = "widgets")]
+pub(crate) fn progress_by_upstream(
+    t: &Theme,
+    home: &str,
+    label: &str,
+    value: Option<f32>,
+    reduce_motion: bool,
+) -> WidgetInfo {
+    progress(t, label, value, reduce_motion).config(
+        "drawn by",
+        format!("gpui-component's own Progress, in upstream's colours and sizes: the theme states no value gpui can take at {home}, so widgets::ProgressBar draws upstream's in its place (native-theme-gpui/widgets/progress.rs, ProgressBar::fallback)"),
+    )
+}
+
+/// A theme-drawn `widgets::ProgressBar` drawn from `look`, which
+/// `ProgressBarLook::next_of` gave it: each claim names the home the look
+/// reads and cites the line that spells it.
+#[cfg(feature = "widgets")]
+fn progress_look(
+    look: ProgressBarLook,
+    label: &str,
+    value: Option<f32>,
+    reduce_motion: bool,
+) -> WidgetInfo {
+    let width = f32::from(look.border_width);
+    let radius = px_text(f32::from(look.radius));
     let info = WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
-        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:80"))
-        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:79"))
-        .colors(edge_claim("frame", "border", Some(p.border.color), Some(p.border.line_width), "native-theme-gpui/widgets/progress.rs:78"))
-        .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
-        .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
-        .config("frame", if p.border.line_width > 0.0 {
-            format!("progress_bar.border: {}px, radius {}px, drawn over the track and the fill (native-theme-gpui widgets/progress.rs, ProgressBarLook)", px_text(p.border.line_width), px_text(p.border.corner_radius))
+        .color(claim("fill", "progress_bar.fill(NONE).fill", look.fill, "native-theme-gpui/widgets/progress.rs:107"))
+        .color(claim("track", "progress_bar.track(NONE).fill", look.track, "native-theme-gpui/widgets/progress.rs:106"))
+        .colors(edge_claim("frame", "progress_bar.track(NONE).stroke.color", Some(look.border), Some(width), "native-theme-gpui/widgets/progress.rs:105"))
+        .config("height", format!("progress_bar.track(NONE).min_size[1]: {}px, the frame inside it", px_text(f32::from(look.height))))
+        .config("minimum width", format!("progress_bar.track(NONE).min_size[0]: {}px", px_text(f32::from(look.min_width))))
+        .config("frame", if width > 0.0 {
+            format!("progress_bar.track(NONE).stroke: {}px, radius {radius}px (progress_bar.track(NONE).corners), drawn over the track and the fill (native-theme-gpui widgets/progress.rs, ProgressBarLook)", px_text(width))
         } else {
-            format!("none: progress_bar.border.line_width is 0; the track and the fill are still rounded by its corner_radius, {}px", px_text(p.border.corner_radius))
+            format!("none: progress_bar.track(NONE).stroke is none or 0 wide; the track and the fill are still rounded by progress_bar.track(NONE).corners, {radius}px")
         })
         .not_themeable("animation", "gpui-component's eased transition to a new value, and a loading bar's sweep (progress/progress.rs, Progress): native-theme models no motion");
     let info = match value {
@@ -223,20 +263,59 @@ pub fn native_progress(
     info.instance("label", label.to_string())
 }
 
-/// A theme-drawn `widgets::Spinner` (spec §2.6) of `kind`, drawn while
-/// gpui's `reduce_motion` is as given.
+/// A theme-drawn `widgets::Spinner` (spec §2.6) of `kind` under the
+/// installed 0.8.0 theme `r`, drawn while gpui's `reduce_motion` is as
+/// given: what `SpinnerLook::next_of_size` gives it, or gpui-component's own
+/// `t` draws in its place where the theme states no value gpui can take at
+/// a home the widget reads.
 #[cfg(feature = "widgets")]
 pub fn native_spinner(
-    r: &ResolvedTheme,
+    r: &NextTheme,
+    t: &Theme,
     kind: SpinnerKind,
     reduce_motion: bool,
     icons: &crate::demo::SpinnerIcons,
 ) -> WidgetInfo {
-    use native_theme::theme::IconSet;
-    use native_theme_gpui::widgets::SpinnerLook;
+    let look = match SpinnerLook::next_of_size(r, kind.size()) {
+        Ok(look) => look,
+        Err(unstated) => return spinner_by_upstream(t, kind, reduce_motion, unstated.home()),
+    };
+    if r.colors.window.foreground.is_none() {
+        return spinner_by_upstream(t, kind, reduce_motion, "colors.window.foreground");
+    }
+    spinner_look(r, look, kind, reduce_motion, icons)
+}
+
+/// The `Spinner` gpui-component draws where `widgets::Spinner` cannot draw
+/// its own, the theme stating no value gpui can take at `home`
+/// (native-theme-gpui/widgets/spinner.rs, `Spinner::render`).
+#[cfg(feature = "widgets")]
+pub(crate) fn spinner_by_upstream(
+    t: &Theme,
+    kind: SpinnerKind,
+    reduce_motion: bool,
+    home: &str,
+) -> WidgetInfo {
+    spinner(t, kind, false, reduce_motion, None).config(
+        "drawn by",
+        format!("gpui-component's own Spinner, in upstream's colours and sizes: the theme states no value gpui can take at {home}, so widgets::Spinner draws upstream's in its place (native-theme-gpui/widgets/spinner.rs, Spinner::render)"),
+    )
+}
+
+/// A theme-drawn `widgets::Spinner` of `kind` drawn from `look`, which
+/// `SpinnerLook::next_of_size` gave it under `r`: each claim names the home
+/// the widget reads and cites the line that spells it.
+#[cfg(feature = "widgets")]
+fn spinner_look(
+    r: &NextTheme,
+    look: SpinnerLook,
+    kind: SpinnerKind,
+    reduce_motion: bool,
+    icons: &crate::demo::SpinnerIcons,
+) -> WidgetInfo {
+    use native_theme::icons::IconSet;
     let s = &r.spinner;
-    let drawn = SpinnerLook::of_size(r, kind.size()).map(|look| f32::from(look.diameter));
-    let drawn = drawn.map_or_else(String::new, |d| format!("{d}px across: "));
+    let drawn = format!("{}px across: ", f32::from(look.diameter));
     let ratio = |ratio: &str, name: &str| {
         format!(
             "{drawn}spinner.diameter ({}px) {ratio}, gpui-component's own {name} ratio to its Medium (icon.rs, Icon::with_size), no less than spinner.min_diameter ({}px)",
@@ -262,23 +341,23 @@ pub fn native_spinner(
         let info = if tinted {
             info.color(claim(
                 "indicator",
-                "fill_color",
-                stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:465",
+                "spinner.color",
+                look.color,
+                "native-theme-gpui/widgets/spinner.rs:472",
             ))
         } else if icons.spins {
             // An SVG element draws the icon's alpha mask in its text colour
             // (gpui-pre 0.3.12 src/svg_renderer.rs:241-250,
             // src/window.rs:5257, :5282), the only element gpui turns.
-            info.color(claim(
+            info.colors(stated_claim(
                 "indicator",
-                "text_color",
-                stated(r.defaults.text_color),
-                "native-theme-gpui/widgets/spinner.rs:466",
+                "colors.window.foreground",
+                r.colors.window.foreground.map(next_stated),
+                "native-theme-gpui/widgets/spinner.rs:475",
             ))
             .not_themeable("icon pixels", "the icon theme's one indicator icon, turned: gpui turns an SVG element but not an image (an image's sprite carries no transformation, gpui-pre/scene.rs, PolychromeSprite), and an SVG element is drawn as a mask in one colour, so the icon's own colours are lost")
         } else {
-            info.config("colour", "the icon theme's own colours, its frames drawn as images; a currentColor it sets no colour for is defaults.text_color (native-theme/icons.rs, fill_current_color)")
+            info.config("colour", "the icon theme's own colours, its frames drawn as images; a currentColor it sets no colour for is colors.window.foreground (native-theme/icons.rs, fill_current_color; native-theme-gpui widgets/spinner.rs, Spinner::render)")
         };
         return info
             .not_themeable("motion", "the indicator's own frames or turn (native-theme's AnimatedIcon); native-theme models no motion")
@@ -289,8 +368,8 @@ pub fn native_spinner(
             });
     }
     info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
-        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:93"))
-        .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
+        .color(claim("arc", "spinner.color", look.color, "native-theme-gpui/widgets/spinner.rs:603"))
+        .config("stroke", format!("spinner.stroke_width: {}px", px_text(f32::from(look.stroke))))
         .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
         .instance("animation", if reduce_motion {
             "none: reduced motion is on, so the arc stands still"
@@ -355,18 +434,19 @@ pub fn progress_circle(
 
 /// gpui-component's `Spinner` of `kind`: every kind's without a native
 /// theme, and, where the `widgets` feature is off, under one too (with it,
-/// `native_spinner` describes the theme-drawn one). A Medium one takes
-/// `geometry::spinner_size` where a native theme is installed, whose line is
-/// recorded where `demo::spinner` applies it; `styled` is whether it did. It
-/// is drawn while gpui's `reduce_motion` is as given. Its colour is
-/// `native`'s `spinner.fill_color`, which `demo::spinner` hands
-/// `Spinner::color`, where a native theme is installed.
+/// `native_spinner` describes the theme-drawn one), and where the
+/// theme-drawn one cannot draw its own. A Medium one takes
+/// `next::geometry::spinner_size` where a native theme is installed, whose
+/// line is recorded where `demo::spinner` applies it; `styled` is whether it
+/// did. It is drawn while gpui's `reduce_motion` is as given. Its colour is
+/// `native`'s `spinner.color`, which `demo::spinner` hands `Spinner::color`,
+/// where a native theme is installed.
 pub fn spinner(
     t: &Theme,
     kind: SpinnerKind,
     styled: bool,
     reduce_motion: bool,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Spinner")
         .variant(kind.name())
@@ -377,8 +457,8 @@ pub fn spinner(
     let info = match native {
         Some(r) => info.color(claim(
             "icon",
-            "fill_color",
-            stated(r.spinner.fill_color),
+            "spinner.color",
+            next_stated(r.spinner.color),
             "showcase",
         )),
         // No colour of its own: the Loader icon takes the text colour it
@@ -504,9 +584,10 @@ pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str, reduce_motion: boo
 }
 
 /// The `Empty` state, its media `icon` of the chosen icon theme at `large`
-/// where a native theme is installed -- `geometry::icon_size_large`, whose
-/// line is recorded where `demo::empty` applies it -- and at upstream's size
-/// where none is (`large` is `None`).
+/// where a native theme is installed and states it --
+/// `next::geometry::icon_size_large`, whose line is recorded where
+/// `demo::empty` applies it -- and at upstream's size where none is, or it
+/// states none (`large` is `None`).
 pub fn empty(
     t: &Theme,
     title: &str,
@@ -516,7 +597,7 @@ pub fn empty(
 ) -> WidgetInfo {
     let media_frame = match (icon.shown(), large) {
         (true, Some(_)) => {
-            "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, so the icon outgrows the frame wherever 2rem is less than defaults.icon_sizes.large"
+            "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, so the icon outgrows the frame wherever 2rem is less than icons.sizes.large"
         }
         (true, None) => {
             "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia)"
@@ -565,15 +646,15 @@ pub fn empty(
     match (icon.shown(), large) {
         (true, Some(Size::Size(large))) => info.config(
             "icon size",
-            format!("defaults.icon_sizes.large, {}px, through geometry::icon_size_large", px_text(large.as_f32())),
+            format!("icons.sizes.large, {}px, through geometry::icon_size_large", px_text(large.as_f32())),
         ),
         (true, Some(size)) => info.config(
             "icon size",
-            format!("defaults.icon_sizes.large through geometry::icon_size_large, which gives gpui-component's {} size", super::buttons::size_name(size)),
+            format!("icons.sizes.large through geometry::icon_size_large, which gives gpui-component's {} size", super::buttons::size_name(size)),
         ),
         (true, None) => info.config(
             "icon size",
-            format!("upstream's size, one rem: the media frame's text_base, {}px at this font_size, which the icon takes where it is given no size of its own (empty.rs, EmptyMedia), as no native theme is installed", px_text(t.font_size.as_f32())),
+            format!("upstream's size, one rem: the media frame's text_base, {}px at this font_size, which the icon takes where it is given no size of its own (empty.rs, EmptyMedia), as no native theme is installed or it states no icons.sizes.large", px_text(t.font_size.as_f32())),
         ),
         (false, _) => info,
     }
@@ -834,7 +915,7 @@ pub fn marker(
 /// where `Button::tooltip` gave it; `styled` is whether it is refined
 /// by `geometry::tooltip`, whose lines are recorded where
 /// `demo::built_tooltip_button` applies it; `delay` is the theme's
-/// `tooltip.show_delay_ms`, which the showcase gives a built tooltip's
+/// `timings.tooltip_show_ms`, which the showcase gives a built tooltip's
 /// element, and `defaults` the application-wide `TooltipDefaults` a
 /// `Button::tooltip` waits, where `apply` installed that delay.
 pub fn tooltip(
@@ -853,7 +934,7 @@ pub fn tooltip(
             "Button::tooltip"
         })
         // geometry::tooltip paints the fill, the edge and the text with
-        // tooltip.background_color, .border.color and .font's colour, which
+        // tooltip.panel.fill, .panel.stroke.color and .text's colour, which
         // no ThemeColor field holds, over upstream's, and rounds it with the
         // platform's corner radius: its geometry line names them.
         .colors(if built.is_some() && styled {
@@ -867,21 +948,21 @@ pub fn tooltip(
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
     let info = match (built.is_some(), delay) {
-        (true, Some(delay)) => info.config("delay", format!("tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1755)", delay.as_millis())),
-        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3784) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1755), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
+        (true, Some(delay)) => info.config("delay", format!("timings.tooltip_show_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1755)", delay.as_millis())),
+        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3784) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1755), which the showcase sets to the theme's timings.tooltip_show_ms where the theme states one; this one states none, or no native theme is installed"),
         (false, _) => info,
     };
     let info = if built.is_some() {
         info.not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
-            .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's, geometry::tooltip_content's: for a tooltip without a key binding, as this one, Tooltip::new with the theme's tooltip.max_width on the popup is the same bubble, since gpui-component 0.10.0 gives the text's box no minimum width and clips it (gpui-component/tooltip.rs, Tooltip::render); with a key binding the two differ: the content's width counts the text alone, so the popup grows past tooltip.max_width by the key and the gap before it, where the width on the popup keeps it within tooltip.max_width and wraps the text beside the key, which is why the chrome's tooltips, which show a key binding, are Tooltip::new with the width on the popup")
+            .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's, geometry::tooltip_content's: for a tooltip without a key binding, as this one, Tooltip::new with the theme's tooltip.panel.max_size[0] on the popup is the same bubble, since gpui-component 0.10.0 gives the text's box no minimum width and clips it (gpui-component/tooltip.rs, Tooltip::render); with a key binding the two differ: the content's width counts the text alone, so the popup grows past tooltip.panel.max_size[0] by the key and the gap before it, where the width on the popup keeps it within tooltip.panel.max_size[0] and wraps the text beside the key, which is why the chrome's tooltips, which show a key binding, are Tooltip::new with the width on the popup")
     } else {
         let (show, grace) = (
             defaults.show_delay().as_millis(),
             defaults.grace_period().as_millis(),
         );
         let info = match delay {
-            Some(_) => info.config("delay", format!("tooltip.show_delay_ms, {show}ms to show, and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108), where apply installed the theme's delay and kept the grace period (native-theme-gpui/lib.rs, install_tooltip_delay); the trigger sets no delay of its own (button/button.rs, Button::tooltip_show_delay, line 424)")),
-            None => info.not_themeable("delay", format!("{show}ms to show and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108) unless the trigger sets its own (button/button.rs, Button::tooltip_show_delay, line 424). The theme states no tooltip.show_delay_ms, or no native theme is installed, so the delay is the application's -- gpui-base's 500ms where it installed none (native-theme-gpui/lib.rs, install_tooltip_delay), and the showcase installs none")),
+            Some(_) => info.config("delay", format!("timings.tooltip_show_ms, {show}ms to show, and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108), where apply installed the theme's delay and kept the grace period (native-theme-gpui/lib.rs, install_tooltip_delay); the trigger sets no delay of its own (button/button.rs, Button::tooltip_show_delay, line 424)")),
+            None => info.not_themeable("delay", format!("{show}ms to show and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108) unless the trigger sets its own (button/button.rs, Button::tooltip_show_delay, line 424). The theme states no timings.tooltip_show_ms, or no native theme is installed, so the delay is the application's -- gpui-base's 500ms where it installed none (native-theme-gpui/lib.rs, install_tooltip_delay), and the showcase installs none")),
         };
         info
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")

@@ -448,7 +448,7 @@ impl TryFrom<RawRgbaData> for RgbaData {
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::IconSet;
+/// use native_theme::icons::IconSet;
 ///
 /// let set = IconSet::from_name("sf-symbols").unwrap();
 /// assert_eq!(set, IconSet::SfSymbols);
@@ -539,7 +539,7 @@ impl IconSet {
 ///
 /// ```
 /// use native_theme::icons::IconProvider;
-/// use native_theme::theme::IconSet;
+/// use native_theme::icons::IconSet;
 /// use std::borrow::Cow;
 ///
 /// #[derive(Debug)]
@@ -591,7 +591,7 @@ impl IconProvider for IconRole {
 ///
 /// ```
 /// use native_theme::icons::{IconRole, icon_name};
-/// use native_theme::theme::IconSet;
+/// use native_theme::icons::IconSet;
 ///
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::SfSymbols), Some("doc.on.doc"));
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::Freedesktop), Some("edit-copy"));

@@ -126,7 +126,10 @@ fn fill_color_of(part: &PartStyle) -> Option<Color> {
 }
 
 /// A part's stroke colour, where stated as one stroke of one colour, in any
-/// alignment.
+/// alignment; stated as none, transparent, no line (spec §10, rule 2), as
+/// [`fill_color_of`] reads a fill stated as none: a builder draws it at the
+/// width [`stroke_width`] gives none, 0, and a colour token, which has no
+/// width to say "none" by, is transparent.
 ///
 /// gpui paints a quad's border over its background, inside its bounds, so
 /// the fill runs under the whole border: `StrokeAlign::Inside` (spec §2,
@@ -140,12 +143,15 @@ fn fill_color_of(part: &PartStyle) -> Option<Color> {
 /// extent stays and the connector's README records the limit (spec §10,
 /// rule 4).
 pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
+    if part.stated.contains(PartStated::STROKE) && matches!(part.stroke, Stroke::None) {
+        return Ok(hsla(Color::TRANSPARENT));
+    }
     stated(stroke_color_of(part), home)
 }
 
-/// A part's stroke colour as `stroke_color` reads it, `None` where it is
-/// not stated, or stated in a form gpui cannot draw (not one stroke of one
-/// colour).
+/// A part's stroke colour as `stroke_color` reads one stroke, `None` where
+/// it is not stated, stated as none (no line: [`stroke_width_of`] gives 0),
+/// or stated in a form gpui cannot draw (not one stroke of one colour).
 pub fn stroke_color_of(part: &PartStyle) -> Option<Hsla> {
     match &part.stroke {
         Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
@@ -259,17 +265,21 @@ pub fn state_fill_of(part: &PartStyle) -> Option<Hsla> {
         .flatten()
 }
 
-/// A part's stroke colour as `state_stroke_color` reads it, `None` where
-/// no rule states it for the queried state, or it is stated in a form gpui
-/// cannot draw (not one stroke of one colour). The rule is for some flag of
-/// the query, not a given one (spec §2, `from_state`): a reader that keeps
-/// the toolkit's own treatment of one flag over a value stated for another
-/// queries with that flag alone.
+/// A part's stroke colour as `state_stroke_color` reads it, a stroke stated
+/// as none transparent, no line (spec §10, rule 2); `None` where no rule
+/// states it for the queried state, or it is stated in a form gpui cannot
+/// draw (not one stroke of one colour, nor none). The rule is for some flag
+/// of the query, not a given one (spec §2, `from_state`): a reader that
+/// keeps the toolkit's own treatment of one flag over a value stated for
+/// another queries with that flag alone.
 pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
-    part.from_state
-        .contains(PartStated::STROKE)
-        .then(|| stroke_color_of(part))
-        .flatten()
+    if !part.from_state.contains(PartStated::STROKE) {
+        return None;
+    }
+    match part.stroke {
+        Stroke::None if part.stated.contains(PartStated::STROKE) => Some(hsla(Color::TRANSPARENT)),
+        _ => stroke_color_of(part),
+    }
 }
 
 /// A text style's colour as `state_text_color` reads it, `None` where no
@@ -295,13 +305,14 @@ pub(crate) fn stated_fill(part: &PartStyle, home: &'static str) -> Mapped<Option
 }
 
 /// A part's stroke colour where a rule states it for the queried state, as
-/// [`stroke_color`] reads it; `None` where none does.
+/// [`stroke_color`] reads it, a stroke stated as none transparent; `None`
+/// where none does.
 pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    state_option(
-        state_stroke_color_of(part),
-        part.from_state.contains(PartStated::STROKE),
-        home,
-    )
+    if part.from_state.contains(PartStated::STROKE) {
+        stroke_color(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
 }
 
 /// A text style's colour where a rule states it for the queried state, as
@@ -324,7 +335,7 @@ fn text_size(text: &TextStyle, home: &'static str) -> Mapped<f32> {
 }
 
 /// A slant of the model as gpui's.
-fn font_style(style: FontStyle) -> Option<gpui::FontStyle> {
+pub(crate) fn font_style(style: FontStyle) -> Option<gpui::FontStyle> {
     match style {
         FontStyle::Normal => Some(gpui::FontStyle::Normal),
         FontStyle::Italic => Some(gpui::FontStyle::Italic),
@@ -346,6 +357,16 @@ fn font<'a>(text: &'a TextStyle, home: &'static str) -> Mapped<Font<'a>> {
 /// colour carried is the style's, stated or not.
 pub(crate) fn uncoloured_font<'a>(text: &'a TextStyle, home: &'static str) -> Mapped<Font<'a>> {
     font_of(text, home, TextStated::default())
+}
+
+/// Where `text`, read at its home `home`, gives no font gpui can letter a
+/// label in, that home: its family, size, weight or slant unstated, or a
+/// slant gpui has no form for; `None` where it gives one. The check a
+/// theme-drawn widget's label font passes (`widgets`, `LabelFont::next`), for
+/// a reader that shows gpui-component's own control in its place.
+#[must_use]
+pub fn label_font_unmapped(text: &TextStyle, home: &'static str) -> Option<Unmapped> {
+    uncoloured_font(text, home).err()
 }
 
 /// [`font`] and [`uncoloured_font`]: the four properties every builder reads
@@ -887,6 +908,19 @@ pub fn font_weight(r: &ResolvedTheme) -> Mapped<u16> {
     text_weight(&r.typography.body, "typography.body.weight")
 }
 
+/// Where the theme gives no body text a label can take its size and weight
+/// from, the home it leaves unstated, `typography.body.size_px` or
+/// `typography.body.weight`; `None` where it states both. The check a
+/// theme-drawn widget's body-text label passes (`widgets`,
+/// `ThemeSource::body_text`).
+#[must_use]
+pub fn body_text_unmapped(r: &ResolvedTheme) -> Option<Unmapped> {
+    if !r.typography.body.stated.contains(TextStated::SIZE_PX) {
+        return Some(Unmapped("typography.body.size_px"));
+    }
+    font_weight(r).err()
+}
+
 /// [`crate::mono_font_weight`]: the monospace text's CSS weight
 /// (`typography.monospace.weight`).
 ///
@@ -1272,7 +1306,7 @@ mod tests {
     }
 
     /// An unstated stroke stays unmapped in every alignment, and a stated
-    /// absent one is no width.
+    /// absent one is no width, its colour transparent.
     #[test]
     fn an_unstated_stroke_is_unmapped_in_every_alignment() {
         for align in [
@@ -1288,7 +1322,60 @@ mod tests {
         let mut none = PartStyle::default();
         none.stated = PartStated::STROKE;
         assert_eq!(stroke_width(&none, "home"), Ok(0.0));
-        assert_eq!(stroke_color(&none, "home"), Err(Unmapped("home")));
+        assert_eq!(stroke_color(&none, "home"), Ok(hsla(Color::TRANSPARENT)));
+    }
+
+    /// Spec §10 rule 2, for every stroke colour a builder or a colour token
+    /// reads: a stroke stated as none is transparent, no line; one stroke its
+    /// colour; an unstated stroke, or one stated per side, the home lacked.
+    #[test]
+    fn a_none_stroke_is_transparent() -> Mapped<()> {
+        let mut none = PartStyle::default();
+        none.stated = PartStated::STROKE;
+        assert_eq!(stroke_color(&none, "home")?, hsla(Color::TRANSPARENT));
+        assert_eq!(stroke_color_of(&none), None);
+        assert_eq!(state_stroke_color(&none, "home")?, None);
+        assert_eq!(state_stroke_color_of(&none), None);
+        none.from_state = PartStated::STROKE;
+        assert_eq!(
+            state_stroke_color(&none, "home")?,
+            Some(hsla(Color::TRANSPARENT))
+        );
+        assert_eq!(state_stroke_color_of(&none), Some(hsla(Color::TRANSPARENT)));
+        let part = stroked(1.0, RED, StrokeAlign::Inside);
+        assert_eq!(stroke_color(&part, "home")?, hsla(RED));
+        let mut unstated = part.clone();
+        unstated.stated = PartStated::default();
+        assert_eq!(stroke_color(&unstated, "home"), Err(Unmapped("home")));
+        Ok(())
+    }
+
+    /// A theme that states the field's and the sidebar's strokes as none
+    /// installs: gpui-component's `input` and `sidebar_border` tokens are
+    /// transparent, where they took kde-breeze's stated lines before the
+    /// patch.
+    #[test]
+    fn a_theme_stroking_its_field_as_none_maps_whole() -> Mapped<()> {
+        use native_theme::next::{
+            InputRule, PartPatch, Preset, Scheme, SidebarRule, Theme, ThemeContext, ThemePatch,
+        };
+        let mut r = Theme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        let before = widget_colors(&r)?;
+        let clear = hsla(Color::TRANSPARENT);
+        assert!(
+            before.input != clear && before.sidebar_border != clear,
+            "kde-breeze light's field or sidebar is edged in no colour, so the test could not tell the patch's effect"
+        );
+        r.apply_patch(
+            &ThemePatch::new()
+                .input(InputRule::new().field(PartPatch::new().stroke(Stroke::None)))
+                .sidebar(SidebarRule::new().container(PartPatch::new().stroke(Stroke::None))),
+        );
+        let after = widget_colors(&r)?;
+        assert_eq!(after.input, clear);
+        assert_eq!(after.sidebar_border, clear);
+        to_theme(&r).map(|_| ())
     }
 
     /// `button.hover_border_color`: without a rule for `HOVER` it is unset,

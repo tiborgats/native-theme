@@ -2894,8 +2894,8 @@ mod t18_constructors {
         sys.accessibility.reduce_motion = !sys.accessibility.reduce_motion;
         sys.layout.widget_gap = Some(gap);
         sys.icon_set = match sys.icon_set {
-            native_theme::theme::IconSet::Lucide => native_theme::theme::IconSet::Material,
-            _ => native_theme::theme::IconSet::Lucide,
+            native_theme::icons::IconSet::Lucide => native_theme::icons::IconSet::Material,
+            _ => native_theme::icons::IconSet::Lucide,
         };
         assert_ne!(sys.mode, detected.mode);
         assert_ne!(

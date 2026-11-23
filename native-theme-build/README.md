@@ -82,7 +82,7 @@ and use it:
 use native_theme::icons::MaterialLoader;
 # use std::borrow::Cow;
 # use native_theme::icons::IconProvider;
-# use native_theme::theme::IconSet;
+# use native_theme::icons::IconSet;
 # #[derive(Debug)]
 # enum AppIcon { PlayPause }
 # impl IconProvider for AppIcon {

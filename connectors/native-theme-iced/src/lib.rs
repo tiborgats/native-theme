@@ -476,10 +476,10 @@ pub use native_theme;
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::color::Rgba;
 pub use native_theme::error::Error;
-pub use native_theme::icons::{AnimatedIcon, IconData, IconProvider, IconRole, TransformAnimation};
-pub use native_theme::theme::{
-    ColorMode, DialogButtonOrder, IconSet, ResolvedTheme, Theme, ThemeMode,
+pub use native_theme::icons::{
+    AnimatedIcon, IconData, IconProvider, IconRole, IconSet, TransformAnimation,
 };
+pub use native_theme::theme::{ColorMode, DialogButtonOrder, ResolvedTheme, Theme, ThemeMode};
 #[cfg(feature = "watch")]
 pub use native_theme::watch::ThemeChangeEvent;
 pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};

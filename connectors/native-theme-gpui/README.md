@@ -936,6 +936,15 @@ platform does; no border colour can take the fill away. A per-side stroke
 (different widths or colours per side) is not drawn: the builder reports the
 part's stroke as unmapped.
 
+**An expander's edge keeps gpui-component's width.** `next::geometry::accordion`
+gives the edge's colour (and a width of 0 where the stroke is stated as none),
+but not a stated visible width: its one refinement lands on the `Accordion`,
+edged on every side, and on each `AccordionItem`, edged only at the bottom and
+not the last (gpui-component 0.10.0 `src/accordion.rs:108-114`, `:380-384`),
+so a width on every side would frame each item. Upstream's 1 px stands where
+the macOS presets and ios-13 state `expander.container(NONE)`'s stroke 0.5 px
+wide.
+
 ## Overriding theme values
 
 An application that wants a value of its own writes it over the installed

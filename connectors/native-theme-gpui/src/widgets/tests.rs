@@ -2254,7 +2254,7 @@ fn a_loading_progress_bar_stands_still_under_reduced_motion(cx: &mut TestAppCont
 /// `spinner.diameter`, and the arc for a set without one.
 #[gpui::test]
 fn the_spinner_is_the_icon_sets_indicator_or_an_arc(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let cx = window_with(
         cx,
         Some(("kde-breeze", ColorMode::Light)),
@@ -5847,14 +5847,73 @@ fn window_with_next<'a>(
     build: Build,
 ) -> &'a mut VisualTestContext {
     let r = native_theme::next::Theme::preset(preset).resolve(ctx);
+    window_with_next_resolved(cx, &r, build)
+}
+
+/// A window drawing `build` under the 0.8.0 theme `r`, installed through
+/// `next::apply`.
+fn window_with_next_resolved<'a>(
+    cx: &'a mut TestAppContext,
+    r: &native_theme::next::ResolvedTheme,
+    build: Build,
+) -> &'a mut VisualTestContext {
     let applied = cx.update(|cx| {
         gpui_component::init(cx);
-        crate::next::apply(&r, cx)
+        crate::next::apply(r, cx)
     });
-    assert_eq!(applied, Ok(()), "{preset:?}: the preset maps");
+    assert_eq!(applied, Ok(()), "the theme maps");
     let (_, cx) = cx.add_window_view(|_, _| Harness { build });
     cx.update(|window, cx| window.draw(cx).clear(cx));
     cx
+}
+
+/// What `Switch::render` draws under a 0.8.0 theme patched to state
+/// `switch.label_gap` and `switch.label(NONE).size_px`, each unlike
+/// gpui-component's own (`gap_2`, `text_sm`): the row spaces the track and
+/// the label by the stated gap, and the label is one line of the stated
+/// size, `typography.line_height_multiplier` tall.
+#[gpui::test]
+fn a_switch_draws_its_stated_label_gap_and_size(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        Preset, SwitchPatch, SwitchRule, TextPatch, ThemeContext, ThemePatch, WidgetPatchMap,
+    };
+    let (gap, size) = (13.0, 23.0);
+    let mut r =
+        native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    assert_ne!(r.switch.label_gap, Some(gap));
+    r.apply_patch(
+        &ThemePatch::new()
+            .widget_rules(WidgetPatchMap::new().switch(SwitchPatch::new().label_gap(gap)))
+            .switch(SwitchRule::new().label(TextPatch::new().size_px(size))),
+    );
+    let line = r.typography.line_height_multiplier;
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| Switch::new("s").label("On").into_any_element()),
+    );
+    let track = bounds(cx, "native-switch-track");
+    let label = bounds(cx, "native-switch-label");
+    assert_eq!(
+        label.origin.x - (track.origin.x + track.size.width),
+        px(gap),
+        "the row's gap"
+    );
+    let (sm, default_gap, scale) = cx.update(|window, _| {
+        (
+            gpui::rems(0.875).to_pixels(window.rem_size()),
+            super::switch::LABEL_GAP.to_pixels(window.rem_size()),
+            window.scale_factor(),
+        )
+    });
+    // The layout rounds each box to whole device pixels.
+    assert_eq!(
+        label.size.height,
+        px((size * line * scale).round() / scale),
+        "one line of the size"
+    );
+    assert_ne!(px(size), sm, "unlike text_sm");
+    assert_ne!(px(gap), default_gap, "unlike gap_2");
 }
 
 /// Under a 0.8.0 theme installed through `next::apply`, which leaves no 0.7.2
@@ -5971,4 +6030,34 @@ fn a_focused_control_draws_a_next_themes_ring(cx: &mut TestAppContext) {
         cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
         "no ring once focused"
     );
+}
+
+/// The body text of a 0.8.0 theme: kde-breeze light states its size and
+/// weight, which `ThemeSource::body_text` takes; with either left unstated,
+/// `next::body_text_unmapped` names that home and there is no body text.
+#[test]
+fn a_next_themes_body_text_is_none_where_its_size_or_weight_is_unstated() {
+    use native_theme::next::{Preset, TextStated, ThemeContext};
+    let theme =
+        || native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let r = theme();
+    assert_eq!(crate::next::body_text_unmapped(&r), None);
+    let body = &r.typography.body;
+    assert_eq!(
+        ThemeSource::Next(&r).body_text(),
+        Some((
+            px(body.size_px),
+            r.typography.line_height_multiplier,
+            gpui::FontWeight(f32::from(body.weight)),
+        ))
+    );
+    for (unstated, home) in [
+        (TextStated::SIZE_PX, "typography.body.size_px"),
+        (TextStated::WEIGHT, "typography.body.weight"),
+    ] {
+        let mut r = theme();
+        r.typography.body.stated = r.typography.body.stated.difference(unstated);
+        assert_eq!(crate::next::body_text_unmapped(&r), Some(Unmapped(home)));
+        assert_eq!(ThemeSource::Next(&r).body_text(), None, "{home}");
+    }
 }

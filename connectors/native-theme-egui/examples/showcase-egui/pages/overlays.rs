@@ -5,7 +5,7 @@
 use egui::Button;
 use egui::containers::menu::SubMenuButton;
 use native_theme::icons::IconRole;
-use native_theme::theme::IconSet;
+use native_theme::icons::IconSet;
 use native_theme_egui::{
     DialogButtonOrder, Role, RoleVariant, Surface, dialog_button_order, window_title_bar_font,
     window_title_bar_text_color,

@@ -13,8 +13,8 @@ use std::path::{Path, PathBuf};
 use native_theme_egui::convert::{composite_over, to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::icons::IconSet;
 use native_theme_egui::native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
-use native_theme_egui::native_theme::theme::IconSet;
 use native_theme_egui::{
     AccessibilityPreferences, NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas,
     focus_ring_color, focus_ring_offset, from_preset,

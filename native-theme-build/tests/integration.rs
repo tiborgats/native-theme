@@ -107,13 +107,13 @@ fn happy_path_icon_name_material() {
 
     assert!(
         output.code().contains(
-            "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\")"
+            "(Self::PlayPause, native_theme::icons::IconSet::Material) => Some(\"play_pause\")"
         ),
         "should have Material icon_name arm for PlayPause"
     );
     assert!(
         output.code().contains(
-            "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(\"skip_next\")"
+            "(Self::SkipForward, native_theme::icons::IconSet::Material) => Some(\"skip_next\")"
         ),
         "should have Material icon_name arm for SkipForward"
     );
@@ -125,13 +125,13 @@ fn happy_path_icon_name_sf_symbols() {
 
     assert!(
         output.code().contains(
-            "(Self::PlayPause, native_theme::theme::IconSet::SfSymbols) => Some(\"play.fill\")"
+            "(Self::PlayPause, native_theme::icons::IconSet::SfSymbols) => Some(\"play.fill\")"
         ),
         "should have SfSymbols icon_name arm for PlayPause"
     );
     assert!(
         output.code().contains(
-            "(Self::SkipForward, native_theme::theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
+            "(Self::SkipForward, native_theme::icons::IconSet::SfSymbols) => Some(\"forward.fill\")"
         ),
         "should have SfSymbols icon_name arm for SkipForward"
     );

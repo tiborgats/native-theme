@@ -208,11 +208,7 @@ impl Showcase {
                             ui,
                             cx,
                             "inputs-checkbox-mixed-theme",
-                            if demo::theme_checkbox(cx).is_some() {
-                                "Mixed, theme-drawn"
-                            } else {
-                                "Mixed, gpui-component's"
-                            },
+                            demo::mixed_checkbox_label(cx),
                             true,
                         )
                         .self_start(),

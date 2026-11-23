@@ -13,7 +13,9 @@ use gpui_component::{ActiveTheme as _, Disableable as _, FocusableExt as _, Styl
 use native_theme::theme::ResolvedTheme;
 
 use super::{Part, PartBounds, ThemeSource, color, faded, finite, length, over, part_bounds};
-use crate::next::{Mapped, Unmapped, fill, hsla, radius, state_fill, stated};
+use crate::next::{
+    Mapped, Unmapped, fill, hsla, radius, state_fill, stated, text_color, text_color_of,
+};
 
 /// The space between the track and the label, which `SwitchTheme` does not
 /// state: gpui-component's own, `gap_2` (switch.rs:247).
@@ -71,8 +73,15 @@ pub struct SwitchLook {
     /// [`thumb_border`](Self::thumb_border) is `None`.
     pub thumb_border_width: Pixels,
     /// The label's colour: `SwitchTheme` states none, so the window's text,
-    /// `defaults.text_color`, and `defaults.disabled_text_color` disabled.
+    /// `defaults.text_color`, and `defaults.disabled_text_color` disabled;
+    /// of a 0.8.0 theme, `switch.label`'s at the switch's state
+    /// ([`SwitchLook::next_label_home`]).
     pub label: Hsla,
+    /// The space between the track and the label: `switch.label_gap` where
+    /// a 0.8.0 theme states it; `None`, gpui-component's own `gap_2`
+    /// (gpui-component 0.10.0 switch.rs, `Switch::render`), where the theme
+    /// states none (`SwitchTheme` has no field for it).
+    pub label_gap: Option<Pixels>,
     /// The whole control's opacity: `switch.disabled_opacity` when disabled,
     /// on top of the disabled colours (docs/platform-facts.md §2.1.6), else 1.
     pub opacity: f32,
@@ -164,6 +173,7 @@ impl SwitchLook {
             thumb_border,
             thumb_border_width,
             label: color(label),
+            label_gap: None,
             opacity: super::disabled_opacity(disabled, s.disabled_opacity),
         })
     }
@@ -176,14 +186,15 @@ impl SwitchLook {
     /// `None`), the hovered track's fill where a rule states it, the track's
     /// and the thumb's strokes (the colour at the state, the width at rest; no
     /// stroke is no outline), the track's minimum size and corners, the
-    /// thumb's minimum width at the checked state, the window's text colour
-    /// (`colors.window.foreground`, and `colors.disabled_text` disabled) and
-    /// `switch.disabled_opacity`.
+    /// thumb's minimum width at the checked state, the label's colour
+    /// ([`SwitchLook::next_label_home`]), `switch.label_gap` where stated
+    /// and `switch.disabled_opacity`.
     ///
-    /// A checked track's hover is read at `HOVER|CHECKED`, where a theme with
-    /// no rule for the hover gives the checked track (the table of homes,
-    /// `switch.hover_checked_background`, `null_reference`), so it is a
-    /// hover layer where it differs from that track.
+    /// A checked track's hover is read at `HOVER|CHECKED` where a rule states
+    /// the hovered track's fill, as the query with that flag alone says
+    /// (`switch.track(HOVER).from_state`, spec §2): a value stated equal to
+    /// the checked track's is a hover layer too, and none is drawn where no
+    /// rule states one.
     ///
     /// # Errors
     ///
@@ -195,19 +206,16 @@ impl SwitchLook {
         checked: bool,
         disabled: bool,
     ) -> Mapped<Self> {
-        use native_theme::next::WidgetState;
-        // The home `switch.<part>(<state>).<property>` at the switch's
-        // state, for `Unmapped`.
-        macro_rules! home {
-            ($checked:expr, $disabled:expr, $part:literal, $prop:literal) => {
-                match ($checked, $disabled) {
-                    (false, false) => concat!("switch.", $part, "(NONE).", $prop),
-                    (true, false) => concat!("switch.", $part, "(CHECKED).", $prop),
-                    (false, true) => concat!("switch.", $part, "(DISABLED).", $prop),
-                    (true, true) => concat!("switch.", $part, "(DISABLED|CHECKED).", $prop),
-                }
-            };
-        }
+        use native_theme::next::{PartStated, WidgetState};
+        // The home of a property at the switch's state, for `Unmapped`:
+        // each spelt whole, so a claim can cite the line that names it.
+        let at = |[none, on, off, off_on]: [&'static str; 4]| match (checked, disabled) {
+            (false, false) => none,
+            (true, false) => on,
+            (false, true) => off,
+            (true, true) => off_on,
+        };
+        let at_rest = |none: &'static str, on: &'static str| if checked { on } else { none };
         let s = &r.switch;
         let rest = if checked {
             WidgetState::CHECKED
@@ -219,53 +227,87 @@ impl SwitchLook {
         } else {
             rest
         };
-        let base = fill(&s.track(rest), home!(checked, false, "track", "fill"))?;
+        let base = fill(
+            &s.track(rest),
+            at_rest("switch.track(NONE).fill", "switch.track(CHECKED).fill"),
+        )?;
         let hover = if checked {
-            let hovered = fill(
-                &s.track(WidgetState::HOVER | WidgetState::CHECKED),
-                "switch.track(HOVER|CHECKED).fill",
-            )?;
-            (hovered != base).then_some(hovered)
+            if s.track(WidgetState::HOVER)
+                .from_state
+                .contains(PartStated::FILL)
+            {
+                Some(fill(
+                    &s.track(WidgetState::HOVER | WidgetState::CHECKED),
+                    "switch.track(HOVER|CHECKED).fill",
+                )?)
+            } else {
+                None
+            }
         } else {
             state_fill(&s.track(WidgetState::HOVER), "switch.track(HOVER).fill")?
         };
         let track = s.track(WidgetState::NONE);
         let thumb = s.thumb(rest);
-        let label = if disabled {
-            hsla(r.colors.disabled_text)
-        } else {
-            hsla(stated(
-                r.colors.window.foreground,
-                "colors.window.foreground",
-            )?)
-        };
+        let (label, _) = next_label(r, checked, disabled)?;
+        let label_gap = s
+            .label_gap
+            .map(|gap| length(gap).ok_or(Unmapped("switch.label_gap")))
+            .transpose()?;
         finite(
             Self::from_reads(
                 &SwitchReads {
                     base,
-                    track: fill(&s.track(state), home!(checked, disabled, "track", "fill"))?,
+                    track: fill(
+                        &s.track(state),
+                        at([
+                            "switch.track(NONE).fill",
+                            "switch.track(CHECKED).fill",
+                            "switch.track(DISABLED).fill",
+                            "switch.track(DISABLED|CHECKED).fill",
+                        ]),
+                    )?,
                     hover,
-                    thumb: fill(&s.thumb(state), home!(checked, disabled, "thumb", "fill"))?,
+                    thumb: fill(
+                        &s.thumb(state),
+                        at([
+                            "switch.thumb(NONE).fill",
+                            "switch.thumb(CHECKED).fill",
+                            "switch.thumb(DISABLED).fill",
+                            "switch.thumb(DISABLED|CHECKED).fill",
+                        ]),
+                    )?,
                     track_border: outline_color(
                         &s.track(state),
-                        home!(checked, disabled, "track", "stroke.color"),
+                        at([
+                            "switch.track(NONE).stroke.color",
+                            "switch.track(CHECKED).stroke.color",
+                            "switch.track(DISABLED).stroke.color",
+                            "switch.track(DISABLED|CHECKED).stroke.color",
+                        ]),
                     )?,
                     track_border_width: outline_width(&track, "switch.track(NONE).stroke.width")?,
                     thumb_border: outline_color(
                         &thumb,
-                        home!(checked, false, "thumb", "stroke.color"),
+                        at_rest(
+                            "switch.thumb(NONE).stroke.color",
+                            "switch.thumb(CHECKED).stroke.color",
+                        ),
                     )?,
                     thumb_border_width: outline_width(
                         &s.thumb(WidgetState::NONE),
                         "switch.thumb(NONE).stroke.width",
                     )?,
                     label,
+                    label_gap,
                     track_width: stated(track.min_size[0], "switch.track(NONE).min_size[0]")?,
                     track_height: stated(track.min_size[1], "switch.track(NONE).min_size[1]")?,
                     track_radius: radius(&track, "switch.track(NONE).corners")?,
                     thumb_diameter: stated(
                         thumb.min_size[0],
-                        home!(checked, false, "thumb", "min_size[0]"),
+                        at_rest(
+                            "switch.thumb(NONE).min_size[0]",
+                            "switch.thumb(CHECKED).min_size[0]",
+                        ),
                     )?,
                     disabled_opacity: s.disabled_opacity,
                 },
@@ -300,6 +342,7 @@ impl SwitchLook {
             thumb_border,
             thumb_border_width,
             label: s.label,
+            label_gap: s.label_gap,
             opacity: super::next_disabled_opacity(disabled, s.disabled_opacity),
         })
     }
@@ -341,6 +384,197 @@ impl SwitchLook {
             self.end_inset
         }
     }
+
+    /// The home [`SwitchLook::next_of`] reads the label's colour at, for a
+    /// switch of a 0.8.0 theme `checked` or not, `disabled` or not:
+    /// `switch.label(<state>).color` where the theme states it (enabled, at
+    /// rest or by a rule; disabled, where a rule states it for `DISABLED`,
+    /// as the query with that flag alone says, spec §2); else
+    /// gpui-component's own label colour (spec §10, rule 0), the window's
+    /// text its switch inherits, `foreground`, which [`crate::next::apply`]
+    /// fills from `colors.window.foreground`, and disabled
+    /// `muted_foreground` (gpui-component 0.10.0 switch.rs,
+    /// `Switch::render`), filled from `colors.window.foreground_muted`.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`] where the colour falls to gpui-component's own and the
+    /// theme states no colour at that home.
+    pub fn next_label_home(
+        r: &native_theme::next::ResolvedTheme,
+        checked: bool,
+        disabled: bool,
+    ) -> Mapped<SwitchLabelHome> {
+        next_label(r, checked, disabled).map(|(_, home)| home)
+    }
+}
+
+/// Where a switch of a 0.8.0 theme takes its label's colour
+/// ([`SwitchLook::next_label_home`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SwitchLabelHome {
+    /// `switch.label(NONE).color`.
+    Rest,
+    /// `switch.label(CHECKED).color`.
+    Checked,
+    /// `switch.label(DISABLED).color`.
+    Disabled,
+    /// `switch.label(DISABLED|CHECKED).color`.
+    DisabledChecked,
+    /// gpui-component's own, `foreground`, from `colors.window.foreground`.
+    WindowForeground,
+    /// gpui-component's own disabled, `muted_foreground`, from
+    /// `colors.window.foreground_muted`.
+    WindowForegroundMuted,
+}
+
+impl SwitchLabelHome {
+    /// The home, spelt whole.
+    #[must_use]
+    pub fn path(self) -> &'static str {
+        match self {
+            Self::Rest => "switch.label(NONE).color",
+            Self::Checked => "switch.label(CHECKED).color",
+            Self::Disabled => "switch.label(DISABLED).color",
+            Self::DisabledChecked => "switch.label(DISABLED|CHECKED).color",
+            Self::WindowForeground => "colors.window.foreground",
+            Self::WindowForegroundMuted => "colors.window.foreground_muted",
+        }
+    }
+}
+
+/// The label's colour of a switch of a 0.8.0 theme and its home
+/// ([`SwitchLook::next_label_home`]). Disabled, a rule stated for
+/// `DISABLED` is asked with that flag alone first, as
+/// [`CheckboxLook::next_sized`](super::CheckboxLook::next_sized) asks the
+/// disabled fill: a colour stated for `CHECKED` alone is not a disabled
+/// colour, and gpui-component's own `muted_foreground` stands.
+fn next_label(
+    r: &native_theme::next::ResolvedTheme,
+    checked: bool,
+    disabled: bool,
+) -> Mapped<(Hsla, SwitchLabelHome)> {
+    use native_theme::next::{TextStated, WidgetState};
+    let shown = if checked {
+        WidgetState::CHECKED
+    } else {
+        WidgetState::NONE
+    };
+    let home = if disabled {
+        let ruled = r
+            .switch
+            .label(WidgetState::DISABLED)
+            .from_state
+            .contains(TextStated::COLOR);
+        match (ruled, checked) {
+            (true, false) => SwitchLabelHome::Disabled,
+            (true, true) => SwitchLabelHome::DisabledChecked,
+            (false, _) => SwitchLabelHome::WindowForegroundMuted,
+        }
+    } else {
+        match (text_color_of(&r.switch.label(shown)).is_some(), checked) {
+            (true, false) => SwitchLabelHome::Rest,
+            (true, true) => SwitchLabelHome::Checked,
+            (false, _) => SwitchLabelHome::WindowForeground,
+        }
+    };
+    let colour = match home {
+        SwitchLabelHome::WindowForeground => hsla(stated(
+            r.colors.window.foreground,
+            "colors.window.foreground",
+        )?),
+        SwitchLabelHome::WindowForegroundMuted => hsla(stated(
+            r.colors.window.foreground_muted,
+            "colors.window.foreground_muted",
+        )?),
+        SwitchLabelHome::Disabled | SwitchLabelHome::DisabledChecked => {
+            text_color(&r.switch.label(WidgetState::DISABLED | shown), home.path())?
+        }
+        SwitchLabelHome::Rest | SwitchLabelHome::Checked => {
+            text_color(&r.switch.label(shown), home.path())?
+        }
+    };
+    Ok((colour, home))
+}
+
+/// The font a switch of a 0.8.0 theme letters its label in, each property
+/// where `switch.label(NONE)` states it, else gpui-component's own (spec
+/// §10, rule 0): its switch's label sets no family, weight or slant, so
+/// the window's stand, and is `input_text_size(Size::Medium)`, `text_sm`
+/// (gpui-component 0.10.0 switch.rs, `Switch::render`). One line
+/// `typography.line_height_multiplier` tall, as the theme-drawn checkbox's
+/// label.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct SwitchLabelFont {
+    /// `switch.label(NONE).family`, where stated.
+    pub family: Option<SharedString>,
+    /// `switch.label(NONE).size_px`, where stated; `None`, `text_sm`.
+    pub size: Option<Pixels>,
+    /// `switch.label(NONE).weight`, where stated.
+    pub weight: Option<gpui::FontWeight>,
+    /// `switch.label(NONE).style`, where stated.
+    pub style: Option<gpui::FontStyle>,
+    /// `typography.line_height_multiplier`, a multiple of the size.
+    pub line_height: f32,
+}
+
+impl SwitchLabelFont {
+    /// The label's font of a switch of a 0.8.0 theme.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`] where the theme states a size that is not finite or not
+    /// positive, or a slant gpui has no form for.
+    pub fn next_of(r: &native_theme::next::ResolvedTheme) -> Mapped<Self> {
+        use native_theme::next::{TextStated, WidgetState};
+        let text = r.switch.label(WidgetState::NONE);
+        let has = |bit: TextStated| text.stated.contains(bit);
+        let size = if has(TextStated::SIZE_PX) {
+            Some(
+                length(text.size_px)
+                    .filter(|size| *size > px(0.))
+                    .ok_or(Unmapped("switch.label(NONE).size_px"))?,
+            )
+        } else {
+            None
+        };
+        let style = if has(TextStated::STYLE) {
+            Some(stated(
+                crate::next::font_style(text.style),
+                "switch.label(NONE).style",
+            )?)
+        } else {
+            None
+        };
+        Ok(Self {
+            family: has(TextStated::FAMILY).then(|| crate::font_family(&text.family)),
+            size,
+            weight: has(TextStated::WEIGHT).then(|| gpui::FontWeight(f32::from(text.weight))),
+            style,
+            line_height: r.typography.line_height_multiplier,
+        })
+    }
+
+    /// The text of a label in this font, one line tall.
+    fn text(&self) -> gpui::Div {
+        let text = div().line_height(gpui::relative(self.line_height));
+        let mut text = match self.size {
+            Some(size) => text.text_size(size),
+            None => text.text_sm(),
+        };
+        if let Some(family) = &self.family {
+            text = text.font_family(family.clone());
+        }
+        if let Some(weight) = self.weight {
+            text = text.font_weight(weight);
+        }
+        if let Some(style) = self.style {
+            text.text_style().font_style = Some(style);
+        }
+        text
+    }
 }
 
 /// The values [`SwitchLook::next_of`] builds the look from: the track at rest
@@ -357,6 +591,7 @@ struct SwitchReads {
     thumb_border: Option<Hsla>,
     thumb_border_width: Option<f32>,
     label: Hsla,
+    label_gap: Option<Pixels>,
     track_width: f32,
     track_height: f32,
     track_radius: f32,
@@ -566,9 +801,22 @@ impl Switch {
             |r| SwitchLook::next_of(r, checked, disabled),
         );
         let ground = self.backdrop.or_else(|| theme.background());
-        let (Some(look), Some(ground), Some((label_size, label_line, label_weight))) =
-            (looks, ground, theme.body_text())
-        else {
+        // One line of the label's font, the line box the model states,
+        // centred on the track -- where gpui-component makes the line box the
+        // track's height (switch.rs:301): of a 0.7.2 theme, which states no
+        // label font, the body text's size and weight, by
+        // `defaults.line_height`; of a 0.8.0 one, `switch.label(NONE)`'s
+        // ([`SwitchLabelFont`]).
+        let text = match theme {
+            ThemeSource::Old(_) => theme.body_text().map(|(size, line, weight)| {
+                div()
+                    .line_height(gpui::relative(line))
+                    .text_size(size)
+                    .font_weight(weight)
+            }),
+            ThemeSource::Next(r) => SwitchLabelFont::next_of(r).ok().map(|font| font.text()),
+        };
+        let (Some(look), Some(ground), Some(text)) = (looks, ground, text) else {
             return Err(Box::new(self));
         };
         let look = look.faded_over(ground);
@@ -613,7 +861,10 @@ impl Switch {
             .group(HOVER_GROUP)
             .flex_row_dir(cx)
             .items_center()
-            .gap(LABEL_GAP)
+            .map(|row| match look.label_gap {
+                Some(gap) => row.gap(gap),
+                None => row.gap(LABEL_GAP),
+            })
             .opacity(look.opacity)
             // The caller's style, refined onto the row after the widget's
             // own, as gpui-component refines its checkbox's (checkbox.rs:294);
@@ -622,16 +873,7 @@ impl Switch {
             .child(track)
             .when_some(self.label, |switch, label| {
                 switch.child(
-                    div()
-                        // One line of the label's font, its size by
-                        // `defaults.line_height`, the line box the model
-                        // states, centred on the track -- where
-                        // gpui-component makes the line box the track's
-                        // height (switch.rs:301).
-                        .line_height(gpui::relative(label_line))
-                        .text_size(label_size)
-                        .font_weight(label_weight)
-                        .text_color(look.label)
+                    text.text_color(look.label)
                         .debug_selector(|| "native-switch-label".into())
                         .child(label)
                         .children(observer.map(|o| part_bounds(Part::Label, o, px(0.)))),
@@ -721,5 +963,120 @@ impl RenderOnce for Switch {
             Ok(row) => row.into_any_element(),
             Err(switch) => switch.fallback(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use native_theme::next::{
+        Color, Preset, ResolvedTheme, Scheme, SwitchPatch, SwitchRule, TextPatch, Theme,
+        ThemeContext, ThemePatch, WidgetPatchMap, WidgetState,
+    };
+
+    use super::*;
+
+    /// kde-breeze light, which states no switch label nor label gap, with
+    /// `patch` laid over it.
+    fn breeze(patch: &ThemePatch) -> ResolvedTheme {
+        let mut r = Theme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        r.apply_patch(patch);
+        r
+    }
+
+    /// Where the theme states no label, its colour is gpui-component's own:
+    /// the window's text, disabled `muted_foreground`, at the homes
+    /// `next::apply` fills them from; no gap and no font property is taken.
+    #[test]
+    fn an_unstated_switch_label_is_gpui_components_own() -> Mapped<()> {
+        let r = breeze(&ThemePatch::new());
+        let text = hsla(stated(r.colors.window.foreground, "foreground")?);
+        let muted = hsla(stated(r.colors.window.foreground_muted, "muted")?);
+        for checked in [false, true] {
+            let rest = SwitchLook::next_of(&r, checked, false)?;
+            assert_eq!(rest.label, text);
+            assert_eq!(rest.label_gap, None);
+            assert_eq!(
+                SwitchLook::next_label_home(&r, checked, false)?,
+                SwitchLabelHome::WindowForeground
+            );
+            let off = SwitchLook::next_of(&r, checked, true)?;
+            assert_eq!(off.label, muted);
+            assert_eq!(
+                SwitchLook::next_label_home(&r, checked, true)?,
+                SwitchLabelHome::WindowForegroundMuted
+            );
+        }
+        let font = SwitchLabelFont::next_of(&r)?;
+        assert_eq!(
+            (font.family, font.size, font.weight, font.style),
+            (None, None, None, None)
+        );
+        assert_eq!(font.line_height, r.typography.line_height_multiplier);
+        Ok(())
+    }
+
+    /// A theme patched to state the label's colour, size and weight, a
+    /// disabled colour for `DISABLED`, and the gap: the look and the font
+    /// take each at the switch's own home.
+    #[test]
+    fn a_stated_switch_label_is_read_at_its_homes() -> Mapped<()> {
+        let red = Color::rgb(1.0, 0.0, 0.0);
+        let blue = Color::rgb(0.0, 0.0, 1.0);
+        let r = breeze(
+            &ThemePatch::new()
+                .widget_rules(WidgetPatchMap::new().switch(SwitchPatch::new().label_gap(13.0)))
+                .switch(
+                    SwitchRule::new().label(TextPatch::new().color(red).size_px(17.0).weight(700)),
+                )
+                .switch(
+                    SwitchRule::new()
+                        .states(WidgetState::DISABLED)
+                        .label(TextPatch::new().color(blue)),
+                ),
+        );
+        for (checked, disabled, colour, home) in [
+            (false, false, red, SwitchLabelHome::Rest),
+            (true, false, red, SwitchLabelHome::Checked),
+            (false, true, blue, SwitchLabelHome::Disabled),
+            (true, true, blue, SwitchLabelHome::DisabledChecked),
+        ] {
+            let look = SwitchLook::next_of(&r, checked, disabled)?;
+            assert_eq!(look.label, hsla(colour), "{home:?}");
+            assert_eq!(look.label_gap, Some(px(13.0)), "{home:?}");
+            assert_eq!(SwitchLook::next_label_home(&r, checked, disabled)?, home);
+        }
+        let font = SwitchLabelFont::next_of(&r)?;
+        assert_eq!(font.size, Some(px(17.0)));
+        assert_eq!(font.weight, Some(gpui::FontWeight(700.0)));
+        Ok(())
+    }
+
+    /// A theme stating the label's colour for `CHECKED` alone: the checked
+    /// switch takes it, and the disabled checked one, which no rule for
+    /// `DISABLED` colours, gpui-component's own `muted_foreground`, not the
+    /// checked colour the `DISABLED|CHECKED` query also returns.
+    #[test]
+    fn a_checked_label_colour_is_not_the_disabled_checked_one() -> Mapped<()> {
+        let red = Color::rgb(1.0, 0.0, 0.0);
+        let r = breeze(
+            &ThemePatch::new().switch(
+                SwitchRule::new()
+                    .states(WidgetState::CHECKED)
+                    .label(TextPatch::new().color(red)),
+            ),
+        );
+        let muted = hsla(stated(r.colors.window.foreground_muted, "muted")?);
+        assert_eq!(SwitchLook::next_of(&r, true, false)?.label, hsla(red));
+        assert_eq!(
+            text_color_of(&r.switch.label(WidgetState::DISABLED | WidgetState::CHECKED)),
+            Some(hsla(red))
+        );
+        assert_eq!(SwitchLook::next_of(&r, true, true)?.label, muted);
+        assert_eq!(
+            SwitchLook::next_label_home(&r, true, true)?,
+            SwitchLabelHome::WindowForegroundMuted
+        );
+        Ok(())
     }
 }

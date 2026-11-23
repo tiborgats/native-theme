@@ -775,25 +775,46 @@ pub fn side_panel(
 }
 
 /// A label of the side panel's theme settings: plain text in `native`'s
-/// `sidebar.font` where a native theme is installed (`demo::sidebar_label`).
-pub fn sidebar_label(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// `sidebar.item_label(NONE)` where a 0.8.0 theme is installed and states a
+/// font gpui can letter it in (`demo::sidebar_label`).
+pub fn sidebar_label(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Side panel label").color(claim(
         "text, inherited",
         "sidebar_foreground",
         t.sidebar_foreground,
         "showcase",
     ));
-    match native {
-        Some(r) => info.config(
+    let Some(r) = native else {
+        return info.not_themeable(
             "font",
-            format!(
-                "sidebar.font: {}: plain text, not a Label, whose render paints foreground over the side panel's colour (gpui-component/label.rs, Label::render)",
-                super::drawn_font(&r.sidebar.font)
-            ),
+            "text_sm, a rem step: no native theme is installed, so there is no sidebar.item_label(NONE)",
+        );
+    };
+    info.config(
+        "font",
+        sidebar_label_font(
+            &r.typography,
+            &r.sidebar.item_label(native_theme::next::WidgetState::NONE),
         ),
-        None => info.not_themeable(
-            "font",
-            "text_sm, a rem step: no native theme is installed, so there is no sidebar.font",
+    )
+}
+
+/// The font line of a side panel label of the installed 0.8.0 theme, whose
+/// `typography` and `sidebar.item_label(NONE)`, `label`, it is lettered in
+/// (`demo::next_text_in`) where `label` gives a font gpui can letter it in;
+/// else gpui's own `text_sm`.
+pub fn sidebar_label_font(
+    typography: &native_theme::next::Typography,
+    label: &native_theme::next::TextStyle,
+) -> String {
+    match native_theme_gpui::next::label_font_unmapped(label, "sidebar.item_label(NONE)") {
+        None => format!(
+            "sidebar.item_label(NONE): {}: plain text, not a Label, whose render paints foreground over the side panel's colour (gpui-component/label.rs, Label::render)",
+            super::typography::text_style_font(typography, label)
+        ),
+        Some(unstated) => format!(
+            "text_sm, a rem step, gpui's own: the theme states no value gpui can take at {} (spec §10, rule 0)",
+            unstated.home()
         ),
     }
 }
@@ -1071,7 +1092,10 @@ pub(super) fn input_background(t: &Theme) -> ColorClaim {
 
 /// The theme settings' preset Combobox (spec §3.3), the showcase's preset
 /// switch.
-pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn preset_combobox(
+    t: &Theme,
+    native: Option<&native_theme::next::ResolvedTheme>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Combobox").variant("searchable").not_themeable(
         "own icons",
         super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the search matches nothing (gpui-component/combobox.rs, ComboboxState::new)"),
@@ -1148,7 +1172,10 @@ const HIGHLIGHT_OFF: &str = "off: highlight_matches(true) would draw the part of
 
 /// The theme settings' colour-mode Select (spec §3.3): the Inputs page's
 /// Select, choosing System, Light or Dark.
-pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn color_mode_select(
+    t: &Theme,
+    native: Option<&native_theme::next::ResolvedTheme>,
+) -> WidgetInfo {
     super::inputs::select(t, native)
         .instance(
             "modes",
@@ -1166,7 +1193,7 @@ pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInf
 
 /// The theme settings' palette Select: the Inputs page's Select, choosing
 /// the palette laid over the installed theme.
-pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn palette_select(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) -> WidgetInfo {
     super::inputs::select(t, native)
         .instance(
             "palettes",
@@ -1174,7 +1201,7 @@ pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         )
         .instance(
             "old model",
-            "under a palette, gpui-component's theme colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette. Until their page group moves to the 0.8.0 model, these are still drawn from the 0.7.2 theme of the same choice (support::OldModel), which has no palettes, so they show the preset alone, in the palette's scheme: the button variant of variants::default_button with geometry::default_button_rest (the Basic page's default-button sample), variants::switch_color (the checked track of the Switches built without the widgets feature: Basic, Inputs and Preferences), and the showcase's own refinements -- native_color, native_geometry, MenuLook and the side panel's padding and label font (sidebar.border.padding, sidebar.font); the tooltip says so",
+            "under a palette, gpui-component's theme colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette. Until their page group moves to the 0.8.0 model, these are still drawn from the 0.7.2 theme of the same choice (support::OldModel), which has no palettes, so they show the preset alone, in the palette's scheme: the button variant of variants::default_button with geometry::default_button_rest (the Basic page's default-button sample), variants::switch_color (the checked track of the Preferences Switches built without the widgets feature), and the showcase's own refinements -- native_color, native_geometry, MenuLook and the side panel's padding and label font (sidebar.border.padding, sidebar.font); the tooltip says so",
         )
         .instance(
             "width",
@@ -1184,7 +1211,10 @@ pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
 
 /// The theme settings' icon-theme Select (spec §3.3, S6): the Inputs page's
 /// Select, choosing the icon theme.
-pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn icon_set_select(
+    t: &Theme,
+    native: Option<&native_theme::next::ResolvedTheme>,
+) -> WidgetInfo {
     #[cfg(feature = "svg-rasterize")]
     let answered = "which the connector's widget icons answer from the chosen icon theme where they can (below)";
     #[cfg(not(feature = "svg-rasterize"))]

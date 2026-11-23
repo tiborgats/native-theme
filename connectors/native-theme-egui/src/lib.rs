@@ -246,9 +246,9 @@ pub use native_theme;
 //                                         it resolves as `crate::SystemTheme` inside egui at
 //                                         context.rs:252 and :2479)
 pub use native_theme::error::Error;
-pub use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, TransformAnimation};
+pub use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, IconSet, TransformAnimation};
 pub use native_theme::theme::{
-    ColorMode, DialogButtonOrder, FontStyle, IconSet, LayoutTheme, ResolvedTheme, ThemeMode,
+    ColorMode, DialogButtonOrder, FontStyle, LayoutTheme, ResolvedTheme, ThemeMode,
 };
 pub use native_theme::{AccessibilityPreferences, Result};
 

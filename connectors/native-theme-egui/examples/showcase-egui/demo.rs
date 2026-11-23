@@ -3,8 +3,8 @@
 use std::borrow::Cow;
 
 use native_theme::Rgba;
-use native_theme::icons::{AnimatedIcon, FreedesktopLoader, IconProvider, IconRole};
-use native_theme::theme::{IconSet, ResolvedFontSpec};
+use native_theme::icons::{AnimatedIcon, FreedesktopLoader, IconProvider, IconRole, IconSet};
+use native_theme::theme::ResolvedFontSpec;
 use native_theme_egui::{
     NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, ThemeAtlas, icons, menu_bar_modifier,
     role_modifier,

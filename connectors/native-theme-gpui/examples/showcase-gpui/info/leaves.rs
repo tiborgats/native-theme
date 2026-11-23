@@ -556,122 +556,122 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.background_color",
-        "gpui: widgets::Checkbox's unchecked fill where unchecked_background is unstated (CheckboxLook)",
+        "gpui: checkbox.indicator(NONE).fill (radio.indicator(NONE).fill), the unchecked indicator's fill (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.border.color",
-        "gpui: the checked indicator's border, and the unchecked one's where unstated (CheckboxLook)",
+        "gpui: checkbox.indicator(CHECKED).stroke.color (radio.indicator(CHECKED)), the checked indicator's border (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.border.corner_radius_px",
-        "gpui: the box's corner radius (widgets::Checkbox; a radio is round)",
+        "gpui: checkbox.indicator(NONE).corners, the box's corner radius (CheckboxLook::next_of; a radio is round)",
     ),
     (
         "",
         "checkbox.border.line_width_px",
-        "gpui: the indicator's border width (widgets::Checkbox)",
+        "gpui: checkbox.indicator(NONE).stroke.width (radio.indicator(NONE)), the indicator's border width (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.border.padding_top_px",
-        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
+        "gpui: checkbox.indicator(NONE).padding, the stated side, insets the check mark in the box (CheckboxLook::next_of, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_right_px",
-        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
+        "gpui: checkbox.indicator(NONE).padding, the stated side, insets the check mark in the box (CheckboxLook::next_of, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_bottom_px",
-        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
+        "gpui: checkbox.indicator(NONE).padding, the stated side, insets the check mark in the box (CheckboxLook::next_of, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_left_px",
-        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
+        "gpui: checkbox.indicator(NONE).padding, the stated side, insets the check mark in the box (CheckboxLook::next_of, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.check_mark_stroke_width_px",
-        "gpui: the check mark's stroke (widgets::Checkbox, stroked_check)",
+        "gpui: checkbox.checkmark(NONE).stroke_width, the check mark's stroke (CheckboxLook::next_of, stroked_check)",
     ),
     (
         "",
         "checkbox.checked_background",
-        "gpui: the checked indicator's fill (CheckboxLook)",
+        "gpui: checkbox.indicator(CHECKED).fill (radio.indicator(CHECKED).fill), the checked indicator's fill (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.disabled_background",
-        "gpui: a disabled indicator's fill where stated (CheckboxLook)",
+        "gpui: checkbox.indicator(DISABLED).fill (DISABLED|CHECKED checked; radio.indicator), a disabled indicator's fill where a rule states it (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.disabled_opacity",
-        "gpui: fades the whole disabled control (widgets::Checkbox)",
+        "gpui: checkbox.disabled_opacity (radio.disabled_opacity), fades the whole disabled control (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.disabled_text_color",
-        "gpui: a disabled control's label, and its mark over a stated disabled fill (CheckboxLook)",
+        "gpui: checkbox.label(DISABLED).color (radio.label(DISABLED)), a disabled control's label, and its mark over a stated disabled fill (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.font",
-        "gpui: the label's family, size, weight and style (widgets::Checkbox, widgets::Radio)",
+        "gpui: checkbox.label(NONE) (radio.label(NONE)), the label's family, size, weight and style (widgets::Checkbox, widgets::Radio)",
     ),
     (
         "",
         "checkbox.font.color",
-        "gpui: the label's colour (CheckboxLook)",
+        "gpui: checkbox.label(NONE).color (radio.label(NONE).color), the label's colour (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.hover_background",
-        "gpui: over the unchecked fill under the pointer; unset, the fill at rest (CheckboxLook)",
+        "gpui: checkbox.indicator(HOVER).fill (radio.indicator(HOVER).fill), over the unchecked fill under the pointer where a rule states it; else the fill at rest (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.hover_border_color",
-        "gpui: the indicator's edge under the pointer (CheckboxLook); unset, the edge at rest",
+        "gpui: checkbox.indicator(HOVER).stroke.color (HOVER|CHECKED checked; radio.indicator), the indicator's edge under the pointer where a rule states it; else the edge at rest (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.indicator_color",
-        "gpui: the check mark's and the radio dot's colour (CheckboxLook)",
+        "gpui: checkbox.checkmark(CHECKED).color and radio.dot(CHECKED).fill, the check mark's and the radio dot's colour (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.indicator_width_px",
-        "gpui: the box's side, the circle's diameter (widgets::Checkbox, widgets::Radio)",
+        "gpui: checkbox.indicator(NONE).min_size[0] (radio.indicator(NONE).min_size[0]), the box's side, the circle's diameter (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.label_gap_px",
-        "gpui: the gap between indicator and label (widgets::Checkbox)",
+        "gpui: checkbox.label_gap (radio.label_gap), the gap between indicator and label (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.radio_dot_diameter_px",
-        "gpui: the selected radio's dot (widgets::Radio)",
+        "gpui: radio.dot(NONE).min_size[0], the selected radio's dot (CheckboxLook::next_radio)",
     ),
     (
         "",
         "checkbox.radio_indicator_width_px",
-        "gpui: the radio's circle, indicator_width where unstated (widgets::Radio, CheckboxLook::radio)",
+        "gpui: radio.indicator(NONE).min_size[0], the radio's circle (CheckboxLook::next_radio)",
     ),
     (
         "",
         "checkbox.unchecked_background",
-        "gpui: the unchecked indicator's fill (CheckboxLook)",
+        "gpui: checkbox.indicator(NONE).fill (radio.indicator(NONE).fill), the unchecked indicator's fill (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.unchecked_border_color",
-        "gpui: the unchecked indicator's border (CheckboxLook)",
+        "gpui: checkbox.indicator(NONE).stroke.color (radio.indicator(NONE)), the unchecked indicator's border (CheckboxLook::next_of)",
     ),
     // --- combo_box: the Combobox of the side panel ------------------------------
     (
@@ -684,7 +684,53 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "combo_box.font.color",
         "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:1035-1042, refine_style)",
     ),
-    // --- combo_box: a Select, and the Combobox's metrics ------------------------
+    // --- combo_box: the Basic page's Select, on the 0.8.0 builder --------------
+    (
+        "basic.drop_down",
+        "combo_box.border.corner_radius_px",
+        "gpui: next::geometry::select's radius, and the surface's (demo::combo_surface)",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.border.padding_top_px",
+        "gpui: next::geometry::select pads the stated side",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.border.padding_right_px",
+        "gpui: next::geometry::select pads it, unless an arrow column is stated",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.border.padding_bottom_px",
+        "gpui: next::geometry::select pads the stated side",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.border.padding_left_px",
+        "gpui: next::geometry::select pads the stated side",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.font",
+        "gpui: next::geometry::select's family, size, weight and style",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.font.color",
+        "gpui: next::geometry::select's text colour",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.min_height_px",
+        "gpui: next::geometry::select's height, by the control-height rule",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.min_width_px",
+        "gpui: next::geometry::select's min_w",
+    ),
+    // --- combo_box: the chrome's Selects, and the Combobox's metrics -----------
     (
         "",
         "combo_box.arrow_area_width_px",
@@ -698,7 +744,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.background_color",
-        "gpui: geometry::combo_box_fill's fill, under the trigger (demo::combo_surface)",
+        "gpui: next::geometry::combo_box_fill's fill, under the trigger (demo::combo_surface)",
     ),
     (
         "",
@@ -768,7 +814,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.hover_border_color",
-        "gpui: an edge laid over the trigger under the pointer (demo::combo_surface); upstream's trigger has no hover style",
+        "gpui: an edge drawn under the trigger, which takes the place of the trigger's under the pointer (demo::combo_surface); upstream's trigger has no hover style",
     ),
     (
         "",
@@ -814,7 +860,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.disabled_text_color",
-        "gpui: a disabled switch's label (SwitchLook)",
+        "gpui: not read by widgets::Switch, whose disabled label is switch.label(DISABLED).color where a rule states it, else gpui-component's own muted_foreground, colors.window.foreground_muted (SwitchLook::next_of)",
     ),
     (
         "",
@@ -844,7 +890,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.font",
-        "gpui: widgets::Switch's label at its size and weight (switch.rs)",
+        "gpui: not read by widgets::Switch, which letters its label in switch.label(NONE)'s family, size, weight and slant where stated, else gpui-component's own, text_sm in the window's font (SwitchLabelFont::next_of)",
     ),
     (
         "",
@@ -859,7 +905,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.font.color",
-        "gpui: widgets::Switch's label, defaults.text_color (SwitchLook)",
+        "gpui: widgets::Switch's label where the theme states no switch.label(NONE).color: gpui-component's own, the window's text, colors.window.foreground (SwitchLook::next_of)",
     ),
     (
         "",
@@ -929,37 +975,37 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.text_inputs",
         "defaults.line_height",
-        "gpui: geometry::input's line height (control-height rule)",
+        "gpui: next::geometry::input's line height (control-height rule)",
     ),
     (
         "basic.number_input",
         "defaults.line_height",
-        "gpui: geometry::input's line height (control-height rule)",
+        "gpui: next::geometry::input's line height (control-height rule)",
     ),
     (
         "basic.text_area",
         "defaults.line_height",
-        "gpui: geometry::text_area's line height",
+        "gpui: next::geometry::text_area's line height",
     ),
     (
         "basic.drop_down",
         "defaults.line_height",
-        "gpui: geometry::select's line height (control-height rule)",
+        "gpui: next::geometry::select's line height (control-height rule)",
     ),
     (
         "chrome.side_panel.settings.theme_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.mode_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.icon_theme_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -1156,7 +1202,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.background_color",
-        "gpui: the field's fill (demo::input_surface, geometry::input_fill)",
+        "gpui: the field's fill (demo::input_surface, next::geometry::input_fill)",
     ),
     (
         "basic.number_input",
@@ -1171,12 +1217,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.border.corner_radius_px",
-        "gpui: geometry::input's corner radius",
+        "gpui: next::geometry::input's corner radius",
     ),
     (
         "",
         "input.border.line_width_px",
-        "gpui: geometry::input's border width",
+        "gpui: next::geometry::input's border width",
     ),
     (
         "basic.number_input",
@@ -1201,22 +1247,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.border.padding_top_px",
-        "gpui: geometry::input pads the stated side",
+        "gpui: next::geometry::input pads the stated side",
     ),
     (
         "",
         "input.border.padding_right_px",
-        "gpui: geometry::input pads the stated side",
+        "gpui: next::geometry::input pads the stated side",
     ),
     (
         "",
         "input.border.padding_bottom_px",
-        "gpui: geometry::input pads the stated side",
+        "gpui: next::geometry::input pads the stated side",
     ),
     (
         "",
         "input.border.padding_left_px",
-        "gpui: geometry::input pads the stated side",
+        "gpui: next::geometry::input pads the stated side",
     ),
     (
         "",
@@ -1246,17 +1292,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_background",
-        "gpui: geometry::input_fill's fill for a disabled field",
+        "gpui: next::geometry::input_fill's fill for a disabled field",
     ),
     (
         "",
         "input.disabled_opacity",
-        "gpui: geometry::input_fill fades a disabled field by it",
+        "gpui: next::geometry::input_fill fades a disabled field by it",
     ),
     (
         "",
         "input.disabled_text_color",
-        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:3222, opacity)",
+        "gpui: next::geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:3222, opacity)",
     ),
     (
         "",
@@ -1266,17 +1312,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.text_area",
         "input.font",
-        "gpui: geometry::text_area's family, size, weight and style",
+        "gpui: next::geometry::text_area's family, size, weight and style",
     ),
     (
         "",
         "input.font",
-        "gpui: geometry::input's family, size, weight and style",
+        "gpui: next::geometry::input's family, size, weight and style",
     ),
     (
         "",
         "input.font.color",
-        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:729, input_style)",
+        "gpui: next::geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:729, input_style)",
     ),
     (
         "basic.number_input",
@@ -1291,7 +1337,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.min_height_px",
-        "gpui: geometry::input's height, by the control-height rule",
+        "gpui: next::geometry::input's height, by the control-height rule",
     ),
     (
         "",
@@ -1393,12 +1439,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.background_color",
-        "gpui: geometry::link's fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
+        "gpui: next::geometry::link's fill, link.container(NONE).fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
     ),
     (
         "",
         "link.font",
-        "gpui: geometry::link's family, size, weight and style",
+        "gpui: next::geometry::link's family, size, weight and style, link.label(NONE)'s",
     ),
     (
         "",
@@ -1418,7 +1464,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.underline_enabled",
-        "gpui: geometry::link removes upstream's underline where false",
+        "gpui: next::geometry::link removes upstream's underline where link.label(NONE).decoration is none",
     ),
     // --- list: the Basic page's table, demo::files_table ------------------------
     (
@@ -1590,53 +1636,57 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.list.",
         "list.hover_border_color",
-        "gpui: an unselected row's outline under the pointer, a box over the row in its suffix, on the corners of its fill (demo::ListRow)",
+        "gpui: list.highlight(HOVER).stroke, an unselected row's outline under the pointer, a box over the row in its suffix, on the corners of its fill (demo::ListRow)",
     ),
     (
         "basic.list.row_",
         "list.border.corner_radius_px",
-        "gpui: the first row's fill takes the frame's inner radius, this less list.border.line_width, on its top corners and the last row's on its bottom corners (demo::ListRow)",
+        "gpui: list.container(NONE).corners, the first row's fill takes the frame's inner radius, this less list.container(NONE).stroke.width, on its top corners and the last row's on its bottom corners (demo::ListRow)",
     ),
     (
         "basic.list.row_",
         "list.border.line_width_px",
-        "gpui: geometry::list's line, which the rows lie inside; taken off the frame's radius for the inner radius of the first and last rows' corners (demo::ListRow)",
+        "gpui: list.container(NONE).stroke.width, next::geometry::list's line, which the rows lie inside; taken off the frame's radius for the inner radius of the first and last rows' corners (demo::ListRow)",
     ),
-    ("", "list.background_color", "gpui: geometry::list's fill"),
+    (
+        "",
+        "list.background_color",
+        "gpui: list.container(NONE).fill, next::geometry::list's fill",
+    ),
     (
         "",
         "list.border.color",
-        "gpui: geometry::list's border colour",
+        "gpui: list.container(NONE).stroke.color, next::geometry::list's border colour",
     ),
     (
         "",
         "list.border.corner_radius_px",
-        "gpui: geometry::list's corner radius",
+        "gpui: list.container(NONE).corners, next::geometry::list's corner radius",
     ),
     (
         "",
         "list.border.line_width_px",
-        "gpui: geometry::list's border width",
+        "gpui: list.container(NONE).stroke.width, next::geometry::list's border width",
     ),
     (
         "",
         "list.border.padding_top_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_right_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_bottom_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_left_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
@@ -1646,22 +1696,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.hover_text_color",
-        "gpui: the label's colour under the pointer (demo::ListRow)",
+        "gpui: list.item_label(HOVER).color, the label's colour under the pointer (demo::ListRow)",
     ),
     (
         "",
         "list.item_font",
-        "gpui: geometry::list_item's family, size, weight and style",
+        "gpui: list.item_label(NONE), next::geometry::list_item's family, size, weight and style",
     ),
     (
         "",
         "list.item_font.color",
-        "gpui: geometry::list_item's text colour",
+        "gpui: list.item_label(NONE).color, next::geometry::list_item's text colour",
     ),
     (
         "",
         "list.row_height_px",
-        "gpui: geometry::list_item's height where stated (control-height rule)",
+        "gpui: list.row(NONE).min_size[1], next::geometry::list_item's height where stated (control-height rule)",
     ),
     (
         "",
@@ -1671,7 +1721,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.selection_text_color",
-        "gpui: geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
+        "gpui: list.item_label(SELECTED).color, next::geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
     ),
     // --- menu: the showcase's MenuBar (demo::MenuTitle, MenuBar::popup) ---------
     (
@@ -1884,37 +1934,37 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "progress_bar.border.color",
-        "gpui: the track's edge (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).stroke.color, the track's edge (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.border.corner_radius_px",
-        "gpui: the track's and the fill's corner radius (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).corners, the track's and the fill's corner radius (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.border.line_width_px",
-        "gpui: the track's border width (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).stroke.width, the track's border width (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.fill_color",
-        "gpui: widgets::ProgressBar's fill (ProgressBarLook)",
+        "gpui: progress_bar.fill(NONE).fill, widgets::ProgressBar's fill (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.min_width_px",
-        "gpui: the bar's min_w (widgets::ProgressBar)",
+        "gpui: progress_bar.track(NONE).min_size[0], the bar's min_w (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.track_color",
-        "gpui: the track's fill (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).fill, the track's fill (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.track_height_px",
-        "gpui: the bar's height (widgets::ProgressBar)",
+        "gpui: progress_bar.track(NONE).min_size[1], the bar's height (ProgressBarLook::next_of)",
     ),
     // --- scrollbar: gpui-base's, through base_layer -----------------------------
     (
@@ -2098,7 +2148,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.font",
-        "gpui: the label's family, size, weight and style (demo::sidebar_label)",
+        "gpui: the label's family, size, weight and style, at sidebar.item_label(NONE) of the installed 0.8.0 theme (demo::sidebar_label)",
     ),
     (
         "chrome.info",
@@ -2114,73 +2164,73 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "slider.fill_color",
-        "gpui: the rail's filled stretch (SliderLook)",
+        "gpui: slider.active_track(NONE).fill (DISABLED disabled), the rail's filled stretch (SliderLook::next_of)",
     ),
     (
         "",
         "slider.thumb_color",
-        "gpui: the thumb's fill (SliderLook)",
+        "gpui: slider.thumb(NONE).fill (DISABLED disabled), the thumb's fill (SliderLook::next_of)",
     ),
     (
         "",
         "slider.thumb_diameter_px",
-        "gpui: the thumb's size (widgets::Slider)",
+        "gpui: slider.thumb(NONE).min_size[0], the thumb's size (SliderLook::next_of)",
     ),
     (
         "",
         "slider.thumb_hover_color",
-        "gpui: over the thumb under the pointer (SliderLook); unset, the thumb at rest",
+        "gpui: slider.thumb(HOVER).fill, over the thumb under the pointer where a rule states it; else the thumb at rest (SliderLook::next_of)",
     ),
     (
         "",
         "slider.track_color",
-        "gpui: the rail's fill (SliderLook)",
+        "gpui: slider.track(NONE).fill (DISABLED disabled), the rail's fill (SliderLook::next_of)",
     ),
     (
         "",
         "slider.track_height_px",
-        "gpui: the rail's height (widgets::Slider)",
+        "gpui: slider.track(NONE).min_size[1], the rail's height (SliderLook::next_of)",
     ),
     (
         "basic.slider.control",
         "slider.thumb_border_color",
-        "gpui: the band inside the thumb at rest, in place of upstream's ring (widgets::ThumbOutline)",
+        "gpui: slider.thumb(NONE).stroke.color, the band inside the thumb at rest, in place of upstream's ring (ThumbOutline::next_of)",
     ),
     (
         "basic.slider.control",
         "slider.thumb_border_line_width_px",
-        "gpui: the width of the band inside the thumb; 0 draws none, upstream's ring included (widgets::ThumbOutline)",
+        "gpui: slider.thumb(NONE).stroke.width, the width of the band inside the thumb; 0, or a stroke stated as none, draws none, upstream's ring included (ThumbOutline::next_of)",
     ),
     (
         "basic.slider.control",
         "slider.thumb_hover_border_color",
-        "gpui: the band with the pointer on the thumb, over the focus colour, not while it is dragged (widgets::ThumbOutline)",
+        "gpui: slider.thumb(HOVER).stroke.color, the band with the pointer on the thumb, over the focus colour, not while it is dragged (ThumbOutline::next_of)",
     ),
     (
         "basic.slider.control",
         "slider.thumb_focus_border_color",
-        "gpui: the band on the end thumb while the slider has the focus (widgets::ThumbOutline)",
+        "gpui: slider.thumb(FOCUSED).stroke.color, the band on the end thumb while the slider has the focus (ThumbOutline::next_of)",
     ),
     // --- spinner: widgets::Spinner --------------------------------------------------
     (
         "",
         "spinner.diameter_px",
-        "gpui: the indicator's size at Medium, and the anchor of the other sizes, gpui-component's own ratios to it (SpinnerLook::of_size)",
+        "gpui: spinner.diameter, the indicator's size at Medium, and the anchor of the other sizes, gpui-component's own ratios to it (SpinnerLook::next_of_size)",
     ),
     (
         "",
         "spinner.fill_color",
-        "gpui: the arc, and a monochrome set's indicator tint (SpinnerLook)",
+        "gpui: spinner.color, the arc, and a monochrome set's indicator tint (SpinnerLook::next_of_size, widgets::Spinner)",
     ),
     (
         "",
         "spinner.min_diameter_px",
-        "gpui: the floor under the indicator's size, at every Size (SpinnerLook::of_size)",
+        "gpui: spinner.min_diameter, the floor under the indicator's size, at every Size (SpinnerLook::next_of_size)",
     ),
     (
         "",
         "spinner.stroke_width_px",
-        "gpui: the arc's stroke, for a set with no indicator (SpinnerLook)",
+        "gpui: spinner.stroke_width, the arc's stroke, for a set with no indicator (SpinnerLook::next_of_size)",
     ),
     // --- splitter: demo::resize_handles --------------------------------------------
     (
@@ -2248,102 +2298,102 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "switch.checked_background",
-        "gpui: the track's fill when on (SwitchLook)",
+        "gpui: switch.track(CHECKED).fill, the track's fill when on (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.disabled_checked_background",
-        "gpui: a disabled switch's track when on, where stated (SwitchLook)",
+        "gpui: switch.track(DISABLED|CHECKED).fill, a disabled switch's track when on (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.checked_track_border_color",
-        "gpui: the on track's outline, track_border_line_width wide, where stated (SwitchLook)",
+        "gpui: switch.track(CHECKED).stroke.color, the on track's outline, switch.track(NONE).stroke.width wide, where stated (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.disabled_checked_track_border_color",
-        "gpui: a disabled on track's outline, where stated; unset, the enabled one (SwitchLook)",
+        "gpui: switch.track(DISABLED|CHECKED).stroke.color, a disabled on track's outline, where stated (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.disabled_opacity",
-        "gpui: fades the whole disabled switch (widgets::Switch)",
+        "gpui: switch.disabled_opacity, fades the whole disabled switch (SwitchLook::next_of, SwitchLook::faded_over)",
     ),
     (
         "",
         "switch.disabled_thumb_color",
-        "gpui: a disabled switch's thumb, where stated (SwitchLook)",
+        "gpui: switch.thumb(DISABLED).fill (DISABLED|CHECKED on), a disabled switch's thumb (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.hover_checked_background",
-        "gpui: over the on track under the pointer (SwitchLook); unset, the track at rest",
+        "gpui: switch.track(HOVER|CHECKED).fill, over the on track under the pointer where it differs from switch.track(CHECKED).fill; else the track at rest (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.hover_unchecked_background",
-        "gpui: over the off track under the pointer (SwitchLook); unset, the track at rest",
+        "gpui: switch.track(HOVER).fill, over the off track under the pointer where a rule states it; else the track at rest (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.thumb_background",
-        "gpui: the thumb's fill (SwitchLook)",
+        "gpui: switch.thumb(CHECKED).fill, the on thumb's fill (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.thumb_border_color",
-        "gpui: the thumb's outline, thumb_border_line_width wide, where stated (SwitchLook)",
+        "gpui: switch.thumb(NONE).stroke.color (CHECKED on), the thumb's outline, switch.thumb(NONE).stroke.width wide, where stated (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.thumb_border_line_width_px",
-        "gpui: the thumb outline's width, inside the thumb (SwitchLook)",
+        "gpui: switch.thumb(NONE).stroke.width, the thumb outline's width, inside the thumb (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.thumb_diameter_px",
-        "gpui: the thumb's size, centred on the track's axis; a thumb taller than its track flush with its ends (SwitchLook)",
+        "gpui: switch.thumb(CHECKED).min_size[0], the on thumb's size, centred on the track's axis; a thumb taller than its track flush with its ends (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.unchecked_thumb_background",
-        "gpui: the off thumb's fill, thumb_background where unstated (SwitchLook)",
+        "gpui: switch.thumb(NONE).fill, the off thumb's fill (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.unchecked_thumb_diameter_px",
-        "gpui: the off thumb's size, thumb_diameter where unstated (SwitchLook)",
+        "gpui: switch.thumb(NONE).min_size[0], the off thumb's size (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.track_border_line_width_px",
-        "gpui: the track outline's width, inside the track (SwitchLook)",
+        "gpui: switch.track(NONE).stroke.width, the track outline's width, inside the track (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.track_height_px",
-        "gpui: the track's height (SwitchLook)",
+        "gpui: switch.track(NONE).min_size[1], the track's height (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.track_radius_px",
-        "gpui: the track's corner radius (SwitchLook)",
+        "gpui: switch.track(NONE).corners, the track's corner radius (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.track_width_px",
-        "gpui: the track's width (SwitchLook)",
+        "gpui: switch.track(NONE).min_size[0], the track's width (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.unchecked_background",
-        "gpui: the track's fill when off (SwitchLook)",
+        "gpui: switch.track(NONE).fill, the track's fill when off (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.unchecked_track_border_color",
-        "gpui: the off track's outline, track_border_line_width wide, where stated (SwitchLook)",
+        "gpui: switch.track(NONE).stroke.color, the off track's outline, switch.track(NONE).stroke.width wide, where stated (SwitchLook::next_of)",
     ),
     // --- tab: widgets::TabBar ----------------------------------------------------
     // The selected tabs before their bars, whose ids are prefixes of theirs.

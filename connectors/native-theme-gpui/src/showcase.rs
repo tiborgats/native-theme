@@ -2669,7 +2669,12 @@ fn home_value_finding(value: &str, field: &str) -> Option<String> {
                 .and_then(|t| t.chars().next())
                 .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
         });
-        return (!read).then(|| format!("its value `{value}` reads no `{path}`"));
+        return (!read && !reads_field_part(&code, field)).then(|| {
+            format!(
+                "its value `{value}` reads no `{path}`, nor calls a helper of \
+                 HOME_PROPERTIES on the part it names"
+            )
+        });
     }
     let Some((widget, part, states, property)) = query_home(field) else {
         return Some(
@@ -2701,6 +2706,38 @@ fn home_value_finding(value: &str, field: &str) -> Option<String> {
     })
 }
 
+/// Whether `code`, a value with its comments, strings and whitespace
+/// removed, reads the home `field` of a part a widget holds as a field and
+/// does not query by state, `<widget>.<part>.<property>`
+/// (`popover.panel.stroke.color`): it calls the property's helper
+/// (`HOME_PROPERTIES`) on exactly that part, reached by a plain path,
+/// `&r.popover.panel`.
+fn reads_field_part(code: &str, field: &str) -> bool {
+    HOME_PROPERTIES.iter().any(|(property, helper)| {
+        let Some((widget, part)) = field
+            .strip_suffix(&format!(".{property}"))
+            .and_then(|head| head.split_once('.'))
+        else {
+            return false;
+        };
+        if part.contains('.') {
+            return false;
+        }
+        let tail = format!(".{widget}.{part}");
+        calls_of(code, helper).iter().any(|arg| {
+            arg.trim_start_matches('&')
+                .trim_end_matches(',')
+                .strip_suffix(tail.as_str())
+                .is_some_and(|receiver| {
+                    !receiver.is_empty()
+                        && receiver
+                            .chars()
+                            .all(|c| c.is_alphanumeric() || c == '_' || c == '.')
+                })
+        })
+    })
+}
+
 /// Whether `haystack` names the home `home` as a whole: not the tail of a
 /// longer path or name, nor the head of one.
 fn mentions_home(haystack: &str, home: &str) -> bool {
@@ -2711,6 +2748,38 @@ fn mentions_home(haystack: &str, home: &str) -> bool {
             && after.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
     })
 }
+
+/// Whether the cited `span` names the home `home`: spelt whole
+/// ([`mentions_home`]), or, for a global's path (`colors.focus_ring`), read
+/// in code at that path off a binding of a 0.8.0 theme, one of the names
+/// the connector gives it ([`THEME_BINDINGS`]), `r.colors.focus_ring`, the
+/// binding no field of a longer path and no longer name after it -- a
+/// global has no query for its reader to spell.
+fn names_home(span: &str, home: &str) -> bool {
+    if mentions_home(span, home) {
+        return true;
+    }
+    if home.contains('(') {
+        return false;
+    }
+    let code = without_comments_or_strings(span);
+    let path = format!(".{home}");
+    code.match_indices(path.as_str()).any(|(at, m)| {
+        let head = code.get(..at).unwrap_or("");
+        let binding = head
+            .trim_end_matches(|c: char| c.is_alphanumeric() || c == '_')
+            .len();
+        let after = code.get(at + m.len()..).and_then(|t| t.chars().next());
+        head.get(binding..)
+            .is_some_and(|name| THEME_BINDINGS.contains(&name))
+            && !head.get(..binding).is_some_and(|t| t.ends_with('.'))
+            && after.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+    })
+}
+
+/// The names the connector binds a 0.8.0 theme to, `r` and `resolved`, off
+/// which [`names_home`] takes a global read at its path.
+const THEME_BINDINGS: &[&str] = &["r", "resolved"];
 
 /// Whether `code` reads `field` through a path, `.<field>`.
 fn reads_path(code: &str, field: &str) -> bool {
@@ -3254,7 +3323,7 @@ fn citation_finding(
         ));
     };
     let named = if is_home(claim.field) {
-        mentions_home(&span.join("\n"), claim.field)
+        names_home(&span.join("\n"), claim.field)
     } else {
         mentions(&span.join("\n"), claim.field)
     };
@@ -3349,12 +3418,12 @@ const EDGE_COLOURS_NOT_EDGES: &[(&str, &str, &str)] = &[
     (
         "native_number_input",
         "step button hovered, the edge colour at 40%",
-        "a fill: upstream tints a hovered step button with its input token, which the connector fills from input.border.color (input/number_input.rs, NumberInput::render; native-theme-gpui colors.rs)",
+        "a fill: the showcase tints a hovered step button with the field's edge colour, input.field(NONE).stroke.color, where upstream tints it with its input token (input/number_input.rs, NumberInput::render)",
     ),
     (
         "native_number_input",
         "step button pressed, the edge colour at 60%",
-        "a fill: upstream tints a pressed step button with its input token, which the connector fills from input.border.color (input/number_input.rs, NumberInput::render; native-theme-gpui colors.rs)",
+        "a fill: the showcase tints a pressed step button with the field's edge colour, input.field(NONE).stroke.color, where upstream tints it with its input token (input/number_input.rs, NumberInput::render)",
     ),
 ];
 
@@ -5128,6 +5197,12 @@ fn a_claim_in_the_0_8_0_form_names_a_home() {
             "stated(r.colors.window.background)",
             "colors.window.background",
         ),
+        // A part held as a field, not queried by state.
+        (
+            "stroke_color_of(&r.popover.panel)",
+            "popover.panel.stroke.color",
+        ),
+        ("fill_of(&r.dialog.panel)", "dialog.panel.fill"),
     ];
     for (value, field) in passes {
         assert_eq!(home_value_finding(value, field), None, "{field}: {value}");
@@ -5197,6 +5272,26 @@ fn a_claim_in_the_0_8_0_form_names_a_home() {
             "colors.window.background",
         ),
         ("stated(r.colors.window)", "colors.window.background"),
+        // A part held as a field, read by another property's helper, on
+        // another part or widget, on a longer path, through a receiver that
+        // is no path, or as a part's sub-field.
+        ("fill_of(&r.popover.panel)", "popover.panel.stroke.color"),
+        (
+            "stroke_color_of(&r.dialog.panel)",
+            "popover.panel.stroke.color",
+        ),
+        (
+            "stroke_color_of(&r.popover.panel.inner)",
+            "popover.panel.stroke.color",
+        ),
+        (
+            "stroke_color_of(&pick(r).popover.panel)",
+            "popover.panel.stroke.color",
+        ),
+        (
+            "text_color_of(&r.popover.panel.stroke)",
+            "popover.panel.stroke.color",
+        ),
     ];
     for (value, field) in fails {
         assert!(
@@ -5216,6 +5311,25 @@ fn a_claim_in_the_0_8_0_form_names_a_home() {
         r#""button.body(DEFAULT).fill_x""#,
         "button.body(DEFAULT).fill"
     ));
+    // A global is named by a line that reads it at its path off a theme
+    // binding; a query home only by its spelling.
+    let ring = "            color: crate::next::hsla(r.colors.focus_ring),";
+    assert!(names_home(ring, "colors.focus_ring"));
+    assert!(names_home(cited, "button.body(DEFAULT).fill"));
+    assert!(names_home("hsla(resolved.colors.caret)", "colors.caret"));
+    for (line, home) in [
+        ("hsla(theme.colors.caret)", "colors.caret"),
+        ("hsla(r.colors.focus_ring_width)", "colors.focus_ring"),
+        ("hsla(r.other.colors.focus_ring)", "colors.focus_ring"),
+        ("hsla(.colors.focus_ring)", "colors.focus_ring"),
+        ("// r.colors.focus_ring", "colors.focus_ring"),
+        (
+            "fill(&r.button.body(WidgetState::DEFAULT))",
+            "button.body(DEFAULT).fill",
+        ),
+    ] {
+        assert!(!names_home(line, home), "{line} names {home}");
+    }
 
     assert!(reads_stroke_colour(
         "state_stroke_color_of(&r.button.body(WidgetState::HOVER))"

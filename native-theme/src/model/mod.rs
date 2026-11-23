@@ -289,7 +289,8 @@ pub struct Theme {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::theme::{Theme, IconSet};
+    /// use native_theme::icons::IconSet;
+    /// use native_theme::theme::Theme;
     ///
     /// let theme = Theme::preset("material-3")?;
     /// assert_eq!(theme.icon_set, Some(IconSet::Material));

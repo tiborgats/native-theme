@@ -6216,7 +6216,7 @@ fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() 
         // so the hover text is in the tree from the fourth pass on (measured).
         harness.run_steps(1);
         assert_eq!(
-            crate::pages::icons::set_label(native_theme::theme::IconSet::Freedesktop, None, detect),
+            crate::pages::icons::set_label(native_theme::icons::IconSet::Freedesktop, None, detect),
             if failed {
                 "freedesktop (unavailable)".to_string()
             } else {
@@ -10473,7 +10473,7 @@ fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<(
                     &mut cache,
                     ui,
                     crate::demo::ChromeIcon::PanelLeft,
-                    native_theme::theme::IconSet::Freedesktop,
+                    native_theme::icons::IconSet::Freedesktop,
                     Some(theme),
                     16.0,
                 );
@@ -10498,7 +10498,7 @@ fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<(
                         &mut cache,
                         ui,
                         crate::demo::ChromeIcon::PanelLeft,
-                        native_theme::theme::IconSet::Freedesktop,
+                        native_theme::icons::IconSet::Freedesktop,
                         Some(theme),
                         16.0,
                     ) {
@@ -10714,7 +10714,7 @@ fn a_named_icon_takes_each_size_it_is_drawn_at() -> std::io::Result<()> {
                     &mut cache,
                     ui,
                     crate::demo::ChromeIcon::PanelLeft,
-                    native_theme::theme::IconSet::Freedesktop,
+                    native_theme::icons::IconSet::Freedesktop,
                     Some("named"),
                     size,
                 );
@@ -10751,7 +10751,7 @@ fn a_named_icon_takes_each_size_it_is_drawn_at() -> std::io::Result<()> {
 #[test]
 fn the_icon_cache_is_forgotten_where_the_icon_choice_changes() -> std::io::Result<()> {
     use crate::demo::IconLoad;
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     const NAME: &str = "tests::the_icon_cache_is_forgotten_where_the_icon_choice_changes";
     if native_theme_test_fixtures::in_child() {
         let mut harness = open(

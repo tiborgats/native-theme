@@ -12,8 +12,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use native_theme::color::Rgba;
+use native_theme::icons::IconSet;
 use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, TransformAnimation};
-use native_theme::theme::IconSet;
 
 use crate::{ResolvedTheme, ThemeAtlas};
 
