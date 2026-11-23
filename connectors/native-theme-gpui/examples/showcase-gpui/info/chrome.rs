@@ -1289,7 +1289,7 @@ pub fn palette_select(t: &Theme, native: Option<&native_theme::next::ResolvedThe
         )
         .instance(
             "old model",
-            "under a palette, gpui-component's theme colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette. Until their page group moves to the 0.8.0 model, these are still drawn from the 0.7.2 theme of the same choice (support::OldModel), which has no palettes, so they show the preset alone, in the palette's scheme: the button variant of variants::default_button with geometry::default_button_rest (the Basic page's default-button sample), variants::switch_color (the checked track of the Preferences Switches built without the widgets feature), and the showcase's own refinements -- native_color, native_geometry, MenuLook and the side panel's padding and label font (sidebar.border.padding, sidebar.font); the tooltip says so",
+            "under a palette, gpui-component's theme colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette. Until their page group moves to the 0.8.0 model, these are still drawn from the 0.7.2 theme of the same choice (support::OldModel), which has no palettes, so they show the preset alone, in the palette's scheme: the button variant of variants::default_button with geometry::default_button_rest (the Basic page's default-button sample), and the showcase's own refinements on the pages and in the inspector not yet moved -- native_color, native_geometry and the inspector's text (sidebar.font); the tooltip says so",
         )
         .instance(
             "width",
@@ -1994,31 +1994,36 @@ pub fn preferences_settings(t: &Theme) -> WidgetInfo {
 }
 
 /// One of the Preferences sheet's switches, `checked` or not, `disabled`
-/// while no native theme is installed, its checked track handed `native`'s
-/// `switch.checked_background` where one is.
+/// while no native theme is installed, its checked track handed the
+/// installed 0.8.0 theme `native`'s `switch.track(CHECKED).fill` through
+/// `next::variants::switch_color` where that maps it.
 pub fn preference_switch(
     t: &Theme,
     field: &'static str,
     checked: bool,
     disabled: bool,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Switch").variant(match (checked, disabled) {
         (_, true) => "disabled",
         (true, false) => "on",
         (false, false) => "off",
     });
-    let info = match (checked, disabled, native) {
+    let native = native.filter(|r| next::variants::switch_color(r).is_ok());
+    let on = native.and_then(|r| {
+        stated_claim(
+            "track",
+            "switch.track(CHECKED).fill",
+            fill_of(&r.switch.track(WidgetState::CHECKED)),
+            "showcase",
+        )
+    });
+    let info = match (checked, disabled, on) {
         (_, true, _) => info.not_themeable(
             "disabled",
             "the row at half opacity (setting/item.rs, SettingItem), and the track at half alpha within it (gpui-component/switch.rs, Switch)",
         ),
-        (true, false, Some(r)) => info.color(claim(
-            "track",
-            "checked_background",
-            stated(r.switch.checked_background),
-            "showcase",
-        )),
+        (true, false, Some(on)) => info.color(on),
         (true, false, None) => info.color(claim(
             "track",
             "primary",
@@ -2044,7 +2049,7 @@ pub fn preference_switch(
     )
     .not_themeable(
         "on track",
-        "primary by default; Switch::color replaces it, and the showcase hands it variants::switch_color, the model's switch.checked_background, where a native theme is installed (gpui-component/switch.rs, Switch; native-theme-gpui/variants.rs, switch_color)",
+        "primary by default; Switch::color replaces it, and the showcase hands it next::variants::switch_color, the model's switch.track(CHECKED).fill, where a 0.8.0 theme that states it is installed (gpui-component/switch.rs, Switch; native-theme-gpui/next/variants.rs, switch_color)",
     )
     .instance(
         "preference",

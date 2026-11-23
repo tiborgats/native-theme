@@ -250,32 +250,12 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
     ),
     (
-        "dialog",
-        "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_width as the least width, which the width upstream sets after the refinement keeps, min_height, max_height, border.corner_radius, and background_color and border.color over the window's background and border upstream paints the surface with first; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
-    ),
-    (
-        "dialog_entrance",
-        "dialog.entrance as the nearest entrance gpui-component draws, through Dialog::entrance and AlertDialog::entrance: DialogEntrance::Fade, a fade in place, for both styles the model has. scale_fade loses its scale, since gpui-component has no scaling entrance, and fade_rise its rise, since FadeSlide settles from just above the dialog's place instead (dialog/entrance.rs, DialogEntrance; dialog/dialog.rs, Dialog::entrance)",
-    ),
-    (
-        "dialog_title",
-        "dialog.title_font including its colour, which displaces nothing, upstream setting none on the title, and defaults.line_height as the line height, which replaces upstream's relative(1.25) (dialog/title.rs, RenderOnce for DialogTitle: line_height then refine_style)",
-    ),
-    (
         "group_box_content",
         "the card.border.padding sides the theme states, corner_radius, line_width, color, and card.background_color -- refined last, so the radius, the edge and the fill drawn are the card's, not upstream's radius or the Fill variant's group_box token (group_box.rs, GroupBox)",
     ),
     (
         "accordion_title",
         "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (gpui-component/accordion.rs, AccordionItem::render)",
-    ),
-    (
-        "select",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui/geometry.rs, select)",
-    ),
-    (
-        "combobox",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font (native-theme-gpui/geometry.rs, combobox)",
     ),
     (
         "list_header_height",
@@ -292,10 +272,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "scrollbar_gutter",
         "scrollbar.groove_width as right padding where scrollbar.overlay_mode is false, and nothing where it is true, because gpui-component overlays the bar on the scroll area instead of putting it beside the content",
-    ),
-    (
-        "dialog_max_width",
-        "dialog.max_width, which caps the width: a Dialog's through Dialog::max_w (dialog/dialog.rs, Dialog::max_w), and an AlertDialog's, which has no max_w of its own, through Styled::max_w, landing on the surface with the rest of the refinement (dialog/alert_dialog.rs, AlertDialog; dialog/dialog.rs, Dialog::render)",
     ),
     (
         "default_button_rest",
@@ -500,6 +476,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "select",
         "combo_box.field(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1; upstream's height where the theme states none), combo_box.field(NONE).min_size[0] as the least width, the padding sides combo_box.field(NONE) states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, its corner radius and stroke width, and combo_box.label(NONE)'s font -- and, unlike geometry::combobox, its colour as well (native-theme-gpui/geometry.rs, select)",
+    ),
+    (
+        "combobox",
+        "combo_box.field(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1; upstream's height where the theme states none), combo_box.field(NONE).min_size[0] as the least width, the padding sides combo_box.field(NONE) states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, its corner radius and stroke width, and combo_box.label(NONE)'s family, size, weight and style but not its colour (native-theme-gpui/geometry.rs, combobox)",
     ),
     (
         "combo_box_fill",

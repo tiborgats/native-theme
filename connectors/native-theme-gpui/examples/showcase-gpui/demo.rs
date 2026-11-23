@@ -1490,19 +1490,20 @@ pub(crate) fn status_bar(
 }
 
 /// The preset switch: a searchable `Combobox` over `state`'s presets,
-/// refined by `geometry::combobox`, as wide as the theme settings it is in.
+/// refined by `next::geometry::combobox`, as wide as the theme settings it
+/// is in.
 pub(crate) fn preset_combobox(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     state: &Entity<ComboboxState<PresetDelegate>>,
 ) -> Stateful<Div> {
     let mut combobox_info = info::preset_combobox(cx.theme(), next_resolved(cx));
-    let combobox = native_info(
+    let combobox = next_native_info(
         Combobox::new(state)
             .placeholder("Pick a preset…")
             .search_placeholder("Filter by name or key…"),
         cx,
-        geometry::combobox,
+        next::geometry::combobox,
         "combobox",
         &mut combobox_info,
     );
@@ -1512,19 +1513,19 @@ pub(crate) fn preset_combobox(
         .info(ui, "chrome-settings-preset", combobox_info)
 }
 
-/// The colour-mode `Select` over `state`, refined by `geometry::select`, as
-/// wide as the theme settings it is in: System, Light and Dark, and the
-/// choice dispatches `SetColorMode` (`Showcase::new`).
+/// The colour-mode `Select` over `state`, refined by
+/// `next::geometry::select`, as wide as the theme settings it is in: System,
+/// Light and Dark, and the choice dispatches `SetColorMode` (`Showcase::new`).
 pub(crate) fn color_mode_select(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
     let mut select_info = info::color_mode_select(cx.theme(), next_resolved(cx));
-    let select = native_info(
+    let select = next_native_info(
         Select::new(state),
         cx,
-        geometry::select,
+        next::geometry::select,
         "select",
         &mut select_info,
     );
@@ -1534,8 +1535,9 @@ pub(crate) fn color_mode_select(
         .info(ui, "chrome-settings-color-mode", select_info)
 }
 
-/// The icon-theme `Select` over `state`, refined by `geometry::select`, as
-/// wide as the theme settings it is in; where the system icon theme cannot be
+/// The icon-theme `Select` over `state`, refined by
+/// `next::geometry::select`, as wide as the theme settings it is in; where
+/// the system icon theme cannot be
 /// detected, `unavailable` gives the reason, which the Select shows in a
 /// tooltip built as [`built_tooltip_button`]'s is, and its info in a `system`
 /// line: the `system` row's label is short, `system (unavailable)`
@@ -1550,10 +1552,10 @@ pub(crate) fn icon_set_select(
     if let Some(reason) = &unavailable {
         select_info = select_info.instance("system", reason.clone());
     }
-    let select = native_info(
+    let select = next_native_info(
         Select::new(state),
         cx,
-        geometry::select,
+        next::geometry::select,
         "select",
         &mut select_info,
     );
@@ -1595,11 +1597,10 @@ pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 
      gpui-component's theme colours and the connector's own widgets are drawn from the 0.8.0 \
      theme with the palette. Still read from the 0.7.2 preset, which has no palettes, until \
      their pages move to the 0.8.0 model: the button variant and rest fill the showcase gives \
-     the Basic page's default-button sample, the checked track of the Preferences Switches \
-     built without the widgets feature, and the showcase's own \
-     refinements -- its colours, geometry, menus and the side panel's padding and label font.";
+     the Basic page's default-button sample, and the showcase's own refinements on the pages \
+     and in the inspector not yet moved -- their colours, geometry and the inspector's text.";
 
-/// The palette Select over `state`, refined by `geometry::select`, as wide
+/// The palette Select over `state`, refined by `next::geometry::select`, as wide
 /// as the theme settings it is in: `none`, the theme's own colours, and the
 /// bundled palettes (`support::palette_rows`); the choice installs the theme
 /// again with the palette laid over it (`Showcase::choose_palette`). Its
@@ -1616,10 +1617,10 @@ pub(crate) fn palette_select(
         select_info =
             select_info.instance("set aside", crate::support::palette_set_aside_text(palette));
     }
-    let select = native_info(
+    let select = next_native_info(
         Select::new(state),
         cx,
-        geometry::select,
+        next::geometry::select,
         "select",
         &mut select_info,
     );
@@ -3017,21 +3018,11 @@ pub(crate) fn resize_handles(
 // Overlays (spec §2.8) and the theme-error Alert (spec §2.5)
 // ---------------------------------------------------------------------------
 
-/// The entrance `geometry::dialog_entrance` gives the installed theme's
-/// `dialog.entrance`, for every Dialog and AlertDialog the showcase opens;
-/// `None` where the theme states none, and the dialog keeps upstream's.
-/// Counted in the self-tests (`THEMED_ENTRANCES`).
-fn themed_entrance(cx: &App) -> Option<DialogEntrance> {
-    #[cfg(test)]
-    THEMED_ENTRANCES.with(|reads| reads.set(reads.get().saturating_add(1)));
-    native_value(cx, geometry::dialog_entrance).flatten()
-}
-
-/// [`themed_entrance`] on the 0.8.0 model: what
-/// `next::geometry::dialog_entrance` gives the installed 0.8.0 theme's
-/// `dialog.entrance`, `Ok(None)` where the theme states none, and the dialog
-/// keeps upstream's; `None` before `next::apply` ran. Counted in
-/// `THEMED_ENTRANCES` as [`themed_entrance`] is.
+/// The entrance `next::geometry::dialog_entrance` gives the installed 0.8.0
+/// theme's `dialog.entrance`, for every Dialog and AlertDialog the showcase
+/// opens: `Ok(None)` where the theme states none, and the dialog keeps
+/// upstream's; `None` before `next::apply` ran. Counted in the self-tests
+/// (`THEMED_ENTRANCES`).
 fn next_themed_entrance(cx: &App) -> Option<next::Mapped<Option<DialogEntrance>>> {
     #[cfg(test)]
     THEMED_ENTRANCES.with(|reads| reads.set(reads.get().saturating_add(1)));
@@ -3056,52 +3047,14 @@ fn next_applies<T>(
 #[cfg(test)]
 thread_local! {
     /// How often a dialog's build read the theme's entrance
-    /// ([`themed_entrance`]) on this thread; a test reads how much a build
-    /// adds to it.
+    /// ([`next_themed_entrance`]) on this thread; a test reads how much a
+    /// build adds to it.
     pub(crate) static THEMED_ENTRANCES: std::cell::Cell<usize> =
         const { std::cell::Cell::new(0) };
 }
 
-/// `dialog` refined by `geometry::dialog`, capped at
-/// `geometry::dialog_max_width` and entering as `entrance`, the theme's
-/// ([`themed_entrance`]), each recorded in `info` where it applies.
-fn dialog_frame(
-    dialog: Dialog,
-    entrance: Option<DialogEntrance>,
-    cx: &App,
-    info: &mut WidgetInfo,
-) -> Dialog {
-    let dialog = native_info(dialog, cx, geometry::dialog, "dialog", info);
-    let dialog = match entrance {
-        Some(entrance) => {
-            *info = std::mem::take(info).geometry("dialog_entrance");
-            dialog.entrance(entrance)
-        }
-        None => dialog,
-    };
-    match native_value(cx, geometry::dialog_max_width) {
-        Some(width) => {
-            *info = std::mem::take(info).geometry("dialog_max_width");
-            dialog.max_w(width)
-        }
-        None => dialog,
-    }
-}
-
-/// A `DialogTitle` reading `text`, refined by `geometry::dialog_title`,
-/// recorded in `info`.
-fn dialog_title(cx: &App, text: &'static str, info: &mut WidgetInfo) -> DialogTitle {
-    native_info(
-        DialogTitle::new().child(text),
-        cx,
-        geometry::dialog_title,
-        "dialog_title",
-        info,
-    )
-}
-
-/// [`dialog_frame`] on the 0.8.0 model: `dialog` refined by
-/// `next::geometry::dialog`, capped at `next::geometry::dialog_max_width`
+/// `dialog` refined by `next::geometry::dialog`, capped at
+/// `next::geometry::dialog_max_width`
 /// where the theme states a maximum width, and entering as `entrance`, the
 /// theme's ([`next_themed_entrance`]), each recorded in `info` where it
 /// applies, and where the theme states a value gpui cannot take, the home
@@ -3133,8 +3086,8 @@ fn next_dialog_frame(
     }
 }
 
-/// [`dialog_title`] on the 0.8.0 model: a `DialogTitle` reading `text`,
-/// refined by `next::geometry::dialog_title`, recorded in `info`.
+/// A `DialogTitle` reading `text`, refined by
+/// `next::geometry::dialog_title`, recorded in `info`.
 fn next_dialog_title(cx: &App, text: &'static str, info: &mut WidgetInfo) -> DialogTitle {
     next_native_info(
         DialogTitle::new().child(text),
@@ -3207,15 +3160,15 @@ pub(crate) fn command_palette(
     set: SharedString,
 ) -> Dialog {
     let groups = palette_groups(groups);
-    let entrance = themed_entrance(cx);
+    let entrance = next_themed_entrance(cx);
     let mut dialog_info = info::palette_dialog(
         cx.theme(),
         cx.reduce_motion(),
-        entrance.is_some(),
-        old_native(cx).is_some(),
+        next_entrance_applies(&entrance),
+        next_applies(cx, next::geometry::dialog),
     );
-    let dialog = dialog_frame(dialog, entrance, cx, &mut dialog_info);
-    let title = dialog_title(cx, "Command Palette", &mut dialog_info)
+    let dialog = next_dialog_frame(dialog, entrance, cx, &mut dialog_info);
+    let title = next_dialog_title(cx, "Command Palette", &mut dialog_info)
         .info(ui, "overlay-palette-dialog", dialog_info)
         .debug_selector(|| OVERLAY_PALETTE_TITLE.into());
     let (ui, state) = (ui.clone(), state.clone());
@@ -3491,15 +3444,13 @@ fn preference_item(
                 .info(&ui, selector, switch_info)
                 .debug_selector(move || selector.into());
         }
-        let native = old_native(cx);
-        let resolved = native.as_ref().map(|n| n.resolved);
+        let resolved = next_resolved(cx);
+        let checked_background = resolved.and_then(|r| next::variants::switch_color(r).ok());
         Switch::new(selector)
             .checked(checked)
             .disabled(options.is_disabled())
             .with_size(options.size())
-            .when_some(native.map(variants::switch_color), |switch, color| {
-                switch.color(color)
-            })
+            .when_some(checked_background, |switch, color| switch.color(color))
             .on_click(move |on: &bool, _window, cx| {
                 change_preferences(&clicked, cx, |overrides| pref.set(overrides, *on));
             })
@@ -3567,10 +3518,10 @@ pub(crate) fn preferences(
     )
     .description("text_scaling_factor: the theme's font sizes are multiplied by it")
     .disabled(disabled);
-    let group = native_info(
+    let group = next_native_info(
         SettingGroup::new(),
         cx,
-        geometry::scrollbar_gutter,
+        next::geometry::scrollbar_gutter,
         "scrollbar_gutter",
         &mut settings_info,
     )

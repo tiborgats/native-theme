@@ -1840,22 +1840,24 @@ fn use_preset_scaled(
 }
 
 /// The narrowest the theme settings' triggers can be: the minimum width
-/// `geometry::select` and `geometry::combobox` give them, `None` where no
-/// native theme is installed or they give none. A trigger takes the
-/// settings' width and this minimum where that is wider, and its wrapper,
-/// which the probes are on, is the settings' width either way, so a trigger
-/// wider than the settings does not show in the wrapper's bounds.
+/// `next::geometry::select` and `next::geometry::combobox` give them under
+/// the installed 0.8.0 theme, `None` where none is installed or they give
+/// none. A trigger takes the settings' width and this minimum where that is
+/// wider, and its wrapper, which the probes are on, is the settings' width
+/// either way, so a trigger wider than the settings does not show in the
+/// wrapper's bounds.
 fn settings_trigger_min_width(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
 ) -> Option<Pixels> {
     read(cx, showcase, |_this, cx| {
         [
-            native_value(cx, geometry::select),
-            native_value(cx, geometry::combobox),
+            crate::support::next_geometry(cx, next::geometry::select),
+            crate::support::next_geometry(cx, next::geometry::combobox),
         ]
         .into_iter()
         .flatten()
+        .filter_map(Result::ok)
         .filter_map(|style| match style.min_size.width {
             Some(Length::Definite(DefiniteLength::Absolute(AbsoluteLength::Pixels(w)))) => Some(w),
             _ => None,
