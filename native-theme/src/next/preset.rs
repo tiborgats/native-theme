@@ -213,8 +213,7 @@ impl Palettes {
 /// scaffolding until each preset's builder lands, not a theme to draw with.
 //
 // Not built yet, each with its milestone (plan, M1): `from_system`,
-// `from_system_with_preset`, `from_system_or_default`; `from_toml`;
-// `diagnostics`.
+// `from_system_with_preset`, `from_system_or_default`; `diagnostics`.
 #[derive(Clone)]
 pub struct Theme {
     preset: Preset,

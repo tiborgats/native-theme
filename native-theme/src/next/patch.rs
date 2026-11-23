@@ -1963,7 +1963,7 @@ impl ThemePatch {
 
 /// The checks of [`ThemePatch::validate`], each returning the
 /// [`Error::InvalidTheme`] of the value at `path` where it fails.
-mod check {
+pub(crate) mod check {
     use super::{
         Color, CornerRadius, Corners, Edges, Error, FocusIndicator, GradientStop, Paint,
         PaintLayer, ShadowLayer, Stroke, Timing, Transform, Transition,
@@ -2011,7 +2011,7 @@ mod check {
     }
 
     /// A colour: finite channels, its alpha an opacity.
-    pub(super) fn color(path: &str, color: &Color) -> Result<(), Error> {
+    pub(crate) fn color(path: &str, color: &Color) -> Result<(), Error> {
         finite(&format!("{path}.r"), &color.r)?;
         finite(&format!("{path}.g"), &color.g)?;
         finite(&format!("{path}.b"), &color.b)?;

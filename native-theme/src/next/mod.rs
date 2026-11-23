@@ -126,6 +126,8 @@ mod rules;
 #[cfg(feature = "serde")]
 mod serial;
 mod style;
+#[cfg(feature = "toml")]
+mod theme_file;
 mod typography;
 mod widgets;
 mod window;

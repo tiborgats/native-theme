@@ -69,6 +69,9 @@ pub enum Error {
         /// What is wrong with it.
         reason: String,
     },
+    /// The text is not TOML.
+    #[cfg(feature = "toml")]
+    Toml(toml::de::Error),
     /// A file could not be read.
     Io(std::io::Error),
 }
@@ -100,6 +103,8 @@ impl Error {
             | Error::UnknownPalette { .. }
             | Error::InvalidColor { .. } => ErrorKind::Parse,
             Error::InvalidTheme { .. } => ErrorKind::Validation,
+            #[cfg(feature = "toml")]
+            Error::Toml(_) => ErrorKind::Parse,
             Error::Io(_) => ErrorKind::Io,
         }
     }
@@ -127,6 +132,8 @@ impl fmt::Display for Error {
             Error::InvalidTheme { path, reason } => {
                 write!(f, "invalid theme value {path}: {reason}")
             }
+            #[cfg(feature = "toml")]
+            Error::Toml(err) => write!(f, "not TOML: {err}"),
             Error::Io(err) => write!(f, "I/O error: {err}"),
         }
     }
@@ -136,6 +143,8 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Error::Io(err) => Some(err),
+            #[cfg(feature = "toml")]
+            Error::Toml(err) => Some(err),
             _ => None,
         }
     }
@@ -144,6 +153,13 @@ impl std::error::Error for Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Error::Io(err)
+    }
+}
+
+#[cfg(feature = "toml")]
+impl From<toml::de::Error> for Error {
+    fn from(err: toml::de::Error) -> Self {
+        Error::Toml(err)
     }
 }
 
