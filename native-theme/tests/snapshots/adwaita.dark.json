@@ -1011,6 +1011,7 @@
     "tab": {
       "base": {
         "fill": "#222226",
+        "stroke": "none",
         "padding": {
           "top": 3.0,
           "right": 12.0,

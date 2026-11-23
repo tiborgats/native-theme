@@ -169,6 +169,12 @@ fn main() -> eframe::Result {
     {
         cli::refuse(&error);
     }
+    // `--palette` waits for this showcase's move to the 0.8.0 model.
+    if cli.palette.is_some()
+        && let Err(error) = cli::palette_support(Kind::Egui)
+    {
+        cli::refuse(&error);
+    }
     eframe::run_native(
         WINDOW_TITLE,
         native_options(cli.capturing()),

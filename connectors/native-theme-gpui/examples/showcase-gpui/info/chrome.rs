@@ -728,7 +728,7 @@ pub fn side_panel(
         )
         .instance(
             "holds",
-            "from the top: the theme settings, a Separator, then the inspector -- its TabBar, and below it its content, which fills the rest of the panel's height and scrolls, the bar kept clear of it by geometry::scrollbar_gutter as on the content panel",
+            "from the top: the theme settings, a Separator, then the inspector -- its TabBar, and below it its content, which fills the rest of the panel's height and scrolls, the bar kept clear of it by geometry::scrollbar_gutter as on the content panel. Where the three are taller than the panel (a large text scale), they scroll as one, the inspector its TabBar's height, so every control stays reachable in the fixed window",
         )
         .instance(
             "padding",
@@ -1157,6 +1157,24 @@ pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInf
         .instance(
             "shows",
             "the mode chosen, whichever way it was chosen: here, from the Theme menu, from the command palette or by the --variant flag (Showcase::show_color_mode)",
+        )
+        .instance(
+            "width",
+            "the settings': the trigger takes it and truncates its text (gpui-component/select.rs, SelectState::render), so its text never widens it past the side panel",
+        )
+}
+
+/// The theme settings' palette Select: the Inputs page's Select, choosing
+/// the palette laid over the installed theme.
+pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    super::inputs::select(t, native)
+        .instance(
+            "palettes",
+            "none, the theme's own colours, then the palettes native_theme::next::Palette::BUNDLED_NAMES names; choosing one installs the chosen theme again with it laid over (next::Theme::with_palette), which locks the scheme to the palette's, so the colour mode chosen does not change it while the palette is chosen (Showcase::choose_palette)",
+        )
+        .instance(
+            "old model",
+            "under a palette, gpui-component's colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette; the showcase's own refinements -- native_color, native_geometry, MenuLook and the side panel's padding and label font (sidebar.border.padding, sidebar.font) -- read the 0.7.2 theme of the same choice, which has no palettes, so they show the preset alone, in the palette's scheme (support::OldModel), until their page group moves to the 0.8.0 model; the tooltip says so",
         )
         .instance(
             "width",
@@ -1847,7 +1865,7 @@ pub fn preferences_settings(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "preferences",
-            "the four AccessibilityPreferences fields of the installed native theme; a change is installed with native_theme_gpui::apply_accessibility, which rebuilds the theme from its stored variant (native-theme-gpui lib.rs, apply_accessibility). The desktop's own settings are not changed. A preference set here stays across theme switches and reloads; the others are the desktop's, read again at every theme install, so a change made on the desktop while the showcase runs lands with the next switch or reload",
+            "the four AccessibilityPreferences fields the installed native theme was asked for; a change is recorded, and the showcase's _preferences observer installs the theme again: resolved for the context they make and installed with native_theme_gpui::next::apply (Showcase::install). A theme without the contrast level asked for is resolved at the nearest level below it, which the High contrast switch's info says. The desktop's own settings are not changed. A preference set here stays across theme switches and reloads; the others are the desktop's, read again at every theme install, so a change made on the desktop while the showcase runs lands with the next switch or reload",
         )
         .instance(
             "text scale",
@@ -1911,7 +1929,7 @@ pub fn preference_switch(
     .instance(
         "preference",
         match field {
-            "reduce_motion" => "reduce_motion: a click installs the preferences with it flipped, and apply_accessibility forwards it to gpui's reduced motion; off is no request: it undoes only the connector's own switch (native-theme-gpui lib.rs, forward_reduce_motion), so an OS request keeps motion reduced whatever the switch shows",
+            "reduce_motion" => "reduce_motion: a click installs the preferences with it flipped: the theme is resolved again with its motion reduced or full, and native_theme_gpui::next::apply forwards it to gpui's reduced motion; off is no request: it undoes only the connector's own switch (native-theme-gpui lib.rs, forward_reduce_motion), so an OS request keeps motion reduced whatever the switch shows",
             "high_contrast" => "high_contrast: a click installs the preferences with it flipped",
             _ => "reduce_transparency: a click installs the preferences with it flipped",
         },

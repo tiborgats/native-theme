@@ -35,28 +35,29 @@ use crate::{
     BUTTONS_LOADING_NO_ICON, BUTTONS_PRIMARY, BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART,
     CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART, CHARTS_PIE_CHART, CHARTS_RADAR_CHART,
     CHARTS_SANKEY_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE, CHROME_LABEL_ICON_THEME,
-    CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR, CHROME_PAGE_TABS, CHROME_SIDE_PANEL,
-    CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE, CHROME_SPLITTER_LINE, CHROME_STATUS_BAR,
-    CHROME_THEME_SETTINGS, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE,
-    CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, CONTENT_ALERT, CONTENT_PANEL,
-    CONTENT_SCROLL, DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER,
-    FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
-    FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
-    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA,
-    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE,
-    LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
-    LAYOUT_FOLDER_TAB_DISABLED, LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS,
-    LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
-    LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
-    LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR, LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK,
-    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
-    OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
-    OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, POINTER_SHIELD,
-    PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND,
-    PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT,
-    STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
+    CHROME_LABEL_MODE, CHROME_LABEL_PALETTE, CHROME_LABEL_THEME, CHROME_MENU_BAR, CHROME_PAGE_TABS,
+    CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SEPARATOR,
+    CHROME_SIDE_PANEL_TOGGLE, CHROME_SPLITTER_LINE, CHROME_STATUS_BAR, CHROME_THEME_SETTINGS,
+    CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES,
+    CHROME_TOOLBAR_RELOAD, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, DATA_PAGINATION,
+    DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT,
+    FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER,
+    FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
+    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS,
+    INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE,
+    LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_FOLDER_TAB_DISABLED,
+    LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS, LAYOUT_GROUP_BOX_NORMAL,
+    LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID,
+    LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED, LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR,
+    LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
+    OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
+    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM,
+    OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT,
+    PAGE_WIDTH_PX, POINTER_SHIELD, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG,
+    PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE,
+    PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_PALETTE,
+    PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
+    STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
     TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
 };
 use native_theme::icons::IconSetChoice;
@@ -297,6 +298,41 @@ fn use_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &
     assert!(installed, "the preset {preset:?} did not install");
 }
 
+/// Lay the palette of the palette Select's row `row` over the installed
+/// theme, as choosing it in the theme settings does
+/// (`Showcase::choose_palette`), and draw the frame after;
+/// `support::NO_PALETTE` takes the palette away. A palette that is not laid
+/// over fails the test.
+fn lay_palette(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, row: &str) {
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.choose_palette(row, window, cx);
+            cx.notify();
+        })
+    });
+    cx.run_until_parked();
+    draw(cx);
+    let laid = read(cx, showcase, |this, _| this.palette);
+    assert_eq!(
+        laid,
+        crate::support::palette_of_row(row),
+        "the palette {row:?} was not laid over the installed theme"
+    );
+}
+
+/// Install `preset` as [`use_preset`] does with the bundled palette
+/// `palette` laid over it ([`lay_palette`]): the 0.8.0 form of a community
+/// preset of the 0.7.2 model, whose colours are that palette.
+fn use_preset_with_palette(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    preset: &str,
+    palette: &str,
+) {
+    use_preset(cx, showcase, preset);
+    lay_palette(cx, showcase, palette);
+}
+
 /// Ask for a preset that does not exist, to provoke a theme error: the
 /// install must fail.
 fn use_missing_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str) {
@@ -323,12 +359,14 @@ fn install_by_name(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, name
 /// draws its scrollbars as overlays; a zero width means no native theme is
 /// installed, which the caller asserts against.
 fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pixels, bool) {
-    read(cx, showcase, |_this, cx| match cx.native() {
-        Some(n) => (
-            px(native_theme_gpui::scrollbar_groove_width(n.resolved)),
-            n.resolved.scrollbar.overlay_mode,
-        ),
-        None => (px(0.), false),
+    read(cx, showcase, |_this, cx| {
+        match crate::support::old_native(cx) {
+            Some(n) => (
+                px(native_theme_gpui::scrollbar_groove_width(n.resolved)),
+                n.resolved.scrollbar.overlay_mode,
+            ),
+            None => (px(0.), false),
+        }
     })
 }
 
@@ -1486,7 +1524,7 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
         let model = read(&mut cx, &showcase, |_this, cx| {
-            cx.native()
+            crate::support::old_native(cx)
                 .map(|n| (n.resolved.toolbar.bar_height, n.resolved.toolbar.item_gap))
         });
         assert!(
@@ -1603,12 +1641,12 @@ fn the_toolbar_holds_the_actions(cx: &mut TestAppContext) {
 }
 
 /// The toolbar row is padded where the theme states no padding for it (spec
-/// §3.1). nord, a colour-scheme preset, states no `toolbar.border` side, so
-/// each side is `layout.container_margin`; with that unstated too, the
-/// showcase's own `TOOLBAR_PADDING`, which the row's info names. Under
+/// §3.1). ios-13, here under the nord palette, states no `toolbar.border`
+/// side, so each side is `layout.container_margin`; with that unstated too,
+/// the showcase's own `TOOLBAR_PADDING`, which the row's info names. Under
 /// kde-breeze and windows-11, which state their sides, the stated left side
-/// stands. nord states no `toolbar.bar_height` (windows-11 does, 48px), so
-/// under nord the row is as tall as its buttons and its padding, and the
+/// stands. ios-13 states no `toolbar.bar_height` (windows-11 does, 48px), so
+/// under it the row is as tall as its buttons and its padding, and the
 /// first button's top is the top padding.
 #[gpui::test]
 fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
@@ -1622,7 +1660,7 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
     };
     let toolbar_padding = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |_this, cx| {
-            cx.native().map(|n| n.resolved.toolbar.border.padding)
+            crate::support::old_native(cx).map(|n| n.resolved.toolbar.border.padding)
         })
     };
     for preset in ["kde-breeze", "windows-11"] {
@@ -1639,24 +1677,24 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
         );
     }
 
-    use_preset(&mut cx, &showcase, "nord");
+    use_preset_with_palette(&mut cx, &showcase, "ios-13", "nord");
     assert_eq!(
         toolbar_padding(&mut cx),
         Some(native_theme::theme::ResolvedPadding::default()),
-        "nord states a toolbar padding side, so the fallback is not what is measured"
+        "ios-13 states a toolbar padding side, so the fallback is not what is measured"
     );
     let margin = read(&mut cx, &showcase, |this, _| {
         geometry::container_margin(&this.layout)
     });
     assert!(
         margin.is_some(),
-        "nord states no container_margin, so the showcase's constant is measured twice"
+        "ios-13 states no container_margin, so the showcase's constant is measured twice"
     );
     let (left, top) = inset(&mut cx);
     assert_eq!(
         (Some(left), Some(top)),
         (margin, margin),
-        "nord: the toolbar is not padded by layout.container_margin"
+        "ios-13 + nord: the toolbar is not padded by layout.container_margin"
     );
 
     cx.update(|_window, cx| {
@@ -1708,17 +1746,17 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
         read(&mut cx, &showcase, |this, _| this
             .current_theme_name
             .clone()),
-        "nord",
-        "the showcase starts on nord, so choosing it proves nothing"
+        "material-3",
+        "the showcase starts on material-3, so choosing it proves nothing"
     );
     // Typing filters the rows and puts the cursor on the first match
-    // (list/list.rs, ListState::start_search), which Enter takes. Nord lands
-    // in row 0, where `default` already is: the case gpui-component before
-    // 0.9.0 missed by telling a selection apart by its filtered row indices
-    // alone; 0.9.0 compares the selection's values (gpui-component
+    // (list/list.rs, ListState::start_search), which Enter takes. Material
+    // lands in row 0, where `default` already is: the case gpui-component
+    // before 0.9.0 missed by telling a selection apart by its filtered row
+    // indices alone; 0.9.0 compares the selection's values (gpui-component
     // combobox.rs, ComboboxState::new).
     click(&mut cx, PROBE_COMBOBOX);
-    cx.simulate_input("nord");
+    cx.simulate_input("material");
     cx.run_until_parked();
     draw(&mut cx);
     cx.simulate_keystrokes("enter");
@@ -1728,86 +1766,30 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
         read(&mut cx, &showcase, |this, _| this
             .current_theme_name
             .clone()),
-        "nord",
-        "choosing nord in the theme settings' Combobox did not install it"
+        "material-3",
+        "choosing material-3 in the theme settings' Combobox did not install it"
     );
 }
 
-/// The presets the side panel's fit is checked under: every bundled preset
-/// (`Theme::list_presets`), each offered on some platform -- the preset
-/// switch offers those `Theme::list_presets_for_platform` gives, plus
-/// `default`, the desktop's own theme, which is built on one of them and
-/// which a test cannot reproduce -- with the font DPI it is resolved at.
-///
-/// A native preset is resolved at its own platform's DPI, as the seams test
-/// does (tests/seams.rs, `NATIVE`): macOS at 72, where a point is a pixel
-/// (native-theme `detect.rs`, `detect_system_font_dpi`), the others at 96.
-/// A native preset is only offered on its own platform, so macos-monterey
-/// resolved on a 96 DPI Linux host is not a configuration the showcase
-/// shows; ios-13 is offered on macOS too (its `platforms` are `macos` and
-/// `ios`), so it is resolved at 72. A colour-scheme preset, offered
-/// everywhere (no `platforms`), keeps the host's DPI (`None`), as
-/// `ResolutionContext::from_system` gives it.
-fn side_panel_presets() -> Vec<(&'static str, Option<f32>)> {
-    native_theme::theme::Theme::list_presets()
-        .iter()
-        .map(|info| {
-            let dpi = if info.platforms.is_empty() {
-                None
-            } else if info.platforms.iter().any(|p| *p == "macos" || *p == "ios") {
-                Some(72.0)
-            } else {
-                Some(96.0)
-            };
-            (info.key, dpi)
-        })
-        .collect()
-}
-
-/// Install `preset` as `use_preset` does, then re-install its theme resolved
-/// at `dpi`, or at the host's DPI where it is `None`, with the text scaled by
-/// `text_scale`: the point sizes it states become pixels at that DPI, as they
-/// do on the platform whose DPI it is. The accessibility preferences are
-/// otherwise the defaults, not the host's: `native_theme::detect::accessibility_preferences`,
-/// which the showcase's own preset path reads, would scale the text by
-/// whatever the desktop the test runs on is set to (native-theme-gpui
-/// lib.rs, `to_theme`).
+/// Install `preset` as `use_preset` does, with the OS's accessibility
+/// preferences the defaults, not the host's (`os_preferences_for_test`):
+/// the host's would scale the text by whatever the desktop the test runs on
+/// is set to. Then scale the text by `text_scale` as the Preferences sheet
+/// scales it ([`scale_text`]), so the showcase resolves the 0.8.0 theme
+/// again for that context and installs it (`Showcase::install`).
 fn use_preset_scaled(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
     preset: &str,
-    dpi: Option<f32>,
     text_scale: f32,
 ) {
-    use_preset(cx, showcase, preset);
-    let font_dpi = dpi.unwrap_or_else(|| native_theme::ResolutionContext::from_system().font_dpi);
     cx.update(|_window, cx| {
-        let is_dark = showcase.read(cx).is_dark;
-        let mode = if is_dark {
-            native_theme::theme::ColorMode::Dark
-        } else {
-            native_theme::theme::ColorMode::Light
-        };
-        let resolved = native_theme::theme::Theme::preset(preset)
-            .expect("the preset loads")
-            .into_variant(mode)
-            .expect("the preset has the variant")
-            .into_resolved(&native_theme::ResolutionContext {
-                font_dpi,
-                ..native_theme::ResolutionContext::for_tests()
-            })
-            .expect("the preset resolves");
-        let mut prefs = native_theme::AccessibilityPreferences::default();
-        prefs.text_scaling_factor = text_scale;
-        native_theme_gpui::apply(
-            native_theme_gpui::to_theme(&resolved, preset, is_dark, &prefs),
-            &resolved,
-            &prefs,
-            cx,
-        );
+        showcase.update(cx, |this, _| {
+            this.os_preferences_for_test = Some(native_theme::AccessibilityPreferences::default())
+        })
     });
-    cx.run_until_parked();
-    draw(cx);
+    use_preset(cx, showcase, preset);
+    scale_text(cx, showcase, text_scale);
 }
 
 /// The narrowest the theme settings' triggers can be: the minimum width
@@ -1836,49 +1818,73 @@ fn settings_trigger_min_width(
 }
 
 /// The side panel holds, top to bottom (spec S2): the theme settings --
-/// Theme, Mode and Icon theme, each a label above its control, the gaps
-/// `layout.widget_gap` -- then a Separator, then the inspector, its TabBar
-/// first, down to the panel's bottom. The panel opens `LEFT_PANEL_WIDTH`
-/// wide, and everything in it fits that width: each control is a trigger
-/// that takes the settings' width and truncates its text (select.rs,
-/// `SelectState::render`; combobox.rs, `Combobox`), so its text never widens
-/// it, and the narrowest it can be is the minimum its builder gives it,
-/// which the settings have to be at least as wide as
-/// (`settings_trigger_min_width`). Checked under every native preset, at its
-/// platform's DPI, and every colour-scheme preset at the host's
-/// (`side_panel_presets`), whose font sizes differ -- at a text scale of 1,
-/// whatever the host's, so the measurement is the same on every machine
-/// (`use_preset_scaled`) -- and again at a text scale of 2, where every text
-/// grows.
+/// Theme, Palette, Mode and Icon theme, each a label above its control, the
+/// gaps `layout.widget_gap` -- then a Separator, then the inspector, its
+/// TabBar first, down to the panel's bottom. The panel opens
+/// `LEFT_PANEL_WIDTH` wide, and everything in it fits that width: each
+/// control is a trigger that takes the settings' width and truncates its
+/// text (select.rs, `SelectState::render`; combobox.rs, `Combobox`), so its
+/// text never widens it, and the narrowest it can be is the minimum its
+/// builder gives it, which the settings have to be at least as wide as
+/// (`settings_trigger_min_width`). Checked under every platform preset
+/// (`native_theme::next::Preset::ALL`; a palette laid over one changes its
+/// colours alone, none of the sizes measured here), whose font sizes differ
+/// -- at a text scale of 1, whatever the host's, so the measurement is the
+/// same on every machine (`use_preset_scaled`) -- and again at a text scale
+/// of 2, where every text grows. The window's size is fixed, so every
+/// control stays reachable by scrolling: the settings, the Separator and the
+/// inspector are one content in a scroll area that fills the panel, which
+/// stays in the window; each row and the inspector's TabBar are inside that
+/// content, which is at least the area's height, the inspector filling the
+/// rest of it, never shorter than its TabBar and the first lines of its
+/// info (`PanelLook::body_min_height`), and the area scrolls exactly where
+/// the content is taller than it.
 #[gpui::test]
 fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let rows = [
         (CHROME_LABEL_THEME, PROBE_COMBOBOX),
+        (CHROME_LABEL_PALETTE, PROBE_PALETTE),
         (CHROME_LABEL_MODE, PROBE_COLOR_MODE),
         (CHROME_LABEL_ICON_THEME, PROBE_ICON_THEME),
     ];
-    let presets = side_panel_presets();
-    for native in [
-        "kde-breeze",
-        "adwaita",
-        "macos-monterey",
-        "macos-tahoe",
-        "ios-13",
-        "windows-11",
-    ] {
-        assert!(
-            presets
-                .iter()
-                .any(|(key, dpi)| *key == native && dpi.is_some()),
-            "{native} is not among the presets checked as a native one: {presets:?}"
-        );
-    }
     for text_scale in [1.0, 2.0] {
-        for &(preset, dpi) in &presets {
-            use_preset_scaled(&mut cx, &showcase, preset, dpi, text_scale);
+        for preset in native_theme::next::Preset::ALL.iter().map(|p| p.as_str()) {
+            use_preset_scaled(&mut cx, &showcase, preset, text_scale);
+            // The frame the side panel's scroll area asks for where the
+            // content's overflow changed its scrollbar's strip
+            // (`support::gutter_scroll`).
+            cx.run_until_parked();
+            draw(&mut cx);
             let at = format!("{preset} at text scale {text_scale}");
             let panel = bounds_of(&mut cx, CHROME_SIDE_PANEL);
+            let window = cx.update(|window, _| window.viewport_size());
+            assert!(
+                within(panel, Bounds::new(point(px(0.), px(0.)), window)),
+                "{at}: the side panel at {panel:?} runs past the window, {window:?}"
+            );
+            let content = bounds_of(&mut cx, CHROME_SIDE_PANEL_CONTENT);
+            let (area, max_offset) = read(&mut cx, &showcase, |this, _| {
+                (
+                    this.side_panel_scroll.bounds(),
+                    this.side_panel_scroll.max_offset(),
+                )
+            });
+            assert!(
+                within(area, panel),
+                "{at}: the side panel's scroll area at {area:?} is not in the side panel at {panel:?}"
+            );
+            assert!(
+                content.size.height >= area.size.height - px(0.01),
+                "{at}: the side panel's content at {content:?} is shorter than its scroll area at {area:?}"
+            );
+            let taller = content.size.height > area.size.height + px(0.01);
+            assert_eq!(
+                max_offset.y > px(0.),
+                taller,
+                "{at}: the side panel's content at {content:?} scrolls ({max_offset:?}) where it \
+                 is not taller than its scroll area at {area:?}, or does not where it is"
+            );
             // Less the strip it keeps clear for a splitter line wider than
             // the handle's own (demo.rs, `splitter_reserve`).
             let reserve = read(&mut cx, &showcase, |_, cx| {
@@ -1891,8 +1897,9 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
             );
             let settings = bounds_of(&mut cx, CHROME_THEME_SETTINGS);
             assert!(
-                within(settings, panel),
-                "{at}: the theme settings at {settings:?} are not in the side panel at {panel:?}"
+                within(settings, content),
+                "{at}: the theme settings at {settings:?} are not in the side panel's content at \
+                 {content:?}"
             );
             let gap = read(&mut cx, &showcase, |this, _| {
                 geometry::widget_gap(&this.layout)
@@ -1941,10 +1948,14 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
                 ("the inspector", inspector),
             ] {
                 assert!(
-                    within(b, panel),
-                    "{at}: {part} at {b:?} runs past the side panel at {panel:?}"
+                    within(b, content),
+                    "{at}: {part} at {b:?} runs past the side panel's content at {content:?}"
                 );
             }
+            assert!(
+                within(tabs, inspector),
+                "{at}: the inspector's TabBar at {tabs:?} is not in the inspector at {inspector:?}"
+            );
             assert!(
                 above.is_some_and(|last| separator.top() >= last.bottom()),
                 "{at}: the Separator at {separator:?} is not below the last row, which ends at \
@@ -1959,16 +1970,37 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
             // sidebar padding (adwaita), else none.
             let bottom = panel.bottom() - side_panel_padding(&mut cx, &showcase).bottom;
             assert!(
-                (inspector.bottom() - bottom).abs() <= px(0.01),
-                "{at}: the inspector ends at {:?}, not at the side panel's bottom less its \
-                 padding, {bottom:?}",
+                (area.bottom() - bottom).abs() <= px(0.01),
+                "{at}: the side panel's scroll area ends at {:?}, not at the side panel's bottom \
+                 less its padding, {bottom:?}",
+                area.bottom(),
+            );
+            assert!(
+                (inspector.bottom() - content.bottom()).abs() <= px(0.01),
+                "{at}: the inspector ends at {:?}, not at the side panel content's bottom, {:?}",
                 inspector.bottom(),
+                content.bottom(),
+            );
+            let body = read(&mut cx, &showcase, |this, _| {
+                this.panel_look
+                    .as_ref()
+                    .map(crate::inspector::PanelLook::body_min_height)
+            });
+            // Within half a pixel: gpui rounds the layout to whole pixels.
+            assert!(
+                body.is_some_and(|body| inspector.size.height >= tabs.size.height + body - px(0.5)),
+                "{at}: the inspector at {inspector:?} is shorter than its TabBar at {tabs:?} and \
+                 the first lines of its info, {body:?}"
             );
         }
     }
 
     // With widget_gap unstated, the gaps are the showcase's own, and the
-    // settings' info says so.
+    // settings' info says so. At text scale 1, where the settings are
+    // shorter than the side panel: the inspector shows the hovered target
+    // with the smallest area (`InfoRegistry::choose`), and settings that
+    // scroll, taller than the panel around them, would lose to the panel.
+    scale_text(&mut cx, &showcase, 1.0);
     cx.update(|_window, cx| {
         showcase.update(cx, |this, cx| {
             this.layout = native_theme::theme::LayoutTheme::default();
@@ -1986,7 +2018,8 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
         crate::demo::THEME_SETTINGS_GAP,
         "with widget_gap unstated, the settings' gap is not the showcase's own THEME_SETTINGS_GAP"
     );
-    let above = bounds_of(&mut cx, PROBE_COMBOBOX);
+    // The Palette row is the one above the Mode row.
+    let above = bounds_of(&mut cx, PROBE_PALETTE);
     assert_eq!(
         label.top() - above.bottom(),
         crate::demo::THEME_SETTINGS_GAP,
@@ -3415,16 +3448,18 @@ fn names_the_container_margin(info: &WidgetInfo) -> bool {
 /// exactly where it pads a side of their content: where the layout states it
 /// and `card.border.padding` leaves a side unstated, not where the padding
 /// states all four (windows-11 and kde-breeze), which leaves the margin
-/// nothing to pad (the M8 T5 carry-over). Every bundled preset in both
-/// modes, each expectation read from the theme installed.
+/// nothing to pad (the M8 T5 carry-over). Every preset the preset switch
+/// can install (`native_theme::next::Preset::ALL`) in both modes, each
+/// expectation read from the theme installed.
 #[gpui::test]
 fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let mut cases = (false, false);
     for mode in [AppColorMode::Light, AppColorMode::Dark] {
         switch_mode(&mut cx, mode);
-        for preset in native_theme::theme::Theme::list_presets() {
-            use_preset(&mut cx, &showcase, preset.key);
+        for preset in native_theme::next::Preset::ALL {
+            let preset = preset.as_str();
+            use_preset(&mut cx, &showcase, preset);
             let p = resolved_theme(&mut cx, &showcase).card.border.padding;
             let margin = read(&mut cx, &showcase, |this, _| {
                 geometry::container_margin(&this.layout)
@@ -3450,7 +3485,7 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
                 Some(pads),
                 "{} {mode:?}: the card's info {} geometry::container_margin, and the margin \
                  pads {} side of card.border.padding {p:?} (container_margin {margin:?}): {info:?}",
-                preset.key,
+                preset,
                 if pads { "does not record" } else { "records" },
                 if pads { "an unstated" } else { "no" },
             );
@@ -3463,7 +3498,7 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
                     "{} {mode:?}: {group_box}'s info {} geometry::container_margin, and the \
                      margin pads {} side of card.border.padding {p:?} (container_margin \
                      {margin:?}): {info:?}",
-                    preset.key,
+                    preset,
                     if pads { "does not record" } else { "records" },
                     if pads { "an unstated" } else { "no" },
                 );
@@ -4587,16 +4622,17 @@ fn the_side_panel_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
     );
 }
 
-/// The presets the Sidebar samples' icons are checked under: every native
-/// preset and one colour-scheme preset.
-const SIDEBAR_ICON_PRESETS: [&str; 7] = [
-    "kde-breeze",
-    "adwaita",
-    "macos-monterey",
-    "macos-tahoe",
-    "ios-13",
-    "windows-11",
-    "nord",
+/// The presets the Sidebar samples' icons are checked under, each with the
+/// palette Select's row laid over it: every native preset with its own
+/// colours, and material-3 under a bundled palette.
+const SIDEBAR_ICON_PRESETS: [(&str, &str); 7] = [
+    ("kde-breeze", crate::support::NO_PALETTE),
+    ("adwaita", crate::support::NO_PALETTE),
+    ("macos-monterey", crate::support::NO_PALETTE),
+    ("macos-tahoe", crate::support::NO_PALETTE),
+    ("ios-13", crate::support::NO_PALETTE),
+    ("windows-11", crate::support::NO_PALETTE),
+    ("material-3", "nord"),
 ];
 
 /// The Layout page's Sidebar samples' icons fit their items (spec S5),
@@ -4639,8 +4675,8 @@ fn the_sidebar_samples_icons_fit_their_items(cx: &mut TestAppContext) {
     cx.run_until_parked();
     draw(&mut cx);
     show(&mut cx, &showcase, Page::Layout);
-    for preset in SIDEBAR_ICON_PRESETS {
-        use_preset(&mut cx, &showcase, preset);
+    for (preset, palette) in SIDEBAR_ICON_PRESETS {
+        use_preset_with_palette(&mut cx, &showcase, preset, palette);
         let (small, rem) = read(&mut cx, &showcase, |_this, cx| {
             (
                 native_value(cx, geometry::icon_size_small),
@@ -5024,7 +5060,7 @@ fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     let padding = read(&mut cx, &showcase, |_this, cx| {
-        cx.native().map(|n| n.resolved.status_bar.border.padding)
+        crate::support::old_native(cx).map(|n| n.resolved.status_bar.border.padding)
     });
     let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
     assert_eq!(
@@ -5097,8 +5133,7 @@ fn the_status_bar_items_abut(
     environment: &str,
 ) {
     let right_padding = read(cx, showcase, |_this, cx| {
-        cx.native()
-            .and_then(|n| n.resolved.status_bar.border.padding.right)
+        crate::support::old_native(cx).and_then(|n| n.resolved.status_bar.border.padding.right)
     });
     assert!(
         right_padding.is_some(),
@@ -5678,7 +5713,7 @@ fn basic_body_text_takes_the_themes_line_height(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
     let expected = read(&mut cx, &showcase, |_this, cx| {
-        cx.native()
+        crate::support::old_native(cx)
             .map(|n| n.resolved.defaults.font.size * n.resolved.defaults.line_height)
     });
     let body = bounds_of(&mut cx, "basic-type-body").size.height.as_f32();
@@ -5998,7 +6033,7 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let r = read(&mut cx, &showcase, |_, cx| {
-            cx.native_theme().and_then(|nt| nt.resolved(cx)).cloned()
+            crate::support::old_resolved(cx).cloned()
         });
         assert!(r.is_some(), "{preset}: no native theme is installed");
         let Some(r) = r else { return };
@@ -6067,7 +6102,7 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Feedback);
         let r = read(&mut cx, &showcase, |_, cx| {
-            cx.native_theme().and_then(|nt| nt.resolved(cx)).cloned()
+            crate::support::old_resolved(cx).cloned()
         });
         assert!(r.is_some(), "{preset}: no native theme is installed");
         let Some(r) = r else { return };
@@ -6133,7 +6168,8 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
 }
 
 /// The Basic page never needs sideways scrolling under the Linux presets the
-/// captures take, in both modes, and under every bundled preset at a text
+/// captures take, in both modes (catppuccin-mocha as its palette over
+/// kde-breeze), and under every preset the preset switch installs at a text
 /// scale of 2.25 (round 2-3 review, item 15(1)): every control ends inside
 /// the scroll area, and the page lays out the columns its rule counts from
 /// the content panel's width. It may be taller than the scroll area
@@ -6143,8 +6179,19 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
 fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
     use crate::pages::basic::basic_column_count;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
-        use_preset(&mut cx, &showcase, preset);
+    let none = crate::support::NO_PALETTE;
+    for (preset, palette) in [
+        ("kde-breeze", none),
+        ("material-3", none),
+        ("kde-breeze", "catppuccin-mocha"),
+        ("adwaita", none),
+    ] {
+        use_preset_with_palette(&mut cx, &showcase, preset, palette);
+        let preset = if palette == none {
+            preset.to_string()
+        } else {
+            format!("{preset} + {palette}")
+        };
         for mode in ["Light", "Dark"] {
             run_menu_item(&mut cx, "Theme", mode);
             show(&mut cx, &showcase, Page::Basic);
@@ -6207,11 +6254,8 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
         }
     }
     let mut faults = Vec::new();
-    for preset in native_theme::theme::Theme::list_presets()
-        .iter()
-        .map(|p| p.key)
-    {
-        use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), 2.25);
+    for preset in native_theme::next::Preset::ALL.iter().map(|p| p.as_str()) {
+        use_preset_scaled(&mut cx, &showcase, preset, 2.25);
         show(&mut cx, &showcase, Page::Basic);
         let viewport = read(&mut cx, &showcase, |this, _| this.content_scroll.bounds());
         let content = bounds_of(&mut cx, CONTENT_PANEL);
@@ -6631,7 +6675,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
         );
         // The builder's fills, which its unit test holds to the two fields.
         let (fill, disabled_fill) = read(&mut cx, &showcase, |_this, cx| {
-            match cx.native() {
+            match crate::support::old_native(cx) {
                 Some(n) => {
                     let solid = |r: gpui::StyleRefinement| {
                         r.background
@@ -6728,12 +6772,17 @@ fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestApp
     }
 }
 
-/// Set the text-scaling factor the connector lays controls out at, and draw
-/// the frame that follows.
-fn scale_text(cx: &mut VisualTestContext, factor: f32) {
-    let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
-    prefs.text_scaling_factor = factor;
-    cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&prefs, cx));
+/// Set the text-scaling factor the connector lays controls out at, as the
+/// Preferences sheet sets it (`demo::change_preferences`): the showcase
+/// resolves its 0.8.0 theme again for the context it makes. Draw the frame
+/// that follows.
+fn scale_text(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, factor: f32) {
+    cx.update(|_window, cx| {
+        let ui = showcase.read(cx).info_ui.clone();
+        crate::demo::change_preferences(&ui, cx, |overrides| {
+            overrides.text_scaling_factor = Some(factor);
+        });
+    });
     cx.run_until_parked();
     draw(cx);
 }
@@ -6771,7 +6820,7 @@ fn the_height_only_field_takes_the_height_rule(cx: &mut TestAppContext) {
         "at text scale 1 the height-only field does not line up with the refined one"
     );
 
-    scale_text(&mut cx, 2.0);
+    scale_text(&mut cx, &showcase, 2.0);
     let field = bounds_of(&mut cx, INPUTS_FIELD_HEIGHT_ONLY).size.height;
     let refined = bounds_of(&mut cx, INPUTS_FIELD).size.height;
     assert!(
@@ -6803,7 +6852,7 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
         "the Textarea's info does not say it takes the text area's padding: {info:?}"
     );
     for factor in [1.0, 2.0] {
-        scale_text(&mut cx, factor);
+        scale_text(&mut cx, &showcase, factor);
         assert_eq!(
             bounds_of(&mut cx, INPUTS_TEXTAREA).size.height,
             px(90.0),
@@ -7529,24 +7578,46 @@ fn two_heading_levels_show_different_infos(cx: &mut TestAppContext) {
     );
 }
 
-/// The Typography page's monospace sample takes `defaults.mono_font` under a
-/// native theme (M9-014), as the Basic page's Monospace type line does: its
-/// family, size (`Theme::mono_font_size`, the stated size the text-scaling
-/// factor scales), weight and line box, at text scale 1 and 1.5; and its
-/// info's size line names that size.
+/// The Typography page's monospace sample takes the installed 0.8.0 theme's
+/// `typography.monospace` (M9-014), as the Basic page's Monospace type line
+/// does: its family, size (`Theme::mono_font_size`, the stated size the
+/// text scale scales, then rounds where the platform's sizes are whole
+/// pixels), weight and line box (kde-breeze's monospace states no line
+/// height, so its size by `typography.line_height_multiplier`), at text
+/// scale 1 and 1.5; and its info's size line names that size.
 #[gpui::test]
 fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Typography);
-    let r = resolved_theme(&mut cx, &showcase);
     for scale in [1.0, 1.5] {
-        scale_text(&mut cx, scale);
-        let (text, theme) = read(&mut cx, &showcase, |_this, cx| {
+        scale_text(&mut cx, &showcase, scale);
+        let (text, theme, r) = read(&mut cx, &showcase, |_this, cx| {
             let mut sample = crate::demo::mono_sample(cx, "mono");
-            (sample.style().text.clone(), Theme::global(cx).clone())
+            (
+                sample.style().text.clone(),
+                Theme::global(cx).clone(),
+                crate::support::next_resolved(cx).cloned(),
+            )
         });
+        assert!(
+            r.is_some(),
+            "at text scale {scale} no 0.8.0 theme is installed"
+        );
+        let Some(r) = r else { return };
+        let mono = &r.typography.monospace;
+        assert!(
+            !mono
+                .stated
+                .contains(native_theme::next::TextStated::LINE_HEIGHT),
+            "kde-breeze's monospace now states a line height: compare the sample's line box with it"
+        );
         let size = theme.mono_font_size;
+        assert_eq!(
+            size,
+            px(mono.size_px),
+            "at text scale {scale} Theme::mono_font_size is not typography.monospace.size_px"
+        );
         assert_eq!(
             (
                 text.font_family,
@@ -7557,12 +7628,12 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
             (
                 Some(theme.mono_font_family.clone()),
                 Some(size.into()),
-                Some(gpui::FontWeight(f32::from(
-                    native_theme_gpui::mono_font_weight(&r)
-                ))),
-                Some((size * r.defaults.line_height).into()),
+                native_theme_gpui::next::mono_font_weight(&r)
+                    .ok()
+                    .map(|weight| gpui::FontWeight(f32::from(weight))),
+                Some((size * r.typography.line_height_multiplier).into()),
             ),
-            "at text scale {scale} the monospace sample does not take defaults.mono_font's family, size, weight and line box"
+            "at text scale {scale} the monospace sample does not take typography.monospace's family, size, weight and line box"
         );
         let info = settle_on(&mut cx, &showcase, "typography-mono");
         let line = info
@@ -7576,6 +7647,45 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
             "at text scale {scale} the monospace sample's size line does not claim the scaled defaults.mono_font.size: {line:?}"
         );
     }
+}
+
+/// Where the installed theme's `typography.monospace` states a line height,
+/// the monospace sample's line box is that line height, not its size by
+/// `typography.line_height_multiplier` (`demo::next_text_in`). No bundled
+/// preset states one for it, so the theme is kde-breeze's with a line
+/// height stated by hand: its size plus its size by the multiplier, which
+/// is neither of the two the sample could otherwise take.
+#[gpui::test]
+fn a_stated_mono_line_height_is_the_samples_line_box(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let mut r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let mono = &mut r.typography.monospace;
+    let multiplier = r.typography.line_height_multiplier;
+    assert!(
+        !mono
+            .stated
+            .contains(native_theme::next::TextStated::LINE_HEIGHT),
+        "kde-breeze's monospace states a line height of its own: hand-build none"
+    );
+    let stated = mono.size_px + mono.size_px * multiplier;
+    mono.line_height = stated;
+    mono.stated |= native_theme::next::TextStated::LINE_HEIGHT;
+    let installed = cx.update(|_window, cx| native_theme_gpui::next::apply(&r, cx));
+    assert!(
+        installed.is_ok(),
+        "the hand-built theme does not install: {installed:?}"
+    );
+    cx.run_until_parked();
+    let line = read(&mut cx, &showcase, |_this, cx| {
+        let mut sample = crate::demo::mono_sample(cx, "mono");
+        sample.style().text.line_height
+    });
+    assert_eq!(
+        line,
+        Some(px(stated).into()),
+        "the monospace sample does not take the stated line height"
+    );
 }
 
 /// The Typography page's `Diff` sample is one file's patch that removes and
@@ -8164,17 +8274,20 @@ fn a_button_inside_the_dialog_shows_the_button_and_its_surface_the_dialog(cx: &m
 /// The showcase applies the theme's dialog entrance and tooltip delay, and
 /// says so: under kde-breeze, which states both, the Overlays page's Dialog
 /// and AlertDialog record `geometry::dialog_entrance` and a toolbar Button's
-/// tooltip delay is the theme's 700ms; under catppuccin-mocha, which states
-/// neither, the dialogs keep upstream's slide and the tooltip gpui's 500ms
-/// (Review Focus 2). Motion is reduced, so the entrance is named and not
-/// drawn.
+/// tooltip delay is the theme's 700ms; under macos-tahoe, here under the
+/// catppuccin-mocha palette, which states neither, the dialogs keep
+/// upstream's slide and the tooltip gpui's 500ms (Review Focus 2). Motion is
+/// reduced, so the entrance is named and not drawn.
 #[gpui::test]
 fn the_dialog_entrance_and_the_tooltip_delay_follow_the_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     // A sliding Dialog is not where its bounds were laid out until it lands.
     without_motion(&mut cx);
-    for (preset, stated) in [("kde-breeze", true), ("catppuccin-mocha", false)] {
-        use_preset(&mut cx, &showcase, preset);
+    for (preset, palette, stated) in [
+        ("kde-breeze", crate::support::NO_PALETTE, true),
+        ("macos-tahoe", "catppuccin-mocha", false),
+    ] {
+        use_preset_with_palette(&mut cx, &showcase, preset, palette);
         let (entrance, delay) = read(&mut cx, &showcase, |_, cx| {
             native_value(cx, |n| {
                 (
@@ -9776,12 +9889,24 @@ impl gpui::PlatformTextSystem for PaintedGlyphs {
 
 /// The Inputs page's searchable Select draws the part of a row that matches
 /// what is typed in `list_highlight_foreground`, the resting text colour
-/// under a native theme, and the rest of the row in the row's own colour.
+/// under a native theme (the 0.8.0 theme's `colors.window.foreground`, 0.7.2's
+/// `defaults.text_color`), and the rest of the row in the row's own colour.
+/// gpui lays a highlight's colour over the run's own (gpui-pre 0.3.12
+/// style.rs, `TextStyle::highlight`, through `Hsla::blend`): an opaque one
+/// replaces it, a translucent one is mixed into it by its alpha and keeps the
+/// run's alpha, so the match is painted in that mix.
 /// Typing "ee" puts the cursor on the first match, Breeze (list/list.rs,
-/// `ListState::start_search`), whose row is lettered accent_foreground: on
-/// nord that differs from the resting text colour, so its glyphs read B, r,
-/// z and e in the one and the matched e, e in the other. Read in the
-/// GPUI Fast form, which paints glyphs under [`PaintedGlyphs`].
+/// `ListState::start_search`), whose row is lettered accent_foreground
+/// (searchable_list/item.rs, `SearchableListItemElement::render`). The test
+/// runs under the first preset the showcase installs
+/// (`native_theme::next::Preset::ALL`), in its light variant and with no
+/// palette, on which that mix differs from accent_foreground, else it would
+/// prove nothing: on Breeze the resting text is accent_foreground itself, and
+/// in a dark variant every preset's resting text is either the row's own
+/// colour or a translucent white that mixes into the row's white as white.
+/// Its glyphs then read B, r, z and e in the one and the matched e, e in the
+/// other. Read in the GPUI Fast form, which paints glyphs under
+/// [`PaintedGlyphs`].
 #[cfg(feature = "gpui-fast")]
 #[gpui::test]
 fn the_select_draws_its_match_in_the_highlight_colour(base: &mut TestAppContext) {
@@ -9793,7 +9918,19 @@ fn the_select_draws_its_match_in_the_highlight_colour(base: &mut TestAppContext)
     let (showcase, _root, mut cx) = open(&mut app, TALL_WINDOW);
     // The popup fades in, and the test platform's clock stands still.
     without_motion(&mut cx);
-    use_preset(&mut cx, &showcase, "nord");
+    lay_palette(&mut cx, &showcase, crate::support::NO_PALETTE);
+    let matched_apart = native_theme::next::Preset::ALL.iter().find(|preset| {
+        use_light_preset(&mut cx, &showcase, preset.as_str());
+        read(&mut cx, &showcase, |_, cx| {
+            let t = Theme::global(cx);
+            t.accent_foreground.blend(t.list_highlight_foreground) != t.accent_foreground
+        })
+    });
+    assert!(
+        matched_apart.is_some(),
+        "no preset paints the selected row's match apart from the rest of its text, so this \
+         proves nothing"
+    );
     show(&mut cx, &showcase, Page::Inputs);
     click(&mut cx, crate::INPUTS_SELECT_HIGHLIGHT);
     cx.simulate_input("ee");
@@ -9803,7 +9940,7 @@ fn the_select_draws_its_match_in_the_highlight_colour(base: &mut TestAppContext)
         let t = Theme::global(cx);
         (
             t.list_highlight_foreground,
-            native_color(cx, |n| n.resolved.defaults.text_color),
+            crate::support::next_color(cx, |r| r.colors.window.foreground),
             t.accent_foreground,
             t.accent,
         )
@@ -9811,39 +9948,40 @@ fn the_select_draws_its_match_in_the_highlight_colour(base: &mut TestAppContext)
     assert_eq!(
         Some(highlight),
         resting,
-        "list_highlight_foreground is not the resting text colour, defaults.text_color"
+        "list_highlight_foreground is not the resting text colour, colors.window.foreground"
     );
-    assert_ne!(
-        highlight, selected,
-        "nord letters the selected row in the highlight colour, so this proves nothing"
-    );
-    // Every fill in the selected row's colour, with the glyphs inside it
-    // from left to right: the Breeze row's among them, and others, such as a
-    // calendar's selected day.
-    let rows = cx.update(|window, _| {
+    // Every fill in the selected row's colour, with the glyphs inside it line
+    // by line, each line from left to right: the Breeze row's among them, and
+    // others, such as a calendar's selected day. Glyphs of the page under the
+    // popup fall inside the row's fill too, on lines of their own.
+    let lines = cx.update(|window, _| {
         let glyphs = scene_glyphs(window);
         scene_quads(window)
             .into_iter()
             .filter(|q| q.background.as_solid() == Some(selected_row))
-            .map(|q| {
+            .flat_map(|q| {
                 let mut inside: Vec<_> = glyphs
                     .iter()
                     .filter(|(b, _)| q.bounds.contains(&b.origin))
                     .copied()
                     .collect();
-                inside.sort_by(|a, b| a.0.origin.x.0.total_cmp(&b.0.origin.x.0));
+                inside.sort_by(|a, b| {
+                    let (a, b) = (a.0.origin, b.0.origin);
+                    a.y.0.total_cmp(&b.y.0).then(a.x.0.total_cmp(&b.x.0))
+                });
                 inside
-                    .into_iter()
-                    .map(|(_, colour)| colour)
+                    .chunk_by(|a, b| a.0.origin.y == b.0.origin.y)
+                    .map(|line| line.iter().map(|(_, colour)| *colour).collect::<Vec<_>>())
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>()
     });
-    let (s, h) = (selected, highlight);
+    let (s, m) = (selected, selected.blend(highlight));
     assert!(
-        rows.contains(&vec![s, s, h, h, s, s]),
-        "no selected row draws Breeze's matched ee in the highlight colour {h:?} and the rest \
-         in the selected row's text colour {s:?}: {rows:?}"
+        lines.contains(&vec![s, s, m, m, s, s]),
+        "no selected row draws Breeze's matched ee in the highlight colour {highlight:?} laid \
+         over the row's text colour {s:?}, {m:?}, and the rest in {s:?} under \
+         {matched_apart:?}: {lines:?}"
     );
     drop(cx);
     app.run_until_parked();
@@ -11981,9 +12119,33 @@ fn a_family_gpui_finds_no_face_of_is_named_by_its_fallback() {
         ))
         .and_then(|overlay| system.with_overlay(&overlay))
         .expect("the overlay applies");
-        cx.update(|window, cx| {
-            showcase.update(cx, |this, cx| this.install_system(overlay, window, cx))
+        // The same families as the 0.8.0 model's reading of the system
+        // states them, which the showcase installs `default` from.
+        let next_overlay = |system: native_theme::next::Theme| {
+            let mut overrides = system.system_overrides().cloned().unwrap_or_default();
+            for (font, family) in [
+                (&mut overrides.ui_font, absent),
+                (&mut overrides.monospace_font, absent_mono),
+            ] {
+                font.get_or_insert_with(native_theme::next::OsFont::default)
+                    .family = Some(family.into());
+            }
+            system.with_system_overrides(overrides)
+        };
+        let installed = cx.update(|window, cx| {
+            showcase.update(cx, |this, cx| {
+                let next = this
+                    .next_system
+                    .take()
+                    .unwrap_or_else(native_theme::next::Theme::from_system_or_default);
+                this.next_system = Some(next_overlay(next));
+                this.install_system(overlay, window, cx)
+            })
         });
+        assert!(
+            installed,
+            "the desktop's theme with the overlay did not install"
+        );
         cx.run_until_parked();
         check(&mut cx, absent, absent, absent_mono);
     });
@@ -12988,7 +13150,10 @@ fn a_variant_alone_reinstalls_the_theme_in_its_mode(cx: &mut TestAppContext) {
         "--variant {variant} alone did not install the theme in that mode"
     );
     assert!(
-        read(&mut cx, &showcase, |_this, cx| cx.native().is_some()),
+        read(&mut cx, &showcase, |_this, cx| crate::support::old_native(
+            cx
+        )
+        .is_some()),
         "--variant {variant} alone left no native variant installed for its mode"
     );
 }
@@ -13033,25 +13198,26 @@ fn the_icon_theme_select_follows_the_preset(cx: &mut TestAppContext) {
     cx.update(|_window, cx| {
         showcase.update(cx, |this, _| this.icon_set_choice = IconSetChoice::System)
     });
-    set_preset(&mut cx, &showcase, "nord");
+    set_preset(&mut cx, &showcase, "material-3");
+    lay_palette(&mut cx, &showcase, "nord");
     assert_eq!(
         choice(&mut cx),
         (
-            IconSetChoice::Default("lucide".into()),
-            Some("default (lucide)".into())
+            IconSetChoice::Default("material".into()),
+            Some("default (material)".into())
         ),
-        "a choice that followed kde-breeze onto system did not follow nord"
+        "a choice that followed kde-breeze onto system did not follow material-3 + nord"
     );
 
     cx.update(|window, cx| {
         showcase.update(cx, |this, cx| {
-            this.select_icon_set("Material (bundled)", window, cx)
+            this.select_icon_set("Lucide (bundled)", window, cx)
         })
     });
     set_preset(&mut cx, &showcase, "kde-breeze");
     assert_eq!(
         choice(&mut cx),
-        (IconSetChoice::Material, Some("Material (bundled)".into())),
+        (IconSetChoice::Lucide, Some("Lucide (bundled)".into())),
         "an icon theme the user chose did not stay chosen across a preset change"
     );
     let fresh = read(
@@ -13066,8 +13232,8 @@ fn the_icon_theme_select_follows_the_preset(cx: &mut TestAppContext) {
         },
     );
     assert!(
-        !icon_theme_row_exists(&mut cx, &showcase, "default (lucide)"),
-        "under kde-breeze the icon-theme Select still offers nord's default row"
+        !icon_theme_row_exists(&mut cx, &showcase, "default (material)"),
+        "under kde-breeze the icon-theme Select still offers material-3's default row"
     );
     if let Some(fresh) = fresh {
         assert!(
@@ -13598,8 +13764,9 @@ fn icons_take_no_tint_without_a_native_theme() {
 #[gpui::test]
 fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, &showcase, "nord");
-    let nord_layout = native_theme::theme::Theme::preset("nord")
+    set_preset(&mut cx, &showcase, "material-3");
+    lay_palette(&mut cx, &showcase, "nord");
+    let installed_layout = native_theme::theme::Theme::preset("material-3")
         .map(|t| t.layout)
         .ok();
     let named = |cx: &mut VisualTestContext| {
@@ -13621,21 +13788,21 @@ fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
     let check = |cx: &mut VisualTestContext, how: &str| {
         let (name, row, status, layout) = named(cx);
         assert_eq!(
-            name, "nord",
+            name, "material-3",
             "{how}: the showcase names the theme that failed"
         );
         assert_eq!(
             row.as_deref(),
-            Some("nord"),
+            Some("material-3"),
             "{how}: the preset switch shows the theme that failed"
         );
         assert!(
-            status.starts_with("nord "),
-            "{how}: the status bar does not name nord: {status}"
+            status.starts_with("material-3 + nord "),
+            "{how}: the status bar does not name material-3 + nord: {status}"
         );
         assert!(
-            layout == nord_layout,
-            "{how}: the layout is no longer nord's"
+            layout == installed_layout,
+            "{how}: the layout is no longer material-3's"
         );
     };
     set_missing_preset(&mut cx, &showcase, "no-such-preset");
@@ -13915,10 +14082,26 @@ fn the_command_line_rejects_what_it_cannot_honour(cx: &mut TestAppContext) {
         before,
         "--theme no-such-preset changed the state"
     );
+    // A community preset of the 0.7.2 model, whose colours the showcase
+    // offers as a palette in the theme settings (`cli::next_theme_key`).
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            theme: Some("nord".to_string()),
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        state(&mut cx),
+        before,
+        "--theme nord, a community preset of the 0.7.2 model, changed the state"
+    );
 }
 
 /// `--theme` installs what the preset switch offers, which the screenshot
-/// workflow passes: each preset meant for this platform, and `default`, the
+/// workflow passes: each preset meant for this platform that the 0.8.0
+/// model has a `Preset` of, and `default`, the
 /// desktop's own theme. The theme is installed, and the preset switch and
 /// the status bar name it. `default` is skipped where the host's OS theme
 /// cannot be read, which on Linux is never ([`system_theme`]).
@@ -13928,6 +14111,7 @@ fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
     let mut accepted: Vec<String> = native_theme::theme::Theme::list_presets_for_platform()
         .iter()
         .map(|info| info.key.to_string())
+        .filter(|key| native_theme::next::Preset::from_name(key).is_some())
         .collect();
     assert!(
         !accepted.is_empty(),
@@ -13958,7 +14142,7 @@ fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
                     .cloned()
                     .unwrap_or_default(),
                 this.error_message.clone(),
-                cx.native().is_some(),
+                crate::support::old_native(cx).is_some(),
             )
         });
         assert_eq!(name, key, "--theme {key} did not install it");
@@ -13977,6 +14161,67 @@ fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
             named,
             "--theme {key}: the status bar does not name it: {status}"
         );
+    }
+}
+
+/// `--palette` lays the bundled palette it names over the theme installed,
+/// as the palette Select does, and the Select shows it; beside `--theme`,
+/// over that theme. `none` takes the palette away; a name the Select does
+/// not offer is reported and changes nothing.
+#[gpui::test]
+fn the_palette_flag_lays_what_the_palette_select_offers(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let state = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            (
+                this.current_theme_name.clone(),
+                this.palette,
+                this.palette_select
+                    .read(cx)
+                    .selected_value()
+                    .map(|v| v.to_string()),
+                crate::support::next_resolved(cx).map(|r| r.name.to_string()),
+            )
+        })
+    };
+    let palette_name = |name: &str| native_theme::next::Palette::from_name(name).map(|p| p.name);
+    let dracula = palette_name("dracula");
+    assert!(dracula.is_some(), "dracula is not bundled");
+    let cases = [
+        (None, "dracula", "kde-breeze", Some("dracula")),
+        (None, "Dracula", "kde-breeze", Some("dracula")),
+        (Some("adwaita"), "nord", "adwaita", Some("nord")),
+        (None, crate::support::NO_PALETTE, "adwaita", None),
+    ];
+    for (theme, flag, installed, wanted) in cases {
+        apply_cli(
+            &mut cx,
+            &showcase,
+            &crate::CliArgs {
+                theme: theme.map(str::to_string),
+                palette: Some(flag.to_string()),
+                ..Default::default()
+            },
+        );
+        let (name, palette, row, next) = state(&mut cx);
+        assert_eq!(
+            (name.as_str(), palette),
+            (installed, wanted),
+            "--theme {theme:?} --palette {flag}"
+        );
+        assert_eq!(
+            row.as_deref(),
+            Some(wanted.unwrap_or(crate::support::NO_PALETTE)),
+            "--palette {flag}: the palette Select does not show it"
+        );
+        if let Some(wanted) = wanted {
+            assert_eq!(
+                next,
+                palette_name(wanted).map(|name| name.to_string()),
+                "--palette {flag}: the 0.8.0 theme installed is not named by the palette"
+            );
+        }
     }
 }
 
@@ -14118,12 +14363,13 @@ fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
         })
     };
     // A bundled set's icon theme is always available: its `default` row.
-    set_preset(&mut cx, &showcase, "catppuccin-mocha");
-    icon_set(&mut cx, "material");
+    set_preset(&mut cx, &showcase, "material-3");
+    lay_palette(&mut cx, &showcase, "catppuccin-mocha");
+    icon_set(&mut cx, "lucide");
     let (choice, state) = (following(&mut cx).0, icon_set(&mut cx, "default"));
     assert!(
         matches!(choice, IconSetChoice::Default(_)),
-        "catppuccin-mocha's icon theme is not its default row: {choice:?}"
+        "material-3's icon theme is not its default row: {choice:?}"
     );
     assert_eq!(
         (state.0, state.3),
@@ -14273,27 +14519,32 @@ fn hiding_the_side_panel_clears_what_left_the_screen(cx: &mut TestAppContext) {
 }
 
 /// The toolbar's items are spaced where the theme states no
-/// `toolbar.item_gap` (spec §3.1): nord states none, so they are
-/// `layout.widget_gap` apart; with that unstated too, the showcase's own
-/// `TOOLBAR_GAP`. The row's info names which.
+/// `toolbar.item_gap` (spec §3.1): ios-13, here under the nord palette,
+/// states none, so they are `layout.widget_gap` apart, its 8px; with that
+/// unstated too, the showcase's own `TOOLBAR_GAP`. The row's info names
+/// which.
 #[gpui::test]
 fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "nord");
+    use_preset_with_palette(&mut cx, &showcase, "ios-13", "nord");
     let (item_gap, widget_gap) = read(&mut cx, &showcase, |this, cx| {
         (
-            cx.native().map(|n| n.resolved.toolbar.item_gap),
+            crate::support::old_native(cx).map(|n| n.resolved.toolbar.item_gap),
             geometry::widget_gap(&this.layout),
         )
     });
     assert_eq!(
         item_gap,
         Some(None),
-        "nord states a toolbar.item_gap, or no native theme is installed, so the fallback is \
+        "ios-13 states a toolbar.item_gap, or no native theme is installed, so the fallback is \
          not what is measured"
     );
+    assert!(
+        widget_gap.is_some(),
+        "ios-13 states no layout.widget_gap, so the showcase's constant is measured twice"
+    );
     let Some(widget_gap) = widget_gap else {
-        panic!("nord states no layout.widget_gap, so the showcase's constant is measured twice");
+        return;
     };
     let gap = |cx: &mut VisualTestContext| {
         bounds_of(cx, CHROME_TOOLBAR_RELOAD).left() - bounds_of(cx, CHROME_TOOLBAR_PALETTE).right()
@@ -14301,7 +14552,7 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
     assert_eq!(
         gap(&mut cx),
         widget_gap,
-        "nord: the toolbar's first two items are not layout.widget_gap apart"
+        "ios-13 + nord: the toolbar's first two items are not layout.widget_gap apart"
     );
     let gap_line = |cx: &mut VisualTestContext| {
         let bar = bounds_of(cx, CHROME_TOOLBAR);
@@ -14320,8 +14571,8 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
     let line = gap_line(&mut cx);
     assert!(
         line.as_deref()
-            .is_some_and(|l| l.starts_with("6px, layout.widget_gap")),
-        "nord: the toolbar's info does not say its gap is layout.widget_gap: {line:?}"
+            .is_some_and(|l| l.starts_with("8px, layout.widget_gap")),
+        "ios-13 + nord: the toolbar's info does not say its gap is layout.widget_gap: {line:?}"
     );
 
     cx.update(|_window, cx| {
@@ -14346,18 +14597,26 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
     );
 }
 
-/// The status bar reports the installed accessibility preferences (spec
-/// §2.7): the text-scale factor always, and a flag only while it is set.
+/// The status bar reports the accessibility preferences the installed theme
+/// was asked for (spec §2.7), set as the Preferences sheet sets them
+/// (`demo::change_preferences`): the text-scale factor always, and a flag
+/// only while it is set -- high contrast too under kde-breeze, which has no
+/// High level and is resolved at a lower one.
 #[gpui::test]
 fn the_status_bar_reports_the_accessibility_preferences(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
-    prefs.text_scaling_factor = 1.5;
-    prefs.reduce_motion = false;
-    prefs.high_contrast = true;
-    prefs.reduce_transparency = false;
-    cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&prefs, cx));
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    cx.update(|_window, cx| {
+        let ui = showcase.read(cx).info_ui.clone();
+        crate::demo::change_preferences(&ui, cx, |overrides| {
+            overrides.text_scaling_factor = Some(1.5);
+            overrides.reduce_motion = Some(false);
+            overrides.high_contrast = Some(true);
+            overrides.reduce_transparency = Some(false);
+        });
+    });
     cx.run_until_parked();
+    draw(&mut cx);
     let items = read(&mut cx, &showcase, crate::chrome::status_environment);
     assert!(
         items.iter().any(|i| i == "text ×1.5"),
@@ -14513,7 +14772,7 @@ fn the_palette_switches_page(cx: &mut TestAppContext) {
 fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     press(&mut cx, "secondary-k");
-    cx.simulate_input("Nord");
+    cx.simulate_input("Material");
     cx.run_until_parked();
     draw(&mut cx);
     press(&mut cx, "enter");
@@ -14521,15 +14780,15 @@ fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
         read(&mut cx, &showcase, |this, _| this
             .current_theme_name
             .clone()),
-        "nord",
-        "\"Nord\" and Enter in the palette did not install nord"
+        "material-3",
+        "\"Material\" and Enter in the palette did not install material-3"
     );
     assert_eq!(
         read(&mut cx, &showcase, |this, cx| {
             this.preset_combobox.read(cx).selected_value()
         })
         .as_deref(),
-        Some("nord"),
+        Some("material-3"),
         "the preset switch does not show the preset the palette installed"
     );
 }
@@ -14810,15 +15069,20 @@ fn the_palette_reports_itself(cx: &mut TestAppContext) {
 }
 
 /// A preference changed in the Preferences sheet reaches the installed
-/// theme through `apply_accessibility` (spec §2.8): the Reduce motion switch,
-/// clicked, switches gpui's reduced motion on.
+/// theme (spec §2.8): the showcase resolves the theme again for it and
+/// installs it through `native_theme_gpui::next::apply`, which forwards the
+/// reduced motion; the Reduce motion switch, clicked, switches gpui's
+/// reduced motion on. The OS's preferences are the test's, all unset.
 #[gpui::test]
-fn a_preference_reaches_apply_accessibility(cx: &mut TestAppContext) {
+fn a_preference_reaches_the_installed_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| {
+            this.os_preferences_for_test =
+                Some(native_theme_gpui::AccessibilityPreferences::DEFAULT.clone())
+        })
+    });
     use_preset(&mut cx, &showcase, "kde-breeze");
-    let unset = native_theme_gpui::AccessibilityPreferences::DEFAULT;
-    cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&unset, cx));
-    cx.run_until_parked();
     assert!(
         !cx.update(|_window, cx| cx.reduce_motion()),
         "motion is reduced before the switch is clicked, so the click could prove nothing"
@@ -14839,6 +15103,86 @@ fn a_preference_reaches_apply_accessibility(cx: &mut TestAppContext) {
     assert!(
         cx.update(|_window, cx| cx.reduce_motion()),
         "the installed preference did not reach gpui's reduced motion"
+    );
+}
+
+/// The High contrast switch shows what the user asked for, not the level the
+/// theme was resolved at (spec §6, resolution step 1): turned on under
+/// kde-breeze, which defines no High level, it reads on while the theme
+/// stays at Normal contrast, and its info says why. Under adwaita, which
+/// defines High, with a palette laid over it, High is taken and the palette
+/// suspended: no reason is given.
+#[gpui::test]
+fn the_high_contrast_switch_shows_what_was_asked_and_says_why_it_is_not_used(
+    cx: &mut TestAppContext,
+) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| {
+            this.os_preferences_for_test =
+                Some(native_theme_gpui::AccessibilityPreferences::DEFAULT.clone())
+        })
+    });
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    press(&mut cx, "secondary-,");
+    assert!(
+        cx.debug_bounds(OVERLAY_PREFERENCES).is_some(),
+        "Ctrl+, did not open the Preferences sheet"
+    );
+    let state = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |_this, cx| {
+            (
+                crate::support::requested_preferences(cx).map(|p| p.high_contrast),
+                crate::support::next_resolved(cx).map(|r| r.context.contrast),
+                crate::support::contrast_held(cx).cloned(),
+            )
+        })
+    };
+    assert_eq!(
+        state(&mut cx),
+        (
+            Some(false),
+            Some(native_theme::next::Contrast::Normal),
+            None
+        ),
+        "kde-breeze before the click"
+    );
+    click(&mut cx, PREF_HIGH_CONTRAST);
+    let (asked, used, held) = state(&mut cx);
+    assert_eq!(asked, Some(true), "the switch does not read on");
+    assert_eq!(
+        used,
+        Some(native_theme::next::Contrast::Normal),
+        "kde-breeze was resolved at another level than Normal"
+    );
+    assert_eq!(
+        held,
+        Some(crate::support::ContrastHeld {
+            asked: native_theme::next::Contrast::High,
+            used: native_theme::next::Contrast::Normal,
+            by_palette: false,
+        })
+    );
+    let info = settle_on(&mut cx, &showcase, PREF_HIGH_CONTRAST);
+    let why = info
+        .as_ref()
+        .and_then(|i| i.instance.iter().find(|n| n.what == "resolved"))
+        .map(|n| n.text.clone());
+    assert!(
+        why.as_deref().is_some_and(|why| why.starts_with(
+            "the theme is resolved at Normal contrast, not the High asked for: the theme defines \
+             no such level"
+        )),
+        "the High contrast switch's info does not say why the theme is at Normal: {why:?}"
+    );
+
+    press(&mut cx, "escape");
+    use_preset_with_palette(&mut cx, &showcase, "adwaita", "dracula");
+    let (asked, used, held) = state(&mut cx);
+    assert_eq!(
+        (asked, used, held),
+        (Some(true), Some(native_theme::next::Contrast::High), None),
+        "adwaita under dracula, High asked for"
     );
 }
 
@@ -15092,7 +15436,7 @@ fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     without_motion(&mut cx);
     let padding = read(&mut cx, &showcase, |_this, cx| {
-        cx.native().map(|n| n.resolved.dialog.border.padding)
+        crate::support::old_native(cx).map(|n| n.resolved.dialog.border.padding)
     });
     let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
     assert_eq!(
@@ -18719,25 +19063,28 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
 /// A disabled refined field's edge swatch is the colour painted: the
 /// surface's `input.border.color` faded with the field by the opacity
 /// `geometry::input_fill` gives it (`input.disabled_opacity`) -- under the
-/// first bundled preset of this platform whose light field is stroked and
-/// faded, chosen at test time.
+/// first preset the preset switch installs (`native_theme::next::Preset`)
+/// whose light field is stroked and faded, chosen at test time, with its
+/// own colours: the swatch is read from the 0.7.2 theme the pages still
+/// read, which under a palette is the preset alone.
 #[gpui::test]
 fn a_disabled_fields_edge_swatch_is_its_faded_edge(cx: &mut TestAppContext) {
-    let offered = native_theme::theme::Theme::list_presets_for_platform();
     let preset = every_bundled_variant()
         .into_iter()
         .find(|(name, r, _)| {
             name.ends_with(" light")
                 && r.input.border.line_width > 0.0
                 && r.input.disabled_opacity < 1.0
-                && offered
-                    .iter()
-                    .any(|p| name.starts_with(&format!("{} ", p.key)))
+                && name
+                    .strip_suffix(" light")
+                    .and_then(native_theme::next::Preset::from_name)
+                    .is_some()
         })
         .and_then(|(name, _, _)| name.strip_suffix(" light").map(str::to_string));
     assert!(
         preset.is_some(),
-        "no bundled preset of this platform strokes and fades a disabled field, which this test reads"
+        "no preset the preset switch installs strokes and fades a disabled field, which this \
+         test reads"
     );
     let Some(preset) = preset else { return };
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -19302,7 +19649,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             ),
         ];
         #[cfg(feature = "widgets")]
-        if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        if let Some(r) = crate::support::old_resolved(cx) {
             built.push((
                 "a theme-drawn Separator sample",
                 crate::info::layout::native_separator(t, r, true),
@@ -20901,34 +21248,28 @@ fn the_page_menu_button_shows_its_caret_without_the_sets_chevron(cx: &mut TestAp
 /// section gap but keeps `layout.widget_gap`, the gap the page's rows keep
 /// between neighbouring widgets, from the next column's left edge, and in the
 /// last column may reach into the page's right margin but keeps
-/// `layout.widget_gap` from the scroll area's edge, under every bundled preset at a
-/// text scale of 1 and 2.25: under macos-monterey and macos-tahoe at 1 the
-/// shared count left it 9 and 13 px into the next column, and at 2.25 three
-/// columns, the old floor, left it past the window under macos-monterey and
-/// ios-13. The four Linux parity presets keep their columns at 1: kde-breeze,
-/// adwaita and catppuccin-mocha five, material-3 four. It prints each
-/// preset's count.
+/// `layout.widget_gap` from the scroll area's edge, under every preset the
+/// preset switch installs (`native_theme::next::Preset::ALL`; a palette laid
+/// over one changes no size) at a text scale of 1 and 2.25: under
+/// macos-monterey and macos-tahoe at 1 the shared count left it 9 and 13 px
+/// into the next column, and at 2.25 three columns, the old floor, left it
+/// past the window under macos-monterey and ios-13. The three Linux parity
+/// presets keep their columns at 1: kde-breeze and adwaita five, material-3
+/// four. It prints each preset's count.
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let mut faults = Vec::new();
-    // The four Linux parity presets at 1; and catppuccin-mocha at 2.25, whose
-    // control ends a pixel past the page in the last of three columns, inside
-    // the right margin (the round 4 review's ruling, item 17 minor 9).
+    // The three Linux parity presets at 1.
     let kept = [
         ("kde-breeze", 1.0, 5),
         ("adwaita", 1.0, 5),
-        ("catppuccin-mocha", 1.0, 5),
         ("material-3", 1.0, 4),
-        ("catppuccin-mocha", 2.25, 3),
     ];
-    for preset in native_theme::theme::Theme::list_presets()
-        .iter()
-        .map(|p| p.key)
-    {
+    for preset in native_theme::next::Preset::ALL.iter().map(|p| p.as_str()) {
         for scale in [1.0, 2.25] {
-            use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), scale);
+            use_preset_scaled(&mut cx, &showcase, preset, scale);
             show(&mut cx, &showcase, Page::Basic);
             let (gap, margin) = read(&mut cx, &showcase, |this, _| {
                 (
@@ -21025,14 +21366,9 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
 fn the_segmented_width_is_the_drawn_controls(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let mut faults = Vec::new();
-    for preset in [
-        "macos-monterey",
-        "kde-breeze",
-        "catppuccin-mocha",
-        "windows-11",
-    ] {
+    for preset in ["macos-monterey", "kde-breeze", "material-3", "windows-11"] {
         for scale in [1.0, 2.25] {
-            use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), scale);
+            use_preset_scaled(&mut cx, &showcase, preset, scale);
             draw(&mut cx);
             let drawn = read(&mut cx, &showcase, |this, cx| {
                 this.info_ui.read(cx).layout_drawn()
@@ -21163,11 +21499,11 @@ fn the_icon_theme_select_puts_the_widget_icons_in_its_state(cx: &mut TestAppCont
     use native_theme::theme::IconSet;
     use native_theme_gpui::icons::WidgetIconsReport;
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "catppuccin-mocha");
+    use_preset_with_palette(&mut cx, &showcase, "material-3", "catppuccin-mocha");
     assert_eq!(
         widget_icons_set(&mut cx),
-        Some((IconSet::Lucide, false)),
-        "under catppuccin-mocha's default row the widget icons do not follow its Lucide"
+        Some((IconSet::Material, false)),
+        "under material-3's default row the widget icons do not follow its Material"
     );
     choose_icon_theme(&mut cx, &showcase, crate::app::GPUI_BUILTIN_ROW);
     assert_eq!(
@@ -21175,30 +21511,30 @@ fn the_icon_theme_select_puts_the_widget_icons_in_its_state(cx: &mut TestAppCont
         Some(WidgetIconsReport::Off),
         "the built-in row does not switch the widget icons off"
     );
-    let material = IconSetChoice::Material.to_string();
-    choose_icon_theme(&mut cx, &showcase, &material);
+    let lucide = IconSetChoice::Lucide.to_string();
+    choose_icon_theme(&mut cx, &showcase, &lucide);
     assert_eq!(
         widget_icons_set(&mut cx),
-        Some((IconSet::Material, true)),
-        "Material's row does not fix the widget icons to Material"
+        Some((IconSet::Lucide, true)),
+        "Lucide's row does not fix the widget icons to Lucide"
     );
-    use_preset(&mut cx, &showcase, "catppuccin-latte");
+    lay_palette(&mut cx, &showcase, "catppuccin-latte");
     assert_eq!(
         widget_icons_set(&mut cx),
-        Some((IconSet::Material, true)),
-        "a theme install while Material is chosen does not keep the widget icons fixed to it"
+        Some((IconSet::Lucide, true)),
+        "a theme install while Lucide is chosen does not keep the widget icons fixed to it"
     );
     let default_row = read(&mut cx, &showcase, |this, _| {
         this.current_icon_theme
             .clone()
             .map(|theme| IconSetChoice::Default(theme).to_string())
     });
-    assert_eq!(default_row.as_deref(), Some("default (lucide)"));
+    assert_eq!(default_row.as_deref(), Some("default (material)"));
     choose_icon_theme(&mut cx, &showcase, &default_row.unwrap_or_default());
     assert_eq!(
         widget_icons_set(&mut cx),
-        Some((IconSet::Lucide, false)),
-        "the default row again does not make the widget icons follow the theme's Lucide"
+        Some((IconSet::Material, false)),
+        "the default row again does not make the widget icons follow the theme's Material"
     );
 }
 
@@ -21212,8 +21548,14 @@ fn the_icon_theme_select_puts_the_widget_icons_in_its_state(cx: &mut TestAppCont
 #[gpui::test]
 fn the_widget_icons_follow_the_set_the_chrome_draws(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
-    for preset in ["catppuccin-mocha", "material-3"] {
-        use_preset(&mut cx, &showcase, preset);
+    // material-3 is the one preset whose set is bundled, so served on every
+    // host; under a palette and then under its own colours.
+    for (preset, palette) in [
+        ("material-3", "catppuccin-mocha"),
+        ("material-3", crate::support::NO_PALETTE),
+    ] {
+        use_preset_with_palette(&mut cx, &showcase, preset, palette);
+        let preset = format!("{preset} + {palette}");
         let chrome = read(&mut cx, &showcase, |this, _| {
             this.icon_choice_follows_preset
                 .then_some(this.icon_set_enum)
@@ -21495,11 +21837,12 @@ fn the_loading_buttons_keep_the_spinners_icon_where_the_set_is_served(cx: &mut T
     use crate::demo::{SpinnerDefault, spinner_default};
     let (showcase, _root, mut cx) = open_icons(cx, TALL_WINDOW);
     without_motion(&mut cx);
-    use_preset(&mut cx, &showcase, "catppuccin-mocha");
+    use_preset_with_palette(&mut cx, &showcase, "material-3", "catppuccin-mocha");
+    choose_icon_theme(&mut cx, &showcase, &IconSetChoice::Lucide.to_string());
     assert_eq!(
         read(&mut cx, &showcase, |_, cx| spinner_default(cx)),
         SpinnerDefault::Set,
-        "under catppuccin-mocha the widget icons do not serve Lucide's Loader"
+        "under Lucide's row the widget icons do not serve Lucide's Loader"
     );
     let spinner = |info: &WidgetInfo| {
         info.not_themeable
@@ -21590,7 +21933,8 @@ fn a_spinner_with_nothing_to_turn_says_so() {
 fn the_icons_page_reports_the_widget_icons(cx: &mut TestAppContext) {
     use crate::pages::icons::widget_icons_caption;
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "catppuccin-mocha");
+    use_preset_with_palette(&mut cx, &showcase, "material-3", "catppuccin-mocha");
+    choose_icon_theme(&mut cx, &showcase, &IconSetChoice::Lucide.to_string());
     show(&mut cx, &showcase, Page::Icons);
     let laid = cx.debug_bounds("icons-widget-icons");
     assert!(
@@ -21633,4 +21977,198 @@ fn the_icons_page_reports_the_widget_icons(cx: &mut TestAppContext) {
         caption,
         "gpui-component's widgets: their own icons (the built-in set is chosen, or no system icon theme was detected)",
     );
+}
+
+/// The theme settings offer the platform presets of the 0.8.0 model this
+/// platform runs, after `default`, and no community preset of the 0.7.2
+/// model; the palette Select `none` and every bundled palette.
+#[test]
+fn the_picker_offers_the_platform_presets_and_the_palettes() {
+    let keys: Vec<String> = crate::support::preset_items("kde-breeze")
+        .into_iter()
+        .map(|item| item.key.to_string())
+        .collect();
+    assert_eq!(keys.first().map(String::as_str), Some("default"));
+    for key in keys.iter().skip(1) {
+        assert!(
+            native_theme::next::Preset::from_name(key).is_some(),
+            "the picker offers {key}, which is no 0.8.0 preset"
+        );
+    }
+    let offered = native_theme::theme::Theme::list_presets_for_platform();
+    let platform: Vec<&str> = offered
+        .iter()
+        .map(|info| info.key)
+        .filter(|key| native_theme::next::Preset::from_name(key).is_some())
+        .collect();
+    assert_eq!(
+        keys.iter().skip(1).map(String::as_str).collect::<Vec<_>>(),
+        platform
+    );
+    let rows: Vec<String> = crate::support::palette_rows()
+        .into_iter()
+        .map(|row| row.to_string())
+        .collect();
+    let mut wanted = vec![crate::support::NO_PALETTE.to_string()];
+    wanted.extend(
+        native_theme::next::Palette::BUNDLED_NAMES
+            .iter()
+            .map(|name| name.to_string()),
+    );
+    assert_eq!(rows, wanted);
+}
+
+/// The 0.8.0 theme the showcase installed, its inactive-window resolve,
+/// and the 0.7.2 theme the pages not yet ported read, each as the helpers
+/// the pages call give them.
+fn installed_models(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> (
+    Option<native_theme::next::ResolvedTheme>,
+    Option<native_theme::next::ResolvedTheme>,
+    Option<native_theme::theme::ResolvedTheme>,
+) {
+    read(cx, showcase, |_this, cx| {
+        (
+            crate::support::next_resolved(cx).cloned(),
+            crate::support::next_inactive(cx).cloned(),
+            crate::support::old_resolved(cx).cloned(),
+        )
+    })
+}
+
+/// A preset installs as a 0.8.0 theme, with its inactive-window resolve
+/// and its 0.7.2 theme beside it; a palette laid over it renames and
+/// recolours the 0.8.0 theme and locks the mode to the palette's scheme,
+/// while the 0.7.2 theme is the preset alone in that scheme; `none` puts
+/// the preset's own colours and the mode chosen back.
+#[gpui::test]
+fn a_palette_is_laid_over_the_preset_in_the_08_model_only(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, &showcase, "kde-breeze");
+    cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(AppColorMode::Light)), cx));
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (next, inactive, old) = installed_models(&mut cx, &showcase);
+    let next = next.expect("kde-breeze installed no 0.8.0 theme");
+    let inactive = inactive.expect("kde-breeze kept no inactive-window resolve");
+    assert!(
+        old.is_some(),
+        "kde-breeze kept no 0.7.2 theme for the pages"
+    );
+    assert_eq!(next.name.as_ref(), "KDE Breeze");
+    assert!(!next.is_dark(), "kde-breeze in Light resolved dark");
+    assert!(next.context.window_active && !inactive.context.window_active);
+    assert_eq!(inactive.name, next.name);
+
+    let dracula = native_theme::next::Palette::from_name("dracula").expect("dracula is bundled");
+    assert!(
+        dracula.scheme == native_theme::next::Scheme::Dark,
+        "dracula is not dark, so locking Light to it proves nothing"
+    );
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| this.choose_palette("dracula", window, cx))
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (next, _, old) = installed_models(&mut cx, &showcase);
+    let next = next.expect("kde-breeze with dracula installed no 0.8.0 theme");
+    assert_eq!(next.name, dracula.name);
+    assert!(next.is_dark(), "dracula did not lock the scheme to its own");
+    let window_bg = read(&mut cx, &showcase, |_this, cx| {
+        crate::support::next_value(cx, |r| r.colors.window.background)
+    });
+    assert_eq!(
+        window_bg,
+        Some(Some(dracula.window_bg)),
+        "the installed 0.8.0 theme's window background is not dracula's"
+    );
+    let preset_dark = native_theme::theme::Theme::preset("kde-breeze")
+        .and_then(|nt| nt.resolve(native_theme_gpui::ColorMode::Dark))
+        .expect("kde-breeze resolves dark")
+        .variant;
+    assert!(
+        old.as_ref() == Some(&preset_dark),
+        "under a palette the 0.7.2 theme is not the preset alone in the palette's scheme"
+    );
+    let (is_dark, status) = read(&mut cx, &showcase, |this, cx| {
+        (
+            this.is_dark,
+            crate::chrome::status_environment(this, cx).join(" · "),
+        )
+    });
+    assert!(is_dark, "the mode shown is not the palette's scheme");
+    assert!(
+        status.contains("kde-breeze + dracula"),
+        "the status bar does not name the palette: {status}"
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |_this, cx| crate::support::next_value(
+            cx,
+            |r| r.is_dark()
+        )),
+        Some(true)
+    );
+
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.choose_palette(crate::support::NO_PALETTE, window, cx)
+        })
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (next, _, _) = installed_models(&mut cx, &showcase);
+    let next = next.expect("kde-breeze without a palette installed no 0.8.0 theme");
+    assert_eq!(next.name.as_ref(), "KDE Breeze");
+    assert!(!next.is_dark(), "`none` did not put the mode chosen back");
+}
+
+/// A preference changed in the Preferences sheet resolves the 0.8.0 theme
+/// again for the context it makes, and the connector reads it back.
+#[gpui::test]
+fn a_preference_resolves_the_08_theme_again(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, &showcase, "kde-breeze");
+    let before = installed_models(&mut cx, &showcase)
+        .0
+        .expect("kde-breeze installed no 0.8.0 theme");
+    assert!(
+        (before.context.text_scale - 1.5).abs() > f32::EPSILON,
+        "the text scale is 1.5 already, so setting it proves nothing"
+    );
+    cx.update(|_window, cx| {
+        let ui = showcase.read(cx).info_ui.clone();
+        crate::demo::change_preferences(&ui, cx, |overrides| {
+            overrides.text_scaling_factor = Some(1.5);
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (next, inactive, _) = installed_models(&mut cx, &showcase);
+    assert_eq!(next.map(|r| r.context.text_scale), Some(1.5));
+    assert_eq!(inactive.map(|r| r.context.text_scale), Some(1.5));
+    assert_eq!(
+        installed_preferences(&mut cx, &showcase).map(|p| p.text_scaling_factor),
+        Some(1.5)
+    );
+    let refined = read(&mut cx, &showcase, |_this, cx| {
+        crate::support::next_geometry(cx, native_theme_gpui::next::geometry::button)
+    });
+    assert!(
+        refined.is_some(),
+        "no 0.8.0 theme is installed for the builders"
+    );
+    let styled = read(&mut cx, &showcase, |_this, cx| {
+        use crate::support::NativeStyled as _;
+        let mut styled = gpui::div().next_native(cx, native_theme_gpui::next::geometry::button);
+        styled.style().clone()
+    });
+    assert!(
+        matches!(refined, Some(Ok(_))),
+        "kde-breeze's button geometry does not map at text scale 1.5: {refined:?}"
+    );
+    if let Some(Ok(refined)) = refined {
+        assert_eq!(styled.padding, refined.padding);
+    }
 }

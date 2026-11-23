@@ -4163,7 +4163,7 @@ fn menu_bar(c: &SchemeColors, roles: &ColorRoles) -> MenuBarWidget {
 
 /// The tab bar: the bar in the window's background (0.7.2:
 /// `tab.bar_background` is `defaults.background_color` where unstated);
-/// tabs of a least size with Breeze's margins and no shadow, filled
+/// tabs of a least size with Breeze's margins, no shadow and no outline, filled
 /// `Window.darker(120)`, hovered in DecorationHover at alpha 0.2, the
 /// selected one in its own fill, outlined and rounded; the UI font in the
 /// window text (0.7.2: `tab.font` is `defaults.font` where unstated); the
@@ -4183,6 +4183,9 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             )),
             // `tab.border.shadow_enabled`: platform-facts.md (§2.11): no shadow
             PartProp::Shadows(None),
+            // `tab.border.color`, `border.line_width`: platform-facts.md (§2.11): Breeze outlines
+            // the selected tab only, an unselected one draws no outline
+            PartProp::Stroke(Stroke::None),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.tab_hover)])
         .rule(

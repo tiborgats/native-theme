@@ -1259,6 +1259,27 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
 }
 
 #[test]
+fn the_covered_presets_are_every_platform_preset() {
+    let covered: Vec<Preset> = PRESETS.iter().map(|&(_, preset)| preset).collect();
+    let misnamed: Vec<&str> = PRESETS
+        .iter()
+        .filter(|&&(key, preset)| key != preset.as_str())
+        .map(|&(key, _)| key)
+        .collect();
+    let missing: Vec<&Preset> = Preset::ALL
+        .iter()
+        .filter(|p| !covered.contains(p))
+        .collect();
+    assert!(
+        covered.len() == Preset::ALL.len() && missing.is_empty() && misnamed.is_empty(),
+        "{} presets covered, {} platform presets; not covered: {missing:?}; keys that are not \
+         their preset's name: {misnamed:?}",
+        covered.len(),
+        Preset::ALL.len()
+    );
+}
+
+#[test]
 fn the_slice_maps_to_the_same_leaves_from_both_models() -> crate::Result<()> {
     let mut failures = Vec::new();
     for &(key, preset) in PRESETS {

@@ -1336,6 +1336,7 @@
     "tab": {
       "base": {
         "fill": "#c7c8c9",
+        "stroke": "none",
         "shadows": "none",
         "padding": {
           "top": 4.0,

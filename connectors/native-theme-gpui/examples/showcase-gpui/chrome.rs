@@ -1,11 +1,11 @@
 //! The window's chrome: title bar or menu-bar row, menus, toolbar, side panel, page tabs, status bar and overlays.
 
 use gpui::{
-    Action, AnyElement, App, Corners, Decorations, InteractiveElement as _, IntoElement, Menu,
-    MenuItem, Pixels, SharedString, Styled as _, StyledText, Window, px,
+    Action, AnyElement, App, Context, Corners, Decorations, InteractiveElement as _, IntoElement,
+    Menu, MenuItem, Pixels, SharedString, Styled as _, StyledText, Window, px,
 };
 use gpui_component::{ActiveTheme as _, IconName, WindowExt as _};
-use native_theme_gpui::{ActiveNativeTheme as _, geometry};
+use native_theme_gpui::geometry;
 use native_theme_showcase_support::status;
 
 use crate::Page;
@@ -17,11 +17,11 @@ use crate::app::{
 use crate::demo::{SeparatorKind, TabBarKind};
 use crate::support::preset_items;
 use crate::{
-    CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR,
-    CHROME_PAGE_TABS, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE,
-    CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE,
-    CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, PROBE_COLOR_MODE, PROBE_COMBOBOX,
-    PROBE_ICON_THEME, WINDOW_TITLE, demo, demo::PaletteEntry,
+    CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_PALETTE, CHROME_LABEL_THEME,
+    CHROME_MENU_BAR, CHROME_PAGE_TABS, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR,
+    CHROME_SIDE_PANEL_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
+    CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, PROBE_COLOR_MODE,
+    PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_PALETTE, WINDOW_TITLE, demo, demo::PaletteEntry,
 };
 
 /// The showcase's application menus (spec §2.2), built fresh for each
@@ -173,13 +173,18 @@ fn menu_bar(app: &Showcase, cx: &App) -> impl IntoElement {
 }
 
 /// The installed preset, the default one by the platform preset it stands
-/// for (`Showcase::default_label`, as the preset switch names it), and the
-/// colour mode, as the status bar names them.
+/// for (`Showcase::default_label`, as the preset switch names it), with the
+/// palette laid over it after a `+` where one is, and the colour mode, as
+/// the status bar names them.
 fn preset_and_mode(app: &Showcase) -> (String, &str) {
     let preset = if app.current_theme_name == "default" {
         app.default_label()
     } else {
         app.current_theme_name.clone()
+    };
+    let preset = match app.palette {
+        Some(palette) => format!("{preset} + {palette}"),
+        None => preset,
     };
     (preset, if app.is_dark { "dark" } else { "light" })
 }
@@ -248,10 +253,11 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
 }
 
 /// The side panel (spec S2): the theme settings -- the preset switch, the
-/// colour mode and the icon theme, each labelled -- padded by the installed
+/// palette, the colour mode and the icon theme, each labelled -- padded by the installed
 /// layout's `container_margin`, as the inspector's content is; a Separator;
-/// then the inspector, which fills the rest of the panel's height.
-pub(crate) fn side_panel(app: &Showcase, cx: &App) -> impl IntoElement {
+/// then the inspector, which fills the rest of the panel's height. All three
+/// scroll, on `side_panel_scroll`, where they are taller than the panel.
+pub(crate) fn side_panel(app: &Showcase, cx: &Context<Showcase>) -> impl IntoElement {
     let ui = &app.info_ui;
     let margin = geometry::container_margin(&app.layout);
     let settings = demo::theme_settings(
@@ -264,6 +270,13 @@ pub(crate) fn side_panel(app: &Showcase, cx: &App) -> impl IntoElement {
                 "Theme",
                 demo::preset_combobox(ui, cx, &app.preset_combobox)
                     .debug_selector(|| PROBE_COMBOBOX.into())
+                    .into_any_element(),
+            ),
+            (
+                CHROME_LABEL_PALETTE,
+                "Palette",
+                demo::palette_select(ui, cx, &app.palette_select)
+                    .debug_selector(|| PROBE_PALETTE.into())
                     .into_any_element(),
             ),
             (
@@ -294,6 +307,13 @@ pub(crate) fn side_panel(app: &Showcase, cx: &App) -> impl IntoElement {
             SeparatorKind::Horizontal,
         ),
         app.inspector.clone(),
+        &app.side_panel_scroll,
+        {
+            let this = cx.entity().downgrade();
+            move |cx: &mut App| {
+                this.update(cx, |_, cx| cx.notify()).ok();
+            }
+        },
     )
     .debug_selector(|| CHROME_SIDE_PANEL.into())
 }
@@ -378,14 +398,16 @@ pub(crate) fn status_bar(
 /// placeholder where no theme could be read) by the family gpui draws and
 /// the size in the unit its source stated, and, once a native theme is
 /// installed, its text-scale factor and each of its accessibility
-/// preferences that is set, by its field name. The drawn family is
+/// preferences that is set, by its field name: the preferences it was asked
+/// for (`support::requested_preferences`), not the level the theme resolved
+/// to, which the Preferences sheet's High contrast switch gives where it is
+/// lower. The drawn family is
 /// `inspector::DrawnFamilies::drawn` of the stated one and
 /// `Theme::font_family`, the connector's `font_family` of it, once a native
 /// theme is installed; before that no preferences are installed, and the
 /// placeholder is named alone.
 pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
     let (preset, mode) = preset_and_mode(app);
-    let native = cx.native_theme();
     let families = crate::inspector::DrawnFamilies::installed(app, cx);
     let asked = &cx.theme().font_family;
     let drawn = families
@@ -393,13 +415,8 @@ pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
         .map_or(status::DrawnFamily::Stated, |families| {
             families.drawn(&app.original_font.family, asked)
         });
-    status::environment_drawn(
-        &preset,
-        mode,
-        &app.original_font,
-        drawn,
-        native.map(|nt| nt.accessibility()),
-    )
+    let prefs = crate::support::requested_preferences(cx);
+    status::environment_drawn(&preset, mode, &app.original_font, drawn, prefs.as_ref())
 }
 
 // ---------------------------------------------------------------------------

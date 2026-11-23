@@ -1119,8 +1119,7 @@
     "icon_text_gap": 8.0,
     "panel": {
       "base": {
-        "fill": "#ffffff",
-        "corners": 10.0
+        "fill": "#ffffff"
       }
     },
     "item": {

@@ -279,6 +279,27 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
 }
 
 #[test]
+fn the_compared_presets_are_every_platform_preset() {
+    let compared: Vec<Preset> = PRESETS.iter().map(|&(_, preset)| preset).collect();
+    let misnamed: Vec<&str> = PRESETS
+        .iter()
+        .filter(|&&(key, preset)| key != preset.as_str())
+        .map(|&(key, _)| key)
+        .collect();
+    let missing: Vec<&Preset> = Preset::ALL
+        .iter()
+        .filter(|p| !compared.contains(p))
+        .collect();
+    assert!(
+        compared.len() == Preset::ALL.len() && missing.is_empty() && misnamed.is_empty(),
+        "{} presets compared, {} platform presets; not compared: {missing:?}; keys that are not \
+         their preset's name: {misnamed:?}",
+        compared.len(),
+        Preset::ALL.len()
+    );
+}
+
+#[test]
 fn every_look_is_the_same_from_both_models() -> crate::Result<()> {
     let mut failures = Vec::new();
     let mut listed = Vec::new();

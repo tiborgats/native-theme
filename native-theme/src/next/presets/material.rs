@@ -2356,10 +2356,10 @@ fn menu_bar(roles: &ColorRoles) -> MenuBarWidget {
 /// The tab bar: the bar and the tabs in the window's background, the
 /// selected one too (0.7.2: `tab.bar_background`, `tab.background_color` and
 /// `tab.active_background` are `defaults.background_color` where unstated),
-/// a tab of least sizes, padded on its sides, its hover layer; the muted text
-/// at its own weight, the window's text on a hovered tab, the accent on the
-/// selected one; the selected tab's indicator in the accent, of an exact
-/// thickness, along its bottom.
+/// a tab of least sizes, padded on its sides, no outline, its hover layer;
+/// the muted text at its own weight, the window's text on a hovered tab, the
+/// accent on the selected one; the selected tab's indicator in the accent, of
+/// an exact thickness, along its bottom.
 fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidget {
     let bar = RuleBuilder::new(PartStyle::default())
         .base(roles.window.background.map(fill))
@@ -2369,6 +2369,8 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
         .base([
             PartProp::MinSize([Some(TAB_MIN_WIDTH), Some(TAB_MIN_HEIGHT)]),
             padding_sides(TAB_PADDING_HORIZONTAL),
+            // `tab.border.color`, `border.line_width`: platform-facts.md (§2.11): none, 0
+            PartProp::Stroke(Stroke::None),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
         .rule(
