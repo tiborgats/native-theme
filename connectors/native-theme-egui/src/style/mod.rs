@@ -2,10 +2,11 @@
 //! §6): egui's own values, with the theme's written into them.
 
 pub(crate) mod base;
+pub(crate) mod cells;
 mod derived;
 mod frames;
 pub(crate) mod line;
-mod roles;
+pub(crate) mod roles;
 pub(crate) mod states;
 mod variants;
 
@@ -71,6 +72,8 @@ pub(crate) fn egui_preset(surface: Surface, base: &egui::Style) -> egui::Frame {
 /// `surface_frame` write the theme's values.
 pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeStyles {
     let base = Arc::new(base::base_style(input, notes));
+    let source = cells::CellSource::old(input.theme, input.prefs);
+    let cell_input = roles::CellInput::old(input);
     let mut cells: [[Arc<egui::Style>; 4]; 25] = std::array::from_fn(|_| {
         [
             Arc::clone(&base),
@@ -80,7 +83,7 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
         ]
     });
     for (slot, role) in cells.iter_mut().zip(Role::all()) {
-        let mut normal = roles::role_cell(*role, &base, input, notes);
+        let mut normal = roles::role_cell_from(*role, &base, &source, &cell_input, notes);
         let finished = |mut style: egui::Style| {
             finish(&mut style, input);
             Arc::new(style)

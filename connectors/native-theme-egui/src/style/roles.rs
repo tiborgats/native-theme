@@ -2,62 +2,119 @@
 
 use egui::{FontFamily, FontId, TextStyle};
 
-use native_theme::theme::{ResolvedPadding, ResolvedWidgetBorder};
+use native_theme::theme::ResolvedPadding;
 
-use super::base::{button_padding, length, margin, opacity, radius, stroke, text_size};
-use super::line::LineAlign;
+use super::base::{
+    Read, Sides, button_padding_of, length, margin_of, opacity, radius, sanitised_size, stroke,
+};
+use super::cells::{CellSource, Outline, PanelEdge, Text};
 use super::states::{
-    BorderEntries, BorderSource, Edge, FillField, FillSource, Layer, OpenFrom, StateSource,
-    TextSource, write_states,
+    BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource, TextSource,
+    Unstated, state_borders, write_states_with,
 };
 use super::{BuildInput, push_note};
-use crate::accessors::scaled_text_size;
 use crate::convert::{
-    Rgba, clamp_length, composite_over, expander_padding_border, padding_with_border,
-    to_button_padding, to_color32,
+    Rgba, button_padding_outside, clamp_length, composite_over, padding_with_line, to_color32,
 };
 use crate::{Note, ResolvedTheme, Role};
 
-/// One role's `Normal` cell: `base` copied, then the role's writes (§3.4).
+/// What a role cell is built with besides its source: the scheme, epaint's Body row (§6.15),
+/// the font definitions a stated row height is fitted on ([`fit_row_padding`]), and whether a
+/// hover or press the source leaves `None` takes egui's own treatment (spec §10, rule 0, the
+/// 0.8.0 model's) or the 0.7.2 model's copy (§6.1).
+pub(crate) struct CellInput<'a> {
+    pub scheme: egui::Theme,
+    pub row_height: Option<f32>,
+    pub defs: Option<&'a egui::FontDefinitions>,
+    pub rule_0: bool,
+}
+
+impl<'a> CellInput<'a> {
+    /// The 0.7.2 model's: an unstated hover or press copies.
+    pub(crate) fn old(input: &BuildInput<'a>) -> Self {
+        Self {
+            scheme: input.scheme,
+            row_height: input.row_height,
+            defs: input.defs,
+            rule_0: false,
+        }
+    }
+}
+
+/// A [`CellInput`] with the treatment of an unstated state resolved.
+struct Cx<'a> {
+    scheme: egui::Theme,
+    row_height: Option<f32>,
+    defs: Option<&'a egui::FontDefinitions>,
+    scaled_up: bool,
+    unstated: Unstated<'a>,
+}
+
+/// One role's `Normal` cell from the 0.7.2 model.
+#[cfg(test)]
 pub(crate) fn role_cell(
     role: Role,
     base: &egui::Style,
     input: &BuildInput<'_>,
     notes: &mut Vec<Note>,
 ) -> egui::Style {
+    let src = CellSource::old(input.theme, input.prefs);
+    role_cell_from(role, base, &src, &CellInput::old(input), notes)
+}
+
+/// One role's `Normal` cell: `base` copied, then the role's writes from `src` (§3.4).
+pub(crate) fn role_cell_from(
+    role: Role,
+    base: &egui::Style,
+    src: &CellSource,
+    input: &CellInput<'_>,
+    notes: &mut Vec<Note>,
+) -> egui::Style {
+    let own = input.scheme.default_style();
+    let cx = Cx {
+        scheme: input.scheme,
+        row_height: input.row_height,
+        defs: input.defs,
+        scaled_up: src.scaled_up,
+        unstated: if input.rule_0 {
+            Unstated::Egui(&own.visuals.widgets)
+        } else {
+            Unstated::Copy
+        },
+    };
     let mut s = base.clone();
     match role {
         Role::Window | Role::Card => {} // no entry, no field (§6.1): the surfaces carry them
         Role::Splitter => {}            // its three strokes are D7 (§6.9), in `derived::apply_role`
-        Role::Button => button(&mut s, base, input, notes),
-        Role::Input => input_role(&mut s, base, input, notes),
-        Role::Checkbox => checkbox(&mut s, base, input, notes),
-        Role::Menu => menu(&mut s, base, input, notes),
-        Role::Tooltip => tooltip(&mut s, base, input, notes),
-        Role::Scrollbar => scrollbar(&mut s, base, input, notes),
-        Role::Slider => slider(&mut s, base, input, notes),
-        Role::ProgressBar => progress_bar(&mut s, base, input, notes),
-        Role::Tab => tab(&mut s, base, input, notes),
-        Role::Sidebar => sidebar(&mut s, base, input, notes),
-        Role::Toolbar => toolbar(&mut s, base, input, notes),
-        Role::StatusBar => status_bar(&mut s, base, input, notes),
-        Role::List => list(&mut s, base, input, notes),
-        Role::Popover => popover(&mut s, base, input, notes),
-        Role::Separator => separator(&mut s, base, input, notes),
-        Role::Switch => switch(&mut s, base, input, notes),
-        Role::Dialog => dialog(&mut s, base, input, notes),
-        Role::Spinner => spinner(&mut s, base, input, notes),
-        Role::ComboBox => combo_box(&mut s, base, input, notes),
-        Role::SegmentedControl => segmented_control(&mut s, base, input, notes),
-        Role::Expander => expander(&mut s, base, input, notes),
-        Role::Link => link(&mut s, base, input, notes),
+        Role::Button => button(&mut s, base, src, &cx, notes),
+        Role::Input => input_role(&mut s, base, src, &cx, notes),
+        Role::Checkbox => checkbox(&mut s, base, src, &cx, notes),
+        Role::Menu => menu(&mut s, base, src, &cx, notes),
+        Role::Tooltip => surface_text(&mut s, base, &src.tooltip, notes),
+        Role::Scrollbar => scrollbar(&mut s, base, src, &cx, notes),
+        Role::Slider => slider(&mut s, base, src, &cx, notes),
+        Role::ProgressBar => progress_bar(&mut s, base, src, notes),
+        Role::Tab => tab(&mut s, base, src, &cx, notes),
+        Role::Sidebar => sidebar(&mut s, base, src, &cx, notes),
+        Role::Toolbar => toolbar(&mut s, base, src, &cx, notes),
+        Role::StatusBar => status_bar(&mut s, base, src, &cx, notes),
+        Role::List => list(&mut s, base, src, &cx, notes),
+        Role::Popover => surface_text(&mut s, base, &src.popover, notes),
+        Role::Separator => separator(&mut s, base, src, notes),
+        Role::Switch => switch(&mut s, base, src, &cx, notes),
+        Role::Dialog => dialog(&mut s, base, src, notes),
+        Role::Spinner => spinner(&mut s, src),
+        Role::ComboBox => combo_box(&mut s, base, src, &cx, notes),
+        Role::SegmentedControl => segmented_control(&mut s, base, src, &cx, notes),
+        Role::Expander => expander(&mut s, base, src, &cx, notes),
+        Role::Link => link(&mut s, src, notes),
     }
-    if keeps_resting_stroke(role, input.theme) {
+    if keeps_resting_stroke(role, src) {
         let w = &mut s.visuals.widgets;
         w.hovered.bg_stroke.color = w.inactive.bg_stroke.color;
         w.active.bg_stroke.color = w.inactive.bg_stroke.color;
     }
-    crate::style::derived::apply_role(role, &mut s, input, notes);
+    crate::style::derived::apply_role(role, &mut s, src, cx.row_height, cx.unstated, notes);
     s
 }
 
@@ -67,9 +124,9 @@ pub(crate) fn role_cell(
 /// Each passes `border: None` to `write_states`. A toolbar whose theme states its
 /// buttons' outline (`toolbar.button_hover_border_color`) keeps the one `toolbar`
 /// writes (D7).
-fn keeps_resting_stroke(role: Role, theme: &ResolvedTheme) -> bool {
+fn keeps_resting_stroke(role: Role, src: &CellSource) -> bool {
     match role {
-        Role::Toolbar => theme.toolbar.button_hover_border_color.is_none(),
+        Role::Toolbar => src.toolbar.button_border.is_none(),
         Role::Scrollbar
         | Role::Slider
         | Role::Sidebar
@@ -82,14 +139,11 @@ fn keeps_resting_stroke(role: Role, theme: &ResolvedTheme) -> bool {
 
 /// B3 (§8.5): the role's font size on `override_font_id`, `Proportional` always; a size
 /// that is not a positive normal `f32` writes no override and is reported.
-fn override_font(
-    s: &mut egui::Style,
-    path: &'static str,
-    size: f32,
-    input: &BuildInput<'_>,
-    notes: &mut Vec<Note>,
-) {
-    let scaled = scaled_text_size(size, input.prefs);
+/// The size is already scaled by the text scale; an unstated one writes nothing.
+fn override_font(s: &mut egui::Style, size: Read<f32>, notes: &mut Vec<Note>) {
+    let Some((scaled, path)) = size else {
+        return;
+    };
     if scaled.is_normal() && scaled > 0.0 {
         s.override_font_id = Some(FontId::new(scaled, FontFamily::Proportional));
     } else {
@@ -97,20 +151,75 @@ fn override_font(
     }
 }
 
-/// A role's font size into one `text_styles` slot (§8.5's rule over the base's value there).
+/// A role's font size, already scaled, into one `text_styles` slot (§8.5's rule over the
+/// base's value there); an unstated one writes nothing.
 fn slot_size(
     s: &mut egui::Style,
     slot: TextStyle,
-    path: &'static str,
-    size: f32,
+    size: Read<f32>,
     own: &egui::Style,
-    input: &BuildInput<'_>,
     notes: &mut Vec<Note>,
 ) {
-    if let (Some(font), Some(own_font)) = (s.text_styles.get_mut(&slot), own.text_styles.get(&slot))
-    {
-        font.size = text_size(path, size, input.prefs, own_font.size, notes);
+    if let (Some(font), Some(own_font), Some((size, path))) = (
+        s.text_styles.get_mut(&slot),
+        own.text_styles.get(&slot),
+        size,
+    ) {
+        font.size = sanitised_size(path, size, own_font.size, notes);
     }
+}
+
+/// A length sink written where `read` is stated, over `own`.
+fn set_length(sink: &mut f32, read: Read<f32>, own: f32, notes: &mut Vec<Note>) {
+    if let Some((v, path)) = read {
+        *sink = length(path, v, own, notes);
+    }
+}
+
+/// `disabled_alpha` where `read` is stated.
+fn set_opacity(s: &mut egui::Style, read: Read<f32>, own: &egui::Style, notes: &mut Vec<Note>) {
+    if let Some((v, path)) = read {
+        s.visuals.disabled_alpha = opacity(path, v, own.visuals.disabled_alpha, notes);
+    }
+}
+
+/// A colour sink written where `c` is stated.
+fn set_color(sink: &mut egui::Color32, c: Option<Rgba>) {
+    if let Some(c) = c {
+        *sink = to_color32(c);
+    }
+}
+
+/// The selected look `button_style` reads (§6.2): `selection.bg_fill` and its text colour.
+fn set_selection(s: &mut egui::Style, fill: Option<Rgba>, text: Option<Rgba>) {
+    set_color(&mut s.visuals.selection.bg_fill, fill);
+    set_color(&mut s.visuals.selection.stroke.color, text);
+}
+
+/// `Spacing::button_padding` from a widget's padding and its outline's width, over the base's.
+fn padding_of(
+    sides: &Sides,
+    outline: &Outline,
+    own: &egui::Style,
+    notes: &mut Vec<Note>,
+) -> egui::Vec2 {
+    button_padding_of(
+        sides.paths,
+        sides.values,
+        outline.edge.width,
+        own.spacing.button_padding,
+        notes,
+    )
+}
+
+/// A border into every entry.
+fn border_all(outline: &Outline) -> Option<BorderSource> {
+    Some(BorderSource {
+        border: outline.edge,
+        paths: outline.paths,
+        entries: BorderEntries::All,
+        align: outline.align,
+    })
 }
 
 /// A row height the theme may leave unstated — `menu.row_height`, `list.row_height`,
@@ -125,15 +234,9 @@ fn slot_size(
 /// to it once the cell's font is written ([`fit_row_padding`]). The menu's `min_row_height`, a
 /// least height the row grows past, goes into `interact_size.y` in its place where
 /// `menu.row_height` is unstated (`menu`), and fits no padding.
-fn row_height(
-    s: &mut egui::Style,
-    path: &'static str,
-    v: Option<f32>,
-    input: &BuildInput<'_>,
-    notes: &mut Vec<Note>,
-) {
-    let own = input.scheme.default_style().spacing.interact_size.y;
-    s.spacing.interact_size.y = optional_length(path, v, own, notes).unwrap_or(own);
+fn row_height(s: &mut egui::Style, v: Read<f32>, cx: &Cx<'_>, notes: &mut Vec<Note>) {
+    let own = cx.scheme.default_style().spacing.interact_size.y;
+    s.spacing.interact_size.y = v.map_or(own, |(v, path)| length(path, v, own, notes));
 }
 
 /// A stated row height (`menu.row_height`, `list.row_height`, `expander.header_height`) as the
@@ -157,16 +260,11 @@ fn row_height(
 /// its scaled text, as gpui's menu and list rows do (`min_h`), and keeps its padding round it.
 /// The same fit as the widgets crate's segmented control (`native-theme-egui-widgets`
 /// `segmented_control.rs`, `fit_height`).
-fn fit_row_padding(
-    s: &mut egui::Style,
-    stated: Option<f32>,
-    slot: TextStyle,
-    input: &BuildInput<'_>,
-) {
-    let (Some(_), Some(defs)) = (stated.filter(|h| h.is_finite()), input.defs) else {
+fn fit_row_padding(s: &mut egui::Style, stated: Read<f32>, slot: TextStyle, cx: &Cx<'_>) {
+    let (Some(_), Some(defs)) = (stated.filter(|(h, _)| h.is_finite()), cx.defs) else {
         return;
     };
-    if input.prefs.text_scale_factor() > 1.0 {
+    if cx.scaled_up {
         return;
     }
     let Some(size) = s.text_styles.get(&slot).map(|font| font.size) else {
@@ -183,20 +281,10 @@ fn fit_row_padding(
     }
 }
 
-/// An `Option<f32>` size (rationale §3.23, S2): `None` writes nothing and egui's value stands.
-fn optional_length(
-    path: &'static str,
-    v: Option<f32>,
-    own: f32,
-    notes: &mut Vec<Note>,
-) -> Option<f32> {
-    v.map(|v| length(path, v, own, notes))
-}
-
 /// A role's text colour in all five entries: the roles §6.1 names that state a text colour
-/// and no hover or pressed one.
-fn text_in_all(idle: Rgba) -> Option<TextSource> {
-    Some(TextSource {
+/// and no hover or pressed one. Unstated, the entries keep theirs.
+fn text_in_all(idle: Option<Rgba>) -> Option<TextSource> {
+    idle.map(|idle| TextSource {
         idle: Some(idle),
         hover: None,
         active: None,
@@ -206,125 +294,117 @@ fn text_in_all(idle: Rgba) -> Option<TextSource> {
 
 /// A panel role's border: the separator line `noninteractive.bg_stroke` strokes
 /// (`egui/src/containers/panel.rs:911`), and no radius, which is the `Surface::Panel`
-/// frame's (§5.6, §6.1).
-fn panel_edge(
-    s: &mut egui::Style,
-    own: &egui::Style,
-    width_path: &'static str,
-    border: &ResolvedWidgetBorder,
-    notes: &mut Vec<Note>,
-) {
-    s.visuals.widgets.noninteractive.bg_stroke = stroke(
-        width_path,
-        own.visuals.widgets.noninteractive.bg_stroke,
-        to_color32(border.color),
-        border.line_width,
-        notes,
-    );
+/// frame's (§5.6, §6.1); each of colour and width where stated.
+fn panel_edge(s: &mut egui::Style, own: &egui::Style, edge: &PanelEdge, notes: &mut Vec<Note>) {
+    let own_line = own.visuals.widgets.noninteractive.bg_stroke;
+    let line = &mut s.visuals.widgets.noninteractive.bg_stroke;
+    if let Some((width, path)) = edge.width {
+        line.width = stroke(path, own_line, own_line.color, width, notes).width;
+    }
+    set_color(&mut line.color, edge.color);
 }
 
-fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let t = input.theme;
-    let b = &t.button;
-    write_states(
+fn button(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let b = &src.button;
+    let st = &b.states;
+    let [idle, hover, active] = st.fill;
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Weak,
-                idle: Some((b.background_color, "button.background_color")),
-                hover: Some((b.hover_background, "button.hover_background")),
-                active: Some((
-                    b.active_background.unwrap_or(b.hover_background),
-                    "button.active_background",
-                )), // §6.4
+                idle,
+                hover,
+                active,
                 layer: Layer::Composite,
             }),
             text: Some(TextSource {
-                idle: Some(b.font.color),
-                hover: Some(b.hover_text_color),
-                active: Some(b.active_text_color),
+                idle: st.label[0],
+                hover: st.label[1],
+                active: b.pressed_label,
                 in_noninteractive: true, // `button.font.color` → {noninteractive,inactive,open} «Button» (§5.3)
             }),
             border: Some(BorderSource {
-                border: Edge::old(&b.border),
-                paths: ["button.border.corner_radius", "button.border.line_width"],
-                align: LineAlign::Outside,
+                border: st.border,
+                paths: st.border_paths,
+                align: st.align,
                 entries: BorderEntries::All, // the `{5}` rows
             }),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
     // the hovered and the focused button's border, as the base writes them (`base_style`)
-    let w = &mut s.visuals.widgets;
-    let border = b.border.color;
-    w.hovered.bg_stroke.color = to_color32(b.hover_border_color.unwrap_or(border));
-    w.active.bg_stroke.color = to_color32(
-        b.focus_border_color
-            .or(b.hover_border_color)
-            .unwrap_or(border),
+    state_borders(
+        &mut s.visuals.widgets,
+        st.state_border,
+        st.align,
+        Some(FillField::Weak),
+        cx.unstated,
     );
     // the selected (primary) button: `button_style` reads `selection.*` regardless of state (§6.2)
-    s.visuals.selection.bg_fill = to_color32(b.primary_background);
-    s.visuals.selection.stroke.color = to_color32(b.primary_text_color);
-    s.spacing.interact_size.y = length(
-        "button.min_height",
+    set_selection(s, b.primary_fill, b.primary_text);
+    set_length(
+        &mut s.spacing.interact_size.y,
         b.min_height,
         own.spacing.interact_size.y,
         notes,
     );
-    s.spacing.icon_spacing = length(
-        "button.icon_text_gap",
-        b.icon_text_gap,
+    set_length(
+        &mut s.spacing.icon_spacing,
+        b.icon_gap,
         own.spacing.icon_spacing,
         notes,
     );
-    s.spacing.button_padding = button_padding(
-        [
-            "button.border.padding.top",
-            "button.border.padding.right",
-            "button.border.padding.bottom",
-            "button.border.padding.left",
-        ],
-        &b.border,
+    s.spacing.button_padding = button_padding_of(
+        b.padding.paths,
+        b.padding.values,
+        st.border.width,
         own.spacing.button_padding,
         notes,
     );
-    s.visuals.disabled_alpha = opacity(
-        "button.disabled_opacity",
-        b.disabled_opacity,
-        own.visuals.disabled_alpha,
-        notes,
-    );
-    override_font(s, "button.font.size", b.font.size, input, notes);
+    set_opacity(s, b.disabled_opacity, own, notes);
+    override_font(s, b.size, notes);
 }
 
-fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let t = input.theme;
-    let m = &t.menu;
+fn menu(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let m = &src.menu;
     // egui's own menu look first (§3.4): item padding vec2(2.0, 0.0), no item outlines, a
     // transparent resting item (`egui/src/containers/menu.rs:22-29`)
     egui::containers::menu::menu_style(s);
-    write_states(
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Weak,
                 idle: None, // menu_style's transparent item stands: no resting fill leaf (§6.1)
-                hover: Some((m.hover_background, "menu.hover_background")),
+                hover: m.hover_fill,
                 active: None,          // copies hovered
                 layer: Layer::AsGiven, // a row highlight over the menu's own frame (C17)
             }),
             text: Some(TextSource {
-                idle: Some(m.font.color),
-                hover: Some(m.hover_text_color),
+                idle: m.text[0],
+                hover: m.text[1],
                 active: None,
                 in_noninteractive: true, // `menu.font.color` → {noninteractive,inactive}
             }),
             border: Some(BorderSource {
-                border: Edge::old(&m.border),
-                paths: ["menu.border.corner_radius", "menu.border.line_width"],
-                align: LineAlign::Outside,
+                border: m.outline.edge,
+                paths: m.outline.paths,
+                align: m.outline.align,
                 entries: BorderEntries::Interactive, // the item's outline; nothing into the frame's
             }),
             // `active` copies `hovered`, so `menu.active_background` and `active_text_color`
@@ -334,11 +414,12 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
             // look would stay on every keyboard-selected item (S6)
             open: OpenFrom::Hovered, // the open item stays highlighted (`menu.rs:382-384`)
         },
+        cx.unstated,
         notes,
     );
     // E1: the base's `window_stroke.width` is `defaults.border.line_width`, sanitised; egui lays
     // the stroke inside the padding (egui-0.37.0/src/theme/default_style.rs:68-71): nothing moves
-    if let Some(c) = m.hover_border_color {
+    if let Some(c) = m.hover_border {
         let line = egui::Stroke::new(own.visuals.window_stroke.width, to_color32(c));
         let w = &mut s.visuals.widgets;
         (w.hovered.bg_stroke, w.open.bg_stroke) = (line, line); // open: a submenu shown, S4
@@ -346,61 +427,59 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
     }
     // E3: `menu_bar_titles` keeps the cell's padding on a non-finite bar side; reported here,
     // where the atlas is built
-    for (side, path) in [
-        (m.bar_padding_horizontal, "menu.bar_padding_horizontal"),
-        (m.bar_padding_vertical, "menu.bar_padding_vertical"),
-    ] {
-        if side.is_some_and(|v| !v.is_finite()) {
+    for (side, path) in m.bar_padding.into_iter().flatten() {
+        if !side.is_finite() {
             push_note(notes, Note::ValueSanitised { path });
         }
     }
-    s.visuals.widgets.noninteractive.bg_stroke.color = to_color32(m.separator_color); // `separator_style` (§5.2)
+    set_color(
+        &mut s.visuals.widgets.noninteractive.bg_stroke.color,
+        m.separator,
+    ); // `separator_style` (§5.2)
     // the item padding over menu_style's vec2(2.0, 0.0), the unstated side's target (§5.2)
     let after_menu_style = s.spacing.button_padding;
-    s.spacing.button_padding = button_padding(
-        [
-            "menu.border.padding.top",
-            "menu.border.padding.right",
-            "menu.border.padding.bottom",
-            "menu.border.padding.left",
-        ],
-        &m.border,
+    s.spacing.button_padding = button_padding_of(
+        m.padding.paths,
+        m.padding.values,
+        m.outline.edge.width,
         after_menu_style,
         notes,
     );
     // E4: egui has one `button_padding.x` for both sides of an item: `menu.border.padding.left`
     // where stated, the shortcut and a submenu's arrow then that far from the right edge too
     // (README, *Limits*); else the pair's mean
-    let mut items = m.border.clone();
-    items.padding.right = items
-        .padding
-        .left
-        .filter(|v| v.is_finite())
-        .or(items.padding.right);
-    s.spacing.button_padding.x = to_button_padding(after_menu_style, &items).x;
+    let [top, right, bottom, left] = m.padding.values;
+    let items = ResolvedPadding {
+        top,
+        right: left.filter(|v| v.is_finite()).or(right),
+        bottom,
+        left,
+    };
+    let items = match m.outline.edge.width {
+        Some(width) => padding_with_line(&items, width),
+        None => padding_with_line(&items, 0.0),
+    };
+    s.spacing.button_padding.x = button_padding_outside(after_menu_style, &items).x;
     // E4: a stated row height is drawn exactly and wins (S2); else a least height, which egui's
     // Button grows past (egui-0.37.0/src/theme/default_style.rs:97-101,
     // src/widgets/button.rs:351); else egui's own
     match (m.row_height, m.min_row_height) {
-        (None, Some(least)) => {
+        (None, Some((least, path))) => {
             s.spacing.interact_size.y = length(
-                "menu.min_row_height",
+                path,
                 least,
-                input.scheme.default_style().spacing.interact_size.y,
+                cx.scheme.default_style().spacing.interact_size.y,
                 notes,
             );
         }
         (_, least) => {
             // a non-finite least height is reported though the row height wins over it
-            if least.is_some_and(|v| !v.is_finite()) {
-                push_note(
-                    notes,
-                    Note::ValueSanitised {
-                        path: "menu.min_row_height",
-                    },
-                );
+            if let Some((v, path)) = least
+                && !v.is_finite()
+            {
+                push_note(notes, Note::ValueSanitised { path });
             }
-            row_height(s, "menu.row_height", m.row_height, input, notes);
+            row_height(s, m.row_height, cx, notes);
         }
     }
     // E4: the panel's inset of its items, where egui frames a menu's popup: `MenuConfig::style`
@@ -408,39 +487,20 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
     // `Popup::show` frames it with `Frame::popup`, whose inner margin is `spacing.menu_margin`
     // (src/containers/popup.rs:650-651, src/containers/frame.rs:214-220). Physical sides, as
     // every egui frame pads, in a right-to-left layout too.
-    let (h, v) = (m.panel_padding_horizontal, m.panel_padding_vertical);
-    s.spacing.menu_margin = margin(
-        [
-            "menu.panel_padding_vertical",
-            "menu.panel_padding_horizontal",
-            "menu.panel_padding_vertical",
-            "menu.panel_padding_horizontal",
-        ],
+    s.spacing.menu_margin = margin_of(
+        m.panel_padding.paths,
         own.spacing.menu_margin,
-        &ResolvedPadding {
-            top: v,
-            right: h,
-            bottom: v,
-            left: h,
-        },
+        m.panel_padding.values,
         notes,
     );
-    s.spacing.icon_spacing = length(
-        "menu.icon_text_gap",
-        m.icon_text_gap,
+    set_length(
+        &mut s.spacing.icon_spacing,
+        m.icon_gap,
         own.spacing.icon_spacing,
         notes,
     );
-    slot_size(
-        s,
-        TextStyle::Body,
-        "menu.font.size",
-        m.font.size,
-        own,
-        input,
-        notes,
-    ); // items read Body (B3)
-    fit_row_padding(s, m.row_height, TextStyle::Body, input);
+    slot_size(s, TextStyle::Body, m.size, own, notes); // items read Body (B3)
+    fit_row_padding(s, m.row_height, TextStyle::Body, cx);
 }
 
 /// E3: a menu bar's titles over the `Role::Menu` cell ([`ThemeAtlas::menu_bar_modifier`]).
@@ -485,113 +545,81 @@ pub(crate) fn menu_bar_titles(t: &ResolvedTheme, s: &mut egui::Style) {
 fn input_role(
     s: &mut egui::Style,
     own: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &CellSource,
+    cx: &Cx<'_>,
     notes: &mut Vec<Note>,
 ) {
-    let t = input.theme;
-    let i = &t.input;
-    write_states(
+    let i = &src.input;
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: None,
-            text: text_in_all(i.font.color),
-            border: Some(BorderSource {
-                border: Edge::old(&i.border),
-                paths: ["input.border.corner_radius", "input.border.line_width"],
-                align: LineAlign::Outside,
-                entries: BorderEntries::All,
-            }),
+            text: text_in_all(i.text),
+            border: border_all(&i.outline),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
     // the hovered and pressed field's border (§6.4: `None` copies `border.color`)
-    let hover = to_color32(i.hover_border_color.unwrap_or(i.border.color));
-    s.visuals.widgets.hovered.bg_stroke.color = hover;
-    s.visuals.widgets.active.bg_stroke.color = hover;
-    s.visuals.weak_text_color = Some(to_color32(i.placeholder_color));
-    s.visuals.selection.bg_fill = to_color32(i.selection_background);
-    s.visuals.selection.stroke.color = to_color32(i.selection_text_color);
-    s.spacing.button_padding = button_padding(
-        [
-            "input.border.padding.top",
-            "input.border.padding.right",
-            "input.border.padding.bottom",
-            "input.border.padding.left",
-        ],
-        &i.border,
-        own.spacing.button_padding,
-        notes,
+    state_borders(
+        &mut s.visuals.widgets,
+        i.state_border,
+        i.outline.align,
+        None,
+        cx.unstated,
     );
-    slot_size(
-        s,
-        TextStyle::Body,
-        "input.font.size",
-        i.font.size,
-        own,
-        input,
-        notes,
-    );
-    s.visuals.disabled_alpha = opacity(
-        "input.disabled_opacity",
-        i.disabled_opacity,
-        own.visuals.disabled_alpha,
-        notes,
-    );
+    if let Some(c) = i.placeholder {
+        s.visuals.weak_text_color = Some(to_color32(c));
+    }
+    set_selection(s, i.selection, i.selection_text);
+    s.spacing.button_padding = padding_of(&i.padding, &i.outline, own, notes);
+    slot_size(s, TextStyle::Body, i.size, own, notes);
+    set_opacity(s, i.disabled_opacity, own, notes);
 }
 
-fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let t = input.theme;
-    let k = &t.checkbox;
-    // §6.4: the unchecked box and its outline fall back to the widget's own colours
-    let border = ResolvedWidgetBorder {
-        color: k.unchecked_border_color.unwrap_or(k.border.color),
-        ..k.border.clone()
-    };
-    write_states(
+fn checkbox(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let k = &src.checkbox;
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Bg,
-                idle: Some(match k.unchecked_background {
-                    Some(c) => (c, "checkbox.unchecked_background"),
-                    None => (k.background_color, "checkbox.background_color"),
-                }),
-                hover: k.hover_background.map(|h| (h, "checkbox.hover_background")),
+                idle: k.fill[0],
+                hover: k.fill[1],
                 active: None,
                 layer: Layer::Composite,
             }),
-            text: text_in_all(k.indicator_color), // the check mark is `fg_stroke` (§5.3)
-            border: Some(BorderSource {
-                border: Edge::old(&border),
-                paths: [
-                    "checkbox.border.corner_radius",
-                    "checkbox.border.line_width",
-                ],
-                align: LineAlign::Outside,
-                entries: BorderEntries::All,
-            }),
+            text: text_in_all(k.mark), // the check mark is `fg_stroke` (§5.3)
+            border: border_all(&k.outline),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
     // the hovered and pressed box's outline where stated (§6.4: `None` keeps the unchecked
     // border `write_states` copied); `active` is also egui's keyboard-focused state, so a box
     // reached by Tab shows the hover outline, which Breeze draws under the pointer only
-    if let Some(hover) = k.hover_border_color {
-        let hover = to_color32(hover);
-        s.visuals.widgets.hovered.bg_stroke.color = hover;
-        s.visuals.widgets.active.bg_stroke.color = hover;
-    }
+    state_borders(
+        &mut s.visuals.widgets,
+        k.state_border,
+        k.outline.align,
+        Some(FillField::Bg),
+        cx.unstated,
+    );
     // The check mark is a line in the state's `fg_stroke` (`egui/src/widgets/checkbox.rs:151-158`,
     // `check_stroke` from `widget_style.rs:131`, `:188`), so its width is the stroke width, one in
     // every state (§6.1); the radio's dot takes only the stroke's colour (`radio_button.rs:97-103`).
-    if let Some(width) = optional_length(
-        "checkbox.check_mark_stroke_width",
-        k.check_mark_stroke_width,
-        own.visuals.widgets.inactive.fg_stroke.width,
-        notes,
-    ) {
+    if let Some(width) = k
+        .mark_width
+        .map(|(v, path)| length(path, v, own.visuals.widgets.inactive.fg_stroke.width, notes))
+    {
         let w = &mut s.visuals.widgets;
         for e in [
             &mut w.noninteractive,
@@ -603,85 +631,43 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             e.fg_stroke.width = width;
         }
     }
-    s.visuals.override_text_color = Some(to_color32(k.font.color)); // the label (B4)
-    override_font(s, "checkbox.font.size", k.font.size, input, notes);
-    s.spacing.icon_width = length(
-        "checkbox.indicator_width",
-        k.indicator_width,
-        own.spacing.icon_width,
-        notes,
-    );
-    // The row: `Checkbox` and `RadioButton` take their minimum size from
-    // `Vec2::splat(interact_size.y)` (`widgets/checkbox.rs:85`, `widgets/radio_button.rs:54`),
-    // which the base style fills from `button.min_height`. The model states no row height for
-    // either, so the floor is the indicator the theme states, and the row grows round a taller
-    // label as egui lays it out.
-    s.spacing.interact_size.y = s.spacing.icon_width;
-    s.spacing.icon_spacing = length(
-        "checkbox.label_gap",
+    if let Some(c) = k.label.color {
+        s.visuals.override_text_color = Some(to_color32(c)); // the label (B4)
+    }
+    override_font(s, k.label.size, notes);
+    if let Some((v, path)) = k.indicator {
+        s.spacing.icon_width = length(path, v, own.spacing.icon_width, notes);
+        // The row: `Checkbox` and `RadioButton` take their minimum size from
+        // `Vec2::splat(interact_size.y)` (`widgets/checkbox.rs:85`, `widgets/radio_button.rs:54`),
+        // which the base style fills from `button.min_height`. The model states no row height
+        // for either, so the floor is the indicator the theme states, and the row grows round a
+        // taller label as egui lays it out.
+        s.spacing.interact_size.y = s.spacing.icon_width;
+    }
+    set_length(
+        &mut s.spacing.icon_spacing,
         k.label_gap,
         own.spacing.icon_spacing,
         notes,
     );
-    s.visuals.disabled_alpha = opacity(
-        "checkbox.disabled_opacity",
-        k.disabled_opacity,
-        own.visuals.disabled_alpha,
-        notes,
-    );
+    set_opacity(s, k.disabled_opacity, own, notes);
 }
 
-fn tooltip(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let f = &input.theme.tooltip.font;
-    s.visuals.widgets.noninteractive.fg_stroke.color = to_color32(f.color); // a surface role (§6.1)
-    slot_size(
-        s,
-        TextStyle::Body,
-        "tooltip.font.size",
-        f.size,
-        own,
-        input,
-        notes,
+/// A surface role's text (§6.1): `noninteractive`'s colour and the Body size.
+fn surface_text(s: &mut egui::Style, own: &egui::Style, text: &Text, notes: &mut Vec<Note>) {
+    set_color(
+        &mut s.visuals.widgets.noninteractive.fg_stroke.color,
+        text.color,
     );
+    slot_size(s, TextStyle::Body, text.size, own, notes);
 }
 
-fn popover(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let f = &input.theme.popover.font;
-    s.visuals.widgets.noninteractive.fg_stroke.color = to_color32(f.color); // a surface role (§6.1)
-    slot_size(
-        s,
-        TextStyle::Body,
-        "popover.font.size",
-        f.size,
-        own,
-        input,
-        notes,
-    );
-}
-
-fn dialog(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let d = &input.theme.dialog;
-    s.visuals.widgets.noninteractive.fg_stroke.color = to_color32(d.body_font.color); // a surface role (§6.1)
-    slot_size(
-        s,
-        TextStyle::Body,
-        "dialog.body_font.size",
-        d.body_font.size,
-        own,
-        input,
-        notes,
-    );
-    slot_size(
-        s,
-        TextStyle::Heading,
-        "dialog.title_font.size",
-        d.title_font.size,
-        own,
-        input,
-        notes,
-    );
-    s.spacing.item_spacing.x = length(
-        "dialog.button_gap",
+fn dialog(s: &mut egui::Style, own: &egui::Style, src: &CellSource, notes: &mut Vec<Note>) {
+    let d = &src.dialog;
+    surface_text(s, own, &d.body, notes);
+    slot_size(s, TextStyle::Heading, d.title_size, own, notes);
+    set_length(
+        &mut s.spacing.item_spacing.x,
         d.button_gap,
         own.spacing.item_spacing.x,
         notes,
@@ -691,19 +677,21 @@ fn dialog(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
 fn scrollbar(
     s: &mut egui::Style,
     own: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &CellSource,
+    cx: &Cx<'_>,
     notes: &mut Vec<Note>,
 ) {
-    let sb = &input.theme.scrollbar;
+    let sb = &src.scrollbar;
     // the base's own rows again, in the cell (§5.5, §5.9)
-    s.visuals.extreme_bg_color = to_color32(sb.track_color);
-    write_states(
+    set_color(&mut s.visuals.extreme_bg_color, sb.track);
+    let [idle, hover, _] = sb.thumb;
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Bg,
-                idle: Some((sb.thumb_color, "scrollbar.thumb_color")),
-                hover: Some((sb.thumb_hover_color, "scrollbar.thumb_hover_color")),
+                idle,
+                hover,
                 active: None, // the pressed thumb is D5 (§6.9), in `derived::apply_role`
                 layer: Layer::AsGiven,
             }),
@@ -711,26 +699,33 @@ fn scrollbar(
             border: None,
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
-    s.spacing.scroll.handle_min_length = length(
-        "scrollbar.min_thumb_length",
-        sb.min_thumb_length,
+    set_length(
+        &mut s.spacing.scroll.handle_min_length,
+        sb.min_thumb,
         own.spacing.scroll.handle_min_length,
         notes,
     );
 }
 
-fn slider(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let sl = &input.theme.slider;
-    s.visuals.selection.bg_fill = to_color32(sl.fill_color); // `slider_trailing_fill` is already on (§5.9)
-    write_states(
+fn slider(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let sl = &src.slider;
+    set_color(&mut s.visuals.selection.bg_fill, sl.fill); // `slider_trailing_fill` is already on (§5.9)
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Bg,
-                idle: Some((sl.track_color, "slider.track_color")), // I1: the rail
-                hover: None, // the hovered and pressed handle: D6 (§6.9), `derived::apply_role`
+                idle: sl.track, // I1: the rail
+                hover: None,    // the hovered and pressed handle: D6 (§6.9), `derived::apply_role`
                 active: None,
                 layer: Layer::AsGiven,
             }),
@@ -738,262 +733,202 @@ fn slider(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
             border: None,
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
-    s.visuals.disabled_alpha = opacity(
-        "slider.disabled_opacity",
-        sl.disabled_opacity,
-        own.visuals.disabled_alpha,
-        notes,
-    );
+    set_opacity(s, sl.disabled_opacity, own, notes);
 }
 
-fn progress_bar(
-    s: &mut egui::Style,
-    own: &egui::Style,
-    input: &BuildInput<'_>,
-    notes: &mut Vec<Note>,
-) {
-    let p = &input.theme.progress_bar;
-    s.visuals.selection.bg_fill = to_color32(p.fill_color);
-    s.visuals.extreme_bg_color = to_color32(p.track_color);
-    s.spacing.interact_size.y = length(
-        "progress_bar.track_height",
-        p.track_height,
+fn progress_bar(s: &mut egui::Style, own: &egui::Style, src: &CellSource, notes: &mut Vec<Note>) {
+    let p = &src.progress_bar;
+    set_color(&mut s.visuals.selection.bg_fill, p.fill);
+    set_color(&mut s.visuals.extreme_bg_color, p.track);
+    set_length(
+        &mut s.spacing.interact_size.y,
+        p.height,
         own.spacing.interact_size.y,
         notes,
     );
-    if let Some(v) = p.border.padding.left {
-        s.spacing.item_spacing.x = length(
-            "progress_bar.border.padding.left",
-            v,
-            own.spacing.item_spacing.x,
-            notes,
-        );
-    }
+    set_length(
+        &mut s.spacing.item_spacing.x,
+        p.gap,
+        own.spacing.item_spacing.x,
+        notes,
+    );
 }
 
-fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let t = input.theme;
-    let tb = &t.tab;
-    write_states(
+fn tab(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let tb = &src.tab;
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Weak,
-                idle: Some((tb.background_color, "tab.background_color")),
-                hover: tb.hover_background.map(|h| (h, "tab.hover_background")),
+                idle: tb.fill[0],
+                hover: tb.fill[1],
                 active: None,
                 // a row highlight (C17): it replaces the idle tab's fill and lies over the tab
                 // bar, as Breeze paints it (docs/platform-facts.md §2.11, `background_color`)
                 layer: Layer::AsGiven,
             }),
             text: Some(TextSource {
-                idle: Some(tb.font.color),
-                hover: Some(tb.hover_text_color),
+                idle: tb.text[0],
+                hover: tb.text[1],
                 active: None,
                 in_noninteractive: true,
             }),
-            border: Some(BorderSource {
-                border: Edge::old(&tb.border),
-                paths: ["tab.border.corner_radius", "tab.border.line_width"],
-                align: LineAlign::Outside,
-                entries: BorderEntries::All,
-            }),
+            border: border_all(&tb.outline),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
     // the selected tab: `button_style` reads `selection.*` (§6.2)
-    s.visuals.selection.bg_fill = to_color32(tb.active_background);
-    s.visuals.selection.stroke.color = to_color32(tb.active_text_color);
-    s.visuals.panel_fill = to_color32(tb.bar_background);
-    s.spacing.interact_size.y = length(
-        "tab.min_height",
+    set_selection(s, tb.selected_fill, tb.selected_text);
+    set_color(&mut s.visuals.panel_fill, tb.bar_fill);
+    set_length(
+        &mut s.spacing.interact_size.y,
         tb.min_height,
         own.spacing.interact_size.y,
         notes,
     );
     // the space between neighbouring tabs, which a tab row lays out in the scope
-    if let Some(gap) = optional_length(
-        "tab.item_gap",
+    set_length(
+        &mut s.spacing.item_spacing.x,
         tb.item_gap,
         own.spacing.item_spacing.x,
         notes,
-    ) {
-        s.spacing.item_spacing.x = gap;
-    }
-    s.spacing.button_padding = button_padding(
-        [
-            "tab.border.padding.top",
-            "tab.border.padding.right",
-            "tab.border.padding.bottom",
-            "tab.border.padding.left",
-        ],
-        &tb.border,
-        own.spacing.button_padding,
-        notes,
     );
-    slot_size(
-        s,
-        TextStyle::Body,
-        "tab.font.size",
-        tb.font.size,
-        own,
-        input,
-        notes,
-    );
+    s.spacing.button_padding = padding_of(&tb.padding, &tb.outline, own, notes);
+    slot_size(s, TextStyle::Body, tb.size, own, notes);
 }
 
-fn sidebar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let t = input.theme;
-    let sb = &t.sidebar;
-    s.visuals.panel_fill = to_color32(sb.background_color);
-    s.visuals.selection.bg_fill = to_color32(sb.selection_background);
-    s.visuals.selection.stroke.color = to_color32(sb.selection_text_color);
-    write_states(
+/// A panel role's fill, text and separator line (§6.1), after `fill` writes its entries' fills.
+fn panel(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    p: &super::cells::PanelCell,
+    fill: Option<FillSource>,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    set_color(&mut s.visuals.panel_fill, p.fill);
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
-            fill: Some(FillSource {
-                field: FillField::Weak,
-                idle: None,
-                hover: Some((sb.hover_background, "sidebar.hover_background")),
-                active: None,
-                layer: Layer::AsGiven, // a row highlight (§6.1)
-            }),
-            text: text_in_all(sb.font.color),
+            fill,
+            text: text_in_all(p.text.color),
             border: None, // a container edge (§6.1)
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
-    panel_edge(s, own, "sidebar.border.line_width", &sb.border, notes);
-    slot_size(
-        s,
-        TextStyle::Body,
-        "sidebar.font.size",
-        sb.font.size,
-        own,
-        input,
-        notes,
-    );
+    panel_edge(s, own, &p.edge, notes);
+    slot_size(s, TextStyle::Body, p.text.size, own, notes);
 }
 
-fn toolbar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let t = input.theme;
-    let tb = &t.toolbar;
-    s.visuals.panel_fill = to_color32(tb.background_color);
-    if !tb.bar_height.is_some_and(f32::is_finite) {
+fn sidebar(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let sb = &src.sidebar;
+    set_selection(s, sb.selection, sb.selection_text);
+    let fill = FillSource {
+        field: FillField::Weak,
+        idle: None,
+        hover: sb.hover,
+        active: None,
+        layer: Layer::AsGiven, // a row highlight (§6.1)
+    };
+    panel(s, own, &sb.panel, Some(fill), cx, notes);
+}
+
+fn toolbar(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let tb = &src.toolbar;
+    if !tb.bar_height.is_some_and(|(h, _)| h.is_finite()) {
         // A stated height is R-BAR's (§6.10, `derived::apply_role`), which also reports a
         // non-finite one.
-        row_height(s, "toolbar.bar_height", None, input, notes);
+        row_height(s, None, cx, notes);
     }
-    if let Some(gap) = optional_length(
-        "toolbar.item_gap",
+    set_length(
+        &mut s.spacing.item_spacing.x,
         tb.item_gap,
         own.spacing.item_spacing.x,
         notes,
-    ) {
-        s.spacing.item_spacing.x = gap;
-    }
-    write_states(
-        &mut s.visuals.widgets,
-        &StateSource {
-            fill: None,
-            text: text_in_all(tb.font.color),
-            border: None,
-            open: OpenFrom::Inactive,
-        },
-        notes,
     );
+    panel(s, own, &tb.panel, None, cx, notes);
     // D7: a flat tool button's hovered and pressed states, each field where stated and as
     // stated, not composited; the rest is the button's own
     let w = &mut s.visuals.widgets;
-    if let Some(fill) = tb.button_hover_background {
-        w.hovered.weak_bg_fill = to_color32(fill);
-    }
-    if let Some(fill) = tb.button_active_background {
-        w.active.weak_bg_fill = to_color32(fill);
-    }
+    let [hover, active] = tb.button_fill;
+    set_color(&mut w.hovered.weak_bg_fill, hover);
+    set_color(&mut w.active.weak_bg_fill, active);
     // the colour only, the width stays the base's; `active` is also egui's keyboard-focused
     // state, so a tool button reached by Tab shows the outline, which a Qt toolbar button,
     // taking no focus, never shows
-    if let Some(edge) = tb.button_hover_border_color {
+    if let Some(edge) = tb.button_border {
         let edge = to_color32(edge);
         w.hovered.bg_stroke.color = edge;
         w.active.bg_stroke.color = edge;
     }
-    panel_edge(s, own, "toolbar.border.line_width", &tb.border, notes);
-    slot_size(
-        s,
-        TextStyle::Body,
-        "toolbar.font.size",
-        tb.font.size,
-        own,
-        input,
-        notes,
-    );
 }
 
 fn status_bar(
     s: &mut egui::Style,
     own: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &CellSource,
+    cx: &Cx<'_>,
     notes: &mut Vec<Note>,
 ) {
-    let t = input.theme;
-    let sb = &t.status_bar;
-    s.visuals.panel_fill = to_color32(sb.background_color);
-    write_states(
-        &mut s.visuals.widgets,
-        &StateSource {
-            fill: None,
-            text: text_in_all(sb.font.color),
-            border: None,
-            open: OpenFrom::Inactive,
-        },
-        notes,
-    );
-    panel_edge(s, own, "status_bar.border.line_width", &sb.border, notes);
-    slot_size(
-        s,
-        TextStyle::Body,
-        "status_bar.font.size",
-        sb.font.size,
-        own,
-        input,
-        notes,
-    );
+    panel(s, own, &src.status_bar, None, cx, notes);
 }
 
-fn list(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let l = &input.theme.list;
-    s.visuals.selection.bg_fill = to_color32(l.selection_background);
-    s.visuals.selection.stroke.color = to_color32(l.selection_text_color);
+fn list(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let l = &src.list;
+    set_selection(s, l.selection, l.selection_text);
     // the table lines: `grid_color` as given, the list's width and radius (§5.4, §6.1)
     let own_edge = &own.visuals.widgets.noninteractive;
     let edge = &mut s.visuals.widgets.noninteractive;
-    edge.bg_stroke.color = to_color32(l.grid_color);
-    edge.bg_stroke.width = length(
-        "list.border.line_width",
-        l.border.line_width,
+    set_color(&mut edge.bg_stroke.color, l.grid);
+    set_length(
+        &mut edge.bg_stroke.width,
+        l.width,
         own_edge.bg_stroke.width,
         notes,
     );
-    edge.corner_radius = radius(
-        "list.border.corner_radius",
-        own_edge.corner_radius,
-        l.border.corner_radius,
-        notes,
-    );
-    row_height(s, "list.row_height", l.row_height, input, notes);
-    write_states(
+    if let Some((r, path)) = l.radius {
+        edge.corner_radius = radius(path, own_edge.corner_radius, r, notes);
+    }
+    row_height(s, l.row_height, cx, notes);
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Bg,
                 idle: None,
-                hover: Some((l.hover_background, "list.hover_background")),
+                hover: l.hover,
                 active: None,
                 layer: Layer::AsGiven, // a row highlight (§6.1)
             }),
@@ -1001,53 +936,47 @@ fn list(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
             border: None,
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
-    s.visuals.widgets.noninteractive.fg_stroke.color = to_color32(l.item_font.color); // the cells are `Label`s
-    s.visuals.widgets.active.fg_stroke.color = to_color32(l.header_font.color); // `strong_text_color` (§5.4)
-    slot_size(
-        s,
-        TextStyle::Body,
-        "list.item_font.size",
-        l.item_font.size,
-        own,
-        input,
-        notes,
-    );
-    fit_row_padding(s, l.row_height, TextStyle::Body, input);
+    set_color(
+        &mut s.visuals.widgets.noninteractive.fg_stroke.color,
+        l.item.color,
+    ); // the cells are `Label`s
+    set_color(&mut s.visuals.widgets.active.fg_stroke.color, l.header_text); // `strong_text_color` (§5.4)
+    slot_size(s, TextStyle::Body, l.item.size, own, notes);
+    fit_row_padding(s, l.row_height, TextStyle::Body, cx);
 }
 
-fn separator(
+fn separator(s: &mut egui::Style, own: &egui::Style, src: &CellSource, notes: &mut Vec<Note>) {
+    let sp = &src.separator;
+    // the line keeps its own colour: no opacity fold (§5.1)
+    let line = &mut s.visuals.widgets.noninteractive.bg_stroke;
+    set_length(
+        &mut line.width,
+        sp.width,
+        own.visuals.widgets.noninteractive.bg_stroke.width,
+        notes,
+    );
+    set_color(&mut line.color, sp.color);
+}
+
+fn switch(
     s: &mut egui::Style,
     own: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &CellSource,
+    cx: &Cx<'_>,
     notes: &mut Vec<Note>,
 ) {
-    let sp = &input.theme.separator;
-    // the line keeps its own colour: no opacity fold (§5.1)
-    s.visuals.widgets.noninteractive.bg_stroke = egui::Stroke::new(
-        length(
-            "separator.line_width",
-            sp.line_width,
-            own.visuals.widgets.noninteractive.bg_stroke.width,
-            notes,
-        ),
-        to_color32(sp.line_color),
-    );
-}
-
-fn switch(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let sw = &input.theme.switch;
-    s.visuals.selection.bg_fill = to_color32(sw.checked_background); // the checked track (§6.2)
-    write_states(
+    let sw = &src.switch;
+    set_color(&mut s.visuals.selection.bg_fill, sw.checked); // the checked track (§6.2)
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Weak,
-                idle: Some((sw.unchecked_background, "switch.unchecked_background")),
-                hover: sw
-                    .hover_unchecked_background
-                    .map(|h| (h, "switch.hover_unchecked_background")),
+                idle: sw.fill[0],
+                hover: sw.fill[1],
                 active: None,
                 layer: Layer::Composite,
             }),
@@ -1055,234 +984,177 @@ fn switch(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
             border: None,
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
-    let w = &mut s.visuals.widgets;
-    for e in [
-        &mut w.noninteractive,
-        &mut w.inactive,
-        &mut w.hovered,
-        &mut w.active,
-        &mut w.open,
-    ] {
-        e.corner_radius = radius(
-            "switch.track_radius",
-            e.corner_radius,
-            sw.track_radius,
-            notes,
-        );
+    if let Some((r, path)) = sw.radius {
+        let w = &mut s.visuals.widgets;
+        for e in [
+            &mut w.noninteractive,
+            &mut w.inactive,
+            &mut w.hovered,
+            &mut w.active,
+            &mut w.open,
+        ] {
+            e.corner_radius = radius(path, e.corner_radius, r, notes);
+        }
     }
-    s.spacing.interact_size.y = length(
-        "switch.track_height",
-        sw.track_height,
+    set_length(
+        &mut s.spacing.interact_size.y,
+        sw.height,
         own.spacing.interact_size.y,
         notes,
     );
-    s.visuals.disabled_alpha = opacity(
-        "switch.disabled_opacity",
-        sw.disabled_opacity,
-        own.visuals.disabled_alpha,
-        notes,
-    );
+    set_opacity(s, sw.disabled_opacity, own, notes);
 }
 
-fn spinner(
-    s: &mut egui::Style,
-    _own: &egui::Style,
-    input: &BuildInput<'_>,
-    _notes: &mut Vec<Note>,
-) {
+fn spinner(s: &mut egui::Style, src: &CellSource) {
     // the arc: `strong_text_color`, `active.fg_stroke.color` (I2); its size is D3 (§6.7), in
     // `derived::apply_role`
-    s.visuals.widgets.active.fg_stroke.color = to_color32(input.theme.spinner.fill_color);
+    set_color(
+        &mut s.visuals.widgets.active.fg_stroke.color,
+        src.spinner.color,
+    );
 }
 
 fn combo_box(
     s: &mut egui::Style,
     own: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &CellSource,
+    cx: &Cx<'_>,
     notes: &mut Vec<Note>,
 ) {
-    let t = input.theme;
-    let cb = &t.combo_box;
-    write_states(
+    let cb = &src.combo_box;
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Weak,
-                idle: Some((cb.background_color, "combo_box.background_color")),
-                hover: cb
-                    .hover_background
-                    .map(|h| (h, "combo_box.hover_background")),
+                idle: cb.fill[0],
+                hover: cb.fill[1],
                 active: None,
                 layer: Layer::Composite,
             }),
-            text: text_in_all(cb.font.color),
-            border: Some(BorderSource {
-                border: Edge::old(&cb.border),
-                paths: [
-                    "combo_box.border.corner_radius",
-                    "combo_box.border.line_width",
-                ],
-                align: LineAlign::Outside,
-                entries: BorderEntries::All,
-            }),
+            text: text_in_all(cb.text.color),
+            border: border_all(&cb.outline),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
     // the hovered and pressed trigger's outline where stated (§6.4: `None` keeps the border
     // `write_states` copied); an open combo box is egui's `open` state, written below
-    if let Some(hover) = cb.hover_border_color {
-        let hover = to_color32(hover);
-        s.visuals.widgets.hovered.bg_stroke.color = hover;
-        s.visuals.widgets.active.bg_stroke.color = hover;
-    }
+    state_borders(
+        &mut s.visuals.widgets,
+        cb.state_border,
+        cb.outline.align,
+        Some(FillField::Weak),
+        cx.unstated,
+    );
     // E10: an open combo box, drawn from `open` under `ComboBox::CLASS_OPEN` whatever the
     // pointer does (egui-0.37.0/src/theme/default_style.rs:41-45), as Breeze draws it: the fill
     // a state layer over the idle fill, as the hover's (opaque is exact), the border at the width
     // `write_states` put there. Unstated, `open` keeps the resting look.
-    if let Some(fill) = cb.open_background {
-        s.visuals.widgets.open.weak_bg_fill = composite_over(fill, cb.background_color);
+    if let Some(fill) = cb.open_fill {
+        s.visuals.widgets.open.weak_bg_fill = match cb.fill[0] {
+            Some((idle, _)) => composite_over(fill, idle),
+            None => to_color32(fill),
+        };
     }
-    if let Some(edge) = cb.open_border_color {
-        s.visuals.widgets.open.bg_stroke.color = to_color32(edge);
-    }
-    s.spacing.interact_size.y = length(
-        "combo_box.min_height",
+    set_color(&mut s.visuals.widgets.open.bg_stroke.color, cb.open_border);
+    set_length(
+        &mut s.spacing.interact_size.y,
         cb.min_height,
         own.spacing.interact_size.y,
         notes,
     );
-    s.spacing.icon_width = length(
-        "combo_box.arrow_icon_size",
-        cb.arrow_icon_size,
+    set_length(
+        &mut s.spacing.icon_width,
+        cb.arrow,
         own.spacing.icon_width,
         notes,
     );
-    s.spacing.button_padding = button_padding(
-        [
-            "combo_box.border.padding.top",
-            "combo_box.border.padding.right",
-            "combo_box.border.padding.bottom",
-            "combo_box.border.padding.left",
-        ],
-        &cb.border,
-        own.spacing.button_padding,
-        notes,
-    );
-    s.visuals.disabled_alpha = opacity(
-        "combo_box.disabled_opacity",
-        cb.disabled_opacity,
-        own.visuals.disabled_alpha,
-        notes,
-    );
+    s.spacing.button_padding = padding_of(&cb.padding, &cb.outline, own, notes);
+    set_opacity(s, cb.disabled_opacity, own, notes);
     // B3: egui 0.37 draws the selected text, and the popup's items, with `ButtonStyle`'s font,
     // `override_font_id` before Body (`egui-0.37.0/src/theme/default_style.rs`,
     // `StyleProvider<ButtonStyle>`; `AtomLayoutStyle::apply`,
     // `egui-0.37.0/src/widget_style/mod.rs`, replaces the `TextStyle::Button` fallback
     // `combo_box_dyn` sets)
-    override_font(s, "combo_box.font.size", cb.font.size, input, notes);
+    override_font(s, cb.text.size, notes);
 }
 
 fn segmented_control(
     s: &mut egui::Style,
     own: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &CellSource,
+    cx: &Cx<'_>,
     notes: &mut Vec<Note>,
 ) {
-    let t = input.theme;
-    let sc = &t.segmented_control;
-    write_states(
+    let sc = &src.segmented_control;
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Weak,
-                idle: Some((sc.background_color, "segmented_control.background_color")),
-                hover: sc
-                    .hover_background
-                    .map(|h| (h, "segmented_control.hover_background")),
+                idle: sc.fill[0],
+                hover: sc.fill[1],
                 active: None,
                 layer: Layer::Composite,
             }),
-            text: text_in_all(sc.font.color),
-            border: Some(BorderSource {
-                border: Edge::old(&sc.border),
-                paths: [
-                    "segmented_control.border.corner_radius",
-                    "segmented_control.border.line_width",
-                ],
-                align: LineAlign::Outside,
-                entries: BorderEntries::All,
-            }),
+            text: text_in_all(sc.text.color),
+            border: border_all(&sc.outline),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
     // the selected segment: `button_style` reads `selection.*` (§6.2)
-    s.visuals.selection.bg_fill = to_color32(sc.active_background);
-    s.visuals.selection.stroke.color = to_color32(sc.active_text_color);
-    s.spacing.interact_size.y = length(
-        "segmented_control.segment_height",
-        sc.segment_height,
+    set_selection(s, sc.selected_fill, sc.selected_text);
+    set_length(
+        &mut s.spacing.interact_size.y,
+        sc.height,
         own.spacing.interact_size.y,
         notes,
     );
-    s.spacing.item_spacing.x = length(
-        "segmented_control.separator_width",
-        sc.separator_width,
+    set_length(
+        &mut s.spacing.item_spacing.x,
+        sc.separator,
         own.spacing.item_spacing.x,
         notes,
     );
-    override_font(s, "segmented_control.font.size", sc.font.size, input, notes);
-    s.spacing.button_padding = button_padding(
-        [
-            "segmented_control.border.padding.top",
-            "segmented_control.border.padding.right",
-            "segmented_control.border.padding.bottom",
-            "segmented_control.border.padding.left",
-        ],
-        &sc.border,
-        own.spacing.button_padding,
-        notes,
-    );
-    s.visuals.disabled_alpha = opacity(
-        "segmented_control.disabled_opacity",
-        sc.disabled_opacity,
-        own.visuals.disabled_alpha,
-        notes,
-    );
+    override_font(s, sc.text.size, notes);
+    s.spacing.button_padding = padding_of(&sc.padding, &sc.outline, own, notes);
+    set_opacity(s, sc.disabled_opacity, own, notes);
 }
 
-fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let t = input.theme;
-    let x = &t.expander;
+fn expander(
+    s: &mut egui::Style,
+    own: &egui::Style,
+    src: &CellSource,
+    cx: &Cx<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let x = &src.expander;
     // the header's one frame layer, with no resting fill (§6.1, `collapsing_header.rs:561-568`)
     s.visuals.collapsing_header_frame = true;
     s.visuals.widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
     s.visuals.widgets.open.weak_bg_fill = egui::Color32::TRANSPARENT; // `open` copies it (§6.1)
-    write_states(
+    write_states_with(
         &mut s.visuals.widgets,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Weak,
                 idle: None,
-                hover: x.hover_background.map(|h| (h, "expander.hover_background")),
+                hover: x.hover,
                 active: None,
                 layer: Layer::AsGiven, // over no idle fill of its own (§6.1)
             }),
-            text: text_in_all(x.font.color),
-            border: Some(BorderSource {
-                border: Edge::old(&x.border),
-                paths: [
-                    "expander.border.corner_radius",
-                    "expander.border.line_width",
-                ],
-                align: LineAlign::Outside,
-                entries: BorderEntries::All,
-            }),
+            text: text_in_all(x.text.color),
+            border: border_all(&x.outline),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
         notes,
     );
     // The header draws no outline, whatever the theme states of `expander.frame_enabled`:
@@ -1293,51 +1165,37 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
     for e in [&mut w.inactive, &mut w.hovered, &mut w.active, &mut w.open] {
         e.bg_stroke.width = 0.0;
     }
-    s.spacing.interact_size.y = length(
-        "expander.header_height",
+    set_length(
+        &mut s.spacing.interact_size.y,
         x.header_height,
         own.spacing.interact_size.y,
         notes,
     );
-    slot_size(
-        s,
-        TextStyle::Button,
-        "expander.font.size",
-        x.font.size,
-        own,
-        input,
-        notes,
-    );
+    slot_size(s, TextStyle::Button, x.text.size, own, notes);
     // `.y` by the pair rule; `.x` is read on the trailing side only (§5.6, §7.4), so the
     // right side alone; `.left` is `spacing.indent`, in `derived::apply_role`
-    let p = &x.border.padding;
-    for (side, path) in [
-        (p.top, "expander.border.padding.top"),
-        (p.right, "expander.border.padding.right"),
-        (p.bottom, "expander.border.padding.bottom"),
-    ] {
+    let [top, right, bottom, _] = x.padding.values;
+    let [top_path, right_path, bottom_path, _] = x.padding.paths;
+    for (side, path) in [(top, top_path), (right, right_path), (bottom, bottom_path)] {
         if side.is_some_and(|v| !v.is_finite()) {
             push_note(notes, Note::ValueSanitised { path });
         }
     }
     // a stated side lies inside the border only where the frame is drawn (M9-178)
     let own_padding = own.spacing.button_padding;
-    let border = expander_padding_border(x);
+    let padding = x.outside_padding();
     s.spacing.button_padding = egui::vec2(
-        padding_with_border(&border)
-            .right
-            .map_or(own_padding.x, clamp_length),
-        to_button_padding(own_padding, &border).y,
+        padding.right.map_or(own_padding.x, clamp_length),
+        button_padding_outside(own_padding, &padding).y,
     );
     // the header's title is laid out in the Button font
     // (`egui/src/containers/collapsing_header.rs:518-523`)
-    fit_row_padding(s, Some(x.header_height), TextStyle::Button, input);
+    fit_row_padding(s, x.header_height, TextStyle::Button, cx);
 }
 
-fn link(s: &mut egui::Style, _own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let l = &input.theme.link;
-    s.visuals.hyperlink_color = to_color32(l.font.color);
-    override_font(s, "link.font.size", l.font.size, input, notes);
+fn link(s: &mut egui::Style, src: &CellSource, notes: &mut Vec<Note>) {
+    set_color(&mut s.visuals.hyperlink_color, src.link.color);
+    override_font(s, src.link.size, notes);
 }
 
 #[cfg(test)]
@@ -1354,8 +1212,8 @@ mod tests {
 
     use super::*;
     use crate::convert::{
-        clamp_length, composite_over, to_button_padding, to_color32, to_corner_radius,
-        unit_interval,
+        clamp_length, composite_over, expander_padding_border, to_button_padding, to_color32,
+        to_corner_radius, unit_interval,
     };
     use crate::install_tests::resolved;
     use crate::style::BuildInput;

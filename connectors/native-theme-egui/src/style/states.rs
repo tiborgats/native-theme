@@ -182,6 +182,7 @@ fn note_transparent(
 /// its kind names and nothing else, so a field the role states no value for keeps what the
 /// entry holds. `expansion` is never written. A hover or press the source leaves `None` is
 /// the 0.7.2 model's copy ([`Unstated::Copy`]).
+#[cfg(test)]
 pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource, notes: &mut Vec<Note>) {
     write_states_with(widgets, src, Unstated::Copy, notes);
 }
@@ -301,6 +302,36 @@ pub(crate) fn write_states_with(
             write(entry, written);
         }
     }
+}
+
+/// The hovered and the pressed entry's border colour, over what [`write_states_with`] wrote
+/// there: each stated one composited over the fill its entry paints (`painted`, [`Line::over`]),
+/// an unstated one what `unstated` gives.
+pub(crate) fn state_borders(
+    widgets: &mut Widgets,
+    [hover, active]: [Option<Rgba>; 2],
+    align: LineAlign,
+    painted: Option<FillField>,
+    unstated: Unstated<'_>,
+) {
+    let line = |c: Rgba, entry: &WidgetVisuals| {
+        Line {
+            color: to_color32(c),
+            align,
+        }
+        .over(painted.map(|f| fill_of(entry, f)))
+    };
+    let own = |e: &WidgetVisuals| e.bg_stroke.color;
+    let hovered = match hover {
+        Some(c) => line(c, &widgets.hovered),
+        None => unstated.hovered(widgets.hovered.bg_stroke.color, own),
+    };
+    let active = match active {
+        Some(c) => line(c, &widgets.active),
+        None => unstated.active(widgets.active.bg_stroke.color, hovered, own),
+    };
+    widgets.hovered.bg_stroke.color = hovered;
+    widgets.active.bg_stroke.color = active;
 }
 
 #[cfg(test)]

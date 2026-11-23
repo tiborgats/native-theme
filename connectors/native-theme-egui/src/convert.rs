@@ -290,6 +290,7 @@ pub(crate) fn padding_with_line(
 /// (ledger M9-178), so a stated padding side lies inside a border only where the companion
 /// crate's `Expander` draws its frame round header and body, as the iced connector pads the
 /// header by the stated sides alone since M9-176.
+#[cfg(test)]
 #[inline]
 #[must_use]
 pub(crate) fn expander_padding_border(

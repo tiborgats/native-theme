@@ -5,12 +5,12 @@
 
 use egui::TextStyle;
 
-use native_theme::theme::{ResolvedPadding, ResolvedWidgetBorder};
+use native_theme::theme::ResolvedPadding;
 
-use super::line::{Line, LineAlign};
+use super::line::LineAlign;
 use super::states::{
     BorderEntries, BorderSource, Edge, FillField, FillSource, Layer, OpenFrom, StateSource,
-    TextSource, Unstated, write_states_with,
+    TextSource, Unstated, state_borders, write_states_with,
 };
 use super::{BuildInput, push_note, saturates_i8};
 use crate::accessors::scaled_text_size;
@@ -127,27 +127,10 @@ pub(crate) fn margin_of(
     )
 }
 
-/// `Spacing::button_padding` from a widget's border (§5's pair rule, `to_button_padding`);
-/// a non-finite side is reported. The border's `line_width` is reported where its stroke is
-/// written, not here (once per leaf).
-pub(crate) fn button_padding(
-    paths: [&'static str; 4],
-    border: &ResolvedWidgetBorder,
-    own: egui::Vec2,
-    notes: &mut Vec<Note>,
-) -> egui::Vec2 {
-    let p = &border.padding;
-    button_padding_of(
-        paths,
-        [p.top, p.right, p.bottom, p.left],
-        Some(border.line_width),
-        own,
-        notes,
-    )
-}
-
-/// [`button_padding`] of four sides given as top, right, bottom, left, each `None` where
-/// unstated, and the border's line width, which a `None` leaves out of the sum.
+/// `Spacing::button_padding` from a widget's padding (§5's pair rule, `to_button_padding`), four
+/// sides given as top, right, bottom, left, each `None` where unstated, and the border's line
+/// width, which a `None` leaves out of the sum; a non-finite side is reported. The line width
+/// is reported where its stroke is written, not here (once per leaf).
 pub(crate) fn button_padding_of(
     paths: [&'static str; 4],
     sides: [Option<f32>; 4],
@@ -204,6 +187,36 @@ pub(crate) struct ButtonStates {
     pub align: LineAlign,
     /// The hovered and the pressed or focused border's colour (egui's `active` is both).
     pub state_border: [Option<Rgba>; 2],
+}
+
+impl ButtonStates {
+    /// The 0.7.2 model's button, every value stated.
+    pub(crate) fn old(t: &ResolvedTheme) -> Self {
+        let b = &t.button;
+        Self {
+            fill: [
+                Some((b.background_color, "button.background_color")),
+                Some((b.hover_background, "button.hover_background")),
+                Some((
+                    b.active_background.unwrap_or(b.hover_background),
+                    "button.active_background",
+                )), // §6.4
+            ],
+            label: [Some(b.font.color), Some(b.hover_text_color)],
+            border: Edge::old(&b.border),
+            border_paths: ["button.border.corner_radius", "button.border.line_width"],
+            align: LineAlign::Outside,
+            // a theme that states both and they differ: a pressed button takes the focus border
+            state_border: [
+                Some(b.hover_border_color.unwrap_or(b.border.color)),
+                Some(
+                    b.focus_border_color
+                        .or(b.hover_border_color)
+                        .unwrap_or(b.border.color),
+                ),
+            ],
+        }
+    }
 }
 
 /// What the base style and [`crate::style::derived::apply_base`] read, from either model, each
@@ -343,29 +356,7 @@ impl BaseSource {
             widget_gap: layout.widget_gap,
             // the theme's milliseconds as egui's seconds (`egui/src/style.rs:928`)
             tooltip_delay: t.tooltip.show_delay.map(|ms| f32::from(ms) / 1000.0),
-            button: ButtonStates {
-                fill: [
-                    Some((b.background_color, "button.background_color")),
-                    Some((b.hover_background, "button.hover_background")),
-                    Some((
-                        b.active_background.unwrap_or(b.hover_background),
-                        "button.active_background",
-                    )), // §6.4
-                ],
-                label: [Some(b.font.color), Some(b.hover_text_color)],
-                border: Edge::old(&b.border),
-                border_paths: ["button.border.corner_radius", "button.border.line_width"],
-                align: LineAlign::Outside,
-                // a theme that states both and they differ: a pressed button takes the focus border
-                state_border: [
-                    Some(b.hover_border_color.unwrap_or(b.border.color)),
-                    Some(
-                        b.focus_border_color
-                            .or(b.hover_border_color)
-                            .unwrap_or(b.border.color),
-                    ),
-                ],
-            },
+            button: ButtonStates::old(t),
             thumb: [
                 Some((sb.thumb_color, "scrollbar.thumb_color")),
                 Some((sb.thumb_hover_color, "scrollbar.thumb_hover_color")),
@@ -638,25 +629,7 @@ pub(crate) fn base_style_from(
     // the hovered button's border, which a pressed one keeps, and the focused one's; egui's
     // `active` is press and keyboard focus alike (`Response::widget_state`, egui 0.37.0
     // src/widget_style/mod.rs:212-222). Each over the fill its entry paints (`Line::over`).
-    let line = |c: Rgba, fill: egui::Color32| {
-        Line {
-            color: to_color32(c),
-            align: b.align,
-        }
-        .over(Some(fill))
-    };
-    let own_line = |e: &egui::style::WidgetVisuals| e.bg_stroke.color;
-    let [hover_border, active_border] = b.state_border;
-    let hovered = match hover_border {
-        Some(c) => line(c, w.hovered.weak_bg_fill),
-        None => unstated.hovered(w.hovered.bg_stroke.color, own_line),
-    };
-    let active = match active_border {
-        Some(c) => line(c, w.active.weak_bg_fill),
-        None => unstated.active(w.active.bg_stroke.color, hovered, own_line),
-    };
-    w.hovered.bg_stroke.color = hovered;
-    w.active.bg_stroke.color = active;
+    state_borders(w, b.state_border, b.align, Some(FillField::Weak), unstated);
     // `bg_fill`: the scrollbar thumb, which every unscoped `ScrollArea` handle paints (§5.9)
     let [thumb, thumb_hover, _] = src.thumb;
     write_states_with(
@@ -678,13 +651,17 @@ pub(crate) fn base_style_from(
     );
     // the topmost window's title bar reads `open.weak_bg_fill` (`egui/src/containers/window.rs:1427`)
     color(&mut w.open.weak_bg_fill, src.title_bar_fill);
-    // §6.1: a hover or press changes only what the platform states, so every entry keeps
-    // `inactive`'s stroke width — egui's stock 1.5 / 2.0 (`egui/src/style.rs:1703`, `:1711`) never
-    // appear; §6.6's slider knob relies on one width in every state. Every cell inherits it.
+    // §6.1: a hover or press changes only what the platform states, so on the 0.7.2 model every
+    // entry keeps `inactive`'s stroke width — egui's stock 1.5 / 2.0 (`egui/src/style.rs:1703`,
+    // `:1711`) never appear; §6.6's slider knob relies on one width in every state. The theme
+    // states no text-stroke width, so under rule 0 a hover and a press take egui's own where
+    // egui's entries change it. Every cell inherits it.
     let width = w.inactive.fg_stroke.width;
-    for e in [&mut w.hovered, &mut w.active, &mut w.open] {
-        e.fg_stroke.width = width;
-    }
+    let own_width = |e: &egui::style::WidgetVisuals| e.fg_stroke.width;
+    let hovered = unstated.hovered(width, own_width);
+    w.active.fg_stroke.width = unstated.active(width, hovered, own_width);
+    w.hovered.fg_stroke.width = hovered;
+    w.open.fg_stroke.width = width;
 
     // §6.15: the line spacing, from the Body size the atlas writes and the row `Builder::build` measured
     if let Some((line_height, path)) = src.line_height {

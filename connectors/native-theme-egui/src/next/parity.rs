@@ -31,6 +31,8 @@
 //! [`DIFFERENCES`], per leaf and preset, with its cause, from which the test computes the
 //! value the 0.8.0 side must hold there; an entry that differs nowhere is stale and fails.
 
+use native_theme::next::Preset;
+
 use super::build::base_source;
 use super::root_parity::{PRESETS, resolve};
 use crate::AccessibilityPreferences;
@@ -50,8 +52,12 @@ enum Cause {
     ButtonBorderOverFill,
 }
 
-/// A listed difference: what is compared, the preset's key, the leaf's path in the `Debug`
-/// form, its cause, and the source of the cause.
+/// The preset key of a difference that occurs on every preset of [`PRESETS`]; the test asks
+/// it of each.
+const EVERY: &str = "*";
+
+/// A listed difference: what is compared, the preset's key (or [`EVERY`]), the leaf's path
+/// in the `Debug` form, its cause, and the source of the cause.
 struct Difference {
     what: &'static str,
     preset: &'static str,
@@ -78,7 +84,15 @@ macro_rules! differences {
     };
 }
 
+/// Rule 0 on the text-stroke width: the theme states none for any state, and egui's own
+/// entries widen it under the pointer and on a press.
+const WIDTH_RULE_0: &str = "the 0.8.0 theme states no text-stroke width, and egui's own \
+     entries change it between rest and the state (egui 0.37.0 src/style.rs, `Widgets::dark` \
+     and `Widgets::light`): egui's own (spec §10, rule 0); 0.7.2 copied the resting width";
+
 const DIFFERENCES: &[Difference] = differences! {
+    "base" "*" ".visuals.widgets.hovered.fg_stroke.width" Egui WIDTH_RULE_0;
+    "base" "*" ".visuals.widgets.active.fg_stroke.width" Egui WIDTH_RULE_0;
     "base" "kde-breeze" ".spacing.interact_size" Egui
         "button.min_height: 0.7.2's 32 is the height at the default font, not a minimum \
          (issue #4 Z1); button.body(NONE).min_size[1] is unstated on kde-breeze (the table of \
@@ -141,7 +155,7 @@ fn leaves(debug: &str) -> Vec<(String, String)> {
 
 /// One comparison: what is compared, the preset and scheme, and egui's own style for the scheme.
 struct Side<'a> {
-    what: &'static str,
+    what: &'a str,
     preset: &'static str,
     label: &'a str,
     own: &'a egui::Style,
@@ -177,10 +191,9 @@ fn compare(
         if o == n {
             continue;
         }
-        let Some(d) = DIFFERENCES
-            .iter()
-            .find(|d| d.what == what && d.preset == side.preset && d.path == path)
-        else {
+        let Some(d) = DIFFERENCES.iter().find(|d| {
+            d.what == what && (d.preset == side.preset || d.preset == EVERY) && d.path == path
+        }) else {
             failures.push(format!("{label}: {what}: {path}: 0.7.2 {o}, 0.8.0 {n}"));
             continue;
         };
@@ -189,7 +202,7 @@ fn compare(
             cause @ Cause::ButtonBorderOverFill => expected(path, cause),
         };
         if want.as_ref() == Some(n) && !d.reason.is_empty() {
-            seen.push((d.what, d.preset, d.path));
+            seen.push((d.what, side.preset, d.path));
         } else {
             failures.push(format!(
                 "{label}: {what}: {path}: listed ({:?}), but 0.8.0 {n}, the cause gives {want:?}",
@@ -281,15 +294,27 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
             );
         }
     }
+    for preset in Preset::ALL {
+        if !PRESETS.iter().any(|(_, p)| p == preset) {
+            failures.push(format!("{preset:?}: not compared"));
+        }
+    }
     for d in DIFFERENCES {
-        if !seen
-            .iter()
-            .any(|(what, preset, path)| *what == d.what && *preset == d.preset && *path == d.path)
-        {
-            failures.push(format!(
-                "{} {} on {}: listed, but differs nowhere: remove the entry",
-                d.what, d.path, d.preset
-            ));
+        let presets: Vec<&str> = if d.preset == EVERY {
+            PRESETS.iter().map(|(key, _)| *key).collect()
+        } else {
+            vec![d.preset]
+        };
+        for key in presets {
+            if !seen
+                .iter()
+                .any(|(what, preset, path)| *what == d.what && *preset == key && *path == d.path)
+            {
+                failures.push(format!(
+                    "{} {} on {key}: listed, but differs nowhere: remove the entry",
+                    d.what, d.path
+                ));
+            }
         }
     }
     assert!(

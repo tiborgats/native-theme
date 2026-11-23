@@ -7,14 +7,15 @@
 //! numeric literals are §6.17's structural constants (`0.0`, `1.0`) and its cited exemptions
 //! (`0.5`, `0.8`, `1.25`, `2.5`, `2.0`, `4.0 / 3.0`), each named at its use.
 
-use native_theme::theme::ResolvedTheme;
+use native_theme::theme::ResolvedPadding;
 
 use crate::convert::{
-    Rgba, clamp_length, expander_padding_border, finite_or, i8_from_f32_saturating,
-    padding_with_border, to_color32, to_corner_radius, to_margin, to_stroke,
+    Rgba, clamp_length, finite_or, i8_from_f32_saturating, to_color32, to_corner_radius, to_margin,
 };
-use crate::style::base::BaseSource;
-use crate::style::{BuildInput, note_transparent_fill, push_note};
+use crate::style::base::{BaseSource, Read, Sides};
+use crate::style::cells::{CellSource, ExpanderCell, SpinnerCell, SplitterCell, ToolbarCell};
+use crate::style::states::Unstated;
+use crate::style::{note_transparent_fill, push_note};
 use crate::{Note, Role};
 
 fn sanitised(path: &'static str, notes: &mut Vec<Note>) {
@@ -48,29 +49,38 @@ pub(crate) fn apply_base(style: &mut egui::Style, src: &BaseSource, notes: &mut 
 pub(crate) fn apply_role(
     role: Role,
     style: &mut egui::Style,
-    input: &BuildInput<'_>,
+    src: &CellSource,
+    row_height: Option<f32>,
+    unstated: Unstated<'_>,
     notes: &mut Vec<Note>,
 ) {
-    let t = input.theme;
     match role {
         Role::Scrollbar => {
-            scrollbar_radii(style, t);
-            scrollbar_pressed_thumb(style, t, notes);
+            if let Some(r) = src.scrollbar.radius {
+                scrollbar_radii(style, r);
+            }
+            if let [_, _, Some(pressed)] = src.scrollbar.thumb {
+                pressed_thumb(style, pressed, notes);
+            }
         }
         Role::Slider => {
-            slider_geometry(style, t, input.row_height, notes);
-            slider_rail_radius(style, t);
-            slider_thumb_colours(style, t, notes);
+            if let Some(d) = src.slider.thumb_diameter {
+                slider_geometry(style, d, row_height, notes);
+            }
+            if let Some(r) = src.slider.radius {
+                slider_rail_radius(style, r);
+            }
+            slider_thumb_colours(style, src.slider.thumb, unstated, notes);
         }
-        Role::Spinner => spinner_size(style, t, notes),
-        Role::Splitter => splitter_strokes(style, t, notes),
-        Role::Toolbar => toolbar_bar_height(style, t, notes),
-        Role::ComboBox => combo_box_arrow_area(style, t, notes),
+        Role::Spinner => spinner_size(style, &src.spinner, notes),
+        Role::Splitter => splitter_strokes(style, &src.splitter, notes),
+        Role::Toolbar => toolbar_bar_height(style, &src.toolbar, notes),
+        Role::ComboBox => combo_box_arrow_area(style, src.combo_box.arrow_area, notes),
         Role::Expander => {
-            expander_arrow_size(style, t, notes);
-            expander_leading_padding(style, t, notes);
+            expander_arrow_size(style, src.expander.arrow, notes);
+            expander_leading_padding(style, &src.expander, notes);
         }
-        Role::Checkbox => checkbox_mark_inset(style, t, notes),
+        Role::Checkbox => checkbox_mark_inset(style, &src.checkbox.padding, notes),
         _ => {}
     }
 }
@@ -121,53 +131,66 @@ fn scrollbar_widths(
 
 // ---- D5, D6, D7: the remaining indicator fallbacks (§6.9) --------------------------------------
 
-/// The pressed thumb: `thumb_active_color`, or `thumb_hover_color` where the platform states
-/// none. Written as given (C17): the thumb sits on a trough egui also paints.
-fn scrollbar_pressed_thumb(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let pressed = match t.scrollbar.thumb_active_color {
-        Some(c) => (c, "scrollbar.thumb_active_color"),
-        None => (t.scrollbar.thumb_hover_color, "scrollbar.thumb_hover_color"),
-    };
-    pressed_thumb(style, pressed, notes);
-}
-
-/// The pressed thumb's colour, with the place a note names it by, into `active.bg_fill`.
+/// The pressed thumb's colour (the pressed thumb, or the hovered one where the platform states
+/// none), with the place a note names it by, into `active.bg_fill`. Written as given (C17): the
+/// thumb sits on a trough egui also paints.
 fn pressed_thumb(style: &mut egui::Style, (c, path): (Rgba, &'static str), notes: &mut Vec<Note>) {
     let c = to_color32(c);
     note_transparent_fill(c, path, notes);
     style.visuals.widgets.active.bg_fill = c;
 }
 
-/// The hovered and pressed handle: `thumb_hover_color`, or `thumb_color` where the platform
-/// states none — the one route by which `thumb_color` reaches the screen (§5.5). `active :=
-/// hovered` (§6.1).
-fn slider_thumb_colours(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let (c, path) = match t.slider.thumb_hover_color {
-        Some(c) => (c, "slider.thumb_hover_color"),
-        None => (t.slider.thumb_color, "slider.thumb_color"),
+/// The hovered and pressed handle: the hovered thumb, or the resting one where the platform
+/// states none — the one route by which the resting thumb reaches the screen (§5.5) —; `active
+/// := hovered` (§6.1). A thumb the theme states neither of keeps the entries' own; under rule 0
+/// an unstated hover takes egui's own where egui's entries change the fill.
+fn slider_thumb_colours(
+    style: &mut egui::Style,
+    [rest, hover]: [Read<Rgba>; 2],
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let w = &mut style.visuals.widgets;
+    let own = |e: &egui::style::WidgetVisuals| e.bg_fill;
+    let mut written = |(c, path): (Rgba, &'static str)| {
+        let c = to_color32(c);
+        note_transparent_fill(c, path, notes);
+        c
     };
-    let c = to_color32(c);
-    note_transparent_fill(c, path, notes);
-    style.visuals.widgets.hovered.bg_fill = c;
-    style.visuals.widgets.active.bg_fill = c;
+    let (hovered, active) = match hover {
+        Some(hover) => {
+            let c = written(hover);
+            (c, c)
+        }
+        None => {
+            let rest = rest.map_or(w.hovered.bg_fill, &mut written);
+            let hovered = unstated.hovered(rest, own);
+            (hovered, unstated.active(rest, hovered, own))
+        }
+    };
+    w.hovered.bg_fill = hovered;
+    w.active.bg_fill = active;
 }
 
 /// The splitter's three lines (`egui/src/containers/panel.rs:906-911`), one width, the drag line
-/// in the hover colour since the model states no drag colour. `to_stroke` applies §6's rule to
-/// the width: a non-finite `divider_width` keeps each stroke's own width, the colours are still
-/// written, and the leaf is reported.
-fn splitter_strokes(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let sp = &t.splitter;
-    if !sp.divider_width.is_finite() {
-        sanitised("splitter.divider_width", notes);
+/// in the hover colour since the model states no drag colour. `to_stroke`'s rule applies to the
+/// width: a non-finite `divider_width` keeps each stroke's own width, the colours are still
+/// written, and the leaf is reported. Each of the three where stated.
+fn splitter_strokes(style: &mut egui::Style, sp: &SplitterCell, notes: &mut Vec<Note>) {
+    if let Some((width, path)) = sp.width
+        && !width.is_finite()
+    {
+        sanitised(path, notes);
     }
     let w = &mut style.visuals.widgets;
-    w.noninteractive.bg_stroke = to_stroke(
-        w.noninteractive.bg_stroke,
-        sp.divider_color,
-        sp.divider_width,
-    );
-    w.hovered.fg_stroke = to_stroke(w.hovered.fg_stroke, sp.hover_color, sp.divider_width);
+    let line = |own: egui::Stroke, color: Option<Rgba>| {
+        let width = sp
+            .width
+            .map_or(own.width, |(v, _)| clamp_length(finite_or(v, own.width)));
+        egui::Stroke::new(width, color.map_or(own.color, to_color32))
+    };
+    w.noninteractive.bg_stroke = line(w.noninteractive.bg_stroke, sp.color);
+    w.hovered.fg_stroke = line(w.hovered.fg_stroke, sp.hover);
     w.active.fg_stroke = w.hovered.fg_stroke;
 }
 
@@ -181,17 +204,16 @@ fn splitter_strokes(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<
 /// size; `row` is the Body row height of §6.15, `Some` only when finite and positive.
 fn slider_geometry(
     style: &mut egui::Style,
-    t: &ResolvedTheme,
+    (d, path): (f32, &'static str),
     row: Option<f32>,
     notes: &mut Vec<Note>,
 ) {
-    let d = t.slider.thumb_diameter;
     // the starting style's value: the base style's `button.min_height` in a cell
     let base_y = style.spacing.interact_size.y;
     style.spacing.interact_size.y = if d.is_finite() {
         clamp_length(1.25 * d) // 0.8 · (1.25 d) == d; `slider.rs:885` (§6.17)
     } else {
-        sanitised("slider.thumb_diameter", notes);
+        sanitised(path, notes);
         base_y
     };
     let w = style.visuals.widgets.inactive.fg_stroke.width; // every state's width (§6.1): finite, >= 0.0
@@ -222,17 +244,26 @@ fn slider_geometry(
 /// `f32::max` would silently drop a `NaN` instead of reporting it; the diameter's fallback is
 /// the starting style's `interact_size.y` (the base style's `button.min_height` in a cell), the
 /// minimum's the `0.0` egui has as no floor (§6.17).
-fn spinner_size(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
+/// Written where the diameter is stated; an unstated minimum is no floor.
+fn spinner_size(style: &mut egui::Style, sp: &SpinnerCell, notes: &mut Vec<Note>) {
+    let Some((diameter, diameter_path)) = sp.diameter else {
+        return;
+    };
     let base_y = style.spacing.interact_size.y;
-    if !t.spinner.diameter.is_finite() {
-        sanitised("spinner.diameter", notes);
+    if !diameter.is_finite() {
+        sanitised(diameter_path, notes);
     }
-    if !t.spinner.min_diameter.is_finite() {
-        sanitised("spinner.min_diameter", notes);
-    }
-    let d = finite_or(t.spinner.diameter, base_y);
-    let m = finite_or(t.spinner.min_diameter, 0.0);
-    style.spacing.interact_size.y = clamp_length(d.max(m));
+    let d = finite_or(diameter, base_y);
+    let size = match sp.min_diameter {
+        Some((min, path)) => {
+            if !min.is_finite() {
+                sanitised(path, notes);
+            }
+            d.max(finite_or(min, 0.0))
+        }
+        None => d,
+    };
+    style.spacing.interact_size.y = clamp_length(size);
 }
 
 // ---- D4: corner radii with no native source (§6.8) ---------------------------------------------
@@ -241,8 +272,7 @@ fn spinner_size(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note
 /// the tessellator clamps a radius to half the painted rect (`epaint/src/tessellator.rs:638-642`).
 /// A non-finite radius keeps each sink's own value through `to_corner_radius`; the base style
 /// reports the leaf.
-fn scrollbar_radii(style: &mut egui::Style, t: &ResolvedTheme) {
-    let r = t.defaults.border.corner_radius;
+fn scrollbar_radii(style: &mut egui::Style, r: f32) {
     let w = &mut style.visuals.widgets;
     for entry in [&mut w.inactive, &mut w.hovered, &mut w.active] {
         entry.corner_radius = to_corner_radius(entry.corner_radius, r);
@@ -252,8 +282,7 @@ fn scrollbar_radii(style: &mut egui::Style, t: &ResolvedTheme) {
 /// The slider rail's radius, capped at half the rail height the scope carries
 /// (`spacing.slider_rail_height`, finite by §6's rule): the rail is trailing-fill geometry too
 /// (`egui/src/widgets/slider.rs:792`, `:795`). `0.5` is the definition of a fully rounded end.
-fn slider_rail_radius(style: &mut egui::Style, t: &ResolvedTheme) {
-    let r = t.defaults.border.corner_radius;
+fn slider_rail_radius(style: &mut egui::Style, r: f32) {
     let cap = style.spacing.slider_rail_height * 0.5;
     let fit = if r.is_finite() {
         r.max(0.0).min(cap)
@@ -273,17 +302,26 @@ fn slider_rail_radius(style: &mut egui::Style, t: &ResolvedTheme) {
 /// separator room it reserves in the outer margin, `noninteractive.bg_stroke.width.round() as
 /// i8` (`:961-965`). So the stated height, less all of that, is what the scope's
 /// `interact_size.y` must hold.
-fn toolbar_bar_height(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let Some(h) = t.toolbar.bar_height else {
+fn toolbar_bar_height(style: &mut egui::Style, tb: &ToolbarCell, notes: &mut Vec<Note>) {
+    let Some((h, path)) = tb.bar_height else {
         return; // S2: no stated height; egui's own sizing stands
     };
     if !h.is_finite() {
-        sanitised("toolbar.bar_height", notes);
+        sanitised(path, notes);
         return; // egui's own value: what the style carries
     }
     let frame = egui::Frame::side_top_panel(style);
     // A non-finite padding side keeps the preset's; `frames::surface_frame` reports it.
-    let inner = to_margin(frame.inner_margin, &t.toolbar.border.padding);
+    let [top, right, bottom, left] = tb.padding.values;
+    let inner = to_margin(
+        frame.inner_margin,
+        &ResolvedPadding {
+            top,
+            right,
+            bottom,
+            left,
+        },
+    );
     let separator = f32::from(i8_from_f32_saturating(
         style.visuals.widgets.noninteractive.bg_stroke.width,
     ));
@@ -302,12 +340,14 @@ fn toolbar_bar_height(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Ve
 /// (`egui/src/containers/collapsing_header.rs:342`), the rect being `icon_width_inner` square
 /// (`egui/src/style.rs:477-478`); `4.0 / 3.0` is that scaling's reciprocal (§6.17). The
 /// finiteness test comes first: `clamp_length` would turn a `NaN` into `0.0`, not egui's value.
-fn expander_arrow_size(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let size = t.expander.arrow_icon_size;
+fn expander_arrow_size(style: &mut egui::Style, arrow: Read<f32>, notes: &mut Vec<Note>) {
+    let Some((size, path)) = arrow else {
+        return;
+    };
     if size.is_finite() {
         style.spacing.icon_width_inner = clamp_length(size * (4.0 / 3.0));
     } else {
-        sanitised("expander.arrow_icon_size", notes);
+        sanitised(path, notes);
     }
 }
 
@@ -323,17 +363,14 @@ fn expander_arrow_size(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut V
 /// expanded body is indented by `indent` (`:164`, `egui/src/ui.rs:2253`), neither of which
 /// the theme states. Written only where the side is stated and the arrow's size is finite
 /// (a non-finite one is reported by R-ARROW); an unstated side keeps egui's own `indent`.
-fn expander_leading_padding(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let border = &t.expander.border;
-    if border.padding.left.is_some_and(|v| !v.is_finite()) {
-        sanitised("expander.border.padding.left", notes);
+fn expander_leading_padding(style: &mut egui::Style, x: &ExpanderCell, notes: &mut Vec<Note>) {
+    let [_, _, _, left] = x.padding.values;
+    if left.is_some_and(|v| !v.is_finite()) {
+        let [_, _, _, path] = x.padding.paths;
+        sanitised(path, notes);
         return;
     }
-    let framed = expander_padding_border(&t.expander);
-    let (Some(left), arrow) = (
-        padding_with_border(&framed).left,
-        t.expander.arrow_icon_size,
-    ) else {
+    let (Some(left), Some((arrow, _))) = (x.outside_padding().left, x.arrow) else {
         return;
     };
     if arrow.is_finite() {
@@ -346,16 +383,16 @@ fn expander_leading_padding(style: &mut egui::Style, t: &ResolvedTheme, notes: &
 /// the mark's inset — is the box less the mean of the two pairs' insets, written only where all
 /// four sides are stated. `icon_width` is read back from the cell, where it is already
 /// `checkbox.indicator_width` after its own rule (§5.3).
-fn checkbox_mark_inset(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let p = &t.checkbox.border.padding;
-    let (Some(l), Some(r), Some(top), Some(b)) = (p.left, p.right, p.top, p.bottom) else {
+fn checkbox_mark_inset(style: &mut egui::Style, p: &Sides, notes: &mut Vec<Note>) {
+    let [Some(top), Some(r), Some(b), Some(l)] = p.values else {
         return; // a side unstated: egui's own value stands, and nothing is reported
     };
+    let [top_path, right_path, bottom_path, left_path] = p.paths;
     let sides = [
-        ("checkbox.border.padding.left", l),
-        ("checkbox.border.padding.right", r),
-        ("checkbox.border.padding.top", top),
-        ("checkbox.border.padding.bottom", b),
+        (left_path, l),
+        (right_path, r),
+        (top_path, top),
+        (bottom_path, b),
     ];
     let mut finite = true;
     for (path, v) in sides {
@@ -376,12 +413,12 @@ fn checkbox_mark_inset(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut V
 /// egui reserves `icon_spacing + icon_width` for the arrow
 /// (`egui/src/containers/combo_box.rs:355`, `:360`); `icon_width` is read back from the cell,
 /// where it is already `combo_box.arrow_icon_size` after its rule (§5.4).
-fn combo_box_arrow_area(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let Some(w) = t.combo_box.arrow_area_width else {
+fn combo_box_arrow_area(style: &mut egui::Style, area: Read<f32>, notes: &mut Vec<Note>) {
+    let Some((w, path)) = area else {
         return; // S2: no stated width; the base style's gap stands
     };
     if !w.is_finite() {
-        sanitised("combo_box.arrow_area_width", notes);
+        sanitised(path, notes);
         return;
     }
     style.spacing.icon_spacing = clamp_length(w - style.spacing.icon_width);
@@ -404,6 +441,64 @@ mod tests {
     use crate::install_tests::resolved;
     use crate::style::{BuildInput, SchemeStyles, compile};
     use crate::{AccessibilityPreferences, LayoutTheme, Note, Role, RoleVariant};
+
+    /// Each formula on a 0.7.2 theme's reads, as `CellSource::old` hands them to `apply_role`.
+    fn source(t: &ResolvedTheme) -> CellSource {
+        CellSource::old(t, &AccessibilityPreferences::default())
+    }
+
+    fn slider_geometry(
+        s: &mut egui::Style,
+        t: &ResolvedTheme,
+        row: Option<f32>,
+        n: &mut Vec<Note>,
+    ) {
+        if let Some(d) = source(t).slider.thumb_diameter {
+            super::slider_geometry(s, d, row, n);
+        }
+    }
+
+    fn spinner_size(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
+        super::spinner_size(s, &source(t).spinner, n);
+    }
+
+    fn scrollbar_radii(s: &mut egui::Style, t: &ResolvedTheme) {
+        super::scrollbar_radii(s, t.defaults.border.corner_radius);
+    }
+
+    fn slider_rail_radius(s: &mut egui::Style, t: &ResolvedTheme) {
+        super::slider_rail_radius(s, t.defaults.border.corner_radius);
+    }
+
+    fn scrollbar_pressed_thumb(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
+        if let [_, _, Some(pressed)] = source(t).scrollbar.thumb {
+            pressed_thumb(s, pressed, n);
+        }
+    }
+
+    fn slider_thumb_colours(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
+        super::slider_thumb_colours(s, source(t).slider.thumb, Unstated::Copy, n);
+    }
+
+    fn splitter_strokes(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
+        super::splitter_strokes(s, &source(t).splitter, n);
+    }
+
+    fn toolbar_bar_height(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
+        super::toolbar_bar_height(s, &source(t).toolbar, n);
+    }
+
+    fn expander_arrow_size(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
+        super::expander_arrow_size(s, source(t).expander.arrow, n);
+    }
+
+    fn checkbox_mark_inset(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
+        super::checkbox_mark_inset(s, &source(t).checkbox.padding, n);
+    }
+
+    fn combo_box_arrow_area(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
+        super::combo_box_arrow_area(s, source(t).combo_box.arrow_area, n);
+    }
 
     fn theme() -> ResolvedTheme {
         resolved("kde-breeze", ColorMode::Light)
