@@ -270,10 +270,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its edge, tooltip.border.line_width on each side, which geometry::tooltip draws in place of upstream's border_1 (gpui-component/tooltip.rs, Tooltip::render), as the max width of the element passed to Tooltip::element, which the text wraps at",
     ),
     (
-        "popover",
-        "the popover.border.padding sides the theme states, corner_radius, and the edge, popover.border.color at line_width, inside the shadow ring popover_style draws; an unstated side keeps upstream's p_3 (gpui-component/popover.rs, Popover::render)",
-    ),
-    (
         "status_bar",
         "the status_bar.border.padding sides the theme states, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style) — and defaults.line_height as the line height",
     ),
@@ -284,10 +280,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "dialog_entrance",
         "dialog.entrance as the nearest entrance gpui-component draws, through Dialog::entrance and AlertDialog::entrance: DialogEntrance::Fade, a fade in place, for both styles the model has. scale_fade loses its scale, since gpui-component has no scaling entrance, and fade_rise its rise, since FadeSlide settles from just above the dialog's place instead (dialog/entrance.rs, DialogEntrance; dialog/dialog.rs, Dialog::entrance)",
-    ),
-    (
-        "dialog_footer",
-        "dialog.button_gap between the buttons (dialog/footer.rs, DialogFooter::render)",
     ),
     (
         "dialog_title",
@@ -435,6 +427,39 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     ("icon_size_toolbar", "toolbar.button_icon(NONE).size"),
     ("icon_size_small", "icons.sizes.small"),
+    ("icon_size_dialog", "icons.sizes.dialog"),
+    (
+        "menu_item",
+        "menu.item(NONE).max_size[1], where the theme states one, by the control-height rule (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.item(NONE).min_size[1] as a least height the content grows past, the padding sides menu.item(NONE) states, menu.icon_text_gap, and menu.item_label(NONE)'s family, size, weight and style but not its colour",
+    ),
+    (
+        "popover",
+        "the padding sides popover.panel states, its corner radius, and its edge, popover.panel.stroke.color at popover.panel.stroke.width, inside the shadow ring popover_style draws; an unstated side keeps upstream's p_3 (gpui-component/popover.rs, Popover::render)",
+    ),
+    (
+        "dialog",
+        "the padding sides dialog.panel states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), dialog.panel.min_size[0] as the least width, which the width upstream sets after the refinement keeps, min_size[1], max_size[1], its corner radius, and dialog.panel.fill and dialog.panel.stroke.color at dialog.panel.stroke.width over the window's background and border upstream paints the surface with first; the max_size[1] does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
+    ),
+    (
+        "dialog_entrance",
+        "dialog.entrance as the nearest entrance gpui-component draws, through Dialog::entrance and AlertDialog::entrance: DialogEntrance::Fade, a fade in place, for scale_fade, fade_rise and fade, and DialogEntrance::None for none. scale_fade loses its scale, since gpui-component has no scaling entrance, and fade_rise its rise, since FadeSlide settles from just above the dialog's place instead (dialog/entrance.rs, DialogEntrance; dialog/dialog.rs, Dialog::entrance)",
+    ),
+    (
+        "dialog_footer",
+        "dialog.button_gap between the buttons (dialog/footer.rs, DialogFooter::render)",
+    ),
+    (
+        "dialog_title",
+        "dialog.title's family, size, weight and style, and its colour, which displaces nothing, upstream setting none on the title, and typography.line_height_multiplier as the line height, which replaces upstream's relative(1.25) (dialog/title.rs, RenderOnce for DialogTitle: line_height then refine_style)",
+    ),
+    (
+        "dialog_description",
+        "dialog.body's family, size, weight and style, and its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render), and typography.line_height_multiplier as the line height",
+    ),
+    (
+        "dialog_max_width",
+        "dialog.panel.max_size[0], which caps the width: a Dialog's through Dialog::max_w (dialog/dialog.rs, Dialog::max_w), and an AlertDialog's, which has no max_w of its own, through Styled::max_w, landing on the surface with the rest of the refinement (dialog/alert_dialog.rs, AlertDialog; dialog/dialog.rs, Dialog::render); nothing where the theme states none",
+    ),
     (
         "input",
         "input.field(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1; upstream's height where the theme states none), the padding sides input.field(NONE) states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, its corner radius and stroke width, and input.text(NONE)'s font including its colour -- the root sets none of its own and the editor paints the field's text in the root's, the window's foreground without it (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)",

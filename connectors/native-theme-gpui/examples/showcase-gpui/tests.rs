@@ -10005,7 +10005,10 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
             "Breadcrumb",
             layout::breadcrumb(&t, &[Page::Buttons], Page::Layout),
         ),
-        ("Dialog", overlays::dialog(&t, false, false, false, &icon)),
+        (
+            "Dialog",
+            overlays::dialog(&t, false, false, false, false, &icon),
+        ),
         ("Sheet", overlays::sheet(&t, SheetSide::Right, false)),
         ("Editor", typography::editor(&t)),
         ("Diff", typography::diff(&t)),
@@ -12319,77 +12322,133 @@ fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext
 }
 
 /// The Overlays page's menu rows, which the application draws itself, are
-/// painted as the showcase's own menus are (M9-007): the frame in
-/// `menu.background_color` and edged by `popover.border`, a hovered row in
-/// `menu.hover_background`, not in the popover's fill. Under adwaita light
-/// `menu.background_color` inherits `defaults.background_color`, which is
-/// not the popover's fill, so the two can be told apart. The connector
-/// fills the `accent` token the rows hovered in before from
-/// `menu.hover_background` (src/colors.rs, `tc.accent`), so the test
-/// overwrites the installed `accent` with a colour of its own: a row hovered
-/// in the token would then show that colour, not the leaf's.
+/// painted as the showcase's own menus are (M9-007), from the installed
+/// 0.8.0 theme: with `menu.panel(NONE).fill` patched to
+/// `colors.window.border` and `menu.item(HOVER).fill` to
+/// `colors.window.foreground`, colours of the same theme that differ from
+/// the menu's own, the frame is filled with the one and a hovered row with
+/// the other, and the frame is edged as `demo::MenuRowsFrame` reads it. A
+/// reader of the 0.7.2 theme, or of the popover and accent tokens, would
+/// paint the unpatched colours.
 #[gpui::test]
 fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) {
-    use crate::demo::MENU_ROWS_FRAME;
-    use crate::info::stated;
+    use crate::demo::{MENU_ROWS_FRAME, MenuRowsFrame};
+    use native_theme::next::{MenuRule, Paint, PartPatch, ThemePatch, WidgetState};
+    use native_theme_gpui::next::fill_of;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    use_light_preset(&mut cx, &showcase, "adwaita");
-    show(&mut cx, &showcase, Page::Overlays);
-    let r = resolved_theme(&mut cx, &showcase);
-    let fill = stated(r.menu.background_color);
-    assert_ne!(
-        fill,
-        stated(r.popover.background_color),
-        "adwaita light's menu fill is the popover's, so this test cannot tell them apart"
+    let mut before = None;
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Overlays, |r| {
+        before = Some((
+            fill_of(&r.menu.panel(WidgetState::NONE)),
+            fill_of(&r.menu.item(WidgetState::HOVER)),
+        ));
+        Some(
+            ThemePatch::new()
+                .menu(
+                    MenuRule::new()
+                        .panel(PartPatch::new().fill(Paint::Solid(r.colors.window.border?))),
+                )
+                .menu(
+                    MenuRule::new()
+                        .states(WidgetState::HOVER)
+                        .item(PartPatch::new().fill(Paint::Solid(r.colors.window.foreground?))),
+                ),
+        )
+    });
+    let Some(r) = r else { return };
+    let fill = fill_of(&r.menu.panel(WidgetState::NONE));
+    let hovered_fill = fill_of(&r.menu.item(WidgetState::HOVER));
+    assert!(
+        fill.is_some() && hovered_fill.is_some(),
+        "the patch does not state the menu's fill or the hovered row's"
     );
+    assert!(
+        before.is_some_and(|(rest, hover)| rest != fill && hover != hovered_fill),
+        "kde-breeze light's menu is filled in the patched colours, so the test could not tell them apart"
+    );
+    let frame = MenuRowsFrame::next_of(&r);
+    assert!(
+        frame.is_ok(),
+        "kde-breeze light states no menu frame: {frame:?}"
+    );
+    let Ok(frame) = frame else { return };
     hover(&mut cx, point(px(4.), px(4.)));
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, MENU_ROWS_FRAME),
-        Some(fill),
-        "the menu rows' frame is not filled with menu.background_color"
+        fill,
+        "the menu rows' frame is not filled with the patched menu.panel(NONE).fill"
     );
     assert_eq!(
         painted_edge(&mut cx, MENU_ROWS_FRAME),
-        (r.popover.border.line_width > 0.0).then(|| stated(r.popover.border.color)),
-        "the menu rows' frame is not edged as popover.border strokes it"
+        frame.colour.filter(|_| frame.width.0 > 0.0),
+        "the menu rows' frame is not edged as the theme strokes the menu's popup frame"
     );
-    let hovered_fill = stated(r.menu.hover_background);
-    let token = gpui::red();
-    assert_ne!(
-        token, hovered_fill,
-        "adwaita light's menu.hover_background is the test's own accent colour"
-    );
-    cx.update(|window, cx| {
-        Theme::global_mut(cx).accent = token;
-        window.refresh();
-    });
-    cx.run_until_parked();
     let row = "overlays-menu-row-copy";
     let at = bounds_of(&mut cx, row).center();
     hover(&mut cx, at);
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, row),
-        Some(hovered_fill),
-        "the hovered menu row is not filled with menu.hover_background"
+        hovered_fill,
+        "the hovered menu row is not filled with the patched menu.item(HOVER).fill"
     );
 }
 
-/// The Overlays page's menu rows' info claims the menu leaves the rows are
+/// The menu rows' frame takes each value from the menu's own panel where it
+/// states one, else from the popover's, and from neither where neither
+/// does (`demo::menu_frame_value`), read on parts of a bundled theme and on
+/// a part that states nothing.
+#[gpui::test]
+fn the_menu_rows_frame_falls_back_to_the_popovers(cx: &mut TestAppContext) {
+    use crate::demo::{FrameFrom, menu_frame_value};
+    use native_theme::next::PartStyle;
+    use native_theme_gpui::next::stroke_width_of;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let (stated, none) = (&r.popover.panel, &PartStyle::default());
+    let width = stroke_width_of(stated);
+    assert!(width.is_some(), "kde-breeze light states no popover stroke");
+    let Some(width) = width else { return };
+    assert_eq!(
+        menu_frame_value(stated, none, stroke_width_of),
+        Some((width, FrameFrom::Menu))
+    );
+    assert_eq!(
+        menu_frame_value(none, stated, stroke_width_of),
+        Some((width, FrameFrom::Popover))
+    );
+    assert_eq!(menu_frame_value(none, none, stroke_width_of), None);
+}
+
+/// The Overlays page's menu rows' info claims the 0.8.0 homes the rows are
 /// painted with (M9-007), and no popover or accent token; its frame's edge
-/// where `popover.border` strokes one (adwaita), and where it strokes none
-/// (material-3) a line saying so that names the radius still rounding the
-/// frame.
+/// where the theme strokes one (adwaita), and where it states the stroke as
+/// none (material-3) a line saying so that names the corners still
+/// rounding the frame.
 #[gpui::test]
 fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
-    use crate::info::{px_text, stated};
+    use crate::demo::{FrameFrom, MenuRowsLook};
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{fill_of, text_color_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let mut branches = (false, false);
     for preset in ["adwaita", "material-3"] {
         use_light_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Overlays);
-        let r = resolved_theme(&mut cx, &showcase);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let look = MenuRowsLook::next_of(&r);
+        assert!(
+            look.is_ok(),
+            "{preset}: the menu rows' look is unstated at {:?}",
+            look.err()
+        );
+        let Ok(look) = look else { return };
         let info = settle_on(&mut cx, &showcase, "overlays-menu-row-copy");
         assert!(info.is_some(), "{preset}: the menu row shows no info");
         let Some(info) = info else { return };
@@ -12402,17 +12461,29 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
         for (role, field, value) in [
             (
                 "bg (the frame's)",
-                "background_color",
-                r.menu.background_color,
+                "menu.panel(NONE).fill",
+                fill_of(&r.menu.panel(WidgetState::NONE)),
             ),
-            ("text", "color", r.menu.font.color),
-            ("hover", "hover_background", r.menu.hover_background),
-            ("hover text", "hover_text_color", r.menu.hover_text_color),
+            (
+                "text",
+                "menu.item_label(NONE).color",
+                text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            ),
+            (
+                "hover",
+                "menu.item(HOVER).fill",
+                fill_of(&r.menu.item(WidgetState::HOVER)),
+            ),
+            (
+                "hover text",
+                "menu.item_label(HOVER).color",
+                text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            ),
         ] {
             assert_eq!(
                 by_role(role),
-                Some((field, stated(value))),
-                "{preset}: the menu row's info does not claim menu.{field} as its {role}: {info:?}"
+                value.map(|value| (field, value)),
+                "{preset}: the menu row's info does not claim {field} as its {role}: {info:?}"
             );
         }
         for token in [
@@ -12427,38 +12498,44 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
                 "{preset}: the menu row's info claims the {token} token, which no longer paints it: {info:?}"
             );
         }
-        if r.popover.border.line_width > 0.0 {
+        let field = match look.frame.width.1 {
+            FrameFrom::Menu => "menu.panel(NONE).stroke.color",
+            FrameFrom::Popover => "popover.panel.stroke.color",
+        };
+        let corners = match look.frame.radius.1 {
+            FrameFrom::Menu => "menu.panel(NONE).corners",
+            FrameFrom::Popover => "popover.panel.corners",
+        };
+        let line = info
+            .config
+            .iter()
+            .find(|n| n.what == "frame edge")
+            .map(|n| n.text.clone());
+        if look.frame.width.0 > 0.0 {
             branches.0 = true;
             assert_eq!(
                 by_role("frame edge"),
-                Some(("border", stated(r.popover.border.color))),
-                "{preset}: the menu row's info does not claim the popover.border.color its frame is edged with: {info:?}"
+                look.frame.colour.map(|colour| (field, colour)),
+                "{preset}: the menu row's info does not claim the {field} its frame is edged with: {info:?}"
             );
         } else {
             branches.1 = true;
             assert_eq!(
                 by_role("frame edge"),
                 None,
-                "{preset}: the menu row's info claims an edge popover.border does not stroke: {info:?}"
+                "{preset}: the menu row's info claims an edge the theme does not stroke: {info:?}"
             );
-            let expected = format!(
-                "none: popover.border.line_width is 0; the frame is still rounded by popover.border.corner_radius, {}px",
-                px_text(r.popover.border.corner_radius)
-            );
-            assert_eq!(
-                info.config
-                    .iter()
-                    .find(|n| n.what == "frame edge")
-                    .map(|n| n.text.as_str()),
-                Some(expected.as_str()),
-                "{preset}: the menu row's info does not say its frame strokes no edge and what rounds it: {info:?}"
+            assert!(
+                line.as_deref()
+                    .is_some_and(|line| line.starts_with("none: ") && line.contains(corners)),
+                "{preset}: the menu row's info does not say its frame strokes no edge and what rounds it: {line:?}"
             );
         }
     }
     assert_eq!(
         branches,
         (true, true),
-        "adwaita no longer strokes popover.border or material-3 now does, so a branch of the frame-edge info went unread"
+        "adwaita no longer strokes the menu's popup frame or material-3 now does, so a branch of the frame-edge info went unread"
     );
 }
 

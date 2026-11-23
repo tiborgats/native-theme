@@ -121,8 +121,8 @@ use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
     SampleListDelegate, SampleTableDelegate, contrast_held, native_color, native_geometry,
-    native_value, next_geometry, next_resolved, old_native, refined, requested_preferences,
-    toolbar_variant, with_gap, with_padding,
+    native_value, next_geometry, next_resolved, next_value, old_native, refined,
+    requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -281,6 +281,16 @@ impl SampleIcon {
             .map(|glyph| native_sized_glyph(cx, glyph, role))
     }
 
+    /// [`glyph_sized`](Self::glyph_sized) on the 0.8.0 model, sized as
+    /// [`next_sized_glyph`] sizes it.
+    fn next_glyph_sized(
+        &self,
+        cx: &App,
+        role: fn(&native_theme::next::ResolvedTheme) -> next::Mapped<Size>,
+    ) -> Option<Glyph> {
+        self.glyph().map(|glyph| next_sized_glyph(cx, glyph, role))
+    }
+
     /// This sample for a widget that takes an `Icon` alone
     /// (`ChromeIcon::svg_only`), whose info then says what it shows.
     fn svg_only(&self) -> Self {
@@ -306,6 +316,21 @@ fn native_sized_glyph(cx: &App, glyph: Glyph, role: fn(Native<'_>) -> Size) -> G
     match native_value(cx, role) {
         Some(size) => glyph.with_size(size),
         None => glyph,
+    }
+}
+
+/// [`native_sized_glyph`] on the 0.8.0 model: `glyph` at the size the
+/// `next::geometry` builder `role` gives the installed 0.8.0 theme; its own
+/// size where the theme states none, or before `next::apply` ran (spec §10,
+/// rule 0).
+fn next_sized_glyph(
+    cx: &App,
+    glyph: Glyph,
+    role: fn(&native_theme::next::ResolvedTheme) -> next::Mapped<Size>,
+) -> Glyph {
+    match next_value(cx, role) {
+        Some(Ok(size)) => glyph.with_size(size),
+        _ => glyph,
     }
 }
 
@@ -450,10 +475,6 @@ pub(crate) struct MenuLook {
     /// its left and right and `panel_padding_vertical` over its top and
     /// bottom where stated: round the popup's rows.
     popup_padding: ResolvedPadding,
-    /// `menu.panel_padding_horizontal` and `panel_padding_vertical` alone,
-    /// each side `None` where unstated: round the Overlays page's rows
-    /// ([`menu_rows`]), which pad nothing on an unstated side.
-    panel_padding: ResolvedPadding,
     /// The gap between the popup's rows: none where
     /// `menu.panel_padding_vertical` is stated (Breeze's rows touch), else
     /// upstream's [`MENU_POPUP_ROW_GAP`].
@@ -511,12 +532,6 @@ impl MenuLook {
                 right: panel_x.or(p.padding.right),
                 bottom: panel_y.or(p.padding.bottom),
                 left: panel_x.or(p.padding.left),
-            },
-            panel_padding: ResolvedPadding {
-                top: panel_y,
-                right: panel_x,
-                bottom: panel_y,
-                left: panel_x,
             },
             popup_row_gap: panel_y.is_none().then_some(MENU_POPUP_ROW_GAP),
             popup_shadow: if p.shadow_enabled {
@@ -2922,6 +2937,32 @@ fn themed_entrance(cx: &App) -> Option<DialogEntrance> {
     native_value(cx, geometry::dialog_entrance).flatten()
 }
 
+/// [`themed_entrance`] on the 0.8.0 model: what
+/// `next::geometry::dialog_entrance` gives the installed 0.8.0 theme's
+/// `dialog.entrance`, `Ok(None)` where the theme states none, and the dialog
+/// keeps upstream's; `None` before `next::apply` ran. Counted in
+/// `THEMED_ENTRANCES` as [`themed_entrance`] is.
+fn next_themed_entrance(cx: &App) -> Option<next::Mapped<Option<DialogEntrance>>> {
+    #[cfg(test)]
+    THEMED_ENTRANCES.with(|reads| reads.set(reads.get().saturating_add(1)));
+    next_value(cx, next::geometry::dialog_entrance)
+}
+
+/// Whether `entrance`, as [`next_themed_entrance`] reads it, is one the
+/// dialog enters as.
+fn next_entrance_applies(entrance: &Option<next::Mapped<Option<DialogEntrance>>>) -> bool {
+    matches!(entrance, Some(Ok(Some(_))))
+}
+
+/// Whether the `next::geometry` builder `build` applies to the installed
+/// 0.8.0 theme: one is installed and states every value the builder reads.
+fn next_applies<T>(
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> next::Mapped<T>,
+) -> bool {
+    next_value(cx, build).is_some_and(|value| value.is_ok())
+}
+
 #[cfg(test)]
 thread_local! {
     /// How often a dialog's build read the theme's entrance
@@ -2964,6 +3005,51 @@ fn dialog_title(cx: &App, text: &'static str, info: &mut WidgetInfo) -> DialogTi
         DialogTitle::new().child(text),
         cx,
         geometry::dialog_title,
+        "dialog_title",
+        info,
+    )
+}
+
+/// [`dialog_frame`] on the 0.8.0 model: `dialog` refined by
+/// `next::geometry::dialog`, capped at `next::geometry::dialog_max_width`
+/// where the theme states a maximum width, and entering as `entrance`, the
+/// theme's ([`next_themed_entrance`]), each recorded in `info` where it
+/// applies, and where the theme states a value gpui cannot take, the home
+/// named (spec §10, rule 0).
+fn next_dialog_frame(
+    dialog: Dialog,
+    entrance: Option<next::Mapped<Option<DialogEntrance>>>,
+    cx: &App,
+    info: &mut WidgetInfo,
+) -> Dialog {
+    let dialog = next_native_info(dialog, cx, next::geometry::dialog, "dialog", info);
+    let dialog = match entrance {
+        Some(Ok(Some(entrance))) => {
+            *info = std::mem::take(info).next_geometry("dialog_entrance");
+            dialog.entrance(entrance)
+        }
+        Some(Err(unstated)) => {
+            *info = std::mem::take(info).next_unmapped("dialog_entrance", unstated);
+            dialog
+        }
+        Some(Ok(None)) | None => dialog,
+    };
+    match next_value(cx, next::geometry::dialog_max_width) {
+        Some(Ok(Some(width))) => {
+            *info = std::mem::take(info).next_geometry("dialog_max_width");
+            dialog.max_w(width)
+        }
+        _ => dialog,
+    }
+}
+
+/// [`dialog_title`] on the 0.8.0 model: a `DialogTitle` reading `text`,
+/// refined by `next::geometry::dialog_title`, recorded in `info`.
+fn next_dialog_title(cx: &App, text: &'static str, info: &mut WidgetInfo) -> DialogTitle {
+    next_native_info(
+        DialogTitle::new().child(text),
+        cx,
+        next::geometry::dialog_title,
         "dialog_title",
         info,
     )
@@ -8997,36 +9083,43 @@ pub(crate) fn confirm_dialog(
     gap: Option<Pixels>,
     icon: &SampleIcon,
 ) -> Dialog {
-    let styled = old_native(cx).is_some();
-    let entrance = themed_entrance(cx);
+    let styled = next_applies(cx, next::geometry::dialog);
+    let described = next_applies(cx, next::geometry::dialog_description);
+    let entrance = next_themed_entrance(cx);
     let mut dialog_info = info::overlays::dialog(
         cx.theme(),
         cx.reduce_motion(),
-        entrance.is_some(),
+        next_entrance_applies(&entrance),
         styled,
+        described,
         icon,
     );
-    let dialog = dialog_frame(dialog, entrance, cx, &mut dialog_info);
-    let title = dialog_title(cx, "Confirm Action", &mut dialog_info);
+    let dialog = next_dialog_frame(dialog, entrance, cx, &mut dialog_info);
+    let title = next_dialog_title(cx, "Confirm Action", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
     // refinement records is recorded once, here, and applied there.
-    let description_style = native_info(
+    let description_style = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::dialog_description,
+        next::geometry::dialog_description,
         "dialog_description",
         &mut dialog_info,
     );
-    if icon.shown() && native_value(cx, geometry::icon_size_dialog).is_some() {
-        dialog_info = dialog_info.geometry("icon_size_dialog");
+    if icon.shown() {
+        let _ = info::next_native_value(
+            cx,
+            next::geometry::icon_size_dialog,
+            "icon_size_dialog",
+            &mut dialog_info,
+        );
     }
     if icon.shown() && gap.is_some() {
         dialog_info = dialog_info.geometry("widget_gap");
     }
-    let footer = native_info(
+    let footer = next_native_info(
         DialogFooter::new(),
         cx,
-        geometry::dialog_footer,
+        next::geometry::dialog_footer,
         "dialog_footer",
         &mut dialog_info,
     );
@@ -9074,7 +9167,7 @@ pub(crate) fn confirm_dialog(
             content.child(
                 with_gap(h_flex(), gap)
                     .items_start()
-                    .children(icon.glyph_sized(cx, geometry::icon_size_dialog))
+                    .children(icon.next_glyph_sized(cx, next::geometry::icon_size_dialog))
                     .child(
                         DialogDescription::new()
                             .refine_style(&description_style)
@@ -9098,35 +9191,44 @@ pub(crate) fn alert_dialog(
     alert: AlertDialog,
     icon: &SampleIcon,
 ) -> AlertDialog {
-    let styled = old_native(cx).is_some();
-    let entrance = themed_entrance(cx);
+    let styled = next_applies(cx, next::geometry::dialog);
+    let entrance = next_themed_entrance(cx);
     let mut alert_info = info::overlays::alert_dialog(
         cx.theme(),
         cx.reduce_motion(),
-        entrance.is_some(),
+        next_entrance_applies(&entrance),
         styled,
         icon,
     );
-    let alert = native_info(alert, cx, geometry::dialog, "dialog", &mut alert_info);
+    let alert = next_native_info(alert, cx, next::geometry::dialog, "dialog", &mut alert_info);
     let alert = match entrance {
-        Some(entrance) => {
-            alert_info = alert_info.geometry("dialog_entrance");
+        Some(Ok(Some(entrance))) => {
+            alert_info = alert_info.next_geometry("dialog_entrance");
             alert.entrance(entrance)
         }
-        None => alert,
+        Some(Err(unstated)) => {
+            alert_info = alert_info.next_unmapped("dialog_entrance", unstated);
+            alert
+        }
+        Some(Ok(None)) | None => alert,
     };
     // An AlertDialog has no `max_w` of its own; `Styled::max_w` lands on the
     // surface through the refinement (dialog/dialog.rs:787).
-    let alert = match native_value(cx, geometry::dialog_max_width) {
-        Some(width) => {
-            alert_info = alert_info.geometry("dialog_max_width");
+    let alert = match next_value(cx, next::geometry::dialog_max_width) {
+        Some(Ok(Some(width))) => {
+            alert_info = alert_info.next_geometry("dialog_max_width");
             alert.max_w(width)
         }
-        None => alert,
+        _ => alert,
     };
-    let drawn = icon.glyph_sized(cx, geometry::icon_size_dialog);
-    if drawn.is_some() && native_value(cx, geometry::icon_size_dialog).is_some() {
-        alert_info = alert_info.geometry("icon_size_dialog");
+    let drawn = icon.next_glyph_sized(cx, next::geometry::icon_size_dialog);
+    if drawn.is_some() {
+        let _ = info::next_native_value(
+            cx,
+            next::geometry::icon_size_dialog,
+            "icon_size_dialog",
+            &mut alert_info,
+        );
     }
     let alert = match drawn {
         Some(drawn) => alert.icon(
@@ -9177,6 +9279,14 @@ pub(crate) fn sheet(
     )
 }
 
+/// The installed 0.8.0 theme where `next::geometry::popover` applies to it:
+/// one that states every value the builder reads. What a Popover's and a
+/// HoverCard's info is given as the theme that refines it; under any other
+/// theme the surface keeps upstream's (spec §10, rule 0).
+fn popover_theme(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
+    next_resolved(cx).filter(|r| next::geometry::popover(r).is_ok())
+}
+
 /// The width the Overlays page's Popover content takes: the showcase's own,
 /// as the model states no popover width.
 const POPOVER_WIDTH: Pixels = px(200.);
@@ -9191,25 +9301,24 @@ pub(crate) fn popover(
     id: &'static str,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut popover_info = info::overlays::popover(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let mut popover_info = info::overlays::popover(cx.theme(), popover_theme(cx));
     let trigger = labelled(
         ui,
         cx,
-        native_info(
+        next_native_info(
             Button::new("overlays-popover-trigger"),
             cx,
-            geometry::button,
+            next::geometry::button,
             "button",
             &mut popover_info,
         ),
         "overlays-popover-trigger",
         "Click for Popover",
     );
-    let popover = native_info(
+    let popover = next_native_info(
         Popover::new(id),
         cx,
-        geometry::popover,
+        next::geometry::popover,
         "popover",
         &mut popover_info,
     )
@@ -9256,25 +9365,24 @@ pub(crate) fn hover_card(
     id: &'static str,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut card_info = info::overlays::hover_card(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let mut card_info = info::overlays::hover_card(cx.theme(), popover_theme(cx));
     let trigger = labelled(
         ui,
         cx,
-        native_info(
+        next_native_info(
             ButtonKind::Ghost.apply(Button::new("overlays-hover-card-trigger"), cx),
             cx,
-            geometry::button,
+            next::geometry::button,
             "button",
             &mut card_info,
         ),
         "overlays-hover-card-trigger",
         "KDE Breeze",
     );
-    let card = native_info(
+    let card = next_native_info(
         HoverCard::new(id),
         cx,
-        geometry::popover,
+        next::geometry::popover,
         "popover",
         &mut card_info,
     )
@@ -9344,10 +9452,10 @@ pub(crate) fn dropdown_menu(
     labelled(
         ui,
         cx,
-        native_info(
+        next_native_info(
             Button::new(id),
             cx,
-            geometry::button,
+            next::geometry::button,
             "button",
             &mut menu_info,
         ),
@@ -9366,16 +9474,179 @@ const MENU_ROWS_WIDTH: Pixels = px(220.);
 /// The debug selector of the Overlays page's frame of menu rows.
 pub(crate) const MENU_ROWS_FRAME: &str = "overlays-menu-rows";
 
+/// Which panel a value of the menu rows' popup frame is the theme's from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum FrameFrom {
+    /// `menu.panel(NONE)`, the menu's own.
+    Menu,
+    /// `popover.panel`, the popup frame a connector draws where the menu
+    /// states none (docs/v0.8.0-spec.md §5, notes to the table, the menu's
+    /// popup frame).
+    Popover,
+}
+
+/// The value `read` gives the menu's panel `menu` where it states one gpui
+/// can take, else the one it gives the popover's `popover`, with the panel
+/// it is from; `None` where neither states one.
+pub(crate) fn menu_frame_value<T>(
+    menu: &native_theme::next::PartStyle,
+    popover: &native_theme::next::PartStyle,
+    read: fn(&native_theme::next::PartStyle) -> Option<T>,
+) -> Option<(T, FrameFrom)> {
+    read(menu)
+        .map(|value| (value, FrameFrom::Menu))
+        .or_else(|| read(popover).map(|value| (value, FrameFrom::Popover)))
+}
+
+/// The popup frame of the Overlays page's menu rows: its edge's width and
+/// colour, from one panel ([`menu_frame_value`] on the stroke's width),
+/// the colour `None` where that panel states its stroke as none, and its
+/// corner radius, each with the panel it is from.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct MenuRowsFrame {
+    pub(crate) width: (f32, FrameFrom),
+    pub(crate) colour: Option<Hsla>,
+    pub(crate) radius: (f32, FrameFrom),
+}
+
+impl MenuRowsFrame {
+    /// The frame `r` states, or the home it leaves without a value gpui can
+    /// take: `popover.panel`'s, where the menu's panel states none either.
+    pub(crate) fn next_of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
+        let (menu, popover) = (&r.menu.panel(WidgetState::NONE), &r.popover.panel);
+        let width = menu_frame_value(menu, popover, next::stroke_width_of)
+            .ok_or("popover.panel.stroke.width")?;
+        let colour = match width.1 {
+            FrameFrom::Menu => next::stroke_color_of(menu),
+            FrameFrom::Popover => next::stroke_color_of(popover),
+        };
+        let radius =
+            menu_frame_value(menu, popover, next::radius_of).ok_or("popover.panel.corners")?;
+        Ok(Self {
+            width,
+            colour,
+            radius,
+        })
+    }
+}
+
+/// The Overlays page's menu rows ([`menu_rows`]) as the installed 0.8.0
+/// theme paints them, the showcase's menus' look: the frame's fill and
+/// edge, a row's text, its fill and text under the pointer, the outline a
+/// rule states for a hovered row, the fill and text one states for a
+/// pressed row, and the row's corners.
+pub(crate) struct MenuRowsLook {
+    /// `menu.panel(NONE).fill`.
+    pub(crate) background: Hsla,
+    /// `menu.item_label(NONE).color`.
+    pub(crate) text: Hsla,
+    /// `menu.item(HOVER).fill`.
+    pub(crate) hover: Hsla,
+    /// `menu.item_label(HOVER).color`.
+    pub(crate) hover_text: Hsla,
+    /// A hovered row's outline, the stroke a rule states for
+    /// `menu.item(HOVER)`, at its width; `None` where no rule states one,
+    /// or it is 0 wide.
+    pub(crate) edge: Option<(Hsla, Pixels)>,
+    /// A pressed row's fill and text, `menu.item(HOVER|PRESSED).fill` and
+    /// `menu.item_label(HOVER|PRESSED).color` where a rule states each for
+    /// the pressed state, the row keeping its hover look otherwise.
+    pub(crate) active: Option<Hsla>,
+    pub(crate) active_text: Option<Hsla>,
+    /// `menu.item(NONE).corners`, `None` where unstated: square rows.
+    pub(crate) radius: Option<Pixels>,
+    pub(crate) frame: MenuRowsFrame,
+    /// `menu.panel(NONE)`'s stated padding sides.
+    pub(crate) panel_padding: ResolvedPadding,
+}
+
+impl MenuRowsLook {
+    /// The rows' look under `r`, or the home `r` leaves without a value
+    /// gpui can take that the look needs, where the rows keep the popover's
+    /// tokens (spec §10, rule 0).
+    pub(crate) fn next_of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
+        let m = &r.menu;
+        let hovered = m.item(WidgetState::HOVER);
+        let pressed = WidgetState::HOVER | WidgetState::PRESSED;
+        let edge_width = next::stroke_width_of(&hovered).filter(|width| *width > 0.0);
+        let [top, right, bottom, left] = next::padding_of(&m.panel(WidgetState::NONE));
+        Ok(Self {
+            background: next::fill_of(&m.panel(WidgetState::NONE))
+                .ok_or("menu.panel(NONE).fill")?,
+            text: next::text_color_of(&m.item_label(WidgetState::NONE))
+                .ok_or("menu.item_label(NONE).color")?,
+            hover: next::fill_of(&hovered).ok_or("menu.item(HOVER).fill")?,
+            hover_text: next::text_color_of(&m.item_label(WidgetState::HOVER))
+                .ok_or("menu.item_label(HOVER).color")?,
+            edge: next::state_stroke_color_of(&hovered)
+                .zip(edge_width)
+                .map(|(colour, width)| (colour, px(width))),
+            active: next::state_fill_of(&m.item(pressed)),
+            active_text: next::state_text_color_of(&m.item_label(pressed)),
+            radius: next::radius_of(&m.item(WidgetState::NONE)).map(px),
+            frame: MenuRowsFrame::next_of(r)?,
+            panel_padding: ResolvedPadding {
+                top,
+                right,
+                bottom,
+                left,
+            },
+        })
+    }
+
+    /// A row's outline, laid over the whole row, its padding included, so
+    /// nothing moves, rounded as the row, lit while the pointer is on the
+    /// row and `none` otherwise; hidden while the row is pressed where a
+    /// pressed fill is stated, as [`MenuLook::edge`] draws it.
+    fn edge(&self, none: Hsla) -> Option<Stateful<Div>> {
+        let (edge, width) = self.edge?;
+        Some(
+            div()
+                .id("menu-row-edge")
+                .absolute()
+                .inset_0()
+                .when_some(self.radius, |edge, radius| edge.rounded(radius))
+                .border(width)
+                .border_color(none)
+                .group_hover(MENU_ROW_GROUP, move |style| style.border_color(edge))
+                .when(self.active.is_some(), |edge| {
+                    edge.group_active(MENU_ROW_GROUP, move |style| style.border_color(none))
+                }),
+        )
+    }
+
+    /// `row` while the mouse button is held on it, as [`MenuLook::pressed`]
+    /// draws it.
+    fn pressed(&self, row: Stateful<Div>) -> Stateful<Div> {
+        let (fill, text) = (self.active, self.active_text);
+        if fill.is_none() && text.is_none() {
+            return row;
+        }
+        row.active(move |style| {
+            let style = match fill {
+                Some(fill) => style.bg(fill),
+                None => style,
+            };
+            match text {
+                Some(text) => style.text_color(text),
+                None => style,
+            }
+        })
+    }
+}
+
 /// The menu rows an application draws itself, one per `(id, icon, label)`
-/// of `rows`, in a frame painted as the showcase's menus are, from
-/// [`MenuLook`]: `menu.background_color` edged by `popover.border` and
-/// padded by the `menu.panel_padding_*` sides the theme states, the rows in
-/// `menu.font.color`, hovered in `menu.hover_background` and
-/// `hover_text_color` and outlined in `menu.hover_border_color`
-/// ([`MenuLook::edge`]), pressed in `menu.active_background` and
-/// `active_text_color` ([`MenuLook::pressed`]), rounded by
-/// `menu.border.corner_radius`; without a native theme, the popover's tokens
-/// and the accent. Each icon is the chosen icon theme's, and a row whose
+/// of `rows`, in a frame painted as the showcase's menus are, from the
+/// installed 0.8.0 theme ([`MenuRowsLook`]): `menu.panel(NONE).fill` edged
+/// and rounded by the menu's panel, or the popover's where the menu states
+/// none ([`MenuRowsFrame`]), and padded by the sides `menu.panel(NONE)`
+/// states, the rows in `menu.item_label(NONE).color`, hovered in
+/// `menu.item(HOVER).fill` and `menu.item_label(HOVER).color` and outlined
+/// in the stroke a rule states for `menu.item(HOVER)`, pressed in what one
+/// states for `menu.item(HOVER|PRESSED)`, rounded by `menu.item(NONE)`'s
+/// corners; where the theme states no value gpui can take at a home the
+/// look needs, or before one is installed, the popover's tokens and the
+/// accent (spec §10, rule 0). Each icon is the chosen icon theme's, and a row whose
 /// icon that theme lacks shows its label alone. Upstream's `MenuItemElement` is crate-private and
 /// `PopupMenu` builds its own rows, so `geometry::menu_item` has no widget
 /// to refine: these rows are the receiver it documents.
@@ -9385,8 +9656,8 @@ pub(crate) fn menu_rows(
     rows: &[(&'static str, SampleIcon, &'static str)],
 ) -> Div {
     let t = cx.theme();
-    let native = old_native(cx);
-    let look = native.as_ref().map(MenuLook::of);
+    let native = next_resolved(cx);
+    let look = native.and_then(|r| MenuRowsLook::next_of(r).ok());
     let frame = v_flex().w(MENU_ROWS_WIDTH);
     let (frame, hover_bg, hover_text, radius) = match &look {
         Some(look) => (
@@ -9394,9 +9665,9 @@ pub(crate) fn menu_rows(
                 frame
                     .bg(look.background)
                     .text_color(look.text)
-                    .border(look.frame_width)
-                    .border_color(look.frame)
-                    .rounded(look.frame_radius)
+                    .border(px(look.frame.width.0))
+                    .border_color(look.frame.colour.unwrap_or(t.transparent))
+                    .rounded(px(look.frame.radius.0))
                     .overflow_hidden(),
                 &look.panel_padding,
                 None::<Pixels>,
@@ -9404,7 +9675,7 @@ pub(crate) fn menu_rows(
             ),
             look.hover,
             look.hover_text,
-            Some(look.radius),
+            look.radius,
         ),
         None => (
             frame
@@ -9420,10 +9691,14 @@ pub(crate) fn menu_rows(
         .debug_selector(|| MENU_ROWS_FRAME.into())
         .children(rows.iter().map(|(id, icon, label)| {
             let (id, label) = (*id, *label);
-            let mut row_info =
-                info::overlays::menu_row(t, native.as_ref().map(|n| n.resolved), label, icon);
-            if icon.shown() && native_value(cx, geometry::icon_size_small).is_some() {
-                row_info = row_info.geometry("icon_size_small");
+            let mut row_info = info::overlays::menu_row(t, native, label, icon);
+            if icon.shown() {
+                let _ = info::next_native_value(
+                    cx,
+                    next::geometry::icon_size_small,
+                    "icon_size_small",
+                    &mut row_info,
+                );
             }
             // Plain text, not a Label: a Label paints foreground on its
             // own element (label.rs:213), over the frame's colour.
@@ -9435,24 +9710,27 @@ pub(crate) fn menu_rows(
                 .items_center()
                 .when_some(radius, |row, radius| row.rounded(radius))
                 .hover(move |this| this.bg(hover_bg).text_color(hover_text))
-                .children(icon.glyph_sized(cx, geometry::icon_size_small))
+                .children(icon.next_glyph_sized(cx, next::geometry::icon_size_small))
                 .child(label)
-                .children(
-                    look.as_ref()
-                        .and_then(|look| look.edge(None, t.transparent)),
-                );
+                .children(look.as_ref().and_then(|look| look.edge(t.transparent)));
             #[cfg(test)]
             let row = row.child(crate::elements::label_probe(ui, format!("{id}-label")));
             // Pressed before `info`, which wraps the row in an element of
             // its own: a style set after it would land on the wrapper,
             // under the row's own hover fill and text.
-            native_info(row, cx, geometry::menu_item, "menu_item", &mut row_info)
-                .map(|row| match &look {
-                    Some(look) => look.pressed(row),
-                    None => row,
-                })
-                .info(ui, id, row_info)
-                .debug_selector(move || id.into())
+            next_native_info(
+                row,
+                cx,
+                next::geometry::menu_item,
+                "menu_item",
+                &mut row_info,
+            )
+            .map(|row| match &look {
+                Some(look) => look.pressed(row),
+                None => row,
+            })
+            .info(ui, id, row_info)
+            .debug_selector(move || id.into())
         }))
 }
 
