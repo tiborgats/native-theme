@@ -435,7 +435,13 @@ adaptive=
 if ! has render; then
   :
 elif [ -d "$out/run1" ] && [ -d "$out/run2" ]; then
-  compare run1 run2 differ.txt differ-levels.txt $adaptive || failed=1
+  # The list set's full screenshots (pages/) are left out: in run
+  # 45220318789 they differed only in the home indicator (y 2583-2598 px of
+  # 2622, outside every cell), whose colour had not yet followed the page's
+  # appearance in one run; the crops (screen/) are compared.
+  pages=
+  [ "$specimen_set" = lists ] && pages='./pages/*'
+  compare run1 run2 differ.txt differ-levels.txt "$adaptive" "$pages" || failed=1
 else
   failed=1
 fi
