@@ -7,10 +7,9 @@ use std::borrow::Cow;
 use crate::color::Rgba;
 #[allow(unused_imports)]
 use crate::detect::{system_icon_set, system_icon_theme};
-use crate::model::IconSet;
 pub use crate::model::{
     AnimatedIcon, EmptyFrameListError, FrameList, FramesData, IconData, IconProvider, IconRole,
-    RgbaData, TransformAnimation, TransformData, icon_name,
+    IconSet, RgbaData, TransformAnimation, TransformData, icon_name,
 };
 #[allow(unused_imports)]
 use crate::model::{bundled_icon_by_name, bundled_icon_svg};

@@ -370,6 +370,26 @@ fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pix
     })
 }
 
+/// [`scrollbar_of`] on the installed 0.8.0 theme: the vertical groove's
+/// width, `scrollbar.track(NONE; orientation=Vertical).min_size[0]`, where
+/// the theme states it, and whether the scrollbar is an overlay; `None`
+/// before a 0.8.0 theme is installed.
+fn next_scrollbar_of(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> Option<(Option<Pixels>, bool)> {
+    read(cx, showcase, |_this, cx| {
+        crate::support::next_resolved(cx).map(|r| {
+            (
+                native_theme_gpui::next::scrollbar_groove_width(r)
+                    .ok()
+                    .map(px),
+                r.scrollbar.overlay_mode,
+            )
+        })
+    })
+}
+
 /// A scrollbar that is not an overlay keeps off the content.
 ///
 /// gpui-component overlays its scrollbar on the scroll area whatever the
@@ -759,12 +779,17 @@ fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
     for preset in ["material-3", "windows-11"] {
         use_preset(&mut cx, &showcase, preset);
         let native = read(&mut cx, &showcase, |_this, cx| {
-            let b = |f: fn(&native_theme::theme::ResolvedWidgetBorder) -> f32| {
-                native_value(cx, |n| px(f(&n.resolved.list.border)))
-            };
-            b(|b| b.corner_radius).zip(b(|b| b.line_width))
+            let container = crate::support::next_resolved(cx)?
+                .list
+                .container(native_theme::next::WidgetState::NONE);
+            let radius = native_theme_gpui::next::radius_of(&container)?;
+            let width = native_theme_gpui::next::stroke_width_of(&container)?;
+            Some((px(radius), px(width)))
         });
-        let frame = cx.update(|_w, cx| native_geometry(cx, geometry::list));
+        let frame = cx.update(|_w, cx| {
+            crate::support::next_geometry(cx, native_theme_gpui::next::geometry::list)
+                .and_then(Result::ok)
+        });
         assert!(
             native.is_some() && frame.is_some(),
             "{preset}: no native theme is installed, so nothing was measured"
@@ -3310,11 +3335,9 @@ const BASIC_FILLS: [(&str, &str, PartOf); 5] = [
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
-    use native_theme::color::Rgba;
     use native_theme::next::{
         CheckboxRule, Color, Paint, PartPatch, SliderRule, SwitchRule, ThemePatch, WidgetState,
     };
-    use native_theme_gpui::ResolvedTheme;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let sentinels = [0x12, 0x24, 0x36, 0x48, 0x5a].map(|g| Color::from_srgb8(0x81, g, 0x3c, 0xff));
     let [box_on, box_off, track_on, track_off, rail] = sentinels;
@@ -3364,11 +3387,6 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let expect = |cx: &mut VisualTestContext, pick: fn(&ResolvedTheme) -> Rgba| {
-            read(cx, &showcase, |_, cx| {
-                native_color(cx, |n| pick(n.resolved))
-            })
-        };
         for (control, home, part) in BASIC_FILLS {
             let want = read(&mut cx, &showcase, |_, cx| {
                 crate::support::next_resolved(cx)
@@ -3381,13 +3399,16 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
                 "{preset}: {control} is not painted in {home}"
             );
         }
-        // The progress bar's Look still reads the 0.7.2 theme.
-        let want = expect(&mut cx, |r: &ResolvedTheme| r.progress_bar.track_color)
-            .filter(|c| !c.is_transparent());
+        let want = read(&mut cx, &showcase, |_, cx| {
+            crate::support::next_resolved(cx).and_then(|r| {
+                native_theme_gpui::next::fill_of(&r.progress_bar.track(WidgetState::NONE))
+            })
+        })
+        .filter(|c| !c.is_transparent());
         assert_eq!(
             painted_fill(&mut cx, "basic-progress"),
             want,
-            "{preset}: basic-progress is not painted in progress_bar.track_color"
+            "{preset}: basic-progress is not painted in progress_bar.track(NONE).fill"
         );
     }
 }
@@ -3424,10 +3445,10 @@ fn the_disabled_basic_checkbox_paints_the_fill_it_claims(cx: &mut TestAppContext
 }
 
 /// A Link is underlined at rest only where the theme says so (M9-061):
-/// under ios-13 and material-3, which state `link.underline_enabled =
-/// false`, no underline is painted inside the resting Link and its info
-/// claims none and says `geometry::link` removes it; under kde-breeze one is,
-/// and its info claims it.
+/// under ios-13 and material-3, whose installed 0.8.0 themes state
+/// `link.label(NONE).decoration` none, no underline is painted inside the
+/// resting Link and its info claims none and says `geometry::link` removes
+/// it; under kde-breeze one is, and its info claims it.
 #[gpui::test]
 fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -3435,7 +3456,13 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
     for preset in ["ios-13", "material-3", "kde-breeze"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let underlined = resolved_theme(&mut cx, &showcase).link.underline_enabled;
+        let underlined = next_theme(&mut cx, &showcase).is_some_and(|r| {
+            r.link
+                .label(native_theme::next::WidgetState::NONE)
+                .decoration
+                .kind
+                == native_theme::next::DecorationKind::Underline
+        });
         if underlined {
             reached.0 = true;
         } else {
@@ -3454,7 +3481,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         assert_eq!(
             painted,
             usize::from(underlined),
-            "{preset}: link.underline_enabled is {underlined}, and the resting Link paints {painted} underlines"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the resting Link paints {painted} underlines"
         );
         let info = settle_on(&mut cx, &showcase, "basic-link");
         let resting = info.as_ref().is_some_and(|info| {
@@ -3464,7 +3491,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         });
         assert_eq!(
             resting, underlined,
-            "{preset}: link.underline_enabled is {underlined}, and the Link's info claims a resting underline: {resting}: {info:?}"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the Link's info claims a resting underline: {resting}: {info:?}"
         );
         let removed = info.as_ref().is_some_and(|info| {
             info.to_text().contains(
@@ -3473,12 +3500,12 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         });
         assert_eq!(
             removed, !underlined,
-            "{preset}: link.underline_enabled is {underlined}, and the Link's info says geometry::link removes the underline: {removed}: {info:?}"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the Link's info says geometry::link removes the underline: {removed}: {info:?}"
         );
         assert!(
             info.as_ref()
                 .is_some_and(|info| !info.to_text().contains("no receiver")),
-            "{preset}: the Link's info says link.underline_enabled has no receiver: {info:?}"
+            "{preset}: the Link's info says link.label(NONE).decoration has no receiver: {info:?}"
         );
     }
     assert_eq!(
@@ -3489,7 +3516,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
 }
 
 /// The Empty state's info prints the size its icon is drawn at (M9-058):
-/// the installed theme's `defaults.icon_sizes.large` where a native theme is
+/// the installed theme's `icons.sizes.large` where a native theme is
 /// installed (kde-breeze), and upstream's size where none is, in place of
 /// the literals "32px, or 48px on KDE".
 #[gpui::test]
@@ -3498,16 +3525,15 @@ fn the_empty_states_info_prints_its_icons_size(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
     show(&mut cx, &showcase, Page::Feedback);
-    let large = resolved_theme(&mut cx, &showcase).defaults.icon_sizes.large;
+    let large = next_theme(&mut cx, &showcase).and_then(|r| r.icons.sizes.large);
+    assert!(large.is_some(), "kde-breeze states no icons.sizes.large");
+    let Some(large) = large else { return };
     let line = |info: &Option<WidgetInfo>| {
         info.as_ref()
             .and_then(|info| note_of(&info.config, "icon size").map(str::to_string))
     };
     let info = settle_on(&mut cx, &showcase, "feedback-empty");
-    let want = format!(
-        "defaults.icon_sizes.large, {}px",
-        crate::info::px_text(large)
-    );
+    let want = format!("icons.sizes.large, {}px", crate::info::px_text(large));
     assert!(
         line(&info).is_some_and(|text| text.starts_with(&want)),
         "under kde-breeze the Empty state's icon size line does not print {want:?}: {info:?}"
@@ -3538,7 +3564,8 @@ fn the_empty_states_info_prints_its_icons_size(cx: &mut TestAppContext) {
 /// Both tables draw their header row `list.header_height` tall where the
 /// theme states it (adwaita, 30), and as tall as a body row is drawn where it
 /// does not (kde-breeze, which states no header height): the Data page's
-/// `DataTable` at `geometry::data_table_size`'s row height, the Basic page's
+/// `DataTable` at `next::geometry::data_table_size`'s row height (its header
+/// at `list.header(NONE).min_size[1]`), the Basic page's
 /// table at `list.row_height`, or else its padding and the header font's line,
 /// on the pixel grid.
 #[gpui::test]
@@ -3546,7 +3573,8 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     for preset in ["adwaita", "kde-breeze"] {
         use_preset(&mut cx, &showcase, preset);
-        let (stated, data_row, basic_row) = read(&mut cx, &showcase, |_, cx| {
+        // The Basic page's table still reads the 0.7.2 theme.
+        let (stated, basic_row) = read(&mut cx, &showcase, |_, cx| {
             native_value(cx, |n| {
                 let l = &n.resolved.list;
                 let pad = &l.border.padding;
@@ -3554,7 +3582,6 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
                     * n.resolved.defaults.line_height;
                 (
                     geometry::list_header_height(n),
-                    geometry::data_table_size(n).table_row_height(),
                     px(l.row_height
                         .unwrap_or(pad.top.unwrap_or(0.) + line + pad.bottom.unwrap_or(0.))),
                 )
@@ -3566,10 +3593,31 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
             preset == "adwaita",
             "precondition: {preset}'s header height"
         );
+        // The DataTable reads the installed 0.8.0 theme.
+        let next = read(&mut cx, &showcase, |_, cx| {
+            crate::support::next_resolved(cx).map(|r| {
+                (
+                    native_theme_gpui::next::geometry::list_header_height(r),
+                    native_theme_gpui::next::geometry::data_table_size(r),
+                )
+            })
+        });
+        assert!(
+            matches!(next, Some((Ok(_), Ok(_)))),
+            "{preset}: no 0.8.0 theme is installed, or it maps no table height: {next:?}"
+        );
+        let Some((Ok(next_stated), Ok(next_size))) = next else {
+            return;
+        };
+        assert_eq!(
+            next_stated.is_some(),
+            preset == "adwaita",
+            "precondition: {preset}'s list.header(NONE).min_size[1]"
+        );
         show(&mut cx, &showcase, Page::Data);
         assert_eq!(
             bounds_of(&mut cx, DATA_TABLE_HEADER).size.height,
-            stated.unwrap_or(data_row),
+            next_stated.unwrap_or(next_size.table_row_height()),
             "{preset}: the DataTable's header row"
         );
         show(&mut cx, &showcase, Page::Basic);
@@ -3655,15 +3703,18 @@ fn names_the_container_margin(info: &WidgetInfo) -> bool {
 
 /// The card's and the GroupBoxes' infos record `geometry::container_margin`
 /// exactly where it pads a side of their content: where the layout states it
-/// and `card.border.padding` leaves a side unstated, not where the padding
+/// and the card's padding leaves a side unstated, not where the padding
 /// states all four (windows-11 and kde-breeze), which leaves the margin
-/// nothing to pad (the M8 T5 carry-over). Every preset the preset switch
-/// can install (`native_theme::next::Preset::ALL`) in both modes, each
-/// expectation read from the theme installed.
+/// nothing to pad (the M8 T5 carry-over) -- the card's `card.border.padding`
+/// of the 0.7.2 theme it still reads, the GroupBoxes' `card.container(NONE)`
+/// and `layout.container_margin` of the installed 0.8.0 theme. Every preset
+/// the preset switch can install (`native_theme::next::Preset::ALL`) in both
+/// modes, each expectation read from the theme installed.
 #[gpui::test]
 fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let mut cases = (false, false);
+    let mut next_cases = (false, false);
     for mode in [AppColorMode::Light, AppColorMode::Dark] {
         switch_mode(&mut cx, mode);
         for preset in native_theme::next::Preset::ALL {
@@ -3698,18 +3749,43 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
                 if pads { "does not record" } else { "records" },
                 if pads { "an unstated" } else { "no" },
             );
+            let (sides, next_margin) = read(&mut cx, &showcase, |_, cx| {
+                crate::support::next_value(cx, |r| {
+                    (
+                        native_theme_gpui::next::padding_of(
+                            &r.card.container(native_theme::next::WidgetState::NONE),
+                        ),
+                        native_theme_gpui::next::geometry::container_margin(r)
+                            .ok()
+                            .flatten(),
+                    )
+                })
+            })
+            .unwrap_or_default();
+            let next_pads = next_margin.is_some() && sides.iter().any(Option::is_none);
+            if next_margin.is_some() {
+                if next_pads {
+                    next_cases.0 = true;
+                } else {
+                    next_cases.1 = true;
+                }
+            }
             show(&mut cx, &showcase, Page::Layout);
             for group_box in [LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE] {
                 let info = settle_on(&mut cx, &showcase, group_box);
                 assert_eq!(
                     info.as_ref().map(names_the_container_margin),
-                    Some(pads),
+                    Some(next_pads),
                     "{} {mode:?}: {group_box}'s info {} geometry::container_margin, and the \
-                     margin pads {} side of card.border.padding {p:?} (container_margin \
-                     {margin:?}): {info:?}",
+                     margin pads {} side of card.container(NONE)'s padding {sides:?} \
+                     (container_margin {next_margin:?}): {info:?}",
                     preset,
-                    if pads { "does not record" } else { "records" },
-                    if pads { "an unstated" } else { "no" },
+                    if next_pads {
+                        "does not record"
+                    } else {
+                        "records"
+                    },
+                    if next_pads { "an unstated" } else { "no" },
                 );
             }
         }
@@ -3719,6 +3795,12 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
         (true, true),
         "the presets no longer cover a card.border.padding that leaves a side to the margin \
          and one that states all four"
+    );
+    assert_eq!(
+        next_cases,
+        (true, true),
+        "the 0.8.0 presets no longer cover a card.container(NONE) padding that leaves a side \
+         to the margin and one that states all four"
     );
 }
 
@@ -5956,10 +6038,10 @@ fn the_basic_tooltip_is_refined(cx: &mut TestAppContext) {
     );
 }
 
-/// A section heading is set in the theme's section-heading role, as the iced
-/// showcase's section titles are: its info says so, and under kde-breeze,
-/// whose role is 16px (12pt) against a 13px body, the heading is taller
-/// than a body-text label.
+/// A section heading is set in the installed 0.8.0 theme's section-heading
+/// role, `typography.headline`, as the iced showcase's section titles are:
+/// its info says so, and under kde-breeze, whose role is 16px (12pt)
+/// against a 13px body, the heading is taller than a body-text label.
 #[gpui::test]
 fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -5967,9 +6049,17 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     show(&mut cx, &showcase, Page::Basic);
     let info = settle_on(&mut cx, &showcase, "basic-heading-buttons");
     assert!(
-        info.as_ref()
-            .is_some_and(|i| i.to_text().contains("text_scale.section_heading")),
-        "the heading's info names no text_scale.section_heading: {info:?}"
+        info.as_ref().is_some_and(|i| i
+            .to_text()
+            .contains("typography.headline, the platform's section heading")),
+        "the heading's info names no typography.headline: {info:?}"
+    );
+    let role = read(&mut cx, &showcase, |_this, cx| {
+        crate::support::next_resolved(cx).map(|r| crate::demo::heading_role(&r.typography))
+    });
+    assert!(
+        matches!(role, Some(Ok(ref role)) if role.home == "typography.headline"),
+        "kde-breeze's 0.8.0 theme gives no headline role: {role:?}"
     );
     let heading = bounds_of(&mut cx, "basic-heading-buttons");
     let body = bounds_of(&mut cx, "basic-type-body");
@@ -6241,15 +6331,9 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let r = read(&mut cx, &showcase, |_, cx| {
-            crate::support::old_resolved(cx).cloned()
-        });
         let next = next_theme(&mut cx, &showcase);
-        assert!(
-            r.is_some() && next.is_some(),
-            "{preset}: no native theme is installed"
-        );
-        let (Some(r), Some(next)) = (r, next) else {
+        assert!(next.is_some(), "{preset}: no native theme is installed");
+        let Some(next) = next else {
             return;
         };
         let rest = native_theme::next::WidgetState::NONE;
@@ -6294,14 +6378,14 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
         );
         let bar = size(&mut cx, "native-progress");
         assert_eq!(
-            bar.height,
-            px(r.progress_bar.track_height),
-            "{preset}: progress_bar.track_height"
+            Some(bar.height),
+            next.progress_bar.track(rest).min_size[1].map(px),
+            "{preset}: progress_bar.track(NONE).min_size[1]"
         );
         let spinner = size(&mut cx, "native-spinner");
         assert_eq!(
             spinner.width,
-            px(r.spinner.diameter.max(r.spinner.min_diameter)),
+            px(next.spinner.diameter.max(next.spinner.min_diameter)),
             "{preset}: spinner.diameter"
         );
     }
@@ -6309,7 +6393,7 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
 
 /// Under a native theme the Feedback page's Small, Medium and Large Spinners
 /// are all the connector's theme-drawn widget, one look at three sizes:
-/// `SpinnerLook::of_size`'s diameters, which strictly increase.
+/// `SpinnerLook::next_of_size`'s diameters, which strictly increase.
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContext) {
@@ -6319,9 +6403,7 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Feedback);
-        let r = read(&mut cx, &showcase, |_, cx| {
-            crate::support::old_resolved(cx).cloned()
-        });
+        let r = next_theme(&mut cx, &showcase);
         assert!(r.is_some(), "{preset}: no native theme is installed");
         let Some(r) = r else { return };
         let mut widths = Vec::new();
@@ -6331,11 +6413,11 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
             ("feedback-spinner-large", SpinnerKind::Large),
         ] {
             let width = bounds_of(&mut cx, id).size.width;
-            let look = SpinnerLook::of_size(&r, kind.size());
+            let look = SpinnerLook::next_of_size(&r, kind.size());
             assert_eq!(
                 Some(width),
-                look.map(|look| look.diameter),
-                "{preset}: {id} is not SpinnerLook::of_size's diameter"
+                look.ok().map(|look| look.diameter),
+                "{preset}: {id} is not SpinnerLook::next_of_size's diameter"
             );
             let info = settle_on(&mut cx, &showcase, id);
             assert!(
@@ -6352,6 +6434,74 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
     }
 }
 
+/// A theme-drawn Spinner's info claims the colours the widget draws at the
+/// homes it reads -- the arc and a monochrome bundled set's indicator in
+/// `spinner.color`, a turned icon theme's indicator in
+/// `colors.window.foreground` -- over every bundled preset in both modes;
+/// and where the theme states no value gpui can take at a home the widget
+/// reads, which no bundled preset does, the info names gpui-component's own
+/// Spinner, that home and upstream's colour.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_theme_drawn_spinner_claims_the_homes_it_draws_from() {
+    use crate::demo::{SpinnerIcons, SpinnerKind};
+    use crate::info::feedback::{native_spinner, spinner_by_upstream};
+    use crate::info::next_stated;
+    use native_theme::icons::IconSet;
+    let arc = SpinnerIcons::default();
+    let tinted = SpinnerIcons {
+        set: Some(IconSet::Material),
+        indicator: true,
+        ..SpinnerIcons::default()
+    };
+    let turned = SpinnerIcons {
+        set: Some(IconSet::Freedesktop),
+        indicator: true,
+        spins: true,
+        ..SpinnerIcons::default()
+    };
+    for (name, r, t) in every_next_variant() {
+        let colour = next_stated(r.spinner.color);
+        let info = native_spinner(&r, &t, SpinnerKind::Medium, false, &arc);
+        assert_eq!(
+            claim_as(&info, "arc"),
+            Some(("spinner.color", colour)),
+            "{name}: {info:?}"
+        );
+        let info = native_spinner(&r, &t, SpinnerKind::Small, false, &tinted);
+        assert_eq!(
+            claim_as(&info, "indicator"),
+            Some(("spinner.color", colour)),
+            "{name}: {info:?}"
+        );
+        let info = native_spinner(&r, &t, SpinnerKind::Large, false, &turned);
+        assert_eq!(
+            claim_as(&info, "indicator"),
+            r.colors
+                .window
+                .foreground
+                .map(|c| ("colors.window.foreground", next_stated(c))),
+            "{name}: {info:?}"
+        );
+    }
+    let t = Theme::default();
+    let home = "colors.window.foreground";
+    let upstream = spinner_by_upstream(&t, SpinnerKind::Medium, false, home);
+    assert!(
+        note_of(&upstream.config, "drawn by").is_some_and(|text| {
+            text.starts_with("gpui-component's own Spinner")
+                && text.contains(home)
+                && text.contains("Spinner::render")
+        }),
+        "{upstream:?}"
+    );
+    assert_eq!(
+        claim_as(&upstream, "icon, inherited foreground"),
+        Some(("foreground", t.foreground)),
+        "{upstream:?}"
+    );
+}
+
 /// The Basic List shows three of its eight rows: its box is three rows and
 /// its frame tall, so the rest scroll.
 #[gpui::test]
@@ -6361,12 +6511,18 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
     show(&mut cx, &showcase, Page::Basic);
     let list = bounds_of(&mut cx, "basic-list");
     let row = bounds_of(&mut cx, "basic-list-row-0");
-    let frame = read(&mut cx, &showcase, |_this, cx| {
-        native_value(cx, |n| n.resolved.list.border.line_width)
-    })
-    .map(px);
-    assert!(frame.is_some(), "no native theme is installed");
-    let frame = frame.unwrap_or_default();
+    let frame = next_theme(&mut cx, &showcase)
+        .and_then(|r| {
+            native_theme_gpui::next::stroke_width_of(
+                &r.list.container(native_theme::next::WidgetState::NONE),
+            )
+        })
+        .map(px);
+    assert!(
+        frame.is_some(),
+        "no native theme is installed, or it states no list.container(NONE).stroke.width"
+    );
+    let Some(frame) = frame else { return };
     assert_eq!(
         list.size.height,
         row.size.height * 3. + frame + frame,
@@ -6380,8 +6536,8 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
     );
     assert!(
         info.as_ref()
-            .is_some_and(|i| i.to_text().contains("list.selection_text_color")),
-        "the selected row's text is not list.selection_text_color: {info:?}"
+            .is_some_and(|i| i.to_text().contains("list.item_label(SELECTED).color")),
+        "the selected row's text is not list.item_label(SELECTED).color: {info:?}"
     );
 }
 
@@ -7437,13 +7593,18 @@ fn a_moved_column_keeps_its_data(cx: &mut TestAppContext) {
 }
 
 /// A List row's text is plain text, so it takes the list font
-/// `geometry::list_item` gives the row, and its info says so; without a
-/// native theme it is ListItem's own foreground.
+/// `next::geometry::list_item` gives the row, and its info says so; without
+/// a native theme it is ListItem's own foreground.
 #[gpui::test]
 fn a_list_rows_text_is_the_list_font(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     show(&mut cx, &showcase, Page::Data);
-    let styled = cx.update(|_w, cx| native_value(cx, |_| ()).is_some());
+    let styled = cx.update(|_w, cx| {
+        matches!(
+            crate::support::next_geometry(cx, native_theme_gpui::next::geometry::list_item),
+            Some(Ok(_))
+        )
+    });
     let info = settle_on(&mut cx, &showcase, "data-list-row-0");
     let text_claim = info
         .as_ref()
@@ -7451,12 +7612,12 @@ fn a_list_rows_text_is_the_list_font(cx: &mut TestAppContext) {
     let font_note = info.as_ref().is_some_and(|info| {
         info.instance
             .iter()
-            .any(|n| n.what == "text" && n.text.starts_with("list.item_font"))
+            .any(|n| n.what == "text" && n.text.starts_with("list.item_label(NONE)"))
     });
     if styled {
         assert!(
             text_claim.is_none() && font_note,
-            "the row takes list.item_font, and its info does not say so: {info:?}"
+            "the row takes list.item_label(NONE), and its info does not say so: {info:?}"
         );
     } else {
         assert_eq!(
@@ -7491,36 +7652,36 @@ fn a_tree_row_reports_itself(cx: &mut TestAppContext) {
 }
 
 /// A List row and a Tree row under the pointer letter their label in
-/// `list.hover_text_color` (M9-008), and in `list.item_font`'s colour at
-/// rest. The label is plain text, so it is painted in the text colour it is
-/// laid out under, which the registry records per row (a text colour is no
-/// quad of the scene). kde-breeze light states the same colour for its list
-/// text and its hovered list text, so the hovered one is set to the theme's
-/// accent, a colour of the same theme that differs from both.
+/// `list.item_label(HOVER).color` (M9-008), and in
+/// `list.item_label(NONE)`'s colour at rest. The label is plain text, so it
+/// is painted in the text colour it is laid out under, which the registry
+/// records per row (a text colour is no quad of the scene). kde-breeze light
+/// states the same colour for its list text and its hovered list text, so
+/// the hovered one is patched to the theme's `colors.window.border`, a
+/// colour of the same theme that differs from both.
 #[gpui::test]
 fn a_hovered_list_or_tree_row_letters_its_label_in_the_lists_hover_text_colour(
     cx: &mut TestAppContext,
 ) {
-    use crate::info::stated;
+    use native_theme::next::{ListRule, TextPatch, ThemePatch, WidgetState};
+    use native_theme_gpui::next::{state_text_color_of, text_color_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let mut r = resolved_theme(&mut cx, &showcase);
-    r.list.hover_text_color = r.defaults.accent_color;
-    assert_ne!(
-        r.list.hover_text_color, r.list.item_font.color,
-        "kde-breeze light's accent is its list text, so the test could not tell the two apart"
-    );
-    cx.update(|_window, cx| {
-        let prefs = native_theme::AccessibilityPreferences::default();
-        native_theme_gpui::apply(
-            native_theme_gpui::to_theme(&r, "kde-breeze", false, &prefs),
-            &r,
-            &prefs,
-            cx,
-        );
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Data, |r| {
+        r.colors.window.border.map(|border| {
+            ThemePatch::new().list(
+                ListRule::new()
+                    .states(WidgetState::HOVER)
+                    .item_label(TextPatch::new().color(border)),
+            )
+        })
     });
-    cx.run_until_parked();
-    show(&mut cx, &showcase, Page::Data);
+    let Some(r) = r else { return };
+    let rest = text_color_of(&r.list.item_label(WidgetState::NONE));
+    let hovered = state_text_color_of(&r.list.item_label(WidgetState::HOVER));
+    assert!(
+        rest.is_some() && hovered.is_some() && rest != hovered,
+        "the patched list.item_label(HOVER).color is not told apart from list.item_label(NONE)'s: {rest:?} / {hovered:?}"
+    );
     let ui = read(&mut cx, &showcase, |this, _| this.info_ui.clone());
     for row in ["data-list-row-0", "data-tree-row-1"] {
         let text = |cx: &mut VisualTestContext| {
@@ -7528,16 +7689,16 @@ fn a_hovered_list_or_tree_row_letters_its_label_in_the_lists_hover_text_colour(
         };
         assert_eq!(
             text(&mut cx),
-            Some(stated(r.list.item_font.color)),
-            "{row}: the label at rest is not list.item_font's colour"
+            rest,
+            "{row}: the label at rest is not list.item_label(NONE)'s colour"
         );
         let bounds = bounds_of(&mut cx, row);
         hover(&mut cx, bounds.center());
         draw(&mut cx);
         assert_eq!(
             text(&mut cx),
-            Some(stated(r.list.hover_text_color)),
-            "{row}: the label under the pointer is not list.hover_text_color"
+            hovered,
+            "{row}: the label under the pointer is not list.item_label(HOVER).color"
         );
         hover(&mut cx, point(px(0.), px(0.)));
         draw(&mut cx);
@@ -7545,7 +7706,7 @@ fn a_hovered_list_or_tree_row_letters_its_label_in_the_lists_hover_text_colour(
 }
 
 /// A selected List or Tree row's info says its text is
-/// `list.selection_text_color`, which `geometry::list_item_selected` sets
+/// `list.item_label(SELECTED).color`, which `geometry::list_item_selected` sets
 /// over the list font's colour (M9-056), and an unselected one's says the
 /// list font's colour and names the hovered text the showcase sets
 /// (M9-008), under a native theme.
@@ -7571,9 +7732,9 @@ fn a_selected_list_or_tree_rows_info_names_the_selection_text_colour(cx: &mut Te
         let info = settle_on(&mut cx, &showcase, selected);
         let says = text(&info).unwrap_or_default();
         assert!(
-            says.starts_with("list.selection_text_color")
+            says.starts_with("list.item_label(SELECTED).color")
                 && says.contains("geometry::list_item_selected"),
-            "{selected}: the selected row's text is list.selection_text_color through \
+            "{selected}: the selected row's text is list.item_label(SELECTED).color through \
                  geometry::list_item_selected, and its info says {says:?}"
         );
         assert!(
@@ -7583,8 +7744,8 @@ fn a_selected_list_or_tree_rows_info_names_the_selection_text_colour(cx: &mut Te
         let info = settle_on(&mut cx, &showcase, unselected);
         let says = text(&info).unwrap_or_default();
         assert!(
-            says.starts_with("list.item_font"),
-            "{unselected}: the unselected row's text is list.item_font's, and its info says {says:?}"
+            says.starts_with("list.item_label(NONE)"),
+            "{unselected}: the unselected row's text is list.item_label(NONE)'s, and its info says {says:?}"
         );
         assert!(
             hovered_text(&info),
@@ -7605,12 +7766,21 @@ fn a_tree_row_keeps_clear_of_a_scrollbar_that_is_no_overlay(cx: &mut TestAppCont
     for preset in ["kde-breeze", "macos-monterey"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Data);
-        let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+        let measured = next_scrollbar_of(&mut cx, &showcase);
+        let edge = next_theme(&mut cx, &showcase).and_then(|r| {
+            native_theme_gpui::next::stroke_width_of(
+                &r.list.container(native_theme::next::WidgetState::NONE),
+            )
+        });
         assert!(
-            groove > px(0.),
-            "{preset}: no native theme is installed, so nothing was measured"
+            measured.is_some_and(|(groove, _)| groove.is_some_and(|g| g > px(0.)))
+                && edge.is_some(),
+            "{preset}: no native theme is installed, or it states no groove width or list edge, so nothing was measured"
         );
-        let edge = px(resolved_theme(&mut cx, &showcase).list.border.line_width);
+        let (Some((Some(groove), overlay)), Some(edge)) = (measured, edge) else {
+            return;
+        };
+        let edge = px(edge);
         let gutter = if overlay { px(0.) } else { groove };
         let tree = bounds_of(&mut cx, TREE_DEMO);
         let row = bounds_of(&mut cx, "data-tree-row-1");
@@ -7627,20 +7797,28 @@ fn a_tree_row_keeps_clear_of_a_scrollbar_that_is_no_overlay(cx: &mut TestAppCont
 
 /// A List's and a Tree's row's Widget Info names the room it keeps for the
 /// scrollbar (`demo::list_gutter`): the groove's width,
-/// `scrollbar.groove_width`, where the theme's scrollbar is no overlay
-/// (kde-breeze), and none where it is one (macos-monterey).
+/// `scrollbar.track(NONE; orientation=Vertical).min_size[0]`, where the
+/// theme's scrollbar is no overlay (kde-breeze), and none where it is one
+/// (macos-monterey).
 #[gpui::test]
 fn a_list_or_tree_rows_info_names_the_scrollbar_room_it_keeps(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     for preset in ["kde-breeze", "macos-monterey"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Data);
-        let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+        let measured = next_scrollbar_of(&mut cx, &showcase);
+        assert!(
+            measured.is_some_and(|(groove, _)| groove.is_some()),
+            "{preset}: no native theme is installed, or it states no groove width"
+        );
+        let Some((Some(groove), overlay)) = measured else {
+            return;
+        };
         let says = if overlay {
             "none: the theme's scrollbar is an overlay".to_string()
         } else {
             format!(
-                "{}px, scrollbar.groove_width",
+                "{}px, scrollbar.track(NONE; orientation=Vertical).min_size[0]",
                 crate::info::px_text(groove.as_f32())
             )
         };
@@ -7882,10 +8060,10 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
             .and_then(|i| i.config.iter().find(|n| n.what == "size"));
         assert!(
             line.is_some_and(|l| l.text.starts_with(&format!(
-                "{}px: defaults.mono_font.size scaled by the text-scaling factor",
+                "{}px: typography.monospace.size_px, which the theme's text scale has already scaled",
                 crate::info::px_text(size.as_f32())
             ))),
-            "at text scale {scale} the monospace sample's size line does not claim the scaled defaults.mono_font.size: {line:?}"
+            "at text scale {scale} the monospace sample's size line does not claim the scaled typography.monospace.size_px: {line:?}"
         );
     }
 }
@@ -9283,7 +9461,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose(&mut cx, "Material (bundled)");
-    let (material, _) = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
+    let (material, _) = load_gpui_icons(Some(native_theme::icons::IconSet::Material), None, None);
     for name in chrome_icon_names() {
         let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
         assert_eq!(
@@ -9572,7 +9750,7 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
-    let (material, _) = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
+    let (material, _) = load_gpui_icons(Some(native_theme::icons::IconSet::Material), None, None);
     for (page, selector, name) in PAGE_SAMPLE_ICONS {
         show(&mut cx, &showcase, page);
         let icon = read(&mut cx, &showcase, |this, _| this.sample_icon(name.clone()));
@@ -9997,13 +10175,16 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
             "Marker spinner",
             feedback::marker(&t, MarkerKind::Spinner, "text", false, None),
         ),
-        ("Accordion", layout::accordion(&t, false, 3, false)),
+        ("Accordion", layout::next_accordion(&t, false, 3, None)),
         ("Carousel", layout::carousel(&t, false)),
         (
             "Breadcrumb",
             layout::breadcrumb(&t, &[Page::Buttons], Page::Layout),
         ),
-        ("Dialog", overlays::dialog(&t, false, false, false, &icon)),
+        (
+            "Dialog",
+            overlays::dialog(&t, false, false, false, false, &icon),
+        ),
         ("Sheet", overlays::sheet(&t, SheetSide::Right, false)),
         ("Editor", typography::editor(&t)),
         ("Diff", typography::diff(&t)),
@@ -10534,8 +10715,8 @@ fn colour_leaves(value: &serde_json::Value, at: &str, out: &mut Vec<(String, ser
 }
 
 /// A Basic drop-down under the pointer takes
-/// `combo_box.field(HOVER).stroke.color` as an edge the showcase lays over
-/// its trigger (`demo::combo_surface`), under kde-breeze and material-3
+/// `combo_box.field(HOVER).stroke.color` as an edge the showcase draws in
+/// place of its trigger's (`demo::combo_surface`), under kde-breeze and material-3
 /// light, and under kde-breeze light with that home patched in the
 /// installed 0.8.0 theme to `colors.window.foreground`, which a reader of
 /// the unchanged 0.7.2 theme would not draw: with the pointer away no box
@@ -10582,6 +10763,15 @@ fn a_hovered_drop_down_takes_the_hover_border(cx: &mut TestAppContext) {
             Some(hovered),
             "{preset}'s drop-down is edged in its hover colour at rest, so the test could not tell the two apart"
         );
+        if preset == "kde-breeze, patched" {
+            let breeze = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+                .resolve(&native_theme::next::ThemeContext::light());
+            assert_ne!(
+                stroke_color_of(&breeze.combo_box.field(WidgetState::HOVER)),
+                Some(hovered),
+                "kde-breeze light already edges its hovered drop-down in colors.window.foreground, so the patched case would pass on the unpatched theme"
+            );
+        }
         let field = "basic-select";
         hover(&mut cx, point(px(4.), px(4.)));
         draw(&mut cx);
@@ -11228,17 +11418,24 @@ fn a_hovered_list_row_takes_the_hover_border(cx: &mut TestAppContext) {
 }
 
 /// The Data page's unselected Tree row under the pointer is outlined in
-/// `list.hover_border_color` at `defaults.border.line_width`, a box in its
-/// suffix (`demo::tree_row`), and at rest it is not, under kde-breeze light.
+/// `list.highlight(HOVER)`'s stroke, a box in its suffix
+/// (`demo::tree_row`), and at rest it is not, under kde-breeze light.
 #[gpui::test]
 fn a_hovered_tree_row_takes_the_hover_border(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{state_stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Data);
-    let r = resolved_theme(&mut cx, &showcase);
-    let edge = r.list.hover_border_color.map(stated);
-    assert!(edge.is_some(), "kde-breeze states list.hover_border_color");
+    let r = next_theme(&mut cx, &showcase);
+    let edge = r.as_ref().and_then(|r| {
+        let hovered = r.list.highlight(WidgetState::HOVER);
+        Some((state_stroke_color_of(&hovered)?, stroke_width_of(&hovered)?))
+    });
+    assert!(
+        edge.is_some(),
+        "kde-breeze states list.highlight(HOVER)'s stroke"
+    );
     let row = "data-tree-row-1";
     hover(&mut cx, point(px(1200.), px(8900.)));
     draw(&mut cx);
@@ -11252,10 +11449,10 @@ fn a_hovered_tree_row_takes_the_hover_border(cx: &mut TestAppContext) {
     draw(&mut cx);
     assert_eq!(
         last_edge_inside(&mut cx, row),
-        edge.map(|e| (e, r.defaults.border.line_width)),
-        "the hovered tree row is not outlined in list.hover_border_color at defaults.border.line_width"
+        edge,
+        "the hovered tree row is not outlined in list.highlight(HOVER)'s stroke"
     );
-    if let Some(edge) = edge {
+    if let Some((edge, _)) = edge {
         assert_eq!(
             painted_edges(&mut cx, row).last(),
             Some(&edge),
@@ -11930,6 +12127,128 @@ fn the_number_edge_is_upstreams_ring_where_no_focus_edge_is_stated() {
     assert_eq!(number_edge(true, None, Some(rest), ring), Some(ring));
 }
 
+/// kde-breeze light with a rule for `state` stating no stroke on the
+/// input's field and the combo box's (spec §10, rule 2), which no bundled
+/// preset does; and the input field's edge at rest, which the state's edge
+/// would otherwise keep or take.
+fn stroked_as_none_in(
+    state: native_theme::next::WidgetState,
+) -> (native_theme::next::ResolvedTheme, Option<gpui::Hsla>) {
+    use native_theme::next::{
+        ComboBoxRule, InputRule, PartPatch, Preset, Scheme, Stroke, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+    let rest = crate::info::stroke_color_of(&r.input.field(WidgetState::NONE));
+    assert!(
+        rest.is_some_and(|edge| !edge.is_transparent()),
+        "kde-breeze light no longer edges its field, so no edge is taken away: {rest:?}"
+    );
+    let none = || PartPatch::new().stroke(Stroke::None);
+    r.apply_patch(
+        &ThemePatch::new()
+            .input(InputRule::new().states(state).field(none()))
+            .combo_box(ComboBoxRule::new().states(state).field(none())),
+    );
+    (r, rest)
+}
+
+/// A hovered field whose `HOVER` rule states no stroke: the surface the
+/// showcase draws it over (`demo::FieldSurface::of`) is edged in
+/// transparent under the pointer, no edge, not in the edge at rest.
+#[test]
+fn a_hovered_field_stroked_as_none_has_no_edge() {
+    use native_theme::next::WidgetState;
+    let (r, rest) = stroked_as_none_in(WidgetState::HOVER);
+    let surface = crate::demo::FieldSurface::of(
+        &r.input.field(WidgetState::NONE),
+        &r.input.field(WidgetState::HOVER),
+    );
+    assert!(
+        surface
+            .as_ref()
+            .is_some_and(|surface| surface.line.colour == rest),
+        "{surface:?}"
+    );
+    let hover = surface.and_then(|surface| surface.hover);
+    assert!(hover.is_some_and(|edge| edge.is_transparent()), "{hover:?}");
+}
+
+/// A focused number field whose `FOCUSED` rule states no stroke: its frame
+/// (`demo::NumberFrame::of`) is edged in transparent while focused, no
+/// edge, not in upstream's `ring`.
+#[test]
+fn a_focused_number_field_stroked_as_none_has_no_edge() {
+    use crate::demo::{NumberFrame, number_edge};
+    use native_theme::next::WidgetState;
+    let (r, rest) = stroked_as_none_in(WidgetState::FOCUSED);
+    let focus = NumberFrame::of(&r).map(|frame| frame.focus);
+    assert!(
+        focus.is_ok_and(|focus| focus.is_some_and(|edge| edge.is_transparent())),
+        "{focus:?}"
+    );
+    let ring = gpui::hsla(0.6, 0.5, 0.5, 1.0);
+    let edge = number_edge(true, focus.ok().flatten(), rest, ring);
+    assert!(edge.is_some_and(|edge| edge.is_transparent()), "{edge:?}");
+}
+
+/// A hovered drop-down whose `HOVER` rule states no stroke: its look
+/// (`demo::combo_look`) has a transparent hover edge, which the edge drawn
+/// under the trigger takes in place of the one at rest.
+#[test]
+fn a_hovered_drop_down_stroked_as_none_has_no_edge() {
+    use native_theme::next::WidgetState;
+    let (r, _) = stroked_as_none_in(WidgetState::HOVER);
+    let edge = crate::demo::combo_look(&r).map(|look| look.hover_edge);
+    assert!(
+        edge.is_ok_and(|edge| edge.is_some_and(|edge| edge.is_transparent())),
+        "{edge:?}"
+    );
+}
+
+/// A Basic drop-down under kde-breeze light patched with a `HOVER` rule
+/// stating no stroke, installed: at rest it is edged in
+/// `combo_box.field(NONE).stroke.color`; hovered, no edge is painted over
+/// its bounds, the edge at rest not kept under the pointer.
+#[gpui::test]
+fn a_hovered_drop_down_stroked_as_none_draws_no_edge(cx: &mut TestAppContext) {
+    use crate::info::stroke_color_of;
+    use native_theme::next::{ComboBoxRule, PartPatch, Stroke, ThemePatch, WidgetState};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(
+            ThemePatch::new().combo_box(
+                ComboBoxRule::new()
+                    .states(WidgetState::HOVER)
+                    .field(PartPatch::new().stroke(Stroke::None)),
+            ),
+        )
+    });
+    let Some(r) = r else { return };
+    let rest = stroke_color_of(&r.combo_box.field(WidgetState::NONE));
+    assert!(
+        rest.is_some_and(|edge| !edge.is_transparent()),
+        "kde-breeze light no longer edges its drop-down: {rest:?}"
+    );
+    let field = "basic-select";
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    let at_rest = painted_edges(&mut cx, field);
+    assert!(
+        rest.is_some_and(|rest| at_rest.contains(&rest)),
+        "a drop-down at rest is not edged in combo_box.field(NONE).stroke.color: {at_rest:?}"
+    );
+    let at = bounds_of(&mut cx, field).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    let hovered = painted_edges(&mut cx, field);
+    assert!(
+        hovered.is_empty(),
+        "a hovered drop-down whose HOVER rule states no stroke is edged: {hovered:?}"
+    );
+}
+
 /// Under the macOS presets, which state no `input.field(FOCUSED)` edge, the
 /// focused number field the showcase draws is edged in upstream's `ring`,
 /// as gpui-component's own NumberInput edges its focused frame
@@ -12186,77 +12505,180 @@ fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext
 }
 
 /// The Overlays page's menu rows, which the application draws itself, are
-/// painted as the showcase's own menus are (M9-007): the frame in
-/// `menu.background_color` and edged by `popover.border`, a hovered row in
-/// `menu.hover_background`, not in the popover's fill. Under adwaita light
-/// `menu.background_color` inherits `defaults.background_color`, which is
-/// not the popover's fill, so the two can be told apart. The connector
-/// fills the `accent` token the rows hovered in before from
-/// `menu.hover_background` (src/colors.rs, `tc.accent`), so the test
-/// overwrites the installed `accent` with a colour of its own: a row hovered
-/// in the token would then show that colour, not the leaf's.
+/// painted as the showcase's own menus are (M9-007), from the installed
+/// 0.8.0 theme: with `menu.panel(NONE).fill` patched to
+/// `colors.window.border` and `menu.item(HOVER).fill` to
+/// `colors.window.foreground`, colours of the same theme that differ from
+/// the menu's own, the frame is filled with the one and a hovered row with
+/// the other, and the frame is edged as `demo::MenuRowsFrame` reads it. A
+/// reader of the 0.7.2 theme, or of the popover and accent tokens, would
+/// paint the unpatched colours.
 #[gpui::test]
 fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) {
-    use crate::demo::MENU_ROWS_FRAME;
-    use crate::info::stated;
+    use crate::demo::{MENU_ROWS_FRAME, MenuRowsFrame};
+    use native_theme::next::{MenuRule, Paint, PartPatch, ThemePatch, WidgetState};
+    use native_theme_gpui::next::fill_of;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    use_light_preset(&mut cx, &showcase, "adwaita");
-    show(&mut cx, &showcase, Page::Overlays);
-    let r = resolved_theme(&mut cx, &showcase);
-    let fill = stated(r.menu.background_color);
-    assert_ne!(
-        fill,
-        stated(r.popover.background_color),
-        "adwaita light's menu fill is the popover's, so this test cannot tell them apart"
+    let mut before = None;
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Overlays, |r| {
+        before = Some((
+            fill_of(&r.menu.panel(WidgetState::NONE)),
+            fill_of(&r.menu.item(WidgetState::HOVER)),
+        ));
+        Some(
+            ThemePatch::new()
+                .menu(
+                    MenuRule::new()
+                        .panel(PartPatch::new().fill(Paint::Solid(r.colors.window.border?))),
+                )
+                .menu(
+                    MenuRule::new()
+                        .states(WidgetState::HOVER)
+                        .item(PartPatch::new().fill(Paint::Solid(r.colors.window.foreground?))),
+                ),
+        )
+    });
+    let Some(r) = r else { return };
+    let fill = fill_of(&r.menu.panel(WidgetState::NONE));
+    let hovered_fill = fill_of(&r.menu.item(WidgetState::HOVER));
+    assert!(
+        fill.is_some() && hovered_fill.is_some(),
+        "the patch does not state the menu's fill or the hovered row's"
     );
+    assert!(
+        before.is_some_and(|(rest, hover)| rest != fill && hover != hovered_fill),
+        "kde-breeze light's menu is filled in the patched colours, so the test could not tell them apart"
+    );
+    let frame = MenuRowsFrame::next_of(&r);
+    assert!(
+        frame.is_ok(),
+        "kde-breeze light states no menu frame: {frame:?}"
+    );
+    let Ok(frame) = frame else { return };
     hover(&mut cx, point(px(4.), px(4.)));
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, MENU_ROWS_FRAME),
-        Some(fill),
-        "the menu rows' frame is not filled with menu.background_color"
+        fill,
+        "the menu rows' frame is not filled with the patched menu.panel(NONE).fill"
     );
     assert_eq!(
         painted_edge(&mut cx, MENU_ROWS_FRAME),
-        (r.popover.border.line_width > 0.0).then(|| stated(r.popover.border.color)),
-        "the menu rows' frame is not edged as popover.border strokes it"
+        frame.colour.filter(|_| frame.width.0 > 0.0),
+        "the menu rows' frame is not edged as the theme strokes the menu's popup frame"
     );
-    let hovered_fill = stated(r.menu.hover_background);
-    let token = gpui::red();
-    assert_ne!(
-        token, hovered_fill,
-        "adwaita light's menu.hover_background is the test's own accent colour"
-    );
-    cx.update(|window, cx| {
-        Theme::global_mut(cx).accent = token;
-        window.refresh();
-    });
-    cx.run_until_parked();
     let row = "overlays-menu-row-copy";
     let at = bounds_of(&mut cx, row).center();
     hover(&mut cx, at);
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, row),
-        Some(hovered_fill),
-        "the hovered menu row is not filled with menu.hover_background"
+        hovered_fill,
+        "the hovered menu row is not filled with the patched menu.item(HOVER).fill"
     );
 }
 
-/// The Overlays page's menu rows' info claims the menu leaves the rows are
+/// The menu rows' frame takes each value from the menu's own panel where it
+/// states one, else from the popover's, and from neither where neither
+/// does (`demo::menu_frame_value`), read on parts of a bundled theme and on
+/// a part that states nothing.
+#[gpui::test]
+fn the_menu_rows_frame_falls_back_to_the_popovers(cx: &mut TestAppContext) {
+    use crate::demo::{FrameFrom, menu_frame_value};
+    use native_theme::next::PartStyle;
+    use native_theme_gpui::next::stroke_width_of;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let (stated, none) = (&r.popover.panel, &PartStyle::default());
+    let width = stroke_width_of(stated);
+    assert!(width.is_some(), "kde-breeze light states no popover stroke");
+    let Some(width) = width else { return };
+    assert_eq!(
+        menu_frame_value(stated, none, stroke_width_of),
+        Some((width, FrameFrom::Menu))
+    );
+    assert_eq!(
+        menu_frame_value(none, stated, stroke_width_of),
+        Some((width, FrameFrom::Popover))
+    );
+    assert_eq!(menu_frame_value(none, none, stroke_width_of), None);
+}
+
+/// The menu rows are painted with the menu's look where the theme gives
+/// one, and with the popover's tokens, the accent under the pointer, square
+/// rows and the showcase's own frame where it leaves a home the look needs
+/// without a value gpui can take, which no bundled preset does
+/// (`demo::MenuRowsPaint::of`): read on kde-breeze light's look and on none.
+#[gpui::test]
+fn the_menu_rows_keep_the_popovers_tokens_without_a_menu_look(cx: &mut TestAppContext) {
+    use crate::demo::{MenuRowsLook, MenuRowsPaint};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let r = next_theme(&mut cx, &showcase);
+    let look = r.as_ref().map(MenuRowsLook::next_of);
+    assert!(
+        matches!(look, Some(Ok(_))),
+        "kde-breeze light gives the menu rows no look: {:?}",
+        look.as_ref().map(|look| look.as_ref().err())
+    );
+    let Some(Ok(look)) = look else { return };
+    let t = cx.update(|_w, cx| Theme::global(cx).clone());
+    let menu = MenuRowsPaint::of(Some(&look), &t);
+    assert_eq!(
+        (menu.background, menu.text, menu.hover, menu.hover_text),
+        (look.background, look.text, look.hover, look.hover_text)
+    );
+    assert_eq!(menu.row_radius, look.radius);
+    assert_eq!(
+        menu.frame,
+        Some((
+            px(look.frame.width.0),
+            look.frame.colour,
+            px(look.frame.radius.0)
+        ))
+    );
+    let popover = MenuRowsPaint::of(None, &t);
+    assert_eq!(
+        popover,
+        MenuRowsPaint {
+            background: t.popover,
+            text: t.popover_foreground,
+            hover: t.accent,
+            hover_text: t.accent_foreground,
+            row_radius: None,
+            frame: None,
+        }
+    );
+}
+
+/// The Overlays page's menu rows' info claims the 0.8.0 homes the rows are
 /// painted with (M9-007), and no popover or accent token; its frame's edge
-/// where `popover.border` strokes one (adwaita), and where it strokes none
-/// (material-3) a line saying so that names the radius still rounding the
-/// frame.
+/// where the theme strokes one (adwaita), and where it states the stroke as
+/// none (material-3) a line saying so that names the corners still
+/// rounding the frame.
 #[gpui::test]
 fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
-    use crate::info::{px_text, stated};
+    use crate::demo::{FrameFrom, MenuRowsLook};
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{fill_of, text_color_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let mut branches = (false, false);
     for preset in ["adwaita", "material-3"] {
         use_light_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Overlays);
-        let r = resolved_theme(&mut cx, &showcase);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let look = MenuRowsLook::next_of(&r);
+        assert!(
+            look.is_ok(),
+            "{preset}: the menu rows' look is unstated at {:?}",
+            look.err()
+        );
+        let Ok(look) = look else { return };
         let info = settle_on(&mut cx, &showcase, "overlays-menu-row-copy");
         assert!(info.is_some(), "{preset}: the menu row shows no info");
         let Some(info) = info else { return };
@@ -12269,17 +12691,29 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
         for (role, field, value) in [
             (
                 "bg (the frame's)",
-                "background_color",
-                r.menu.background_color,
+                "menu.panel(NONE).fill",
+                fill_of(&r.menu.panel(WidgetState::NONE)),
             ),
-            ("text", "color", r.menu.font.color),
-            ("hover", "hover_background", r.menu.hover_background),
-            ("hover text", "hover_text_color", r.menu.hover_text_color),
+            (
+                "text",
+                "menu.item_label(NONE).color",
+                text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            ),
+            (
+                "hover",
+                "menu.item(HOVER).fill",
+                fill_of(&r.menu.item(WidgetState::HOVER)),
+            ),
+            (
+                "hover text",
+                "menu.item_label(HOVER).color",
+                text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            ),
         ] {
             assert_eq!(
                 by_role(role),
-                Some((field, stated(value))),
-                "{preset}: the menu row's info does not claim menu.{field} as its {role}: {info:?}"
+                value.map(|value| (field, value)),
+                "{preset}: the menu row's info does not claim {field} as its {role}: {info:?}"
             );
         }
         for token in [
@@ -12294,38 +12728,44 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
                 "{preset}: the menu row's info claims the {token} token, which no longer paints it: {info:?}"
             );
         }
-        if r.popover.border.line_width > 0.0 {
+        let field = match look.frame.width.1 {
+            FrameFrom::Menu => "menu.panel(NONE).stroke.color",
+            FrameFrom::Popover => "popover.panel.stroke.color",
+        };
+        let corners = match look.frame.radius.1 {
+            FrameFrom::Menu => "menu.panel(NONE).corners",
+            FrameFrom::Popover => "popover.panel.corners",
+        };
+        let line = info
+            .config
+            .iter()
+            .find(|n| n.what == "frame edge")
+            .map(|n| n.text.clone());
+        if look.frame.width.0 > 0.0 {
             branches.0 = true;
             assert_eq!(
                 by_role("frame edge"),
-                Some(("border", stated(r.popover.border.color))),
-                "{preset}: the menu row's info does not claim the popover.border.color its frame is edged with: {info:?}"
+                look.frame.colour.map(|colour| (field, colour)),
+                "{preset}: the menu row's info does not claim the {field} its frame is edged with: {info:?}"
             );
         } else {
             branches.1 = true;
             assert_eq!(
                 by_role("frame edge"),
                 None,
-                "{preset}: the menu row's info claims an edge popover.border does not stroke: {info:?}"
+                "{preset}: the menu row's info claims an edge the theme does not stroke: {info:?}"
             );
-            let expected = format!(
-                "none: popover.border.line_width is 0; the frame is still rounded by popover.border.corner_radius, {}px",
-                px_text(r.popover.border.corner_radius)
-            );
-            assert_eq!(
-                info.config
-                    .iter()
-                    .find(|n| n.what == "frame edge")
-                    .map(|n| n.text.as_str()),
-                Some(expected.as_str()),
-                "{preset}: the menu row's info does not say its frame strokes no edge and what rounds it: {info:?}"
+            assert!(
+                line.as_deref()
+                    .is_some_and(|line| line.starts_with("none: ") && line.contains(corners)),
+                "{preset}: the menu row's info does not say its frame strokes no edge and what rounds it: {line:?}"
             );
         }
     }
     assert_eq!(
         branches,
         (true, true),
-        "adwaita no longer strokes popover.border or material-3 now does, so a branch of the frame-edge info went unread"
+        "adwaita no longer strokes the menu's popup frame or material-3 now does, so a branch of the frame-edge info went unread"
     );
 }
 
@@ -14515,7 +14955,7 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
     set_preset(&mut cx, &showcase, "material-3");
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.icon_set_enum),
-        Some(native_theme::theme::IconSet::Material),
+        Some(native_theme::icons::IconSet::Material),
         "material-3 did not take its bundled Material icons, so the switch below does not \
          start from a bundled set"
     );
@@ -15135,7 +15575,7 @@ fn icon_choice_state(
     showcase: &Entity<Showcase>,
 ) -> (
     IconSetChoice,
-    Option<native_theme::theme::IconSet>,
+    Option<native_theme::icons::IconSet>,
     String,
     Option<String>,
 ) {
@@ -15160,7 +15600,7 @@ fn icon_choice_state(
 /// is available, `system` where it is not, as the Select's rows are.
 #[gpui::test]
 fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let listed = "a-listed-icon-theme";
     list_icon_themes(&mut cx, &showcase, &[listed]);
@@ -16625,23 +17065,24 @@ fn native_info_records_the_builder_only_when_it_applies_it(cx: &mut TestAppConte
 }
 
 /// The Typography page's code Editor takes the platform's line height
-/// through `geometry::editor` under a native theme, as `demo::editor`
-/// refines it, and its info names the builder (`native_info` records it only
-/// where it applies it, which
-/// `native_info_records_the_builder_only_when_it_applies_it` holds). Its
-/// fill claim is the platform's field fill, which the connector's highlight
-/// theme gives the editor.
+/// through `next::geometry::editor` under the installed 0.8.0 theme, as
+/// `demo::editor` refines it, and its info names the builder
+/// (`next_native_info` records it only where it applies it). Its fill claim
+/// is the platform's field fill, `input.field(NONE).fill`, which the
+/// connector's highlight theme gives the editor.
 #[gpui::test]
 fn the_code_editor_is_refined_by_geometry_editor(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
     let (line_height, fill) = read(&mut cx, &showcase, |this, cx| {
         let mut info = WidgetInfo::new("Editor");
-        let mut editor = native_info(
+        let mut editor = crate::info::next_native_info(
             gpui_component::input::Editor::new(&this.editor_state),
             cx,
-            geometry::editor,
+            native_theme_gpui::next::geometry::editor,
             "editor",
             &mut info,
         );
@@ -16652,8 +17093,14 @@ fn the_code_editor_is_refined_by_geometry_editor(cx: &mut TestAppContext) {
             .map(|c| c.value);
         (editor.style().text.line_height, fill)
     });
-    assert_eq!(line_height, Some(gpui::relative(r.defaults.line_height)));
-    assert_eq!(fill, Some(crate::info::stated(r.input.background_color)));
+    assert_eq!(
+        line_height,
+        Some(gpui::relative(r.typography.line_height_multiplier))
+    );
+    assert_eq!(
+        fill,
+        native_theme_gpui::next::fill_of(&r.input.field(native_theme::next::WidgetState::NONE))
+    );
     show(&mut cx, &showcase, Page::Typography);
     let shown = settle_on(&mut cx, &showcase, "typography-editor");
     assert!(
@@ -18377,7 +18824,8 @@ fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAp
 
 /// The labels the showcase lays out one `defaults.line_height` line tall
 /// name the route that does it (M9-031): widgets::Switch's label, the side
-/// panel's labels and the segments in demo::text_in's line box, the tab
+/// panel's labels in demo::next_text_in's line box (the installed 0.8.0
+/// theme's), the segments in demo::text_in's, the tab
 /// rows' labels in widgets::TabBar's, the expander's title and body, and
 /// the status bar's text in geometry::status_bar's; none says "not applied"
 /// or names gpui's own line height. The status bar's toggle and environment
@@ -18389,7 +18837,7 @@ fn the_line_height_and_status_gap_routes_name_what_applies_them() {
         (
             "chrome.side_panel.settings.",
             "defaults.line_height",
-            "demo::text_in",
+            "demo::next_text_in",
         ),
         (
             "chrome.side_panel.inspector_tabs.",
@@ -18757,6 +19205,109 @@ fn the_toggle_state_line_names_upstreams_fill_where_none_is_stated() {
         checked.contains("filled with button.body(CHECKED).fill and"),
         "{checked}"
     );
+}
+
+/// The section heading's role where the theme states no headline, as a user
+/// theme may: the body, its line box its size by the multiplier where it
+/// states no line height; and where that style states no size or no weight,
+/// the home, so the heading keeps the showcase's own style. No bundled
+/// preset leaves the headline out, so kde-breeze's is changed by hand.
+#[test]
+fn a_heading_without_a_headline_takes_the_body_or_says_what_is_unstated() {
+    use crate::demo::heading_role;
+    use native_theme::next::TextStated;
+    let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let mut typography = r.typography.clone();
+    typography.headline = None;
+    typography.body.stated = typography.body.stated.difference(TextStated::LINE_HEIGHT);
+    let body = &typography.body;
+    assert_eq!(
+        heading_role(&typography).map(|role| (role.home, role.size, role.line_height)),
+        Ok((
+            "typography.body",
+            px(body.size_px),
+            px(body.size_px * typography.line_height_multiplier)
+        ))
+    );
+    typography.body.stated = typography.body.stated.difference(TextStated::WEIGHT);
+    assert_eq!(
+        heading_role(&typography).map(|role| role.home),
+        Err("typography.body.weight")
+    );
+    typography.body.stated = typography.body.stated.difference(TextStated::SIZE_PX);
+    assert_eq!(
+        heading_role(&typography).map(|role| role.home),
+        Err("typography.body.size_px")
+    );
+    let shown = crate::info::text::heading(&Theme::default(), Some(Err("typography.body.size_px")))
+        .to_text();
+    assert!(
+        shown.contains("the theme states no value gpui can take at typography.body.size_px"),
+        "{shown}"
+    );
+}
+
+/// The gpui-component arms no bundled preset reaches, read off what the
+/// theme states: the mixed checkbox's label says gpui-component's where the
+/// widget does not draw the theme's look; the theme-drawn Switch's and
+/// Slider's infos, where the theme leaves a home without a value gpui can
+/// take, and the slider's thumb outline, where it states no stroke gpui can
+/// draw, each name gpui-component's own and the home, and keep their state
+/// and keyboard lines.
+#[test]
+fn the_upstream_arms_of_the_switch_slider_and_mixed_label_say_so() {
+    use crate::demo::mixed_label;
+    assert_eq!(mixed_label(true), "Mixed, theme-drawn");
+    assert_eq!(mixed_label(false), "Mixed, gpui-component's");
+    #[cfg(feature = "widgets")]
+    {
+        use crate::info::inputs::{slider_by_upstream, switch_by_upstream, upstream_thumb_outline};
+        let home = "switch.track(NONE).min_size[0]";
+        let switch = switch_by_upstream(WidgetInfo::new("Switch"), home, "Wi-Fi", true, true);
+        assert!(
+            note_of(&switch.config, "drawn by").is_some_and(|text| {
+                text.starts_with("gpui-component's own Switch")
+                    && text.contains(home)
+                    && text.contains("Switch::row")
+            }),
+            "{switch:?}"
+        );
+        assert_eq!(note_of(&switch.instance, "label"), Some("Wi-Fi"));
+        assert_eq!(switch.variant.as_deref(), Some("on, disabled"));
+        assert!(switch.colors.is_empty(), "{switch:?}");
+        let home = "slider.thumb(NONE).fill";
+        let slider = slider_by_upstream(WidgetInfo::new("Slider"), home, true);
+        assert!(
+            note_of(&slider.config, "drawn by").is_some_and(|text| {
+                text.starts_with("gpui-component's own Slider")
+                    && text.contains(home)
+                    && text.contains("Slider::render")
+            }),
+            "{slider:?}"
+        );
+        assert!(
+            note_of(&slider.instance, "keyboard").is_some_and(|text| text.contains("range")),
+            "{slider:?}"
+        );
+        assert!(slider.colors.is_empty(), "{slider:?}");
+        let home = "slider.thumb(NONE).stroke";
+        let unmapped = upstream_thumb_outline(WidgetInfo::new("Slider"), Some(home));
+        assert!(
+            note_of(&unmapped.not_themeable, "thumb outline").is_some_and(|text| {
+                text.starts_with("gpui-component's own: a 1px ring")
+                    && text.ends_with(&format!("no stroke gpui can draw at {home}"))
+            }),
+            "{unmapped:?}"
+        );
+        let unstated = upstream_thumb_outline(WidgetInfo::new("Slider"), None);
+        assert!(
+            note_of(&unstated.not_themeable, "thumb outline").is_some_and(|text| {
+                text.ends_with("the theme states no slider.thumb(NONE).stroke")
+            }),
+            "{unstated:?}"
+        );
+    }
 }
 
 /// A Toggle and a ToggleGroup the installed 0.8.0 theme styles through
@@ -19510,22 +20061,104 @@ fn checkbox_homes(
     [fill, hover, hover_edge, border, mark, label]
 }
 
+/// `switch_hover_stated` decides as `SwitchLook::next_of` does, on
+/// kde-breeze light patched so that a rule with no required state clears
+/// the hovered track's fill (`not_states(CHECKED)`, spec §2: a later rule
+/// without required states clears the `from_state` bit) and the tracks are
+/// translucent, so that a hover layer laid over the track shows: a `HOVER`
+/// rule; one beside a `HOVER|CHECKED` rule differing from the checked
+/// track, and beside one equal to it; a `HOVER|CHECKED` rule alone, which
+/// the query with `HOVER` alone does not see (spec §2, `from_state`); none.
+#[cfg(feature = "widgets")]
+#[test]
+fn switch_hover_stated_decides_as_the_switch_look_does() {
+    use crate::info::inputs::switch_hover_stated;
+    use native_theme::next::{
+        Color, Paint, PartPatch, Preset, Scheme, SwitchRule, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    use native_theme_gpui::widgets::SwitchLook;
+    let tint = |r, g, b| Paint::solid(Color::rgb(r, g, b).with_alpha(0.5));
+    let (rest, on) = (tint(0.2, 0.2, 0.2), tint(0.1, 0.3, 0.9));
+    let (hover, hover_on) = (tint(0.6, 0.6, 0.6), tint(0.9, 0.1, 0.1));
+    let rule = |states: WidgetState, fill: &Paint| {
+        SwitchRule::new()
+            .states(states)
+            .track(PartPatch::new().fill(fill.clone()))
+    };
+    let hovered_on = WidgetState::HOVER | WidgetState::CHECKED;
+    let cases = [
+        ("no hover rule", vec![], false),
+        ("a HOVER rule", vec![rule(WidgetState::HOVER, &hover)], true),
+        (
+            "a HOVER rule and a HOVER|CHECKED rule differing from CHECKED",
+            vec![
+                rule(WidgetState::HOVER, &hover),
+                rule(hovered_on, &hover_on),
+            ],
+            true,
+        ),
+        (
+            "a HOVER rule and a HOVER|CHECKED rule equal to CHECKED",
+            vec![rule(WidgetState::HOVER, &hover), rule(hovered_on, &on)],
+            true,
+        ),
+        (
+            "a HOVER|CHECKED rule alone",
+            vec![rule(hovered_on, &hover_on)],
+            false,
+        ),
+    ];
+    for (case, rules, stated) in cases {
+        let patch = rules.into_iter().fold(
+            ThemePatch::new()
+                .switch(
+                    SwitchRule::new()
+                        .not_states(WidgetState::CHECKED)
+                        .track(PartPatch::new().fill(rest.clone())),
+                )
+                .switch(rule(WidgetState::CHECKED, &on)),
+            ThemePatch::switch,
+        );
+        let mut r = NextTheme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        r.apply_patch(&patch);
+        for checked in [false, true] {
+            let layered = SwitchLook::next_of(&r, checked, false)
+                .map(|look| look.hover_track != Some(look.track))
+                .map_err(|unstated| unstated.home());
+            assert_eq!(
+                layered,
+                Ok(stated),
+                "{case}, checked {checked}: SwitchLook::next_of"
+            );
+            assert_eq!(
+                switch_hover_stated(&r, checked),
+                stated,
+                "{case}, checked {checked}: switch_hover_stated"
+            );
+        }
+    }
+}
+
 /// The home each colour of a switch's look is read at, `checked` or not,
 /// `disabled` or not, as `SwitchLook::next_of` reads them, with the line of
 /// widgets/switch.rs that spells it: the track `switch.track(<state>).fill`
-/// (:256-259) at the switch's state; the hover
-/// `switch.track(HOVER).fill` (:240), or `switch.track(HOVER|CHECKED).fill`
-/// (:236) where it differs from the checked track, over the track, else the
-/// track at rest (:231); the track's outline
-/// `switch.track(<state>).stroke.color` (:275-278); the thumb's outline
-/// `switch.thumb(NONE)` or `(CHECKED).stroke.color` (:285, :286); the thumb
-/// `switch.thumb(<state>).fill` (:266-269); the label
-/// `switch.label(<state>).color` where the theme states it (:425-428), else
-/// gpui-component's own, `colors.window.foreground_muted` disabled (:434),
-/// `colors.window.foreground` enabled (:435) -- as (track, hover, track
-/// outline, thumb outline, thumb, label).
+/// (:263-266) at the switch's state; the hover
+/// `switch.track(HOVER).fill` (:247), or `switch.track(HOVER|CHECKED).fill`
+/// (:241) checked, over the track, where a rule states the hovered track's
+/// fill (`switch.track(HOVER).from_state`), else the track at rest (:232);
+/// the track's outline
+/// `switch.track(<state>).stroke.color` (:282-285); the thumb's outline
+/// `switch.thumb(NONE)` or `(CHECKED).stroke.color` (:292, :293); the thumb
+/// `switch.thumb(<state>).fill` (:273-276); the label
+/// `switch.label(<state>).color` where the theme states it (:437-440), else
+/// gpui-component's own, `colors.window.foreground_muted` disabled (:488),
+/// `colors.window.foreground` enabled (:484), as `SwitchLabelHome` names
+/// them -- as (track, hover, track outline, thumb outline, thumb, label).
 #[cfg(feature = "widgets")]
 fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: bool) -> [Leaf; 6] {
+    use native_theme_gpui::widgets::SwitchLabelHome;
     let pick = |[none, on, off, off_on]: [Leaf; 4]| match (checked, disabled) {
         (false, false) => none,
         (true, false) => on,
@@ -19535,114 +20168,116 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
     let track = pick([
         (
             "switch.track(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:256",
+            "native-theme-gpui/widgets/switch.rs:263",
         ),
         (
             "switch.track(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:257",
+            "native-theme-gpui/widgets/switch.rs:264",
         ),
         (
             "switch.track(DISABLED).fill",
-            "native-theme-gpui/widgets/switch.rs:258",
+            "native-theme-gpui/widgets/switch.rs:265",
         ),
         (
             "switch.track(DISABLED|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:259",
+            "native-theme-gpui/widgets/switch.rs:266",
         ),
     ]);
-    let hover = match (
-        checked,
-        crate::info::inputs::switch_hover_stated(r, checked),
-    ) {
+    let hover_ruled = r
+        .switch
+        .track(native_theme::next::WidgetState::HOVER)
+        .from_state
+        .contains(native_theme::next::PartStated::FILL);
+    let hover = match (checked, hover_ruled) {
         (false, true) => (
             "switch.track(HOVER).fill",
-            "native-theme-gpui/widgets/switch.rs:240",
+            "native-theme-gpui/widgets/switch.rs:247",
         ),
         (true, true) => (
             "switch.track(HOVER|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:236",
+            "native-theme-gpui/widgets/switch.rs:241",
         ),
         (false, false) => (
             "switch.track(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:231",
+            "native-theme-gpui/widgets/switch.rs:232",
         ),
         (true, false) => (
             "switch.track(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:231",
+            "native-theme-gpui/widgets/switch.rs:232",
         ),
     };
     let track_outline = pick([
         (
             "switch.track(NONE).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:275",
+            "native-theme-gpui/widgets/switch.rs:282",
         ),
         (
             "switch.track(CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:276",
+            "native-theme-gpui/widgets/switch.rs:283",
         ),
         (
             "switch.track(DISABLED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:277",
+            "native-theme-gpui/widgets/switch.rs:284",
         ),
         (
             "switch.track(DISABLED|CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:278",
+            "native-theme-gpui/widgets/switch.rs:285",
         ),
     ]);
     let thumb_outline = if checked {
         (
             "switch.thumb(CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:286",
+            "native-theme-gpui/widgets/switch.rs:293",
         )
     } else {
         (
             "switch.thumb(NONE).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:285",
+            "native-theme-gpui/widgets/switch.rs:292",
         )
     };
     let thumb = pick([
         (
             "switch.thumb(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:266",
+            "native-theme-gpui/widgets/switch.rs:273",
         ),
         (
             "switch.thumb(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:267",
+            "native-theme-gpui/widgets/switch.rs:274",
         ),
         (
             "switch.thumb(DISABLED).fill",
-            "native-theme-gpui/widgets/switch.rs:268",
+            "native-theme-gpui/widgets/switch.rs:275",
         ),
         (
             "switch.thumb(DISABLED|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:269",
+            "native-theme-gpui/widgets/switch.rs:276",
         ),
     ]);
     let label = match native_theme_gpui::widgets::SwitchLook::next_label_home(r, checked, disabled)
     {
-        Ok("switch.label(NONE).color") => (
+        Ok(SwitchLabelHome::Rest) => (
             "switch.label(NONE).color",
-            "native-theme-gpui/widgets/switch.rs:425",
+            "native-theme-gpui/widgets/switch.rs:437",
         ),
-        Ok("switch.label(CHECKED).color") => (
+        Ok(SwitchLabelHome::Checked) => (
             "switch.label(CHECKED).color",
-            "native-theme-gpui/widgets/switch.rs:426",
+            "native-theme-gpui/widgets/switch.rs:438",
         ),
-        Ok("switch.label(DISABLED).color") => (
+        Ok(SwitchLabelHome::Disabled) => (
             "switch.label(DISABLED).color",
-            "native-theme-gpui/widgets/switch.rs:427",
+            "native-theme-gpui/widgets/switch.rs:439",
         ),
-        Ok("switch.label(DISABLED|CHECKED).color") => (
+        Ok(SwitchLabelHome::DisabledChecked) => (
             "switch.label(DISABLED|CHECKED).color",
-            "native-theme-gpui/widgets/switch.rs:428",
+            "native-theme-gpui/widgets/switch.rs:440",
         ),
-        _ if disabled => (
+        Ok(SwitchLabelHome::WindowForegroundMuted) => (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/switch.rs:434",
+            "native-theme-gpui/widgets/switch.rs:488",
         ),
         _ => (
             "colors.window.foreground",
-            "native-theme-gpui/widgets/switch.rs:435",
+            "native-theme-gpui/widgets/switch.rs:484",
         ),
     };
     [track, hover, track_outline, thumb_outline, thumb, label]
@@ -20079,11 +20714,11 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
             [
                 (
                     "colors.window.foreground",
-                    "native-theme-gpui/widgets/switch.rs:435",
+                    "native-theme-gpui/widgets/switch.rs:484",
                 ),
                 (
                     "colors.window.foreground_muted",
-                    "native-theme-gpui/widgets/switch.rs:434",
+                    "native-theme-gpui/widgets/switch.rs:488",
                 ),
             ],
             "gap_2",
@@ -20094,11 +20729,11 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
             [
                 (
                     "switch.label(NONE).color",
-                    "native-theme-gpui/widgets/switch.rs:425",
+                    "native-theme-gpui/widgets/switch.rs:437",
                 ),
                 (
                     "switch.label(DISABLED).color",
-                    "native-theme-gpui/widgets/switch.rs:427",
+                    "native-theme-gpui/widgets/switch.rs:439",
                 ),
             ],
             "switch.label_gap: 13px",
@@ -20202,7 +20837,7 @@ fn a_theme_drawn_sliders_info_prints_its_look() {
                     Some(look.thumb_color),
                     (
                         "slider.thumb(NONE).fill",
-                        "native-theme-gpui/widgets/slider.rs:306",
+                        "native-theme-gpui/widgets/slider.rs:304",
                     ),
                 ),
                 ("hover", look.hover_thumb, hover),
@@ -20307,45 +20942,73 @@ fn the_app_menus_claim_a_menu_edge_only_where_one_is_drawn() {
 }
 
 /// A theme-drawn ProgressBar claims its frame only where it draws one
-/// (M9-057): `progress_bar.border.color` where `progress_bar.border.line_width`
-/// is above 0, none where it is 0 (adwaita, windows-11, material-3), and
-/// its frame line names no question only the archived spec holds -- over
-/// every bundled preset in both modes.
+/// (M9-057): `progress_bar.track(NONE).stroke.color` where the stroke
+/// `ProgressBarLook::next_of` reads is above 0 wide, none where it is none or
+/// 0 wide, and its frame line names no question only the archived spec
+/// holds -- over every bundled preset in both modes; and where the theme
+/// states no value gpui can take at a home the look reads, which no bundled
+/// preset does, the info names gpui-component's own Progress and that home.
 #[cfg(feature = "widgets")]
 #[test]
 fn a_theme_drawn_progress_bar_claims_a_frame_only_where_one_is_drawn() {
-    use crate::info::stated;
+    use native_theme_gpui::widgets::ProgressBarLook;
     let mut branches = (false, false);
-    for (name, r, _) in every_bundled_variant() {
-        let p = &r.progress_bar;
-        let info = crate::info::feedback::native_progress(&r, "Progress", Some(40.), false);
+    for (name, r, t) in every_next_variant() {
+        let look = ProgressBarLook::next_of(&r);
+        assert!(
+            look.is_ok(),
+            "{name}: the progress bar's look does not map: {look:?}"
+        );
+        let Ok(look) = look else { continue };
+        let info = crate::info::feedback::native_progress(&r, &t, "Progress", Some(40.), false);
         let line = note_of(&info.config, "frame");
         assert!(
             info.to_text().find("OPEN O4").is_none(),
             "{name}: the ProgressBar's info cites OPEN O4, which no open entry holds: {info:?}"
         );
-        if p.border.line_width > 0.0 {
+        assert_eq!(
+            claim_as(&info, "fill"),
+            Some(("progress_bar.fill(NONE).fill", look.fill)),
+            "{name}: the ProgressBar's info does not claim its fill: {info:?}"
+        );
+        if f32::from(look.border_width) > 0.0 {
             branches.0 = true;
             assert_eq!(
                 claim_as(&info, "frame"),
-                Some(("border", stated(p.border.color))),
-                "{name}: the ProgressBar's info does not claim the progress_bar.border.color it is framed in: {info:?}"
+                Some(("progress_bar.track(NONE).stroke.color", look.border)),
+                "{name}: the ProgressBar's info does not claim the stroke it is framed in: {info:?}"
             );
         } else {
             branches.1 = true;
             assert_eq!(
                 claim_as(&info, "frame"),
                 None,
-                "{name}: the ProgressBar's info claims a frame progress_bar.border.line_width 0 does not draw: {info:?}"
+                "{name}: the ProgressBar's info claims a frame a stroke 0 wide does not draw: {info:?}"
             );
             assert!(
-                line.is_some_and(
-                    |text| text.starts_with("none: progress_bar.border.line_width is 0")
-                ),
+                line.is_some_and(|text| text
+                    .starts_with("none: progress_bar.track(NONE).stroke is none or 0 wide")),
                 "{name}: the ProgressBar's frame line does not say none is drawn: {line:?}"
             );
         }
     }
+    let t = Theme::default();
+    let home = "progress_bar.track(NONE).min_size[1]";
+    let upstream = crate::info::feedback::progress_by_upstream(&t, home, "Progress", None, false);
+    assert!(
+        note_of(&upstream.config, "drawn by").is_some_and(|text| {
+            text.starts_with("gpui-component's own Progress")
+                && text.contains(home)
+                && text.contains("ProgressBar::fallback")
+        }),
+        "{upstream:?}"
+    );
+    assert_eq!(upstream.variant.as_deref(), Some("loading"), "{upstream:?}");
+    assert_eq!(
+        claim_as(&upstream, "bar"),
+        Some(("progress_bar", t.progress_bar)),
+        "{upstream:?}"
+    );
     assert_eq!(
         branches,
         (true, true),
@@ -20353,32 +21016,20 @@ fn a_theme_drawn_progress_bar_claims_a_frame_only_where_one_is_drawn() {
     );
 }
 
-/// A GroupBox's and a card's info claim the card edge
-/// `geometry::group_box_content` draws on the content -- `card.border.color`
-/// at `card.border.line_width` -- only where that width is above 0
-/// (windows-11 and kde-breeze at the time of writing), and elsewhere say
-/// none is drawn, an Outline box's note that its own `border_1` gives way to
-/// the 0 width (M9-044); and a card claims no content text, its content
-/// being a Label that paints foreground on its own element (M9-049) --
-/// over every bundled preset in both modes, and with no native theme.
+/// A card's info claims the card edge `geometry::group_box_content` draws
+/// on the content -- `card.border.color` at `card.border.line_width` -- only
+/// where that width is above 0 (windows-11 and kde-breeze at the time of
+/// writing), and elsewhere says none is drawn (M9-044); and it claims no
+/// content text, its content being a Label that paints foreground on its own
+/// element (M9-049) -- over every bundled preset in both modes, and with no
+/// native theme. The GroupBoxes, on the 0.8.0 model:
+/// `a_group_box_claims_the_card_edge_only_where_one_is_drawn`.
 #[test]
-fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
-    use crate::demo::GroupBoxKind;
+fn a_card_claims_the_card_edge_only_where_one_is_drawn() {
     use crate::info::{px_text, stated};
     let mut branches = (false, false);
     for (name, r, t) in every_bundled_variant() {
         let width = r.card.border.line_width;
-        let infos = [
-            GroupBoxKind::Normal,
-            GroupBoxKind::Fill,
-            GroupBoxKind::Outline,
-        ]
-        .map(|kind| {
-            (
-                kind,
-                crate::info::layout::group_box(&t, kind, Some(&r), None, "Title"),
-            )
-        });
         let card = crate::info::layout::card(&t, Some(&r), None);
         assert!(
             card.colors
@@ -20386,12 +21037,8 @@ fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
                 .all(|c| c.role != "content text" && c.field != "group_box_foreground"),
             "{name}: the card's info claims a content text its Label paints over: {card:?}"
         );
-        let all = infos
-            .iter()
-            .map(|(kind, info)| (Some(*kind), info))
-            .chain([(None, &card)]);
-        for (kind, info) in all {
-            let what = kind.map_or("the card", GroupBoxKind::name);
+        {
+            let (what, info) = ("the card", &card);
             let line = note_of(&info.config, "edge");
             if width > 0.0 {
                 branches.0 = true;
@@ -20415,12 +21062,6 @@ fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
                     line.is_some_and(|text| text.starts_with("none: card.border.line_width is 0")),
                     "{name}: {what}'s edge line does not say no edge is drawn: {line:?}"
                 );
-                if kind == Some(GroupBoxKind::Outline) {
-                    assert!(
-                        line.is_some_and(|text| text.contains("border_1 gives way")),
-                        "{name}: the Outline box's edge line does not say its own border_1 gives way to the 0 width: {line:?}"
-                    );
-                }
             }
         }
     }
@@ -20436,6 +21077,273 @@ fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
             .iter()
             .all(|c| c.role != "content text" && c.field != "group_box_foreground"),
         "the card's info without a native theme claims a content text its Label paints over: {card:?}"
+    );
+}
+
+/// A GroupBox's info on the 0.8.0 model claims the card edge
+/// `next::geometry::group_box_content` draws on the content --
+/// `card.container(NONE)`'s stroke -- only where it is above 0 wide; says
+/// none is drawn where it is 0 wide, an Outline box's note that its own
+/// `border_1` gives way to it; and where the theme states no stroke, claims
+/// upstream's edge, an Outline box's `border_1` in `border` and none on a
+/// Normal or Fill one -- over every bundled preset in both modes, and a
+/// theme patched to stroke its card as none, which no bundled preset need
+/// do; and it claims no edge or fill of the card without a 0.8.0 theme.
+#[test]
+fn a_group_box_claims_the_card_edge_only_where_one_is_drawn() {
+    use crate::demo::GroupBoxKind;
+    use crate::info::{px_text, stroke_color_of, stroke_width_of};
+    use native_theme::next::{CardRule, PartPatch, Stroke, ThemePatch, WidgetState};
+    let unstroked = every_next_variant()
+        .into_iter()
+        .next()
+        .map(|(name, mut r, t)| {
+            r.apply_patch(
+                &ThemePatch::new()
+                    .card(CardRule::new().container(PartPatch::new().stroke(Stroke::None))),
+            );
+            (format!("{name}, its card stroked as none"), r, t)
+        });
+    assert!(unstroked.is_some(), "no bundled 0.8.0 variant to patch");
+    let mut branches = (false, false, false);
+    for (name, r, t) in every_next_variant().into_iter().chain(unstroked) {
+        let container = r.card.container(WidgetState::NONE);
+        for kind in [
+            GroupBoxKind::Normal,
+            GroupBoxKind::Fill,
+            GroupBoxKind::Outline,
+        ] {
+            let info = crate::info::layout::next_group_box(&t, kind, Some(&r), None, "Title");
+            let what = kind.name();
+            let line = note_of(&info.config, "edge");
+            match stroke_width_of(&container) {
+                Some(width) if width > 0.0 => {
+                    branches.0 = true;
+                    assert_eq!(
+                        claim_as(&info, "edge"),
+                        stroke_color_of(&container)
+                            .map(|colour| ("card.container(NONE).stroke.color", colour)),
+                        "{name}: the {what} box's info does not claim the card.container(NONE) stroke its content is edged with: {info:?}"
+                    );
+                    assert!(
+                        line.is_some_and(|text| text.contains(&format!("{}px", px_text(width)))),
+                        "{name}: the {what} box's edge line does not print the stroke's width: {line:?}"
+                    );
+                }
+                Some(_) => {
+                    branches.1 = true;
+                    assert_eq!(
+                        claim_as(&info, "edge"),
+                        None,
+                        "{name}: the {what} box's info claims an edge a 0 wide stroke does not draw: {info:?}"
+                    );
+                    assert!(
+                        line.is_some_and(|text| text
+                            .starts_with("none: card.container(NONE)'s stroke is 0 wide")),
+                        "{name}: the {what} box's edge line does not say no edge is drawn: {line:?}"
+                    );
+                    if kind == GroupBoxKind::Outline {
+                        assert!(
+                            line.is_some_and(|text| text.contains("border_1 gives way")),
+                            "{name}: the Outline box's edge line does not say its own border_1 gives way to the 0 width: {line:?}"
+                        );
+                    }
+                }
+                None => {
+                    branches.2 = true;
+                    assert_eq!(
+                        claim_as(&info, "edge"),
+                        None,
+                        "{name}: the {what} box's info claims a card edge the theme does not state: {info:?}"
+                    );
+                    if kind == GroupBoxKind::Outline {
+                        assert_eq!(
+                            claim_as(&info, "border"),
+                            Some(("border", t.border)),
+                            "{name}: the Outline box's info does not claim its own border: {info:?}"
+                        );
+                        assert!(
+                            line.is_some_and(
+                                |text| text.starts_with("the Outline variant's own border_1")
+                            ),
+                            "{name}: the Outline box's edge line does not say it keeps its own border: {line:?}"
+                        );
+                    } else {
+                        assert!(
+                            line.is_some_and(|text| text.starts_with(
+                                "none: the theme states no card.container(NONE) stroke"
+                            )),
+                            "{name}: the {what} box's edge line does not say none is drawn: {line:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+    assert_eq!(
+        branches,
+        (true, true, true),
+        "no variant edged the card, stroked it as none, or left its stroke unstated, so a branch went unread"
+    );
+    let t = Theme::default();
+    for kind in [
+        GroupBoxKind::Normal,
+        GroupBoxKind::Fill,
+        GroupBoxKind::Outline,
+    ] {
+        let info = crate::info::layout::next_group_box(&t, kind, None, None, "Title");
+        assert!(
+            info.colors.iter().all(|c| !c.field.starts_with("card.")),
+            "the {} box's info without a 0.8.0 theme claims the card: {info:?}",
+            kind.name()
+        );
+    }
+}
+
+/// The Accordion's info claims upstream's colours for exactly the parts the
+/// installed 0.8.0 theme's builders leave to it: the border and the line
+/// between items where `next::geometry::accordion` lacks a value, the
+/// titles' colours where `next::geometry::accordion_title` does, both
+/// without a 0.8.0 theme, which alone says the items take no hover -- the
+/// arms with one builder refining and the other not being ones no bundled
+/// preset need reach.
+#[test]
+fn the_accordions_info_claims_upstreams_colours_where_a_builder_lacks_one() {
+    let t = Theme::default();
+    let roles = |info: &WidgetInfo| -> Vec<&str> { info.colors.iter().map(|c| c.role).collect() };
+    let edges = ["border", "line between items"];
+    let titles = ["open item's title", "closed item's title, inherited"];
+    for (refined, edged, titled) in [
+        (None, false, false),
+        (Some((false, false)), false, false),
+        (Some((true, false)), false, true),
+        (Some((false, true)), true, false),
+        (Some((true, true)), true, true),
+    ] {
+        let info = crate::info::layout::next_accordion(&t, false, 3, refined);
+        let claimed = roles(&info);
+        for role in edges {
+            assert_eq!(
+                claimed.contains(&role),
+                !edged,
+                "{refined:?}: the info claims {role} {}",
+                if edged {
+                    "the builder colours"
+                } else {
+                    "only where upstream draws it"
+                }
+            );
+        }
+        for role in titles {
+            assert_eq!(
+                claimed.contains(&role),
+                !titled,
+                "{refined:?}: the info claims {role} {}",
+                if titled {
+                    "the builder colours"
+                } else {
+                    "only where upstream colours it"
+                }
+            );
+        }
+        assert_eq!(
+            note_of(&info.not_themeable, "hover").is_some(),
+            refined.is_none(),
+            "{refined:?}: the hover note is not there exactly without a 0.8.0 theme"
+        );
+    }
+}
+
+/// The Theme Map's "branch" note follows what the installed 0.8.0 theme
+/// states, read off the same queries the connector makes: a
+/// secondary_active swatch says which way `button.body(PRESSED).fill`'s
+/// rule sent it, a list_hover or table_hover swatch which way
+/// `list.highlight(HOVER).fill` did, and any other swatch has none -- each
+/// arm read here, whether or not a bundled preset reaches it.
+#[test]
+fn a_swatchs_branch_note_follows_what_the_theme_states() {
+    use crate::demo::ThemeToken;
+    use crate::info::theme_map::branch_note;
+    for token in [
+        ThemeToken::SecondaryActive,
+        ThemeToken::ButtonActive,
+        ThemeToken::ButtonSecondaryActive,
+    ] {
+        assert!(
+            branch_note(token, true, false)
+                .is_some_and(|n| n.starts_with("a rule states button.body(PRESSED).fill")),
+            "a stated pressed fill's note"
+        );
+        assert!(
+            branch_note(token, false, true)
+                .is_some_and(|n| n.starts_with("no rule states button.body(PRESSED).fill")),
+            "an unstated pressed fill's note"
+        );
+    }
+    for token in [ThemeToken::ListHover, ThemeToken::TableHover] {
+        assert!(
+            branch_note(token, false, true)
+                .is_some_and(|n| n.starts_with("the theme states list.highlight(HOVER).fill")),
+            "a stated hovered row's note"
+        );
+        assert!(
+            branch_note(token, true, false)
+                .is_some_and(|n| n.starts_with("the theme states no list.highlight(HOVER).fill")),
+            "an unstated hovered row's note"
+        );
+    }
+    assert_eq!(branch_note(ThemeToken::Background, true, true), None);
+}
+
+/// The Folder tab row's font and size lines, and the side panel label's
+/// font line, name the installed 0.8.0 theme's homes where it states a font
+/// gpui can letter the label in and a least size, and gpui-component's own
+/// where it does not -- the second a branch no bundled preset need reach,
+/// so read here off a label style whose properties are all unstated.
+#[test]
+fn the_tab_and_side_panel_labels_name_their_homes_or_upstreams() {
+    use crate::info::chrome::sidebar_label_font;
+    use crate::info::layout::{folder_tab_font, folder_tab_size};
+    use native_theme::next::{TextStated, WidgetState};
+    let variants = every_next_variant();
+    let first = variants.first();
+    assert!(first.is_some(), "no bundled 0.8.0 variant");
+    let Some((name, r, _)) = first else { return };
+    let tab = r.tab.label(WidgetState::NONE);
+    let side = r.sidebar.item_label(WidgetState::NONE);
+    assert!(
+        folder_tab_font(&r.typography, &tab).starts_with("tab.label(NONE): "),
+        "{name}: the tab's font line does not name tab.label(NONE)"
+    );
+    assert!(
+        sidebar_label_font(&r.typography, &side).starts_with("sidebar.item_label(NONE): "),
+        "{name}: the side panel label's font line does not name sidebar.item_label(NONE)"
+    );
+    let mut bare = tab.clone();
+    bare.stated = TextStated::default();
+    let own = folder_tab_font(&r.typography, &bare);
+    assert!(
+        own.starts_with("text_sm, the Tab's own") && own.contains("at tab.label(NONE)"),
+        "an unstated tab label's font line does not say upstream's own: {own}"
+    );
+    let own = sidebar_label_font(&r.typography, &bare);
+    assert!(
+        own.starts_with("text_sm, a rem step, gpui's own")
+            && own.contains("at sidebar.item_label(NONE)"),
+        "an unstated side panel label's font line does not say gpui's own: {own}"
+    );
+    let stated = folder_tab_size([Some(80.), Some(30.)]);
+    assert!(
+        stated.contains("width at least tab.tab(NONE).min_size[0], 80px")
+            && stated.contains("height at least tab.tab(NONE).min_size[1], 30px"),
+        "the stated tab size line: {stated}"
+    );
+    let unstated = folder_tab_size([None, None]);
+    assert!(
+        unstated.contains("width upstream's: the theme states no tab.tab(NONE).min_size[0]")
+            && unstated
+                .contains("height upstream's: the theme states no tab.tab(NONE).min_size[1]"),
+        "the unstated tab size line: {unstated}"
     );
 }
 
@@ -21364,10 +22272,12 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             ),
         ];
         #[cfg(feature = "widgets")]
-        if let Some(r) = crate::support::old_resolved(cx) {
+        if let Some(look) = crate::support::next_resolved(cx)
+            .and_then(|r| native_theme_gpui::widgets::SeparatorLook::next_of(r).ok())
+        {
             built.push((
                 "a theme-drawn Separator sample",
-                crate::info::layout::native_separator(t, r, true),
+                crate::info::layout::native_separator(t, &look, true),
                 "room",
                 vec![
                     crate::info::rems_text(crate::demo::SEPARATOR_SAMPLE_ROOM, t),
@@ -23178,7 +24088,7 @@ fn widget_icons_report(
 /// The set the widget icons loaded, and whether it is fixed (else they
 /// follow the theme); `None` where they loaded none.
 #[cfg(feature = "svg-rasterize")]
-fn widget_icons_set(cx: &mut VisualTestContext) -> Option<(native_theme::theme::IconSet, bool)> {
+fn widget_icons_set(cx: &mut VisualTestContext) -> Option<(native_theme::icons::IconSet, bool)> {
     match widget_icons_report(cx) {
         Some(native_theme_gpui::icons::WidgetIconsReport::Loaded(set)) => {
             Some((set.set, set.fixed))
@@ -23211,7 +24121,7 @@ fn two_colour_svg(top: &str, bottom: &str) -> native_theme::icons::IconData {
 ))]
 #[gpui::test]
 fn the_icon_theme_select_puts_the_widget_icons_in_its_state(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     use native_theme_gpui::icons::WidgetIconsReport;
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
     use_preset_with_palette(&mut cx, &showcase, "material-3", "catppuccin-mocha");
@@ -23301,7 +24211,7 @@ fn the_widget_icons_follow_the_set_the_chrome_draws(cx: &mut TestAppContext) {
 ))]
 #[gpui::test]
 fn a_fixed_row_keeps_the_widget_icons_where_the_detection_fails(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     use native_theme_gpui::icons::WidgetIconsReport;
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "adwaita");

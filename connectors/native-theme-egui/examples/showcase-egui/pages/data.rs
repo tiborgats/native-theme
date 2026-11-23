@@ -3,10 +3,11 @@
 
 use egui_extras::{Column, Size, StripBuilder, TableBuilder};
 use native_theme_egui::convert::to_color32;
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font, list_header_height};
+use native_theme_egui::{Role, RoleVariant, list_header_font, list_header_height};
 use native_theme_showcase_support::rows;
 
 use super::{DemoState, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 /// The rows the table and the grids show: a datum.
@@ -17,13 +18,8 @@ const ROWS: [(&str, &str); 4] = [
     ("windows-11", "Windows"),
 ];
 
-pub(crate) fn show(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    atlas: &ThemeAtlas,
-    ui: &mut egui::Ui,
-) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     // `list.header_font` at its weight, as the Basic table's header is
     // (`demo::weighted_family`), and at its scaled size (`list_header_font`)
     let header_font = egui::FontId::new(
@@ -168,7 +164,7 @@ impl TableRows {
     /// the header drawn in `header_font`.
     pub(crate) fn of(
         ui: &egui::Ui,
-        atlas: &ThemeAtlas,
+        atlas: &OldAtlas,
         t: &native_theme_egui::ResolvedTheme,
         header_font: &egui::FontId,
     ) -> Self {

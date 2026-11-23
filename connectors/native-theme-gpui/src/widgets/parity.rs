@@ -2,8 +2,8 @@
 //! 1, rule 2; M4, step 1): each look type's 0.8.0 constructor gives the look
 //! its 0.7.2 constructor gives, and so does each value a control reads beside
 //! its look ([`ThemeSource`]: the ground it is faded over, its focus ring, the
-//! focus ring's trigger, its label's font, the switch's body text and the
-//! spinner's colours), on the presets the connector parity covers, kde-breeze,
+//! focus ring's trigger, its label's font, the switch's body text and label
+//! font and the spinner's colours), on the presets the connector parity covers, kde-breeze,
 //! adwaita, windows-11, macos-monterey, macos-tahoe, material-3 and ios-13,
 //! light and dark, in every state each constructor takes.
 //!
@@ -26,7 +26,7 @@ use native_theme::next::{Preset, ThemeContext, WidgetState};
 
 use super::{
     CheckboxLook, FocusRing, LabelFont, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook,
-    SwitchLook, TabLook, ThemeSource, ThumbOutline, rgba,
+    SwitchLabelFont, SwitchLook, TabLook, ThemeSource, ThumbOutline, rgba,
 };
 use crate::next::{Mapped, Unmapped};
 use crate::{ColorMode, Native, ResolvedTheme};
@@ -49,6 +49,18 @@ struct Difference {
     presets: &'static [&'static str],
     reason: &'static str,
 }
+
+/// Every preset compared, for a difference that no 0.8.0 preset's statement
+/// removes.
+const EVERY_PRESET: &[&str] = &[
+    "kde-breeze",
+    "adwaita",
+    "windows-11",
+    "macos-monterey",
+    "macos-tahoe",
+    "material-3",
+    "ios-13",
+];
 
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[
@@ -203,6 +215,34 @@ const DIFFERENCES: &[Difference] = &[
                  native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a listed \
                  difference); so an enabled radio hovers in the outline stated there, a checked \
                  one in its checked outline",
+    },
+    Difference {
+        leaf: "SwitchLabelFont",
+        presets: &["ios-13"],
+        reason: "the 0.8.0 ios-13 states no font of switch.label (no source: iOS's switch \
+                 draws no label), so a switch's label is lettered in gpui-component's own font \
+                 (spec §10, rule 0): text_sm (input_text_size(Size::Medium)) in the window's \
+                 family and weight (gpui-component 0.10.0 switch.rs, Switch::render), where \
+                 the 0.7.2 switch took the body text's size and weight (SwitchTheme states no \
+                 label font)",
+    },
+    Difference {
+        leaf: "SwitchLabelFont",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+        ],
+        reason: "the 0.8.0 presets state switch.label as the platform's switch label, the \
+                 body font (kde-breeze qqc2-desktop-style's control.font, adwaita \
+                 AdwSwitchRow's title, windows-11 ToggleSwitch's content, macOS the body \
+                 font, material-3 Android's MaterialSwitch text), its family and slant \
+                 included, where the 0.7.2 switch took the body text's size and weight alone \
+                 and left the family and slant to the window's (SwitchTheme states no label \
+                 font); the size and weight are the same",
     },
 ];
 
@@ -516,6 +556,19 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         "",
         o.body_text(),
         given(n.body_text()),
+    );
+    r.leaf(
+        "SwitchLabelFont",
+        "",
+        o.body_text()
+            .map(|(size, line_height, weight)| SwitchLabelFont {
+                family: None,
+                size: Some(size),
+                weight: Some(weight),
+                style: None,
+                line_height,
+            }),
+        SwitchLabelFont::next_of(&new),
     );
     r.leaf(
         "LabelFont checkbox",

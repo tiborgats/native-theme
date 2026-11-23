@@ -265,17 +265,21 @@ pub fn state_fill_of(part: &PartStyle) -> Option<Hsla> {
         .flatten()
 }
 
-/// A part's stroke colour as `state_stroke_color` reads it, `None` where
-/// no rule states it for the queried state, or it is stated in a form gpui
-/// cannot draw (not one stroke of one colour). The rule is for some flag of
-/// the query, not a given one (spec §2, `from_state`): a reader that keeps
-/// the toolkit's own treatment of one flag over a value stated for another
-/// queries with that flag alone.
+/// A part's stroke colour as `state_stroke_color` reads it, a stroke stated
+/// as none transparent, no line (spec §10, rule 2); `None` where no rule
+/// states it for the queried state, or it is stated in a form gpui cannot
+/// draw (not one stroke of one colour, nor none). The rule is for some flag
+/// of the query, not a given one (spec §2, `from_state`): a reader that
+/// keeps the toolkit's own treatment of one flag over a value stated for
+/// another queries with that flag alone.
 pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
-    part.from_state
-        .contains(PartStated::STROKE)
-        .then(|| stroke_color_of(part))
-        .flatten()
+    if !part.from_state.contains(PartStated::STROKE) {
+        return None;
+    }
+    match part.stroke {
+        Stroke::None if part.stated.contains(PartStated::STROKE) => Some(hsla(Color::TRANSPARENT)),
+        _ => stroke_color_of(part),
+    }
 }
 
 /// A text style's colour as `state_text_color` reads it, `None` where no
@@ -988,6 +992,19 @@ pub fn font_weight(r: &ResolvedTheme) -> Mapped<u16> {
     text_weight(&r.typography.body, "typography.body.weight")
 }
 
+/// Where the theme gives no body text a label can take its size and weight
+/// from, the home it leaves unstated, `typography.body.size_px` or
+/// `typography.body.weight`; `None` where it states both. The check a
+/// theme-drawn widget's body-text label passes (`widgets`,
+/// `ThemeSource::body_text`).
+#[must_use]
+pub fn body_text_unmapped(r: &ResolvedTheme) -> Option<Unmapped> {
+    if !r.typography.body.stated.contains(TextStated::SIZE_PX) {
+        return Some(Unmapped("typography.body.size_px"));
+    }
+    font_weight(r).err()
+}
+
 /// [`crate::mono_font_weight`]: the monospace text's CSS weight
 /// (`typography.monospace.weight`).
 ///
@@ -1402,11 +1419,13 @@ mod tests {
         assert_eq!(stroke_color(&none, "home")?, hsla(Color::TRANSPARENT));
         assert_eq!(stroke_color_of(&none), None);
         assert_eq!(state_stroke_color(&none, "home")?, None);
+        assert_eq!(state_stroke_color_of(&none), None);
         none.from_state = PartStated::STROKE;
         assert_eq!(
             state_stroke_color(&none, "home")?,
             Some(hsla(Color::TRANSPARENT))
         );
+        assert_eq!(state_stroke_color_of(&none), Some(hsla(Color::TRANSPARENT)));
         let part = stroked(1.0, RED, StrokeAlign::Inside);
         assert_eq!(stroke_color(&part, "home")?, hsla(RED));
         let mut unstated = part.clone();

@@ -2,18 +2,14 @@
 //! each `TextEdit` the page builds given `input_frame`; the completion popup and the date picker
 //! in the base style.
 
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas, input_frame, text_area_frame};
+use native_theme_egui::{Role, RoleVariant, input_frame, text_area_frame};
 
 use super::{DemoState, caption, input_min_size};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
-pub(crate) fn show(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    atlas: &ThemeAtlas,
-    ui: &mut egui::Ui,
-) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     // Each `TextEdit` the page builds at least `input.min_height` tall, a single line's row
     // centred in the height the minimum adds, as the platform centres a field's text and the

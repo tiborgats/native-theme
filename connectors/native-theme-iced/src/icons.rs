@@ -31,11 +31,11 @@
 
 use std::borrow::Cow;
 
+use native_theme::icons::IconSet;
 use native_theme::icons::{
     AnimatedIcon, IconData, IconProvider, RgbaData, colorize_monochrome_svg, fill_current_color,
     load_custom_icon_in,
 };
-use native_theme::theme::IconSet;
 
 /// Converted animation frames with timing metadata.
 ///
@@ -100,7 +100,7 @@ pub fn to_svg_handle(
 #[must_use]
 pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::theme::IconSet,
+    icon_set: native_theme::icons::IconSet,
     icon_theme: Option<&str>,
     color: Option<iced_core::Color>,
     size: Option<u32>,
@@ -130,7 +130,7 @@ pub fn custom_icon_to_image_handle(
 #[must_use]
 pub fn custom_icon_to_svg_handle(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::theme::IconSet,
+    icon_set: native_theme::icons::IconSet,
     icon_theme: Option<&str>,
     color: Option<iced_core::Color>,
     size: Option<u32>,
@@ -457,12 +457,12 @@ mod tests {
     struct TestSvgProvider;
 
     impl native_theme::icons::IconProvider for TestSvgProvider {
-        fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
+        fn icon_name(&self, _set: native_theme::icons::IconSet) -> Option<&str> {
             None
         }
         fn icon_svg(
             &self,
-            _set: native_theme::theme::IconSet,
+            _set: native_theme::icons::IconSet,
         ) -> Option<std::borrow::Cow<'static, [u8]>> {
             Some(std::borrow::Cow::Borrowed(
                 b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>",
@@ -474,12 +474,12 @@ mod tests {
     struct EmptyProvider;
 
     impl native_theme::icons::IconProvider for EmptyProvider {
-        fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
+        fn icon_name(&self, _set: native_theme::icons::IconSet) -> Option<&str> {
             None
         }
         fn icon_svg(
             &self,
-            _set: native_theme::theme::IconSet,
+            _set: native_theme::icons::IconSet,
         ) -> Option<std::borrow::Cow<'static, [u8]>> {
             None
         }
@@ -490,7 +490,7 @@ mod tests {
         // SVG data is not RGBA, so to_image_handle returns None
         let result = custom_icon_to_image_handle(
             &TestSvgProvider,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
             None,
@@ -502,7 +502,7 @@ mod tests {
     fn custom_icon_to_svg_handle_with_svg_provider_returns_some() {
         let result = custom_icon_to_svg_handle(
             &TestSvgProvider,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
             None,
@@ -515,7 +515,7 @@ mod tests {
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
         let result = custom_icon_to_svg_handle(
             &TestSvgProvider,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             Some(color),
             None,
@@ -527,7 +527,7 @@ mod tests {
     fn custom_icon_to_image_handle_with_empty_provider_returns_none() {
         let result = custom_icon_to_image_handle(
             &EmptyProvider,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
             None,
@@ -539,7 +539,7 @@ mod tests {
     fn custom_icon_to_svg_handle_with_empty_provider_returns_none() {
         let result = custom_icon_to_svg_handle(
             &EmptyProvider,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
             None,
@@ -552,7 +552,7 @@ mod tests {
         let boxed: Box<dyn native_theme::icons::IconProvider> = Box::new(TestSvgProvider);
         let result = custom_icon_to_svg_handle(
             &*boxed,
-            native_theme::theme::IconSet::Material,
+            native_theme::icons::IconSet::Material,
             None,
             None,
             None,
@@ -567,12 +567,12 @@ mod tests {
 
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     impl native_theme::icons::IconProvider for FolderProvider {
-        fn icon_name(&self, set: native_theme::theme::IconSet) -> Option<&str> {
-            (set == native_theme::theme::IconSet::Freedesktop).then_some("folder")
+        fn icon_name(&self, set: native_theme::icons::IconSet) -> Option<&str> {
+            (set == native_theme::icons::IconSet::Freedesktop).then_some("folder")
         }
         fn icon_svg(
             &self,
-            _set: native_theme::theme::IconSet,
+            _set: native_theme::icons::IconSet,
         ) -> Option<std::borrow::Cow<'static, [u8]>> {
             None
         }
@@ -600,7 +600,7 @@ mod tests {
             let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
             let handle = custom_icon_to_svg_handle(
                 &FolderProvider,
-                native_theme::theme::IconSet::Freedesktop,
+                native_theme::icons::IconSet::Freedesktop,
                 None,
                 Some(red),
                 None,
@@ -640,7 +640,7 @@ mod tests {
         if crate::icon_fixture::in_child() {
             let handle = custom_icon_to_svg_handle(
                 &FolderProvider,
-                native_theme::theme::IconSet::Freedesktop,
+                native_theme::icons::IconSet::Freedesktop,
                 Some("Fixture"),
                 None,
                 None,
@@ -673,7 +673,7 @@ mod tests {
             for (asked, found) in [(64, 64), (99_999, 512)] {
                 let handle = custom_icon_to_svg_handle(
                     &FolderProvider,
-                    native_theme::theme::IconSet::Freedesktop,
+                    native_theme::icons::IconSet::Freedesktop,
                     Some("sized"),
                     None,
                     Some(asked),
@@ -866,7 +866,7 @@ mod tests {
                     })
                     .collect();
                 let drawn = animated_frames_to_svg_handles_for(
-                    native_theme::theme::IconSet::Freedesktop,
+                    native_theme::icons::IconSet::Freedesktop,
                     &anim,
                     Some(red),
                 )
@@ -906,7 +906,7 @@ mod tests {
 
     /// The frames of the given set, two of `svg`, with the colour given.
     fn frames_for(
-        set: native_theme::theme::IconSet,
+        set: native_theme::icons::IconSet,
         svg: &'static [u8],
         color: Option<iced_core::Color>,
     ) -> AnimatedSvgHandles {
@@ -925,7 +925,7 @@ mod tests {
     /// [`animated_frames_to_svg_handles`] colours it.
     #[test]
     fn material_and_lucide_frames_are_coloured_as_monochrome() {
-        use native_theme::theme::IconSet;
+        use native_theme::icons::IconSet;
         const SVG: &[u8] = br#"<svg viewBox="0 0 24 24"><path d="M2 2h20v20H2z"/></svg>"#;
         let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
         let expected = String::from_utf8(colorize_monochrome_svg(SVG, to_rgba(red))).unwrap();
@@ -944,7 +944,7 @@ mod tests {
     /// set's without a colour.
     #[test]
     fn other_sets_frames_and_frames_without_a_colour_are_as_they_are() {
-        use native_theme::theme::IconSet;
+        use native_theme::icons::IconSet;
         const SVG: &str =
             r#"<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2 2h20v20H2z"/></svg>"#;
         let red = iced_core::Color::from_rgb(1.0, 0.0, 0.0);

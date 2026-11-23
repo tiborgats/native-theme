@@ -273,6 +273,11 @@ struct Difference {
     reason: &'static str,
 }
 
+/// The presets whose 0.8.0 side leaves the dialog panel's sizes unstated
+/// where 0.7.2 states them, as `geometry::dialog`'s entry in
+/// [`DIFFERENCES`] says.
+const DIALOG_SIZES_UNSTATED: &[&str] = &["kde-breeze"];
+
 /// The button height 0.7.2's kde-breeze states, `button.min_height` in
 /// `native-theme/src/presets/kde-breeze.toml`, which [`DIFFERENCES`]' entry
 /// names.
@@ -310,14 +315,28 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "geometry::dialog",
-        presets: &["kde-breeze"],
-        reason: "0.7.2 states dialog.min_width, min_height and max_height, which have no \
-                 source (issue #4 Z2, docs/issues/0004_kde-leftovers-rationale.md §3, sizes \
-                 that are not minimums or have no source; docs/v0.8.0-spec.md §5, notes to \
-                 the table); the 0.8.0 kde-breeze leaves dialog.panel's min_size and \
-                 max_size[1] unstated, so the 0.8.0 refinement sets no `min_size` and no \
-                 `max_size.height` and the dialog keeps gpui-component's own; every other \
-                 field of the refinement is equal",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ],
+        reason: "0.7.2's refinement sets no edge width, so the dialog keeps gpui-component's \
+                 own, border_1 (gpui-component 0.10.0 src/dialog/dialog.rs:783), though \
+                 0.7.2 states dialog.border.line_width; the 0.8.0 refinement sets the same \
+                 width, dialog.panel.stroke.width, on every side (0 under material-3, which \
+                 states it 0 wide; 0.5 px under the macOS presets and ios-13), as it sets the \
+                 edge's colour; and on kde-breeze (DIALOG_SIZES_UNSTATED) 0.7.2 states \
+                 dialog.min_width, min_height and max_height, which have no source (issue #4 \
+                 Z2, docs/issues/0004_kde-leftovers-rationale.md §3, sizes that are not \
+                 minimums or have no source; docs/v0.8.0-spec.md §5, notes to the table); the \
+                 0.8.0 kde-breeze leaves dialog.panel's min_size and max_size[1] unstated, so \
+                 the 0.8.0 refinement sets no `min_size` and no `max_size.height` and the \
+                 dialog keeps gpui-component's own; every other field of the refinement is \
+                 equal",
     },
     Difference {
         leaf: "geometry::dialog_max_width",
@@ -1432,14 +1451,18 @@ fn compare_builders(
             if let Some(n) = report.mapped(dialog, super::builders::dialog(new)) {
                 report.count(dialog);
                 let o = crate::geometry::dialog(Native::unscaled(old));
-                let mut corrected = o.clone();
-                corrected.min_size.width = None;
-                corrected.min_size.height = None;
-                corrected.max_size.height = None;
+                let mut corrected =
+                    gpui::Styled::border(o.clone(), px(old.dialog.border.line_width));
+                let sizes_unstated = DIALOG_SIZES_UNSTATED.contains(&report.preset);
+                if sizes_unstated {
+                    corrected.min_size.width = None;
+                    corrected.min_size.height = None;
+                    corrected.max_size.height = None;
+                }
                 let stated = o.min_size.width.is_some()
                     && o.min_size.height.is_some()
                     && o.max_size.height.is_some();
-                if !stated || corrected != n {
+                if o.border_widths.top.is_some() || (sizes_unstated && !stated) || corrected != n {
                     report.failures.push(format!(
                         "{}: {dialog}: the listed difference ({}) no longer describes \
                          it: 0.7.2 {o:?}, 0.8.0 {n:?}",
@@ -1908,9 +1931,12 @@ fn every_builder_is_compared() -> crate::Result<()> {
 /// `Mapped` forms), so they are compared through those; the `Mapped` form
 /// of a `state_` read (`state_fill`, …) reads through it too.
 /// `label_font_unmapped` takes a text style and is `uncoloured_font`'s
-/// check, which the builders read through.
+/// check, which the builders read through; `body_text_unmapped` is
+/// `ThemeSource::body_text`'s check, compared through it (`widgets`'s
+/// parity, `ThemeSource::body_text`).
 const NOT_ROOT_ACCESSORS: &[&str] = &[
     "root::label_font_unmapped",
+    "root::body_text_unmapped",
     "root::to_theme",
     "root::apply",
     "root::fill_of",

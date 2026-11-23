@@ -814,7 +814,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.hover_border_color",
-        "gpui: an edge laid over the trigger under the pointer (demo::combo_surface); upstream's trigger has no hover style",
+        "gpui: an edge drawn under the trigger, which takes the place of the trigger's under the pointer (demo::combo_surface); upstream's trigger has no hover style",
     ),
     (
         "",
@@ -995,17 +995,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.mode_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.icon_theme_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -1439,12 +1439,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.background_color",
-        "gpui: geometry::link's fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
+        "gpui: next::geometry::link's fill, link.container(NONE).fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
     ),
     (
         "",
         "link.font",
-        "gpui: geometry::link's family, size, weight and style",
+        "gpui: next::geometry::link's family, size, weight and style, link.label(NONE)'s",
     ),
     (
         "",
@@ -1464,7 +1464,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.underline_enabled",
-        "gpui: geometry::link removes upstream's underline where false",
+        "gpui: next::geometry::link removes upstream's underline where link.label(NONE).decoration is none",
     ),
     // --- list: the Basic page's table, demo::files_table ------------------------
     (
@@ -1636,53 +1636,57 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.list.",
         "list.hover_border_color",
-        "gpui: an unselected row's outline under the pointer, a box over the row in its suffix, on the corners of its fill (demo::ListRow)",
+        "gpui: list.highlight(HOVER).stroke, an unselected row's outline under the pointer, a box over the row in its suffix, on the corners of its fill (demo::ListRow)",
     ),
     (
         "basic.list.row_",
         "list.border.corner_radius_px",
-        "gpui: the first row's fill takes the frame's inner radius, this less list.border.line_width, on its top corners and the last row's on its bottom corners (demo::ListRow)",
+        "gpui: list.container(NONE).corners, the first row's fill takes the frame's inner radius, this less list.container(NONE).stroke.width, on its top corners and the last row's on its bottom corners (demo::ListRow)",
     ),
     (
         "basic.list.row_",
         "list.border.line_width_px",
-        "gpui: geometry::list's line, which the rows lie inside; taken off the frame's radius for the inner radius of the first and last rows' corners (demo::ListRow)",
+        "gpui: list.container(NONE).stroke.width, next::geometry::list's line, which the rows lie inside; taken off the frame's radius for the inner radius of the first and last rows' corners (demo::ListRow)",
     ),
-    ("", "list.background_color", "gpui: geometry::list's fill"),
+    (
+        "",
+        "list.background_color",
+        "gpui: list.container(NONE).fill, next::geometry::list's fill",
+    ),
     (
         "",
         "list.border.color",
-        "gpui: geometry::list's border colour",
+        "gpui: list.container(NONE).stroke.color, next::geometry::list's border colour",
     ),
     (
         "",
         "list.border.corner_radius_px",
-        "gpui: geometry::list's corner radius",
+        "gpui: list.container(NONE).corners, next::geometry::list's corner radius",
     ),
     (
         "",
         "list.border.line_width_px",
-        "gpui: geometry::list's border width",
+        "gpui: list.container(NONE).stroke.width, next::geometry::list's border width",
     ),
     (
         "",
         "list.border.padding_top_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_right_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_bottom_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_left_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
@@ -1692,22 +1696,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.hover_text_color",
-        "gpui: the label's colour under the pointer (demo::ListRow)",
+        "gpui: list.item_label(HOVER).color, the label's colour under the pointer (demo::ListRow)",
     ),
     (
         "",
         "list.item_font",
-        "gpui: geometry::list_item's family, size, weight and style",
+        "gpui: list.item_label(NONE), next::geometry::list_item's family, size, weight and style",
     ),
     (
         "",
         "list.item_font.color",
-        "gpui: geometry::list_item's text colour",
+        "gpui: list.item_label(NONE).color, next::geometry::list_item's text colour",
     ),
     (
         "",
         "list.row_height_px",
-        "gpui: geometry::list_item's height where stated (control-height rule)",
+        "gpui: list.row(NONE).min_size[1], next::geometry::list_item's height where stated (control-height rule)",
     ),
     (
         "",
@@ -1717,7 +1721,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.selection_text_color",
-        "gpui: geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
+        "gpui: list.item_label(SELECTED).color, next::geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
     ),
     // --- menu: the showcase's MenuBar (demo::MenuTitle, MenuBar::popup) ---------
     (
@@ -1930,37 +1934,37 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "progress_bar.border.color",
-        "gpui: the track's edge (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).stroke.color, the track's edge (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.border.corner_radius_px",
-        "gpui: the track's and the fill's corner radius (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).corners, the track's and the fill's corner radius (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.border.line_width_px",
-        "gpui: the track's border width (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).stroke.width, the track's border width (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.fill_color",
-        "gpui: widgets::ProgressBar's fill (ProgressBarLook)",
+        "gpui: progress_bar.fill(NONE).fill, widgets::ProgressBar's fill (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.min_width_px",
-        "gpui: the bar's min_w (widgets::ProgressBar)",
+        "gpui: progress_bar.track(NONE).min_size[0], the bar's min_w (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.track_color",
-        "gpui: the track's fill (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).fill, the track's fill (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.track_height_px",
-        "gpui: the bar's height (widgets::ProgressBar)",
+        "gpui: progress_bar.track(NONE).min_size[1], the bar's height (ProgressBarLook::next_of)",
     ),
     // --- scrollbar: gpui-base's, through base_layer -----------------------------
     (
@@ -2144,7 +2148,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.font",
-        "gpui: the label's family, size, weight and style (demo::sidebar_label)",
+        "gpui: the label's family, size, weight and style, at sidebar.item_label(NONE) of the installed 0.8.0 theme (demo::sidebar_label)",
     ),
     (
         "chrome.info",
@@ -2211,22 +2215,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "spinner.diameter_px",
-        "gpui: the indicator's size at Medium, and the anchor of the other sizes, gpui-component's own ratios to it (SpinnerLook::of_size)",
+        "gpui: spinner.diameter, the indicator's size at Medium, and the anchor of the other sizes, gpui-component's own ratios to it (SpinnerLook::next_of_size)",
     ),
     (
         "",
         "spinner.fill_color",
-        "gpui: the arc, and a monochrome set's indicator tint (SpinnerLook)",
+        "gpui: spinner.color, the arc, and a monochrome set's indicator tint (SpinnerLook::next_of_size, widgets::Spinner)",
     ),
     (
         "",
         "spinner.min_diameter_px",
-        "gpui: the floor under the indicator's size, at every Size (SpinnerLook::of_size)",
+        "gpui: spinner.min_diameter, the floor under the indicator's size, at every Size (SpinnerLook::next_of_size)",
     ),
     (
         "",
         "spinner.stroke_width_px",
-        "gpui: the arc's stroke, for a set with no indicator (SpinnerLook)",
+        "gpui: spinner.stroke_width, the arc's stroke, for a set with no indicator (SpinnerLook::next_of_size)",
     ),
     // --- splitter: demo::resize_handles --------------------------------------------
     (

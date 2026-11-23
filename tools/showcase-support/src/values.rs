@@ -14,7 +14,8 @@
 use std::str::FromStr as _;
 
 use native_theme::color::Rgba;
-use native_theme::theme::{IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTheme};
+use native_theme::icons::IconSet;
+use native_theme::theme::{LayoutTheme, ResolvedFontSpec, ResolvedTheme};
 
 /// What Widget Info shows for a value the theme leaves unstated.
 pub const NOT_STATED: &str = "not stated";

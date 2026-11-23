@@ -4,7 +4,8 @@ use egui::style::{WidgetVisuals, Widgets};
 
 use native_theme::theme::ResolvedWidgetBorder;
 
-use super::base::{radius, stroke};
+use super::base::{Read, radius, stroke};
+use super::line::{Line, LineAlign};
 use super::note_transparent_fill;
 use crate::Note;
 use crate::convert::{Rgba, composite_over, to_color32};
@@ -56,28 +57,98 @@ pub(crate) struct FillSource {
 }
 
 /// A text colour: into `inactive` (and `noninteractive` where the role's labels take it),
-/// the hover and pressed colours or else the copies.
+/// the hover and pressed colours or else what [`Unstated`] gives. `idle: None` leaves the
+/// resting entries' colour as it stands.
 pub(crate) struct TextSource {
-    pub idle: Rgba,
+    pub idle: Option<Rgba>,
     pub hover: Option<Rgba>,
     pub active: Option<Rgba>,
     pub in_noninteractive: bool,
 }
 
-/// A border: its own colour as stated — the final line colour, into which the model has
-/// already folded `defaults.border.opacity` —, width and radius, into `entries`. `paths` are
-/// the corner-radius and line-width leaves.
-pub(crate) struct BorderSource<'a> {
-    pub border: &'a ResolvedWidgetBorder,
-    pub paths: [&'static str; 2],
-    pub entries: BorderEntries,
+/// A border's values: its colour as stated — the final line colour, into which the model has
+/// already folded the border opacity —, its width and its corner radius, each `None` where
+/// the theme states none, which leaves each entry's own (spec §10, rule 0).
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Edge {
+    pub color: Option<Rgba>,
+    pub width: Option<f32>,
+    pub radius: Option<f32>,
 }
 
-pub(crate) struct StateSource<'a> {
+impl Edge {
+    /// A 0.7.2 border, whose values are always set.
+    pub(crate) fn old(border: &ResolvedWidgetBorder) -> Self {
+        Self {
+            color: Some(border.color),
+            width: Some(border.line_width),
+            radius: Some(border.corner_radius),
+        }
+    }
+}
+
+/// A border into `entries`. `paths` are the corner-radius and line-width leaves. `align` is
+/// where the stroke lies: each entry is handed the colour composited over the fill that entry
+/// paints ([`Line::over`]), the 0.7.2 model's `Outside` stroke as given.
+pub(crate) struct BorderSource {
+    pub border: Edge,
+    pub paths: [&'static str; 2],
+    pub entries: BorderEntries,
+    pub align: LineAlign,
+}
+
+pub(crate) struct StateSource {
     pub fill: Option<FillSource>,
     pub text: Option<TextSource>,
-    pub border: Option<BorderSource<'a>>,
+    pub border: Option<BorderSource>,
     pub open: OpenFrom,
+}
+
+/// What a hover or pressed value a source leaves `None` takes.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Unstated<'a> {
+    /// The 0.7.2 model's (§6.1): a hover the model has no leaf for copies the resting value, a
+    /// press the hovered one.
+    Copy,
+    /// Spec §10, rule 0: per property, egui's own value for the state where egui's own
+    /// entries for the scheme (these) change the property between rest and that state, else
+    /// the value at rest.
+    Egui(&'a Widgets),
+}
+
+impl Unstated<'_> {
+    /// The hovered value of a property `own` reads from an entry, the theme stating none.
+    pub(crate) fn hovered<T: PartialEq>(self, rest: T, own: impl Fn(&WidgetVisuals) -> T) -> T {
+        match self {
+            Self::Copy => rest,
+            Self::Egui(stock) => changed(stock, &stock.hovered, rest, own),
+        }
+    }
+
+    /// The pressed value of a property `own` reads from an entry, the theme stating none;
+    /// `hovered` is the hovered value the entries hold.
+    pub(crate) fn active<T: PartialEq>(
+        self,
+        rest: T,
+        hovered: T,
+        own: impl Fn(&WidgetVisuals) -> T,
+    ) -> T {
+        match self {
+            Self::Copy => hovered,
+            Self::Egui(stock) => changed(stock, &stock.active, rest, own),
+        }
+    }
+}
+
+/// `entry`'s own value of a property where it differs from egui's resting one, else `rest`.
+fn changed<T: PartialEq>(
+    stock: &Widgets,
+    entry: &WidgetVisuals,
+    rest: T,
+    own: impl Fn(&WidgetVisuals) -> T,
+) -> T {
+    let v = own(entry);
+    if v == own(&stock.inactive) { rest } else { v }
 }
 
 fn fill_of(entry: &WidgetVisuals, field: FillField) -> egui::Color32 {
@@ -109,8 +180,21 @@ fn note_transparent(
 
 /// Apply §6.1's policy for one widget to `widgets`: each `Some` of `src` writes the entries
 /// its kind names and nothing else, so a field the role states no value for keeps what the
-/// entry holds. `expansion` is never written.
-pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: &mut Vec<Note>) {
+/// entry holds. `expansion` is never written. A hover or press the source leaves `None` is
+/// the 0.7.2 model's copy ([`Unstated::Copy`]).
+#[cfg(test)]
+pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource, notes: &mut Vec<Note>) {
+    write_states_with(widgets, src, Unstated::Copy, notes);
+}
+
+/// §6.1's policy for one widget (`write_states`, the 0.7.2 model's copy, in the tests), a hover
+/// or press the source leaves `None` taking what `unstated` gives.
+pub(crate) fn write_states_with(
+    widgets: &mut Widgets,
+    src: &StateSource,
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
     if let Some(f) = &src.fill {
         let idle = match f.idle {
             Some((c, path)) => {
@@ -125,13 +209,14 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
             (Layer::Composite, Some((idle_rgba, _))) => composite_over(layer, idle_rgba),
             _ => to_color32(layer),
         };
+        let own = |e: &WidgetVisuals| fill_of(e, f.field);
         let hovered = match f.hover {
             Some((c, path)) => {
                 let written = over(c);
                 note_transparent(f.field, written, path, notes);
                 written
             }
-            None => idle,
+            None => unstated.hovered(idle, own),
         };
         let active = match f.active {
             Some((c, path)) => {
@@ -139,7 +224,7 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
                 note_transparent(f.field, written, path, notes);
                 written
             }
-            None => hovered,
+            None => unstated.active(idle, hovered, own),
         };
         set_fill(&mut widgets.hovered, f.field, hovered);
         set_fill(&mut widgets.active, f.field, active);
@@ -153,10 +238,15 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
     }
 
     if let Some(t) = &src.text {
-        let idle = to_color32(t.idle);
-        let hovered = t.hover.map_or(idle, to_color32);
-        let active = t.active.map_or(hovered, to_color32);
-        if t.in_noninteractive {
+        let idle = t.idle.map_or(widgets.inactive.fg_stroke.color, to_color32);
+        let own = |e: &WidgetVisuals| e.fg_stroke.color;
+        let hovered = t
+            .hover
+            .map_or_else(|| unstated.hovered(idle, own), to_color32);
+        let active = t
+            .active
+            .map_or_else(|| unstated.active(idle, hovered, own), to_color32);
+        if t.in_noninteractive && t.idle.is_some() {
             widgets.noninteractive.fg_stroke.color = idle;
         }
         widgets.inactive.fg_stroke.color = idle;
@@ -170,42 +260,109 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
 
     if let Some(b) = &src.border {
         let [radius_path, width_path] = b.paths;
-        // one stroke and one radius per kind of entry, each over its resting entry's own:
+        let line = b.border.color.map(|c| Line {
+            color: to_color32(c),
+            align: b.align,
+        });
+        let painted = src.fill.as_ref().map(|f| f.field);
+        // one width and one radius per kind of entry, each over its resting entry's own:
         // egui's stock entries differ (`egui/src/style.rs:1693-1720`), and a hover that
         // fell back to its own would show egui's look, not the platform's (§6.1)
         let over = |own: &WidgetVisuals, notes: &mut Vec<Note>| {
             (
-                stroke(
-                    width_path,
-                    own.bg_stroke,
-                    to_color32(b.border.color),
-                    b.border.line_width,
-                    notes,
-                ),
-                radius(
-                    radius_path,
-                    own.corner_radius,
-                    b.border.corner_radius,
-                    notes,
-                ),
+                b.border.width.map(|w| {
+                    stroke(width_path, own.bg_stroke, own.bg_stroke.color, w, notes).width
+                }),
+                b.border
+                    .radius
+                    .map(|r| radius(radius_path, own.corner_radius, r, notes)),
             )
         };
+        let write = |entry: &mut WidgetVisuals, (width, corner_radius): (Option<f32>, _)| {
+            if let Some(width) = width {
+                entry.bg_stroke.width = width;
+            }
+            if let Some(line) = line {
+                entry.bg_stroke.color = line.over(painted.map(|f| fill_of(entry, f)));
+            }
+            if let Some(corner_radius) = corner_radius {
+                entry.corner_radius = corner_radius;
+            }
+        };
         if matches!(b.entries, BorderEntries::All) {
-            let (bg_stroke, corner_radius) = over(&widgets.noninteractive, notes);
-            widgets.noninteractive.bg_stroke = bg_stroke;
-            widgets.noninteractive.corner_radius = corner_radius;
+            let written = over(&widgets.noninteractive, notes);
+            write(&mut widgets.noninteractive, written);
         }
-        let (bg_stroke, corner_radius) = over(&widgets.inactive, notes);
+        let written = over(&widgets.inactive, notes);
         for entry in [
             &mut widgets.inactive,
             &mut widgets.hovered,
             &mut widgets.active,
             &mut widgets.open,
         ] {
-            entry.bg_stroke = bg_stroke;
-            entry.corner_radius = corner_radius;
+            write(entry, written);
         }
     }
+}
+
+/// A hovered or pressed border the theme states for its state: its colour and its width, each
+/// `None` where it states none.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct StateLine {
+    pub color: Option<Rgba>,
+    pub width: Read<f32>,
+}
+
+impl StateLine {
+    /// A stated colour alone, the width left to the entry: the 0.7.2 model's state borders.
+    pub(crate) fn colour(color: Option<Rgba>) -> Option<Self> {
+        color.map(|c| Self {
+            color: Some(c),
+            width: None,
+        })
+    }
+}
+
+/// The hovered and the pressed entry's border, over what [`write_states_with`] wrote there,
+/// each property apart: a stated colour composited over the fill its entry paints (`painted`,
+/// [`Line::over`]) and a stated width laid over the entry's; an unstated one what `unstated`
+/// gives.
+pub(crate) fn state_borders(
+    widgets: &mut Widgets,
+    [hover, active]: [Option<StateLine>; 2],
+    align: LineAlign,
+    painted: Option<FillField>,
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let line = |c: Rgba, entry: &WidgetVisuals| {
+        Line {
+            color: to_color32(c),
+            align,
+        }
+        .over(painted.map(|f| fill_of(entry, f)))
+    };
+    let (hover, active) = (hover.unwrap_or_default(), active.unwrap_or_default());
+    let own = |e: &WidgetVisuals| e.bg_stroke.color;
+    let hovered = match hover.color {
+        Some(c) => line(c, &widgets.hovered),
+        None => unstated.hovered(widgets.hovered.bg_stroke.color, own),
+    };
+    let active_color = match active.color {
+        Some(c) => line(c, &widgets.active),
+        None => unstated.active(widgets.active.bg_stroke.color, hovered, own),
+    };
+    let own_width = |e: &WidgetVisuals| e.bg_stroke.width;
+    let mut width = |state: Read<f32>, entry: &WidgetVisuals| {
+        state.map(|(w, path)| stroke(path, entry.bg_stroke, entry.bg_stroke.color, w, notes).width)
+    };
+    let hovered_width = width(hover.width, &widgets.hovered)
+        .unwrap_or_else(|| unstated.hovered(widgets.hovered.bg_stroke.width, own_width));
+    let active_width = width(active.width, &widgets.active).unwrap_or_else(|| {
+        unstated.active(widgets.active.bg_stroke.width, hovered_width, own_width)
+    });
+    widgets.hovered.bg_stroke = egui::Stroke::new(hovered_width, hovered);
+    widgets.active.bg_stroke = egui::Stroke::new(active_width, active_color);
 }
 
 #[cfg(test)]
@@ -367,9 +524,10 @@ mod tests {
                     fill: None,
                     text: None,
                     border: Some(BorderSource {
-                        border: &t.button.border,
+                        border: Edge::old(&t.button.border),
                         paths: ["test.corner_radius", "test.line_width"],
                         entries: BorderEntries::All,
+                        align: LineAlign::Outside,
                     }),
                     open: OpenFrom::Inactive,
                 },

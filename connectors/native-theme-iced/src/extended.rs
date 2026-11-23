@@ -5,24 +5,25 @@
 //! values. All fields are guaranteed populated in ResolvedTheme, so
 //! overrides are always applied unconditionally.
 
+#[cfg(test)]
 use crate::palette::to_color;
+use iced_core::Color;
 use iced_core::theme::palette::Pair;
-use native_theme::color::Rgba;
 
 /// Captured color values for Extended palette overrides.
 ///
-/// Holds the `Rgba` values extracted from `ResolvedTheme` that
+/// Holds the colours read from the resolved theme, of either model, that
 /// `to_theme()` captures into its closure. Using a struct instead of
 /// individual parameters keeps the API clean.
 #[derive(Clone, Copy)]
 pub(crate) struct OverrideColors {
-    pub placeholder: Rgba,
-    pub surface: Rgba,
-    pub foreground: Rgba,
-    pub accent_fg: Rgba,
-    pub success_fg: Rgba,
-    pub danger_fg: Rgba,
-    pub warning_fg: Rgba,
+    pub placeholder: Color,
+    pub surface: Color,
+    pub foreground: Color,
+    pub accent_fg: Color,
+    pub success_fg: Color,
+    pub danger_fg: Color,
+    pub warning_fg: Color,
 }
 
 /// WCAG 2.1 relative luminance from an iced Color.
@@ -88,7 +89,7 @@ pub(crate) fn apply_overrides(
     // every widget that states no color of its own, and `Extended::generate`
     // passes the platform's text color through `readable()`, which substitutes
     // another whenever the contrast falls below its own threshold.
-    extended.background.base.text = to_color(colors.foreground);
+    extended.background.base.text = colors.foreground;
     // Ordering: the label is read from `background.base.text`, which the line
     // above has just set to the platform's, so what `Pair::new` is offered is
     // the platform's colour. It is not what comes out: `Pair::new` runs
@@ -96,17 +97,16 @@ pub(crate) fn apply_overrides(
     // window text are close by construction -- exactly the pair `readable()`
     // rejects -- so all 34 bundled combinations emit a substitute of
     // iced's own (the contract's `derived.rs` counts them on every run).
-    extended.secondary.base =
-        Pair::new(to_color(colors.placeholder), extended.background.base.text);
+    extended.secondary.base = Pair::new(colors.placeholder, extended.background.base.text);
     // A hovered `button::secondary` keeps the base label and swaps only the
     // fill, so the fill must be one that label was chosen for.
     extended.secondary.strong = extended.secondary.base;
-    extended.background.weak.color = to_color(colors.surface);
-    extended.background.weak.text = to_color(colors.foreground);
-    extended.primary.base.text = to_color(colors.accent_fg);
-    extended.success.base.text = to_color(colors.success_fg);
-    extended.danger.base.text = to_color(colors.danger_fg);
-    extended.warning.base.text = to_color(colors.warning_fg);
+    extended.background.weak.color = colors.surface;
+    extended.background.weak.text = colors.foreground;
+    extended.primary.base.text = colors.accent_fg;
+    extended.success.base.text = colors.success_fg;
+    extended.danger.base.text = colors.danger_fg;
+    extended.warning.base.text = colors.warning_fg;
 }
 
 #[cfg(test)]
@@ -141,13 +141,13 @@ mod tests {
 
     fn colors_from_resolved(r: &native_theme::theme::ResolvedTheme) -> OverrideColors {
         OverrideColors {
-            placeholder: r.input.placeholder_color,
-            surface: r.defaults.surface_color,
-            foreground: r.defaults.text_color,
-            accent_fg: r.defaults.accent_text_color,
-            success_fg: r.defaults.success_text_color,
-            danger_fg: r.defaults.danger_text_color,
-            warning_fg: r.defaults.warning_text_color,
+            placeholder: to_color(r.input.placeholder_color),
+            surface: to_color(r.defaults.surface_color),
+            foreground: to_color(r.defaults.text_color),
+            accent_fg: to_color(r.defaults.accent_text_color),
+            success_fg: to_color(r.defaults.success_text_color),
+            danger_fg: to_color(r.defaults.danger_text_color),
+            warning_fg: to_color(r.defaults.warning_text_color),
         }
     }
 

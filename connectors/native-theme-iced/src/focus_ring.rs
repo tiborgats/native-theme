@@ -11,6 +11,7 @@
 //! what an overlay took; a field under an open dialog can so remember a key
 //! where a click came last, and show the ring once.
 
+use iced_core::border::Radius;
 use iced_core::layout::{self, Layout};
 use iced_core::renderer::Quad;
 use iced_core::widget::operation::Focusable;
@@ -39,6 +40,14 @@ pub(crate) struct RingLook {
     /// `defaults.focus_ring_keyboard_only` is `Some(true)`: the ring shows
     /// only for a focus that followed a key.
     pub(crate) keyboard_only: bool,
+    /// The 0.8.0 model's `focus_ring.inner_stroke`: a second ring, its
+    /// colour and its positive, finite width, inside the first; `None`
+    /// where the theme states none (0.7.2 states none).
+    pub(crate) inner: Option<(Color, f32)>,
+    /// The 0.8.0 model's `focus_ring.corners`: the ring's outer corners as
+    /// stated, in place of the field's grown; `None` where the theme states
+    /// none (0.7.2 states none).
+    pub(crate) corners: Option<Radius>,
 }
 
 /// [`crate::focus_ring()`]'s look: `None` where the theme states no ring
@@ -48,10 +57,27 @@ pub(crate) struct RingLook {
 /// `styles::text_editor` already draw as the focused field's border.
 pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLook> {
     let d = &resolved.defaults;
-    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
+    ring_look_from(
+        to_color(d.focus_ring_color),
+        d.focus_ring_width,
+        d.focus_ring_offset,
+        radius,
+        d.focus_ring_keyboard_only == Some(true),
+    )
+}
+
+/// [`ring_look`] of a ring `width` wide in `color`, `offset` out from the
+/// field's edge, round a field of corner `radius`.
+pub(crate) fn ring_look_from(
+    color: Color,
+    width: f32,
+    offset: f32,
+    radius: f32,
+    keyboard_only: bool,
+) -> Option<RingLook> {
     let drawn = width.is_finite() && offset.is_finite() && width > 0.0 && offset != -width;
     drawn.then(|| RingLook {
-        color: to_color(d.focus_ring_color),
+        color,
         width,
         offset,
         radius: if radius.is_finite() {
@@ -59,11 +85,24 @@ pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLoo
         } else {
             0.0
         },
-        keyboard_only: d.focus_ring_keyboard_only == Some(true),
+        keyboard_only,
+        inner: None,
+        corners: None,
     })
 }
 
 impl RingLook {
+    /// This ring with a second ring inside it, `width` wide in `color`
+    /// (`None`, and so no second ring, for a width that is not positive and
+    /// finite), and its outer corners `corners` where `Some`.
+    pub(crate) fn with(self, inner: Option<(Color, f32)>, corners: Option<Radius>) -> Self {
+        Self {
+            inner: inner.filter(|(_, width)| width.is_finite() && *width > 0.0),
+            corners,
+            ..self
+        }
+    }
+
     /// The quad that draws the ring round a field whose bounds are `field`,
     /// and its fill: iced draws a quad's border inside its bounds
     /// (iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl:78-83`), so the bounds
@@ -71,25 +110,70 @@ impl RingLook {
     /// border `width` wide and the radius the field's grown as much, the
     /// curve concentric with the field's, as the egui connector strokes the
     /// ring outside the field's grown by `offset` (its `plugin.rs`,
-    /// `paint_focus_ring`). `None` where an inset ring leaves no room.
+    /// `paint_focus_ring`). Where the theme states the ring's corners
+    /// ([`corners`](Self::corners)), they are the quad's radius. `None` where
+    /// an inset ring leaves no room.
     pub(crate) fn quad(&self, field: Rectangle) -> Option<(Quad, Background)> {
         let out = self.offset + self.width;
-        let bounds = field.expand(Padding::new(out));
-        (bounds.width > 0.0 && bounds.height > 0.0).then(|| {
-            (
-                Quad {
-                    bounds,
-                    border: Border {
-                        color: self.color,
-                        width: self.width,
-                        radius: (self.radius + out).max(0.0).into(),
-                    },
-                    ..Quad::default()
-                },
-                Background::Color(Color::TRANSPARENT),
-            )
-        })
+        let radius = self
+            .corners
+            .unwrap_or_else(|| Radius::from((self.radius + out).max(0.0)));
+        ring_quad(
+            field.expand(Padding::new(out)),
+            self.color,
+            self.width,
+            radius,
+        )
     }
+
+    /// The quad that draws the second ring ([`inner`](Self::inner)) round a
+    /// field whose bounds are `field`: its outer edge the first ring's inner
+    /// edge, the field's bounds grown by `offset`, and its radius the first
+    /// ring's less the first ring's width, the curve concentric. `None`
+    /// where the theme states no second ring, or an inset ring leaves no
+    /// room.
+    pub(crate) fn inner_quad(&self, field: Rectangle) -> Option<(Quad, Background)> {
+        let (color, width) = self.inner?;
+        let (outer, _) = self.quad(field)?;
+        let r = outer.border.radius;
+        let less = |corner: f32| (corner - self.width).max(0.0);
+        ring_quad(
+            field.expand(Padding::new(self.offset)),
+            color,
+            width,
+            Radius {
+                top_left: less(r.top_left),
+                top_right: less(r.top_right),
+                bottom_right: less(r.bottom_right),
+                bottom_left: less(r.bottom_left),
+            },
+        )
+    }
+}
+
+/// A ring of `bounds`, `width` wide in `color` with corners `radius`, as
+/// iced draws a quad's border inside its bounds over a transparent fill;
+/// `None` where the bounds are empty.
+fn ring_quad(
+    bounds: Rectangle,
+    color: Color,
+    width: f32,
+    radius: Radius,
+) -> Option<(Quad, Background)> {
+    (bounds.width > 0.0 && bounds.height > 0.0).then(|| {
+        (
+            Quad {
+                bounds,
+                border: Border {
+                    color,
+                    width,
+                    radius,
+                },
+                ..Quad::default()
+            },
+            Background::Color(Color::TRANSPARENT),
+        )
+    })
 }
 
 /// What the wrapper keeps between frames: whether a widget [`Probe`] went
@@ -369,9 +453,15 @@ where
             .as_widget()
             .draw(child, renderer, theme, style, layout, cursor, viewport);
         if ringed(tree, self.keyboard_only())
-            && let Some((quad, background)) = self.look.and_then(|look| look.quad(layout.bounds()))
+            && let Some(look) = self.look
         {
-            renderer.fill_quad(quad, background);
+            let field = layout.bounds();
+            for (quad, background) in [look.quad(field), look.inner_quad(field)]
+                .into_iter()
+                .flatten()
+            {
+                renderer.fill_quad(quad, background);
+            }
         }
     }
 

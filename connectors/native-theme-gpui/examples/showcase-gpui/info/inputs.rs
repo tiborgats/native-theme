@@ -9,7 +9,7 @@ use native_theme::next::{ResolvedTheme as NextTheme, Stroke, WidgetState};
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{
-    CheckboxLook, SliderLook, SwitchLabelFont, SwitchLook, ThumbOutline,
+    CheckboxLook, SliderLook, SwitchLabelFont, SwitchLabelHome, SwitchLook, ThumbOutline,
 };
 
 use super::{
@@ -966,17 +966,18 @@ fn switch_label_font_text(font: Option<&SwitchLabelFont>) -> String {
 }
 
 /// Whether a theme-drawn switch, `checked` or not, is hovered in a colour
-/// of its own, as `SwitchLook::next_of` reads it: an unchecked one where a
-/// rule states `switch.track(HOVER).fill`, a checked one where
-/// `switch.track(HOVER|CHECKED).fill` is not the checked track's.
+/// of its own, as `SwitchLook::next_of` reads it: where a rule states the
+/// hovered track's fill, as the query with that flag alone says
+/// (`switch.track(HOVER).from_state`, spec §2), an unchecked one in
+/// `switch.track(HOVER).fill`, a checked one in
+/// `switch.track(HOVER|CHECKED).fill`, whatever its value.
 #[cfg(feature = "widgets")]
 pub(crate) fn switch_hover_stated(r: &NextTheme, checked: bool) -> bool {
-    let track = |state| r.switch.track(state);
+    let hover = r.switch.track(WidgetState::HOVER);
     if checked {
-        fill_of(&track(WidgetState::HOVER | WidgetState::CHECKED))
-            .is_some_and(|hover| Some(hover) != fill_of(&track(WidgetState::CHECKED)))
+        hover.from_state.contains(PartStated::FILL)
     } else {
-        state_fill_of(&track(WidgetState::HOVER)).is_some()
+        state_fill_of(&hover).is_some()
     }
 }
 
@@ -1596,6 +1597,22 @@ pub fn native_radio_column(
     next_focus_ring(info.instance("selected", chosen), r, "row")
 }
 
+/// A theme-drawn switch's `info` where the theme states no value gpui can
+/// take at `home`, and `widgets::Switch` draws gpui-component's own in its
+/// place (native-theme-gpui/widgets/switch.rs, `Switch::row`): the switch
+/// reading `label`, `checked` or not, `disabled` or not.
+#[cfg(feature = "widgets")]
+pub(crate) fn switch_by_upstream(
+    info: WidgetInfo,
+    home: &str,
+    label: &'static str,
+    checked: bool,
+    disabled: bool,
+) -> WidgetInfo {
+    let info = info.config("drawn by", format!("gpui-component's own Switch, in upstream's colours and sizes: the theme states no value gpui can take at {home}, so widgets::Switch draws upstream's in its place (native-theme-gpui/widgets/switch.rs, Switch::row)"));
+    toggled(info.instance("label", label), SWITCH, checked, disabled)
+}
+
 /// A theme-drawn `widgets::Switch` reading `label`, `checked` or not,
 /// `disabled` or not (spec §2.3), under the installed 0.8.0 theme `r`: what
 /// `SwitchLook::next_of` gives it, the one source the widget draws from,
@@ -1616,10 +1633,7 @@ pub fn native_switch(
     );
     let (rest, ground) = match drawn {
         Ok(drawn) => drawn,
-        Err(home) => {
-            let info = info.config("drawn by", format!("gpui-component's own Switch, in upstream's colours and sizes: the theme states no value gpui can take at {home}, so widgets::Switch draws upstream's in its place (native-theme-gpui/widgets/switch.rs, Switch::row)"));
-            return toggled(info.instance("label", label), SWITCH, checked, disabled);
-        }
+        Err(home) => return switch_by_upstream(info, home, label, checked, disabled),
     };
     let look = rest.faded_over(ground);
     let info = info.config("drawn by", DRAWN_BY);
@@ -1632,25 +1646,25 @@ pub fn native_switch(
             "track",
             "switch.track(NONE).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:256",
+            "native-theme-gpui/widgets/switch.rs:263",
         ),
         (true, false) => claim(
             "track",
             "switch.track(CHECKED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:257",
+            "native-theme-gpui/widgets/switch.rs:264",
         ),
         (false, true) => claim(
             "track",
             "switch.track(DISABLED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:258",
+            "native-theme-gpui/widgets/switch.rs:265",
         ),
         (true, true) => claim(
             "track",
             "switch.track(DISABLED|CHECKED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:259",
+            "native-theme-gpui/widgets/switch.rs:266",
         ),
     });
     // The swatch is the track drawn under the pointer, the layer composited
@@ -1661,25 +1675,25 @@ pub fn native_switch(
             "hover, switch.track(HOVER).fill over the track",
             "switch.track(HOVER).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:240",
+            "native-theme-gpui/widgets/switch.rs:247",
         ),
         (true, true) => stated_claim(
             "hover, switch.track(HOVER|CHECKED).fill over the track",
             "switch.track(HOVER|CHECKED).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:236",
+            "native-theme-gpui/widgets/switch.rs:241",
         ),
         (false, false) => stated_claim(
             "hover, none stated: the track at rest",
             "switch.track(NONE).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:231",
+            "native-theme-gpui/widgets/switch.rs:232",
         ),
         (true, false) => stated_claim(
             "hover, none stated: the track at rest",
             "switch.track(CHECKED).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:231",
+            "native-theme-gpui/widgets/switch.rs:232",
         ),
     });
     // The track's outline and the thumb's, where the theme states the colour
@@ -1691,28 +1705,28 @@ pub fn native_switch(
             "switch.track(NONE).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:275",
+            "native-theme-gpui/widgets/switch.rs:282",
         ),
         (true, false) => edge_claim(
             "track outline",
             "switch.track(CHECKED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:276",
+            "native-theme-gpui/widgets/switch.rs:283",
         ),
         (false, true) => edge_claim(
             "track outline",
             "switch.track(DISABLED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:277",
+            "native-theme-gpui/widgets/switch.rs:284",
         ),
         (true, true) => edge_claim(
             "track outline",
             "switch.track(DISABLED|CHECKED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:278",
+            "native-theme-gpui/widgets/switch.rs:285",
         ),
     });
     let width = Some(f32::from(look.thumb_border_width));
@@ -1722,7 +1736,7 @@ pub fn native_switch(
             "switch.thumb(CHECKED).stroke.color",
             look.thumb_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:286",
+            "native-theme-gpui/widgets/switch.rs:293",
         )
     } else {
         edge_claim(
@@ -1730,7 +1744,7 @@ pub fn native_switch(
             "switch.thumb(NONE).stroke.color",
             look.thumb_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:285",
+            "native-theme-gpui/widgets/switch.rs:292",
         )
     });
     // While focused the track draws the theme's focus ring; a disabled switch
@@ -1745,25 +1759,25 @@ pub fn native_switch(
             "thumb",
             "switch.thumb(NONE).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:266",
+            "native-theme-gpui/widgets/switch.rs:273",
         ),
         (true, false) => claim(
             "thumb",
             "switch.thumb(CHECKED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:267",
+            "native-theme-gpui/widgets/switch.rs:274",
         ),
         (false, true) => claim(
             "thumb",
             "switch.thumb(DISABLED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:268",
+            "native-theme-gpui/widgets/switch.rs:275",
         ),
         (true, true) => claim(
             "thumb",
             "switch.thumb(DISABLED|CHECKED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:269",
+            "native-theme-gpui/widgets/switch.rs:276",
         ),
     });
     // The label at the switch's own home where the theme states its colour,
@@ -1771,41 +1785,41 @@ pub fn native_switch(
     // disabled muted_foreground (gpui-component/switch.rs, Switch::render),
     // at the homes the connector fills those tokens from.
     let info = info.color(match SwitchLook::next_label_home(r, checked, disabled) {
-        Ok("switch.label(NONE).color") => claim(
+        Ok(SwitchLabelHome::Rest) => claim(
             "label",
             "switch.label(NONE).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:425",
+            "native-theme-gpui/widgets/switch.rs:437",
         ),
-        Ok("switch.label(CHECKED).color") => claim(
+        Ok(SwitchLabelHome::Checked) => claim(
             "label",
             "switch.label(CHECKED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:426",
+            "native-theme-gpui/widgets/switch.rs:438",
         ),
-        Ok("switch.label(DISABLED).color") => claim(
+        Ok(SwitchLabelHome::Disabled) => claim(
             "label",
             "switch.label(DISABLED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:427",
+            "native-theme-gpui/widgets/switch.rs:439",
         ),
-        Ok("switch.label(DISABLED|CHECKED).color") => claim(
+        Ok(SwitchLabelHome::DisabledChecked) => claim(
             "label",
             "switch.label(DISABLED|CHECKED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:428",
+            "native-theme-gpui/widgets/switch.rs:440",
         ),
-        _ if disabled => claim(
+        Ok(SwitchLabelHome::WindowForegroundMuted) => claim(
             "label",
             "colors.window.foreground_muted",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:434",
+            "native-theme-gpui/widgets/switch.rs:488",
         ),
         _ => claim(
             "label",
             "colors.window.foreground",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:435",
+            "native-theme-gpui/widgets/switch.rs:484",
         ),
     });
     let thumb_home = if checked {
@@ -1868,6 +1882,16 @@ pub fn native_switch(
     toggled(info.instance("label", label), SWITCH, checked, disabled)
 }
 
+/// A theme-drawn slider's `info` where the theme states no value gpui can
+/// take at `home`, and `widgets::Slider` draws gpui-component's own in its
+/// place (native-theme-gpui/widgets/slider.rs, `Slider::render`), with the
+/// keyboard line of a `range` one or a single thumb.
+#[cfg(feature = "widgets")]
+pub(crate) fn slider_by_upstream(info: WidgetInfo, home: &str, range: bool) -> WidgetInfo {
+    let info = info.config("drawn by", format!("gpui-component's own Slider, in upstream's colours and sizes: the theme states no value gpui can take at {home}, so widgets::Slider draws upstream's in its place (native-theme-gpui/widgets/slider.rs, Slider::render)"));
+    slider_keys(info, range)
+}
+
 /// A theme-drawn `widgets::Slider` (spec §2.4) under the installed 0.8.0
 /// theme `r`: what `SliderLook::next_of` and `ThumbOutline::next_of` give
 /// it, the one source the widget draws from.
@@ -1881,10 +1905,7 @@ pub fn native_slider(r: &NextTheme, vertical: bool, range: bool) -> WidgetInfo {
     );
     let (rest, ground) = match drawn {
         Ok(drawn) => drawn,
-        Err(home) => {
-            let info = info.config("drawn by", format!("gpui-component's own Slider, in upstream's colours and sizes: the theme states no value gpui can take at {home}, so widgets::Slider draws upstream's in its place (native-theme-gpui/widgets/slider.rs, Slider::render)"));
-            return slider_keys(info, range);
-        }
+        Err(home) => return slider_by_upstream(info, home, range),
     };
     let look = rest.faded_over(ground);
     // Each claim names the home SliderLook::next_of reads and cites the line
@@ -1909,7 +1930,7 @@ pub fn native_slider(r: &NextTheme, vertical: bool, range: bool) -> WidgetInfo {
             "thumb",
             "slider.thumb(NONE).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/slider.rs:306",
+            "native-theme-gpui/widgets/slider.rs:304",
         ));
     let info = info.colors(
         if state_fill_of(&r.slider.thumb(WidgetState::HOVER)).is_some() {
@@ -1967,22 +1988,9 @@ fn native_thumb_outline(
     ground: Hsla,
     rest: &SliderLook,
 ) -> WidgetInfo {
-    let upstream_ring = "gpui-component's own: a 1px ring of the fill colour at half alpha (gpui-component/slider.rs, Slider::render)";
     let read = ThumbOutline::next_of(r, false);
     let Some(outline) = read.ok().flatten().map(|o| o.faded_over(ground, rest)) else {
-        return match read {
-            Err(unstated) => info.not_themeable(
-                "thumb outline",
-                format!(
-                    "{upstream_ring}; the theme states no stroke gpui can draw at {}",
-                    unstated.home()
-                ),
-            ),
-            Ok(_) => info.not_themeable(
-                "thumb outline",
-                format!("{upstream_ring}; the theme states no slider.thumb(NONE).stroke"),
-            ),
-        };
+        return upstream_thumb_outline(info, read.err().map(|unstated| unstated.home()));
     };
     if outline.width <= gpui::px(0.) {
         return info.config("thumb outline", "none: slider.thumb(NONE).stroke is none or 0 wide, so the thumb draws no outline in any state, gpui-component's ring included");
@@ -1993,6 +2001,23 @@ fn native_thumb_outline(
         .colors(edge_claim("thumb outline, hovered", "slider.thumb(HOVER).stroke.color", outline.hover.filter(|_| ruled(WidgetState::HOVER)), width, "native-theme-gpui/widgets/slider.rs:211"))
         .colors(edge_claim("thumb outline, focused", "slider.thumb(FOCUSED).stroke.color", outline.focus.filter(|_| ruled(WidgetState::FOCUSED)), width, "native-theme-gpui/widgets/slider.rs:215"))
         .config("thumb outline", format!("slider.thumb(NONE).stroke.width, {}, a band inside the thumb (widgets::ThumbOutline): slider.thumb(NONE).stroke.color at rest; slider.thumb(HOVER).stroke.color with the pointer on the thumb, though not while it is dragged, gpui applying no hover style during a drag (gpui-pre/elements/div.rs, Interactivity::compute_style_internal); slider.thumb(FOCUSED).stroke.color on the end thumb while the slider has the focus, from a key or a press on the rail (a press on a thumb gives none: gpui-base/slider.rs, SliderThumb), the pointer's winning; each a rule does not state the rest colour (widgets/slider.rs, thumb)", length_text(outline.width)))
+}
+
+/// A theme-drawn slider's thumb outline in `info` where it is
+/// gpui-component's own ring: the theme states no stroke gpui can draw at
+/// `unstated`, or, where that is `None`, no `slider.thumb(NONE).stroke`.
+#[cfg(feature = "widgets")]
+pub(crate) fn upstream_thumb_outline(info: WidgetInfo, unstated: Option<&str>) -> WidgetInfo {
+    let upstream_ring = "gpui-component's own: a 1px ring of the fill colour at half alpha (gpui-component/slider.rs, Slider::render)";
+    info.not_themeable(
+        "thumb outline",
+        match unstated {
+            Some(home) => {
+                format!("{upstream_ring}; the theme states no stroke gpui can draw at {home}")
+            }
+            None => format!("{upstream_ring}; the theme states no slider.thumb(NONE).stroke"),
+        },
+    )
 }
 
 /// A theme-drawn slider's `info` with its keyboard line, a `range` one's
@@ -2181,14 +2206,14 @@ pub fn combo_fill(
                     "showcase",
                 ))
                 .colors(edge_claim(
-                    "hovered edge, over the trigger's",
+                    "hovered edge, in place of the trigger's",
                     "combo_box.field(HOVER).stroke.color",
                     state_stroke_color_of(&r.combo_box.field(WidgetState::HOVER)),
                     width,
                     "showcase",
                 ))
                 .next_geometry("combo_box_fill");
-            info.config("fill", "geometry::combo_box_fill's combo_box.field(NONE).fill, and combo_box.field(HOVER).fill over it under the pointer where a rule states it, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.field(NONE)'s stroke, none where it is 0 wide, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where a rule states it, combo_box.field(HOVER).stroke.color as an edge the showcase lays over the trigger's under the pointer, for the same reason")
+            info.config("fill", "geometry::combo_box_fill's combo_box.field(NONE).fill, and combo_box.field(HOVER).fill over it under the pointer where a rule states it, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.field(NONE)'s stroke, none where it is 0 wide, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where a rule states it, combo_box.field(HOVER).stroke.color in place of that edge under the pointer, none where the rule states no stroke, for the same reason: the showcase then draws the edge on an element under the trigger, combo_box.field(NONE)'s at rest, and leaves the trigger's own transparent, so the focused trigger's ring edge stays over it")
         }
         Some((_, Err(home))) => unstated_combo_fill(info, t, combobox, home),
         None => upstream_combo_fill(info, t, combobox),

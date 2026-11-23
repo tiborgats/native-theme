@@ -93,16 +93,37 @@ pub(crate) struct Flare {
 /// [`crate::tab_flares()`]'s look: `None` unless the theme states a
 /// positive, finite `tab.active_outward_corner_radius`.
 pub(crate) fn tab_flares_look(t: &ResolvedTabTheme) -> Option<FlareLook> {
-    let radius = t
-        .active_outward_corner_radius
-        .filter(|r| r.is_finite() && *r > 0.0)?;
-    let w = t.border.line_width;
-    let width = if w.is_finite() { w.max(0.0) } else { 0.0 };
     let bottom_line =
         crate::tab_indicator_strip(t).is_some_and(|(_, _, side)| side == TabIndicatorSide::Bottom);
+    flares_look_from(
+        t.active_outward_corner_radius,
+        t.border.line_width,
+        to_color(t.active_background),
+        to_color(t.border.color),
+        bottom_line,
+    )
+}
+
+/// [`FlareLook`] of the outward radius `radius`, the selected tab's outline
+/// `line_width` wide in `outline` and its fill `fill`, `bottom_line` where
+/// an indicator line covers the tab's bottom edge: `None` unless `radius` is
+/// positive and finite.
+pub(crate) fn flares_look_from(
+    radius: Option<f32>,
+    line_width: f32,
+    fill: Color,
+    outline: Color,
+    bottom_line: bool,
+) -> Option<FlareLook> {
+    let radius = radius.filter(|r| r.is_finite() && *r > 0.0)?;
+    let width = if line_width.is_finite() {
+        line_width.max(0.0)
+    } else {
+        0.0
+    };
     Some(FlareLook {
-        fill: to_color(t.active_background),
-        outline: to_color(t.border.color),
+        fill,
+        outline,
         radius,
         width,
         strip: width > 0.0 && !bottom_line,

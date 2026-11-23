@@ -57,8 +57,9 @@ fn the_atlas_reports_what_the_builder_was_given() {
         .icon_theme(egui::Theme::Dark, "breeze-dark")
         .build();
     assert_eq!(atlas.name(), "Mixed");
-    assert_eq!(atlas.resolved_for(egui::Theme::Light), &light);
-    assert_eq!(atlas.resolved_for(egui::Theme::Dark), &dark);
+    assert_eq!(atlas.resolved_for(egui::Theme::Light), Some(&light));
+    assert_eq!(atlas.resolved_for(egui::Theme::Dark), Some(&dark));
+    assert!(atlas.next_resolved_for(egui::Theme::Light).is_none());
     assert_eq!(atlas.accessibility(), &prefs);
     assert_eq!(atlas.layout(), &layout);
     assert_eq!(atlas.os_mode(), Some(ColorMode::Dark));
@@ -789,9 +790,9 @@ fn role_with_radius_other_than(
 fn a_clicked_borderless_text_field_shows_the_focus_ring() {
     let (ctx, atlas, probe) = ring_harness("adwaita");
     let theme = ctx.theme();
-    let t = atlas.resolved_for(theme);
     assert_eq!(
-        t.input.border.line_width, 0.0,
+        atlas.resolved_for(theme).map(|t| t.input.border.line_width),
+        Some(0.0),
         "adwaita's field has no rest line"
     );
     let ring = atlas
@@ -829,13 +830,17 @@ fn the_ring_marks_keyboard_focus_only_while_the_window_has_it() {
     let ring = atlas
         .focus_ring(theme)
         .expect("kde-breeze states a focus ring");
-    let t = atlas.resolved_for(theme);
+    let stated = atlas.resolved_for(theme).map(|t| {
+        (
+            crate::convert::to_color32(t.defaults.focus_ring_color),
+            t.defaults.focus_ring_width,
+            t.defaults.focus_ring_offset,
+        )
+    });
     assert_eq!(
-        ring.stroke.color,
-        crate::convert::to_color32(t.defaults.focus_ring_color)
+        stated,
+        Some((ring.stroke.color, ring.stroke.width, ring.offset))
     );
-    assert_eq!(ring.stroke.width, t.defaults.focus_ring_width);
-    assert_eq!(ring.offset, t.defaults.focus_ring_offset);
     let base_radius = atlas
         .scheme(theme)
         .base
@@ -936,8 +941,10 @@ fn pointer_moved(pos: egui::Pos2) -> egui::RawInput {
 /// kde-breeze's ring stroke, asserted to be keyboard only: the harness of the tests below.
 fn keyboard_only_ring(atlas: &ThemeAtlas, theme: egui::Theme) -> egui::Stroke {
     assert_eq!(
-        atlas.resolved_for(theme).defaults.focus_ring_keyboard_only,
-        Some(true),
+        atlas
+            .resolved_for(theme)
+            .map(|t| t.defaults.focus_ring_keyboard_only),
+        Some(Some(true)),
         "kde-breeze says keyboard only, or the test proves nothing"
     );
     let ring = atlas
@@ -978,8 +985,10 @@ fn a_click_into_a_text_edit_draws_the_ring_where_not_keyboard_only() {
     let (ctx, atlas, probe) = ring_harness("ios-13");
     let theme = ctx.theme();
     assert_eq!(
-        atlas.resolved_for(theme).defaults.focus_ring_keyboard_only,
-        Some(false),
+        atlas
+            .resolved_for(theme)
+            .map(|t| t.defaults.focus_ring_keyboard_only),
+        Some(Some(false)),
         "ios-13 says any focus, or the test proves nothing"
     );
     let ring = atlas.focus_ring(theme).expect("ios-13 states a focus ring");
@@ -2788,13 +2797,13 @@ mod t18_constructors {
                 assert_eq!(atlas.name(), spec.name, "{}", preset.key);
                 assert_eq!(
                     atlas.resolved_for(egui::Theme::Light),
-                    &light.variant,
+                    Some(&light.variant),
                     "{}",
                     preset.key
                 );
                 assert_eq!(
                     atlas.resolved_for(egui::Theme::Dark),
-                    &dark.variant,
+                    Some(&dark.variant),
                     "{}",
                     preset.key
                 );
@@ -2846,8 +2855,8 @@ mod t18_constructors {
         let atlas = to_theme(&r, "gruvbox twice");
         let direct = ThemeAtlas::builder("gruvbox twice", &r, &r).build();
         assert_eq!(atlas.name(), "gruvbox twice");
-        assert_eq!(atlas.resolved_for(egui::Theme::Light), &r);
-        assert_eq!(atlas.resolved_for(egui::Theme::Dark), &r);
+        assert_eq!(atlas.resolved_for(egui::Theme::Light), Some(&r));
+        assert_eq!(atlas.resolved_for(egui::Theme::Dark), Some(&r));
         assert_eq!(atlas.os_mode(), None);
         assert!(same_styles(&atlas, &direct));
     }
@@ -2885,8 +2894,8 @@ mod t18_constructors {
         sys.accessibility.reduce_motion = !sys.accessibility.reduce_motion;
         sys.layout.widget_gap = Some(gap);
         sys.icon_set = match sys.icon_set {
-            native_theme::theme::IconSet::Lucide => native_theme::theme::IconSet::Material,
-            _ => native_theme::theme::IconSet::Lucide,
+            native_theme::icons::IconSet::Lucide => native_theme::icons::IconSet::Material,
+            _ => native_theme::icons::IconSet::Lucide,
         };
         assert_ne!(sys.mode, detected.mode);
         assert_ne!(
@@ -2906,8 +2915,8 @@ mod t18_constructors {
         assert_eq!(atlas.accessibility(), &sys.accessibility);
         assert_eq!(atlas.layout(), &sys.layout);
         assert_eq!(atlas.icon_set(), sys.icon_set);
-        assert_eq!(atlas.resolved_for(egui::Theme::Light), &sys.light);
-        assert_eq!(atlas.resolved_for(egui::Theme::Dark), &sys.dark);
+        assert_eq!(atlas.resolved_for(egui::Theme::Light), Some(&sys.light));
+        assert_eq!(atlas.resolved_for(egui::Theme::Dark), Some(&sys.dark));
         assert_eq!(
             atlas.icon_theme(egui::Theme::Light),
             sys.icon_theme_for(ColorMode::Light)
@@ -2942,8 +2951,8 @@ mod t18_constructors {
         assert_eq!(again.name(), fresh.name);
         assert_eq!(again.os_mode(), Some(fresh.mode));
         assert_eq!(loaded.mode, fresh.mode);
-        assert_eq!(again.resolved_for(egui::Theme::Light), &fresh.light);
-        assert_eq!(again.resolved_for(egui::Theme::Dark), &fresh.dark);
+        assert_eq!(again.resolved_for(egui::Theme::Light), Some(&fresh.light));
+        assert_eq!(again.resolved_for(egui::Theme::Dark), Some(&fresh.dark));
         assert_eq!(&loaded.resolved, fresh.pick(fresh.mode));
         assert_eq!(loaded.accessibility, fresh.accessibility);
         assert_eq!(loaded.icon_set, fresh.icon_set);
@@ -3163,8 +3172,10 @@ fn t8b_a_window_scrollbar_keeps_the_base_radius() {
     );
     let thumb = base.visuals.widgets.inactive.bg_fill; // scrollbar.thumb_color (§5.9)
     assert_eq!(
-        thumb,
-        crate::convert::to_color32(atlas.resolved_for(scheme).scrollbar.thumb_color)
+        Some(thumb),
+        atlas
+            .resolved_for(scheme)
+            .map(|t| crate::convert::to_color32(t.scrollbar.thumb_color))
     );
     assert_ne!(
         thumb, base.visuals.extreme_bg_color,
@@ -3299,8 +3310,10 @@ mod t13_accessibility {
                     .expect("Body")
                     .size;
                 assert_eq!(
-                    body,
-                    scaled_text_size(scaled.resolved_for(scheme).defaults.font.size, &prefs),
+                    Some(body),
+                    scaled
+                        .resolved_for(scheme)
+                        .map(|t| scaled_text_size(t.defaults.font.size, &prefs)),
                     "{key} {scheme:?}"
                 );
             }
@@ -3463,7 +3476,7 @@ mod t13_accessibility {
     /// the slider `expansion` of §6.6, with the Body row height taken from egui itself
     /// (`epaint/src/text/fonts.rs:865-875`) on a `Context` given the definitions the atlas installs.
     #[test]
-    fn t5_line_spacing_and_slider_expansion_at_factor_two() {
+    fn t5_line_spacing_and_slider_expansion_at_factor_two() -> Result<(), &'static str> {
         let mut prefs = AccessibilityPreferences::default();
         prefs.text_scaling_factor = 2.0;
         let hack = epaint_default_fonts::HACK_REGULAR;
@@ -3483,7 +3496,9 @@ mod t13_accessibility {
                 // §6.15: the plan's definitions, else egui's default.
                 let defs = atlas.fonts().cloned().unwrap_or_default();
                 for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-                    let t = atlas.resolved_for(scheme);
+                    let t = atlas
+                        .resolved_for(scheme)
+                        .ok_or("an atlas of the 0.7.2 model")?;
                     let size = scaled_text_size(t.defaults.font.size, &prefs);
                     let ctx = egui::Context::default();
                     ctx.set_fonts(defs.clone());
@@ -3535,6 +3550,7 @@ mod t13_accessibility {
                 }
             }
         }
+        Ok(())
     }
 }
 
@@ -4170,7 +4186,10 @@ fn a_stated_row_height_is_the_drawn_row_at_a_text_scale_of_one() {
         for (scheme, is_dark) in [(egui::Theme::Light, false), (egui::Theme::Dark, true)] {
             let prefs = AccessibilityPreferences::default();
             let (atlas, _) = crate::from_preset(name.key, is_dark, &prefs).unwrap();
-            let t = atlas.resolved_for(scheme).clone();
+            let Some(t) = atlas.resolved_for(scheme).cloned() else {
+                faults.push(format!("{} {scheme:?}: no 0.7.2 theme", name.key));
+                continue;
+            };
             for (role, stated) in [
                 (Role::Menu, t.menu.row_height),
                 (Role::List, t.list.row_height),
@@ -4211,15 +4230,16 @@ fn above_a_text_scale_of_one_the_row_padding_is_the_themes() {
     let mut prefs = AccessibilityPreferences::default();
     prefs.text_scaling_factor = 1.5;
     let (atlas, _) = crate::from_preset("macos-monterey", false, &prefs).unwrap();
-    let t = atlas.resolved_for(egui::Theme::Light);
     let mut own = egui::Style::default();
     egui::containers::menu::menu_style(&mut own);
-    let want = crate::convert::to_button_padding(own.spacing.button_padding, &t.menu.border).y;
-    assert_eq!(want, 3.0, "macos-monterey's stated menu padding");
+    let want = atlas
+        .resolved_for(egui::Theme::Light)
+        .map(|t| crate::convert::to_button_padding(own.spacing.button_padding, &t.menu.border).y);
+    assert_eq!(want, Some(3.0), "macos-monterey's stated menu padding");
     let cell = atlas
         .scheme(egui::Theme::Light)
         .cell(Role::Menu, RoleVariant::Normal);
-    assert_eq!(cell.spacing.button_padding.y, want);
+    assert_eq!(Some(cell.spacing.button_padding.y), want);
 }
 
 /// The height egui's own `CollapsingHeader` is drawn at in the `Role::Expander` scope
@@ -4280,7 +4300,13 @@ fn a_stated_header_height_is_the_drawn_header_at_a_text_scale_of_one() {
     atlases.push(("material-3 at 24".to_string(), egui::Theme::Light, atlas));
     let mut faults = Vec::new();
     for (name, scheme, atlas) in &atlases {
-        let stated = atlas.resolved_for(*scheme).expander.header_height;
+        let Some(stated) = atlas
+            .resolved_for(*scheme)
+            .map(|t| t.expander.header_height)
+        else {
+            faults.push(format!("{name} {scheme:?}: no 0.7.2 theme"));
+            continue;
+        };
         let (drawn, title) = drawn_header_height(atlas, *scheme);
         let want = if title > stated {
             title.round()
@@ -4311,12 +4337,16 @@ struct FieldInsets {
 
 /// The field of [`FieldInsets`] under `atlas` in `scheme`, drawn plain (`framed` false) or with
 /// `input_frame`, after the passes that load its fonts.
-fn field_insets(atlas: &ThemeAtlas, scheme: egui::Theme, framed: bool) -> FieldInsets {
+fn field_insets(
+    atlas: &ThemeAtlas,
+    t: &ResolvedTheme,
+    scheme: egui::Theme,
+    framed: bool,
+) -> FieldInsets {
     use crate::NativeThemeUiExt as _;
     let ctx = egui::Context::default();
     atlas.install(&ctx);
     ctx.set_theme(scheme);
-    let t = atlas.resolved_for(scheme).clone();
     let id = egui::Id::unique("e6-field");
     let mut text = "a field whose text runs past its right edge ".repeat(8);
     let mut measured = None;
@@ -4325,7 +4355,7 @@ fn field_insets(atlas: &ThemeAtlas, scheme: egui::Theme, framed: bool) -> FieldI
             ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
                 let edit = egui::TextEdit::singleline(&mut text).id(id);
                 let edit = if framed {
-                    edit.frame(crate::input_frame(ui, id, &t))
+                    edit.frame(crate::input_frame(ui, id, t))
                 } else {
                     edit
                 };
@@ -4368,7 +4398,10 @@ fn e6_a_resting_field_keeps_the_platform_padding_either_way() {
         let dark = resolved(name.key, ColorMode::Dark);
         let atlas = ThemeAtlas::builder(name.key, &light, &dark).build();
         for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-            let t = atlas.resolved_for(scheme);
+            let Some(t) = atlas.resolved_for(scheme) else {
+                faults.push(format!("{} {scheme:?}: no 0.7.2 theme", name.key));
+                continue;
+            };
             let styles = atlas.scheme(scheme);
             let cell = styles.cell(Role::Input, RoleVariant::Normal);
             let state = cell.visuals.widgets.inactive;
@@ -4406,8 +4439,8 @@ fn e6_a_resting_field_keeps_the_platform_padding_either_way() {
                 y.map(|v| two(egui::vec2(0.0, v)).top),
                 y.map(|v| two(egui::vec2(0.0, v)).bottom),
             ];
-            let plain = field_insets(&atlas, scheme, false);
-            let framed = field_insets(&atlas, scheme, true);
+            let plain = field_insets(&atlas, t, scheme, false);
+            let framed = field_insets(&atlas, t, scheme, true);
             let tag = format!("{} {scheme:?}", name.key);
             if left.is_some() != right.is_some() || top.is_some() != bottom.is_some() {
                 faults.push(format!(
@@ -4496,7 +4529,10 @@ fn the_field_accessors_take_the_input_cell_s_padding_where_none_is_stated() {
         let dark = resolved(name.key, ColorMode::Dark);
         let atlas = ThemeAtlas::builder(name.key, &light, &dark).build();
         for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-            let t = atlas.resolved_for(scheme);
+            let Some(t) = atlas.resolved_for(scheme) else {
+                faults.push(format!("{} {scheme:?}: no 0.7.2 theme", name.key));
+                continue;
+            };
             let cell = egui::Margin::from(
                 atlas
                     .scheme(scheme)

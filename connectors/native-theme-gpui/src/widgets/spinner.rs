@@ -19,9 +19,9 @@ use gpui_component::{Sizable, Size};
 use native_theme::color::Rgba;
 use native_theme::detect::{system_icon_set, system_icon_theme};
 use native_theme::icons::{
-    AnimatedIcon, IconData, MAX_ICON_SIZE, TransformAnimation, load_icon_indicator,
+    AnimatedIcon, IconData, IconSet, MAX_ICON_SIZE, TransformAnimation, load_icon_indicator,
 };
-use native_theme::theme::{IconSet, ResolvedTheme};
+use native_theme::theme::ResolvedTheme;
 
 use super::{ThemeSource, color, finite, length, rgba};
 use crate::NativeTheme;
@@ -600,7 +600,7 @@ impl SpinnerLook {
             Some(Self {
                 diameter: diameter.max(min),
                 stroke: length(s.stroke_width)?,
-                color: crate::next::hsla(s.color),
+                color: crate::next::hsla(r.spinner.color),
             })
         };
         finite(look(), "spinner.diameter")

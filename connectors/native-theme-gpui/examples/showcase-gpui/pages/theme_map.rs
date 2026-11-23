@@ -4,7 +4,7 @@ use gpui::{Context, IntoElement, ParentElement, StyleRefinement, Styled, div, pr
 
 use crate::app::Showcase;
 use crate::demo::{self, ThemeToken};
-use crate::pages::{SWATCH_GAP_X, SWATCH_GAP_Y, page_root};
+use crate::pages::{SWATCH_GAP_X, SWATCH_GAP_Y, next_page_root};
 use crate::support::NativeStyled as _;
 
 /// The swatch table, as `(heading id, heading, fields)`: every ThemeColor
@@ -267,7 +267,7 @@ impl Showcase {
         // Built once, so every swatch sits in the showcase's one frame
         // without the theme being reached for a hundred and forty times.
         let frame = StyleRefinement::default().demo_frame(cx);
-        page_root(&self.layout)
+        next_page_root(cx)
             .flex_1()
             .child(demo::heading(
                 ui,
