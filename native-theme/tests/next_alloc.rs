@@ -172,11 +172,23 @@ fn query_every_part(theme: &ResolvedTheme, state: WidgetState) {
         black_box(theme.scrollbar.thumb(bar));
         black_box(theme.scrollbar.parts(bar));
     }
-    // The window chrome: a normal window and a maximized, tiled one.
+    // The window chrome: a normal window, a maximized, a full-screen and a
+    // tiled one, and a maximized, tiled one.
+    let mut maximized = WindowState::default();
+    maximized.maximized = true;
+    let mut fullscreen = WindowState::default();
+    fullscreen.fullscreen = true;
     let mut tiled = WindowState::default();
-    tiled.maximized = true;
     tiled.tiled = EdgeFlags::LEFT | EdgeFlags::TOP;
-    for window in [WindowState::default(), tiled] {
+    let mut maximized_tiled = tiled;
+    maximized_tiled.maximized = true;
+    for window in [
+        WindowState::default(),
+        maximized,
+        fullscreen,
+        tiled,
+        maximized_tiled,
+    ] {
         black_box(theme.window.frame(window));
         black_box(theme.window.title_bar(window));
         black_box(theme.window.title_bar_height(window));
