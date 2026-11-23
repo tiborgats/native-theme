@@ -74,8 +74,8 @@ use native_theme::icons::{
     list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::next::{
-    Contrast, Direction, MotionPreference, Palette, PartStated, PartStyle, Preset, Scheme, Stroke,
-    StrokeAlign, TextStated, TextStyle, ThemeContext, Typography, WidgetState,
+    ButtonQuery, Contrast, Direction, MotionPreference, Palette, PartStated, PartStyle, Preset,
+    Scheme, Stroke, StrokeAlign, TextStated, TextStyle, ThemeContext, Typography, WidgetState,
 };
 use native_theme::theme::{
     ArrowSide, FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedListTheme, ResolvedTextScale,
@@ -97,6 +97,7 @@ use native_theme_showcase_support::cli::{
 };
 use native_theme_showcase_support::elements::{self, ShowcaseElement};
 use native_theme_showcase_support::info::ListedInfo;
+use native_theme_showcase_support::next::status as next_status;
 use native_theme_showcase_support::status::DrawnFamily as FontDrawing;
 use native_theme_showcase_support::{
     CAPTURE_WAIT, DIALOG_PADDING_PX, INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows,
@@ -5124,14 +5125,18 @@ fn in_state<T: PartialEq>(stated: Option<T>, rest: T, iced: (T, T)) -> T {
 }
 
 /// A flat button in the platform's button state colours, built from the
-/// homes the gpui connector's `variants::ghost_button` takes: no fill and no
-/// frame at rest, its label `button.label(NONE).color`;
-/// `button.body(HOVER).fill` and `button.label(HOVER).color` under the
-/// pointer; `button.body(PRESSED).fill` and `button.label(PRESSED).color`
-/// while pressed, and while `selected`, as a toggle that is on;
-/// `button.label(DISABLED).color` disabled; rounded by
-/// `button.body(NONE).corners`. The model states no flat button, so it
-/// takes the button's own states. Each property the theme leaves unstated
+/// homes the gpui connector's `variants::ghost_button` takes: no fill and
+/// no frame at rest, its label `button.label(NONE).color`; under the
+/// pointer and pressed the flat button's states ([`flat`], `variant=Flat`,
+/// as the gpui connector's `secondary_hover` and `secondary_active` read
+/// them), `button.body(HOVER;variant=Flat).fill` and
+/// `button.label(HOVER;variant=Flat).color` under the pointer,
+/// `button.body(PRESSED;variant=Flat).fill` and
+/// `button.label(PRESSED;variant=Flat).color` while pressed, and while
+/// `selected`, as a toggle that is on; `button.label(DISABLED).color`
+/// disabled; rounded by `button.body(NONE).corners`. A rule that names no
+/// variant answers the flat button's query too, so where no rule states the
+/// flat button it takes the button's own states. Each property the theme leaves unstated
 /// in a status is iced's own flat button's, `button::text` ([`in_state`]:
 /// iced's value where it changes the property in that status, else the
 /// theme's at rest). The toolbar's buttons take `styles::toolbar_button`.
@@ -5141,10 +5146,10 @@ fn ghost_button(
 ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
     let b = &r.button;
     let label = iced_next::text_color_of(&b.label(WidgetState::NONE));
-    let hover = iced_next::state_fill_of(&b.body(WidgetState::HOVER));
-    let hover_label = iced_next::state_text_color_of(&b.label(WidgetState::HOVER));
-    let pressed = iced_next::state_fill_of(&b.body(WidgetState::PRESSED));
-    let pressed_label = iced_next::state_text_color_of(&b.label(WidgetState::PRESSED));
+    let hover = iced_next::state_fill_of(&b.body(flat(WidgetState::HOVER)));
+    let hover_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::HOVER)));
+    let pressed = iced_next::state_fill_of(&b.body(flat(WidgetState::PRESSED)));
+    let pressed_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::PRESSED)));
     let disabled_label = iced_next::state_text_color_of(&b.label(WidgetState::DISABLED));
     let radius = iced_next::radius_of(&b.body(WidgetState::NONE));
     move |theme, status| {
@@ -5187,6 +5192,12 @@ fn ghost_button(
 /// it moves nothing.
 fn ghost_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
     stated_sides(&r.button.body(WidgetState::NONE), button::DEFAULT_PADDING)
+}
+
+/// The query of a flat button in `state`: `ButtonQuery::flat`, the
+/// `variant=Flat` button of the 0.8.0 model's homes.
+fn flat(state: WidgetState) -> ButtonQuery {
+    ButtonQuery::flat().state(state)
 }
 
 /// A stroke of the 0.8.0 model as iced draws it on a widget it paints
@@ -8026,22 +8037,40 @@ fn splitter_colour(r: &native_theme::next::ResolvedTheme, hovered: bool) -> Opti
     }))
 }
 
-/// The status bar's environment (spec §2.7), the three showcases' items
-/// (`status::environment_drawn`): the desktop, the preset and colour mode,
-/// the theme's `defaults.font` by what iced draws it in ([`drawn_family`])
-/// in the unit its source stated, the text-scaling factor, and each
-/// accessibility preference that is set, by its field name.
+/// The status bar's environment (spec §2.7), the three showcases' items, on
+/// the installed 0.8.0 theme (`next::status::environment_drawn`): the
+/// desktop, the preset and colour mode, `typography.body` by what iced draws
+/// it in ([`next_family_drawing`]) in the unit its source stated, the text
+/// scale the theme was resolved for, and each accessibility preference its
+/// context sets, by 0.7.2's field name.
 fn status_environment(state: &State) -> Vec<String> {
     let mode = if state.is_dark { "dark" } else { "light" };
-    let font = &state.current_resolved.defaults.font;
-    let drawn = font_drawn(font);
-    status::environment_drawn(
+    let r = state.next_shown();
+    let font = &r.typography.body;
+    let drawn = next_font_from_database(font, false);
+    next_status::environment_drawn(
         &state.preset_label(),
         mode,
         font,
-        drawn_family(&drawn),
-        Some(&state.accessibility),
+        next_family_drawing(drawn.as_ref()),
+        Some(&r.context),
     )
+}
+
+/// What a 0.8.0 text style's family is drawn in, as the shared crate's label
+/// takes it: [`drawn_family`] of how iced draws it, where the style gives a
+/// font iced can draw ([`next_font_from_database`]); else iced's own font,
+/// `Font::DEFAULT`, whose family is iced's generic sans-serif, which the text
+/// is left in (spec §10, rule 0).
+fn next_family_drawing(drawn: Option<&Drawn>) -> FontDrawing<'_> {
+    match drawn {
+        Some(drawn) => drawn_family(drawn),
+        None => FontDrawing::OtherFont {
+            toolkit: "iced",
+            font: "its own font's, Font::DEFAULT's,",
+            family: "its generic sans-serif",
+        },
+    }
 }
 
 /// The title Widget Info shows: its text's first line, `None` before any
@@ -9264,10 +9293,10 @@ const OS_ICON_COLOURS: &str = "not drawn: an OS icon theme's icon keeps the colo
 fn ghost_home(leaf: &str) -> Option<&'static str> {
     Some(match leaf {
         "button.font.color" => "button.label(NONE).color",
-        "button.hover_background" => "button.body(HOVER).fill",
-        "button.hover_text_color" => "button.label(HOVER).color",
-        "button.active_background" => "button.body(PRESSED).fill",
-        "button.active_text_color" => "button.label(PRESSED).color",
+        "button.hover_background" => "button.body(HOVER;variant=Flat).fill",
+        "button.hover_text_color" => "button.label(HOVER;variant=Flat).color",
+        "button.active_background" => "button.body(PRESSED;variant=Flat).fill",
+        "button.active_text_color" => "button.label(PRESSED;variant=Flat).color",
         _ => return None,
     })
 }
@@ -9288,10 +9317,11 @@ fn ghost_route(
 ) -> String {
     let b = &r.button;
     let label = iced_next::text_color_of(&b.label(WidgetState::NONE)).is_some();
-    let hover = iced_next::state_fill_of(&b.body(WidgetState::HOVER)).is_some();
-    let hover_label = iced_next::state_text_color_of(&b.label(WidgetState::HOVER)).is_some();
-    let pressed = iced_next::state_fill_of(&b.body(WidgetState::PRESSED)).is_some();
-    let pressed_label = iced_next::state_text_color_of(&b.label(WidgetState::PRESSED)).is_some();
+    let hover = iced_next::state_fill_of(&b.body(flat(WidgetState::HOVER))).is_some();
+    let hover_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::HOVER))).is_some();
+    let pressed = iced_next::state_fill_of(&b.body(flat(WidgetState::PRESSED))).is_some();
+    let pressed_label =
+        iced_next::state_text_color_of(&b.label(flat(WidgetState::PRESSED))).is_some();
     let route = match leaf {
         "button.font.color" => match (icon, selected) {
             (true, _) if os_icon => OS_ICON_COLOURS,
@@ -9301,26 +9331,27 @@ fn ghost_route(
             }
             (true, true) if pressed_label => {
                 "not drawn: the toggle is selected, and icon_colour colours its icon in \
-                 button.label(PRESSED).color"
+                 button.label(PRESSED;variant=Flat).color"
             }
             (true, true) => {
                 "icon_colour: the icon's colour while selected, button.label(NONE).color, \
-                 where button.label(PRESSED).color is unstated"
+                 where button.label(PRESSED;variant=Flat).color is unstated"
             }
             (true, false) => {
                 "icon_colour: the icon's colour, set as the icon loads, button.label(NONE).color"
             }
             (false, true) if pressed_label => {
                 "not drawn: the toggle is selected, and ghost_button gives its label \
-                 button.label(PRESSED).color"
+                 button.label(PRESSED;variant=Flat).color"
             }
             (false, true) => {
                 "ghost_button: the label's text_color while selected, in every status, \
-                 button.label(NONE).color, where button.label(PRESSED).color is unstated"
+                 button.label(NONE).color, where button.label(PRESSED;variant=Flat).color is \
+                 unstated"
             }
             (false, false) => {
                 "ghost_button: the label's text_color at rest, and pressed where \
-                 button.label(PRESSED).color is unstated, button.label(NONE).color"
+                 button.label(PRESSED;variant=Flat).color is unstated, button.label(NONE).color"
             }
         },
         "button.hover_background" => match (selected, hover) {
@@ -9329,10 +9360,10 @@ fn ghost_route(
                  under the pointer"
             }
             (false, false) => {
-                "not drawn: button.body(HOVER).fill is unstated, and iced's own flat button \
-                 (button::text) has no fill"
+                "not drawn: button.body(HOVER;variant=Flat).fill is unstated, and iced's own \
+                 flat button (button::text) has no fill"
             }
-            (false, true) => "ghost_button: the Hovered fill, button.body(HOVER).fill",
+            (false, true) => "ghost_button: the Hovered fill, button.body(HOVER;variant=Flat).fill",
         },
         "button.hover_text_color" => match (selected, icon) {
             (true, _) => {
@@ -9342,37 +9373,45 @@ fn ghost_route(
             (false, true) if os_icon => OS_ICON_COLOURS,
             (false, true) => ICON_FOR_LABEL,
             (false, false) if !hover_label => {
-                "not drawn: button.label(HOVER).color is unstated, so the Hovered label is \
-                 iced's own flat button's (button::text)"
+                "not drawn: button.label(HOVER;variant=Flat).color is unstated, so the Hovered \
+                 label is iced's own flat button's (button::text)"
             }
-            (false, false) => "ghost_button: the Hovered text_color, button.label(HOVER).color",
+            (false, false) => {
+                "ghost_button: the Hovered text_color, button.label(HOVER;variant=Flat).color"
+            }
         },
         "button.active_background" => match (selected, pressed) {
             (_, false) => {
-                "not drawn: button.body(PRESSED).fill is unstated, and iced's own flat button \
-                 (button::text) has no fill"
+                "not drawn: button.body(PRESSED;variant=Flat).fill is unstated, and iced's own \
+                 flat button (button::text) has no fill"
             }
             (true, true) => {
                 "ghost_button: the fill while selected, in every status, \
-                 button.body(PRESSED).fill"
+                 button.body(PRESSED;variant=Flat).fill"
             }
-            (false, true) => "ghost_button: the Pressed fill, button.body(PRESSED).fill",
+            (false, true) => {
+                "ghost_button: the Pressed fill, button.body(PRESSED;variant=Flat).fill"
+            }
         },
         "button.active_text_color" => match (selected, icon) {
             (_, true) if os_icon => OS_ICON_COLOURS,
             _ if !pressed_label => {
-                "not drawn: button.label(PRESSED).color is unstated, so ghost_button keeps \
-                 the label at rest pressed, as iced's own flat button (button::text) does"
+                "not drawn: button.label(PRESSED;variant=Flat).color is unstated, so \
+                 ghost_button keeps the label at rest pressed, as iced's own flat button \
+                 (button::text) does"
             }
             (true, true) => {
-                "icon_colour: the icon's colour while selected, button.label(PRESSED).color"
+                "icon_colour: the icon's colour while selected, \
+                 button.label(PRESSED;variant=Flat).color"
             }
             (false, true) => ICON_FOR_LABEL,
             (true, false) => {
                 "ghost_button: the label's text_color while selected, in every status, \
-                 button.label(PRESSED).color"
+                 button.label(PRESSED;variant=Flat).color"
             }
-            (false, false) => "ghost_button: the Pressed text_color, button.label(PRESSED).color",
+            (false, false) => {
+                "ghost_button: the Pressed text_color, button.label(PRESSED;variant=Flat).color"
+            }
         },
         _ => "not drawn: ghost_button reads no such colour",
     };
@@ -29154,7 +29193,9 @@ mod tests {
     /// The TOML of a patch that states `colour` at `home`, a colour home of
     /// the 0.8.0 model ([`is_home`]), the property `fill`, `stroke.color`
     /// or, of a text part, `color`: a rule of the home's states appended to
-    /// a ruled widget's (none for `NONE`, which every query matches), a
+    /// a ruled widget's (none for `NONE`, which every query matches), of the
+    /// variant `;variant=<Variant>` after them names (`button.body(HOVER;
+    /// variant=Flat).fill` written without the space), a
     /// static widget's part patch, or the colour role. A stroke is stated
     /// 1 px wide in the colour, so a home whose stroke the theme leaves
     /// unstated draws it. `None` for any other home.
@@ -29181,7 +29222,14 @@ mod tests {
         };
         Some(match states {
             None => format!("[widgets.{widget}]\n{value}\n"),
-            Some(states) => {
+            Some(query) => {
+                let (states, variant) = match query.split_once(";variant=") {
+                    Some((states, variant)) => (
+                        states,
+                        format!("variant = \"{}\"\n", variant.to_lowercase()),
+                    ),
+                    None => (query, String::new()),
+                };
                 let names: Vec<String> = states
                     .split('|')
                     .filter(|state| *state != "NONE")
@@ -29192,7 +29240,7 @@ mod tests {
                 } else {
                     format!("states = [{}]\n", names.join(", "))
                 };
-                format!("[[widgets.{widget}.rules]]\n{states}{value}\n")
+                format!("[[widgets.{widget}.rules]]\n{variant}{states}{value}\n")
             }
         })
     }
@@ -36065,7 +36113,9 @@ mod tests {
         let bar_with = |family: Option<&str>| {
             let mut state = loaded("kde-breeze", false);
             if let Some(family) = family {
-                state.current_resolved.defaults.font.family = family.into();
+                for r in [&mut state.next_resolved, &mut state.next_inactive] {
+                    r.typography.body.family = family.into();
+                }
             }
             state.shown_info = Some(ShownInfo::Unlisted("Button · Normal".to_owned()));
             let environment = status_environment(&state).join(" · ");
@@ -36108,7 +36158,9 @@ mod tests {
             "the shown title {title:?} runs past the bar {bar:?}"
         );
         let mut state = loaded("kde-breeze", false);
-        state.current_resolved.defaults.font.family = family.trim_end().into();
+        for r in [&mut state.next_resolved, &mut state.next_inactive] {
+            r.typography.body.family = family.trim_end().into();
+        }
         let info = match elements::element("chrome.status_bar.environment") {
             Some(element) => element_info(&state, element),
             None => panic!("chrome.status_bar.environment is not in the list"),
@@ -37398,8 +37450,9 @@ mod tests {
     }
 
     /// docs/todo.md, *iced showcase: Widget Info claims a substituted
-    /// family*: the status bar's font item names the family iced draws,
-    /// through the shared crate's `status::environment_drawn`: the stated
+    /// family*: the status bar's font item names the family iced draws of
+    /// the installed 0.8.0 theme's `typography.body`, through the shared
+    /// crate's `next::status::environment_drawn`: the stated
     /// name alone where the system has a face of it, and the platform's
     /// substitute where it has none and iced draws the substitute asked for
     /// in its place, worked out from this system's fonts at test time
@@ -37410,19 +37463,29 @@ mod tests {
     /// system has any of the three families, and passes, said so, only
     /// where it has none.
     #[test]
-    fn the_status_bar_names_the_drawn_family() {
+    fn the_status_bar_names_the_drawn_family() -> Result<(), String> {
         let presets = ["windows-11", "kde-breeze", "adwaita"];
         let mut checked = 0;
         let mut installed = Vec::new();
         for preset in presets {
             let state = page_state(preset, Tab::Basic);
-            let font = &state.current_resolved.defaults.font;
-            let own =
-                native_theme::fonts::system_face(&font.family, font.weight, font.style).is_some();
+            let font = &state.next_shown().typography.body;
+            let slant = match font.style {
+                native_theme::next::FontStyle::Normal => FontStyle::Normal,
+                native_theme::next::FontStyle::Italic => FontStyle::Italic,
+                native_theme::next::FontStyle::Oblique => FontStyle::Oblique,
+                other => {
+                    return Err(format!(
+                        "{preset}: a body slant iced has no face for, {other:?}"
+                    ));
+                }
+            };
+            let own = native_theme::fonts::system_face(&font.family, font.weight, slant).is_some();
             if own {
                 installed.push(font.family.to_string());
             }
-            let asked = native_theme_iced::system_font_family(font);
+            let asked = native_theme_iced::next::system_font_family(font)
+                .map_err(|e| format!("{preset}: {}", e.home()))?;
             let held = {
                 let mut system = iced::advanced::graphics::text::font_system()
                     .write()
@@ -37441,7 +37504,7 @@ mod tests {
                     continue;
                 }
             };
-            let want = format!("{family} {}", status::defined_size(font));
+            let want = format!("{family} {}", next_status::defined_size(font));
             let items = status_environment(&state);
             assert!(
                 items.contains(&want),
@@ -37457,6 +37520,41 @@ mod tests {
             checked > 0 || installed.is_empty(),
             "no preset checked, though this system has {installed:?}"
         );
+        Ok(())
+    }
+
+    /// The status bar's environment on the installed 0.8.0 theme: its text
+    /// scale is the context's, its font item `typography.body`'s; a body
+    /// style that gives iced no font (it states no weight) is said to be
+    /// drawn in iced's own font, which no bundled preset reaches.
+    #[test]
+    fn the_status_bar_environment_reads_the_installed_theme() -> Result<(), String> {
+        let mut state = loaded("adwaita", false);
+        let r = state.next_shown();
+        let items = status_environment(&state);
+        let scale = format!("text ×{}", r.context.text_scale);
+        assert!(items.contains(&scale), "{items:?} lack {scale:?}");
+        let body = &r.typography.body;
+        let drawn = next_font_from_database(body, false).ok_or("the body gives no font")?;
+        let want = format!(
+            "{} {}",
+            drawn_family(&drawn).label(&body.family),
+            next_status::defined_size(body)
+        );
+        assert_eq!(items.get(2), Some(&want));
+        for r in [&mut state.next_resolved, &mut state.next_inactive] {
+            r.typography.body.stated = r.typography.body.stated.difference(TextStated::WEIGHT);
+        }
+        let body = &state.next_shown().typography.body;
+        assert!(next_font_from_database(body, false).is_none());
+        let want = format!(
+            "{} (iced draws it in its own font's, Font::DEFAULT's, face: its generic \
+             sans-serif) {}",
+            body.family,
+            next_status::defined_size(body)
+        );
+        assert_eq!(status_environment(&state).get(2), Some(&want));
+        Ok(())
     }
 
     /// A weight is shown as the number alone where it is drawn, and with
@@ -37500,11 +37598,13 @@ mod tests {
         };
         // `next_measured_font` names iced's own font, which a 0.8.0 text
         // style that gives none iced can draw leaves its text in, only to
-        // measure that text as it is drawn.
+        // measure that text as it is drawn; `next_family_drawing` names it,
+        // and builds the label's `FontDrawing::OtherFont`, no font.
         let helpers = [
             body("fn drawable_font"),
             body("fn family_label"),
             body("fn next_measured_font"),
+            body("fn next_family_drawing"),
         ];
         let mut generic = Vec::new();
         for token in [
