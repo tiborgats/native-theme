@@ -8053,21 +8053,21 @@ fn info_title(info: &str) -> Option<&str> {
 /// The window's status bar (spec §2.7, platform-facts §2.14): at its left
 /// the side-panel toggle, then the environment joined by " · ", on one line
 /// cut at the room the rest leaves it; at its right the title of what Widget
-/// Info shows. Filled with
-/// `status_bar.background_color`, lettered in `status_bar.font`, padded by
-/// `status_bar.border.padding` ([`status_bar_padding`] on a side it leaves
-/// unstated), its items `layout.widget_gap` apart (none where that is
-/// unstated), its top edge a `status_bar.border.line_width` line in
-/// `status_bar.border.color` outside that padding: the bar is its line, its
-/// padding and its content, the model's box (padding lies inside the
-/// border).
+/// Info shows. On the installed 0.8.0 theme: filled with
+/// `status_bar.bar.fill` ([`Surface::StatusBar`]), lettered in
+/// `status_bar.label` ([`Typeset::next_text`]), padded by the sides
+/// `status_bar.bar.padding` states ([`status_bar_padding`] on a side it
+/// leaves unstated), its items `layout.widget_gap` apart (a row's own
+/// spacing, none, where that is unstated), its top edge a
+/// `status_bar.bar.stroke.width` line ([`Line::StatusBar`]; iced's own
+/// border width, none, where unstated) outside that padding: the bar is its
+/// line, its padding and its content, the model's box (padding lies inside
+/// the border).
 fn status_bar(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let s = &resolved.status_bar;
+    let r = state.next_shown();
+    let s = &r.status_bar;
     // A flat button padded as the toolbar's are, by the button's own sides.
-    let pad = ghost_padding(state.next_shown());
+    let pad = ghost_padding(r);
     let toggle = icon_button(
         state,
         IconButton {
@@ -8087,10 +8087,8 @@ fn status_bar(state: &State) -> Element<'_, Message> {
     // The bar's text on the theme's line box rounded to a whole pixel, as
     // gpui lays a line of text out (gpui-pre 0.3.12 `src/style.rs:553-556`,
     // `TextStyle::line_height_in_pixels`), so it lies on the pixels gpui's
-    // does: catppuccin-mocha's 14 x 1.2 = 16.8 is 17.
-    let status_line = iced::Pixels(
-        (scaled_text_size(s.font.size, a11y) * native_theme_iced::line_height(resolved)).round(),
-    );
+    // does: a 14 px label on a 1.2 line is 16.8, drawn 17.
+    let status_line = iced::Pixels(status_line_box(r));
     // The environment on one line, in the room the toggle and the shown
     // title leave it, cut at its edge where it is wider, as the gpui
     // showcase's is cut short (`truncate`): iced 0.14's text wraps by default
@@ -8101,27 +8099,29 @@ fn status_bar(state: &State) -> Element<'_, Message> {
     let environment = container(tagged(
         "chrome.status_bar.environment",
         text(status_environment(state).join(" · "))
-            .themed(&s.font, resolved, a11y)
+            .next_text(&s.label, &r.typography)
             .line_height(status_line)
             .wrapping(text::Wrapping::None),
     ))
     .width(Fill)
     .clip(true);
-    let mut items = row![toggle, environment]
-        .spacing(gap.widget)
-        .align_y(iced::Center);
+    let items = row![toggle, environment];
+    let mut items = match r.layout.widget_gap {
+        Some(gap) => items.spacing(gap),
+        None => items,
+    }
+    .align_y(iced::Center);
     if let Some(title) = shown_title(state) {
         items = items.push(tagged(
             "chrome.status_bar.shown",
             text(title)
-                .themed(&s.font, resolved, a11y)
+                .next_text(&s.label, &r.typography)
                 .line_height(status_line),
         ));
     }
     // Each side rounded as gpui rounds its bar's, so the items land on the
     // pixels gpui's do.
-    let padding =
-        native_theme_iced::padding_or(&s.border.padding, status_bar_padding(resolved, a11y));
+    let padding = stated_sides(&s.bar, status_bar_padding(r));
     let rounded = |side: f32| gpui_rounded(side, state.scale_factor);
     let bar = container(items)
         .padding(Padding {
@@ -8131,16 +8131,30 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             left: rounded(padding.left),
         })
         .width(Fill)
-        .style(surface(state.next_shown(), Surface::StatusBar));
+        .style(surface(r, Surface::StatusBar));
     tagged(
         "chrome.status_bar",
         column![
-            rule::horizontal(s.border.line_width)
-                .style(line_style(state.next_shown(), Line::StatusBar)),
+            rule::horizontal(status_line_width(r)).style(line_style(r, Line::StatusBar)),
             bar,
         ],
     )
     .into()
+}
+
+/// The height of the status bar's top edge on the installed 0.8.0 theme:
+/// `status_bar.bar.stroke.width`, iced's own border width, none, where
+/// unstated.
+fn status_line_width(r: &native_theme::next::ResolvedTheme) -> f32 {
+    iced_next::stroke_width_of(&r.status_bar.bar).unwrap_or(iced::Border::default().width)
+}
+
+/// The line box of the status bar's text on the installed 0.8.0 theme:
+/// `status_bar.label`'s ([`next_line_box`]) rounded to a whole pixel, as
+/// gpui lays a line of text out one `line_height` tall rounded to the
+/// nearest pixel.
+fn status_line_box(r: &native_theme::next::ResolvedTheme) -> f32 {
+    next_line_box(&r.typography, &r.status_bar.label).round()
 }
 
 /// `length` as gpui lays a padding out on a display of `scale`: rounded to
@@ -8158,16 +8172,17 @@ fn gpui_rounded(length: f32, scale: f32) -> f32 {
     (device.abs() - 0.5).ceil().copysign(device) / scale
 }
 
-/// The status bar's padding on a side `status_bar.border.padding` leaves
+/// The status bar's padding on a side `status_bar.bar.padding` leaves
 /// unstated: gpui-component's StatusBar's own, which the gpui showcase's bar
 /// keeps, `py_1` above and below and `px_2` at the sides (gpui-component
 /// 0.9.1 `src/status_bar.rs:89-90`). They are `rems(0.25)` and `rems(0.5)`
 /// (gpui-pre-macros 0.3.12 `src/styles.rs:939-951`), and gpui-component's rem
 /// is its `Theme::font_size` (`src/root.rs:714`), which the gpui connector
-/// fills with the scaled `defaults.font.size` (`native-theme-gpui/src/lib.rs`,
-/// `to_theme`): a quarter of that size above and below, a half at the sides.
-fn status_bar_padding(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Padding {
-    let rem = a11y.scaled(resolved.defaults.font.size);
+/// fills on the 0.8.0 model with `typography.body.size_px`
+/// (`native-theme-gpui/src/next/mod.rs`), the text scale already applied:
+/// a quarter of that size above and below, a half at the sides.
+fn status_bar_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    let rem = r.typography.body.size_px;
     Padding {
         top: rem / 4.0,
         right: rem / 2.0,
@@ -10519,8 +10534,17 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("status_bar", "border.color") => {
             "line_style: the top edge's colour, status_bar.bar.stroke.color".into()
         }
+        ("status_bar", "border.line_width_px")
+            if iced_next::stroke_width_of(&state.next_shown().status_bar.bar).is_none() =>
+        {
+            "not drawn: status_bar.bar.stroke.width is unstated; the top edge rule is iced's \
+             own border width, none, high (status_line_width)"
+                .into()
+        }
         ("status_bar", "border.line_width_px") => {
-            "the top edge rule's height, above the bar's padding".into()
+            "status_line_width: the top edge rule's height, status_bar.bar.stroke.width, above \
+             the bar's padding"
+                .into()
         }
         ("status_bar", f) if side(f).is_some() => {
             let upstream = match side(f) {
@@ -10528,11 +10552,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 _ => "px_2, a half",
             };
             format!(
-                "the bar container's padding; where unstated gpui-component's StatusBar \
-                 padding, which gpui's status bar keeps: {upstream} of the scaled \
-                 defaults.font.size (status_bar_padding; gpui-component status_bar.rs:89-90); \
-                 each side rounded to whole device pixels as gpui rounds a padding, a half \
-                 toward zero (gpui_rounded)"
+                "the bar container's padding, the side of status_bar.bar.padding; where \
+                 unstated gpui-component's StatusBar padding, which gpui's status bar keeps: \
+                 {upstream} of typography.body.size_px (status_bar_padding; gpui-component \
+                 status_bar.rs:89-90); each side rounded to whole device pixels as gpui rounds \
+                 a padding, a half toward zero (gpui_rounded)"
             )
             .into()
         }
@@ -10541,7 +10565,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              status_bar.label (Typeset::next_text)"
                 .into()
         }
-        ("status_bar", "font") => "the text's size and theme_font".into(),
+        ("status_bar", "font") => {
+            "the text in status_bar.label (Typeset::next_text)".into()
+        }
         ("status_bar", "font.color") => {
             "surface: the bar's text_color, status_bar.label.color".into()
         }
@@ -10980,8 +11006,13 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "the tab row's left and right padding (none where that is unstated)".into()
         }
         ("layout", "container_margin_px") if id == "chrome.status_bar" => {
-            "not drawn: a side status_bar.border.padding leaves unstated takes \
+            "not drawn: a side status_bar.bar.padding leaves unstated takes \
              gpui-component's StatusBar padding (status_bar_padding)"
+                .into()
+        }
+        ("layout", "widget_gap_px") if id == "chrome.status_bar" => {
+            "Row::spacing between the items, layout.widget_gap; a row's own, none, where \
+             unstated"
                 .into()
         }
         ("layout", "widget_gap_px") => "Row/Column::spacing between the items".into(),
@@ -10990,8 +11021,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("layout", "section_gap_px") => "Column::spacing between the groups".into(),
         // ---- defaults, text scale, icons ----
         ("defaults", "line_height") if under("chrome.status_bar") => {
-            "the text's LineHeight, the font size times it rounded to a whole pixel, as gpui \
-             rounds a line of text (gpui-pre style.rs:553-556)"
+            "status_line_box: the text's LineHeight, status_bar.label's line box \
+             (next_line_box) rounded to a whole pixel, as gpui rounds a line of text \
+             (gpui-pre style.rs:553-556)"
                 .into()
         }
         ("defaults", "line_height") => {
@@ -35844,10 +35876,11 @@ mod tests {
     /// where that is unstated. The toolbar's first button sits the side of
     /// the installed 0.8.0 theme's `toolbar.bar(NONE).padding` in from the
     /// bar's left and top, else its `layout.container_margin`, else
-    /// [`TOOLBAR_PADDING`]. The status bar's items
-    /// sit `status_bar.border.padding`'s side inside the bar, under its top
-    /// line, else gpui-component's StatusBar padding: a half of the scaled
-    /// `defaults.font.size` at the sides and a quarter above and below; each
+    /// [`TOOLBAR_PADDING`]. The status bar's items sit the side of the
+    /// installed 0.8.0 theme's `status_bar.bar.padding` inside the bar,
+    /// under its top line ([`status_line_width`]), else gpui-component's
+    /// StatusBar padding: a half of `typography.body.size_px` at the sides
+    /// and a quarter above and below; each
     /// side rounded as gpui rounds a padding, to whole device pixels with a
     /// half toward zero (M9b Step 8 I4: material-3's 3.5 px is 3, as in
     /// gpui's dump). Under macos-tahoe, which states none of them: 8, 8, and
@@ -35858,7 +35891,6 @@ mod tests {
         let gpui_rounds = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
         for (preset, dark) in every_preset_in_both_modes() {
             let state = loaded(preset, dark);
-            let r = &state.current_resolved;
             let margin = state.layout.container_margin;
             let (drawn, _) = drawn_frame(&state);
             let rect = |id: &str| match drawn.get(id) {
@@ -35896,12 +35928,13 @@ mod tests {
                     first.y - bar.y
                 );
             }
-            let s = state.accessibility.scaled(r.defaults.font.size);
-            let stated = &r.status_bar.border.padding;
+            let s = next.typography.body.size_px;
+            let [stated_top, _, stated_bottom, stated_left] =
+                iced_next::padding_of(&next.status_bar.bar);
             let (left, top, bottom) = (
-                gpui_rounds(stated.left.unwrap_or(s / 2.0)),
-                gpui_rounds(stated.top.unwrap_or(s / 4.0)),
-                gpui_rounds(stated.bottom.unwrap_or(s / 4.0)),
+                gpui_rounds(stated_left.unwrap_or(s / 2.0)),
+                gpui_rounds(stated_top.unwrap_or(s / 4.0)),
+                gpui_rounds(stated_bottom.unwrap_or(s / 4.0)),
             );
             let bar = rect("chrome.status_bar");
             let toggle = rect("chrome.status_bar.toggle");
@@ -35913,7 +35946,7 @@ mod tests {
             );
             let items_top = toggle.y.min(environment.y);
             let items_bottom = (toggle.y + toggle.height).max(environment.y + environment.height);
-            let under_line = bar.y + r.status_bar.border.line_width;
+            let under_line = bar.y + status_line_width(next);
             assert!(
                 near(items_top - under_line, top),
                 "{preset} (dark: {dark}): the status bar's items are {}px under its line, \
@@ -35967,8 +36000,7 @@ mod tests {
                 None => panic!("{id} is not drawn"),
             };
             let (bar, toggle) = (rect("chrome.status_bar"), rect("chrome.status_bar.toggle"));
-            let under_line =
-                toggle.y - (bar.y + state.current_resolved.status_bar.border.line_width);
+            let under_line = toggle.y - (bar.y + status_line_width(state.next_shown()));
             assert!(
                 (under_line - want).abs() < 0.001,
                 "at a reported scale of {scale} the status bar's items are {under_line}px under \
@@ -35981,18 +36013,25 @@ mod tests {
     /// line box rounded to a whole pixel, as gpui lays a line of text out
     /// one `line_height` tall rounded to the nearest pixel (gpui-pre 0.3.12
     /// `src/style.rs:553-556`, `TextStyle::line_height_in_pixels`): under
-    /// every bundled preset in both modes the environment is
-    /// `(status_bar.font.size × defaults.line_height).round()` tall, and
-    /// under catppuccin-mocha (14 × 1.2 = 16.8) 17, gpui's.
+    /// every bundled preset in both modes the environment is the installed
+    /// 0.8.0 theme's `status_bar.label` line box rounded, its stated
+    /// `line_height` or its size times `typography.line_height_multiplier`,
+    /// computed here from the theme; under one preset at least that line
+    /// box is a fraction of a pixel, so the rounding is met.
     #[test]
     fn the_status_bar_text_takes_gpuis_whole_pixel_line() {
         let mut faults = Vec::new();
+        let mut fractional = 0;
         for (preset, dark) in every_preset_in_both_modes() {
             let state = loaded(preset, dark);
-            let r = &state.current_resolved;
-            let want = (scaled_text_size(r.status_bar.font.size, &state.accessibility)
-                * r.defaults.line_height)
-                .round();
+            let next = state.next_shown();
+            let label = &next.status_bar.label;
+            let line = if label.stated.contains(TextStated::LINE_HEIGHT) {
+                label.line_height
+            } else {
+                label.size_px * next.typography.line_height_multiplier
+            };
+            let want = line.round();
             let (drawn, _) = drawn_frame(&state);
             match drawn.get("chrome.status_bar.environment") {
                 Some(at) if near(at.height, want) => {}
@@ -36002,13 +36041,15 @@ mod tests {
                 )),
                 None => faults.push(format!("{preset} (dark: {dark}): no environment drawn")),
             }
-            if preset == "catppuccin-mocha" && !near(want, 17.0) {
-                faults.push(format!(
-                    "catppuccin-mocha (dark: {dark}): the line is {want}px, not 17"
-                ));
+            if !near(line, want) {
+                fractional += 1;
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
+        assert!(
+            fractional > 0,
+            "no preset's status bar line box is a fraction of a pixel, so none was rounded"
+        );
     }
 
     /// The status bar stays one line high at the window's default size
