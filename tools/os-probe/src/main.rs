@@ -31,8 +31,10 @@
 //! and carets; `--button-pass --events` posts clicks, drags, hovers and
 //! typing and reads what AppKit made of them; `--button-pass --controls`
 //! hovers and presses the other controls (check box, pop-up, disclosure,
-//! text field, tables, segmented control, slider, switch, tab view, split
-//! view, box, toolbar) over every backdrop; `--colors`, macOS only, the
+//! text field, tables, segmented control, slider, the knobs of a legacy and
+//! an overlay scroller, switch, tab view, split view, box, toolbar) over
+//! every backdrop, then the toolbar button again in a toolbar sheet whose
+//! content view lies under its transparent title bar; `--colors`, macOS only, the
 //! colours pass alone: every NSColor and Core Animation's colour
 //! interpolation.
 
@@ -70,7 +72,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events | --controls]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --controls, with --button-pass only: the other controls hovered and pressed by posted mouse events over every backdrop; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events | --controls]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --controls, with --button-pass only: the other controls (the scrollers' knobs among them) hovered and pressed by posted mouse events over every backdrop, then the toolbar button in a toolbar sheet; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -317,24 +319,79 @@ fn run(options: &Options) -> ExitCode {
         return ExitCode::FAILURE;
     }
     eprintln!("wrote {}", path.display());
-    if options.controls && pass_error(&doc, &["macos", "button_pass", "controls"]) {
-        eprintln!("the controls pass wrote an error: [macos.button_pass.controls] error");
+    if options.controls
+        && let Some(reason) = pass_error(&doc)
+    {
+        eprintln!("the controls pass failed: {reason}");
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
 }
 
-/// Whether the pass's table at `path` holds an `error` (the pass could not
-/// run).
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-fn pass_error(doc: &toml::Table, path: &[&str]) -> bool {
-    let mut table = Some(doc);
-    for key in path {
-        table = table
-            .and_then(|t| t.get(*key))
-            .and_then(toml::Value::as_table);
+/// Why the controls pass's output is a failure, where it is:
+/// `[macos.button_pass]` missing, not a table or holding an `error`;
+/// `[macos.button_pass.controls]` or its `toolbar_sheet` missing, not a
+/// table or holding an `error`; or either sheet with no target outside
+/// error.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+fn pass_error(doc: &toml::Table) -> Option<String> {
+    let pass = doc
+        .get("macos")
+        .and_then(|macos| macos.get("button_pass"))
+        .ok_or("[macos.button_pass] is missing".to_owned())
+        .and_then(|pass| table_without_error(pass, "[macos.button_pass]"));
+    let controls = pass.and_then(|pass| {
+        let path = "[macos.button_pass.controls]";
+        let controls = pass
+            .get("controls")
+            .ok_or(format!("{path} is missing"))
+            .and_then(|controls| table_without_error(controls, path))?;
+        targets_error(controls, path)?;
+        Ok(controls)
+    });
+    controls
+        .and_then(|controls| {
+            let path = "[macos.button_pass.controls.toolbar_sheet]";
+            let toolbar = controls
+                .get("toolbar_sheet")
+                .ok_or(format!("{path} is missing"))
+                .and_then(|toolbar| table_without_error(toolbar, path))?;
+            targets_error(toolbar, path)
+        })
+        .err()
+}
+
+/// `value` as a table without an `error` key, or (as `Err`, the reason)
+/// what it is otherwise.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+fn table_without_error<'a>(value: &'a toml::Value, path: &str) -> Result<&'a toml::Table, String> {
+    let Some(table) = value.as_table() else {
+        return Err(format!("{path} is not a table: {value}"));
+    };
+    match table.get("error") {
+        Some(error) => Err(format!("{path} error = {error}")),
+        None => Ok(table),
     }
-    table.is_some_and(|t| t.contains_key("error"))
+}
+
+/// An error (the reason) where `sheet`'s `targets` is missing or not a
+/// table, or where none of its targets is a table without an `error`.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+fn targets_error(sheet: &toml::Table, path: &str) -> Result<(), String> {
+    let Some(targets) = sheet.get("targets").and_then(toml::Value::as_table) else {
+        return Err(format!("{path} has no targets table"));
+    };
+    let placed = targets
+        .values()
+        .any(|target| target.as_table().is_some_and(|t| !t.contains_key("error")));
+    if placed {
+        Ok(())
+    } else {
+        Err(format!(
+            "every target of {path}.targets is in error ({} targets)",
+            targets.len()
+        ))
+    }
 }
 
 /// The `[probe]` table: what ran, where.
@@ -551,11 +608,94 @@ mod tests {
         assert!(parse(&["--button-pass", "--events"]).is_ok());
         assert!(parse(&["--motion"]).is_err());
         assert!(parse(&["--button-pass", "--motion", "--events"]).is_err());
-        assert!(parse(&["--button-pass", "--controls"]).is_ok());
-        assert!(parse(&["--controls"]).is_err());
-        assert!(parse(&["--button-pass", "--controls", "--events"]).is_err());
         assert!(parse(&["--colors"]).is_ok());
         assert!(parse(&["--colors", "--reads"]).is_err());
         assert!(parse(&["--colors", "--button-pass"]).is_err());
+    }
+
+    /// `--controls` is taken with `--button-pass` in any order, and without
+    /// another of the button pass's conditions.
+    #[test]
+    fn controls_is_taken_with_the_button_pass_alone() {
+        let controls = |out: &str| -> Result<Options, String> {
+            Ok(Options {
+                out: PathBuf::from(out),
+                not_key: false,
+                button_pass: true,
+                focus: false,
+                inactive: false,
+                focus_transition: false,
+                key_not_main: false,
+                main_not_key: false,
+                symbols: false,
+                reads: false,
+                motion: false,
+                events: false,
+                controls: true,
+                colors: false,
+            })
+        };
+        assert_eq!(
+            parse(&["--button-pass", "--controls"]),
+            controls("os-probe-out")
+        );
+        assert_eq!(
+            parse(&["--controls", "--out", "/tmp/c", "--button-pass"]),
+            controls("/tmp/c")
+        );
+        assert!(parse(&["--controls"]).is_err());
+        assert!(parse(&["--button-pass", "--controls", "--events"]).is_err());
+        assert!(parse(&["--button-pass", "--controls", "--not-key"]).is_err());
+    }
+
+    /// A controls pass's output with a placed target in each sheet, and the
+    /// rest of `extra`.
+    fn controls_doc(extra: &str) -> Result<toml::Table, toml::de::Error> {
+        format!(
+            "[macos.button_pass.controls.targets.push]\nclass = \"NSButton\"\n\
+             [macos.button_pass.controls.toolbar_sheet.targets.toolbar_button]\nclass = \"NSButton\"\n{extra}"
+        )
+        .parse()
+    }
+
+    #[test]
+    fn a_controls_pass_with_a_placed_target_in_each_sheet_is_no_failure() {
+        assert!(matches!(
+            controls_doc("").map(|doc| pass_error(&doc)),
+            Ok(None)
+        ));
+        let one_in_error = controls_doc(
+            "[macos.button_pass.controls.targets.box]\nerror = \"unavailable: the part is empty\"\n",
+        );
+        assert!(matches!(one_in_error.map(|doc| pass_error(&doc)), Ok(None)));
+    }
+
+    #[test]
+    fn a_controls_pass_missing_or_in_error_is_a_failure() {
+        for text in [
+            "",
+            "[macos]\nbutton_pass = \"unavailable: not on the main thread\"\n",
+            "[macos.button_pass]\nerror = \"unavailable: NSScreen screens is empty\"\n",
+            "[macos.button_pass]\nmode = \"controls\"\n",
+            "[macos.button_pass]\ncontrols = \"unavailable: x\"\n",
+            "[macos.button_pass.controls]\nerror = \"unavailable: x\"\n",
+            "[macos.button_pass.controls.targets.push]\nerror = \"unavailable: x\"\n\
+             [macos.button_pass.controls.toolbar_sheet.targets.toolbar_button]\nclass = \"NSButton\"\n",
+            "[macos.button_pass.controls]\ntargets = {}\n\
+             [macos.button_pass.controls.toolbar_sheet.targets.toolbar_button]\nclass = \"NSButton\"\n",
+            "[macos.button_pass.controls.targets.push]\nclass = \"NSButton\"\n",
+            "[macos.button_pass.controls.targets.push]\nclass = \"NSButton\"\n\
+             [macos.button_pass.controls.toolbar_sheet]\nerror = \"unavailable: x\"\n",
+            "[macos.button_pass.controls.targets.push]\nclass = \"NSButton\"\n\
+             [macos.button_pass.controls.toolbar_sheet.targets.toolbar_button]\nerror = \"unavailable: the view is in no window\"\n",
+        ] {
+            assert!(
+                matches!(
+                    text.parse::<toml::Table>().map(|doc| pass_error(&doc)),
+                    Ok(Some(_))
+                ),
+                "no failure for {text:?}"
+            );
+        }
     }
 }

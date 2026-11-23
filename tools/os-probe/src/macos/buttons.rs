@@ -110,6 +110,10 @@ const DIFF_MARGIN: f64 = 6.0;
 /// The grey backdrop's sRGB byte, the same in each channel.
 const GREY_BYTE: u8 = 128;
 
+/// What a control in no window (a toolbar item in the overflow menu) gives
+/// for its geometry and its layer's measures.
+const NO_WINDOW: &str = "the control is in no window";
+
 /// The patterned backdrop's image size and square size, in pixels.
 const PATTERN_SIZE: usize = 8;
 const PATTERN_SQUARE: usize = 4;
@@ -1857,6 +1861,10 @@ impl Pass<'_> {
         }
         let mut buttons = Table::new();
         for (case, frame_px, region_px) in regions {
+            if case.control.window().is_none() {
+                out::put(&mut buttons, &case.name, out::unavailable(NO_WINDOW));
+                continue;
+            }
             match (frame_px, region_px) {
                 (Some(f), Some(r)) => {
                     let mut m = layer.measures(f, r, ratio);
@@ -2066,6 +2074,24 @@ impl Pass<'_> {
         escape: bool,
     ) -> Option<Rgba> {
         let path: PathBuf = dir.join(file);
+        let under = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(
+            NSPoint::new(at.x, self.primary_height - at.y),
+            0,
+            self.mtm,
+        );
+        let ours = under == window.windowNumber();
+        out::put(t, "window_at_press_is_ours", out::boolean(ours));
+        if !ours {
+            out::put(
+                t,
+                "error",
+                out::unavailable(format!(
+                    "the window at the press point is window {under}, not the probe's {}: the press is skipped",
+                    window.windowNumber()
+                )),
+            );
+            return None;
+        }
         let Some(down) =
             CGEvent::new_mouse_event(None, CGEventType::LeftMouseDown, at, CGMouseButton::Left)
         else {
@@ -2213,12 +2239,21 @@ fn case_table(case: &Case, frame: NSSize) -> Table {
         "alignmentRectInsets_tlbr",
         insets(c.alignmentRectInsets()),
     );
-    out::put(
-        &mut t,
-        "in_window_frame_from_top_left_xywh",
-        rect(from_top_left(c, frame)),
-    );
-    out::put(&mut t, "subviews", subviews_value(c, frame));
+    if c.window().is_some() {
+        out::put(
+            &mut t,
+            "in_window_frame_from_top_left_xywh",
+            rect(from_top_left(c, frame)),
+        );
+        out::put(&mut t, "subviews", subviews_value(c, frame));
+    } else {
+        out::put(
+            &mut t,
+            "in_window_frame_from_top_left_xywh",
+            out::unavailable(NO_WINDOW),
+        );
+        out::put(&mut t, "subviews", out::unavailable(NO_WINDOW));
+    }
     match c.font() {
         Some(font) => out::put_table(&mut t, "font", font_table(&font)),
         None => out::put(&mut t, "font", out::unavailable("nil")),

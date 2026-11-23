@@ -142,6 +142,55 @@ jobs:
                 || echo "::warning::granting $service to $client failed"
             done
           done
+      # The image's own accessibility settings, wallpaper tinting and accent,
+      # read before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
+      # pair "does not exist", xcode-27 "Could not find key"), or what the read
+      # said where it failed otherwise (and a pass then restores nothing);
+      # also into environment/accessibility.txt. This step and the
+      # wallpaper's run before every pass, and whatever failed before them.
+      - name: Record the image's accessibility settings (macOS)
+        if: always() && runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/universalaccess" os-probe-out/environment
+          for setting in "com.apple.universalaccess reduceTransparency" \
+                         "com.apple.universalaccess increaseContrast" \
+                         "com.apple.universalaccess reduceMotion" \
+                         "-g AppleReduceDesktopTinting" \
+                         "-g AppleAccentColor" \
+                         "-g AppleKeyboardUIMode"; do
+            set -- $setting
+            value="$(defaults read "$1" "$2" 2>&1)"
+            if [ $? -ne 0 ]; then
+              case "$value" in
+                *"does not exist"*|*"Could not find key"*) value=absent ;;
+                *) value="unreadable: $value" ;;
+              esac
+            fi
+            echo "$value" > "$RUNNER_TEMP/universalaccess/$2"
+            echo "$1 $2: $value" | tee -a os-probe-out/environment/accessibility.txt
+          done
+      # The desktop picture, which the materials and, with wallpaper tinting on,
+      # the window backgrounds show through: as System Events names it (which
+      # may need an Automation grant the image lacks, so it is given 20 s) and
+      # as the wallpaper store records it, for the README to name.
+      - name: Record the wallpaper (macOS)
+        if: always() && runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/environment
+          mkdir -p "$out"
+          {
+            osascript -e 'tell application "System Events" to get picture of current desktop' &
+            pid=$!
+            for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+            if kill -0 "$pid" 2>/dev/null; then kill "$pid"; echo "osascript: killed after 20 s"; else wait "$pid"; echo "osascript: exit $?"; fi
+            store="$HOME/Library/Application Support/com.apple.wallpaper/Store/Index.plist"
+            if [ -f "$store" ]; then plutil -p "$store"; echo "plutil: exit $?"; else echo "no $store"; fi
+          } > "$out/wallpaper.txt" 2>&1
+          cat "$out/wallpaper.txt"
       - name: Run the probe
         if: matrix.pass == 'probe'
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
@@ -182,19 +231,52 @@ jobs:
           } > "$out/environment.txt" 2>&1
           cat "$out/environment.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
+      # The controls pass measures macOS's default look, so Reduce
+      # Transparency, which the macOS 15 and 26 images turn on
+      # (`reduceTransparency` 1 in the step above), is turned off for it on
+      # the runner VM (disposable; the probe itself only reads):
+      # button-pass-controls/settings.txt records the image's value, the
+      # write's exit status and the value read back, and the step fails where
+      # the read-back is not 0. The probe's own read,
+      # accessibilityDisplayShouldReduceTransparency, is in probe.toml's
+      # [macos.environment.accessibility].
+      - name: Turn Reduce Transparency off for the controls pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'controls'
+        run: |
+          set +e
+          out=os-probe-out/button-pass-controls
+          mkdir -p "$out"
+          {
+            echo "image's reduceTransparency: $(cat "$RUNNER_TEMP/universalaccess/reduceTransparency" 2>/dev/null || echo 'not recorded')"
+            defaults write com.apple.universalaccess reduceTransparency -bool false
+            echo "write reduceTransparency false: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          read_back="$(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+          if [ "$read_back" != "0" ]; then
+            echo "::error::reduceTransparency reads back '$read_back', not 0"
+            exit 1
+          fi
       # The controls pass (M2.FS4 of the 0.8.0 plan): the controls other than
       # the push buttons in one key window (check boxes, disclosure buttons, a
       # pop-up, a text field, a segmented control, a switch, a slider, two
-      # tables, a tab view, a split view, a box and a toolbar button), each
-      # hovered by a posted mouse-moved event and pressed by a real mouse-down
-      # captured during the press, every state over the window's background
-      # and the black, white and grey backdrops, into button-pass-controls/;
-      # probe.toml's [macos.button_pass.controls] method says how. It posts
-      # mouse and key events, so Accessibility and PostEvent access are
-      # granted to the built probe's path as for the button pass. The step
-      # fails where the build fails, where the probe exits non-zero (it does
-      # where [macos.button_pass.controls] holds an error) or wrote no
-      # probe.toml; the upload still runs.
+      # scroll views whose scrollers' knobs, legacy and overlay, are the
+      # targets, two tables, a tab view, a split view, a box and a toolbar
+      # button), each hovered by a posted mouse-moved event and pressed by a
+      # real mouse-down captured during the press, every state over the
+      # window's background and the black, white and grey backdrops; then the
+      # toolbar sheet, the toolbar button again in a window whose content
+      # view lies under its transparent title bar; into
+      # button-pass-controls/; probe.toml's [macos.button_pass.controls]
+      # method and its toolbar_sheet's say how. It posts mouse and key
+      # events, so Accessibility and PostEvent access are granted to the
+      # built probe's path as for the button pass. The step fails where the
+      # build fails, where the probe exits non-zero (it does where
+      # [macos.button_pass] or [macos.button_pass.controls] or its
+      # toolbar_sheet is missing or holds an error, or where every target of
+      # either sheet is in error) or wrote no probe.toml; the upload still
+      # runs.
       - name: Run the controls pass (macOS)
         if: runner.os == 'macOS' && matrix.pass == 'controls'
         run: |
@@ -295,53 +377,6 @@ jobs:
           mv "$RUNNER_TEMP/xcode.txt" "$out/xcode.txt"
           grep -v -E '^[0-9a-f]{64}  ' "$out/xcode.txt"
           echo "$(grep -c -E '^[0-9a-f]{64}  ' "$out/xcode.txt") SHA-256 lines in xcode.txt"
-      # The image's own accessibility settings, wallpaper tinting and accent,
-      # read before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
-      # pair "does not exist", xcode-27 "Could not find key"), or what the read
-      # said where it failed otherwise (and a pass then restores nothing).
-      - name: Record the image's accessibility settings (macOS)
-        if: runner.os == 'macOS'
-        continue-on-error: true
-        run: |
-          set +e
-          mkdir -p "$RUNNER_TEMP/universalaccess"
-          for setting in "com.apple.universalaccess reduceTransparency" \
-                         "com.apple.universalaccess increaseContrast" \
-                         "com.apple.universalaccess reduceMotion" \
-                         "-g AppleReduceDesktopTinting" \
-                         "-g AppleAccentColor" \
-                         "-g AppleKeyboardUIMode"; do
-            set -- $setting
-            value="$(defaults read "$1" "$2" 2>&1)"
-            if [ $? -ne 0 ]; then
-              case "$value" in
-                *"does not exist"*|*"Could not find key"*) value=absent ;;
-                *) value="unreadable: $value" ;;
-              esac
-            fi
-            echo "$value" > "$RUNNER_TEMP/universalaccess/$2"
-            echo "$1 $2: $value"
-          done
-      # The desktop picture, which the materials and, with wallpaper tinting on,
-      # the window backgrounds show through: as System Events names it (which
-      # may need an Automation grant the image lacks, so it is given 20 s) and
-      # as the wallpaper store records it, for the README to name.
-      - name: Record the wallpaper (macOS)
-        if: runner.os == 'macOS'
-        continue-on-error: true
-        run: |
-          set +e
-          out=os-probe-out/environment
-          mkdir -p "$out"
-          {
-            osascript -e 'tell application "System Events" to get picture of current desktop' &
-            pid=$!
-            for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
-            if kill -0 "$pid" 2>/dev/null; then kill "$pid"; echo "osascript: killed after 20 s"; else wait "$pid"; echo "osascript: exit $?"; fi
-            store="$HOME/Library/Application Support/com.apple.wallpaper/Store/Index.plist"
-            if [ -f "$store" ]; then plutil -p "$store"; echo "plutil: exit $?"; else echo "no $store"; fi
-          } > "$out/wallpaper.txt" 2>&1
-          cat "$out/wallpaper.txt"
       # The button pass in its conditions, each into its own folder, whatever
       # fails, with the image's settings but the one each sets, which it
       # restores after: with keyboard navigation on (AppleKeyboardUIMode 2,
@@ -1145,6 +1180,23 @@ jobs:
             if [ -f "$out/probe.toml" ]; then echo "probe.toml written"; else echo "no probe.toml"; fi
           } > "$out/run.txt" 2>&1
           cat "$out/run.txt"
+      # Every macOS pass but sdk-headers captures with `screencapture` (a
+      # window's PNG, or a .mov recording); a pass where none of them was
+      # written is red, whatever the probe's exit status (run 45208260830's
+      # macOS 26 controls job: 248 captures failed, the job green). A capture
+      # is counted as a PNG that is not an offscreen render (those end in -1x
+      # or -2x) and not a frame cut from a recording, or a .mov; the probe's
+      # own failure messages ("screencapture …") are counted and printed.
+      - name: Check that the captures were written (macOS)
+        if: runner.os == 'macOS' && matrix.pass != 'sdk-headers'
+        run: |
+          captures=$(find os-probe-out \( -name '*.png' ! -name '*-1x.png' ! -name '*-2x.png' ! -path '*-frames/*' \) -o -name '*.mov' | wc -l | tr -d ' ')
+          failures=$(grep -rhoE 'screencapture [^"]*' os-probe-out 2>/dev/null | grep -cE 'exited with|could not|cannot run|timed out|wrote no') || true
+          echo "captures written: $captures; screencapture failures reported: $failures"
+          if [ "$captures" -eq 0 ]; then
+            echo "::error::no capture was written (screencapture failures reported: $failures)"
+            exit 1
+          fi
       - name: Upload the probe's output
         if: always()
         uses: actions/upload-artifact@v7

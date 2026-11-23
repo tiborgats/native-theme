@@ -1,9 +1,14 @@
 //! The controls pass (`--button-pass --controls`): the controls other than
-//! the push buttons, one sheet of them in a titled window made key, each
-//! hovered by a posted mouse-moved event and pressed by a real mouse-down
-//! captured during the press, as the button pass hovers and clicks its push
-//! buttons; every state is captured over the window's own background and the
-//! three opaque backdrops, so each state's layer is solved
+//! the push buttons (check boxes, disclosure buttons, a pop-up, a text field,
+//! a segmented control, a switch, a slider, two scroll views whose
+//! scrollers' knobs, legacy and overlay, are the targets, two tables, a tab
+//! view, a split view, a box and a toolbar button), one sheet of them in a
+//! titled window made key, each hovered by a posted mouse-moved event and
+//! pressed by a real mouse-down captured during the press, as the button pass
+//! hovers and clicks its push buttons; then the toolbar sheet, the toolbar
+//! button again in a window whose content view lies under its transparent
+//! title bar. Every state is captured over the window's own background and
+//! the three opaque backdrops, so each state's layer is solved
 //! ([`super::layer`]). The analysis reads each control's part from the
 //! layers at the rects this pass records.
 
@@ -12,7 +17,7 @@ use objc2::runtime::ProtocolObject;
 use objc2::{MainThreadOnly, Message};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceCustomization, NSAttributedStringNSStringDrawing, NSBezelStyle,
-    NSBox, NSBoxType, NSButton, NSButtonType, NSControl, NSControlSize, NSPopUpButton,
+    NSBox, NSBoxType, NSButton, NSButtonType, NSClipView, NSControl, NSControlSize, NSPopUpButton,
     NSScrollView, NSScroller, NSScrollerPart, NSScrollerStyle, NSSegmentedControl, NSSlider,
     NSSliderCell, NSSplitView, NSSwitch, NSTabView, NSTabViewItem, NSTableCellView, NSTableColumn,
     NSTableView, NSTableViewStyle, NSTextField, NSTitlePosition, NSToolbar, NSToolbarItem, NSView,
@@ -22,10 +27,10 @@ use objc2_foundation::{NSIndexSet, NSPoint, NSRect, NSSize, NSString};
 use toml::{Table, Value};
 
 use super::{
-    Backdrop, Case, DIFF_MARGIN, Pass, Sheet, away_point, case_table, diff_table, from_top_left,
-    px_ratio, sheet_window,
+    Backdrop, Case, DIFF_MARGIN, NO_WINDOW, Pass, Sheet, away_point, case_table, diff_table,
+    from_top_left, px_ratio, sheet_window,
 };
-use crate::macos::layer::Rgba;
+use crate::macos::layer::{PxRect, Rgba};
 use crate::macos::{
     APPEARANCES, SETTLE_STEPS, control_common, ffi, ns, pixel_index, point_text, rect, rect_text,
     state_value,
@@ -123,9 +128,16 @@ struct Target {
     press: bool,
     /// Whether an Escape follows the mouse-up (the pop-up's menu).
     escape: bool,
-    /// What the control is set back to after each press.
-    reset: Box<dyn Fn()>,
+    /// What the control is set back to after each press, with what it
+    /// reads back into the press's table.
+    reset: Reset,
+    /// The scroll view whose scroller's knob the target is: its scrollers
+    /// are flashed before each hovered and pressed capture.
+    scroll: Option<Retained<NSScrollView>>,
 }
+
+/// A target's reset (`Target::reset`).
+type Reset = Box<dyn Fn(&mut Table)>;
 
 /// A target as `build` makes it: its part is found in its view
 /// (`locate`) once the window is shown and settled.
@@ -135,7 +147,7 @@ struct Pending {
     part: Part,
     press: bool,
     escape: bool,
-    reset: Box<dyn Fn()>,
+    reset: Reset,
 }
 
 /// How a target's part is found in its view.
@@ -229,7 +241,28 @@ pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
         scroll_views
     });
 
-    appearances(pass, &sheet, &targets, &mut t);
+    let scroll_reads = |row: &mut Table| {
+        let mut styles = Table::new();
+        for (name, style, scroll) in &keep.scrolls {
+            let mut s = Table::new();
+            out::put(
+                &mut s,
+                "scrollerStyle_read",
+                out::text(scroller_style_name(scroll.scrollerStyle())),
+            );
+            scroll.setScrollerStyle(*style);
+            scroll.tile();
+            scroll_to_middle(scroll);
+            out::put(
+                &mut s,
+                "scrollerStyle_after_set",
+                out::text(scroller_style_name(scroll.scrollerStyle())),
+            );
+            out::put_table(&mut styles, name, s);
+        }
+        out::put_table(row, "scroll_views", styles);
+    };
+    appearances(pass, &sheet, &targets, &scroll_reads, &mut t);
     close(window, other);
     for table in &keep.tables {
         ffi::set_table_source(table, None);
@@ -285,7 +318,7 @@ fn toolbar_sheet_table(pass: &Pass<'_>) -> Table {
     let targets = place_targets(pending, &[], &sheet, &mut placed, &|_, _| {});
     out::put_table(&mut t, "targets", placed);
 
-    appearances(pass, &sheet, &targets, &mut t);
+    appearances(pass, &sheet, &targets, &|_| {}, &mut t);
     close(window, other);
     window.setToolbar(None);
     drop(delegate);
@@ -331,6 +364,13 @@ fn place_targets(
         match locate(&p, tab_rects) {
             Ok(part) => targets.push(Target {
                 name: p.name,
+                scroll: match p.part {
+                    Part::ScrollerKnob => p
+                        .view
+                        .downcast_ref::<NSScrollView>()
+                        .map(|scroll| scroll.retain()),
+                    _ => None,
+                },
                 view: p.view,
                 part,
                 press: p.press,
@@ -347,7 +387,11 @@ fn place_targets(
                 out::put(
                     &mut row,
                     "view_in_window_from_top_left_xywh",
-                    rect(from_top_left(&p.view, frame_size)),
+                    if p.view.window().is_some() {
+                        rect(from_top_left(&p.view, frame_size))
+                    } else {
+                        out::unavailable(NO_WINDOW)
+                    },
                 );
                 out::put(&mut row, "error", out::unavailable(reason));
                 out::put_table(placed, p.name, row);
@@ -357,19 +401,34 @@ fn place_targets(
     for target in &targets {
         let mut row = target_table(target, frame_size);
         let part = in_window(&target.view, target.part, frame_size);
+        let covering = backgrounds_between(&target.view, &sheet.content);
         out::put(
             &mut row,
             "over_backdrop",
-            out::boolean(contains(backdrop_rect, part)),
+            out::boolean(contains(backdrop_rect, part) && covering.is_empty()),
         );
+        if !covering.is_empty() {
+            out::put(
+                &mut row,
+                "backdrop_covered_by",
+                out::array(covering.into_iter().map(out::text).collect()),
+            );
+        }
         extra(target, &mut row);
         out::put_table(placed, target.name, row);
     }
     targets
 }
 
-/// Per appearance, the sheet's states (`appearance_table`).
-fn appearances(pass: &Pass<'_>, sheet: &Sheet, targets: &[Target], t: &mut Table) {
+/// Per appearance, `reads` (what the sheet reads once the appearance is
+/// set, before its states) and the sheet's states (`appearance_table`).
+fn appearances(
+    pass: &Pass<'_>,
+    sheet: &Sheet,
+    targets: &[Target],
+    reads: &dyn Fn(&mut Table),
+    t: &mut Table,
+) {
     let window = &sheet.window;
     for (key, name) in APPEARANCES {
         let Some(appearance) = NSAppearance::appearanceNamed(&ns(name)) else {
@@ -383,7 +442,14 @@ fn appearances(pass: &Pass<'_>, sheet: &Sheet, targets: &[Target], t: &mut Table
         window.setAppearance(Some(&appearance));
         sheet.content.setNeedsDisplay(true);
         pass.settle(window, SETTLE_STEPS);
-        out::put_table(t, key, appearance_table(pass, sheet, targets, key));
+        let mut read = Table::new();
+        reads(&mut read);
+        pass.settle(window, SETTLE_STEPS);
+        let mut states = appearance_table(pass, sheet, targets, key);
+        for (k, v) in read {
+            states.insert(k, v);
+        }
+        out::put_table(t, key, states);
     }
     window.setAppearance(None);
 }
@@ -425,6 +491,16 @@ fn scroll_views_table(
             &mut row,
             "scrollerStyle",
             out::text(scroller_style_name(scroll.scrollerStyle())),
+        );
+        out::put(
+            &mut row,
+            "drawsBackground",
+            out::boolean(scroll.drawsBackground()),
+        );
+        out::put(
+            &mut row,
+            "contentView_drawsBackground",
+            out::boolean(scroll.contentView().drawsBackground()),
         );
         match scroll.verticalScroller() {
             Some(scroller) => {
@@ -500,7 +576,9 @@ fn appearance_table(pass: &Pass<'_>, sheet: &Sheet, targets: &[Target], key: &st
 
     let mut highlighted = Table::new();
     for case in &sheet.cases {
-        if let Some(b) = &case.button {
+        if let Some(b) = &case.button
+            && b.window().is_some()
+        {
             b.highlight(true);
         }
     }
@@ -538,16 +616,30 @@ fn appearance_table(pass: &Pass<'_>, sheet: &Sheet, targets: &[Target], key: &st
     let frame = window.frame().size;
     let mut hovered = Table::new();
     for target in targets {
-        let mut h = Table::new();
-        out::put_table(
-            &mut h,
-            "cursor",
-            pass.move_cursor(window, screen_point(window, target)),
-        );
         let stem = format!("hovered-{}", target.name);
-        let rgba = pass
-            .shots(sheet, &mut h, &dir, &rel, &stem, &[], false, None)
-            .window;
+        let (mut h, rgba) = if target.scroll.is_some() {
+            over_backdrops(pass, sheet, &dir, &rel, &stem, &|sub, file| {
+                flash(target);
+                out::put_table(
+                    sub,
+                    "cursor",
+                    pass.move_cursor(window, screen_point(window, target)),
+                );
+                pass.shot(window, sub, &dir, &rel, file)
+            })
+        } else {
+            let mut h = Table::new();
+            out::put_table(
+                &mut h,
+                "cursor",
+                pass.move_cursor(window, screen_point(window, target)),
+            );
+            let rgba = pass
+                .shots(sheet, &mut h, &dir, &rel, &stem, &[], false, None)
+                .window;
+            (h, rgba)
+        };
+        knob_drawn(&mut h, target, rgba.as_ref(), frame);
         out::put(
             &mut h,
             "diff_from_normal",
@@ -589,8 +681,46 @@ fn press_table(
 ) -> Table {
     let window = &sheet.window;
     let frame = window.frame().size;
-    let point = sheet.backdrop_point();
     let stem = format!("clicked-{}", target.name);
+    let (mut t, window_rgba) = over_backdrops(pass, sheet, dir, rel, &stem, &|sub, file| {
+        flash(target);
+        let at = screen_point(window, target);
+        out::put_table(sub, "cursor", pass.move_cursor(window, at));
+        let rgba = pass.click_at(sub, window, dir, rel, file, pass.quartz(at), target.escape);
+        out::put(
+            sub,
+            "firstResponder_class_after_press",
+            first_responder(window),
+        );
+        (target.reset)(sub);
+        rgba
+    });
+    knob_drawn(&mut t, target, window_rgba.as_ref(), frame);
+    out::put(
+        &mut t,
+        "diff_from_normal",
+        compare(normal, window_rgba.as_ref(), target, frame),
+    );
+    t
+}
+
+/// One state captured over every backdrop in turn: per backdrop the
+/// backdrop shown, then `capture`, given the backdrop's table and the file
+/// (`<stem>[-over-<backdrop>].png`), sets the state and takes the capture,
+/// in which the backdrop is then read; and the state's layer solved from
+/// the black and white captures. The state's table and its capture over the
+/// window's background.
+fn over_backdrops(
+    pass: &Pass<'_>,
+    sheet: &Sheet,
+    dir: &std::path::Path,
+    rel: &str,
+    stem: &str,
+    capture: &dyn Fn(&mut Table, &str) -> Option<Rgba>,
+) -> (Table, Option<Rgba>) {
+    let window = &sheet.window;
+    let frame = window.frame().size;
+    let point = sheet.backdrop_point();
     let mut t = Table::new();
     let mut captured: Vec<(Backdrop, Option<Rgba>, Option<[u8; 4]>)> = Vec::new();
     for backdrop in Backdrop::ALL {
@@ -604,27 +734,8 @@ fn press_table(
                 out::text(crate::macos::layer::hex([b, b, b, 0xff])),
             );
         }
-        let at = screen_point(window, target);
-        out::put_table(&mut sub, "cursor", pass.move_cursor(window, at));
         let file = format!("{stem}{}.png", backdrop.suffix());
-        let rgba = pass.click_at(
-            &mut sub,
-            window,
-            dir,
-            rel,
-            &file,
-            pass.quartz(at),
-            target.escape,
-        );
-        out::put(
-            &mut sub,
-            "firstResponder_class_after_press",
-            match window.firstResponder() {
-                Some(responder) => out::text(responder.class().name().to_string_lossy()),
-                None => out::text("nil"),
-            },
-        );
-        (target.reset)();
+        let rgba = capture(&mut sub, &file);
         pass.settle(window, SETTLE_STEPS);
         let sampled = rgba.as_ref().and_then(|rgba| {
             let ratio = px_ratio(rgba.width, frame.width);
@@ -662,7 +773,7 @@ fn press_table(
                 sheet,
                 dir,
                 rel,
-                &stem,
+                stem,
                 &[],
                 false,
                 [black, white],
@@ -682,13 +793,110 @@ fn press_table(
         }
     };
     out::put_table(&mut t, "layer", layer);
-    let window_rgba = find(Backdrop::Window).map(|(rgba, _)| rgba);
+    let window_rgba = captured
+        .into_iter()
+        .find(|(k, _, _)| *k == Backdrop::Window)
+        .and_then(|(_, rgba, _)| rgba);
+    (t, window_rgba)
+}
+
+/// The class of the window's first responder, or "nil".
+fn first_responder(window: &NSWindow) -> Value {
+    match window.firstResponder() {
+        Some(responder) => out::text(responder.class().name().to_string_lossy()),
+        None => out::text("nil"),
+    }
+}
+
+/// Flash the scrollers of the target's scroll view, where it has one
+/// (`flashScrollers`), so an overlay scroller's knob is shown for the
+/// capture that follows.
+fn flash(target: &Target) {
+    if let Some(scroll) = &target.scroll {
+        scroll.flashScrollers();
+    }
+}
+
+/// For a scroller knob's target, whether its knob is drawn in `capture`
+/// (the state's capture over the window's background): its rect's pixels
+/// that differ from the scroll view's background, read at the middle of the
+/// scroll view's clip view, into `t.knob_drawn`; where none does, the
+/// target's `error` in `t`.
+fn knob_drawn(t: &mut Table, target: &Target, capture: Option<&Rgba>, frame: NSSize) {
+    let Some(scroll) = &target.scroll else {
+        return;
+    };
+    let Some(rgba) = capture else {
+        out::put(t, "knob_drawn", out::unavailable("no capture"));
+        return;
+    };
+    let clip = scroll.contentView().frame();
+    let middle = in_window(
+        &target.view,
+        NSRect::new(
+            NSPoint::new(
+                clip.origin.x + clip.size.width / 2.0,
+                clip.origin.y + clip.size.height / 2.0,
+            ),
+            NSSize::new(0.0, 0.0),
+        ),
+        frame,
+    )
+    .origin;
+    let ratio = px_ratio(rgba.width, frame.width);
+    let background = (|| {
+        let x = pixel_index(middle.x, ratio, isize::try_from(rgba.width).ok()?)?;
+        let y = pixel_index(middle.y, ratio, isize::try_from(rgba.height).ok()?)?;
+        rgba.pixel(usize::try_from(x).ok()?, usize::try_from(y).ok()?)
+    })();
+    let part = ratio.and_then(|ratio| {
+        PxRect::from_points(
+            in_window(&target.view, target.part, frame),
+            0.0,
+            ratio,
+            rgba.width,
+            rgba.height,
+        )
+    });
+    let (Some(background), Some(part)) = (background, part) else {
+        out::put(
+            t,
+            "knob_drawn",
+            out::unavailable("the background point or the knob's rect lies outside the capture"),
+        );
+        return;
+    };
+    let mut differing: i64 = 0;
+    for y in part.y0..part.y1 {
+        for x in part.x0..part.x1 {
+            if rgba.pixel(x, y).is_some_and(|p| p != background) {
+                differing = differing.saturating_add(1);
+            }
+        }
+    }
+    let mut k = Table::new();
     out::put(
-        &mut t,
-        "diff_from_normal",
-        compare(normal, window_rgba, target, frame),
+        &mut k,
+        "background_in_window_from_top_left_xy",
+        out::floats(&[middle.x, middle.y]),
     );
-    t
+    out::put(
+        &mut k,
+        "background_raw",
+        out::text(crate::macos::layer::hex(background)),
+    );
+    out::put(&mut k, "part_px_xywh", part.value());
+    out::put(&mut k, "differing_pixels", out::int(differing));
+    out::put_table(t, "knob_drawn", k);
+    if differing == 0 {
+        out::put(
+            t,
+            "error",
+            out::unavailable(
+                "the knob is not drawn: no pixel of its rect differs from the scroll view's background",
+            ),
+        );
+    }
 }
 
 /// The two captures compared inside the target's view's frame grown by
@@ -743,6 +951,44 @@ fn target_table(target: &Target, frame: NSSize) -> Table {
     t
 }
 
+/// The scroll views and clip views that draw their background from `view`
+/// (included, with a scroll view's own clip view, which lies under an
+/// overlay scroller) up to `content` (left out), each by its class: where
+/// any does, the backdrop does not show behind the target's part.
+fn backgrounds_between(view: &NSView, content: &NSView) -> Vec<String> {
+    let mut found = Vec::new();
+    let mut note = |v: &NSView, draws: bool| {
+        if draws {
+            found.push(v.class().name().to_string_lossy().into_owned());
+        }
+    };
+    if let Some(scroll) = view.downcast_ref::<NSScrollView>() {
+        let clip = scroll.contentView();
+        note(&clip, clip.drawsBackground());
+    }
+    for v in chain(content, view).unwrap_or_default() {
+        if let Some(scroll) = v.downcast_ref::<NSScrollView>() {
+            note(&v, scroll.drawsBackground());
+        } else if let Some(clip) = v.downcast_ref::<NSClipView>() {
+            note(&v, clip.drawsBackground());
+        }
+    }
+    found
+}
+
+/// The views from `to` (included) up to `from` (left out), found down
+/// `from`'s subviews; `None` where `to` does not lie under `from`.
+fn chain(from: &NSView, to: &NSView) -> Option<Vec<Retained<NSView>>> {
+    if std::ptr::eq(from, to) {
+        return Some(Vec::new());
+    }
+    from.subviews().iter().find_map(|sub| {
+        let mut views = chain(&sub, to)?;
+        views.push(sub);
+        Some(views)
+    })
+}
+
 /// Whether `inner` lies within `outer`, edges included.
 fn contains(outer: NSRect, inner: NSRect) -> bool {
     inner.origin.x >= outer.origin.x
@@ -764,10 +1010,10 @@ fn locate(p: &Pending, tab_rects: &[Option<NSRect>]) -> Result<NSRect, String> {
             .and_then(|button| button.cell())
             .map(|cell| cell.imageRectForBounds(b))
             .ok_or("the check box has no button cell")?,
-        Part::Titled => view
-            .downcast_ref::<NSButton>()
-            .map(titled_part)
-            .ok_or("the view is not an NSButton")?,
+        Part::Titled => titled_part(
+            view.downcast_ref::<NSButton>()
+                .ok_or("the view is not an NSButton")?,
+        )?,
         Part::MiddleThird => NSRect::new(
             NSPoint::new(b.origin.x + b.size.width / 3.0, b.origin.y),
             NSSize::new(b.size.width / 3.0, b.size.height),
@@ -833,21 +1079,20 @@ fn locate(p: &Pending, tab_rects: &[Option<NSRect>]) -> Result<NSRect, String> {
     Ok(part)
 }
 
-/// A titled button's triangle and title: its bounds from the left edge to
-/// the end of the attributed title's width laid from the cell's
-/// `titleRectForBounds:` origin (the bounds where it has no cell), so the
-/// part's centre falls on the button's drawing, not on the room right of it.
-fn titled_part(button: &NSButton) -> NSRect {
+/// A titled button's triangle and title as drawn: its bounds from the left
+/// edge to the end of the cell's `titleRectForBounds:` (the slot the title is
+/// drawn in, clipped to it where the title is wider), so the part's centre
+/// falls on the button's drawing, not on the room right of it; an error
+/// where the button has no cell.
+fn titled_part(button: &NSButton) -> Result<NSRect, String> {
     let b = button.bounds();
-    let Some(cell) = button.cell() else {
-        return b;
-    };
+    let cell = button.cell().ok_or("the titled button has no cell")?;
     let title = cell.titleRectForBounds(b);
-    let end = title.origin.x + button.attributedTitle().size().width;
-    NSRect::new(
+    let end = title.origin.x + title.size.width;
+    Ok(NSRect::new(
         b.origin,
         NSSize::new((end - b.origin.x).clamp(0.0, b.size.width), b.size.height),
-    )
+    ))
 }
 
 /// The titled disclosure button's title: the cell's `titleRectForBounds:`
@@ -878,6 +1123,7 @@ fn title_reads(t: &mut Table, button: &NSButton, frame: NSSize) {
 /// alive.
 fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
     let mtm = pass.mtm;
+    let count = isize::try_from(SEGMENTS.len()).map_err(|e| e.to_string())?;
     let (window, content, backdrop) = sheet_window(mtm, CONTROLS_ORIGIN, CONTROLS_CONTENT, false)?;
     let height = CONTROLS_CONTENT.height;
     let size = NSControlSize::Regular;
@@ -942,7 +1188,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
             part: Part::Indicator,
             press: true,
             escape: false,
-            reset: Box::new(move || reset_button.setState(state_value(on))),
+            reset: Box::new(move |_| reset_button.setState(state_value(on))),
         });
     }
     for (name, b, part) in [
@@ -956,7 +1202,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
             part,
             press: true,
             escape: false,
-            reset: Box::new(move || reset_button.setState(state_value(false))),
+            reset: Box::new(move |_| reset_button.setState(state_value(false))),
         });
     }
     targets.push(Pending {
@@ -965,7 +1211,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Bounds,
         press: true,
         escape: false,
-        reset: Box::new(|| {}),
+        reset: Box::new(|_| {}),
     });
 
     // Row 1: the pop-up button, the text field, the segmented control and
@@ -984,7 +1230,6 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
     control_common(&field, size);
     place(&field, c1, 1.0);
     let segmented = NSSegmentedControl::new(mtm);
-    let count = isize::try_from(SEGMENTS.len()).map_err(|e| e.to_string())?;
     segmented.setSegmentCount(count);
     for (i, label) in (0_isize..).zip(SEGMENTS) {
         segmented.setLabel_forSegment(&ns(label), i);
@@ -1005,7 +1250,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Bounds,
         press: true,
         escape: true,
-        reset: Box::new(move || reset_popup.selectItemAtIndex(0)),
+        reset: Box::new(move |_| reset_popup.selectItemAtIndex(0)),
     });
     let reset_field = field.retain();
     let reset_field_window = window.retain();
@@ -1015,8 +1260,13 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Bounds,
         press: true,
         escape: false,
-        reset: Box::new(move || {
+        reset: Box::new(move |t| {
             reset_field_window.makeFirstResponder(None);
+            out::put(
+                t,
+                "firstResponder_class_after_reset",
+                first_responder(&reset_field_window),
+            );
             reset_field.setStringValue(&ns(FIELD_TEXT));
         }),
     });
@@ -1027,7 +1277,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::MiddleThird,
         press: true,
         escape: false,
-        reset: Box::new(move || reset_segmented.setSelectedSegment(0)),
+        reset: Box::new(move |_| reset_segmented.setSelectedSegment(0)),
     });
     let reset_switch = switch.retain();
     targets.push(Pending {
@@ -1036,7 +1286,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Bounds,
         press: true,
         escape: false,
-        reset: Box::new(move || reset_switch.setState(state_value(false))),
+        reset: Box::new(move |_| reset_switch.setState(state_value(false))),
     });
 
     // Row 2: the slider.
@@ -1055,7 +1305,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Knob,
         press: true,
         escape: false,
-        reset: Box::new(move || reset_slider.setDoubleValue(SLIDER_VALUE)),
+        reset: Box::new(move |_| reset_slider.setDoubleValue(SLIDER_VALUE)),
     });
 
     // The scroll views: a vertical scroller in each style, its knob in the
@@ -1084,7 +1334,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
             part: Part::ScrollerKnob,
             press: true,
             escape: false,
-            reset: Box::new(move || scroll_to_middle(&reset_scroll)),
+            reset: Box::new(move |_| scroll_to_middle(&reset_scroll)),
         });
         scrolls.push((name, style, scroll));
     }
@@ -1115,9 +1365,14 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
             part: Part::Row,
             press: true,
             escape: false,
-            reset: Box::new(move || {
+            reset: Box::new(move |t| {
                 reset_table.selectRowIndexes_byExtendingSelection(&NSIndexSet::new(), false);
                 reset_window.makeFirstResponder(None);
+                out::put(
+                    t,
+                    "firstResponder_class_after_reset",
+                    first_responder(&reset_window),
+                );
             }),
         });
         cases.push(Case {
@@ -1153,7 +1408,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Tab,
         press: true,
         escape: false,
-        reset: Box::new(move || reset_tabs.selectTabViewItemAtIndex(0)),
+        reset: Box::new(move |_| reset_tabs.selectTabViewItemAtIndex(0)),
     });
 
     let split = NSSplitView::new(mtm);
@@ -1176,7 +1431,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Divider,
         press: true,
         escape: false,
-        reset: Box::new(move || {
+        reset: Box::new(move |_| {
             if let Some(position) = divider_position {
                 reset_split.setPosition_ofDividerAtIndex(position, 0);
             }
@@ -1193,7 +1448,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Bounds,
         press: false,
         escape: false,
-        reset: Box::new(|| {}),
+        reset: Box::new(|_| {}),
     });
 
     // A button in a toolbar item.
@@ -1204,7 +1459,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
         part: Part::Bounds,
         press: true,
         escape: false,
-        reset: Box::new(|| {}),
+        reset: Box::new(|_| {}),
     });
 
     for (name, kind, setup, b) in [
@@ -1370,7 +1625,7 @@ fn build_toolbar_sheet(
         part: Part::Bounds,
         press: true,
         escape: false,
-        reset: Box::new(|| {}),
+        reset: Box::new(|_| {}),
     }];
     let cases = vec![Case {
         name: "toolbar_button".to_owned(),
@@ -1402,7 +1657,8 @@ fn build_toolbar_sheet(
 
 /// A scroll view at `frame` with a vertical scroller in `style`, never
 /// hidden, whose document view (an empty NSView) is `SCROLL_DOCUMENT_FACTOR`
-/// times its height.
+/// times its height; neither the scroll view nor its clip view draws a
+/// background, so the backdrop shows behind the scroller.
 fn scroll_in(
     mtm: objc2::MainThreadMarker,
     frame: NSRect,
@@ -1412,6 +1668,8 @@ fn scroll_in(
     scroll.setHasVerticalScroller(true);
     scroll.setAutohidesScrollers(false);
     scroll.setScrollerStyle(style);
+    scroll.setDrawsBackground(false);
+    scroll.contentView().setDrawsBackground(false);
     let document = NSView::initWithFrame(
         NSView::alloc(mtm),
         NSRect::new(
@@ -1561,7 +1819,7 @@ fn tabs_table(tabs: &Tabs, frame: NSSize) -> Table {
 
 fn method_text() -> String {
     format!(
-        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt so its whole title is drawn; targets.disclosure: title_rect_xywh, the cell's titleRectForBounds:, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and, in the fifth column, a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide; under it two scroll views at {scroll} and {overlay} (x, y), each {} x {} pt with a vertical scroller (autohidesScrollers NO), the first set to NSScrollerStyleLegacy, the second to NSScrollerStyleOverlay, each document view an empty NSView {SCROLL_DOCUMENT_FACTOR} times the scroll view's height, scrolled to its middle; once the window is shown and settled each scroll view's style read (scroll_views.scrollerStyle_when_shown), set again and the scroll view tiled and scrolled to its middle again (scroll_views: the styles read back after that, each vertical scroller's isHidden, alphaValue, knobProportion and doubleValue, and NSScroller's preferredScrollerStyle); below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked right of the window), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the pop-up's mouse-up followed by an Escape; firstResponder_class_after_press, the class of the window's first responder read after the mouse-up, before the control is set back: the text field's press makes its field editor the first responder), the control set back after each press (the text field: makeFirstResponder: nil and its text set again; the split view: setPosition:ofDividerAtIndex: 0 to the first pane's right edge read when it was built; the scroll views: scrolled to their middle again) (targets: their parts' rects, each read once the window is shown and settled, the cases' reads too; a part whose view is in no window, or that is empty or does not lie within its view's bounds, is the target's error and the target is neither hovered nor pressed; over_backdrop: whether the part lies within the backdrop box, where not (the toolbar's) its layer is the composite over what lies behind it; the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:; the disclosure button: from its left edge to the end of its title, titleRectForBounds:'s origin plus the attributed title's width; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide; the scroller knobs: the vertical scroller's rectForPart: NSScrollerKnob, in the scroll view's coordinates); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt; then the toolbar sheet (toolbar_sheet, its method)",
+        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt; its title is drawn in the cell's titleRectForBounds:, clipped to it where the title is wider; targets.disclosure: title_rect_xywh, that rect, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and, in the fifth column, a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide; under it two scroll views at {scroll} and {overlay} (x, y), each {} x {} pt with a vertical scroller (autohidesScrollers NO), the first set to NSScrollerStyleLegacy, the second to NSScrollerStyleOverlay, each document view an empty NSView {SCROLL_DOCUMENT_FACTOR} times the scroll view's height, scrolled to its middle, and neither the scroll view nor its clip view drawing a background (drawsBackground NO on both), so the backdrop shows behind the scroller; once the window is shown and settled each scroll view's style read (scroll_views.scrollerStyle_when_shown), set again and the scroll view tiled and scrolled to its middle again (scroll_views: the styles read back after that, drawsBackground and contentView_drawsBackground, each vertical scroller's isHidden, alphaValue, knobProportion and doubleValue, and NSScroller's preferredScrollerStyle), and so again once each appearance is set (<appearance>.scroll_views: scrollerStyle_read, then scrollerStyle_after_set); below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked right of the window), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the pop-up's mouse-up followed by an Escape; firstResponder_class_after_press, the class of the window's first responder read after the mouse-up, before the control is set back: the text field's press makes its field editor the first responder), the control set back after each press (the text field: makeFirstResponder: nil, the first responder's class read back (firstResponder_class_after_reset), and its text set again; the tables: the selection cleared and makeFirstResponder: nil, read back as the text field's; the split view: setPosition:ofDividerAtIndex: 0 to the first pane's right edge read when it was built; the scroll views: scrolled to their middle again); a press is posted only where windowNumberAtPoint: at the press point gives the probe's window (window_at_press_is_ours), else it is skipped and its error recorded; for the scroller knobs the hovered state is taken per backdrop as the press is, and before each hovered and pressed capture the scroll view's flashScrollers shows its scrollers (an overlay scroller's knob is drawn only while shown), then the cursor is moved; knob_drawn: in the capture over the window's background, the pixels of the knob's rect that differ from the scroll view's background read at the middle of its clip view (background_raw), where none does the state's error (the knob is not drawn) (targets: their parts' rects, each read once the window is shown and settled, the cases' reads too; a part whose view is in no window, or that is empty or does not lie within its view's bounds, is the target's error and the target is neither hovered nor pressed; a case whose control is in no window gets an error for its geometry and its layer's measures and is not highlighted; over_backdrop: whether the part lies within the backdrop box and no scroll view or clip view between the target's view (included, with a scroll view's own clip view) and the content view draws a background (backdrop_covered_by: the classes of those that do), where not its layer is the composite over what lies behind it; the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:; the disclosure button: from its left edge to the end of the cell's titleRectForBounds:, the slot its title is drawn in; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide; the scroller knobs: the vertical scroller's rectForPart: NSScrollerKnob, in the scroll view's coordinates); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt; then the toolbar sheet (toolbar_sheet, its method)",
         CONTROLS_CONTENT.width,
         CONTROLS_CONTENT.height,
         point_text(CONTROLS_ORIGIN),
