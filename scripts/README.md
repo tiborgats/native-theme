@@ -194,6 +194,15 @@ not fuse `1.0f - (s * f)` into one multiply-add, as the reference build does.
 python3 -I scripts/generate_qt_color_vectors.py
 ```
 
+With `--qt-tint` it writes instead `native-theme/tests/vectors/qt_tint.tsv`,
+the table of the clean-room `qt_tint`: `Qt.tint(base, Qt.alpha(tint, factor))`
+run by Qt's QML engine, no Qt code transcribed. That mode has its own pin,
+PySide6 6.12.0 (Qt 6.12.0), and the same output on every run.
+
+```sh
+python3 -I scripts/generate_qt_color_vectors.py --qt-tint
+```
+
 ## generate_assets_release.sh
 
 Full pre-release asset pipeline. Triggers the CI screenshots workflow for
@@ -996,8 +1005,14 @@ docstring states the whole rule. Prints the counts of every preset, its
 citations by kind, and exits 0 when it reads every preset, 2 on an input it
 cannot read (not UTF-8 or TOML, a facts file with no Chapter 2 rows, or a
 preset citing the facts file in either form where the rule reads no
-citation). `--self-test` runs the rule on a synthetic facts file and
-preset.
+citation). Until the cut it also reads the 0.8.0 builders,
+`native-theme/src/next/presets/*.rs`: each `` // `key`: source `` comment
+is a citation, counted as `platform-facts.md` (by its sections, in
+parentheses or bare), `0.7.2 <file> (uncited)` or another source; every
+`platform-facts.md` in a builder's comments must name existing sections and
+no line, and a builder citation with no source, or a `(uncited)` in another
+form, fails. `--self-test` runs the rules on a synthetic facts file, preset
+and builder.
 `check_release.sh` (every mode) and `ci.yml`'s parity job run it and its
 self-test.
 
