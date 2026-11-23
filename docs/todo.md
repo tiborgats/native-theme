@@ -5383,6 +5383,16 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       colour for a row; the OS probe never hovers one), so the macOS presets leave `list.highlight(HOVER).fill` unstated and
       the gpui connector shows gpui-component's own hovered row (the accent at 0.6) where 0.7.2 showed the list's own
       background. Measure it on macOS 14/15/26 (a probe pass hovering a table row) and state it.
+- [ ] [0.8.x] **State values 0.7.2 states without a source** (M2.FS, 2026-11-23): model parity now requires a value
+      the unresolved 0.7.2 theme states under a state to be a rule for that state (`from_state` set), so the builders
+      state these as 0.7.2 does, each equal to the rest value and cited `0.7.2 <preset>.toml (uncited)`: **adwaita**
+      `button.hover_text_color`, `button.active_text_color`, `link.hover_text_color`, `link.active_text_color`,
+      `list.hover_text_color`, `menu.hover_text_color`, `tab.hover_text_color`, `tab.active_text_color`;
+      **material-3** `button.hover_text_color`, `button.active_text_color`, `link.hover_text_color`,
+      `slider.thumb_hover_color`; **ios-13** `link.hover_text_color`, `list.hover_text_color`, `tab.hover_text_color`.
+      The switch's on-thumb diameter is stated for `CHECKED` from constants already carried `(uncited)` on adwaita
+      and windows-11 (`switch.thumb_diameter`). Find each one's source; where `docs/platform-facts.md` has a row for
+      it, check that the row gives this value (not checked in M2.FS).
 - [ ] [0.8.x] Motion tokens: no bundled preset states any, so no connector maps them yet (gpui-component's
       `MotionTokens` slots and the model's tokens are not paired; built in the first unit that states them).
 

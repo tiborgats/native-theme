@@ -389,6 +389,22 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#1d192b"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#1d192b"
+          }
+        },
+        {
+          "states": [
             "checked"
           ],
           "label": {
@@ -764,6 +780,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "track": {
+            "fill": "#e6e0e9"
+          }
+        },
+        {
+          "states": [
             "checked"
           ],
           "track": {
@@ -912,6 +936,14 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "thumb": {
+            "fill": "#6750a4"
+          }
+        },
         {
           "states": [
             "disabled"
@@ -1185,6 +1217,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#1d1b20"
+          }
+        },
+        {
+          "states": [
             "disabled"
           ],
           "item_label": {
@@ -1287,6 +1327,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#1d1b20"
+          }
+        },
         {
           "states": [
             "selected"
@@ -1836,6 +1884,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#6750a4"
+          }
+        },
         {
           "states": [
             "pressed"
