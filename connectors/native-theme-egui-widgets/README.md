@@ -37,7 +37,7 @@ transparent and a stroke stated as none is no outline (rule 2).
 | widget | what it reads | where the theme states none |
 |---|---|---|
 | `switch::Switch` | `switch.track` and `switch.thumb`: fills, outlines, sizes and the track's corners, at rest, checked, hovered and disabled; the label's colour (`switch.label`, else `typography.body.color`) and `switch.label_gap` | no track or checked thumb size or fill, or track corners egui cannot draw as one radius: egui's `Checkbox` |
-| `radio_button::RadioButton` | `radio.dot` and `radio.indicator` widths, `radio.label_gap` | its `Role::Checkbox` cell's circle, dot and `icon_spacing` |
+| `radio_button::RadioButton` | `radio.dot` and `radio.indicator` widths, `radio.label_gap`; `radio.indicator`'s fill and stroke at rest, hovered and pressed, `radio.dot`'s fill, `radio.label`'s colour and `radio.disabled_opacity`, laid over its `Role::Checkbox` cell | its `Role::Checkbox` cell's circle, dot, label colour and `icon_spacing` |
 | `progress_bar::ProgressBar` | `progress_bar.track`: its least width, corners and outline | egui's bar |
 | `spinner::Spinner` | `spinner.color`, `diameter`, `stroke_width`; `colors.window.foreground` for a freedesktop indicator's `currentColor` | egui's own text colour for the indicator |
 | `slider::Slider` | `slider.track`, `active_track` and `thumb` fills at rest and disabled, the thumb's hover fill and its outline at rest, hovered and focused, the thumb's and the rail's sizes | no rail, filled rail or knob fill or size: egui's `Slider` |
@@ -52,7 +52,8 @@ Limits under the 0.8.0 model:
   not stretch: the model this version builds on states no label side and no
   stretching gap.
 * Three outline colours are drawn otherwise than under the 0.7.2 model, each
-  the stroke of the widget's connector cell: the radio button's circle, the
+  the stroke of the widget's connector cell, or laid over it as the cell lays
+  its own (the radio's `radio.indicator`): the radio button's circle, the
   drop-down's border and the segmented control's frame and dividers
   (windows-11, macos-monterey, macos-tahoe). The 0.8.0 theme lays these
   translucent borders inside the part, and egui ends a rect's fill at its stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,

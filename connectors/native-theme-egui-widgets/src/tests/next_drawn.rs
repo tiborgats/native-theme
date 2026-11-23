@@ -78,10 +78,10 @@ const SEGMENTED_CELL: &str = "the frame's and the dividers' colour alone differs
      SegmentedControl entry of its differences); a disabled control fades that colour as one";
 
 /// The radio's circle is egui's, outlined in its Checkbox cell's stroke.
-const RADIO_CELL: &str = "the circle's outline colour alone differs: it is the connector's \
-     Checkbox cell's bg_stroke, whose translucent border lies inside the part in the 0.8.0 theme \
-     and is composited over its fill (native-theme-egui, next::parity, the Checkbox entry of \
-     its differences)";
+const RADIO_CELL: &str = "the circle's outline colour alone differs: radio.indicator's stroke, \
+     laid over the connector's Checkbox cell as the cell lays its bg_stroke, a translucent border \
+     inside the part in the 0.8.0 theme, composited over its fill (native-theme-egui, \
+     next::parity, the Checkbox entry of its differences)";
 
 /// A context with the atlas of each model of `key` installed, drawn in its scheme: the 0.7.2
 /// theme resolved as `crate::next::parity::resolve` resolves it, and the 0.8.0 preset as
@@ -504,6 +504,69 @@ fn a_radio_label_is_at_the_stated_gap() -> TestResult {
     let patch = "[widgets.radio]\nlabel_gap = 23.0\n";
     let (right, text) = label_x(&patched_installed(Preset::KdeBreeze, patch)?).ok_or("patched")?;
     assert_eq!(text - right, 23.0);
+    Ok(())
+}
+
+/// The radio is drawn from its own homes, not from the check box's cell: a theme that styles
+/// the radio unlike the check box draws the radio's circle, outline, dot and label as stated.
+#[test]
+fn a_radio_styled_unlike_the_check_box_is_drawn_as_stated() -> TestResult {
+    let drawn = |ctx: &egui::Context| {
+        let add = |ui: &mut egui::Ui| ui.add(RadioButton::new(true, "Radio"));
+        let _ = response(ctx, at(1.0), add);
+        let (out, _) = response(ctx, at(1.0), add);
+        let shapes = flat(&out.shapes);
+        let circles: Vec<egui::epaint::CircleShape> = shapes
+            .iter()
+            .filter_map(|s| match s {
+                egui::Shape::Circle(c) => Some(*c),
+                _ => None,
+            })
+            .collect();
+        let text = shapes.iter().find_map(|s| match s {
+            egui::Shape::Text(t) => Some(
+                t.galley
+                    .job
+                    .sections
+                    .first()
+                    .map(|s| s.format.color)
+                    .filter(|&c| c != egui::Color32::PLACEHOLDER)
+                    .unwrap_or(t.fallback_color),
+            ),
+            _ => None,
+        });
+        (circles, text)
+    };
+    let (green, red, blue, magenta) = (
+        egui::Color32::from_rgb(0, 255, 0),
+        egui::Color32::from_rgb(255, 0, 0),
+        egui::Color32::from_rgb(0, 0, 255),
+        egui::Color32::from_rgb(255, 0, 255),
+    );
+    let (stock, stock_text) = drawn(&patched_installed(Preset::KdeBreeze, "")?);
+    let (circle, dot) = (
+        stock.first().ok_or("no circle")?,
+        stock.get(1).ok_or("no dot")?,
+    );
+    assert!(
+        circle.fill != green
+            && circle.stroke != egui::Stroke::new(2.0, red)
+            && dot.fill != blue
+            && stock_text != Some(magenta),
+        "the check box's cell is the stated radio: the test proves nothing"
+    );
+    let patch = "[[widgets.radio.rules]]\nstates = []\nindicator.fill = \"#00ff00\"\n\
+                 indicator.stroke = { width = 2.0, color = \"#ff0000\" }\n\
+                 dot.fill = \"#0000ff\"\nlabel.color = \"#ff00ff\"\n";
+    let (patched, text) = drawn(&patched_installed(Preset::KdeBreeze, patch)?);
+    let (circle, dot) = (
+        patched.first().ok_or("no circle")?,
+        patched.get(1).ok_or("no dot")?,
+    );
+    assert_eq!(circle.fill, green);
+    assert_eq!(circle.stroke, egui::Stroke::new(2.0, red));
+    assert_eq!(dot.fill, blue);
+    assert_eq!(text, Some(magenta));
     Ok(())
 }
 

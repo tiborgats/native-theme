@@ -44,6 +44,20 @@ pub(crate) fn open_faded<R>(
     ground: Option<egui::Color32>,
     add: impl FnOnce(&mut egui::Ui) -> R,
 ) -> R {
+    open_faded_with(ui, role, selected, enabled, ground, |_, _| {}, add)
+}
+
+/// [`open_faded`], with `prepare` given the scope before it is faded, and whether the control
+/// is disabled (here or by its calling `Ui`): what a widget lays over its cell is faded with it.
+pub(crate) fn open_faded_with<R>(
+    ui: &mut egui::Ui,
+    role: Role,
+    selected: bool,
+    enabled: bool,
+    ground: Option<egui::Color32>,
+    prepare: impl FnOnce(&mut egui::Ui, bool),
+    add: impl FnOnce(&mut egui::Ui) -> R,
+) -> R {
     // A disabled calling `Ui` has faded its painter already, and `Ui::disable` multiplies the
     // opacity again on every call (`egui/src/ui.rs:497-502`), so only an enabled one is
     // disabled here.
@@ -56,6 +70,7 @@ pub(crate) fn open_faded<R>(
         (true, false) => RoleVariant::Normal,
     };
     ui.native_scope(role, variant, |ui| {
+        prepare(ui, !(enabled && outer));
         if !enabled && outer {
             match ground {
                 Some(ground) => crate::fade::fade_as_one(ui, ground),
