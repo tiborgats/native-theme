@@ -20,13 +20,13 @@ pub struct MenuWidget {
     pub origin: WidgetOrigin,
     /// The space between an item's icon and its label, in logical pixels.
     pub icon_text_gap: f32,
-    panel: PartRules,
-    item: PartRules,
-    item_label: TextRules,
-    shortcut: TextRules,
-    icon: IconRules,
-    submenu_arrow: IconRules,
-    separator: PartRules,
+    pub(crate) panel: PartRules,
+    pub(crate) item: PartRules,
+    pub(crate) item_label: TextRules,
+    pub(crate) shortcut: TextRules,
+    pub(crate) icon: IconRules,
+    pub(crate) submenu_arrow: IconRules,
+    pub(crate) separator: PartRules,
 }
 
 /// The parts of a menu for one query.

@@ -13,9 +13,9 @@ pub struct MenuBarWidget {
     /// The space between adjacent titles, in logical pixels; `None` where no
     /// source states it.
     pub item_gap: Option<f32>,
-    bar: PartRules,
-    item: PartRules,
-    item_label: TextRules,
+    pub(crate) bar: PartRules,
+    pub(crate) item: PartRules,
+    pub(crate) item_label: TextRules,
 }
 
 /// The parts of a menu bar for one query.

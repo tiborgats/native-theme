@@ -116,9 +116,9 @@ pub struct ButtonWidget {
     /// The opacity of the whole disabled button drawn as one group; `None`
     /// where no source states it.
     pub disabled_opacity: Option<f32>,
-    body: PartRules<ButtonMatcher>,
-    label: TextRules<ButtonMatcher>,
-    icon: IconRules<ButtonMatcher>,
+    pub(crate) body: PartRules<ButtonMatcher>,
+    pub(crate) label: TextRules<ButtonMatcher>,
+    pub(crate) icon: IconRules<ButtonMatcher>,
 }
 
 /// The parts of a button for one query.
@@ -204,9 +204,9 @@ pub struct CheckboxWidget {
     /// The opacity of the whole disabled check box drawn as one group;
     /// `None` where no source states it.
     pub disabled_opacity: Option<f32>,
-    indicator: PartRules,
-    checkmark: IconRules,
-    label: TextRules,
+    pub(crate) indicator: PartRules,
+    pub(crate) checkmark: IconRules,
+    pub(crate) label: TextRules,
 }
 
 /// The parts of a check box for one query.
@@ -292,9 +292,9 @@ pub struct RadioWidget {
     /// The opacity of the whole disabled radio button drawn as one group;
     /// `None` where no source states it.
     pub disabled_opacity: Option<f32>,
-    indicator: PartRules,
-    dot: PartRules,
-    label: TextRules,
+    pub(crate) indicator: PartRules,
+    pub(crate) dot: PartRules,
+    pub(crate) label: TextRules,
 }
 
 /// The parts of a radio button for one query.
@@ -380,8 +380,8 @@ pub struct ScrollbarWidget {
     pub min_thumb_length: f32,
     /// Whether the bar overlays the content instead of taking layout space.
     pub overlay_mode: bool,
-    track: PartRules,
-    thumb: PartRules,
+    pub(crate) track: PartRules,
+    pub(crate) thumb: PartRules,
 }
 
 /// The parts of a scroll bar for one query.
@@ -460,13 +460,13 @@ pub struct ListWidget {
     pub origin: WidgetOrigin,
     /// The colour of a table's grid lines.
     pub grid_color: Color,
-    container: PartRules<ListMatcher>,
-    row: PartRules<ListMatcher>,
-    highlight: PartRules<ListMatcher>,
-    item_label: TextRules<ListMatcher>,
-    header: PartRules<ListMatcher>,
-    header_label: TextRules<ListMatcher>,
-    header_separator: PartRules<ListMatcher>,
+    pub(crate) container: PartRules<ListMatcher>,
+    pub(crate) row: PartRules<ListMatcher>,
+    pub(crate) highlight: PartRules<ListMatcher>,
+    pub(crate) item_label: TextRules<ListMatcher>,
+    pub(crate) header: PartRules<ListMatcher>,
+    pub(crate) header_label: TextRules<ListMatcher>,
+    pub(crate) header_separator: PartRules<ListMatcher>,
 }
 
 /// The parts of a list for one query.

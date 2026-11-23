@@ -27,10 +27,10 @@ pub struct ExpanderWidget {
     /// Whether the expander draws its frame; `None` where no source states
     /// it.
     pub frame_enabled: Option<bool>,
-    container: PartRules,
-    header: PartRules,
-    header_label: TextRules,
-    arrow: IconRules,
+    pub(crate) container: PartRules,
+    pub(crate) header: PartRules,
+    pub(crate) header_label: TextRules,
+    pub(crate) arrow: IconRules,
 }
 
 /// The parts of an expander for one query.

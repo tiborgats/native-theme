@@ -15,11 +15,11 @@ pub struct ToolbarWidget {
     /// The space between adjacent items, in logical pixels; `None` where no
     /// source states it.
     pub item_gap: Option<f32>,
-    bar: PartRules,
-    button: PartRules,
-    button_label: TextRules,
-    button_icon: IconRules,
-    separator: PartRules,
+    pub(crate) bar: PartRules,
+    pub(crate) button: PartRules,
+    pub(crate) button_label: TextRules,
+    pub(crate) button_icon: IconRules,
+    pub(crate) separator: PartRules,
 }
 
 /// The parts of a toolbar for one query.

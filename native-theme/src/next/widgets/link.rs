@@ -10,8 +10,8 @@ use crate::next::style::{PartStyle, TextStyle};
 pub struct LinkWidget {
     /// Native or synthesized.
     pub origin: WidgetOrigin,
-    pub(super) container: PartRules,
-    pub(super) label: TextRules,
+    pub(crate) container: PartRules,
+    pub(crate) label: TextRules,
 }
 
 /// The parts of a hyperlink for one query.

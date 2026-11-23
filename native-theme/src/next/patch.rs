@@ -23,9 +23,23 @@ use super::query::{
     ButtonShape, ButtonVariant, ControlSize, GroupPosition, InputVariant, ListVariant, Orientation,
     Surface, TabVariant, WidgetState,
 };
-use super::rules::{ButtonMatcher, IconProp, ListMatcher, PartProp, RuleSelector, TextProp};
+use super::roles::{
+    AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
+};
+use super::rules::{
+    ButtonMatcher, IconProp, ListMatcher, PartProp, Patched, RuleSelector, RuleSet, TextProp,
+};
 use super::style::{
-    FocusIndicator, FontStyle, FontWidth, IconRenderingMode, RippleSpec, TextDecoration,
+    FocusIndicator, FontStyle, FontWidth, IconRenderingMode, IconStyle, PartStyle, RippleSpec,
+    TextDecoration, TextStated, TextStyle,
+};
+use super::typography::Typography;
+use super::widgets::{
+    ButtonWidget, CardWidget, CheckboxWidget, ComboBoxWidget, DialogWidget, ExpanderWidget,
+    InputWidget, LinkWidget, ListWidget, MenuBarWidget, MenuWidget, PopoverWidget,
+    ProgressBarWidget, RadioWidget, ResolvedTheme, ScrollbarWidget, SegmentedControlWidget,
+    SeparatorWidget, SidebarWidget, SliderWidget, SpinnerWidget, SplitterWidget, StatusBarWidget,
+    SwitchWidget, TabWidget, ToolbarWidget, TooltipWidget,
 };
 
 /// A struct of sparse fields, its `new()` (the patch that states nothing) and
@@ -203,6 +217,26 @@ macro_rules! widget_patch {
                 }
                 Ok(())
             }
+
+            /// Sets the metrics this patch states and appends its rules to
+            /// each part, in order; a rule that states nothing of a part
+            /// appends nothing to it.
+            fn apply_to(&self, widget: &mut $Widget) {
+                $( if let Some(value) = self.$set { widget.$set = value; } )*
+                $( if let Some(value) = self.$opt { widget.$opt = Some(value); } )*
+                $(
+                    widget.$part.append(self.rules.iter().filter_map(|rule| {
+                        let props: Vec<_> = rule.$part.to_props().collect();
+                        (!props.is_empty()).then_some((rule.selector, props))
+                    }));
+                )*
+            }
+        }
+
+        impl RescaledWidget for $Widget {
+            fn rescale(&mut self, rescale: &Rescale) {
+                $( rescale.rules(&mut self.$part); )*
+            }
         }
     };
     (
@@ -249,6 +283,24 @@ macro_rules! widget_patch {
                 $( self.$part.check(&format!("{path}.{}", stringify!($part)))?; )*
                 Ok(())
             }
+
+            /// Sets the metrics this patch states and applies each part's
+            /// properties onto the part.
+            fn apply_to(&self, widget: &mut $Widget) {
+                $( if let Some(value) = self.$set { widget.$set = value; } )*
+                $( if let Some(value) = self.$opt { widget.$opt = Some(value); } )*
+                $(
+                    for prop in self.$part.to_props() {
+                        widget.$part.apply(&prop);
+                    }
+                )*
+            }
+        }
+
+        impl RescaledWidget for $Widget {
+            fn rescale(&mut self, _rescale: &Rescale) {
+                $( _rescale.style(&mut self.$part); )*
+            }
         }
     };
 }
@@ -258,7 +310,7 @@ macro_rules! widget_patch {
 // ---------------------------------------------------------------------------
 
 sparse! {
-    /// A sparse [`PartStyle`](super::style::PartStyle): each property it
+    /// A sparse [`PartStyle`]: each property it
     /// states becomes a [`PartProp`].
     pub struct PartPatch {
         /// `fill`.
@@ -364,7 +416,7 @@ impl PartPatch {
 }
 
 sparse! {
-    /// A sparse [`TextStyle`](super::style::TextStyle): each property it
+    /// A sparse [`TextStyle`]: each property it
     /// states becomes a [`TextProp`].
     pub struct TextPatch {
         /// `family`.
@@ -443,7 +495,7 @@ impl TextPatch {
 }
 
 sparse! {
-    /// A sparse [`IconStyle`](super::style::IconStyle): each property it
+    /// A sparse [`IconStyle`]: each property it
     /// states becomes an [`IconProp`].
     pub struct IconPatch {
         /// `size`.
@@ -503,7 +555,7 @@ impl IconPatch {
 // ---------------------------------------------------------------------------
 
 sparse! {
-    /// A sparse [`SurfaceColors`](super::roles::SurfaceColors).
+    /// A sparse [`SurfaceColors`].
     pub struct SurfacePatch {
         /// `background`.
         background: opt Color,
@@ -519,7 +571,7 @@ sparse! {
 }
 
 sparse! {
-    /// A sparse [`SelectionColors`](super::roles::SelectionColors).
+    /// A sparse [`SelectionColors`].
     pub struct SelectionPatch {
         /// `background`.
         background: opt Color,
@@ -533,7 +585,7 @@ sparse! {
 }
 
 sparse! {
-    /// A sparse [`AccentColors`](super::roles::AccentColors).
+    /// A sparse [`AccentColors`].
     pub struct AccentPatch {
         /// `fill`.
         fill: opt Color,
@@ -545,9 +597,8 @@ sparse! {
 }
 
 sparse! {
-    /// A sparse [`StatusColors`](super::roles::StatusColors); a status colour
-    /// it changes takes the origin
-    /// [`Custom`](super::roles::RoleOrigin::Custom).
+    /// A sparse [`StatusColors`]; a status colour it changes takes the
+    /// origin [`Custom`](RoleOrigin::Custom).
     pub struct StatusPatch {
         /// `fill`.
         fill: opt Color,
@@ -559,7 +610,7 @@ sparse! {
 }
 
 sparse! {
-    /// A sparse [`ColorRoles`](super::roles::ColorRoles): each role it states
+    /// A sparse [`ColorRoles`]: each role it states
     /// replaces the resolved one. Only the role changes: widget parts already
     /// derived from it keep their colours (a [`Palette`](super::Palette)
     /// recolours coherently).
@@ -1044,7 +1095,7 @@ impl ListRule {
 
 sparse! {
     /// The widgets' patches, one entry per widget of a
-    /// [`ResolvedTheme`](super::ResolvedTheme).
+    /// [`ResolvedTheme`].
     pub struct WidgetPatchMap {
         /// `button`.
         button: all ButtonPatch,
@@ -1126,6 +1177,404 @@ impl WidgetPatchMap {
         for_each_widget!(check_each);
         Ok(())
     }
+
+    /// Each widget's patch applied onto the widget of `theme`.
+    fn apply_to(&self, theme: &mut ResolvedTheme) {
+        macro_rules! apply_each {
+            ($($widget:ident)*) => {
+                $( self.$widget.apply_to(&mut theme.$widget); )*
+            };
+        }
+        for_each_widget!(apply_each);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The application (resolution step 3)
+// ---------------------------------------------------------------------------
+
+/// `value` written into `slot` where stated.
+fn set<T: Copy>(slot: &mut T, value: Option<T>) {
+    if let Some(value) = value {
+        *slot = value;
+    }
+}
+
+/// `value` written into the optional `slot` where stated.
+fn set_some<T: Copy>(slot: &mut Option<T>, value: Option<T>) {
+    if value.is_some() {
+        *slot = value;
+    }
+}
+
+impl SurfacePatch {
+    fn apply_to(&self, roles: &mut SurfaceColors) {
+        set_some(&mut roles.background, self.background);
+        set_some(&mut roles.foreground, self.foreground);
+        set_some(&mut roles.foreground_muted, self.foreground_muted);
+        set_some(&mut roles.border, self.border);
+        set_some(&mut roles.divider, self.divider);
+    }
+}
+
+impl SelectionPatch {
+    fn apply_to(&self, roles: &mut SelectionColors) {
+        set(&mut roles.background, self.background);
+        set(&mut roles.foreground, self.foreground);
+        set_some(&mut roles.unfocused_background, self.unfocused_background);
+        set_some(&mut roles.unfocused_foreground, self.unfocused_foreground);
+    }
+}
+
+impl AccentPatch {
+    fn apply_to(&self, roles: &mut AccentColors) {
+        set(&mut roles.fill, self.fill);
+        set(&mut roles.foreground, self.foreground);
+        set_some(&mut roles.standalone, self.standalone);
+    }
+}
+
+impl StatusPatch {
+    /// The roles it states written, the status taking the origin `Custom`
+    /// where it states any.
+    fn apply_to(&self, roles: &mut StatusColors) {
+        if *self == Self::default() {
+            return;
+        }
+        set(&mut roles.fill, self.fill);
+        set(&mut roles.foreground, self.foreground);
+        set_some(&mut roles.standalone, self.standalone);
+        roles.origin = RoleOrigin::Custom;
+    }
+}
+
+impl ColorPatch {
+    /// The roles it states written; nothing derived from them changes.
+    fn apply_to(&self, roles: &mut ColorRoles) {
+        self.window.apply_to(&mut roles.window);
+        self.view.apply_to(&mut roles.view);
+        self.header.apply_to(&mut roles.header);
+        self.sidebar.apply_to(&mut roles.sidebar);
+        self.card.apply_to(&mut roles.card);
+        self.dialog.apply_to(&mut roles.dialog);
+        self.popover.apply_to(&mut roles.popover);
+        self.tooltip.apply_to(&mut roles.tooltip);
+        self.osd.apply_to(&mut roles.osd);
+        self.selection.apply_to(&mut roles.selection);
+        self.text_selection.apply_to(&mut roles.text_selection);
+        set_some(&mut roles.find_highlight, self.find_highlight);
+        set_some(&mut roles.scrim, self.scrim);
+        self.accent.apply_to(&mut roles.accent);
+        set(&mut roles.focus_ring, self.focus_ring);
+        set(&mut roles.caret, self.caret);
+        set(&mut roles.link, self.link);
+        set_some(&mut roles.link_visited, self.link_visited);
+        set(&mut roles.disabled_text, self.disabled_text);
+        set(&mut roles.shadow, self.shadow);
+        set(&mut roles.disabled_opacity, self.disabled_opacity);
+        self.error.apply_to(&mut roles.error);
+        self.warning.apply_to(&mut roles.warning);
+        self.success.apply_to(&mut roles.success);
+        self.info.apply_to(&mut roles.info);
+    }
+}
+
+/// What one patch's walk over every part changes: the font families it
+/// replaces, each as (the family it replaces, the new one), and the scales.
+struct Rescale {
+    ui: Option<(Arc<str>, Arc<str>)>,
+    mono: Option<(Arc<str>, Arc<str>)>,
+    corner: Option<f32>,
+    spacing: Option<f32>,
+}
+
+impl Rescale {
+    /// The walk of `patch` over a theme of `typography`: the UI family it
+    /// replaces is the body's, the monospace one the monospace slot's; `None`
+    /// where the patch states no family and no scale.
+    fn new(patch: &ThemePatch, typography: &Typography) -> Option<Self> {
+        let rescale = Self {
+            ui: patch
+                .font_family
+                .clone()
+                .map(|new| (typography.body.family.clone(), new)),
+            mono: patch
+                .monospace_family
+                .clone()
+                .map(|new| (typography.monospace.family.clone(), new)),
+            corner: patch.corner_scale,
+            spacing: patch.spacing_scale,
+        };
+        let changes = rescale.ui.is_some()
+            || rescale.mono.is_some()
+            || rescale.corner.is_some()
+            || rescale.spacing.is_some();
+        changes.then_some(rescale)
+    }
+
+    /// The new family of a text whose family is `family`: the UI family's
+    /// replacement where it is the replaced UI family, else the monospace
+    /// one's where it is the replaced monospace family.
+    fn family(&self, family: &str) -> Option<&Arc<str>> {
+        [&self.ui, &self.mono]
+            .into_iter()
+            .flatten()
+            .find(|(old, _)| **old == *family)
+            .map(|(_, new)| new)
+    }
+
+    fn corners(&self, corners: &mut Corners) {
+        let Some(k) = self.corner else {
+            return;
+        };
+        corners.radius = match corners.radius {
+            CornerRadius::Uniform(r) => CornerRadius::Uniform(r * k),
+            CornerRadius::PerCorner {
+                top_left,
+                top_right,
+                bottom_right,
+                bottom_left,
+            } => CornerRadius::PerCorner {
+                top_left: top_left * k,
+                top_right: top_right * k,
+                bottom_right: bottom_right * k,
+                bottom_left: bottom_left * k,
+            },
+            CornerRadius::Concentric { inset, min_radius } => CornerRadius::Concentric {
+                inset,
+                min_radius: min_radius * k,
+            },
+            other => other,
+        };
+    }
+
+    fn edges(&self, edges: &mut Edges) {
+        let Some(k) = self.spacing else {
+            return;
+        };
+        *edges = Edges::new(
+            edges.top * k,
+            edges.right * k,
+            edges.bottom * k,
+            edges.left * k,
+        );
+    }
+
+    fn gap(&self, gap: &mut f32) {
+        if let Some(k) = self.spacing {
+            *gap *= k;
+        }
+    }
+
+    fn optional_gap(&self, gap: &mut Option<f32>) {
+        if let Some(gap) = gap {
+            self.gap(gap);
+        }
+    }
+
+    /// `rules` with its base and every property rescaled, where this walk
+    /// changes anything of its kind.
+    fn rules<T: Rescaled, M>(&self, rules: &mut RuleSet<T, T::Prop, M>) {
+        if T::touched(self) {
+            rules.edit(
+                |base| base.rescale(self),
+                |prop| T::rescale_prop(prop, self),
+            );
+        }
+    }
+
+    fn style<T: Rescaled>(&self, style: &mut T) {
+        style.rescale(self);
+    }
+
+    /// The walk over the whole theme: the typography slots (the body and the
+    /// monospace slot always take their new family), the layout's radii and
+    /// gaps, the widgets' parts and `*_gap` metrics, and the window chrome.
+    fn theme(&self, theme: &mut ResolvedTheme) {
+        let typography = &mut theme.typography;
+        for slot in [
+            &mut typography.display,
+            &mut typography.title1,
+            &mut typography.title2,
+            &mut typography.title3,
+            &mut typography.title4,
+            &mut typography.headline,
+            &mut typography.callout,
+            &mut typography.subheadline,
+            &mut typography.caption,
+        ]
+        .into_iter()
+        .flatten()
+        {
+            self.style(slot);
+        }
+        for (slot, family) in [
+            (&mut typography.body, &self.ui),
+            (&mut typography.monospace, &self.mono),
+        ] {
+            match family {
+                Some((_, new)) => {
+                    slot.family = new.clone();
+                    slot.stated |= TextStated::FAMILY;
+                }
+                None => self.style(slot),
+            }
+        }
+
+        let layout = &mut theme.layout;
+        if let Some(k) = self.corner {
+            layout.corner_radius *= k;
+            layout.corner_radius_lg *= k;
+        }
+        for gap in [
+            &mut layout.widget_gap,
+            &mut layout.container_margin,
+            &mut layout.window_margin,
+            &mut layout.section_gap,
+        ] {
+            self.optional_gap(gap);
+        }
+
+        macro_rules! rescale_each {
+            ($($widget:ident)*) => {
+                $( theme.$widget.rescale(self); )*
+            };
+        }
+        for_each_widget!(rescale_each);
+        self.gap(&mut theme.button.icon_text_gap);
+        self.gap(&mut theme.checkbox.label_gap);
+        self.gap(&mut theme.radio.label_gap);
+        self.optional_gap(&mut theme.switch.label_gap);
+        self.optional_gap(&mut theme.tab.item_gap);
+        self.gap(&mut theme.menu.icon_text_gap);
+        self.optional_gap(&mut theme.menu_bar.item_gap);
+        self.optional_gap(&mut theme.sidebar.item_gap);
+        self.optional_gap(&mut theme.toolbar.item_gap);
+        self.optional_gap(&mut theme.expander.arrow_gap);
+        self.gap(&mut theme.dialog.button_gap);
+
+        let window = &mut theme.window;
+        window.edit_parts(|part| self.style(part), |text| self.style(text));
+        self.rules(&mut window.caption_button);
+        self.rules(&mut window.caption_icon);
+    }
+}
+
+/// A style a patch's walk rescales, with the kind of property its rules
+/// state.
+trait Rescaled {
+    /// The property kind.
+    type Prop: Clone;
+
+    /// Whether the walk changes anything of this kind.
+    fn touched(rescale: &Rescale) -> bool;
+
+    fn rescale(&mut self, rescale: &Rescale);
+
+    fn rescale_prop(prop: &mut Self::Prop, rescale: &Rescale);
+}
+
+impl Rescaled for PartStyle {
+    type Prop = PartProp;
+
+    fn touched(rescale: &Rescale) -> bool {
+        rescale.corner.is_some() || rescale.spacing.is_some()
+    }
+
+    /// The corners, the padding and the margin; never a stroke, a width or a
+    /// size.
+    fn rescale(&mut self, rescale: &Rescale) {
+        rescale.corners(&mut self.corners);
+        rescale.edges(&mut self.padding);
+        rescale.edges(&mut self.margin);
+    }
+
+    fn rescale_prop(prop: &mut PartProp, rescale: &Rescale) {
+        match prop {
+            PartProp::Corners(corners) => rescale.corners(corners),
+            PartProp::Padding(edges)
+            | PartProp::PaddingSides(edges, _)
+            | PartProp::Margin(edges)
+            | PartProp::MarginSides(edges, _) => rescale.edges(edges),
+            _ => {}
+        }
+    }
+}
+
+impl Rescaled for TextStyle {
+    type Prop = TextProp;
+
+    fn touched(rescale: &Rescale) -> bool {
+        rescale.ui.is_some() || rescale.mono.is_some()
+    }
+
+    /// The family, where it is stated and one the walk replaces.
+    fn rescale(&mut self, rescale: &Rescale) {
+        if !self.stated.contains(TextStated::FAMILY) {
+            return;
+        }
+        if let Some(new) = rescale.family(&self.family) {
+            self.family = new.clone();
+        }
+    }
+
+    fn rescale_prop(prop: &mut TextProp, rescale: &Rescale) {
+        if let TextProp::Family(family) = prop
+            && let Some(new) = rescale.family(family)
+        {
+            *family = new.clone();
+        }
+    }
+}
+
+impl Rescaled for IconStyle {
+    type Prop = IconProp;
+
+    fn touched(_rescale: &Rescale) -> bool {
+        false
+    }
+
+    fn rescale(&mut self, _rescale: &Rescale) {}
+
+    fn rescale_prop(_prop: &mut IconProp, _rescale: &Rescale) {}
+}
+
+/// A widget whose parts a patch's walk rescales.
+trait RescaledWidget {
+    fn rescale(&mut self, rescale: &Rescale);
+}
+
+impl ResolvedTheme {
+    /// `patch` applied onto this theme (spec §6, resolution step 3), as
+    /// [`Theme::with_patch`](super::Theme::with_patch) applies it; for use
+    /// inside a transform. In order: the colour roles it states (only the
+    /// roles: the parts derived from them keep their colours); the font
+    /// families, in the typography slots and in every text part and rule
+    /// whose family is the one replaced; the corner radii and the spacing
+    /// (never a stroke width, `border_width`, `border_opacity` or a
+    /// `min_size`); the widgets' rules, appended after the preset's, the
+    /// static widgets' part patches and the direct metrics; the custom
+    /// tokens, merged. A patch's scales therefore leave the rules it
+    /// appends as they are written.
+    pub fn apply_patch(&mut self, patch: &ThemePatch) {
+        patch.color_overrides.apply_to(&mut self.colors);
+        if let Some(rescale) = Rescale::new(patch, &self.typography) {
+            rescale.theme(self);
+        }
+        patch.widget_rules.apply_to(self);
+        self.custom_colors.extend(
+            patch
+                .custom_colors
+                .iter()
+                .map(|(key, color)| (key.clone(), *color)),
+        );
+        self.custom_metrics.extend(
+            patch
+                .custom_metrics
+                .iter()
+                .map(|(key, value)| (key.clone(), *value)),
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1135,7 +1584,7 @@ impl WidgetPatchMap {
 /// Sparse changes laid over a resolved theme (spec §7, Tier 2), applied by
 /// [`Theme::with_patch`](super::Theme::with_patch) after the preset's
 /// builder and before the transforms, or by
-/// [`ResolvedTheme::apply_patch`](super::ResolvedTheme::apply_patch) inside
+/// [`ResolvedTheme::apply_patch`] inside
 /// a transform. Within a patch the fields apply in the order they are
 /// declared here (spec §6, resolution step 3), so a patch's scales do not
 /// touch the rules it appends.

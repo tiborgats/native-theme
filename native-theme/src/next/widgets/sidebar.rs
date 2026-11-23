@@ -16,11 +16,11 @@ pub struct SidebarWidget {
     /// The space between adjacent items, in logical pixels; `None` where no
     /// source states it.
     pub item_gap: Option<f32>,
-    container: PartRules,
-    item: PartRules,
-    item_label: TextRules,
-    item_icon: IconRules,
-    section_header: TextRules,
+    pub(crate) container: PartRules,
+    pub(crate) item: PartRules,
+    pub(crate) item_label: TextRules,
+    pub(crate) item_icon: IconRules,
+    pub(crate) section_header: TextRules,
 }
 
 /// The parts of a sidebar for one query.

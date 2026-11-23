@@ -9,6 +9,7 @@ use super::icons::{IconSizes, IconThemeSpec};
 use super::layout::LayoutMetrics;
 use super::motion::{CaretSpec, MotionTokens, UiTimings};
 use super::palette::Palette;
+use super::patch::ThemePatch;
 use super::presets::kde;
 use super::query::{Contrast, Scheme, ThemeContext, sanitized_text_scale};
 use super::reader::{OsColors, SystemOverrides};
@@ -203,17 +204,17 @@ impl Palettes {
 }
 
 /// A theme to resolve: a preset, the context it resolves for by default, the
-/// system's settings, a name, palettes, an accent and transforms, each where
-/// given (spec §6).
+/// system's settings, a name, palettes, an accent, patches and transforms,
+/// each where given (spec §6).
 ///
 /// [`resolve`](Self::resolve) runs the preset's builder. Only `kde-breeze`'s
 /// is written, and it does not apply the palette or the accent yet; every
 /// other preset resolves to a theme that states nothing (plan, M1, M2):
 /// scaffolding until each preset's builder lands, not a theme to draw with.
 //
-// Not built yet, each with its milestone (plan, M1): `with_patch`;
-// `from_system`, `from_system_with_preset`, `from_system_or_default`;
-// `from_toml`; `diagnostics`.
+// Not built yet, each with its milestone (plan, M1): `from_system`,
+// `from_system_with_preset`, `from_system_or_default`; `from_toml`;
+// `diagnostics`.
 #[derive(Clone)]
 pub struct Theme {
     preset: Preset,
@@ -223,7 +224,7 @@ pub struct Theme {
     palettes: Palettes,
     accent: Option<Color>,
     preserve_palette_in_high_contrast: bool,
-    // `patches: Vec<ThemePatch>` comes with the `ThemePatch` type (plan, M1).
+    patches: Vec<ThemePatch>,
     transforms: Vec<Transform>,
 }
 
@@ -240,6 +241,7 @@ impl std::fmt::Debug for Theme {
                 "preserve_palette_in_high_contrast",
                 &self.preserve_palette_in_high_contrast,
             )
+            .field("patches", &self.patches)
             .field("transforms", &self.transforms.len())
             .finish()
     }
@@ -247,7 +249,7 @@ impl std::fmt::Debug for Theme {
 
 impl Theme {
     /// The theme of `preset`, for the default context, without system
-    /// settings, name, palette, accent or transform.
+    /// settings, name, palette, accent, patch or transform.
     #[must_use]
     pub fn preset(preset: Preset) -> Self {
         Self {
@@ -258,6 +260,7 @@ impl Theme {
             palettes: Palettes::NONE,
             accent: None,
             preserve_palette_in_high_contrast: false,
+            patches: Vec::new(),
             transforms: Vec::new(),
         }
     }
@@ -364,6 +367,15 @@ impl Theme {
         self
     }
 
+    /// This theme with `patch` applied onto every resolved theme, after the
+    /// patches given before it and before the transforms (spec §6,
+    /// resolution step 3; [`ResolvedTheme::apply_patch`]).
+    #[must_use]
+    pub fn with_patch(mut self, patch: ThemePatch) -> Self {
+        self.patches.push(patch);
+        self
+    }
+
     /// This theme with `f` run on every resolved theme, after the transforms
     /// given before it (spec §6, resolution step 4).
     #[must_use]
@@ -383,8 +395,8 @@ impl Theme {
 
     /// The theme resolved for `ctx` (spec §6, "Resolution Algorithm"): the
     /// effective context and the active palette (step 1), the preset's
-    /// builder run with them (step 2), then the transforms in the order
-    /// given (step 4).
+    /// builder run with them (step 2), then the patches (step 3) and the
+    /// transforms (step 4), each in the order given.
     ///
     /// The name is the explicit name, else the active palette's, else the
     /// system's theme name unless the system was read in the other scheme
@@ -406,6 +418,9 @@ impl Theme {
                     .and_then(|system| system.theme_name.clone())
             })
             .unwrap_or_else(|| Arc::from(self.preset.display_name()));
+        for patch in &self.patches {
+            resolved.apply_patch(patch);
+        }
         for transform in &self.transforms {
             transform(&mut resolved);
         }

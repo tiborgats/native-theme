@@ -12,7 +12,7 @@ pub struct SplitterWidget {
     pub origin: WidgetOrigin,
     /// The handle's width across the split, in logical pixels.
     pub divider_width: f32,
-    pub(super) handle: PartRules,
+    pub(crate) handle: PartRules,
 }
 
 /// The parts of a splitter for one query.

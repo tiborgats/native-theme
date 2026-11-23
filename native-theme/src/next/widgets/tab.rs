@@ -30,12 +30,12 @@ pub struct TabWidget {
     /// which spread its fill into the bar's edge; `None` where the
     /// platform's selected tab does not curve out.
     pub active_outward_corner_radius: Option<f32>,
-    bar: PartRules<TabMatcher>,
-    tab: PartRules<TabMatcher>,
-    label: TextRules<TabMatcher>,
-    indicator: PartRules<TabMatcher>,
-    close_button: PartRules<TabMatcher>,
-    close_icon: IconRules<TabMatcher>,
+    pub(crate) bar: PartRules<TabMatcher>,
+    pub(crate) tab: PartRules<TabMatcher>,
+    pub(crate) label: TextRules<TabMatcher>,
+    pub(crate) indicator: PartRules<TabMatcher>,
+    pub(crate) close_button: PartRules<TabMatcher>,
+    pub(crate) close_icon: IconRules<TabMatcher>,
 }
 
 /// The parts of a tab bar for one query.

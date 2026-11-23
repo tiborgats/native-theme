@@ -14,8 +14,8 @@ pub struct ProgressBarWidget {
     /// The period of the indeterminate animation, in milliseconds; `None`
     /// where no source states it.
     pub indeterminate_period_ms: Option<u32>,
-    pub(super) track: PartRules,
-    pub(super) fill: PartRules,
+    pub(crate) track: PartRules,
+    pub(crate) fill: PartRules,
 }
 
 /// The parts of a progress bar for one query.

@@ -285,13 +285,6 @@ impl<T, P, M> RuleSet<T, P, M> {
     /// §6, resolution step 3): evaluated after the builder's, so that where
     /// both match, the appended rule wins. The rule and property buffers are
     /// rebuilt, once for the whole batch; with no rule given, nothing is.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "called by ResolvedTheme::apply_patch, the next commit of M1.8"
-        )
-    )]
     pub(crate) fn append<Q>(&mut self, rules: impl IntoIterator<Item = (RuleSelector<M>, Q)>)
     where
         Q: IntoIterator<Item = P>,
@@ -315,6 +308,19 @@ impl<T, P, M> RuleSet<T, P, M> {
             });
         }
         self.rules = Arc::from(entries);
+        self.props = Arc::from(props);
+    }
+
+    /// The rule set with `base` run on its base style and `prop` on every
+    /// property of its rules (a theme patch's scales and font families, spec
+    /// §6, resolution step 3); the property buffer is rebuilt.
+    pub(crate) fn edit(&mut self, base: impl FnOnce(&mut T), prop: impl FnMut(&mut P))
+    where
+        P: Clone,
+    {
+        base(&mut self.base);
+        let mut props = self.props.to_vec();
+        props.iter_mut().for_each(prop);
         self.props = Arc::from(props);
     }
 

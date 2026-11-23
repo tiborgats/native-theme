@@ -20,9 +20,9 @@ pub struct ComboBoxWidget {
     /// The opacity of the whole disabled combo box drawn as one group;
     /// `None` where no source states it.
     pub disabled_opacity: Option<f32>,
-    field: PartRules,
-    label: TextRules,
-    chevron: IconRules,
+    pub(crate) field: PartRules,
+    pub(crate) label: TextRules,
+    pub(crate) chevron: IconRules,
 }
 
 /// The parts of a combo box for one query.

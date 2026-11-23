@@ -235,6 +235,25 @@ impl WindowChrome {
         self.caption_icon.eval(&caption_query(kind, state))
     }
 
+    /// The chrome with `part` run on the frame's and the title bar's style
+    /// in each window state and `text` on the title's (a theme patch's
+    /// scales and font families, spec §6, resolution step 3); the caption
+    /// rule sets are edited where they stand.
+    pub(crate) fn edit_parts(
+        &mut self,
+        mut part: impl FnMut(&mut PartStyle),
+        text: impl FnOnce(&mut TextStyle),
+    ) {
+        for frame in [&mut self.frame, &mut self.frame_maximized] {
+            let mut style = frame.style.clone();
+            part(&mut style);
+            *frame = FrameStyle::new(style);
+        }
+        part(&mut self.title_bar);
+        part(&mut self.title_bar_maximized);
+        text(&mut self.title);
+    }
+
     fn title_bar_of(&self, state: WindowState) -> &PartStyle {
         if state.maximized || state.fullscreen {
             &self.title_bar_maximized

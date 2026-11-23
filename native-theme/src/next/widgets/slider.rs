@@ -17,10 +17,10 @@ pub struct SliderWidget {
     /// The opacity of the whole disabled slider drawn as one group; `None`
     /// where no source states it.
     pub disabled_opacity: Option<f32>,
-    pub(super) track: PartRules,
-    pub(super) active_track: PartRules,
-    pub(super) thumb: PartRules,
-    pub(super) tick: PartRules,
+    pub(crate) track: PartRules,
+    pub(crate) active_track: PartRules,
+    pub(crate) thumb: PartRules,
+    pub(crate) tick: PartRules,
 }
 
 /// The parts of a slider for one query.

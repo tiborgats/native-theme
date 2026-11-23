@@ -20,9 +20,9 @@ pub struct SwitchWidget {
     /// The opacity of the whole disabled switch drawn as one group; `None`
     /// where no source states it.
     pub disabled_opacity: Option<f32>,
-    track: PartRules,
-    thumb: PartRules,
-    label: TextRules,
+    pub(crate) track: PartRules,
+    pub(crate) thumb: PartRules,
+    pub(crate) label: TextRules,
 }
 
 /// The parts of a switch for one query.

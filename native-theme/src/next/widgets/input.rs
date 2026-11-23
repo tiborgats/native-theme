@@ -14,10 +14,10 @@ pub struct InputWidget {
     /// The opacity of the whole disabled field drawn as one group; `None`
     /// where no source states it.
     pub disabled_opacity: Option<f32>,
-    pub(super) field: PartRules<Option<InputVariant>>,
-    pub(super) text: TextRules<Option<InputVariant>>,
-    pub(super) placeholder: TextRules<Option<InputVariant>>,
-    pub(super) helper_text: TextRules<Option<InputVariant>>,
+    pub(crate) field: PartRules<Option<InputVariant>>,
+    pub(crate) text: TextRules<Option<InputVariant>>,
+    pub(crate) placeholder: TextRules<Option<InputVariant>>,
+    pub(crate) helper_text: TextRules<Option<InputVariant>>,
 }
 
 /// The parts of a text input for one query.

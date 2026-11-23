@@ -17,10 +17,10 @@ pub struct SegmentedControlWidget {
     /// The opacity of the whole disabled control drawn as one group; `None`
     /// where no source states it.
     pub disabled_opacity: Option<f32>,
-    track: PartRules,
-    segment: PartRules,
-    label: TextRules,
-    separator: PartRules,
+    pub(crate) track: PartRules,
+    pub(crate) segment: PartRules,
+    pub(crate) label: TextRules,
+    pub(crate) separator: PartRules,
 }
 
 /// The parts of a segmented control for one query.

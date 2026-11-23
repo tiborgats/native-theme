@@ -10,7 +10,7 @@ use crate::next::style::PartStyle;
 pub struct CardWidget {
     /// Native or synthesized.
     pub origin: WidgetOrigin,
-    container: PartRules,
+    pub(crate) container: PartRules,
 }
 
 /// The parts of a card for one query.
