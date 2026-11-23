@@ -703,6 +703,42 @@ fn a_radio_styled_unlike_the_check_box_is_drawn_as_stated() -> TestResult {
     Ok(())
 }
 
+/// `radio.disabled_opacity` is the fade of a disabled radio as one widget over its backdrop:
+/// its circle, in the stated disabled fill, is faded over the backdrop by the stated opacity.
+#[test]
+fn a_disabled_radio_is_faded_by_its_stated_opacity() -> TestResult {
+    let ground = egui::Color32::from_rgb(0, 0, 0);
+    let green = egui::Color32::from_rgb(0, 255, 0);
+    let circle = |opacity: &str| -> Result<egui::Color32, Box<dyn std::error::Error>> {
+        let patch = format!(
+            "[widgets.radio]\ndisabled_opacity = {opacity}\n\n\
+             [[widgets.radio.rules]]\nstates = [\"disabled\"]\nindicator.fill = \"#00ff00\"\n"
+        );
+        let ctx = patched_installed(Preset::KdeBreeze, &patch)?;
+        let add = |ui: &mut egui::Ui| {
+            ui.add(
+                RadioButton::new(false, "Radio")
+                    .enabled(false)
+                    .backdrop(ground),
+            )
+        };
+        let _ = response(&ctx, at(1.0), add);
+        let (out, _) = response(&ctx, at(1.0), add);
+        Ok(flat(&out.shapes)
+            .into_iter()
+            .find_map(|s| match s {
+                egui::Shape::Circle(c) => Some(c.fill),
+                _ => None,
+            })
+            .ok_or("no circle drawn")?)
+    };
+    let (quarter, half) = (circle("0.25")?, circle("0.5")?);
+    assert_eq!(quarter, crate::fade::faded(ground, green, 0.25));
+    assert_eq!(half, crate::fade::faded(ground, green, 0.5));
+    assert_ne!(quarter, half);
+    Ok(())
+}
+
 /// A progress bar's track stroke stated as none is no outline, on every preset whose bar has
 /// one; its pill corners are half its stated height.
 #[test]
