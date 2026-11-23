@@ -4,8 +4,8 @@
 //! ships, every icon of the theme above its role's name, and `ui.image` — an image carries no
 //! theme, so every item is in the base style.
 
+use native_theme::icons::IconSet;
 use native_theme::icons::{IconRole, TransformAnimation};
-use native_theme::theme::IconSet;
 use native_theme_egui::icons::{self, IconContext};
 use native_theme_egui::{ThemeAtlas, border_color, border_corner_radius};
 use native_theme_showcase_support::rows;

@@ -4,7 +4,7 @@
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use native_theme::icons::{IconSetChoice, default_icon_choice};
-use native_theme::{AccessibilityPreferences, SystemTheme, theme::IconSet};
+use native_theme::{AccessibilityPreferences, SystemTheme, icons::IconSet};
 use native_theme_egui::{SystemThemeExt as _, ThemeAtlas, from_preset};
 use native_theme_showcase_support::capture::{Content, FrameCapture};
 use native_theme_showcase_support::cli::{self, Output, Outputs};

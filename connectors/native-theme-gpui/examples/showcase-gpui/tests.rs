@@ -6447,7 +6447,7 @@ fn a_theme_drawn_spinner_claims_the_homes_it_draws_from() {
     use crate::demo::{SpinnerIcons, SpinnerKind};
     use crate::info::feedback::{native_spinner, spinner_by_upstream};
     use crate::info::next_stated;
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let arc = SpinnerIcons::default();
     let tinted = SpinnerIcons {
         set: Some(IconSet::Material),
@@ -9463,7 +9463,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose(&mut cx, "Material (bundled)");
-    let (material, _) = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
+    let (material, _) = load_gpui_icons(Some(native_theme::icons::IconSet::Material), None, None);
     for name in chrome_icon_names() {
         let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
         assert_eq!(
@@ -9752,7 +9752,7 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
-    let (material, _) = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
+    let (material, _) = load_gpui_icons(Some(native_theme::icons::IconSet::Material), None, None);
     for (page, selector, name) in PAGE_SAMPLE_ICONS {
         show(&mut cx, &showcase, page);
         let icon = read(&mut cx, &showcase, |this, _| this.sample_icon(name.clone()));
@@ -14957,7 +14957,7 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
     set_preset(&mut cx, &showcase, "material-3");
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.icon_set_enum),
-        Some(native_theme::theme::IconSet::Material),
+        Some(native_theme::icons::IconSet::Material),
         "material-3 did not take its bundled Material icons, so the switch below does not \
          start from a bundled set"
     );
@@ -15577,7 +15577,7 @@ fn icon_choice_state(
     showcase: &Entity<Showcase>,
 ) -> (
     IconSetChoice,
-    Option<native_theme::theme::IconSet>,
+    Option<native_theme::icons::IconSet>,
     String,
     Option<String>,
 ) {
@@ -15602,7 +15602,7 @@ fn icon_choice_state(
 /// is available, `system` where it is not, as the Select's rows are.
 #[gpui::test]
 fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let listed = "a-listed-icon-theme";
     list_icon_themes(&mut cx, &showcase, &[listed]);
@@ -24051,7 +24051,7 @@ fn widget_icons_report(
 /// The set the widget icons loaded, and whether it is fixed (else they
 /// follow the theme); `None` where they loaded none.
 #[cfg(feature = "svg-rasterize")]
-fn widget_icons_set(cx: &mut VisualTestContext) -> Option<(native_theme::theme::IconSet, bool)> {
+fn widget_icons_set(cx: &mut VisualTestContext) -> Option<(native_theme::icons::IconSet, bool)> {
     match widget_icons_report(cx) {
         Some(native_theme_gpui::icons::WidgetIconsReport::Loaded(set)) => {
             Some((set.set, set.fixed))
@@ -24084,7 +24084,7 @@ fn two_colour_svg(top: &str, bottom: &str) -> native_theme::icons::IconData {
 ))]
 #[gpui::test]
 fn the_icon_theme_select_puts_the_widget_icons_in_its_state(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     use native_theme_gpui::icons::WidgetIconsReport;
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
     use_preset_with_palette(&mut cx, &showcase, "material-3", "catppuccin-mocha");
@@ -24174,7 +24174,7 @@ fn the_widget_icons_follow_the_set_the_chrome_draws(cx: &mut TestAppContext) {
 ))]
 #[gpui::test]
 fn a_fixed_row_keeps_the_widget_icons_where_the_detection_fails(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     use native_theme_gpui::icons::WidgetIconsReport;
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "adwaita");

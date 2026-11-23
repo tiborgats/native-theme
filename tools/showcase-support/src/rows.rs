@@ -4,8 +4,8 @@
 //! as the gpui connector's `DataTable` rows do.
 
 use native_theme::AccessibilityPreferences;
-use native_theme::icons::{IconSetChoice, default_icon_choice};
-use native_theme::theme::{IconSet, Theme};
+use native_theme::icons::{IconSet, IconSetChoice, default_icon_choice};
+use native_theme::theme::Theme;
 
 /// The name the preset picker, the command palette and the status bar give
 /// `default`, the desktop's own theme, built on the platform preset

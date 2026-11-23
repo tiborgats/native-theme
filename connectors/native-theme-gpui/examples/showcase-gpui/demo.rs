@@ -100,8 +100,9 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
+use native_theme::icons::IconSet;
 use native_theme::next::WidgetState;
-use native_theme::theme::{ArrowSide, FontStyle, IconSet, ResolvedFontSpec, ResolvedPadding};
+use native_theme::theme::{ArrowSide, FontStyle, ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]

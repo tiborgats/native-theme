@@ -9,8 +9,8 @@
 
 use std::time::{Duration, Instant};
 
-use native_theme::icons::{IconData, load_icon};
-use native_theme::theme::{ColorMode, IconSet, Theme};
+use native_theme::icons::{IconData, IconSet, load_icon};
+use native_theme::theme::{ColorMode, Theme};
 use native_theme_gpui::AccessibilityPreferences;
 use native_theme_gpui::icons::{into_image_source, to_image_source};
 
