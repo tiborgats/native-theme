@@ -276,8 +276,9 @@ impl Theme {
     /// [system settings](Self::system_overrides), whose non-fatal fallbacks
     /// [`diagnostics`](Self::diagnostics) returns.
     ///
-    /// Only the KDE reader is written (the `kde` feature, on Linux); each
-    /// other platform's comes with its preset's builder (plan, M2).
+    /// The KDE reader (the `kde` feature) and the GNOME reader (the `portal`
+    /// feature) are written, on Linux; each other platform's comes with its
+    /// preset's builder (plan, M2).
     ///
     /// # Errors
     ///
@@ -318,14 +319,39 @@ impl Theme {
     }
 
     /// The system's settings, read by the reader of `detected`, the
-    /// platform's preset: KDE's for `kde-breeze`. The other platforms'
-    /// readers are not written yet (plan, M2): `PlatformUnsupported`.
+    /// platform's preset: KDE's for `kde-breeze`, the XDG portal's for
+    /// `adwaita`. The other platforms' readers are not written yet (plan,
+    /// M2): `PlatformUnsupported`.
     fn read_system(detected: Preset) -> Result<SystemSnapshot, Error> {
         match detected {
             Preset::KdeBreeze => Self::read_kde(),
+            Preset::Adwaita => Self::read_gnome(),
             _ => Err(Error::PlatformUnsupported {
                 platform: std::env::consts::OS,
             }),
+        }
+    }
+
+    /// The GNOME reader's snapshot (`reader::portal::read`): on Linux with
+    /// the `portal` feature; `FeatureDisabled` on Linux without it,
+    /// `PlatformUnsupported` elsewhere.
+    fn read_gnome() -> Result<SystemSnapshot, Error> {
+        #[cfg(all(target_os = "linux", feature = "portal"))]
+        {
+            super::reader::portal::read()
+        }
+        #[cfg(all(target_os = "linux", not(feature = "portal")))]
+        {
+            Err(Error::FeatureDisabled {
+                feature: "portal",
+                needed_for: "reading the GNOME desktop's settings",
+            })
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            Err(Error::PlatformUnsupported {
+                platform: std::env::consts::OS,
+            })
         }
     }
 
@@ -941,11 +967,14 @@ mod tests {
         Ok(())
     }
 
-    /// A platform without a written reader, every preset but `kde-breeze`, is unsupported, and
-    /// both entry points' pure part passes the reader's error on.
+    /// A platform without a written reader, every preset but `kde-breeze` and `adwaita`, is
+    /// unsupported, and both entry points' pure part passes the reader's error on.
     #[test]
     fn a_platform_without_a_reader_is_unsupported() {
-        for preset in Preset::ALL.iter().filter(|p| **p != Preset::KdeBreeze) {
+        for preset in Preset::ALL
+            .iter()
+            .filter(|p| !matches!(p, Preset::KdeBreeze | Preset::Adwaita))
+        {
             let read = Theme::read_system(*preset);
             assert!(
                 matches!(
@@ -975,10 +1004,27 @@ mod tests {
         );
     }
 
-    /// Where no reader reads the desktop (no `kde` feature, or not Linux), `from_system` fails
-    /// without a read and `from_system_or_default` is the platform's preset alone, which
-    /// resolves.
-    #[cfg(not(all(target_os = "linux", feature = "kde")))]
+    /// On Linux without the `portal` feature, the GNOME desktop's reader is a disabled feature.
+    #[cfg(all(target_os = "linux", not(feature = "portal")))]
+    #[test]
+    fn gnome_without_its_feature_is_a_disabled_feature() {
+        let read = Theme::read_system(Preset::Adwaita);
+        assert!(
+            matches!(
+                read,
+                Err(Error::FeatureDisabled {
+                    feature: "portal",
+                    ..
+                })
+            ),
+            "{read:?}"
+        );
+    }
+
+    /// Where no reader reads the desktop (neither the `kde` nor the `portal` feature, or not
+    /// Linux), `from_system` fails without a read and `from_system_or_default` is the platform's
+    /// preset alone, which resolves.
+    #[cfg(not(all(target_os = "linux", any(feature = "kde", feature = "portal"))))]
     #[test]
     fn from_system_or_default_falls_back_to_the_platform_preset() {
         assert!(Theme::from_system().is_err());

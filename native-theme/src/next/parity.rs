@@ -1798,3 +1798,81 @@ fn reader_parity_kde_settings() -> TestResult {
     }
     Ok(())
 }
+
+// ---------------------------------------------------------------------------------------------------------
+// The GNOME reader: the clean-room Pango parser against 0.7.2's parse (plan, M2, "The reader").
+// ---------------------------------------------------------------------------------------------------------
+
+/// A font as 0.7.2's `gnome::parse_gnome_font_to_fontspec` returns it: family, size (its unit and value),
+/// weight and style.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+type FontOutputs = Option<(
+    Option<String>,
+    Option<(&'static str, f32)>,
+    Option<u16>,
+    Option<String>,
+)>;
+
+/// The rows of the clean-room Pango parser's table (`tests/vectors/reader.pango_font_description.tsv`,
+/// Pango 1.58.2) whose font, as the GNOME reader reads it (`reader::portal::font`), differs from 0.7.2's
+/// parse of the same string: each the input and both outputs, 0.7.2's first.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+fn pango_rows_differing_from_072() -> Result<Vec<(String, FontOutputs, FontOutputs)>, String> {
+    use crate::next::reader::pango_font_description::tests::table_rows;
+
+    let old_size = |size: crate::model::font::FontSize| match size {
+        crate::model::font::FontSize::Pt(v) => ("Pt", v),
+        crate::model::font::FontSize::Px(v) => ("Px", v),
+    };
+    let new_size = |size: crate::next::style::FontSize| match size {
+        crate::next::style::FontSize::Pt(v) => ("Pt", v),
+        crate::next::style::FontSize::Px(v) => ("Px", v),
+    };
+    Ok(table_rows()?
+        .into_iter()
+        .filter_map(|(_, input, _)| {
+            let old: FontOutputs = crate::gnome::parse_gnome_font_to_fontspec(&input).map(|f| {
+                (
+                    f.family.map(|family| family.to_string()),
+                    f.size.map(old_size),
+                    f.weight,
+                    f.style.map(|style| format!("{style:?}")),
+                )
+            });
+            let new: FontOutputs = crate::next::reader::portal::font(Some(&input)).map(|f| {
+                (
+                    f.family.map(|family| family.to_string()),
+                    f.size.map(new_size),
+                    f.weight,
+                    f.style.map(|style| format!("{style:?}")),
+                )
+            });
+            (old != new).then_some((input, old, new))
+        })
+        .collect())
+}
+
+/// The number of the table's 263 rows on which the two parses differ, each where Pango's own output
+/// (the table's) differs from 0.7.2's: a size not on Pango's grid of 1/1024 (`Sans 10.3`, `Sans 0.0005`,
+/// `Sans 7.00048828125`, `Sans 7.000488281`), or below its half step, which Pango stores as 0, no size
+/// (`Sans 0.0001`, `Sans 0.0004`); a hexadecimal size (`Sans 0x10`, `Sans 0x1p3px`); a vertical tab before
+/// a number (`Sans \v11`, `Sans \v\v+11px`, `Sans weight=\v700 11`, `Sans weight=\v-0 11`); a quoted
+/// family (`'Cantarell' 11`: 0.7.2 strips the string's leading quote, Pango keeps both).
+#[cfg(all(target_os = "linux", feature = "portal"))]
+const PANGO_ROWS_DIFFERING: usize = 13;
+
+/// The plan's first test of the clean-room Pango parser: its vector table run through the GNOME reader's
+/// font parse and through 0.7.2's, compared on the outputs 0.7.2's function returns (family, size, weight,
+/// style). The rows that differ are printed and counted ([`PANGO_ROWS_DIFFERING`]); they are the reader
+/// parity's listed differences of the parser (plan, Appendix B: the clean-room parser replaces 0.7.2's
+/// whatever this test shows, the table its citation).
+#[cfg(all(target_os = "linux", feature = "portal"))]
+#[test]
+fn pango_parser_table_against_072() -> TestResult {
+    let differing = pango_rows_differing_from_072()?;
+    for (input, old, new) in &differing {
+        println!("{input:?}\n  0.7.2 {old:?}\n  0.8.0 {new:?}");
+    }
+    assert_eq!(differing.len(), PANGO_ROWS_DIFFERING);
+    Ok(())
+}

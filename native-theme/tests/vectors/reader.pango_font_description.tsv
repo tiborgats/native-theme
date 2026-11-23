@@ -1,0 +1,280 @@
+# function: reader.pango_font_description
+# route: public_api
+# source: pango@1.58.2
+# source: glib@2.90.1
+# generations: adwaita
+# generator: tools/gnome-reader-vectors
+# inputs: s:string
+# outputs: family:option<string> style:number variant:number weight:number width:number gravity:option<number> color:option<number> size:option<number> absolute:bool variations:option<string> features:option<string>
+# written by tools/gnome-reader-vectors/generate.py on Pango 1.58.2 and GLib 2.90.1; do not edit.
+# Each row: pango_font_description_from_string(s) read through Pango's getters. A string cell is a JSON
+# string literal. `none`: the field is not in pango_font_description_get_set_fields (style, variant,
+# weight and width always are). style, variant, weight, width, gravity and color are Pango's integers
+# (PangoStyle, PangoVariant, PangoWeight, PangoWidth, PangoGravity, PangoFontColor); size is in Pango
+# units (1/1024 of a point, or of a pixel where absolute is true). The inputs: the four GNOME font
+# settings' defaults (gsettings-desktop-schemas@51.0), typical values, every word of Pango's tables, the
+# word, field, size, family-list and whitespace forms.
+s	family	style	variant	weight	width	gravity	color	size	absolute	variations	features
+"Adwaita Sans 11"	"Adwaita Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Adwaita Sans 12"	"Adwaita Sans"	0	0	400	1000	none	none	12288	false	none	none
+"Adwaita Mono 11"	"Adwaita Mono"	0	0	400	1000	none	none	11264	false	none	none
+"Adwaita Sans Bold 11"	"Adwaita Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Cantarell 11"	"Cantarell"	0	0	400	1000	none	none	11264	false	none	none
+"Cantarell Bold 11"	"Cantarell"	0	0	700	1000	none	none	11264	false	none	none
+"Cantarell 15px"	"Cantarell"	0	0	400	1000	none	none	15360	true	none	none
+"Cantarell Bold Italic 11"	"Cantarell"	2	0	700	1000	none	none	11264	false	none	none
+"Source Code Pro 10"	"Source Code Pro"	0	0	400	1000	none	none	10240	false	none	none
+"Monospace 11"	"Monospace"	0	0	400	1000	none	none	11264	false	none	none
+"Sans 10"	"Sans"	0	0	400	1000	none	none	10240	false	none	none
+"Noto Sans 10"	"Noto Sans"	0	0	400	1000	none	none	10240	false	none	none
+"Noto Sans Bold 10"	"Noto Sans"	0	0	700	1000	none	none	10240	false	none	none
+"Noto Sans Mono 10"	"Noto Sans Mono"	0	0	400	1000	none	none	10240	false	none	none
+"Noto Sans CJK JP 10"	"Noto Sans CJK JP"	0	0	400	1000	none	none	10240	false	none	none
+"DejaVu Sans 9"	"DejaVu Sans"	0	0	400	1000	none	none	9216	false	none	none
+"DejaVu Sans Mono 10"	"DejaVu Sans Mono"	0	0	400	1000	none	none	10240	false	none	none
+"DejaVu Sans Mono Book 10"	"DejaVu Sans Mono"	0	0	380	1000	none	none	10240	false	none	none
+"DejaVu Sans Bold 9"	"DejaVu Sans"	0	0	700	1000	none	none	9216	false	none	none
+"Ubuntu 11"	"Ubuntu"	0	0	400	1000	none	none	11264	false	none	none
+"Ubuntu Bold 11"	"Ubuntu"	0	0	700	1000	none	none	11264	false	none	none
+"Ubuntu Mono 13"	"Ubuntu Mono"	0	0	400	1000	none	none	13312	false	none	none
+"Ubuntu Sans 11"	"Ubuntu Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Ubuntu Sans Medium 11"	"Ubuntu Sans"	0	0	500	1000	none	none	11264	false	none	none
+"Ubuntu Sans Mono 13"	"Ubuntu Sans Mono"	0	0	400	1000	none	none	13312	false	none	none
+"Fira Sans Heavy 14"	"Fira Sans"	0	0	900	1000	none	none	14336	false	none	none
+"Fira Code Retina 10"	"Fira Code Retina"	0	0	400	1000	none	none	10240	false	none	none
+"Inter 11"	"Inter"	0	0	400	1000	none	none	11264	false	none	none
+"Inter Variable 10.5"	"Inter Variable"	0	0	400	1000	none	none	10752	false	none	none
+"Inter Display Semi-Bold 12"	"Inter Display"	0	0	600	1000	none	none	12288	false	none	none
+"JetBrains Mono 10"	"JetBrains Mono"	0	0	400	1000	none	none	10240	false	none	none
+"Liberation Sans 9"	"Liberation Sans"	0	0	400	1000	none	none	9216	false	none	none
+"Roboto Medium 10"	"Roboto"	0	0	500	1000	none	none	10240	false	none	none
+"Adwaita Sans 10.5"	"Adwaita Sans"	0	0	400	1000	none	none	10752	false	none	none
+"Adwaita Sans Italic 11"	"Adwaita Sans"	2	0	400	1000	none	none	11264	false	none	none
+"Cantarell Italic Light 15 @wght=200 #tnum=1"	"Cantarell"	2	0	300	1000	none	none	15360	false	"wght=200"	"tnum=1"
+"Inter 11 @wght=450"	"Inter"	0	0	400	1000	none	none	11264	false	"wght=450"	none
+"Inter 11 #tnum,ss01"	"Inter"	0	0	400	1000	none	none	11264	false	none	"tnum,ss01"
+"Inter 11 #tnum=1,cv05=1 @opsz=32"	"Inter 11 #tnum=1,cv05=1"	0	0	400	1000	none	none	none	false	"opsz=32"	none
+"Recursive Sans Linear 11 @MONO=0.5,CASL=1"	"Recursive Sans Linear"	0	0	400	1000	none	none	11264	false	"MONO=0.5,CASL=1"	none
+"Sans Normal 11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Roman 11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Oblique 11"	"Sans"	1	0	400	1000	none	none	11264	false	none	none
+"Sans Italic 11"	"Sans"	2	0	400	1000	none	none	11264	false	none	none
+"Sans Small-Caps 11"	"Sans"	0	1	400	1000	none	none	11264	false	none	none
+"Sans All-Small-Caps 11"	"Sans"	0	2	400	1000	none	none	11264	false	none	none
+"Sans Petite-Caps 11"	"Sans"	0	3	400	1000	none	none	11264	false	none	none
+"Sans All-Petite-Caps 11"	"Sans"	0	4	400	1000	none	none	11264	false	none	none
+"Sans Unicase 11"	"Sans"	0	5	400	1000	none	none	11264	false	none	none
+"Sans Title-Caps 11"	"Sans"	0	6	400	1000	none	none	11264	false	none	none
+"Sans Thin 11"	"Sans"	0	0	100	1000	none	none	11264	false	none	none
+"Sans Ultra-Light 11"	"Sans"	0	0	200	1000	none	none	11264	false	none	none
+"Sans Extra-Light 11"	"Sans"	0	0	200	1000	none	none	11264	false	none	none
+"Sans Light 11"	"Sans"	0	0	300	1000	none	none	11264	false	none	none
+"Sans Semi-Light 11"	"Sans"	0	0	350	1000	none	none	11264	false	none	none
+"Sans Demi-Light 11"	"Sans"	0	0	350	1000	none	none	11264	false	none	none
+"Sans Book 11"	"Sans"	0	0	380	1000	none	none	11264	false	none	none
+"Sans Regular 11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Medium 11"	"Sans"	0	0	500	1000	none	none	11264	false	none	none
+"Sans Semi-Bold 11"	"Sans"	0	0	600	1000	none	none	11264	false	none	none
+"Sans Demi-Bold 11"	"Sans"	0	0	600	1000	none	none	11264	false	none	none
+"Sans Bold 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Sans Ultra-Bold 11"	"Sans"	0	0	800	1000	none	none	11264	false	none	none
+"Sans Extra-Bold 11"	"Sans"	0	0	800	1000	none	none	11264	false	none	none
+"Sans Heavy 11"	"Sans"	0	0	900	1000	none	none	11264	false	none	none
+"Sans Black 11"	"Sans"	0	0	900	1000	none	none	11264	false	none	none
+"Sans Ultra-Heavy 11"	"Sans"	0	0	1000	1000	none	none	11264	false	none	none
+"Sans Extra-Heavy 11"	"Sans"	0	0	1000	1000	none	none	11264	false	none	none
+"Sans Ultra-Black 11"	"Sans"	0	0	1000	1000	none	none	11264	false	none	none
+"Sans Extra-Black 11"	"Sans"	0	0	1000	1000	none	none	11264	false	none	none
+"Sans Ultra-Condensed 11"	"Sans"	0	0	400	500	none	none	11264	false	none	none
+"Sans Extra-Condensed 11"	"Sans"	0	0	400	625	none	none	11264	false	none	none
+"Sans Condensed 11"	"Sans"	0	0	400	750	none	none	11264	false	none	none
+"Sans Semi-Condensed 11"	"Sans"	0	0	400	875	none	none	11264	false	none	none
+"Sans Semi-Expanded 11"	"Sans"	0	0	400	1125	none	none	11264	false	none	none
+"Sans Expanded 11"	"Sans"	0	0	400	1250	none	none	11264	false	none	none
+"Sans Extra-Expanded 11"	"Sans"	0	0	400	1500	none	none	11264	false	none	none
+"Sans Ultra-Expanded 11"	"Sans"	0	0	400	2000	none	none	11264	false	none	none
+"Sans Not-Rotated 11"	"Sans"	0	0	400	1000	0	none	11264	false	none	none
+"Sans South 11"	"Sans"	0	0	400	1000	0	none	11264	false	none	none
+"Sans Upside-Down 11"	"Sans"	0	0	400	1000	2	none	11264	false	none	none
+"Sans North 11"	"Sans"	0	0	400	1000	2	none	11264	false	none	none
+"Sans Rotated-Left 11"	"Sans"	0	0	400	1000	1	none	11264	false	none	none
+"Sans East 11"	"Sans"	0	0	400	1000	1	none	11264	false	none	none
+"Sans Rotated-Right 11"	"Sans"	0	0	400	1000	3	none	11264	false	none	none
+"Sans West 11"	"Sans"	0	0	400	1000	3	none	11264	false	none	none
+"Sans With-Color 11"	"Sans"	0	0	400	1000	none	1	11264	false	none	none
+"Sans Without-Color 11"	"Sans"	0	0	400	1000	none	0	11264	false	none	none
+"Sans bold 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Sans BOLD 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Sans SemiBold 11"	"Sans"	0	0	600	1000	none	none	11264	false	none	none
+"Sans semibold 11"	"Sans"	0	0	600	1000	none	none	11264	false	none	none
+"Sans Semi-bold 11"	"Sans"	0	0	600	1000	none	none	11264	false	none	none
+"Sans SEMI-BOLD 11"	"Sans"	0	0	600	1000	none	none	11264	false	none	none
+"Sans Semi Bold 11"	"Sans Semi"	0	0	700	1000	none	none	11264	false	none	none
+"Sans Semi--Bold 11"	"Sans Semi--Bold"	0	0	400	1000	none	none	11264	false	none	none
+"Sans -Bold 11"	"Sans -Bold"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Bold- 11"	"Sans Bold-"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Bol 11"	"Sans Bol"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Bolder 11"	"Sans Bolder"	0	0	400	1000	none	none	11264	false	none	none
+"Sans UltraBlack 11"	"Sans"	0	0	1000	1000	none	none	11264	false	none	none
+"Sans Ultra 11"	"Sans Ultra"	0	0	400	1000	none	none	11264	false	none	none
+"Sans smallcaps 11"	"Sans"	0	1	400	1000	none	none	11264	false	none	none
+"Sans NORMAL 11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans normal 11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Nor-mal 11"	"Sans Nor-mal"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Italic Bold 11"	"Sans"	2	0	700	1000	none	none	11264	false	none	none
+"Sans Bold Light 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Sans Light Bold 11"	"Sans"	0	0	300	1000	none	none	11264	false	none	none
+"Sans Italic Oblique 11"	"Sans"	2	0	400	1000	none	none	11264	false	none	none
+"Sans Bold Normal Italic 11"	"Sans"	2	0	700	1000	none	none	11264	false	none	none
+"Sans Bold Mono 11"	"Sans Bold Mono"	0	0	400	1000	none	none	11264	false	none	none
+"Noto Sans Bold Mono 10"	"Noto Sans Bold Mono"	0	0	400	1000	none	none	10240	false	none	none
+"Sans Bold Italic Condensed Small-Caps Rotated-Left With-Color 11"	"Sans"	2	1	700	750	1	1	11264	false	none	none
+"Sans Bold,Italic 11"	"Sans Bold"	2	0	400	1000	none	none	11264	false	none	none
+"Sans Bold ,Italic 11"	"Sans Bold"	2	0	400	1000	none	none	11264	false	none	none
+"Sans,Bold 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Bold 11"	none	0	0	700	1000	none	none	11264	false	none	none
+"Bold"	none	0	0	700	1000	none	none	none	false	none	none
+"Bold Italic"	none	2	0	700	1000	none	none	none	false	none	none
+"Sans Bold"	"Sans"	0	0	700	1000	none	none	none	false	none	none
+"Sans 11 Bold"	"Sans 11"	0	0	700	1000	none	none	none	false	none	none
+"Italic 11"	none	2	0	400	1000	none	none	11264	false	none	none
+"Normal 11"	none	0	0	400	1000	none	none	11264	false	none	none
+"Normal"	none	0	0	400	1000	none	none	none	false	none	none
+"Sans weight=650 11"	"Sans"	0	0	650	1000	none	none	11264	false	none	none
+"Sans weight=Bold 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Sans weight=bold 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Sans weight=semibold 11"	"Sans"	0	0	600	1000	none	none	11264	false	none	none
+"Sans weight=Normal 11"	"Sans weight=Normal"	0	0	400	1000	none	none	11264	false	none	none
+"Sans weight=Regular 11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans weight=0 11"	"Sans"	0	0	0	1000	none	none	11264	false	none	none
+"Sans weight=1000 11"	"Sans"	0	0	1000	1000	none	none	11264	false	none	none
+"Sans weight=5000 11"	"Sans"	0	0	5000	1000	none	none	11264	false	none	none
+"Sans weight=+700 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Sans weight=-1 11"	"Sans weight=-1"	0	0	400	1000	none	none	11264	false	none	none
+"Sans weight= 11"	"Sans weight="	0	0	400	1000	none	none	11264	false	none	none
+"Sans weight=7x 11"	"Sans weight=7x"	0	0	400	1000	none	none	11264	false	none	none
+"Sans weight=0x10 11"	"Sans weight=0x10"	0	0	400	1000	none	none	11264	false	none	none
+"Sans weight=2147483647 11"	"Sans"	0	0	2147483647	1000	none	none	11264	false	none	none
+"Sans weight=2147483648 11"	"Sans weight=2147483648"	0	0	400	1000	none	none	11264	false	none	none
+"Sans Weight=700 11"	"Sans Weight=700"	0	0	400	1000	none	none	11264	false	none	none
+"Sans weight 11"	"Sans weight"	0	0	400	1000	none	none	11264	false	none	none
+"Sans weight=Italic 11"	"Sans weight=Italic"	0	0	400	1000	none	none	11264	false	none	none
+"Sans style=italic 11"	"Sans"	2	0	400	1000	none	none	11264	false	none	none
+"Sans style=Oblique 11"	"Sans"	1	0	400	1000	none	none	11264	false	none	none
+"Sans style=1 11"	"Sans"	1	0	400	1000	none	none	11264	false	none	none
+"Sans style=2 11"	"Sans"	2	0	400	1000	none	none	11264	false	none	none
+"Sans style=5 11"	"Sans"	5	0	400	1000	none	none	11264	false	none	none
+"Sans style=Bold 11"	"Sans style=Bold"	0	0	400	1000	none	none	11264	false	none	none
+"Sans variant=small-caps 11"	"Sans"	0	1	400	1000	none	none	11264	false	none	none
+"Sans variant=3 11"	"Sans"	0	3	400	1000	none	none	11264	false	none	none
+"Sans width=Condensed 11"	"Sans"	0	0	400	750	none	none	11264	false	none	none
+"Sans width=condensed 11"	"Sans"	0	0	400	750	none	none	11264	false	none	none
+"Sans width=750 11"	"Sans"	0	0	400	750	none	none	11264	false	none	none
+"Sans width=1 11"	"Sans"	0	0	400	1	none	none	11264	false	none	none
+"Sans width=3000 11"	"Sans"	0	0	400	3000	none	none	11264	false	none	none
+"Sans stretch=Condensed 11"	"Sans stretch=Condensed"	0	0	400	1000	none	none	11264	false	none	none
+"Sans gravity=east 11"	"Sans"	0	0	400	1000	1	none	11264	false	none	none
+"Sans gravity=2 11"	"Sans"	0	0	400	1000	2	none	11264	false	none	none
+"Sans color=With-Color 11"	"Sans"	0	0	400	1000	none	1	11264	false	none	none
+"Sans color=1 11"	"Sans"	0	0	400	1000	none	1	11264	false	none	none
+"Sans weight=650 style=italic 11"	"Sans"	2	0	650	1000	none	none	11264	false	none	none
+"Sans 11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans 11.5"	"Sans"	0	0	400	1000	none	none	11776	false	none	none
+"Sans 10.3"	"Sans"	0	0	400	1000	none	none	10547	false	none	none
+"Sans 10.25"	"Sans"	0	0	400	1000	none	none	10496	false	none	none
+"Sans 0.0001"	"Sans"	0	0	400	1000	none	none	0	false	none	none
+"Sans 0.0004"	"Sans"	0	0	400	1000	none	none	0	false	none	none
+"Sans 0.0005"	"Sans"	0	0	400	1000	none	none	1	false	none	none
+"Sans 7.00048828125"	"Sans"	0	0	400	1000	none	none	7169	false	none	none
+"Sans 7.000488281"	"Sans"	0	0	400	1000	none	none	7168	false	none	none
+"Sans 11px"	"Sans"	0	0	400	1000	none	none	11264	true	none	none
+"Sans 11.5px"	"Sans"	0	0	400	1000	none	none	11776	true	none	none
+"Sans 11PX"	"Sans 11PX"	0	0	400	1000	none	none	none	false	none	none
+"Sans 11Px"	"Sans 11Px"	0	0	400	1000	none	none	none	false	none	none
+"Sans 11 px"	"Sans 11 px"	0	0	400	1000	none	none	none	false	none	none
+"Sans 11pt"	"Sans 11pt"	0	0	400	1000	none	none	none	false	none	none
+"Sans px"	"Sans px"	0	0	400	1000	none	none	none	false	none	none
+"Sans .5"	"Sans"	0	0	400	1000	none	none	512	false	none	none
+"Sans 5."	"Sans"	0	0	400	1000	none	none	5120	false	none	none
+"Sans ."	"Sans ."	0	0	400	1000	none	none	none	false	none	none
+"Sans +11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans -11"	"Sans -11"	0	0	400	1000	none	none	none	false	none	none
+"Sans -0"	"Sans"	0	0	400	1000	none	none	0	false	none	none
+"Sans 0"	"Sans"	0	0	400	1000	none	none	0	false	none	none
+"Sans 0px"	"Sans"	0	0	400	1000	none	none	0	true	none	none
+"Sans 00011"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans 1e1"	"Sans"	0	0	400	1000	none	none	10240	false	none	none
+"Sans 1E1px"	"Sans"	0	0	400	1000	none	none	10240	true	none	none
+"Sans 1e"	"Sans 1e"	0	0	400	1000	none	none	none	false	none	none
+"Sans 1e+1"	"Sans"	0	0	400	1000	none	none	10240	false	none	none
+"Sans 1000000"	"Sans"	0	0	400	1000	none	none	1024000000	false	none	none
+"Sans 1000000.0001"	"Sans 1000000.0001"	0	0	400	1000	none	none	none	false	none	none
+"Sans 1e6"	"Sans"	0	0	400	1000	none	none	1024000000	false	none	none
+"Sans 1e7"	"Sans 1e7"	0	0	400	1000	none	none	none	false	none	none
+"Sans 999999.9999"	"Sans"	0	0	400	1000	none	none	1024000000	false	none	none
+"Sans inf"	"Sans inf"	0	0	400	1000	none	none	none	false	none	none
+"Sans nan"	"Sans nan"	0	0	400	1000	none	none	none	false	none	none
+"Sans infinity"	"Sans infinity"	0	0	400	1000	none	none	none	false	none	none
+"Sans 0x10"	"Sans"	0	0	400	1000	none	none	16384	false	none	none
+"Sans 0x1p3px"	"Sans"	0	0	400	1000	none	none	8192	true	none	none
+"Sans 0x"	"Sans 0x"	0	0	400	1000	none	none	none	false	none	none
+"Sans 1,5"	"Sans 1"	0	0	400	1000	none	none	5120	false	none	none
+"Sans 1.5.5"	"Sans 1.5.5"	0	0	400	1000	none	none	none	false	none	none
+"Sans 11 11"	"Sans 11"	0	0	400	1000	none	none	11264	false	none	none
+"11"	none	0	0	400	1000	none	none	11264	false	none	none
+"11px"	none	0	0	400	1000	none	none	11264	true	none	none
+"Sans11"	"Sans11"	0	0	400	1000	none	none	none	false	none	none
+"Cantarell, Sans 11"	"Cantarell,Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Cantarell,Sans 11"	"Cantarell,Sans"	0	0	400	1000	none	none	11264	false	none	none
+" Cantarell , Sans , 11"	"Cantarell,Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Cantarell,Sans,11"	"Cantarell,Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Cantarell,Sans,"	"Cantarell,Sans"	0	0	400	1000	none	none	none	false	none	none
+"Sans,,Serif 10"	"Sans,,Serif"	0	0	400	1000	none	none	10240	false	none	none
+"Sans, ,Serif 10"	"Sans,,Serif"	0	0	400	1000	none	none	10240	false	none	none
+",Sans 10"	",Sans"	0	0	400	1000	none	none	10240	false	none	none
+"Sans, 10"	"Sans"	0	0	400	1000	none	none	10240	false	none	none
+"Sans,10"	"Sans"	0	0	400	1000	none	none	10240	false	none	none
+"Sans,, 10"	"Sans,"	0	0	400	1000	none	none	10240	false	none	none
+", 11"	none	0	0	400	1000	none	none	11264	false	none	none
+",, 11"	","	0	0	400	1000	none	none	11264	false	none	none
+","	none	0	0	400	1000	none	none	none	false	none	none
+"Sans , Bold 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"'Cantarell' 11"	"'Cantarell'"	0	0	400	1000	none	none	11264	false	none	none
+"\"Cantarell\" 11"	"\"Cantarell\""	0	0	400	1000	none	none	11264	false	none	none
+"Sans 11"	"Sans 11"	0	0	400	1000	none	none	none	false	none	none
+"Sans  11"	"Sans  11"	0	0	400	1000	none	none	none	false	none	none
+"Noto Sans 日本語 10"	"Noto Sans 日本語"	0	0	400	1000	none	none	10240	false	none	none
+"  Sans   11  "	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"\tSans\t11\t"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans\n11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans\r\n11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans\f11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans\u000b11"	"Sans\u000b11"	0	0	400	1000	none	none	none	false	none	none
+"Sans\u000b 11"	"Sans\u000b"	0	0	400	1000	none	none	11264	false	none	none
+""	none	0	0	400	1000	none	none	none	false	none	none
+" "	none	0	0	400	1000	none	none	none	false	none	none
+"\t"	none	0	0	400	1000	none	none	none	false	none	none
+"Sans"	"Sans"	0	0	400	1000	none	none	none	false	none	none
+"Sans Serif"	"Sans Serif"	0	0	400	1000	none	none	none	false	none	none
+"@wght=200"	none	0	0	400	1000	none	none	none	false	"wght=200"	none
+"#tnum"	none	0	0	400	1000	none	none	none	false	none	"tnum"
+"Sans @wght=200"	"Sans"	0	0	400	1000	none	none	none	false	"wght=200"	none
+"Sans #tnum"	"Sans"	0	0	400	1000	none	none	none	false	none	"tnum"
+"Sans 11 #tnum @wght=200"	"Sans"	0	0	400	1000	none	none	11264	false	"wght=200"	"tnum"
+"Sans 11 @wght=200 #tnum"	"Sans"	0	0	400	1000	none	none	11264	false	"wght=200"	"tnum"
+"Sans @a=1 @b=2"	"Sans @a=1"	0	0	400	1000	none	none	none	false	"b=2"	none
+"Sans #a #b"	"Sans #a"	0	0	400	1000	none	none	none	false	none	"b"
+"Sans @wght=200,wdth=50 #tnum"	"Sans @wght=200,wdth=50"	0	0	400	1000	none	none	none	false	none	"tnum"
+"Sans 11 @wght=200,wdth=50"	"Sans"	0	0	400	1000	none	none	11264	false	"wght=200,wdth=50"	none
+"Sans 11,@wght=1"	"Sans 11"	0	0	400	1000	none	none	none	false	"wght=1"	none
+"Sans,#tnum"	"Sans"	0	0	400	1000	none	none	none	false	none	"tnum"
+"Sans 11#tnum"	"Sans 11#tnum"	0	0	400	1000	none	none	none	false	none	none
+"Sans 11 #"	"Sans"	0	0	400	1000	none	none	11264	false	none	""
+"Sans 11 @"	"Sans"	0	0	400	1000	none	none	11264	false	""	none
+"Sans 11 # tnum"	"Sans 11 # tnum"	0	0	400	1000	none	none	none	false	none	none
+"Sans Bold 11 @wght=200 #tnum=1 extra"	"Sans Bold 11 @wght=200 #tnum=1 extra"	0	0	400	1000	none	none	none	false	none	none
+"Sans #tnum 11"	"Sans #tnum"	0	0	400	1000	none	none	11264	false	none	none
+"Sans \u000b11"	"Sans"	0	0	400	1000	none	none	11264	false	none	none
+"Sans \u000b\u000b+11px"	"Sans"	0	0	400	1000	none	none	11264	true	none	none
+"Sans weight=\u000b700 11"	"Sans"	0	0	700	1000	none	none	11264	false	none	none
+"Sans weight=\u000b-0 11"	"Sans"	0	0	0	1000	none	none	11264	false	none	none
