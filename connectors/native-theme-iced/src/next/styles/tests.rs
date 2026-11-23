@@ -1,12 +1,15 @@
 //! The 0.8.0 style functions on themes built for the case: a stated value
 //! the presets do not show, or one they leave unstated.
 
+use std::sync::Arc;
+
 use iced_core::Background;
 use iced_core::Color as IcedColor;
 use native_theme::next::{
-    ButtonRule, ButtonVariant, CheckboxRule, Color, InputRule, LinkRule, Paint, PaintLayer,
-    PartPatch, PartStated, Preset, RadioRule, ResolvedTheme, Stroke, TextPatch, TextStated, Theme,
-    ThemeContext, ThemePatch, ToolbarRule, WidgetState,
+    ButtonRule, ButtonVariant, CheckboxRule, Color, InputRule, LinkRule, MenuRule, Paint,
+    PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme, ShadowLayer, SliderRule,
+    Stroke, StrokeAlign, TextPatch, TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule,
+    WidgetState,
 };
 
 use super::super::borders::line;
@@ -422,6 +425,121 @@ fn a_class_button_and_a_checked_toggle_with_no_disabled_opacity_halve_what_is_le
         stated > 0 && left > 0,
         "both cases covered: {stated} stated, {left} left to iced"
     );
+    Ok(())
+}
+
+/// The menu's shadow is the panel's first outset layer, its spread and the
+/// other layers dropped; a stated none is no shadow, and an unstated one
+/// iced's own.
+#[test]
+fn a_menu_shadow_is_its_first_outset_layer() -> TestResult {
+    use iced_core::{Shadow, Vector};
+    let layer = |inset, offset_y, spread| ShadowLayer {
+        offset_x: 1.0,
+        offset_y,
+        blur: 8.0,
+        spread,
+        color: LABEL,
+        inset,
+    };
+    let shadow_of = |shadows: Option<Arc<[ShadowLayer]>>| -> Result<Shadow, super::Unmapped> {
+        let patch =
+            ThemePatch::new().menu(MenuRule::new().panel(PartPatch::new().shadows(shadows)));
+        let r = Theme::preset(Preset::Material3)
+            .with_patch(patch)
+            .resolve(&ThemeContext::light());
+        Ok(super::menu(&r)?(&to_theme(&r)?).shadow)
+    };
+    let expected = |offset_y| Shadow {
+        color: to_color(LABEL),
+        offset: Vector::new(1.0, offset_y),
+        blur_radius: 8.0,
+    };
+    assert_eq!(
+        shadow_of(Some(Arc::from([layer(false, 2.0, 0.0)])))?,
+        expected(2.0)
+    );
+    assert_eq!(
+        shadow_of(Some(Arc::from([
+            layer(true, 1.0, 0.0),
+            layer(false, 4.0, 3.0),
+            layer(false, 6.0, 0.0),
+        ])))?,
+        expected(4.0)
+    );
+    assert_eq!(shadow_of(None)?, Shadow::default());
+
+    let r = Theme::preset(Preset::Material3).resolve(&ThemeContext::light());
+    let theme = to_theme(&r)?;
+    assert_eq!(
+        super::menu(&r)?(&theme).shadow,
+        iced_widget::overlay::menu::default(&theme).shadow
+    );
+    Ok(())
+}
+
+/// The menu's own panel stroke frames the popup where the theme states one,
+/// laid over the panel's fill; the popover's frames it where not.
+#[test]
+fn a_menu_is_framed_by_its_own_stroke_where_stated() -> TestResult {
+    let translucent = Color::new(0.0, 0.0, 0.0, 0.25);
+    let patch = ThemePatch::new().menu(MenuRule::new().panel(PartPatch::new().stroke(
+        Stroke::uniform_aligned(2.0, translucent, StrokeAlign::Inside),
+    )));
+    for (preset, r) in every_preset_with(&patch) {
+        let style = super::menu(&r)?(&to_theme(&r)?);
+        let panel = fill(&r.menu.panel(WidgetState::NONE), "fill")?;
+        assert_eq!(style.border.width, 2.0, "{preset:?}");
+        assert_eq!(
+            style.border.color,
+            crate::styles::composite_over(to_color(translucent), panel),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// A dragged thumb is the pressed fill the theme states, laid over the
+/// thumb's own; a translucent thumb stroke inside the thumb is laid over
+/// the fill each status paints.
+#[test]
+fn the_slider_thumb_takes_its_pressed_fill_and_its_aligned_stroke() -> TestResult {
+    use iced_widget::slider::Status;
+    let layer = Color::new(0.0, 0.0, 0.0, 0.5);
+    let translucent = Color::new(0.0, 0.0, 0.0, 0.25);
+    let patch = ThemePatch::new()
+        .slider(
+            SliderRule::new().thumb(PartPatch::new().stroke(Stroke::uniform_aligned(
+                1.0,
+                translucent,
+                StrokeAlign::Inside,
+            ))),
+        )
+        .slider(
+            SliderRule::new()
+                .states(WidgetState::PRESSED)
+                .thumb(PartPatch::new().fill(Paint::Solid(layer))),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let slider = super::slider(&r)?;
+        let thumb = fill(&r.slider.thumb(WidgetState::NONE), "fill")?;
+        let pressed = crate::styles::composite_over(to_color(layer), thumb);
+        for (status, under) in [(Status::Active, thumb), (Status::Dragged, pressed)] {
+            let style = slider(&theme, status);
+            assert_eq!(
+                style.handle.background,
+                Background::Color(under),
+                "{preset:?} {status:?}"
+            );
+            assert_eq!(style.handle.border_width, 1.0, "{preset:?} {status:?}");
+            assert_eq!(
+                style.handle.border_color,
+                crate::styles::composite_over(to_color(translucent), under),
+                "{preset:?} {status:?}"
+            );
+        }
+    }
     Ok(())
 }
 

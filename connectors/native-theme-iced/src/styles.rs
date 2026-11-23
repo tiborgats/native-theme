@@ -89,7 +89,7 @@ pub mod aw;
 use crate::palette::to_color;
 use iced_core::border::Radius;
 use iced_core::theme::Theme;
-use iced_core::{Background, Border, Color};
+use iced_core::{Background, Border, Color, Shadow};
 use native_theme::color::Rgba;
 use native_theme::theme::{
     ResolvedCheckboxTheme, ResolvedDefaults, ResolvedInputTheme, ResolvedTheme,
@@ -2439,41 +2439,89 @@ pub(crate) fn pick_list_from(
 pub fn menu(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::overlay::menu::Style + Clone + use<> {
-    let m = &resolved.menu;
-    let p = &resolved.popover;
-    menu_from(
-        to_color(m.background_color),
-        to_color(m.font.color),
-        to_color(m.hover_text_color),
-        to_color(m.hover_background),
-        Border {
-            color: to_color(p.border.color),
-            width: p.border.line_width,
-            radius: Radius::new(m.border.corner_radius),
-        },
-    )
+    menu_from(&MenuSource::of(resolved))
 }
 
-/// [`menu`] of what it reads: the panel's fill, the label colour at rest
-/// and under the pointer, the highlight under the pointer, the outline.
+/// What the menu style reads from the theme, of either model. Each value
+/// `None` is one the theme leaves unstated, iced's own then
+/// (`overlay::menu::default`; spec §10, rule 0, and §2, `from_state`, for
+/// the two hovered values); the 0.7.2 model states all but the shadow.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct MenuSource {
+    pub background: Color,
+    pub label: Color,
+    /// The label of the item under the pointer.
+    pub selected_label: Option<Color>,
+    /// The highlight of the item under the pointer, painted as given over
+    /// the panel.
+    pub selected_background: Option<Color>,
+    /// The frame's stroke; `None` with a stated `width` is no line.
+    pub line: Option<Line>,
+    pub width: Option<f32>,
+    /// The one radius iced rounds the popup and the item highlight with.
+    pub radius: Option<f32>,
+    pub shadow: Option<Shadow>,
+}
+
+impl MenuSource {
+    /// The 0.7.2 model's reads.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let m = &resolved.menu;
+        let p = &resolved.popover;
+        Self {
+            background: to_color(m.background_color),
+            label: to_color(m.font.color),
+            selected_label: Some(to_color(m.hover_text_color)),
+            selected_background: Some(to_color(m.hover_background)),
+            line: Some(Line::outside(to_color(p.border.color))),
+            width: Some(p.border.line_width),
+            radius: Some(m.border.corner_radius),
+            shadow: None,
+        }
+    }
+
+    /// The stroke where it lies as `listed` says, and the radius iced's own
+    /// where it says so, for the parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        Self {
+            line: self.line.map(|l| l.aligned(listed.align)),
+            radius: self.radius.filter(|_| !listed.iced_corners),
+            ..self
+        }
+    }
+}
+
+/// [`menu`] of what it reads. The frame's stroke is laid over the panel's
+/// fill ([`Line::over`]); a selected row is a highlight iced paints over the
+/// panel, so its fill is as given.
 pub(crate) fn menu_from(
-    background: Color,
-    label: Color,
-    selected_label: Color,
-    selected_background: Color,
-    border: Border,
+    m: &MenuSource,
 ) -> impl Fn(&Theme) -> iced_widget::overlay::menu::Style + Clone + use<> {
     use iced_widget::overlay::menu::Style;
 
+    let m = *m;
+
     move |theme| {
         let iced = iced_widget::overlay::menu::default(theme);
+        let border = Border {
+            color: match (m.line, m.width) {
+                (Some(line), _) => line.over(m.background),
+                (None, Some(_)) => Border::default().color,
+                (None, None) => iced.border.color,
+            },
+            width: m.width.unwrap_or(iced.border.width),
+            radius: m.radius.map_or(iced.border.radius, Radius::new),
+        };
         Style {
-            background: Background::Color(background),
+            background: Background::Color(m.background),
             border,
-            text_color: label,
-            selected_text_color: selected_label,
-            selected_background: Background::Color(selected_background),
-            shadow: iced.shadow,
+            text_color: m.label,
+            selected_text_color: m.selected_label.unwrap_or(iced.selected_text_color),
+            selected_background: m
+                .selected_background
+                .map_or(iced.selected_background, Background::Color),
+            shadow: m.shadow.unwrap_or(iced.shadow),
         }
     }
 }
@@ -2517,18 +2565,7 @@ pub(crate) fn menu_from(
 pub fn slider(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<> {
-    let s = &resolved.slider;
-    slider_from(&SliderSource {
-        fill_color: to_color(s.fill_color),
-        track_color: to_color(s.track_color),
-        track_height: Some(s.track_height),
-        thumb_color: to_color(s.thumb_color),
-        thumb_hover_color: s.thumb_hover_color.map(to_color),
-        thumb_diameter: Some(s.thumb_diameter),
-        thumb_border_line_width: s.thumb_border_line_width,
-        thumb_border_color: s.thumb_border_color.map(to_color),
-        thumb_hover_border_color: s.thumb_hover_border_color.map(to_color),
-    })
+    slider_from(&SliderSource::of(resolved))
 }
 
 /// What the slider style reads from the theme, of either model: each
@@ -2539,11 +2576,66 @@ pub(crate) struct SliderSource {
     pub track_color: Color,
     pub track_height: Option<f32>,
     pub thumb_color: Color,
-    pub thumb_hover_color: Option<Color>,
+    /// The thumb under the pointer, its hover layer over the thumb's fill;
+    /// `None` where the theme states nothing for the hovered thumb, which
+    /// is then iced's own (spec §2, `from_state`). The 0.7.2 model's unset
+    /// hover layer is the platform saying the thumb does not change, and
+    /// its reads state that.
+    pub hovered_thumb: Option<Color>,
+    /// The dragged thumb, its pressed layer over the thumb's fill; `None`,
+    /// iced's own, where the theme states none (0.7.2 states none).
+    pub pressed_thumb: Option<Color>,
     pub thumb_diameter: Option<f32>,
+    /// The width of the thumb's outline in every status, where it is drawn.
     pub thumb_border_line_width: Option<f32>,
-    pub thumb_border_color: Option<Color>,
-    pub thumb_hover_border_color: Option<Color>,
+    /// The thumb's stroke at rest.
+    pub thumb_border_color: Option<Line>,
+    /// The thumb's stroke under the pointer and while dragged, each the one
+    /// under the pointer where unstated, and that one the stroke at rest.
+    pub thumb_hover_border_color: Option<Line>,
+    pub thumb_pressed_border_color: Option<Line>,
+}
+
+impl SliderSource {
+    /// The 0.7.2 model's reads.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let s = &resolved.slider;
+        let thumb = to_color(s.thumb_color);
+        let line = |c: Rgba| Line::outside(to_color(c));
+        let hover_border = s.thumb_hover_border_color.map(line);
+        Self {
+            fill_color: to_color(s.fill_color),
+            track_color: to_color(s.track_color),
+            track_height: Some(s.track_height),
+            thumb_color: thumb,
+            hovered_thumb: Some(
+                s.thumb_hover_color
+                    .map_or(thumb, |hover| composite_over(to_color(hover), thumb)),
+            ),
+            pressed_thumb: None,
+            thumb_diameter: Some(s.thumb_diameter),
+            thumb_border_line_width: s.thumb_border_line_width,
+            thumb_border_color: s.thumb_border_color.map(line),
+            thumb_hover_border_color: hover_border,
+            thumb_pressed_border_color: hover_border,
+        }
+    }
+
+    /// Every stroke where it lies as `listed` says, and the hover options
+    /// it names unset, for the parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let (align, s) = (listed.align, listed.states);
+        let line = |l: Option<Line>| l.map(|l| l.aligned(align));
+        Self {
+            hovered_thumb: self.hovered_thumb.filter(|_| !s.hover_fill),
+            thumb_border_color: line(self.thumb_border_color),
+            thumb_hover_border_color: line(self.thumb_hover_border_color)
+                .filter(|_| !s.hover_stroke),
+            thumb_pressed_border_color: line(self.thumb_pressed_border_color),
+            ..self
+        }
+    }
 }
 
 /// [`slider`] of what it reads. A rail height or a thumb diameter the
@@ -2558,33 +2650,39 @@ pub(crate) fn slider_from(
     let rail_width = s.track_height;
 
     let thumb = s.thumb_color;
-    // A soft option: `None` is the platform saying the thumb does not change
-    // under the pointer, so it is the thumb's own color.
-    let hovered_thumb = s
-        .thumb_hover_color
-        .map_or(thumb, |hover| composite_over(hover, thumb));
+    let hovered_thumb = s.hovered_thumb;
+    let pressed_thumb = s.pressed_thumb;
     // The model states the thumb's diameter; iced states a circular handle by
     // its radius.
     let handle_radius = s.thumb_diameter.map(|d| d / 2.0);
     let width = s
         .thumb_border_line_width
         .filter(|w| w.is_finite() && *w > 0.0);
-    let edge = |c: Option<Color>| width.zip(c);
-    let rest_edge = edge(s.thumb_border_color);
-    let hovered_edge = edge(s.thumb_hover_border_color.or(s.thumb_border_color));
+    let edge = move |line: Option<Line>| width.zip(line);
+    let rest_line = s.thumb_border_color;
+    let hovered_line = s.thumb_hover_border_color.or(rest_line);
+    let pressed_line = s.thumb_pressed_border_color.or(hovered_line);
+    let rest_edge = edge(rest_line);
 
     move |theme, status| {
         let iced = iced_widget::slider::default(theme, status);
+        // A thumb the theme states no fill for in this status is iced's own
+        // handle's fill.
         let handle_background = match status {
-            Status::Active => Background::Color(thumb),
-            Status::Hovered => Background::Color(hovered_thumb),
-            Status::Dragged => iced.handle.background,
-        };
+            Status::Active => Some(thumb),
+            Status::Hovered => hovered_thumb,
+            Status::Dragged => pressed_thumb,
+        }
+        .map_or(iced.handle.background, Background::Color);
         let (border_width, border_color) = match status {
             Status::Active => rest_edge,
-            Status::Hovered | Status::Dragged => hovered_edge,
+            Status::Hovered => edge(hovered_line),
+            Status::Dragged => edge(pressed_line),
         }
-        .unwrap_or((iced.handle.border_width, iced.handle.border_color));
+        .map_or(
+            (iced.handle.border_width, iced.handle.border_color),
+            |(width, line)| (width, line.over(painted(Some(handle_background)))),
+        );
         Style {
             rail: Rail {
                 backgrounds: (Background::Color(filled), Background::Color(remaining)),

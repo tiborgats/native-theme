@@ -6,9 +6,10 @@
 //! Requires the `widgets` feature (on by default).
 
 use iced_core::theme::Theme;
+use iced_core::{Shadow, Vector};
 use native_theme::next::{
-    ButtonQuery, IconStated, Paint, PartStated, PartStyle, ResolvedTheme, Stroke, WidgetState,
-    WindowState,
+    ButtonQuery, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke,
+    StyleQuery, WidgetState, WindowState,
 };
 
 use super::borders::{
@@ -17,7 +18,7 @@ use super::borders::{
 use super::{Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, to_color};
 use crate::styles::{
     self as old, ButtonSource, CheckFills, CheckboxSource, InputSource, Layer, Line, LinkSource,
-    Outline, PickListSource, SwitchSource, ToolbarButtonSource,
+    MenuSource, Outline, PickListSource, SliderSource, SwitchSource, ToolbarButtonSource,
 };
 
 /// A part's fill, where stated, as a layer the style lays over the fill
@@ -437,7 +438,7 @@ macro_rules! check_fills {
                 &w.indicator(WidgetState::HOVER),
                 concat!($home, ".indicator(HOVER).fill"),
             )?
-            .map(|hover| hover.over(unchecked)),
+            .map(|layer| layer.over(unchecked)),
             checked_border: line_or_none(
                 &w.indicator(WidgetState::CHECKED),
                 concat!($home, ".indicator(CHECKED).stroke.color"),
@@ -602,12 +603,12 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
             WidgetState::HOVER | WidgetState::CHECKED,
             "switch.track(HOVER|CHECKED).fill"
         )?
-        .map(|hover| hover.over(checked)),
+        .map(|layer| layer.over(checked)),
         hovered_unchecked_background: state_layer(
             &s.track(WidgetState::HOVER),
             "switch.track(HOVER).fill",
         )?
-        .map(|hover| hover.over(unchecked)),
+        .map(|layer| layer.over(unchecked)),
         disabled_checked_background: flag_fill!(
             s,
             track,
@@ -705,7 +706,7 @@ pub fn pick_list(
     Ok(old::pick_list_from(&PickListSource {
         background: idle,
         hovered_background: state_layer(&hover, "combo_box.field(HOVER).fill")?
-            .map(|hover| hover.over(idle)),
+            .map(|layer| layer.over(idle)),
         label: text_color(&c.label(WidgetState::NONE), "combo_box.label(NONE).color")?,
         placeholder: text_color(
             &r.input.placeholder(WidgetState::NONE),
@@ -720,6 +721,140 @@ pub fn pick_list(
             &open_hover,
             "combo_box.field(OPEN|HOVER).stroke.color",
         )?,
+    }))
+}
+
+/// A part's shadow as iced draws one, where the theme states the part's
+/// shadows: iced's menu draws one outset shadow by its offset, blur and
+/// colour, so it is the first outset layer, its spread and every other
+/// layer dropped (the README lists what iced cannot draw), and no shadow
+/// (`Shadow::default()`, transparent) where the theme states none outset.
+/// `None` where the theme states no shadow, iced's own then.
+fn shadow(part: &PartStyle) -> Option<Shadow> {
+    if !part.stated.contains(PartStated::SHADOWS) {
+        return None;
+    }
+    let outset = part
+        .shadows
+        .as_deref()
+        .and_then(|layers| layers.iter().find(|layer| !layer.inset));
+    Some(outset.map_or_else(Shadow::default, |layer| Shadow {
+        color: to_color(layer.color),
+        offset: Vector::new(layer.offset_x, layer.offset_y),
+        blur_radius: layer.blur,
+    }))
+}
+
+/// [`crate::styles::menu`]: the menu's panel, its items and their labels,
+/// framed by the menu's own stroke where the theme states one, else by the
+/// popover's (spec §5, notes to the table, the menu's popup frame). iced
+/// rounds the popup and the item highlight with one radius, which is
+/// `menu.item`'s corners (spec §5, `menu.border`); the panel's shadow is
+/// [`shadow`]'s. Each value the theme leaves unstated is iced's own.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no panel fill or item label
+/// colour, or a frame, corners or highlight iced cannot take.
+pub fn menu(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::overlay::menu::Style + Clone + use<>> {
+    let m = &r.menu;
+    let panel = m.panel(WidgetState::NONE);
+    let (frame, color_home, width_home) = if panel.stated.contains(PartStated::STROKE) {
+        (
+            &panel,
+            "menu.panel(NONE).stroke.color",
+            "menu.panel(NONE).stroke.width",
+        )
+    } else {
+        (
+            &r.popover.panel,
+            "popover.panel.stroke.color",
+            "popover.panel.stroke.width",
+        )
+    };
+    let (line, width) = if frame.stated.contains(PartStated::STROKE) {
+        let line = match frame.stroke {
+            Stroke::None => None,
+            _ => Some(line(frame, color_home)?),
+        };
+        (line, Some(stroke_width(frame, width_home)?))
+    } else {
+        (None, None)
+    };
+    Ok(old::menu_from(&MenuSource {
+        background: fill(&panel, "menu.panel(NONE).fill")?,
+        label: text_color(
+            &m.item_label(WidgetState::NONE),
+            "menu.item_label(NONE).color",
+        )?,
+        selected_label: state_text_color(
+            &m.item_label(WidgetState::HOVER),
+            "menu.item_label(HOVER).color",
+        )?,
+        selected_background: state_fill(&m.item(WidgetState::HOVER), "menu.item(HOVER).fill")?,
+        line,
+        width,
+        radius: radius_or_iced(&m.item(WidgetState::NONE), "menu.item(NONE).corners")?,
+        shadow: shadow(&panel),
+    }))
+}
+
+/// A part's stroke at rest as the slider's thumb takes it: its width and
+/// its stroke where stated, `None` for each where not or where the stroke
+/// is none.
+fn thumb_edge(part: &PartStyle) -> Mapped<(Option<f32>, Option<Line>)> {
+    if !part.stated.contains(PartStated::STROKE) || matches!(part.stroke, Stroke::None) {
+        return Ok((None, None));
+    }
+    Ok((
+        Some(stroke_width(part, "slider.thumb(NONE).stroke.width")?),
+        Some(line(part, "slider.thumb(NONE).stroke.color")?),
+    ))
+}
+
+/// [`crate::styles::slider`]: the rail's two fills and its height, the
+/// thumb's fill, diameter and strokes, each laid over the fill the thumb
+/// paints in that status; under the pointer and dragged, the thumb's own
+/// where the theme states it, else iced's handle fill and the stroke at
+/// rest.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no rail or thumb fill, or a
+/// stroke iced cannot take.
+pub fn slider(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<>,
+> {
+    let s = &r.slider;
+    let horizontal = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Horizontal);
+    let [_, track_height] = s.track(horizontal).min_size;
+    let thumb = s.thumb(WidgetState::NONE);
+    let [thumb_diameter, _] = thumb.min_size;
+    let thumb_color = fill(&thumb, "slider.thumb(NONE).fill")?;
+    let hover = s.thumb(WidgetState::HOVER);
+    let pressed = s.thumb(WidgetState::PRESSED);
+    let (width, rest_line) = thumb_edge(&thumb)?;
+    Ok(old::slider_from(&SliderSource {
+        fill_color: fill(
+            &s.active_track(WidgetState::NONE),
+            "slider.active_track(NONE).fill",
+        )?,
+        track_color: fill(&s.track(WidgetState::NONE), "slider.track(NONE).fill")?,
+        track_height,
+        thumb_color,
+        hovered_thumb: state_layer(&hover, "slider.thumb(HOVER).fill")?
+            .map(|layer| layer.over(thumb_color)),
+        pressed_thumb: state_layer(&pressed, "slider.thumb(PRESSED).fill")?
+            .map(|layer| layer.over(thumb_color)),
+        thumb_diameter,
+        thumb_border_line_width: width,
+        thumb_border_color: rest_line,
+        thumb_hover_border_color: state_line(&hover, "slider.thumb(HOVER).stroke.color")?,
+        thumb_pressed_border_color: state_line(&pressed, "slider.thumb(PRESSED).stroke.color")?,
     }))
 }
 

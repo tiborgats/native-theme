@@ -62,13 +62,15 @@ struct Difference {
 }
 
 /// How a listed style function's 0.8.0 side differs from the 0.7.2 side:
-/// where its strokes lie, and which of its state options the 0.8.0 theme
-/// leaves to iced. The expected value is the 0.7.2 side's output with its
-/// strokes laid there and those options unset.
+/// where its strokes lie, which of its state options the 0.8.0 theme
+/// leaves to iced, and whether it leaves the corners to iced. The expected
+/// value is the 0.7.2 side's output with its strokes laid there and those
+/// options unset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Listed {
     pub align: LineAlign,
     pub states: States,
+    pub iced_corners: bool,
 }
 
 /// The state options of a style function's source that the 0.8.0 theme
@@ -136,6 +138,7 @@ const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Differe
         listed: Listed {
             align: LineAlign::Inside,
             states: States::STATED,
+            iced_corners: false,
         },
         reason: &[INSIDE],
     }
@@ -149,6 +152,16 @@ const PRESSED_LINK: &str = "the theme states no fill for the pressed link: 0.7.2
      queried with PRESSED alone), and the connector keeps iced's own text button for that \
      status, its fill none (iced_widget 0.14.2 src/button.rs, fn text), with the pressed \
      label the theme states (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+
+/// The reason of material-3's menu corners.
+const MENU_CORNERS: &str = "material-3 rounds the menu's container (menu.panel.corners, 4, \
+     the M3 token container-shape, docs/platform-facts.md §2.6) and states no corners for an \
+     item, whose highlight is rectangular; 0.7.2's menu.border.corner_radius is the \
+     container's on material-3 (docs/v0.8.0-spec.md §5, notes to the table, menu.border). \
+     iced rounds the popup and the item highlight with one radius (iced_widget 0.14.2 \
+     src/overlay/menu.rs, the selected row's border::rounded of the menu's radius); the \
+     connector takes menu.item's corners, which material-3 leaves unstated, so the radius is \
+     iced's own (0) and the container is drawn square";
 
 /// The reason of a pressed link whose label the 0.8.0 theme states nothing
 /// for either.
@@ -169,7 +182,11 @@ const fn hover(
     Difference {
         leaf,
         presets,
-        listed: Listed { align, states },
+        listed: Listed {
+            align,
+            states,
+            iced_corners: false,
+        },
         reason: match align {
             LineAlign::Outside => &[HOVER],
             LineAlign::Inside => &[INSIDE, HOVER],
@@ -234,6 +251,7 @@ const DIFFERENCES: &[Difference] = &[
         listed: Listed {
             align: LineAlign::Center,
             states: States::STATED,
+            iced_corners: false,
         },
         reason: &[CENTER],
     },
@@ -325,6 +343,29 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         hovered(true, false, false),
     ),
+    // The menu's frame, popover.panel's stroke over menu.panel's fill.
+    inside(
+        "menu",
+        &["adwaita", "windows-11", "macos-monterey", "macos-tahoe"],
+    ),
+    Difference {
+        leaf: "menu",
+        presets: &["material-3"],
+        listed: Listed {
+            align: LineAlign::Outside,
+            states: States::STATED,
+            iced_corners: true,
+        },
+        reason: &[MENU_CORNERS],
+    },
+    // slider.thumb(HOVER): no hovered thumb fill (macos-monterey: in its dark
+    // scheme).
+    hover(
+        "slider",
+        &["kde-breeze", "windows-11", "macos-monterey", "macos-tahoe"],
+        LineAlign::Outside,
+        hovered(true, false, false),
+    ),
     // link.container(PRESSED): no preset states a pressed link's fill, and
     // the macOS presets no pressed label (`link.label(PRESSED)`).
     Difference {
@@ -342,6 +383,7 @@ const DIFFERENCES: &[Difference] = &[
                 pressed_fill: true,
                 ..States::STATED
             },
+            iced_corners: false,
         },
         reason: &[PRESSED_LINK],
     },
@@ -355,6 +397,7 @@ const DIFFERENCES: &[Difference] = &[
                 pressed_label: true,
                 ..States::STATED
             },
+            iced_corners: false,
         },
         reason: &[PRESSED_LINK, PRESSED_LINK_LABEL],
     },
@@ -600,8 +643,8 @@ fn compare_styles(
 ) {
     use crate::palette::to_color;
     use crate::styles::{
-        self as o, ButtonSource, CheckFills, CheckboxSource, InputSource, LinkSource, Outline,
-        PickListSource, SwitchSource, ToolbarButtonSource,
+        self as o, ButtonSource, CheckFills, CheckboxSource, InputSource, LinkSource, MenuSource,
+        Outline, PickListSource, SliderSource, SwitchSource, ToolbarButtonSource,
     };
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
 
@@ -835,6 +878,30 @@ fn compare_styles(
             n::pick_list(new),
             |l: Listed| o::pick_list_from(&c.listed(l)),
             fields
+        );
+    }
+
+    let m = MenuSource::of(old);
+    listed_style!(
+        report,
+        themes,
+        "menu",
+        surface(o::menu(old)),
+        n::menu(new).map(surface),
+        |l: Listed| surface(o::menu_from(&m.listed(l))),
+        [()]
+    );
+    {
+        use iced_widget::slider::Status;
+        let s = SliderSource::of(old);
+        listed_style!(
+            report,
+            themes,
+            "slider",
+            o::slider(old),
+            n::slider(new),
+            |l: Listed| o::slider_from(&s.listed(l)),
+            [Status::Active, Status::Hovered, Status::Dragged]
         );
     }
 
