@@ -331,7 +331,7 @@ fn text_size(text: &TextStyle, home: &'static str) -> Mapped<f32> {
 }
 
 /// A slant of the model as gpui's.
-fn font_style(style: FontStyle) -> Option<gpui::FontStyle> {
+pub(crate) fn font_style(style: FontStyle) -> Option<gpui::FontStyle> {
     match style {
         FontStyle::Normal => Some(gpui::FontStyle::Normal),
         FontStyle::Italic => Some(gpui::FontStyle::Italic),

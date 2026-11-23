@@ -4,11 +4,13 @@
 use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
 #[cfg(feature = "widgets")]
-use native_theme::next::{FocusTrigger, PartStated, TextStated, TextStyle};
+use native_theme::next::{FocusTrigger, PartStated, TextStyle};
 use native_theme::next::{ResolvedTheme as NextTheme, Stroke, WidgetState};
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
-use native_theme_gpui::widgets::{CheckboxLook, SliderLook, SwitchLook, ThumbOutline};
+use native_theme_gpui::widgets::{
+    CheckboxLook, SliderLook, SwitchLabelFont, SwitchLook, ThumbOutline,
+};
 
 use super::{
     WidgetInfo, chrome::input_background, claim, edge_claim, px_text, state_stroke_color_of,
@@ -932,19 +934,35 @@ fn unstated_label_font(text: &TextStyle, home: &'static str) -> Option<&'static 
     native_theme_gpui::next::label_font_unmapped(text, home).map(|unstated| unstated.home())
 }
 
-/// The home of the body text a theme-drawn switch letters its label in
-/// where the theme leaves it unstated, `typography.body.size_px` or
-/// `typography.body.weight`: the widget then draws gpui-component's own
-/// switch in its place (native-theme-gpui/widgets/mod.rs,
-/// `ThemeSource::body_text`); `None` where both are stated.
+/// The `label font` line of a theme-drawn switch: each property of `font`
+/// (`SwitchLabelFont::next_of`) at `switch.label(NONE)` where the theme
+/// states it, else gpui-component's own, its switch's label setting no
+/// family, weight or slant and the size `input_text_size(Size::Medium)`.
 #[cfg(feature = "widgets")]
-pub(crate) fn unstated_body_text(r: &NextTheme) -> Option<&'static str> {
-    if !r.typography.body.stated.contains(TextStated::SIZE_PX) {
-        return Some("typography.body.size_px");
-    }
-    native_theme_gpui::next::font_weight(r)
-        .err()
-        .map(|unstated| unstated.home())
+fn switch_label_font_text(font: Option<&SwitchLabelFont>) -> String {
+    let Some(font) = font else {
+        return "none gpui can take at switch.label(NONE)".to_owned();
+    };
+    let family = font.family.as_ref().map_or_else(
+        || "the window's family (none stated at switch.label(NONE).family)".to_owned(),
+        |family| format!("switch.label(NONE).family {family}"),
+    );
+    let size = font.size.map_or_else(
+        || "gpui-component's own size, text_sm, input_text_size(Size::Medium) (none stated at switch.label(NONE).size_px)".to_owned(),
+        |size| format!("switch.label(NONE).size_px {}", length_text(size)),
+    );
+    let weight = font.weight.map_or_else(
+        || "the window's weight (none stated at switch.label(NONE).weight)".to_owned(),
+        |weight| format!("switch.label(NONE).weight {}", weight.0),
+    );
+    let style = font.style.map_or_else(
+        || "the window's slant (none stated at switch.label(NONE).style)".to_owned(),
+        |style| format!("switch.label(NONE).style {style:?}"),
+    );
+    format!(
+        "{family}, {size}, {weight}, {style}, one line typography.line_height_multiplier {} tall (native-theme-gpui/widgets/switch.rs, SwitchLabelFont::next_of; gpui-component/switch.rs, Switch::render)",
+        font.line_height
+    )
 }
 
 /// Whether a theme-drawn switch, `checked` or not, is hovered in a colour
@@ -1590,10 +1608,11 @@ pub fn native_switch(
     disabled: bool,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Switch");
+    let font = SwitchLabelFont::next_of(r);
     let drawn = drawn_or_upstream(
         SwitchLook::next_of(r, checked, disabled).map_err(|unstated| unstated.home()),
         next_ground(r),
-        unstated_body_text(r),
+        font.as_ref().err().map(|unstated| unstated.home()),
     );
     let (rest, ground) = match drawn {
         Ok(drawn) => drawn,
@@ -1613,25 +1632,25 @@ pub fn native_switch(
             "track",
             "switch.track(NONE).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:249",
+            "native-theme-gpui/widgets/switch.rs:256",
         ),
         (true, false) => claim(
             "track",
             "switch.track(CHECKED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:250",
+            "native-theme-gpui/widgets/switch.rs:257",
         ),
         (false, true) => claim(
             "track",
             "switch.track(DISABLED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:251",
+            "native-theme-gpui/widgets/switch.rs:258",
         ),
         (true, true) => claim(
             "track",
             "switch.track(DISABLED|CHECKED).fill",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:252",
+            "native-theme-gpui/widgets/switch.rs:259",
         ),
     });
     // The swatch is the track drawn under the pointer, the layer composited
@@ -1642,25 +1661,25 @@ pub fn native_switch(
             "hover, switch.track(HOVER).fill over the track",
             "switch.track(HOVER).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:230",
+            "native-theme-gpui/widgets/switch.rs:240",
         ),
         (true, true) => stated_claim(
             "hover, switch.track(HOVER|CHECKED).fill over the track",
             "switch.track(HOVER|CHECKED).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:226",
+            "native-theme-gpui/widgets/switch.rs:236",
         ),
         (false, false) => stated_claim(
             "hover, none stated: the track at rest",
             "switch.track(NONE).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:221",
+            "native-theme-gpui/widgets/switch.rs:231",
         ),
         (true, false) => stated_claim(
             "hover, none stated: the track at rest",
             "switch.track(CHECKED).fill",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:221",
+            "native-theme-gpui/widgets/switch.rs:231",
         ),
     });
     // The track's outline and the thumb's, where the theme states the colour
@@ -1672,28 +1691,28 @@ pub fn native_switch(
             "switch.track(NONE).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:268",
+            "native-theme-gpui/widgets/switch.rs:275",
         ),
         (true, false) => edge_claim(
             "track outline",
             "switch.track(CHECKED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:269",
+            "native-theme-gpui/widgets/switch.rs:276",
         ),
         (false, true) => edge_claim(
             "track outline",
             "switch.track(DISABLED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:270",
+            "native-theme-gpui/widgets/switch.rs:277",
         ),
         (true, true) => edge_claim(
             "track outline",
             "switch.track(DISABLED|CHECKED).stroke.color",
             look.track_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:271",
+            "native-theme-gpui/widgets/switch.rs:278",
         ),
     });
     let width = Some(f32::from(look.thumb_border_width));
@@ -1703,7 +1722,7 @@ pub fn native_switch(
             "switch.thumb(CHECKED).stroke.color",
             look.thumb_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:279",
+            "native-theme-gpui/widgets/switch.rs:286",
         )
     } else {
         edge_claim(
@@ -1711,7 +1730,7 @@ pub fn native_switch(
             "switch.thumb(NONE).stroke.color",
             look.thumb_border,
             width,
-            "native-theme-gpui/widgets/switch.rs:278",
+            "native-theme-gpui/widgets/switch.rs:285",
         )
     });
     // While focused the track draws the theme's focus ring; a disabled switch
@@ -1726,41 +1745,68 @@ pub fn native_switch(
             "thumb",
             "switch.thumb(NONE).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:259",
+            "native-theme-gpui/widgets/switch.rs:266",
         ),
         (true, false) => claim(
             "thumb",
             "switch.thumb(CHECKED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:260",
+            "native-theme-gpui/widgets/switch.rs:267",
         ),
         (false, true) => claim(
             "thumb",
             "switch.thumb(DISABLED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:261",
+            "native-theme-gpui/widgets/switch.rs:268",
         ),
         (true, true) => claim(
             "thumb",
             "switch.thumb(DISABLED|CHECKED).fill",
             look.thumb_color,
-            "native-theme-gpui/widgets/switch.rs:262",
+            "native-theme-gpui/widgets/switch.rs:269",
         ),
     });
-    let info = info.color(if disabled {
-        claim(
+    // The label at the switch's own home where the theme states its colour,
+    // else gpui-component's own, the window's text its switch inherits,
+    // disabled muted_foreground (gpui-component/switch.rs, Switch::render),
+    // at the homes the connector fills those tokens from.
+    let info = info.color(match SwitchLook::next_label_home(r, checked, disabled) {
+        Ok("switch.label(NONE).color") => claim(
             "label",
-            "colors.disabled_text",
+            "switch.label(NONE).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:235",
-        )
-    } else {
-        claim(
+            "native-theme-gpui/widgets/switch.rs:425",
+        ),
+        Ok("switch.label(CHECKED).color") => claim(
+            "label",
+            "switch.label(CHECKED).color",
+            look.label,
+            "native-theme-gpui/widgets/switch.rs:426",
+        ),
+        Ok("switch.label(DISABLED).color") => claim(
+            "label",
+            "switch.label(DISABLED).color",
+            look.label,
+            "native-theme-gpui/widgets/switch.rs:427",
+        ),
+        Ok("switch.label(DISABLED|CHECKED).color") => claim(
+            "label",
+            "switch.label(DISABLED|CHECKED).color",
+            look.label,
+            "native-theme-gpui/widgets/switch.rs:428",
+        ),
+        _ if disabled => claim(
+            "label",
+            "colors.window.foreground_muted",
+            look.label,
+            "native-theme-gpui/widgets/switch.rs:434",
+        ),
+        _ => claim(
             "label",
             "colors.window.foreground",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:239",
-        )
+            "native-theme-gpui/widgets/switch.rs:435",
+        ),
     });
     let thumb_home = if checked {
         "switch.thumb(CHECKED).min_size[0]"
@@ -1799,13 +1845,16 @@ pub fn native_switch(
                 outline(look.thumb_border, look.thumb_border_width, "switch.thumb(NONE).stroke.width"),
             ),
         )
+        .config("label font", switch_label_font_text(font.ok().as_ref()))
         .config(
-            "label font",
-            "the window's, at typography.body.size_px and typography.body.weight, at typography.line_height_multiplier (native-theme-gpui/widgets/mod.rs, ThemeSource::body_text): widgets::Switch does not read switch.label(NONE)",
-        )
-        .not_themeable(
             "label gap",
-            "gpui-component's gap_2 (gpui-component/switch.rs, Switch::render): widgets::Switch does not read switch.label_gap",
+            match look.label_gap {
+                Some(gap) => format!(
+                    "switch.label_gap: {} (native-theme-gpui/widgets/switch.rs, SwitchLook::next_of)",
+                    length_text(gap)
+                ),
+                None => "none stated at switch.label_gap: gpui-component's own gap_2 (gpui-component/switch.rs, Switch::render)".to_owned(),
+            },
         );
     let info = if disabled {
         info.config("disabled", if rest.opacity < 1. {

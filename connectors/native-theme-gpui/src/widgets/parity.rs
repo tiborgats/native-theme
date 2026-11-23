@@ -51,7 +51,21 @@ struct Difference {
 }
 
 /// The listed differences.
-const DIFFERENCES: &[Difference] = &[];
+const DIFFERENCES: &[Difference] = &[Difference {
+    leaf: "SwitchLook::label disabled",
+    presets: &[
+        "kde-breeze",
+        "adwaita",
+        "windows-11",
+        "macos-monterey",
+        "macos-tahoe",
+        "material-3",
+        "ios-13",
+    ],
+    reason: "no 0.8.0 preset states switch.label, so a disabled switch's label is \
+             gpui-component's own, muted_foreground, colors.window.foreground_muted \
+             (spec §10, rule 0), where the 0.7.2 look took defaults.disabled_text_color",
+}];
 
 /// The leaves compared and the differences found, for one preset and scheme.
 struct Report {
@@ -186,11 +200,31 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         );
         for checked in [false, true] {
             let state = format!(" checked={checked} disabled={disabled}");
+            let (old_switch, new_switch) = (
+                SwitchLook::of(&old, checked, disabled),
+                SwitchLook::next_of(&new, checked, disabled),
+            );
+            // The label apart, so a listed difference of the disabled label
+            // leaves the rest of the look compared.
+            let unlabelled = |look: SwitchLook| SwitchLook {
+                label: gpui::transparent_black(),
+                ..look
+            };
             r.leaf(
                 "SwitchLook",
                 &state,
-                SwitchLook::of(&old, checked, disabled),
-                SwitchLook::next_of(&new, checked, disabled),
+                old_switch.map(unlabelled),
+                new_switch.map(unlabelled),
+            );
+            r.leaf(
+                if disabled {
+                    "SwitchLook::label disabled"
+                } else {
+                    "SwitchLook::label"
+                },
+                &state,
+                old_switch.map(|look| look.label),
+                new_switch.map(|look| look.label),
             );
             r.leaf(
                 "CheckboxLook::of",

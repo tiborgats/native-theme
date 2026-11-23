@@ -80,7 +80,7 @@ pub use progress::{ProgressBar, ProgressBarLook};
 pub use separator::{Separator, SeparatorLook};
 pub use slider::{Slider, SliderLook, ThumbOutline};
 pub use spinner::{Spinner, SpinnerLook};
-pub use switch::{Switch, SwitchLook};
+pub use switch::{Switch, SwitchLabelFont, SwitchLook};
 pub use tab_bar::{Tab, TabBar, TabIndicator, TabLook};
 
 into_element!(

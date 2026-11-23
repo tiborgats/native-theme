@@ -19478,15 +19478,17 @@ fn checkbox_homes(
 /// The home each colour of a switch's look is read at, `checked` or not,
 /// `disabled` or not, as `SwitchLook::next_of` reads them, with the line of
 /// widgets/switch.rs that spells it: the track `switch.track(<state>).fill`
-/// (:249-252) at the switch's state; the hover
-/// `switch.track(HOVER).fill` (:230), or `switch.track(HOVER|CHECKED).fill`
-/// (:226) where it differs from the checked track, over the track, else the
-/// track at rest (:221); the track's outline
-/// `switch.track(<state>).stroke.color` (:268-271); the thumb's outline
-/// `switch.thumb(NONE)` or `(CHECKED).stroke.color` (:278, :279); the thumb
-/// `switch.thumb(<state>).fill` (:259-262); the label
-/// `colors.disabled_text` disabled (:235), else `colors.window.foreground`
-/// (:239) -- as (track, hover, track outline, thumb outline, thumb, label).
+/// (:256-259) at the switch's state; the hover
+/// `switch.track(HOVER).fill` (:240), or `switch.track(HOVER|CHECKED).fill`
+/// (:236) where it differs from the checked track, over the track, else the
+/// track at rest (:231); the track's outline
+/// `switch.track(<state>).stroke.color` (:275-278); the thumb's outline
+/// `switch.thumb(NONE)` or `(CHECKED).stroke.color` (:285, :286); the thumb
+/// `switch.thumb(<state>).fill` (:266-269); the label
+/// `switch.label(<state>).color` where the theme states it (:425-428), else
+/// gpui-component's own, `colors.window.foreground_muted` disabled (:434),
+/// `colors.window.foreground` enabled (:435) -- as (track, hover, track
+/// outline, thumb outline, thumb, label).
 #[cfg(feature = "widgets")]
 fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: bool) -> [Leaf; 6] {
     let pick = |[none, on, off, off_on]: [Leaf; 4]| match (checked, disabled) {
@@ -19498,19 +19500,19 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
     let track = pick([
         (
             "switch.track(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:249",
+            "native-theme-gpui/widgets/switch.rs:256",
         ),
         (
             "switch.track(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:250",
+            "native-theme-gpui/widgets/switch.rs:257",
         ),
         (
             "switch.track(DISABLED).fill",
-            "native-theme-gpui/widgets/switch.rs:251",
+            "native-theme-gpui/widgets/switch.rs:258",
         ),
         (
             "switch.track(DISABLED|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:252",
+            "native-theme-gpui/widgets/switch.rs:259",
         ),
     ]);
     let hover = match (
@@ -19519,78 +19521,94 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
     ) {
         (false, true) => (
             "switch.track(HOVER).fill",
-            "native-theme-gpui/widgets/switch.rs:230",
+            "native-theme-gpui/widgets/switch.rs:240",
         ),
         (true, true) => (
             "switch.track(HOVER|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:226",
+            "native-theme-gpui/widgets/switch.rs:236",
         ),
         (false, false) => (
             "switch.track(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:221",
+            "native-theme-gpui/widgets/switch.rs:231",
         ),
         (true, false) => (
             "switch.track(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:221",
+            "native-theme-gpui/widgets/switch.rs:231",
         ),
     };
     let track_outline = pick([
         (
             "switch.track(NONE).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:268",
+            "native-theme-gpui/widgets/switch.rs:275",
         ),
         (
             "switch.track(CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:269",
+            "native-theme-gpui/widgets/switch.rs:276",
         ),
         (
             "switch.track(DISABLED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:270",
+            "native-theme-gpui/widgets/switch.rs:277",
         ),
         (
             "switch.track(DISABLED|CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:271",
+            "native-theme-gpui/widgets/switch.rs:278",
         ),
     ]);
     let thumb_outline = if checked {
         (
             "switch.thumb(CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:279",
+            "native-theme-gpui/widgets/switch.rs:286",
         )
     } else {
         (
             "switch.thumb(NONE).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:278",
+            "native-theme-gpui/widgets/switch.rs:285",
         )
     };
     let thumb = pick([
         (
             "switch.thumb(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:259",
+            "native-theme-gpui/widgets/switch.rs:266",
         ),
         (
             "switch.thumb(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:260",
+            "native-theme-gpui/widgets/switch.rs:267",
         ),
         (
             "switch.thumb(DISABLED).fill",
-            "native-theme-gpui/widgets/switch.rs:261",
+            "native-theme-gpui/widgets/switch.rs:268",
         ),
         (
             "switch.thumb(DISABLED|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:262",
+            "native-theme-gpui/widgets/switch.rs:269",
         ),
     ]);
-    let label = if disabled {
-        (
-            "colors.disabled_text",
-            "native-theme-gpui/widgets/switch.rs:235",
-        )
-    } else {
-        (
+    let label = match native_theme_gpui::widgets::SwitchLook::next_label_home(r, checked, disabled)
+    {
+        Ok("switch.label(NONE).color") => (
+            "switch.label(NONE).color",
+            "native-theme-gpui/widgets/switch.rs:425",
+        ),
+        Ok("switch.label(CHECKED).color") => (
+            "switch.label(CHECKED).color",
+            "native-theme-gpui/widgets/switch.rs:426",
+        ),
+        Ok("switch.label(DISABLED).color") => (
+            "switch.label(DISABLED).color",
+            "native-theme-gpui/widgets/switch.rs:427",
+        ),
+        Ok("switch.label(DISABLED|CHECKED).color") => (
+            "switch.label(DISABLED|CHECKED).color",
+            "native-theme-gpui/widgets/switch.rs:428",
+        ),
+        _ if disabled => (
+            "colors.window.foreground_muted",
+            "native-theme-gpui/widgets/switch.rs:434",
+        ),
+        _ => (
             "colors.window.foreground",
-            "native-theme-gpui/widgets/switch.rs:239",
-        )
+            "native-theme-gpui/widgets/switch.rs:435",
+        ),
     };
     [track, hover, track_outline, thumb_outline, thumb, label]
 }
@@ -19976,6 +19994,104 @@ fn a_theme_drawn_controls_info_prints_its_look() {
         "no bundled preset stated a radio width of its own, an off thumb of its own, a check \
          mark stroke, or a fade below 1 (in that order), so a branch went unread"
     );
+}
+
+/// The theme-drawn Switch's label in its info: on kde-breeze light, which
+/// states no switch label nor gap, gpui-component's own colour (the
+/// window's text, disabled `muted_foreground`, at the homes the connector
+/// fills them from), size and gap; on the same theme patched to state the
+/// label's colour, size and gap and a disabled colour, each at the
+/// switch's own home, the colour cited at the line `SwitchLook::next_of`
+/// reads it at.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_switchs_info_reads_its_label_at_its_own_homes() {
+    use crate::info::{inputs, next_stated};
+    use native_theme::next::{
+        Color, Preset, Scheme, SwitchPatch, SwitchRule, TextPatch, Theme, ThemeContext, ThemePatch,
+        WidgetPatchMap, WidgetState,
+    };
+    use native_theme_gpui::widgets::SwitchLook;
+    let breeze = || {
+        Theme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light))
+    };
+    let plain = breeze();
+    let mut patched = breeze();
+    patched.apply_patch(
+        &ThemePatch::new()
+            .widget_rules(WidgetPatchMap::new().switch(SwitchPatch::new().label_gap(13.0)))
+            .switch(
+                SwitchRule::new().label(
+                    TextPatch::new()
+                        .color(Color::rgb(1.0, 0.0, 0.0))
+                        .size_px(17.0),
+                ),
+            )
+            .switch(
+                SwitchRule::new()
+                    .states(WidgetState::DISABLED)
+                    .label(TextPatch::new().color(Color::rgb(0.0, 0.0, 1.0))),
+            ),
+    );
+    let says = |text: Option<&str>, part: &str| text.is_some_and(|text| text.contains(part));
+    let mut wrong = Vec::new();
+    for (r, homes, gap, size) in [
+        (
+            &plain,
+            [
+                (
+                    "colors.window.foreground",
+                    "native-theme-gpui/widgets/switch.rs:435",
+                ),
+                (
+                    "colors.window.foreground_muted",
+                    "native-theme-gpui/widgets/switch.rs:434",
+                ),
+            ],
+            "gap_2",
+            "text_sm",
+        ),
+        (
+            &patched,
+            [
+                (
+                    "switch.label(NONE).color",
+                    "native-theme-gpui/widgets/switch.rs:425",
+                ),
+                (
+                    "switch.label(DISABLED).color",
+                    "native-theme-gpui/widgets/switch.rs:427",
+                ),
+            ],
+            "switch.label_gap: 13px",
+            "switch.label(NONE).size_px 17px",
+        ),
+    ] {
+        let ground = r.colors.window.background.map(next_stated);
+        for (disabled, (field, cited)) in [false, true].into_iter().zip(homes) {
+            let info = inputs::native_switch(r, "label", false, disabled);
+            let look = SwitchLook::next_of(r, false, disabled)
+                .ok()
+                .zip(ground)
+                .map(|(look, ground)| look.faded_over(ground).label);
+            let claimed = claim_by_role(&info, "label").map(|c| (c.value, c.field, c.cited_at));
+            if claimed != look.map(|label| (label, field, cited)) {
+                wrong.push(format!(
+                    "disabled {disabled}: the label claims {claimed:?}, the Look has {look:?} at {field} ({cited})"
+                ));
+            }
+            if !says(note_of(&info.config, "label gap"), gap)
+                || !says(note_of(&info.config, "label font"), size)
+            {
+                wrong.push(format!(
+                    "disabled {disabled}: the label gap and font lines do not say {gap:?} and {size:?}: {:?}",
+                    info.config
+                ));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
 
 /// A theme-drawn Slider's info prints what the widget draws, over every
