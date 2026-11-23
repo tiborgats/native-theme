@@ -598,7 +598,7 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
     };
     let info = info
         .config("indicator radius", format!("radius, capped at 4px: {}px", t.radius.as_f32().min(4.0)))
-        .not_themeable("font colour", "carried as size and weight only. Upstream wraps a Checkbox label in a div that sets foreground itself and re-sets muted_foreground there when disabled (gpui-component/checkbox.rs, Checkbox::render), and the disabled hook applies muted_foreground before this refinement, so a carried colour would never reach the label and would displace the disabled colour of custom children (native-theme-gpui geometry.rs, geometry::checkbox)")
+        .not_themeable("font colour", "carried as size and weight only. Upstream wraps a Checkbox label in a div that sets foreground itself and re-sets muted_foreground there when disabled (gpui-component/checkbox.rs, Checkbox::render), and the disabled hook applies muted_foreground before this refinement, so a carried colour would never reach the label and would displace the disabled colour of custom children (native-theme-gpui/geometry.rs, geometry::checkbox)")
         .not_themeable("unchecked fill", "input_background(), as an Input's: the window background in light mode, input faded toward transparent in dark (gpui-component/checkbox.rs, Checkbox::render)")
         .not_themeable("indicator size", "rems(0.75 / 0.875 / 1 / 1.125) per Size (gpui-component/checkbox.rs, Checkbox::render indicator_size), so the box already scales with the platform font -- the rem is Theme::font_size. What has no route is checkbox.indicator_width, which the model states in absolute px: Size::Size falls into the same catch-all arm as Medium. Tier U for the px, not for the scaling")
         .instance("label", label);
@@ -1689,7 +1689,7 @@ pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
             t.muted_foreground,
             "gpui-component/select.rs:492",
         ))
-        .not_themeable("carried colour", "the one difference from a Combobox, such as the theme settings' preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)")
+        .not_themeable("carried colour", "the one difference from a Combobox, such as the theme settings' preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui/geometry.rs, combobox)")
         .not_themeable("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (gpui-component/select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size")
         .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the list is empty (gpui-component/select.rs, SelectState::new)"))
 }

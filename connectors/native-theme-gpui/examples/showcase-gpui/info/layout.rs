@@ -1518,7 +1518,7 @@ pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
             format!("scrollbar_mode: {:?}", t.scrollbar_mode),
         );
     let info = if styled {
-        info.config("track and thumb", "scrollbar.groove_width wide, the thumb scrollbar.thumb_width wide and at least scrollbar.min_thumb_length long, in scrollbar.track_color, thumb_color and thumb_hover_color -- the colours ThemeColor holds as scrollbar, scrollbar_thumb and scrollbar_thumb_hover -- written onto gpui-base by the connector after every rebuild (native-theme-gpui base_layer.rs, scrollbar_styles)")
+        info.config("track and thumb", "scrollbar.groove_width wide, the thumb scrollbar.thumb_width wide and at least scrollbar.min_thumb_length long, in scrollbar.track_color, thumb_color and thumb_hover_color -- the colours ThemeColor holds as scrollbar, scrollbar_thumb and scrollbar_thumb_hover -- written onto gpui-base by the connector after every rebuild (native-theme-gpui/base_layer.rs, scrollbar_styles)")
     } else {
         info
     };
