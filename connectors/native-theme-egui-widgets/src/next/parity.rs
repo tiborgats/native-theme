@@ -21,8 +21,12 @@ use native_theme_egui::ResolvedTheme;
 use native_theme_egui::native_theme;
 use native_theme_egui::native_theme::next::{Preset, ThemeContext};
 
+use crate::combo_box::Sides;
+use crate::links::Look as LinkLook;
 use crate::progress_bar::Bar;
 use crate::radio_button::{Geometry as RadioGeometry, Look as RadioLook};
+use crate::segmented_control::Look as SegmentedLook;
+use crate::slider::{Geometry as SliderGeometry, Look as SliderLook};
 use crate::spinner::Look as SpinnerLook;
 use crate::switch::{Geometry as SwitchGeometry, Look as SwitchLook};
 
@@ -153,6 +157,10 @@ pub(crate) fn resolve(
 
 /// Every widget's look and geometry, of one preset and scheme.
 fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::next::ResolvedTheme) {
+    // The width a slider is given by its `Ui`: egui's own.
+    let slider_width = native_theme_egui::egui::Style::default()
+        .spacing
+        .slider_width;
     compare!(
         report,
         "switch::Look",
@@ -226,6 +234,67 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
         Some(SpinnerLook::of(old)),
         Some(SpinnerLook::next_of(new)),
         [fill_color, text_color, diameter, stroke_width]
+    );
+    compare!(
+        report,
+        "links::Look",
+        LinkLook,
+        Some(LinkLook::of(old).painted()),
+        Some(LinkLook::next_of(new).painted()),
+        [
+            text_color,
+            background_color,
+            hover_background,
+            hover_text_color,
+            active_text_color,
+            visited_text_color,
+            disabled_text_color,
+            underline_enabled,
+        ]
+    );
+    compare!(
+        report,
+        "segmented_control::Look",
+        SegmentedLook,
+        Some(SegmentedLook::of(old)),
+        Some(SegmentedLook::next_of(new)),
+        [background, hover, padded]
+    );
+    compare!(
+        report,
+        "slider::Look",
+        SliderLook,
+        Some(SliderLook::of(old)),
+        SliderLook::next_of(new),
+        [
+            track_color,
+            fill_color,
+            thumb_color,
+            thumb_hover_color,
+            disabled_track_color,
+            disabled_fill_color,
+            disabled_thumb_color,
+            thumb_border_color,
+            thumb_hover_border_color,
+            thumb_focus_border_color,
+            background,
+        ]
+    );
+    compare!(
+        report,
+        "slider::Geometry",
+        SliderGeometry,
+        SliderGeometry::of(&old.slider, slider_width),
+        SliderGeometry::next_of(new, slider_width),
+        [thumb, rail, width, outline]
+    );
+    compare!(
+        report,
+        "combo_box::Sides",
+        Sides,
+        Sides::of(old),
+        Sides::next_of(new),
+        [left, right, border, column]
     );
 }
 

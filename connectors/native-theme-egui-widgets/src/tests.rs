@@ -349,104 +349,28 @@ fn in_scope(
 #[test]
 fn under_a_next_atlas_every_widget_is_its_egui_counterpart() {
     type Add = Box<dyn Fn(&mut egui::Ui, bool) -> egui::Response>;
-    let disabled_by_ui = |add: fn(&mut egui::Ui) -> egui::Response| -> Add {
-        Box::new(move |ui, enabled| ui.add_enabled_ui(enabled, add).inner)
-    };
-    let cases: Vec<(&str, Add, Add)> = vec![
-        (
-            "slider",
-            Box::new(|ui, enabled| {
-                ui.add(
-                    Slider::new(&mut 40.0, 0.0..=100.0)
-                        .label("Volume")
-                        .enabled(enabled),
-                )
-            }),
-            Box::new(|ui, enabled| {
-                in_scope(ui, None, false, enabled, |ui| {
-                    ui.add(
-                        egui::Slider::new(&mut 40.0, 0.0..=100.0)
-                            .show_value(false)
-                            .text("Volume"),
-                    )
-                })
-            }),
-        ),
-        (
-            "segmented control",
-            disabled_by_ui(|ui| ui.add(SegmentedControl::new(&mut 1, ["Day", "Week"]))),
-            disabled_by_ui(|ui| {
-                ui.horizontal(|ui| {
-                    ui.add(egui::Button::new("Day").selected(false));
-                    ui.add(egui::Button::new("Week").selected(true));
-                })
-                .response
-            }),
-        ),
-        (
-            "link",
-            disabled_by_ui(|ui| {
-                let w = links::link(ui, "Link");
-                ui.add(w)
-            }),
-            disabled_by_ui(|ui| ui.add(egui::Link::new("Link"))),
-        ),
-        (
-            "hyperlink",
-            disabled_by_ui(|ui| {
-                let w = links::hyperlink(ui, "Docs", "https://example.org");
-                ui.add(w)
-            }),
-            disabled_by_ui(|ui| {
-                ui.add(egui::Hyperlink::from_label_and_url(
-                    "Docs",
-                    "https://example.org",
-                ))
-            }),
-        ),
-        (
-            "combo box",
-            Box::new(|ui, enabled| {
-                ComboBox::from_id_salt("fruit")
-                    .selected_text("Apple")
-                    .width(140.0)
-                    .enabled(enabled)
-                    .show_ui(ui, |ui| ui.label("Banana"))
-                    .response
-            }),
-            Box::new(|ui, enabled| {
-                in_scope(ui, Some(Role::ComboBox), false, enabled, |ui| {
-                    egui::ComboBox::from_id_salt("fruit")
-                        .selected_text("Apple")
-                        .width(140.0)
-                        .show_ui(ui, |ui| ui.label("Banana"))
-                        .response
-                })
-            }),
-        ),
-        (
-            "expander",
-            Box::new(|ui, enabled| {
-                Expander::new("Details")
+    let cases: Vec<(&str, Add, Add)> = vec![(
+        "expander",
+        Box::new(|ui, enabled| {
+            Expander::new("Details")
+                .default_open(true)
+                .enabled(enabled)
+                .show(ui, |ui| ui.label("Body"))
+                .header_response
+        }),
+        Box::new(|ui, enabled| {
+            let outer = std::sync::Arc::clone(ui.style());
+            in_scope(ui, Some(Role::Expander), false, enabled, |ui| {
+                egui::CollapsingHeader::new("Details")
                     .default_open(true)
-                    .enabled(enabled)
-                    .show(ui, |ui| ui.label("Body"))
+                    .show(ui, |ui| {
+                        ui.set_style(outer);
+                        ui.label("Body")
+                    })
                     .header_response
-            }),
-            Box::new(|ui, enabled| {
-                let outer = std::sync::Arc::clone(ui.style());
-                in_scope(ui, Some(Role::Expander), false, enabled, |ui| {
-                    egui::CollapsingHeader::new("Details")
-                        .default_open(true)
-                        .show(ui, |ui| {
-                            ui.set_style(outer);
-                            ui.label("Body")
-                        })
-                        .header_response
-                })
-            }),
-        ),
-    ];
+            })
+        }),
+    )];
     let mut faded_twice_differs = Vec::new();
     for &preset in Preset::ALL {
         for enabled in [true, false] {
@@ -461,23 +385,6 @@ fn under_a_next_atlas_every_widget_is_its_egui_counterpart() {
                 let (b, rb) = response(&egui_ctx, at(1.0), |ui| egui_s(ui, enabled));
                 assert!(ra.rect.is_finite(), "{at_}");
                 let (a, b) = (flat(&a.shapes), flat(&b.shapes));
-                if *name == "combo box" {
-                    // the drop-down's arrow is the connector's open chevron in egui's arrow
-                    // box, grown to the text's line where that is taller
-                    // (`combo_box::paint_chevron`), where egui fills a triangle; the text keeps
-                    // egui's own padding
-                    let open = |s: &egui::Shape| matches!(s, egui::Shape::Path(p) if !p.closed);
-                    assert_eq!(a.iter().filter(|s| open(s)).count(), 1, "{at_}");
-                    let text_x = |shapes: &[egui::Shape]| {
-                        shapes.iter().find_map(|s| match s {
-                            egui::Shape::Text(t) => Some(t.pos.x),
-                            _ => None,
-                        })
-                    };
-                    assert_eq!(text_x(&a), text_x(&b), "{at_}: not egui's padding");
-                    assert!(text_x(&a).is_some(), "{at_}");
-                    continue;
-                }
                 assert_eq!(ra.rect, rb.rect, "{at_}: a different size from egui's");
                 assert_eq!(a, b, "{at_}: not egui's pixels");
             }

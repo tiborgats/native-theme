@@ -1,7 +1,9 @@
 //! [`ComboBox`]: egui's own drop-down, as tall as its text and padding make it.
 
 use native_theme_egui::egui;
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
+use native_theme_egui::next::{padding_of, stroke_width_of};
+use native_theme_egui::{ResolvedTheme, Role, RoleVariant, ThemeAtlas};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -160,17 +162,12 @@ impl ComboBox {
         };
         let popup_style =
             popup_style.unwrap_or_else(|| atlas.role_modifier(theme, Role::ComboBox, variant));
-        // Where the border's width is not finite, or the atlas holds no 0.7.2 theme, egui's own
-        // padding and arrow place stand.
-        let sides = atlas.resolved_for(theme).and_then(|t| {
-            let c = &t.combo_box;
-            scope::length(c.border.line_width).map(|border| Sides {
-                left: c.border.padding.left.and_then(scope::length),
-                right: c.border.padding.right.and_then(scope::length),
-                border,
-                column: c.arrow_area_width.and_then(scope::length),
-            })
-        });
+        // Where the border's width is unstated or not finite, egui's own padding and arrow
+        // place stand.
+        let sides = match atlas.resolved_for(theme) {
+            Some(t) => Sides::of(t),
+            None => atlas.next_resolved_for(theme).and_then(Sides::next_of),
+        };
         scope::open(ui, Role::ComboBox, enabled, |ui| {
             // The text `combo_box.border.padding.left` inside the border: egui pads its button by
             // one `button_padding.x` on both sides (`combo_box_dyn`), which the scope holds as
@@ -294,15 +291,42 @@ impl ComboBox {
 
 /// The drop-down's stated sides, from `combo_box`: its `border.padding` left and right, its
 /// border's width, and its arrow column's width (`arrow_area_width`).
-#[derive(Clone, Copy)]
-struct Sides {
-    left: Option<f32>,
-    right: Option<f32>,
-    border: f32,
-    column: Option<f32>,
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Sides {
+    pub(crate) left: Option<f32>,
+    pub(crate) right: Option<f32>,
+    pub(crate) border: f32,
+    pub(crate) column: Option<f32>,
 }
 
 impl Sides {
+    /// `None` where the border's width is not finite.
+    pub(crate) fn of(t: &ResolvedTheme) -> Option<Self> {
+        let c = &t.combo_box;
+        Some(Self {
+            left: c.border.padding.left.and_then(scope::length),
+            right: c.border.padding.right.and_then(scope::length),
+            border: scope::length(c.border.line_width)?,
+            column: c.arrow_area_width.and_then(scope::length),
+        })
+    }
+
+    /// The sides of a drop-down of a 0.8.0 theme: `combo_box.field(NONE)`'s left and right
+    /// padding and its stroke's width (none for a stroke stated as none), and
+    /// `combo_box.arrow_area_width`, each where stated and finite. `None` where the field's
+    /// stroke is unstated, stated per side, or not finite.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
+        let c = &r.combo_box;
+        let field = c.field(WidgetState::NONE);
+        let [_, right, _, left] = padding_of(&field);
+        Some(Self {
+            left: left.and_then(scope::length),
+            right: right.and_then(scope::length),
+            border: scope::length(stroke_width_of(&field)?)?,
+            column: c.arrow_area_width.and_then(scope::length),
+        })
+    }
+
     /// Where the arrow's column is centred: the column `arrow_area_width` wide, at the button's
     /// right edge inside its border and `border.padding.right` — Breeze centres its arrow in
     /// its `MenuButton_IndicatorWidth` column (`docs/platform-facts.md` §2.24). `icon` is the

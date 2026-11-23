@@ -43,7 +43,39 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["macos-monterey", "macos-tahoe"],
         reason: RADIO_CELL,
     },
+    Difference {
+        case: "combo box",
+        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        reason: COMBO_CELL,
+    },
+    Difference {
+        case: "combo box disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: COMBO_CELL,
+    },
+    Difference {
+        case: "segmented control",
+        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        reason: SEGMENTED_CELL,
+    },
+    Difference {
+        case: "segmented control disabled",
+        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        reason: SEGMENTED_CELL,
+    },
 ];
+
+/// The drop-down is egui's `ComboBox`, outlined in its cell's stroke.
+const COMBO_CELL: &str = "the button's outline colour alone differs: it is the connector's \
+     ComboBox cell's bg_stroke, whose translucent border lies inside the part in the 0.8.0 theme \
+     and is composited over its fill (native-theme-egui, next::parity, the ComboBox and \
+     ComboBox/Disabled entries of its differences)";
+
+/// The segments are framed and divided in their cell's stroke.
+const SEGMENTED_CELL: &str = "the frame's and the dividers' colour alone differs: it is the \
+     connector's SegmentedControl cell's bg_stroke, whose translucent border lies inside the part \
+     in the 0.8.0 theme and is composited over its fill (native-theme-egui, next::parity, the \
+     SegmentedControl entry of its differences); a disabled control fades that colour as one";
 
 /// The radio's circle is egui's, outlined in its Checkbox cell's stroke.
 const RADIO_CELL: &str = "the circle's outline colour alone differs: it is the connector's \
@@ -80,7 +112,12 @@ fn both_installed(
     // same set's indicator: the connector's parity compares the icon sets.
     let (light, _) = crate::next::parity::resolve(key, preset, false)?;
     let (dark, _) = crate::next::parity::resolve(key, preset, true)?;
-    let mut old_builder = ThemeAtlas::builder(key, &light, &dark).icon_set(new_atlas.icon_set());
+    // The preset's layout, as `from_preset` hands it to the 0.7.2 builder (the connector's
+    // `next::parity` builds its 0.7.2 atlas so).
+    let layout = native_theme_egui::native_theme::theme::Theme::preset(key)?.layout;
+    let mut old_builder = ThemeAtlas::builder(key, &light, &dark)
+        .layout(&layout)
+        .icon_set(new_atlas.icon_set());
     for scheme in [egui::Theme::Light, egui::Theme::Dark] {
         if let Some(name) = new_atlas.icon_theme(scheme) {
             old_builder = old_builder.icon_theme(scheme, name);
@@ -231,6 +268,83 @@ fn the_progress_bar_and_the_spinner_draw_alike_from_both_models() -> TestResult 
     let bar = |ui: &mut egui::Ui| ui.add(ProgressBar::new(0.4));
     let spinner = |ui: &mut egui::Ui| ui.add(Spinner::new());
     assert_drawn_alike(&[("progress bar", &bar), ("spinner", &spinner)])
+}
+
+#[test]
+fn the_slider_draws_alike_from_both_models() -> TestResult {
+    let slider = |enabled: bool| {
+        move |ui: &mut egui::Ui| {
+            ui.add(
+                Slider::new(&mut 40.0, 0.0..=100.0)
+                    .label("Volume")
+                    .enabled(enabled),
+            )
+        }
+    };
+    let (on, off) = (slider(true), slider(false));
+    assert_drawn_alike(&[("slider", &on), ("slider disabled", &off)])
+}
+
+#[test]
+fn the_segmented_control_draws_alike_from_both_models() -> TestResult {
+    let control = |enabled: bool| {
+        move |ui: &mut egui::Ui| {
+            ui.add_enabled_ui(enabled, |ui| {
+                ui.add(SegmentedControl::new(&mut 1, ["Day", "Week"]))
+            })
+            .inner
+        }
+    };
+    let (on, off) = (control(true), control(false));
+    assert_drawn_alike(&[
+        ("segmented control", &on),
+        ("segmented control disabled", &off),
+    ])
+}
+
+#[test]
+fn the_links_draw_alike_from_both_models() -> TestResult {
+    let link = |enabled: bool| {
+        move |ui: &mut egui::Ui| {
+            ui.add_enabled_ui(enabled, |ui| {
+                let w = links::link(ui, "Link");
+                ui.add(w)
+            })
+            .inner
+        }
+    };
+    let hyperlink = |enabled: bool| {
+        move |ui: &mut egui::Ui| {
+            ui.add_enabled_ui(enabled, |ui| {
+                let w = links::hyperlink(ui, "Docs", "https://example.org");
+                ui.add(w)
+            })
+            .inner
+        }
+    };
+    let (a, b, c, d) = (link(true), link(false), hyperlink(true), hyperlink(false));
+    assert_drawn_alike(&[
+        ("link", &a),
+        ("link disabled", &b),
+        ("hyperlink", &c),
+        ("hyperlink disabled", &d),
+    ])
+}
+
+#[test]
+fn the_combo_box_draws_alike_from_both_models() -> TestResult {
+    let combo = |enabled: bool| {
+        move |ui: &mut egui::Ui| {
+            ComboBox::from_id_salt("fruit")
+                .selected_text("Apple")
+                .width(140.0)
+                .enabled(enabled)
+                .show_ui(ui, |ui| ui.label("Banana"))
+                .response
+        }
+    };
+    let (on, off) = (combo(true), combo(false));
+    assert_drawn_alike(&[("combo box", &on), ("combo box disabled", &off)])
 }
 
 // ---- patched themes: the branches no preset reaches ---------------------------------------------
@@ -395,5 +509,126 @@ fn a_progress_bar_track_stated_as_none_has_no_outline() -> TestResult {
     let bar = Bar::next_of(&patched(Preset::KdeBreeze, pill)?);
     assert_eq!(bar.frame.map(|(r, _)| r), Some(3.0));
     assert_eq!(bar.min_width, Some(100.0));
+    Ok(())
+}
+
+/// A link's stated underline underlines it at rest, and a hover fill a rule for `HOVER`
+/// states is the layer laid over its background under the pointer.
+#[test]
+fn a_link_takes_its_stated_underline_and_hover_layer() -> TestResult {
+    use crate::links::Look;
+    let underlined = |ctx: &egui::Context| -> Option<f32> {
+        let add = |ui: &mut egui::Ui| {
+            let w = links::link(ui, "Link");
+            ui.add(w)
+        };
+        let _ = response(ctx, at(1.0), add);
+        let (out, _) = response(ctx, at(1.0), add);
+        flat(&out.shapes).into_iter().find_map(|s| match s {
+            egui::Shape::Text(t) => t
+                .galley
+                .job
+                .sections
+                .first()
+                .map(|s| s.format.underline.width),
+            _ => None,
+        })
+    };
+    // Breeze underlines its links at rest; the patch states the opposite.
+    let magenta = Rgba::new(255, 0, 255, 255);
+    let stock = Look::next_of(&patched(Preset::KdeBreeze, "")?);
+    assert_eq!(stock.underline_enabled, Some(true), "{stock:?}");
+    assert_ne!(stock.hover_background, Some(magenta), "{stock:?}");
+    let width = underlined(&patched_installed(Preset::KdeBreeze, "")?).ok_or("no text")?;
+    assert!(width > 0.0, "the stock link is not underlined: {width}");
+    let patch = "[[widgets.link.rules]]\nstates = []\nlabel.decoration = { kind = \"none\" }\n\n\
+                 [[widgets.link.rules]]\nstates = [\"hover\"]\ncontainer.fill = \"#ff00ff\"\n";
+    let look = Look::next_of(&patched(Preset::KdeBreeze, patch)?);
+    assert_eq!(look.underline_enabled, Some(false));
+    assert_eq!(look.hover_background, Some(magenta));
+    assert_eq!(
+        underlined(&patched_installed(Preset::KdeBreeze, patch)?),
+        Some(0.0)
+    );
+    Ok(())
+}
+
+/// A slider thumb's stroke stated as none is no outline, on every preset whose thumb has one.
+#[test]
+fn a_slider_thumb_stated_as_none_has_no_outline() -> TestResult {
+    use crate::slider::{Geometry, Look};
+    let none = "[[widgets.slider.rules]]\nstates = []\nthumb.stroke = \"none\"\n";
+    let mut outlined = 0;
+    for &(_, preset) in crate::next::parity::PRESETS {
+        let stock = patched(preset, "")?;
+        if Geometry::next_of(&stock, 1.0)
+            .and_then(|g| g.outline)
+            .is_none()
+        {
+            continue;
+        }
+        outlined += 1;
+        let r = patched(preset, none)?;
+        assert_eq!(
+            Geometry::next_of(&r, 1.0).ok_or("no geometry")?.outline,
+            None,
+            "{preset:?}"
+        );
+        let look = Look::next_of(&r).ok_or("no look")?;
+        assert_eq!(look.thumb_border_color, None, "{preset:?}");
+    }
+    assert!(
+        outlined > 0,
+        "no preset outlines its thumb: the test proves nothing"
+    );
+    Ok(())
+}
+
+/// A segmented control's stated vertical padding keeps its stated height, and a hover fill a
+/// rule for `HOVER` states is its hover layer.
+#[test]
+fn a_segmented_control_takes_its_stated_padding_and_hover_layer() -> TestResult {
+    use crate::segmented_control::Look;
+    let mut unpadded = None;
+    for &(_, preset) in crate::next::parity::PRESETS {
+        let stock = Look::next_of(&patched(preset, "")?);
+        if !stock.padded && stock.hover.is_none() {
+            unpadded = Some(preset);
+        }
+    }
+    let preset = unpadded.ok_or("every preset states the padding or a hover layer")?;
+    let patch = "[[widgets.segmented_control.rules]]\nstates = []\nsegment.padding = { top = 3.0, right = 0.0, bottom = 3.0, left = 0.0 }\n\n\
+                 [[widgets.segmented_control.rules]]\nstates = [\"hover\"]\nsegment.fill = \"#ff00ff\"\n";
+    let look = Look::next_of(&patched(preset, patch)?);
+    assert!(look.padded, "{preset:?}");
+    assert_eq!(look.hover, Some(Rgba::new(255, 0, 255, 255)), "{preset:?}");
+    Ok(())
+}
+
+/// A drop-down field's stroke stated as none is no border: its text is inset by the padding
+/// alone.
+#[test]
+fn a_combo_box_field_stated_as_none_has_no_border() -> TestResult {
+    use crate::combo_box::Sides;
+    let none = "[[widgets.combo_box.rules]]\nstates = []\nfield.stroke = \"none\"\n";
+    let mut bordered = 0;
+    for &(_, preset) in crate::next::parity::PRESETS {
+        let stock = Sides::next_of(&patched(preset, "")?);
+        if !stock.is_some_and(|s| s.border > 0.0) {
+            continue;
+        }
+        bordered += 1;
+        let sides = Sides::next_of(&patched(preset, none)?).ok_or("no sides")?;
+        assert_eq!(sides.border, 0.0, "{preset:?}");
+        assert_eq!(
+            (sides.left, sides.right),
+            stock.map(|s| (s.left, s.right)).ok_or("no stock sides")?,
+            "{preset:?}"
+        );
+    }
+    assert!(
+        bordered > 0,
+        "no preset borders its field: the test proves nothing"
+    );
     Ok(())
 }

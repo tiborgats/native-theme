@@ -41,8 +41,9 @@
 //! connector installed ([`ThemeAtlas::from_ctx`](native_theme_egui::ThemeAtlas::from_ctx)),
 //! in the colour scheme egui is drawing. Under an atlas of the 0.8.0 model
 //! ([`next::to_theme`](native_theme_egui::next::to_theme)) the switch, the radio button, the
-//! progress bar and the spinner read the 0.8.0 theme, each value where the theme states it and
-//! egui's own where it does not; the other widgets are still egui's own counterparts there. It contains no colour, no radius and
+//! progress bar, the spinner, the slider, the segmented control, the links and the combo box
+//! read the 0.8.0 theme, each value where the theme states it and egui's own where it does
+//! not; the expander is still egui's own counterpart there. It contains no colour, no radius and
 //! no metric of its own: a size the theme leaves unstated is the value egui
 //! itself uses there. **With no atlas installed, every widget renders as
 //! egui's own counterpart** — [`switch::Switch`] as `egui::Checkbox`,

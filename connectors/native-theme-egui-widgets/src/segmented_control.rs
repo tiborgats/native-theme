@@ -3,8 +3,11 @@
 use native_theme_egui::convert::{to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
+use native_theme_egui::next::padding_of;
 use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
 
+use crate::next;
 use crate::parts::Parts;
 
 /// One control of joined segments, one of them selected: `segmented_control.*`.
@@ -119,18 +122,39 @@ impl<'a> SegmentedControl<'a> {
 /// colour-leaf coverage test sees the widget's reads.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
-    /// `defaults.background_color`: the colour faded over where no backdrop is given.
-    pub(crate) background: Rgba,
+    /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
+    /// egui's own fade of a disabled widget.
+    pub(crate) background: Option<Rgba>,
     /// `segmented_control.hover_background`: what a hovered unselected segment lays over the
     /// group fill, as given; `None`, nothing.
     pub(crate) hover: Option<Rgba>,
+    /// Whether `segmented_control.border.padding` states its top or its bottom side: where it
+    /// states neither, the segments are fitted to their text.
+    pub(crate) padded: bool,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        let padding = &t.segmented_control.border.padding;
         Self {
-            background: t.defaults.background_color,
+            background: Some(t.defaults.background_color),
             hover: t.segmented_control.hover_background,
+            padded: padding.top.is_some() || padding.bottom.is_some(),
+        }
+    }
+
+    /// The look of a segmented control of a 0.8.0 theme: the window's background
+    /// (`colors.window.background`), the hover layer `segmented_control.segment(HOVER)`'s
+    /// fill where a rule for `HOVER` states it (spec §2, `from_state`), and whether
+    /// `segmented_control.segment(NONE)` states its top or bottom padding.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
+        let sc = &r.segmented_control;
+        let hover = sc.segment(WidgetState::HOVER);
+        let [top, _, bottom, _] = padding_of(&sc.segment(WidgetState::NONE));
+        Self {
+            background: next::window_background(r),
+            hover: next::ruled_fill(&hover, &hover),
+            padded: top.is_some() || bottom.is_some(),
         }
     }
 }
@@ -143,24 +167,27 @@ impl egui::Widget for SegmentedControl<'_> {
             wrap,
             backdrop,
         } = self;
-        // Without an atlas of the 0.7.2 model, egui's own row.
-        let atlas = ThemeAtlas::from_ctx(ui.ctx());
-        if let Some(t) = atlas
-            .as_ref()
-            .and_then(|a| a.resolved_for(ui.ctx().theme()))
-        {
-            let padding = &t.segmented_control.border.padding;
-            let unstated = padding.top.is_none() && padding.bottom.is_none();
-            let look = Look::of(t);
+        // Without an atlas, egui's own row.
+        let theme = ui.ctx().theme();
+        let read = ThemeAtlas::from_ctx(ui.ctx()).and_then(|a| match a.resolved_for(theme) {
+            Some(t) => Some(Look::of(t)),
+            None => a.next_resolved_for(theme).map(Look::next_of),
+        });
+        if let Some(look) = read {
+            let unstated = !look.padded;
             let hover = look.hover.map(to_color32);
             // A disabled calling `Ui`: the opacity its painter had before egui faded it by that
             // `Ui`'s `disabled_alpha`, which the control takes back to fade itself as one by its
-            // own `disabled_opacity`, over the backdrop.
-            let disabled = (!ui.is_enabled()).then(|| {
-                let before = crate::fade::outer_fade(ui).map_or(ui.opacity(), |(_, before)| before);
-                let ground = backdrop.unwrap_or_else(|| to_color32(look.background));
-                (ground, before)
-            });
+            // own `disabled_opacity`, over the backdrop; where neither a backdrop nor the
+            // window's background is given, egui's own fade stands.
+            let disabled = (!ui.is_enabled())
+                .then(|| {
+                    let before =
+                        crate::fade::outer_fade(ui).map_or(ui.opacity(), |(_, before)| before);
+                    let ground = backdrop.or_else(|| look.background.map(to_color32))?;
+                    Some((ground, before))
+                })
+                .flatten();
             ui.native_scope(Role::SegmentedControl, RoleVariant::Normal, |ui| {
                 if unstated {
                     fit_height(ui, &segments);
