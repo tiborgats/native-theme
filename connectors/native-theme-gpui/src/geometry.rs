@@ -833,10 +833,23 @@ pub(crate) fn popover_from(
 #[must_use]
 pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     let s = &n.resolved.status_bar;
-    with_coloured_text(
-        with_padding(StyleRefinement::default(), &s.border.padding),
-        &s.font,
-        n,
+    status_bar_from(
+        sides_of(&s.border.padding),
+        &font_of(&s.font, n),
+        n.resolved.defaults.line_height,
+    )
+}
+
+/// [`status_bar`] of the padding sides and the font it is made of.
+pub(crate) fn status_bar_from(
+    sides: [Option<f32>; 4],
+    font: &Font<'_>,
+    line_height: f32,
+) -> StyleRefinement {
+    coloured_text(
+        padding(StyleRefinement::default(), sides),
+        font,
+        line_height,
     )
 }
 
@@ -1359,12 +1372,19 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn title_bar_inactive(n: Native<'_>) -> StyleRefinement {
     let w = &n.resolved.window;
+    title_bar_inactive_from(
+        rgba_to_hsla(w.inactive_title_bar_background),
+        rgba_to_hsla(w.background_color),
+        rgba_to_hsla(w.inactive_title_bar_text_color),
+    )
+}
+
+/// [`title_bar_inactive`] of the inactive bar's fill `bar` and text colour
+/// `text`, over the window's fill `background`.
+pub(crate) fn title_bar_inactive_from(bar: Hsla, background: Hsla, text: Hsla) -> StyleRefinement {
     StyleRefinement::default()
-        .bg(title_bar_gradient(
-            rgba_to_hsla(w.inactive_title_bar_background),
-            rgba_to_hsla(w.background_color),
-        ))
-        .text_color(rgba_to_hsla(w.inactive_title_bar_text_color))
+        .bg(title_bar_gradient(bar, background))
+        .text_color(text)
 }
 
 /// The weight of the bar's own colour in the colour its gradient starts
@@ -1428,7 +1448,33 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 #[must_use]
 pub fn toolbar(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
-    let r = with_coloured_text(StyleRefinement::default(), &t.font, n).h_auto();
+    toolbar_from(
+        &ToolbarFrame {
+            bar_height: t.bar_height,
+            item_gap: t.item_gap,
+            padding: sides_of(&t.border.padding),
+            background: rgba_to_hsla(t.background_color),
+            border_width: t.border.line_width,
+            border_color: rgba_to_hsla(t.border.color),
+        },
+        &font_of(&t.font, n),
+        n.resolved.defaults.line_height,
+    )
+}
+
+/// The theme's values [`toolbar`] is made of, read from either model.
+pub(crate) struct ToolbarFrame {
+    pub(crate) bar_height: Option<f32>,
+    pub(crate) item_gap: Option<f32>,
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) background: Hsla,
+    pub(crate) border_width: f32,
+    pub(crate) border_color: Hsla,
+}
+
+/// [`toolbar`] of the bar `t` and the font `font`.
+pub(crate) fn toolbar_from(t: &ToolbarFrame, font: &Font<'_>, line_height: f32) -> StyleRefinement {
+    let r = coloured_text(StyleRefinement::default(), font, line_height).h_auto();
     let r = match t.bar_height {
         Some(h) => r.min_h(px(h)),
         None => r.min_h_auto(),
@@ -1437,10 +1483,10 @@ pub fn toolbar(n: Native<'_>) -> StyleRefinement {
         Some(g) => r.gap(px(g)),
         None => r,
     };
-    with_padding(r, &t.border.padding)
-        .bg(rgba_to_hsla(t.background_color))
-        .border_b(px(t.border.line_width))
-        .border_color(rgba_to_hsla(t.border.color))
+    padding(r, t.padding)
+        .bg(t.background)
+        .border_b(px(t.border_width))
+        .border_color(t.border_color)
 }
 
 // --- Size helpers (spec §9.3) -------------------------------------------------
@@ -1562,7 +1608,7 @@ fn table_row_height(stated: Pixels, font: &ResolvedFontSpec, n: Native<'_>) -> P
 /// `defaults.icon_sizes.toolbar` where a platform states no toolbar-specific size.
 #[must_use]
 pub fn icon_size_toolbar(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.toolbar.icon_size))
+    icon_size(n.resolved.toolbar.icon_size)
 }
 
 /// `Icon::with_size` for small icons (`defaults.icon_sizes.small`).
@@ -1895,20 +1941,27 @@ pub(crate) fn button_checked_from(
 /// (`:836-850`). Apply it before [`toolbar_button_checked`].
 #[must_use]
 pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement {
-    if n.resolved.toolbar.button_hover_border_color.is_none() {
+    let b = &n.resolved.button;
+    toolbar_button_rest_from(
+        n.resolved.toolbar.button_hover_border_color.is_some(),
+        b.border.line_width,
+        sides_of(&b.border.padding),
+    )
+}
+
+/// [`toolbar_button_rest`] where the theme states the hover outline
+/// (`outlined`), of the button's border width `w` and padding sides.
+pub(crate) fn toolbar_button_rest_from(
+    outlined: bool,
+    w: f32,
+    [top, right, bottom, left]: [Option<f32>; 4],
+) -> StyleRefinement {
+    if !outlined {
         return StyleRefinement::default();
     }
-    let b = &n.resolved.button;
-    let w = b.border.line_width;
-    let p = &b.border.padding;
     let less = |side: Option<f32>| side.map(|v| (v - w).max(0.0));
-    let inside = ResolvedPadding {
-        top: less(p.top),
-        right: less(p.right),
-        bottom: less(p.bottom),
-        left: less(p.left),
-    };
-    with_padding(StyleRefinement::default(), &inside)
+    let inside = [less(top), less(right), less(bottom), less(left)];
+    padding(StyleRefinement::default(), inside)
         .bg(Hsla::transparent_black())
         .border(px(w))
         .border_color(Hsla::transparent_black())
@@ -1931,18 +1984,43 @@ pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement {
 pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
     let b = &n.resolved.button;
+    toolbar_button_checked_from(&ToolbarChecked {
+        button_checked_background: t.button_checked_background.map(rgba_to_hsla),
+        button_active_background: t.button_active_background.map(rgba_to_hsla),
+        button_checked_border_color: t.button_checked_border_color.map(rgba_to_hsla),
+        checked_text_color: b.checked_text_color.map(rgba_to_hsla),
+        active_text_color: rgba_to_hsla(b.active_text_color),
+        active_background: b.active_background.map(rgba_to_hsla),
+    })
+}
+
+/// The theme's values [`toolbar_button_checked`] is made of, read from either
+/// model, each named after its 0.7.2 field and `None` where the theme states
+/// none: the toolbar's (`toolbar.button_*`) and the push button's
+/// (`button.checked_text_color`, `button.active_text_color`,
+/// `button.active_background`).
+pub(crate) struct ToolbarChecked {
+    pub(crate) button_checked_background: Option<Hsla>,
+    pub(crate) button_active_background: Option<Hsla>,
+    pub(crate) button_checked_border_color: Option<Hsla>,
+    pub(crate) checked_text_color: Option<Hsla>,
+    pub(crate) active_text_color: Hsla,
+    pub(crate) active_background: Option<Hsla>,
+}
+
+/// [`toolbar_button_checked`] of the values `t`.
+pub(crate) fn toolbar_button_checked_from(t: &ToolbarChecked) -> StyleRefinement {
     let r = match t.button_checked_background {
-        Some(_) => StyleRefinement::default().text_color(rgba_to_hsla(
-            b.checked_text_color.unwrap_or(b.active_text_color),
-        )),
+        Some(_) => StyleRefinement::default()
+            .text_color(t.checked_text_color.unwrap_or(t.active_text_color)),
         None => StyleRefinement::default(),
     };
     match t
         .button_checked_background
         .or(t.button_active_background)
-        .or(b.active_background)
+        .or(t.active_background)
     {
-        Some(fill) => checked_pen(r.bg(rgba_to_hsla(fill)), t),
+        Some(fill) => checked_pen(r.bg(fill), t),
         None => checked_pen(r, t),
     }
 }
@@ -2000,12 +2078,9 @@ fn row_height_rule(stated: Option<f32>, least: Option<f32>, text_scale: f32) -> 
 /// border colour `toolbar.button_checked_border_color` where the theme states
 /// it, drawn at the width [`toolbar_button_rest`] gives the border; `r` as it
 /// is where the theme states none.
-fn checked_pen(
-    r: StyleRefinement,
-    t: &native_theme::theme::ResolvedToolbarTheme,
-) -> StyleRefinement {
+fn checked_pen(r: StyleRefinement, t: &ToolbarChecked) -> StyleRefinement {
     match t.button_checked_border_color {
-        Some(pen) => r.border_color(rgba_to_hsla(pen)),
+        Some(pen) => r.border_color(pen),
         None => r,
     }
 }

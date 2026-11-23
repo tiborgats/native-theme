@@ -340,34 +340,14 @@ const FALLBACK_ONLY: &[FallbackOnly] = &[
 /// field outside the slice, each with one such field: not mapped by the
 /// 0.8.0 side yet.
 const BUILDERS_OUTSIDE_SLICE: &[(&str, &str)] = &[
-    ("geometry::status_bar", "status_bar.font"),
     ("geometry::progress", "progress_bar.track_height"),
     ("geometry::group_box_content", "card.border.padding"),
     ("geometry::accordion_title", "expander.header_height"),
     ("geometry::accordion", "expander.border.color"),
     ("geometry::accordion_hover", "expander.hover_background"),
-    ("geometry::title_bar", "window.title_bar_font"),
-    (
-        "geometry::title_bar_inactive",
-        "window.inactive_title_bar_background",
-    ),
-    ("geometry::toolbar", "toolbar.font"),
     ("geometry::spinner_size", "spinner.diameter"),
-    ("geometry::icon_size_toolbar", "toolbar.icon_size"),
-    (
-        "geometry::toolbar_button_rest",
-        "toolbar.button_hover_border_color",
-    ),
-    (
-        "geometry::toolbar_button_checked",
-        "toolbar.button_checked_background",
-    ),
     ("geometry::link", "link.font"),
     ("variants::switch_color", "switch.checked_background"),
-    (
-        "variants::toolbar_button",
-        "toolbar.button_hover_background",
-    ),
 ];
 
 /// The leaves compared and the differences found, for one preset and scheme.
@@ -453,6 +433,19 @@ fn resolve(
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
     let new = native_theme::next::Theme::preset(preset).resolve(&ctx);
     Ok((old, layout, new))
+}
+
+/// The 0.8.0 theme of `preset` for `is_dark`, resolved for an inactive
+/// window, where the table of homes places 0.7.2's `window.inactive_*`
+/// fields (their rows' `context`).
+fn resolve_inactive(preset: Preset, is_dark: bool) -> native_theme::next::ResolvedTheme {
+    let mut ctx = if is_dark {
+        ThemeContext::dark()
+    } else {
+        ThemeContext::light()
+    };
+    ctx.window_active = false;
+    native_theme::next::Theme::preset(preset).resolve(&ctx)
 }
 
 /// The theme's leaves the slice feeds: the colours, their tokens and
@@ -642,6 +635,7 @@ fn compare_builders(
     old: &ResolvedTheme,
     layout: &LayoutTheme,
     new: &native_theme::next::ResolvedTheme,
+    inactive: &native_theme::next::ResolvedTheme,
 ) {
     let button = "geometry::button";
     if let Some(n) = report.mapped(button, super::builders::button(new)) {
@@ -721,6 +715,24 @@ fn compare_builders(
     builder!(report, old, new, dialog_footer);
     builder!(report, old, new, dialog_title);
     builder!(report, old, new, dialog_description);
+    builder!(report, old, new, status_bar);
+    builder!(report, old, new, title_bar);
+    compare_mapped(
+        report,
+        "geometry::title_bar_inactive",
+        crate::geometry::title_bar_inactive(Native::unscaled(old)),
+        super::builders::title_bar_inactive(new, inactive),
+    );
+    builder!(report, old, new, toolbar);
+    builder!(report, old, new, icon_size_toolbar);
+    builder!(report, old, new, toolbar_button_rest);
+    builder!(report, old, new, toolbar_button_checked);
+    compare_mapped(
+        report,
+        "variants::toolbar_button",
+        crate::variants::toolbar_button_states(Native::unscaled(old)),
+        super::builders::toolbar_button_states(new),
+    );
     let max_width = "geometry::dialog_max_width";
     match report.listed(max_width) {
         Some(listed) => {
@@ -793,7 +805,13 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
     let mut report = Report::new(key, is_dark);
     compare_theme(&mut report, &old, &new, is_dark);
     compare_scrollbar(&mut report, &old, &new);
-    compare_builders(&mut report, &old, &layout, &new);
+    compare_builders(
+        &mut report,
+        &old,
+        &layout,
+        &new,
+        &resolve_inactive(preset, is_dark),
+    );
     for entry in FALLBACK_ONLY {
         if entry.presets.contains(&key) && !(entry.unset)(&old) {
             report.failures.push(format!(

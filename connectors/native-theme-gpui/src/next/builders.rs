@@ -12,16 +12,16 @@ use gpui::{Hsla, Pixels, StyleRefinement, px};
 use gpui_component::Size;
 use gpui_component::dialog::DialogEntrance;
 use native_theme::next::{
-    DialogEntranceStyle, PartStated, PartStyle, ResolvedTheme, TextStated, WidgetState,
+    DialogEntranceStyle, IconStated, PartStated, PartStyle, ResolvedTheme, TextStated, WidgetState,
 };
 
 use super::{
-    Mapped, Unmapped, fill, font, hsla, padding, radius, scrollbar_geometry, state_fill,
-    state_stroke_color, state_text_color, stated, stroke_color, stroke_width, text_color,
-    text_size, uncoloured_font,
+    Mapped, Unmapped, fill, font, hsla, normal_window, padding, radius, scrollbar_geometry,
+    state_fill, state_stroke_color, state_text_color, stated, stroke_color, stroke_width,
+    text_color, text_size, uncoloured_font,
 };
 use crate::geometry;
-use crate::variants::DefaultButtonStates;
+use crate::variants::{DefaultButtonStates, ToolbarButtonStates};
 
 /// `defaults.line_height`'s home.
 fn line_height(r: &ResolvedTheme) -> f32 {
@@ -564,6 +564,148 @@ pub(crate) fn dialog_max_width(r: &ResolvedTheme) -> Mapped<Pixels> {
         r.dialog.panel.max_size[0],
         "dialog.panel.max_size[0]",
     )?))
+}
+
+/// [`crate::geometry::status_bar`].
+pub(crate) fn status_bar(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let s = &r.status_bar;
+    Ok(geometry::status_bar_from(
+        padding(&s.bar),
+        &font(&s.label, "status_bar.label")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::title_bar`].
+pub(crate) fn title_bar(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::coloured_text(
+        StyleRefinement::default(),
+        &font(&r.window.title(normal_window()), "window.title(normal)")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::title_bar_inactive`]: the title bar's fill and the
+/// title's colour of `inactive`, the theme resolved for an inactive window
+/// (`ThemeContext::window_active` false, spec §3), over the window's fill of
+/// `r`, the theme resolved for the context the connector shows.
+pub(crate) fn title_bar_inactive(
+    r: &ResolvedTheme,
+    inactive: &ResolvedTheme,
+) -> Mapped<StyleRefinement> {
+    let w = &inactive.window;
+    Ok(geometry::title_bar_inactive_from(
+        fill(
+            &w.title_bar(normal_window()),
+            "window.title_bar(normal).fill, inactive",
+        )?,
+        fill(
+            &r.window.frame(normal_window()),
+            "window.frame(normal).fill",
+        )?,
+        text_color(
+            &w.title(normal_window()),
+            "window.title(normal).color, inactive",
+        )?,
+    ))
+}
+
+/// [`crate::geometry::toolbar`]: the bar's frame, the toolbar button's label.
+pub(crate) fn toolbar(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let t = &r.toolbar;
+    let bar = t.bar(WidgetState::NONE);
+    Ok(geometry::toolbar_from(
+        &geometry::ToolbarFrame {
+            bar_height: bar.min_size[1],
+            item_gap: t.item_gap,
+            padding: padding(&bar),
+            background: fill(&bar, "toolbar.bar(NONE).fill")?,
+            border_width: stroke_width(&bar, "toolbar.bar(NONE).stroke.width")?,
+            border_color: stroke_color(&bar, "toolbar.bar(NONE).stroke.color")?,
+        },
+        &font(
+            &t.button_label(WidgetState::NONE),
+            "toolbar.button_label(NONE)",
+        )?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::icon_size_toolbar`].
+pub(crate) fn icon_size_toolbar(r: &ResolvedTheme) -> Mapped<Size> {
+    let icon = r.toolbar.button_icon(WidgetState::NONE);
+    if !icon.stated.contains(IconStated::SIZE) {
+        return Err(Unmapped("toolbar.button_icon(NONE).size"));
+    }
+    Ok(geometry::icon_size(icon.size))
+}
+
+/// [`crate::geometry::toolbar_button_rest`]: `toolbar.button_hover_border_color`
+/// at the hovered toolbar button's stroke, a soft option, where a rule states
+/// it for the state (module doc of `next`); the push button's stroke width
+/// and padding.
+pub(crate) fn toolbar_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let body = r.button.body(WidgetState::NONE);
+    Ok(geometry::toolbar_button_rest_from(
+        state_stroke_color(
+            &r.toolbar.button(WidgetState::HOVER),
+            "toolbar.button(HOVER).stroke.color",
+        )?
+        .is_some(),
+        stroke_width(&body, "button.body(NONE).stroke.width")?,
+        padding(&body),
+    ))
+}
+
+/// [`crate::geometry::toolbar_button_checked`]: each soft option where a rule
+/// states it for its state (module doc of `next`), else unset, so the 0.7.2
+/// path's fallbacks are taken.
+pub(crate) fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let t = &r.toolbar;
+    let b = &r.button;
+    let checked = t.button(WidgetState::CHECKED);
+    Ok(geometry::toolbar_button_checked_from(
+        &geometry::ToolbarChecked {
+            button_checked_background: state_fill(&checked, "toolbar.button(CHECKED).fill")?,
+            button_active_background: state_fill(
+                &t.button(WidgetState::PRESSED),
+                "toolbar.button(PRESSED).fill",
+            )?,
+            button_checked_border_color: state_stroke_color(
+                &checked,
+                "toolbar.button(CHECKED).stroke.color",
+            )?,
+            checked_text_color: state_text_color(
+                &b.label(WidgetState::CHECKED),
+                "button.label(CHECKED).color",
+            )?,
+            active_text_color: text_color(
+                &b.label(WidgetState::PRESSED),
+                "button.label(PRESSED).color",
+            )?,
+            active_background: state_fill(
+                &b.body(WidgetState::PRESSED),
+                "button.body(PRESSED).fill",
+            )?,
+        },
+    ))
+}
+
+/// [`crate::variants::toolbar_button_states`], what
+/// [`crate::variants::toolbar_button`] gives its variant: the toolbar
+/// button's hovered fill and stroke and pressed fill, soft options, each
+/// where a rule states it for its state (module doc of `next`), else `None`.
+pub(crate) fn toolbar_button_states(r: &ResolvedTheme) -> Mapped<ToolbarButtonStates> {
+    let t = &r.toolbar;
+    let hovered = t.button(WidgetState::HOVER);
+    Ok(ToolbarButtonStates {
+        hover: state_fill(&hovered, "toolbar.button(HOVER).fill")?,
+        hover_border: state_stroke_color(&hovered, "toolbar.button(HOVER).stroke.color")?,
+        active: state_fill(
+            &t.button(WidgetState::PRESSED),
+            "toolbar.button(PRESSED).fill",
+        )?,
+    })
 }
 
 /// [`crate::variants::hover_border`], the colour of
