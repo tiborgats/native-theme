@@ -1176,7 +1176,7 @@ struct StoredVariant {
 /// [`next::apply`] stores.
 #[derive(Debug)]
 pub(crate) enum Variant {
-    Old(ResolvedTheme),
+    Old(Box<ResolvedTheme>),
     Next(Box<next::Installed>),
 }
 
@@ -1184,7 +1184,7 @@ impl Variant {
     /// The 0.7.2 resolved theme, where the variant is one.
     fn old(&self) -> Option<&ResolvedTheme> {
         match self {
-            Self::Old(resolved) => Some(resolved),
+            Self::Old(resolved) => Some(resolved.as_ref()),
             Self::Next(_) => None,
         }
     }
@@ -1239,7 +1239,7 @@ impl Variant {
     fn base_palette(&self, is_dark: bool) -> gpui_component::theme::ThemeColor {
         match self {
             Self::Old(resolved) => colors::base_palette(resolved, is_dark),
-            Self::Next(installed) => installed.palette.clone(),
+            Self::Next(installed) => installed.palette,
         }
     }
 
@@ -1477,7 +1477,7 @@ pub fn apply(
     cx: &mut App,
 ) {
     let is_dark = theme.is_dark();
-    let variant = Variant::Old(resolved.clone());
+    let variant = Variant::Old(Box::new(resolved.clone()));
     let (light, dark) = if is_dark {
         (None, Some(variant))
     } else {
@@ -1508,8 +1508,8 @@ pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
     let theme = system_gpui_theme(sys);
     apply_inner(
         theme,
-        Some(Variant::Old(sys.light.clone())),
-        Some(Variant::Old(sys.dark.clone())),
+        Some(Variant::Old(Box::new(sys.light.clone()))),
+        Some(Variant::Old(Box::new(sys.dark.clone()))),
         &sys.accessibility,
         cx,
     );
@@ -4400,7 +4400,7 @@ mod apply_tests {
         let nt = NativeTheme {
             dark: Some(StoredVariant {
                 name: theme.theme_name().clone(),
-                variant: Variant::Old(resolved.clone()),
+                variant: Variant::Old(Box::new(resolved.clone())),
             }),
             ..NativeTheme::default()
         };

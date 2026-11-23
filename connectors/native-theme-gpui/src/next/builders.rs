@@ -725,17 +725,16 @@ pub(crate) fn progress(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// keeps gpui-component's own.
 pub(crate) fn group_box_content(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let container = r.card.container(WidgetState::NONE);
+    let stroked = container.stated.contains(PartStated::STROKE);
     Ok(geometry::group_box_content_from(&geometry::CardFrame {
         padding: padding(&container),
         radius: radius(&container, "card.container(NONE).corners")?,
-        border: if container.stated.contains(PartStated::STROKE) {
-            Some((
-                stroke_width(&container, "card.container(NONE).stroke.width")?,
-                stroke_color(&container, "card.container(NONE).stroke.color")?,
-            ))
-        } else {
-            None
-        },
+        border_width: stroked
+            .then(|| stroke_width(&container, "card.container(NONE).stroke.width"))
+            .transpose()?,
+        border_color: stroked
+            .then(|| stroke_color(&container, "card.container(NONE).stroke.color"))
+            .transpose()?,
         background: fill(&container, "card.container(NONE).fill")?,
     }))
 }

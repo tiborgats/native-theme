@@ -593,7 +593,7 @@ impl Installed {
             config,
             scrollbar: scrollbar_geometry(r)?,
             resizable: resizable_theme(r)?,
-            palette: theme.colors.clone(),
+            palette: theme.colors,
             capped: capped_natives_of(
                 widget_colors(r)?.selection,
                 slice_colors(r)?.list_selection_bg,
