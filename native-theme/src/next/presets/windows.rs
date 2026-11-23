@@ -2979,8 +2979,8 @@ fn menu_bar(roles: &ColorRoles) -> MenuBarWidget {
 /// The tab bar: the bar and the tabs in the window's background (0.7.2:
 /// `tab.bar_background` and `tab.background_color` are
 /// `defaults.background_color` where unstated), a tab of least sizes, padded,
-/// no shadow, its hover layer; the selected tab's own fill, in the default
-/// border colour at its own width and corners; the muted text, which a
+/// no shadow, no outline, its hover layer; the selected tab's own fill, in the
+/// default border colour at its own width and corners; the muted text, which a
 /// hovered tab keeps (`tab.hover_text_color`), the window's text on the
 /// selected tab. 0.7.2 states no indicator.
 fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidget {
@@ -2992,6 +2992,9 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
         .base([
             // `tab.border.shadow_enabled`: 0.7.2 windows-11.toml (uncited)
             PartProp::Shadows(None),
+            // `tab.border.color`, `border.line_width`: platform-facts.md (§2.11): an unselected
+            // tab's outline is transparent, the selected tab's alone is drawn
+            PartProp::Stroke(Stroke::None),
             PartProp::MinSize([Some(TAB_MIN_WIDTH), Some(TAB_MIN_HEIGHT)]),
             PartProp::Padding(Edges::symmetric(
                 TAB_PADDING_VERTICAL,

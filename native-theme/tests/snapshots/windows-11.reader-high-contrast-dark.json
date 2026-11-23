@@ -1092,6 +1092,7 @@
     "tab": {
       "base": {
         "fill": "#010101",
+        "stroke": "none",
         "shadows": "none",
         "padding": {
           "top": 3.0,

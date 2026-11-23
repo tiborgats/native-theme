@@ -2475,9 +2475,9 @@ fn menu_bar(roles: &ColorRoles) -> MenuBarWidget {
 /// The tab bar: the bar and the tabs in the window's background (0.7.2:
 /// `tab.bar_background` and `tab.background_color` are
 /// `defaults.background_color` where unstated), a tab of least sizes,
-/// padded, its hover fill, the selected tab's own fill
-/// (`tab.active_background`); the window's text, which a hovered and a
-/// selected tab keep (`tab.hover_text_color`, `tab.active_text_color`); the
+/// padded, no outline, selected or not, its hover fill, the selected tab's
+/// own fill (`tab.active_background`); the window's text, which a hovered and
+/// a selected tab keep (`tab.hover_text_color`, `tab.active_text_color`); the
 /// selected tab's indicator in the accent along its bottom.
 fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidget {
     let bar = RuleBuilder::new(PartStyle::default())
@@ -2491,6 +2491,9 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
                 TAB_PADDING_VERTICAL,
                 TAB_PADDING_HORIZONTAL,
             )),
+            // `tab.border.color`, `border.line_width`: platform-facts.md (§2.11): Notebook and
+            // AdwTabBar draw no outline on a tab, line width 0
+            PartProp::Stroke(Stroke::None),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.menu_hover)])
         .rule(

@@ -1086,6 +1086,7 @@
     "tab": {
       "base": {
         "fill": "#fef7ff",
+        "stroke": "none",
         "padding": {
           "right": 16.0,
           "left": 16.0
