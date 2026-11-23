@@ -7,9 +7,8 @@
 // android-17.0.0_r1), and the threshold of androidx's compose/ui/ui-text
 // SpannableExtensions.android.kt (androidx at e4d933c9), whose notices follow; it stays under that licence whatever
 // licence the rest of the crate is used under (the 0.8.0 plan's D10). The
-// repository's LICENSE-APACHE holds the licence; the notice of
-// frameworks/base's NOTICE file goes into the crate's NOTICE at the 0.8.0
-// cut (the 0.8.0 plan, Appendix B, "Licences").
+// repository's LICENSE-APACHE holds the licence, the crate's NOTICE the
+// notice of frameworks/base's NOTICE file.
 //
 // Copyright (C) 2009 The Android Open Source Project
 // Copyright (C) 2022 The Android Open Source Project
