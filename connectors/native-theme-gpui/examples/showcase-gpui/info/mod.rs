@@ -410,6 +410,26 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
 /// builder whose every caller is on the 0.8.0 model has its entry here alone.
 pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
+        "widget_gap",
+        "layout.widget_gap, the space between adjacent widgets; none where the platform specifies none (platform-facts §2.20)",
+    ),
+    (
+        "container_margin",
+        "layout.container_margin, the padding inside containers; none where the platform specifies none (platform-facts §2.20)",
+    ),
+    (
+        "window_margin",
+        "layout.window_margin, the padding inside the main window; none where the platform specifies none (platform-facts §2.20)",
+    ),
+    (
+        "section_gap",
+        "layout.section_gap, the space between major content sections; none where the platform specifies none (platform-facts §2.20)",
+    ),
+    (
+        "scrollbar_gutter",
+        "the vertical track's width, scrollbar.track(NONE; orientation=Vertical).min_size[0], as right padding where scrollbar.overlay_mode is false, and nothing where it is true, because gpui-component overlays the bar on the scroll area instead of putting it beside the content",
+    ),
+    (
         "editor",
         "typography.line_height_multiplier as the line height, over the relative(1.5) upstream's Editor sets on its Input first: the Editor refines the caller's style last (input/editor.rs, Editor::render). Its font is the mono font the theme sets, mono_font_family at mono_font_size, typography.monospace's family and size (native-theme-gpui next/mod.rs, theme_scalars)",
     ),
@@ -573,8 +593,8 @@ pub fn stated(color: native_theme::color::Rgba) -> Hsla {
 /// A colour of the installed 0.8.0 theme as gpui paints it, each channel
 /// clamped to [0, 1] as the connector converts one (native-theme-gpui
 /// colors.rs, `channels_to_hsla`): the value of a claim on a global colour
-/// (`colors.focus_ring`) that a theme-drawn widget paints.
-#[cfg(feature = "widgets")]
+/// (`colors.focus_ring`) that a theme-drawn widget paints, or that the
+/// showcase hands a widget itself (`separator.color`).
 pub fn next_stated(color: native_theme::next::Color) -> Hsla {
     Hsla::from(gpui::Rgba {
         r: color.r.clamp(0., 1.),

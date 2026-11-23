@@ -21666,10 +21666,12 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             ),
         ];
         #[cfg(feature = "widgets")]
-        if let Some(r) = crate::support::old_resolved(cx) {
+        if let Some(look) = crate::support::next_resolved(cx)
+            .and_then(|r| native_theme_gpui::widgets::SeparatorLook::next_of(r).ok())
+        {
             built.push((
                 "a theme-drawn Separator sample",
-                crate::info::layout::native_separator(t, r, true),
+                crate::info::layout::native_separator(t, &look, true),
                 "room",
                 vec![
                     crate::info::rems_text(crate::demo::SEPARATOR_SAMPLE_ROOM, t),

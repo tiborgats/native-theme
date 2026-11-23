@@ -1,12 +1,12 @@
 //! The Layout page.
 
 use gpui::{
-    Context, Decorations, IntoElement, ParentElement, Rems, SharedString, Styled, Window, div,
-    prelude::*, px, rems,
+    Context, Decorations, IntoElement, ParentElement, Pixels, Rems, SharedString, Styled, Window,
+    div, prelude::*, px, rems,
 };
 use gpui_component::{IconName, h_flex, v_flex};
 
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{
@@ -15,7 +15,7 @@ use crate::demo::{
 };
 use crate::pages::{CAROUSEL_SIDE_ROOM, page_root};
 use crate::support::{
-    NativeStyled as _, STEPPER_STEPS, SampleIcon, frame_drawer, layout_value, with_gap,
+    NativeStyled as _, STEPPER_STEPS, SampleIcon, frame_drawer, layout_value, next_value, with_gap,
 };
 use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
@@ -125,13 +125,19 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         let collapsible_open = self.collapsible_open;
-        // The four layout accessors. `None` where the platform specifies
-        // nothing (platform-facts §2.20), and then no space is drawn for
-        // it, here or round the page -- nothing is invented to fill the gap.
-        let widget_gap = geometry::widget_gap(&self.layout);
-        let container_margin = geometry::container_margin(&self.layout);
-        let window_margin = geometry::window_margin(&self.layout);
-        let section_gap = geometry::section_gap(&self.layout);
+        // The four layout metrics of the installed 0.8.0 theme. `None` where
+        // the platform specifies nothing (platform-facts §2.20), and then no
+        // space is drawn for it, here or round the page -- nothing is
+        // invented to fill the gap.
+        let app: &gpui::App = cx;
+        let metric =
+            |build: fn(&native_theme::next::ResolvedTheme) -> next::Mapped<Option<Pixels>>| {
+                next_value(app, build).and_then(Result::ok).flatten()
+            };
+        let widget_gap = metric(next::geometry::widget_gap);
+        let container_margin = metric(next::geometry::container_margin);
+        let window_margin = metric(next::geometry::window_margin);
+        let section_gap = metric(next::geometry::section_gap);
         let spacing_summary = format!(
             "widget_gap {} · container_margin {} · window_margin {} · section_gap {}",
             layout_value(widget_gap),

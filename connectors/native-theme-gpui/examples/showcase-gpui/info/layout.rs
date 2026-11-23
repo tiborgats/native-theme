@@ -7,7 +7,7 @@ use native_theme::theme::TabIndicatorSide;
 use native_theme::theme::{ArrowSide, ResolvedExpanderTheme, ResolvedPadding};
 use native_theme_gpui::ResolvedTheme;
 #[cfg(feature = "widgets")]
-use native_theme_gpui::widgets::TabLook;
+use native_theme_gpui::widgets::{SeparatorLook, TabLook};
 
 use super::{
     WidgetInfo,
@@ -69,11 +69,11 @@ fn sample_room(t: &Theme) -> String {
     )
 }
 
-/// A plain line drawn by `native_theme_gpui::widgets::Separator` from `r`,
-/// with `room` above and below where `demo::separator` gives it some.
+/// A plain line drawn by `native_theme_gpui::widgets::Separator` in `look`,
+/// the installed 0.8.0 theme's (`SeparatorLook::next_of`), with `room` above
+/// and below where `demo::separator` gives it some.
 #[cfg(feature = "widgets")]
-pub fn native_separator(t: &Theme, r: &ResolvedTheme, room: bool) -> WidgetInfo {
-    let s = &r.separator;
+pub fn native_separator(t: &Theme, look: &SeparatorLook, room: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Separator");
     let info = if room {
         info.not_themeable("room", sample_room(t))
@@ -85,25 +85,32 @@ pub fn native_separator(t: &Theme, r: &ResolvedTheme, room: bool) -> WidgetInfo 
         .config("drawn by", "native_theme_gpui::widgets::Separator, a box filled in the line's colour, as thick as the theme states and one device pixel at least: gpui-component's Separator draws its line an absolute child at px(1.), which no caller style reaches (separator.rs, Separator::render_base)")
         .color(claim(
             "line",
-            "line_color",
-            stated(s.line_color),
-            "native-theme-gpui/widgets/separator.rs:30",
+            "separator.color",
+            look.color,
+            "native-theme-gpui/widgets/separator.rs:36",
         ))
         .config(
             "thickness",
-            format!("separator.line_width: {}px", px_text(s.line_width)),
+            format!(
+                "separator.thickness: {}px",
+                px_text(look.width.as_f32())
+            ),
         )
 }
 
-/// A `Separator` of `kind`, its line `native`'s `separator.line_color`
-/// where a native theme is installed (`demo::separator`).
-pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// A `Separator` of `kind`, its line `native`'s `separator.color` where a
+/// 0.8.0 theme is installed (`demo::separator`).
+pub fn separator(
+    t: &Theme,
+    kind: SeparatorKind,
+    native: Option<&native_theme::next::ResolvedTheme>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Separator").variant(kind.name());
     let info = match native {
         Some(r) => info.color(claim(
             "line",
-            "line_color",
-            stated(r.separator.line_color),
+            "separator.color",
+            super::next_stated(r.separator.color),
             "showcase",
         )),
         None => info.color(claim(
@@ -116,7 +123,7 @@ pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>)
     let info = info
         .not_themeable(
             "thickness",
-            "Tier U, not an absence: the platform states separator.line_width and the model carries it. Upstream draws the line on an inner absolutely-positioned div at px(1.) and applies the caller's refinement to the outer container instead, so nothing reaches the line (separator.rs, Separator::render_base)",
+            "Tier U, not an absence: the platform states separator.thickness and the model carries it. Upstream draws the line on an inner absolutely-positioned div at px(1.) and applies the caller's refinement to the outer container instead, so nothing reaches the line (separator.rs, Separator::render_base)",
         );
     let info = match kind {
         SeparatorKind::Vertical => info,
@@ -1518,7 +1525,7 @@ pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
             format!("scrollbar_mode: {:?}", t.scrollbar_mode),
         );
     let info = if styled {
-        info.config("track and thumb", "scrollbar.groove_width wide, the thumb scrollbar.thumb_width wide and at least scrollbar.min_thumb_length long, in scrollbar.track_color, thumb_color and thumb_hover_color -- the colours ThemeColor holds as scrollbar, scrollbar_thumb and scrollbar_thumb_hover -- written onto gpui-base by the connector after every rebuild (native-theme-gpui/base_layer.rs, scrollbar_styles)")
+        info.config("track and thumb", "scrollbar.track(NONE; orientation=Vertical).min_size[0] wide, the thumb scrollbar.thumb(NONE; orientation=Vertical).min_size[0] wide and at least scrollbar.min_thumb_length long, in scrollbar.track(NONE).fill, scrollbar.thumb(UNFOCUSED_VIEW).fill at rest and scrollbar.thumb(HOVER).fill -- the colours ThemeColor holds as scrollbar, scrollbar_thumb and scrollbar_thumb_hover -- written onto gpui-base by the connector after every rebuild (native-theme-gpui/next/mod.rs, scrollbar_geometry; native-theme-gpui/base_layer.rs, scrollbar_styles)")
     } else {
         info
     };

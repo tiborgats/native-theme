@@ -7792,12 +7792,12 @@ pub(crate) fn spacing_box(
     let (frame, box_info) = match kind {
         SpacingBox::Window => {
             let box_info = if padding.is_some() {
-                box_info.geometry("window_margin")
+                box_info.next_geometry("window_margin")
             } else {
                 box_info
             };
             let box_info = if gap.is_some() {
-                box_info.geometry("section_gap")
+                box_info.next_geometry("section_gap")
             } else {
                 box_info
             };
@@ -7805,12 +7805,12 @@ pub(crate) fn spacing_box(
         }
         SpacingBox::Container => {
             let box_info = if padding.is_some() {
-                box_info.geometry("container_margin")
+                box_info.next_geometry("container_margin")
             } else {
                 box_info
             };
             let box_info = if gap.is_some() {
-                box_info.geometry("widget_gap")
+                box_info.next_geometry("widget_gap")
             } else {
                 box_info
             };
@@ -7931,20 +7931,20 @@ impl SeparatorKind {
 /// Separator's info says so.
 pub(crate) const SEPARATOR_SAMPLE_ROOM: Rems = rems(0.25);
 
-/// A `Separator` of `kind`, its line in `separator.line_color` through
-/// `Separator::color` where a native theme is installed.
+/// A `Separator` of `kind`, its line in the installed 0.8.0 theme's
+/// `separator.color` through `Separator::color`.
 pub(crate) fn separator(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     kind: SeparatorKind,
 ) -> Stateful<Div> {
-    // The plain line under a native theme is the connector's: its thickness
-    // is `separator.line_width`, which gpui-component's literal 1px line does
+    // The plain line under a 0.8.0 theme is the connector's: its thickness
+    // is `separator.thickness`, which gpui-component's literal 1px line does
     // not take (separator.rs:78-82).
     #[cfg(feature = "widgets")]
     if kind == SeparatorKind::Horizontal
-        && let Some(r) = old_resolved(cx)
+        && let Some(look) = next_resolved(cx).and_then(|r| widgets::SeparatorLook::next_of(r).ok())
     {
         // A line of docs/showcase-elements.toml takes no room beyond its
         // own, as the iced and egui showcases lay it out; the others keep
@@ -7954,7 +7954,7 @@ pub(crate) fn separator(
             .info(
                 ui,
                 id,
-                info::layout::native_separator(cx.theme(), r, !listed),
+                info::layout::native_separator(cx.theme(), &look, !listed),
             )
             .when(!listed, |separator| separator.py(SEPARATOR_SAMPLE_ROOM))
             .debug_selector(move || id.into());
@@ -7965,15 +7965,11 @@ pub(crate) fn separator(
         SeparatorKind::Dashed => Separator::horizontal_dashed(),
         SeparatorKind::Vertical => Separator::vertical(),
     };
-    let native = old_native(cx);
-    let line = native_color(cx, |n| n.resolved.separator.line_color);
+    let native = next_resolved(cx);
+    let line = native.map(|r| info::next_stated(r.separator.color));
     separator
         .when_some(line, |separator, line| separator.color(line))
-        .info(
-            ui,
-            id,
-            info::layout::separator(cx.theme(), kind, native.as_ref().map(|n| n.resolved)),
-        )
+        .info(ui, id, info::layout::separator(cx.theme(), kind, native))
         // A horizontal Separator's box is as tall as its label and no
         // taller: the line is an absolute child (separator.rs:79-84). The
         // padding leaves something to point at. A vertical one is as tall
@@ -8136,17 +8132,19 @@ pub(crate) fn scroll_area(
     height: Pixels,
     items: usize,
 ) -> Stateful<Div> {
-    // What `native_info` applies the builder under.
-    let styled = old_native(cx).is_some();
+    // Whether the connector wrote the installed 0.8.0 theme's scroll bar onto
+    // gpui-base (`next::base_layer::scrollbar_geometry`).
+    let styled =
+        next_value(cx, |r| next::base_layer::scrollbar_geometry(r).is_ok()).unwrap_or(false);
     let mut area_info = info::layout::scroll_area(cx.theme(), styled, items);
-    let viewport = native_info(
+    let viewport = next_native_info(
         div()
             .id(SharedString::from(format!("{id}-viewport")))
             .size_full()
             .debug_selector(move || format!("{id}-viewport"))
             .overflow_y_scrollbar(),
         cx,
-        geometry::scrollbar_gutter,
+        next::geometry::scrollbar_gutter,
         "scrollbar_gutter",
         &mut area_info,
     )
@@ -8857,10 +8855,10 @@ pub(crate) fn form(
 pub(crate) fn settings(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
     let mut settings_info = info::layout::settings(cx.theme());
     // One refinement for the three groups, so its line is recorded once.
-    let gutter = native_info(
+    let gutter = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::scrollbar_gutter,
+        next::geometry::scrollbar_gutter,
         "scrollbar_gutter",
         &mut settings_info,
     );
