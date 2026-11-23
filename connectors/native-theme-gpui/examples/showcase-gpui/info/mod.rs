@@ -570,6 +570,20 @@ pub fn stated(color: native_theme::color::Rgba) -> Hsla {
     Hsla::from(gpui::Rgba { r, g, b, a })
 }
 
+/// A colour of the installed 0.8.0 theme as gpui paints it, each channel
+/// clamped to [0, 1] as the connector converts one (native-theme-gpui
+/// colors.rs, `channels_to_hsla`): the value of a claim on a global colour
+/// (`colors.focus_ring`) that a theme-drawn widget paints.
+#[cfg(feature = "widgets")]
+pub fn next_stated(color: native_theme::next::Color) -> Hsla {
+    Hsla::from(gpui::Rgba {
+        r: color.r.clamp(0., 1.),
+        g: color.g.clamp(0., 1.),
+        b: color.b.clamp(0., 1.),
+        a: color.a.clamp(0., 1.),
+    })
+}
+
 /// A size in logical pixels to two decimals, trailing zeros dropped: a rem
 /// multiple of a 14.666667px font_size (adwaita's 11 pt at 96 DPI) prints as
 /// what it is to the eye, not as float noise.

@@ -4776,7 +4776,7 @@ pub(crate) fn checkbox(
     // Under a native theme, the connector's theme-drawn checkbox: every part
     // gpui-component draws from literals of its own is the theme's there.
     #[cfg(feature = "widgets")]
-    if let Some(r) = old_resolved(cx) {
+    if let Some(r) = next_resolved(cx) {
         let checkbox_info = info::inputs::native_checkbox(r, label, checked, disabled);
         return widgets::Checkbox::new(id)
             .label(label)
@@ -4810,14 +4810,14 @@ pub(crate) fn checkbox(
 /// native theme's, with the `widgets` feature. `None` where it draws
 /// gpui-component's own in its place.
 #[cfg(feature = "widgets")]
-pub(crate) fn theme_checkbox(cx: &App) -> Option<&native_theme_gpui::ResolvedTheme> {
-    old_resolved(cx)
+pub(crate) fn theme_checkbox(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
+    next_resolved(cx)
 }
 
 /// The theme [`mixed_checkbox`] draws a theme-drawn box from: none without
 /// the `widgets` feature, where it draws gpui-component's own.
 #[cfg(not(feature = "widgets"))]
-pub(crate) fn theme_checkbox(_: &App) -> Option<&native_theme_gpui::ResolvedTheme> {
+pub(crate) fn theme_checkbox(_: &App) -> Option<&native_theme::next::ResolvedTheme> {
     None
 }
 
@@ -4883,7 +4883,7 @@ pub(crate) fn radio_group(
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     #[cfg(feature = "widgets")]
-    if let Some(r) = old_resolved(cx) {
+    if let Some(r) = next_resolved(cx) {
         let group_info =
             info::inputs::native_radio_column(r, labels, selected).variant("horizontal");
         let on_click = Rc::new(on_click);
@@ -4937,7 +4937,7 @@ pub(crate) fn radio_column(
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     #[cfg(feature = "widgets")]
-    if let Some(r) = old_resolved(cx) {
+    if let Some(r) = next_resolved(cx) {
         let mut group_info = info::inputs::native_radio_column(r, labels, selected);
         if gap.is_some() {
             group_info = group_info.geometry("widget_gap");

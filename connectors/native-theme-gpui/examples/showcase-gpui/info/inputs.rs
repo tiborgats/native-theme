@@ -3,6 +3,8 @@
 #[cfg(feature = "widgets")]
 use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
+#[cfg(feature = "widgets")]
+use native_theme::next::{FocusTrigger, PartStated, TextStated, TextStyle};
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::ResolvedTheme;
@@ -15,7 +17,7 @@ use super::{
     stated_claim, stroke_color_of, stroke_width_of,
 };
 #[cfg(feature = "widgets")]
-use super::{percent_text, stated};
+use super::{next_stated, percent_text, stated};
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
 use crate::support::SampleIcon;
 
@@ -858,6 +860,60 @@ fn ground(r: &ResolvedTheme) -> Hsla {
     stated(r.defaults.background_color)
 }
 
+/// [`ground`] of the installed 0.8.0 theme: the window's
+/// `colors.window.background`, `None` where the theme states none and the
+/// widget draws gpui-component's own control in its place
+/// (native-theme-gpui/widgets/mod.rs, `ThemeSource::background`).
+#[cfg(feature = "widgets")]
+fn next_ground(r: &NextTheme) -> Option<Hsla> {
+    r.colors.window.background.map(next_stated)
+}
+
+/// The home a theme-drawn checkbox's or radio's label font is read at,
+/// `home`, where the theme leaves its family, size, weight or slant
+/// unstated there: the widget then draws gpui-component's own control in its
+/// place (native-theme-gpui/widgets/mod.rs, `LabelFont::next`); `None` where
+/// the four are stated.
+#[cfg(feature = "widgets")]
+fn unstated_label_font(text: &TextStyle, home: &'static str) -> Option<&'static str> {
+    let needed = TextStated::FAMILY | TextStated::SIZE_PX | TextStated::WEIGHT | TextStated::STYLE;
+    (!text.stated.contains(needed)).then_some(home)
+}
+
+/// The `drawn by` line of a theme-drawn `control` that draws
+/// gpui-component's own in its place, the theme stating no value gpui can
+/// take at `home` (native-theme-gpui/widgets/checkbox.rs, `Parts::render`).
+#[cfg(feature = "widgets")]
+fn drawn_by_upstream(info: WidgetInfo, control: &str, home: &str) -> WidgetInfo {
+    info.config(
+        "drawn by",
+        format!(
+            "gpui-component's own {control}, in upstream's colours and sizes: the theme states no value gpui can take at {home}, so widgets::{control} draws upstream's in its place (native-theme-gpui/widgets/checkbox.rs, Parts::render)"
+        ),
+    )
+}
+
+/// A font of the installed 0.8.0 theme as a theme-drawn widget's label draws
+/// it (native-theme-gpui/widgets/mod.rs, `LabelFont::next`), for its info's
+/// font line: the family as `status::family_label` names what gpui is asked
+/// for, the size the theme's text scale has already scaled, the weight, the
+/// slant where it is not upright, and the line box.
+#[cfg(feature = "widgets")]
+fn next_drawn_font(text: &TextStyle) -> String {
+    let drawn = native_theme_gpui::font_family(&text.family);
+    let style = match text.style {
+        native_theme::next::FontStyle::Italic => ", italic",
+        native_theme::next::FontStyle::Oblique => ", oblique",
+        _ => "",
+    };
+    format!(
+        "{}, {}px, weight {}{style}, at typography.line_height_multiplier",
+        native_theme_showcase_support::status::family_label(&text.family, Some(&drawn)),
+        px_text(text.size_px),
+        text.weight
+    )
+}
+
 /// A length of a connector Look as Widget Info prints one.
 #[cfg(feature = "widgets")]
 fn length_text(length: Pixels) -> String {
@@ -866,11 +922,12 @@ fn length_text(length: Pixels) -> String {
 
 /// A theme-drawn `widgets::Checkbox` (spec §2.1 of
 /// docs/archive/todo_gpui-widgets-spec.md) reading `label`, `checked` or not,
-/// `disabled` or not, under `r`: what `CheckboxLook::of` gives it, the one
-/// source the widget draws from, faded as the widget fades a disabled one.
+/// `disabled` or not, under the installed 0.8.0 theme `r`: what
+/// `CheckboxLook::next_of` gives it, the one source the widget draws from,
+/// faded as the widget fades a disabled one.
 #[cfg(feature = "widgets")]
 pub fn native_checkbox(
-    r: &ResolvedTheme,
+    r: &NextTheme,
     label: &'static str,
     checked: bool,
     disabled: bool,
@@ -883,29 +940,43 @@ pub fn native_checkbox(
 /// gpui-component's dash in place of the check (native-theme-gpui
 /// widgets/checkbox.rs, `Checkbox::indeterminate`).
 #[cfg(feature = "widgets")]
-pub fn native_mixed_checkbox(r: &ResolvedTheme, label: &'static str) -> WidgetInfo {
+pub fn native_mixed_checkbox(r: &NextTheme, label: &'static str) -> WidgetInfo {
     drawn_checkbox(r, label, true, false, true)
 }
 
 /// [`native_checkbox`], `mixed` or not.
 #[cfg(feature = "widgets")]
 fn drawn_checkbox(
-    r: &ResolvedTheme,
+    r: &NextTheme,
     label: &'static str,
     checked: bool,
     disabled: bool,
     mixed: bool,
 ) -> WidgetInfo {
-    let k = &r.checkbox;
     let info = WidgetInfo::new("Checkbox");
-    let Some(rest) = CheckboxLook::of(r, checked, disabled) else {
-        let info = info.config("drawn by", "gpui-component's own Checkbox, in upstream's colours and sizes: a length the theme states is not finite, so widgets::Checkbox draws upstream's in its place (native-theme-gpui/widgets/checkbox.rs, CheckboxLook::of)");
-        return checkbox_state(info.instance("label", label), checked, disabled, mixed);
+    let text = r.checkbox.label(WidgetState::NONE);
+    let drawn = CheckboxLook::next_of(r, checked, disabled)
+        .map_err(|unstated| unstated.home())
+        .and_then(|rest| {
+            next_ground(r)
+                .map(|ground| (rest, ground))
+                .ok_or("colors.window.background")
+        })
+        .and_then(|drawn| {
+            unstated_label_font(&text, "checkbox.label(NONE)").map_or(Ok(drawn), Err)
+        });
+    let (rest, ground) = match drawn {
+        Ok(drawn) => drawn,
+        Err(home) => {
+            let info = drawn_by_upstream(info, "Checkbox", home);
+            return checkbox_state(info.instance("label", label), checked, disabled, mixed);
+        }
     };
-    let look = rest.faded_over(ground(r));
+    let look = rest.faded_over(ground);
     let info = native_indicator(
         info.config("drawn by", DRAWN_BY),
-        k,
+        r,
+        false,
         &look,
         checked,
         disabled,
@@ -914,14 +985,14 @@ fn drawn_checkbox(
         .config(
             "indicator",
             format!(
-                "checkbox.indicator_width: {} square",
+                "checkbox.indicator(NONE).min_size[0]: {} square",
                 length_text(look.indicator)
             ),
         )
         .config(
             "corner radius",
             format!(
-                "checkbox.border.corner_radius: {}",
+                "checkbox.indicator(NONE).corners: {}",
                 length_text(look.radius)
             ),
         )
@@ -931,23 +1002,26 @@ fn drawn_checkbox(
         )
         .config(
             "label font",
-            format!("checkbox.font: {}", super::drawn_font(&k.font)),
+            format!("checkbox.label(NONE): {}", next_drawn_font(&text)),
         );
+    let inside = if look.mark_padded {
+        "checkbox.indicator(NONE).padding, and inside its stroke on a side the theme leaves unstated"
+    } else {
+        "its stroke"
+    };
     let info = match (look.mark_stroke, mixed) {
         (Some(stroke), false) => info.config("check mark", format!(
-            "the connector strokes upstream's check polyline at checkbox.check_mark_stroke_width, {}, in a {} square, the box inside {} (native-theme-gpui/widgets/checkbox.rs, stroked_check)",
+            "the connector strokes upstream's check polyline at checkbox.checkmark(NONE).stroke_width, {}, in a {} square, the box inside {inside} (native-theme-gpui/widgets/checkbox.rs, stroked_check)",
             length_text(stroke),
             length_text(look.mark_size),
-            if look.mark_padded { "checkbox.border.padding, and inside its border on a side the theme leaves unstated" } else { "its border" }
         )),
         (Some(stroke), true) => info.config("mixed mark", format!(
-            "the connector strokes upstream's dash, the line of its Minus icon, at checkbox.check_mark_stroke_width, {}, in a {} square, the box inside {}, in the checked mark's colour (native-theme-gpui/widgets/checkbox.rs, MINUS_POINTS; stroked_check)",
+            "the connector strokes upstream's dash, the line of its Minus icon, at checkbox.checkmark(NONE).stroke_width, {}, in a {} square, the box inside {inside}, in the checked mark's colour (native-theme-gpui/widgets/checkbox.rs, MINUS_POINTS; stroked_check)",
             length_text(stroke),
             length_text(look.mark_size),
-            if look.mark_padded { "checkbox.border.padding, and inside its border on a side the theme leaves unstated" } else { "its border" }
         )),
-        (None, false) => info.not_themeable("check mark", super::own_icons("Check, the mark gpui-component's own checkbox draws (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws where the theme states no checkbox.check_mark_stroke_width, filling the box inside its border")),
-        (None, true) => info.not_themeable("mixed mark", super::own_icons("Minus, the dash gpui-component's own checkbox draws in the mixed state (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws through the application's icon resolver where the theme states no checkbox.check_mark_stroke_width, filling the box inside its border, in the checked mark's colour")),
+        (None, false) => info.not_themeable("check mark", super::own_icons("Check, the mark gpui-component's own checkbox draws (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws where the theme states no checkbox.checkmark(NONE).stroke_width, filling the box inside its stroke")),
+        (None, true) => info.not_themeable("mixed mark", super::own_icons("Minus, the dash gpui-component's own checkbox draws in the mixed state (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws through the application's icon resolver where the theme states no checkbox.checkmark(NONE).stroke_width, filling the box inside its stroke, in the checked mark's colour")),
     };
     let info = if mixed {
         info.not_themeable("mixed look", "the checked state's fill, border and mark colour: the model states no look of its own for the mixed state, so widgets::Checkbox draws it as checked, with the dash in place of the check (native-theme-gpui/widgets/checkbox.rs, Checkbox::indeterminate)")
@@ -956,7 +1030,7 @@ fn drawn_checkbox(
     };
     let info = if disabled {
         info.config("disabled", if rest.opacity < 1. {
-            format!("checkbox.disabled_opacity {}: the whole control faded as one over the window's defaults.background_color, so each colour above is composited over what it is drawn on and faded by it (native-theme-gpui/widgets/checkbox.rs, CheckboxLook::faded_over)", percent_text(rest.opacity))
+            format!("checkbox.disabled_opacity {}: the whole control faded as one over the window's colors.window.background, so each colour above is composited over what it is drawn on and faded by it (native-theme-gpui/widgets/checkbox.rs, CheckboxLook::faded_over)", percent_text(rest.opacity))
         } else {
             format!("checkbox.disabled_opacity {}: no fade, the colours above as the theme states them (native-theme-gpui/widgets/checkbox.rs, CheckboxLook::faded_over)", percent_text(rest.opacity))
         })
@@ -968,7 +1042,7 @@ fn drawn_checkbox(
     let info = if disabled {
         info
     } else {
-        theme_focus_ring(info, r, "row")
+        next_focus_ring(info, r, "row")
     };
     checkbox_state(info.instance("label", label), checked, disabled, mixed)
 }
@@ -1069,251 +1143,370 @@ fn theme_focus_ring(info: WidgetInfo, r: &ResolvedTheme, part: &str) -> WidgetIn
     )
 }
 
-/// The indicator's colours for a checkbox or radio in this state, `look`'s,
-/// each claim naming the leaf `CheckboxLook::of` reads it from in that state
-/// (widgets/checkbox.rs, `CheckboxLook::sized`), a soft option's fallback
-/// where the theme leaves it unstated. The mark is claimed where it is
-/// painted: the widget fades it out while unchecked.
+/// [`theme_focus_ring`] of the installed 0.8.0 theme, as `FocusRing::next_of`
+/// reads it (native-theme-gpui/widgets/mod.rs): `colors.focus_ring`,
+/// `focus_ring.stroke.width` wide, its outer edge `focus_ring.offset` plus
+/// the width outside the part, drawn for a focus that followed a key press
+/// only where `focus_ring.trigger` says keyboard only.
+#[cfg(feature = "widgets")]
+fn next_focus_ring(info: WidgetInfo, r: &NextTheme, part: &str) -> WidgetInfo {
+    let offset = r.focus_ring.offset;
+    let width = native_theme_gpui::next::focus_ring_width(r)
+        .ok()
+        .filter(|width| width.is_finite() && offset.is_finite() && *width > 0.0);
+    let Some(width) = width else {
+        return info.config(
+            "focus ring",
+            "none: the theme's focus_ring.stroke.width is not positive, or is stated per side (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+        );
+    };
+    let place = if offset == -width {
+        format!(
+            "inset at the {part}'s edge, a band inside it, the {part} having no border of its own to take the colour"
+        )
+    } else {
+        format!(
+            "its outer edge {}px outside the {part}'s, focus_ring.offset {}px plus the width, its corners grown as much",
+            px_text(offset + width),
+            px_text(offset)
+        )
+    };
+    info.color(claim(
+        "focus ring",
+        "colors.focus_ring",
+        next_stated(r.colors.focus_ring),
+        "native-theme-gpui/widgets/mod.rs:356",
+    ))
+    .config(
+        "focus ring",
+        format!(
+            "focus_ring.stroke.width {}px wide, {place}, painted over the {part}'s other parts (native-theme-gpui/widgets/mod.rs, FocusRing::draw){}",
+            px_text(width),
+            if r.focus_ring.trigger == Some(FocusTrigger::KeyboardOnly) {
+                ", for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, ring_shows)"
+            } else {
+                ""
+            }
+        ),
+    )
+}
+
+/// The indicator's colours for a checkbox, or a `radio`, in this state,
+/// `look`'s, each claim naming the home `CheckboxLook::next_of` (or
+/// `next_radio`) reads it at in that state and citing the line that names it
+/// (widgets/checkbox.rs, `CheckboxLook::next_sized`), the fill at rest where
+/// no rule states the hovered one. The mark is claimed where it is painted:
+/// the widget fades it out while unchecked.
 #[cfg(feature = "widgets")]
 fn native_indicator(
     info: WidgetInfo,
-    k: &native_theme::theme::ResolvedCheckboxTheme,
+    r: &NextTheme,
+    radio: bool,
     look: &CheckboxLook,
     checked: bool,
     disabled: bool,
 ) -> WidgetInfo {
-    // A stated disabled fill replaces the box and its mark's colour; with
-    // none the box is its enabled self (CheckboxLook::of).
-    let stated_disabled = disabled && k.disabled_background.is_some();
-    let unchecked_stated = k.unchecked_background.is_some();
-    let info = info.color(match (stated_disabled, checked, unchecked_stated) {
-        (true, _, _) => claim(
+    let indicator = |state: WidgetState| {
+        if radio {
+            r.radio.indicator(state)
+        } else {
+            r.checkbox.indicator(state)
+        }
+    };
+    // A disabled fill a rule states replaces the box and its mark's colour;
+    // with none the box is its enabled self (CheckboxLook::next_of).
+    let stated_disabled = disabled
+        && indicator(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::FILL);
+    let info = info.color(match (radio, stated_disabled, checked) {
+        (false, true, false) => claim(
             "fill",
-            "disabled_background",
+            "checkbox.indicator(DISABLED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:134",
+            "native-theme-gpui/widgets/checkbox.rs:272",
         ),
-        (false, true, _) => claim(
+        (false, true, true) => claim(
             "fill",
-            "checked_background",
+            "checkbox.indicator(DISABLED|CHECKED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:130",
+            "native-theme-gpui/widgets/checkbox.rs:273",
+        ),
+        (true, true, false) => claim(
+            "fill",
+            "radio.indicator(DISABLED).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:274",
+        ),
+        (true, true, true) => claim(
+            "fill",
+            "radio.indicator(DISABLED|CHECKED).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:275",
         ),
         (false, false, true) => claim(
             "fill",
-            "unchecked_background",
+            "checkbox.indicator(CHECKED).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:128",
+            "native-theme-gpui/widgets/checkbox.rs:330",
+        ),
+        (true, false, true) => claim(
+            "fill",
+            "radio.indicator(CHECKED).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:331",
         ),
         (false, false, false) => claim(
             "fill",
-            "background_color",
+            "checkbox.indicator(NONE).fill",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:128",
+            "native-theme-gpui/widgets/checkbox.rs:323",
+        ),
+        (true, false, false) => claim(
+            "fill",
+            "radio.indicator(NONE).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:324",
         ),
     });
-    // An unset hover is the box at rest (CheckboxLook::of); the swatch is
-    // the fill drawn under the pointer, the layer composited over the fill.
-    let info = info.colors(match (k.hover_background.is_some(), unchecked_stated) {
-        (true, _) => stated_claim(
-            "hover, hover_background over the fill",
-            "hover_background",
-            look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:139",
-        ),
+    // An unset hover is the box at rest (CheckboxLook::next_of); the swatch
+    // is the fill drawn under the pointer, the layer composited over the
+    // fill.
+    let hover_stated = state_fill_of(&indicator(WidgetState::HOVER)).is_some();
+    let info = info.colors(match (radio, hover_stated) {
         (false, true) => stated_claim(
-            "hover, none stated: the fill at rest",
-            "unchecked_background",
+            "hover, checkbox.indicator(HOVER).fill over the fill",
+            "checkbox.indicator(HOVER).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:128",
+            "native-theme-gpui/widgets/checkbox.rs:338",
+        ),
+        (true, true) => stated_claim(
+            "hover, radio.indicator(HOVER).fill over the fill",
+            "radio.indicator(HOVER).fill",
+            look.hover_fill,
+            "native-theme-gpui/widgets/checkbox.rs:339",
         ),
         (false, false) => stated_claim(
             "hover, none stated: the fill at rest",
-            "background_color",
+            "checkbox.indicator(NONE).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:128",
+            "native-theme-gpui/widgets/checkbox.rs:323",
+        ),
+        (true, false) => stated_claim(
+            "hover, none stated: the fill at rest",
+            "radio.indicator(NONE).fill",
+            look.hover_fill,
+            "native-theme-gpui/widgets/checkbox.rs:324",
         ),
     });
-    let info = info.colors(edge_claim(
-        "hovered edge",
-        "hover_border_color",
-        look.hover_border,
-        Some(f32::from(look.border_width)),
-        "native-theme-gpui/widgets/checkbox.rs:153",
-    ));
     let width = Some(f32::from(look.border_width));
-    let info = info.colors(match (checked, k.unchecked_border_color.is_some()) {
-        (true, _) => edge_claim(
-            "border",
-            "border",
-            Some(look.border),
+    let info = info.colors(match (radio, checked) {
+        (false, false) => edge_claim(
+            "hovered edge",
+            "checkbox.indicator(HOVER).stroke.color",
+            look.hover_border,
             width,
-            "native-theme-gpui/widgets/checkbox.rs:143",
+            "native-theme-gpui/widgets/checkbox.rs:288",
         ),
         (false, true) => edge_claim(
+            "hovered edge",
+            "checkbox.indicator(HOVER|CHECKED).stroke.color",
+            look.hover_border,
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:289",
+        ),
+        (true, false) => edge_claim(
+            "hovered edge",
+            "radio.indicator(HOVER).stroke.color",
+            look.hover_border,
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:290",
+        ),
+        (true, true) => edge_claim(
+            "hovered edge",
+            "radio.indicator(HOVER|CHECKED).stroke.color",
+            look.hover_border,
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:291",
+        ),
+    });
+    let info = info.colors(match (radio, checked) {
+        (false, true) => edge_claim(
             "border",
-            "unchecked_border_color",
+            "checkbox.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:145",
+            "native-theme-gpui/widgets/checkbox.rs:345",
+        ),
+        (true, true) => edge_claim(
+            "border",
+            "radio.indicator(CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:346",
         ),
         (false, false) => edge_claim(
             "border",
-            "border",
+            "checkbox.indicator(NONE).stroke.color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:145",
+            "native-theme-gpui/widgets/checkbox.rs:352",
+        ),
+        (true, false) => edge_claim(
+            "border",
+            "radio.indicator(NONE).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:353",
         ),
     });
-    let info = info.colors(match (disabled, stated_disabled) {
+    // Over a stated disabled fill the mark takes the disabled label's colour.
+    let info = info.colors(match (radio, stated_disabled) {
+        (false, true) => stated_claim(
+            "mark",
+            "checkbox.label(DISABLED).color",
+            checked.then_some(look.mark),
+            "native-theme-gpui/widgets/checkbox.rs:365",
+        ),
         (true, true) => stated_claim(
             "mark",
-            "disabled_text_color",
+            "radio.label(DISABLED).color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:148",
+            "native-theme-gpui/widgets/checkbox.rs:366",
+        ),
+        (false, false) => stated_claim(
+            "mark",
+            "checkbox.checkmark(CHECKED).color",
+            checked.then_some(look.mark),
+            "native-theme-gpui/widgets/checkbox.rs:305",
         ),
         (true, false) => stated_claim(
             "mark",
-            "indicator_color",
+            "radio.dot(CHECKED).fill",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:149",
-        ),
-        (false, _) => stated_claim(
-            "mark",
-            "indicator_color",
-            checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:150",
+            "native-theme-gpui/widgets/checkbox.rs:300",
         ),
     });
-    info.color(match (disabled, stated_disabled) {
+    info.color(match (radio, disabled) {
+        (false, true) => claim(
+            "label",
+            "checkbox.label(DISABLED).color",
+            look.label,
+            "native-theme-gpui/widgets/checkbox.rs:365",
+        ),
         (true, true) => claim(
             "label",
-            "disabled_text_color",
+            "radio.label(DISABLED).color",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:148",
+            "native-theme-gpui/widgets/checkbox.rs:366",
+        ),
+        (false, false) => claim(
+            "label",
+            "checkbox.label(NONE).color",
+            look.label,
+            "native-theme-gpui/widgets/checkbox.rs:360",
         ),
         (true, false) => claim(
             "label",
-            "disabled_text_color",
+            "radio.label(NONE).color",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:149",
-        ),
-        (false, _) => claim(
-            "label",
-            "font",
-            look.label,
-            "native-theme-gpui/widgets/checkbox.rs:150",
+            "native-theme-gpui/widgets/checkbox.rs:360",
         ),
     })
 }
 
 /// A column of theme-drawn `widgets::Radio`s reading `labels`, the one at
-/// `selected` selected (spec §2.2): what `CheckboxLook::radio` gives a
-/// selected radio and an unselected one, the one source the widget draws
-/// from.
+/// `selected` selected (spec §2.2), under the installed 0.8.0 theme `r`:
+/// what `CheckboxLook::next_radio` gives a selected radio and an unselected
+/// one, the one source the widget draws from.
 #[cfg(feature = "widgets")]
 pub fn native_radio_column(
-    r: &ResolvedTheme,
+    r: &NextTheme,
     labels: &[&'static str],
     selected: Option<usize>,
 ) -> WidgetInfo {
-    let k = &r.checkbox;
     let chosen = selected
         .and_then(|ix| labels.get(ix).copied())
         .unwrap_or("none");
     let info = WidgetInfo::new("RadioGroup").variant("vertical");
     let radios = labels.join(", ");
-    let (Some(on), Some(off)) = (
-        CheckboxLook::radio(r, true, false),
-        CheckboxLook::radio(r, false, false),
-    ) else {
-        return info
-            .config("drawn by", "gpui-component's own Radio, in upstream's colours and sizes: a length the theme states is not finite, so widgets::Radio draws upstream's in its place (native-theme-gpui/widgets/checkbox.rs, CheckboxLook::radio)")
-            .instance("radios", radios)
-            .instance("selected", chosen);
+    let drawn = CheckboxLook::next_radio(r, true, false)
+        .and_then(|on| CheckboxLook::next_radio(r, false, false).map(|off| (on, off)))
+        .map_err(|unstated| unstated.home())
+        .and_then(|(on, off)| {
+            next_ground(r)
+                .map(|ground| (on, off, ground))
+                .ok_or("colors.window.background")
+        })
+        .and_then(|drawn| {
+            unstated_label_font(&r.radio.label(WidgetState::NONE), "radio.label(NONE)")
+                .map_or(Ok(drawn), Err)
+        });
+    let (on, off, ground) = match drawn {
+        Ok(drawn) => drawn,
+        Err(home) => {
+            return drawn_by_upstream(info, "Radio", home)
+                .instance("radios", radios)
+                .instance("selected", chosen);
+        }
     };
     // The page's radios are never disabled, so `faded_over` leaves both
     // looks as they are; they go through it as the widget's do.
-    let unselected = off.faded_over(ground(r));
+    let unselected = off.faded_over(ground);
     // The selected radio's colours, then the unselected ones'.
     let info = native_indicator(
         info.config("drawn by", DRAWN_BY),
-        k,
-        &on.faded_over(ground(r)),
+        r,
+        true,
+        &on.faded_over(ground),
         true,
         false,
     );
-    let unchecked_stated = k.unchecked_background.is_some();
-    let info = info.color(if unchecked_stated {
-        claim(
-            "unselected fill",
-            "unchecked_background",
-            unselected.fill,
-            "native-theme-gpui/widgets/checkbox.rs:128",
-        )
-    } else {
-        claim(
-            "unselected fill",
-            "background_color",
-            unselected.fill,
-            "native-theme-gpui/widgets/checkbox.rs:128",
-        )
-    });
+    let info = info.color(claim(
+        "unselected fill",
+        "radio.indicator(NONE).fill",
+        unselected.fill,
+        "native-theme-gpui/widgets/checkbox.rs:324",
+    ));
     let width = Some(f32::from(unselected.border_width));
-    let info = info.colors(if k.unchecked_border_color.is_some() {
-        edge_claim(
-            "unselected border",
-            "unchecked_border_color",
-            Some(unselected.border),
-            width,
-            "native-theme-gpui/widgets/checkbox.rs:145",
-        )
-    } else {
-        edge_claim(
-            "unselected border",
-            "border",
-            Some(unselected.border),
-            width,
-            "native-theme-gpui/widgets/checkbox.rs:145",
-        )
-    });
-    let info = info.colors(match (k.hover_background.is_some(), unchecked_stated) {
-        (true, _) => stated_claim(
-            "hover, hover_background over an unselected fill",
-            "hover_background",
-            unselected.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:139",
-        ),
-        (false, true) => stated_claim(
-            "hover, none stated: an unselected fill at rest",
-            "unchecked_background",
-            unselected.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:128",
-        ),
-        (false, false) => stated_claim(
-            "hover, none stated: an unselected fill at rest",
-            "background_color",
-            unselected.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:128",
-        ),
-    });
-    let info = if k.radio_indicator_width.is_some() {
-        info.config("indicator", format!("checkbox.radio_indicator_width: a circle {} across (platform-facts §2.5: radio buttons are circular)", length_text(on.indicator)))
-    } else {
-        info.config("indicator", format!("checkbox.indicator_width, as the theme states no checkbox.radio_indicator_width: a circle {} across (platform-facts §2.5: radio buttons are circular)", length_text(on.indicator)))
-    };
-    let info = info.config(
-        "label gap",
-        format!("checkbox.label_gap: {}", length_text(on.label_gap)),
+    let info = info.colors(edge_claim(
+        "unselected border",
+        "radio.indicator(NONE).stroke.color",
+        Some(unselected.border),
+        width,
+        "native-theme-gpui/widgets/checkbox.rs:353",
+    ));
+    let info = info.colors(
+        if state_fill_of(&r.radio.indicator(WidgetState::HOVER)).is_some() {
+            stated_claim(
+                "hover, radio.indicator(HOVER).fill over an unselected fill",
+                "radio.indicator(HOVER).fill",
+                unselected.hover_fill,
+                "native-theme-gpui/widgets/checkbox.rs:339",
+            )
+        } else {
+            stated_claim(
+                "hover, none stated: an unselected fill at rest",
+                "radio.indicator(NONE).fill",
+                unselected.hover_fill,
+                "native-theme-gpui/widgets/checkbox.rs:324",
+            )
+        },
     );
+    let info = info
+        .config("indicator", format!("radio.indicator(NONE).min_size[0]: a circle {} across (platform-facts §2.5: radio buttons are circular)", length_text(on.indicator)))
+        .config(
+            "label gap",
+            format!("radio.label_gap: {}", length_text(on.label_gap)),
+        );
     let info = match (on.dot, on.mark_stroke) {
-        (Some(dot), _) => info.config("dot", format!("checkbox.radio_dot_diameter: a dot {} across in indicator_color, centred in the circle (platform-facts §2.5)", length_text(dot))),
+        (Some(dot), _) => info.config("dot", format!("radio.dot(NONE).min_size[0]: a dot {} across in radio.dot(CHECKED).fill, centred in the circle (platform-facts §2.5)", length_text(dot))),
         (None, Some(stroke)) => info.config("mark", format!(
-            "the theme states no radio dot size (checkbox.radio_dot_diameter), so the connector strokes upstream's check polyline at checkbox.check_mark_stroke_width, {}, in a {} square inside the circle (native-theme-gpui/widgets/checkbox.rs, stroked_check)",
+            "the theme states no radio dot size (radio.dot(NONE).min_size[0]), so the connector strokes upstream's check polyline at checkbox.checkmark(NONE).stroke_width, {}, in a {} square inside the circle (native-theme-gpui/widgets/checkbox.rs, stroked_check)",
             length_text(stroke),
             length_text(on.mark_size)
         )),
-        (None, None) => info.not_themeable("mark", super::own_icons("Check, gpui-component's check glyph, which widgets::Radio draws where the theme states no radio dot size (checkbox.radio_dot_diameter) and no checkbox.check_mark_stroke_width (native-theme-gpui/widgets/checkbox.rs, indicator_and_label)")),
+        (None, None) => info.not_themeable("mark", super::own_icons("Check, gpui-component's check glyph, which widgets::Radio draws where the theme states no radio dot size (radio.dot(NONE).min_size[0]) and no checkbox.checkmark(NONE).stroke_width (native-theme-gpui/widgets/checkbox.rs, indicator_and_label)")),
     };
     let info = info.instance(
         "radios",
@@ -1321,7 +1514,7 @@ pub fn native_radio_column(
     );
     // The focused radio's row draws the ring, as gpui-component's and the
     // egui connector's do.
-    theme_focus_ring(info.instance("selected", chosen), r, "row")
+    next_focus_ring(info.instance("selected", chosen), r, "row")
 }
 
 /// A theme-drawn `widgets::Switch` reading `label`, `checked` or not,
