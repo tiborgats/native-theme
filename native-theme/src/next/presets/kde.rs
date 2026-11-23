@@ -164,8 +164,17 @@
 //! qstyle.cpp at qtbase v6.11.0), and the scroll bar's line takes its side
 //! from Breeze's own rule (`S1`); every other per-side value the preset
 //! states is the same on both sides, and it states no per-corner radius. The
-//! motion preference, the text scale and the accessibility flags change
-//! nothing here: no row of the parity table needs them.
+//! text scale is linear (spec §6, resolution step 2): every font size,
+//! converted at the font DPI, times the text scale, then rounded as Qt rounds
+//! it, and every line height times it too; each `defined_size` stays the
+//! unscaled size. The motion preference and the system's animation scale:
+//! `MotionPreference::None` or a scale of 0 sets the dialog's entrance to
+//! `DialogEntranceStyle::None` and would collapse every transition, a scale
+//! above 0 would multiply every duration, and the preset states no
+//! transition and no motion token; KDE states no policy of its own for
+//! `MotionPreference::Reduced`, which therefore changes nothing. The
+//! accessibility flags change nothing here: no cited source states a rule
+//! for them on KDE.
 //!
 //! Sources: `kde-breeze.toml` of 0.7.2 (`src/presets/kde-breeze.toml`), each
 //! constant with the citation the TOML gives it (`docs/platform-facts.md` by
@@ -197,7 +206,9 @@ use crate::next::platform::kirigami_lerp::kirigami_lerp;
 use crate::next::platform::qt_lighter::qt_lighter;
 use crate::next::platform::qt_tint::{qt_tint, tint_stored};
 use crate::next::preset::{Preset, ResolveInputs};
-use crate::next::presets::helpers::physical_edges;
+use crate::next::presets::helpers::{
+    Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
+};
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
 };
@@ -2456,8 +2467,14 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
     }
     let c = &scheme_colors;
     let colors = roles(c, os, system.and_then(|s| s.accent));
-    let typography = typography(&colors, system);
-    let widget_font = |os: Option<&OsFont>| laid_over(&typography.body, os, typography.font_dpi);
+    let typography = typography(&colors, system, ctx.text_scale);
+    let units = FontUnits {
+        dpi: typography.font_dpi,
+        text_scale: ctx.text_scale,
+    };
+    let widget_font = |os: Option<&OsFont>| laid_over(&typography.body, os, units);
+    // KDE states no policy of its own for reduced motion: `Reduced` runs as `Full`.
+    let motion = motion(ctx.motion, system.and_then(|s| s.animation_scale));
     let menu_font = widget_font(system.and_then(|s| s.menu_font.as_ref()));
     let toolbar_font = widget_font(system.and_then(|s| s.toolbar_font.as_ref()));
     let title_font = widget_font(system.and_then(|s| s.title_bar_font.as_ref()));
@@ -2512,14 +2529,17 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
             key_repeat_delay_ms: None,
             key_repeat_interval_ms: None,
         },
-        motion_tokens: MotionTokens {
-            fast: None,
-            standard: None,
-            emphasized: None,
-            spring_spatial: None,
-            spring_effects: None,
-            theme_change: None,
-        },
+        motion_tokens: motion_tokens(
+            MotionTokens {
+                fast: None,
+                standard: None,
+                emphasized: None,
+                spring_spatial: None,
+                spring_effects: None,
+                theme_change: None,
+            },
+            motion,
+        ),
         // 0.7.2's `defaults.focus_ring_*`: a ring.
         focus_ring: FocusIndicator::new(
             FocusKind::Ring,
@@ -2587,7 +2607,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography, &layout),
         switch: switch(c, &colors),
-        dialog: dialog(&colors, &typography, &layout),
+        dialog: dialog(&colors, &typography, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
         card: card(c, &colors),
@@ -2693,16 +2713,28 @@ fn roles(c: &SchemeColors, os: Option<&OsColors>, system_accent: Option<Color>) 
     }
 }
 
-/// A font size in logical pixels at the font DPI `dpi`, rounded as Qt rounds
-/// it where [`FONT_WHOLE_PIXELS`] (0.7.2: `src/resolve/validate.rs`, the
-/// whole-pixel sizes).
-fn font_px(size: FontSize, dpi: f32) -> f32 {
-    let px = size.to_logical_px(dpi);
-    if FONT_WHOLE_PIXELS {
-        qt_whole_px(px)
-    } else {
-        px
-    }
+/// How a font size becomes logical pixels: the font DPI and the text scale
+/// (spec §6, resolution step 2).
+#[derive(Clone, Copy)]
+struct FontUnits {
+    /// The font DPI.
+    dpi: f32,
+    /// The text scale, `effective.text_scale`.
+    text_scale: f32,
+}
+
+/// A font size in logical pixels: converted at the font DPI, times the text
+/// scale, linear on KDE (spec §6, resolution step 2), and rounded as Qt
+/// rounds it where [`FONT_WHOLE_PIXELS`] (0.7.2: `src/resolve/validate.rs`,
+/// the whole-pixel sizes).
+fn font_px(size: FontSize, units: FontUnits) -> f32 {
+    let whole_pixels: fn(f32) -> f32 = qt_whole_px;
+    linear_font_px(
+        size,
+        units.dpi,
+        units.text_scale,
+        FONT_WHOLE_PIXELS.then_some(whole_pixels),
+    )
 }
 
 /// `size` times `factor`, in its unit.
@@ -2727,11 +2759,11 @@ fn qt_whole_px(px: f32) -> f32 {
 
 /// The line height of a style of `size`, in logical pixels: the multiplier
 /// times the size before whole-pixel rounding, in its unit, converted at the
-/// font DPI `dpi` (0.7.2's `resolve_text_scale_entry`,
+/// font DPI (0.7.2's `resolve_text_scale_entry`,
 /// `src/resolve/inheritance.rs`, then its conversion in `validate`; spec §4,
-/// `Typography`).
-fn line_height_px(size: FontSize, dpi: f32) -> f32 {
-    scaled(size, LINE_HEIGHT).to_logical_px(dpi)
+/// `Typography`), times the text scale.
+fn line_height_px(size: FontSize, units: FontUnits) -> f32 {
+    linear_font_px(scaled(size, LINE_HEIGHT), units.dpi, units.text_scale, None)
 }
 
 /// A font as 0.7.2 resolves it: the system's font `os` laid over the
@@ -2744,14 +2776,14 @@ fn font(
     os: Option<&OsFont>,
     (family, size, weight): (&str, FontSize, u16),
     color: Option<Color>,
-    dpi: f32,
+    units: FontUnits,
 ) -> TextStyle {
     let size = os.and_then(|f| f.size).unwrap_or(size);
     let mut font = TextStyle {
         family: os
             .and_then(|f| f.family.clone())
             .unwrap_or_else(|| Arc::from(family)),
-        size_px: font_px(size, dpi),
+        size_px: font_px(size, units),
         defined_size: Some(size),
         weight: os.and_then(|f| f.weight).unwrap_or(weight),
         style: os.and_then(|f| f.style).unwrap_or(FontStyle::Normal),
@@ -2769,8 +2801,8 @@ fn font(
 /// widget laid over the UI font `base` field by field, its family, size,
 /// weight and style where `os` gives them (0.7.2's `kde/fonts.rs`,
 /// `populate_fonts`; a widget font's unstated fields are `defaults.font`'s,
-/// `resolve_font_inheritance`); the size converted at the font DPI `dpi`.
-fn laid_over(base: &TextStyle, os: Option<&OsFont>, dpi: f32) -> TextStyle {
+/// `resolve_font_inheritance`); the size converted in `units`.
+fn laid_over(base: &TextStyle, os: Option<&OsFont>, units: FontUnits) -> TextStyle {
     let mut font = base.clone();
     let Some(os) = os else {
         return font;
@@ -2779,7 +2811,7 @@ fn laid_over(base: &TextStyle, os: Option<&OsFont>, dpi: f32) -> TextStyle {
         font.family = family.clone();
     }
     if let Some(size) = os.size {
-        font.size_px = font_px(size, dpi);
+        font.size_px = font_px(size, units);
         font.defined_size = Some(size);
     }
     if let Some(weight) = os.weight {
@@ -2793,12 +2825,12 @@ fn laid_over(base: &TextStyle, os: Option<&OsFont>, dpi: f32) -> TextStyle {
 
 /// A text-scale entry as 0.7.2 resolves it: its size, weight and line height
 /// stated, nothing else (0.7.2's `TextScaleEntry`).
-fn text_scale_entry(size: FontSize, weight: u16, dpi: f32) -> TextStyle {
+fn text_scale_entry(size: FontSize, weight: u16, units: FontUnits) -> TextStyle {
     TextStyle {
-        size_px: font_px(size, dpi),
+        size_px: font_px(size, units),
         defined_size: Some(size),
         weight,
-        line_height: line_height_px(size, dpi),
+        line_height: line_height_px(size, units),
         stated: TextStated::SIZE_PX | TextStated::WEIGHT | TextStated::LINE_HEIGHT,
         ..TextStyle::default()
     }
@@ -2816,19 +2848,25 @@ fn text_scale_entry(size: FontSize, weight: u16, dpi: f32) -> TextStyle {
 /// [`HEADING_WEIGHT`]). The body's line height follows the text-scale rule
 /// (spec §4); `display`, which 0.7.2 resolves from the body font, is `None`
 /// and falls back to the body. Sizes convert at the system's font DPI where
-/// given, else at [`FONT_DPI`].
-fn typography(colors: &ColorRoles, system: Option<&SystemOverrides>) -> Typography {
+/// given, else at [`FONT_DPI`], and scale by `text_scale` (spec §6,
+/// resolution step 2); each keeps its unscaled size as its `defined_size`.
+fn typography(
+    colors: &ColorRoles,
+    system: Option<&SystemOverrides>,
+    text_scale: f32,
+) -> Typography {
     let dpi = system.and_then(|s| s.font_dpi).unwrap_or(FONT_DPI);
+    let units = FontUnits { dpi, text_scale };
     let text = colors.window.foreground;
     let ui = system.and_then(|s| s.ui_font.as_ref());
     let ui_size = ui.and_then(|f| f.size);
     let body_size = ui_size.unwrap_or(FontSize::Pt(FONT_SIZE_PT));
-    let mut body = font(ui, (FONT_FAMILY, body_size, FONT_WEIGHT), text, dpi);
-    body.line_height = line_height_px(body_size, dpi);
+    let mut body = font(ui, (FONT_FAMILY, body_size, FONT_WEIGHT), text, units);
+    body.line_height = line_height_px(body_size, units);
     body.stated |= TextStated::LINE_HEIGHT;
     let heading = |factor: f32, (size, weight): (f32, u16)| match ui_size {
-        Some(ui_size) => text_scale_entry(scaled(ui_size, factor), HEADING_WEIGHT, dpi),
-        None => text_scale_entry(FontSize::Pt(size), weight, dpi),
+        Some(ui_size) => text_scale_entry(scaled(ui_size, factor), HEADING_WEIGHT, units),
+        None => text_scale_entry(FontSize::Pt(size), weight, units),
     };
     let caption = system.and_then(|s| s.caption_font.as_ref());
     Typography {
@@ -2852,13 +2890,13 @@ fn typography(colors: &ColorRoles, system: Option<&SystemOverrides>) -> Typograp
                 .and_then(|f| f.size)
                 .unwrap_or(FontSize::Pt(CAPTION_SIZE_PT)),
             caption.and_then(|f| f.weight).unwrap_or(CAPTION_WEIGHT),
-            dpi,
+            units,
         )),
         monospace: font(
             system.and_then(|s| s.monospace_font.as_ref()),
             (MONO_FAMILY, FontSize::Pt(MONO_SIZE_PT), MONO_WEIGHT),
             text,
-            dpi,
+            units,
         ),
         line_height_multiplier: LINE_HEIGHT,
         fallbacks: Arc::from([]),
@@ -4120,8 +4158,14 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
 /// uncited, a listed difference of the parity tests); title and body in the
 /// UI font (0.7.2: `dialog.title_font` and
 /// `body_font` are `defaults.font` where unstated); KStyle's message box
-/// icon size; the buttons' gap and order and Kirigami's entrance.
-fn dialog(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -> DialogWidget {
+/// icon size; the buttons' gap and order and Kirigami's entrance, none under
+/// `motion` collapsed (spec §6, resolution step 2).
+fn dialog(
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+    motion: Motion,
+) -> DialogWidget {
     let mut panel = PartStyle::default();
     for prop in roles
         .window
@@ -4149,7 +4193,7 @@ fn dialog(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -
         icon,
         DIALOG_BUTTON_GAP,
         Some(DIALOG_BUTTON_ORDER),
-        Some(DIALOG_ENTRANCE),
+        dialog_entrance(Some(DIALOG_ENTRANCE), motion),
     )
 }
 

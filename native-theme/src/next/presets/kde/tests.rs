@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::next::preset::Theme;
-use crate::next::query::{ButtonQuery, Contrast, ListQuery, StyleQuery};
+use crate::next::query::{ButtonQuery, Contrast, ListQuery, MotionPreference, StyleQuery};
 use crate::next::reader::{OsSelectionColors, SystemOverrides};
 use crate::next::style::PartStated;
 
@@ -814,7 +814,7 @@ fn distinct_decorations() -> (SchemeColors, ColorRoles, Typography, LayoutMetric
     c.decoration_hover = DECORATION_HOVER;
     c.accent = DECORATION_FOCUS;
     let colors = roles(&c, None, None);
-    let typography = typography(&colors, None);
+    let typography = typography(&colors, None, ThemeContext::default().text_scale);
     let layout = Theme::preset(Preset::KdeBreeze)
         .resolve(&ThemeContext::light())
         .layout;
@@ -1274,5 +1274,110 @@ fn right_to_left_is_left_to_right_mirrored() {
         rest.status_bar = rtl.status_bar.clone();
         rest.scrollbar = rtl.scrollbar.clone();
         assert_eq!(rest, rtl, "{scheme:?}");
+    }
+}
+
+/// The text scale of the test below.
+const TEXT_SCALE_TWO: f32 = 2.0;
+
+/// The text scale is linear on KDE (spec §6, resolution step 2): at 2.0 every
+/// font size is the size converted at the font DPI times 2, then rounded as
+/// Qt rounds it, so the 10 pt body is 27 px (26.67 rounded), not twice the
+/// rounded 13 px; every line height is twice the one at 1.0; each
+/// `defined_size` stays the unscaled size; nothing but the text changes.
+#[test]
+fn at_text_scale_2_every_font_size_is_doubled_before_qt_s_rounding() -> TestResult {
+    use crate::next::window::WindowState;
+
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let base = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let double = Theme::preset(Preset::KdeBreeze).resolve(&ctx.with_text_scale(TEXT_SCALE_TWO));
+        assert_eq!(base.typography.body.size_px, 13.0, "{scheme:?}");
+        assert_eq!(double.typography.body.size_px, 27.0, "{scheme:?}");
+        let slots = |t: &ResolvedTheme| -> Result<Vec<TextStyle>, String> {
+            let entry = |slot: &Option<TextStyle>, name: &str| {
+                slot.clone().ok_or_else(|| format!("no {name}"))
+            };
+            Ok(vec![
+                t.typography.body.clone(),
+                t.typography.monospace.clone(),
+                entry(&t.typography.title1, "title1")?,
+                entry(&t.typography.headline, "headline")?,
+                entry(&t.typography.caption, "caption")?,
+                t.button.label(ButtonQuery::new(WidgetState::NONE)),
+                t.menu.item_label(WidgetState::NONE),
+                t.window.title(WindowState::default()),
+            ])
+        };
+        for (one, two) in slots(&base)?.into_iter().zip(slots(&double)?) {
+            let size = one.defined_size.ok_or("no defined size")?;
+            assert_eq!(two.defined_size, Some(size), "{scheme:?}");
+            assert_eq!(
+                two.size_px,
+                qt_whole_px(size.to_logical_px(FONT_DPI) * TEXT_SCALE_TWO),
+                "{scheme:?} {size:?}"
+            );
+            assert_eq!(
+                two.line_height,
+                one.line_height * TEXT_SCALE_TWO,
+                "{scheme:?} {size:?}"
+            );
+        }
+        let rest = ButtonQuery::new(WidgetState::NONE);
+        assert_eq!(
+            double.button.body(rest),
+            base.button.body(rest),
+            "{scheme:?}"
+        );
+        let row = ListQuery::new(WidgetState::NONE);
+        assert_eq!(double.list.row(row), base.list.row(row), "{scheme:?}");
+        assert_eq!(double.layout, base.layout, "{scheme:?}");
+        assert_eq!(double.icons, base.icons, "{scheme:?}");
+    }
+    Ok(())
+}
+
+/// Motion: `MotionPreference::None`, or the system's animation scale
+/// (KDE's `AnimationDurationFactor`) at 0, sets the dialog's entrance to
+/// `DialogEntranceStyle::None` (spec §6, resolution step 2); Kirigami's
+/// `FadeRise` stays under full motion, under a scale above 0 and under
+/// `MotionPreference::Reduced`, for which KDE states no policy. The preset
+/// states no motion token, under any motion.
+#[test]
+fn no_motion_or_an_animation_scale_of_0_removes_the_dialog_s_entrance() {
+    let resolve = |motion: MotionPreference, animation_scale: Option<f32>| {
+        Theme::preset(Preset::KdeBreeze)
+            .with_system_overrides(SystemOverrides {
+                animation_scale,
+                ..SystemOverrides::default()
+            })
+            .resolve(&ThemeContext::light().with_motion(motion))
+    };
+    for (motion, scale) in [
+        (MotionPreference::None, None),
+        (MotionPreference::Full, Some(0.0)),
+        (MotionPreference::Reduced, Some(0.0)),
+    ] {
+        let theme = resolve(motion, scale);
+        assert_eq!(
+            theme.dialog.entrance,
+            Some(DialogEntranceStyle::None),
+            "{motion:?} {scale:?}"
+        );
+        assert_eq!(theme.motion_tokens, MotionTokens::default(), "{motion:?}");
+    }
+    for (motion, scale) in [
+        (MotionPreference::Full, None),
+        (MotionPreference::Full, Some(0.5)),
+        (MotionPreference::Reduced, None),
+    ] {
+        let theme = resolve(motion, scale);
+        assert_eq!(
+            theme.dialog.entrance,
+            Some(DialogEntranceStyle::FadeRise),
+            "{motion:?} {scale:?}"
+        );
+        assert_eq!(theme.motion_tokens, MotionTokens::default(), "{motion:?}");
     }
 }

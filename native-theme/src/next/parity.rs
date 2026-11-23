@@ -1452,8 +1452,9 @@ fn old_kde_reader(
 
 /// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
 /// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
-/// `SystemOverrides` and resolved for the file's context, over the table of homes, the snapshot's context
-/// compared. Zero mismatches over every row of [`PORTED_GROUPS`], the four `snapshot.context.*` rows
+/// `SystemOverrides` and resolved for the file's context (its motion level and text scale at their
+/// defaults, its animation scale unset, as 0.7.2 applies neither), over the table of homes, the
+/// snapshot's context compared. Zero mismatches over every row of [`PORTED_GROUPS`], the four `snapshot.context.*` rows
 /// compared and equal, the one skip for its named reason; the other rows counted and reported, the two
 /// counts making the whole table; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
@@ -1494,10 +1495,20 @@ fn reader_parity_on(
     let mut ini = crate::kde::create_kde_parser();
     crate::kde::read_kconfig(&mut ini, content);
     let snapshot = snapshot_from_kdeglobals(&ini, None, None);
-    let theme =
-        NextTheme::preset(Preset::KdeBreeze).with_system_overrides(snapshot.overrides.clone());
-    let new = theme.resolve(&snapshot.context);
-    let with_context = |context: RowContext| theme.resolve(&context.applied_to(&snapshot.context));
+    // 0.7.2 applies neither the motion setting nor the text scale to the theme: the theme is
+    // resolved with both at their defaults and the animation scale unset, and the settings are
+    // compared through their own rows (spec §8, "The KDE part", *Context*).
+    let mut overrides = snapshot.overrides.clone();
+    overrides.animation_scale = None;
+    let defaults = crate::next::query::ThemeContext::default();
+    let context = crate::next::query::ThemeContext {
+        motion: defaults.motion,
+        text_scale: defaults.text_scale,
+        ..snapshot.context.clone()
+    };
+    let theme = NextTheme::preset(Preset::KdeBreeze).with_system_overrides(overrides);
+    let new = theme.resolve(&context);
+    let with_context = |row: RowContext| theme.resolve(&row.applied_to(&context));
     let extra = compare::Extra {
         unresolved: Some(&unresolved),
         with_context: Some(&with_context),
