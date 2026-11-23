@@ -1,7 +1,8 @@
 //! native-theme-iced — comprehensive widget showcase and designer reference.
 //!
-//! Demonstrates every styled iced widget with live theme switching across all
-//! bundled `native-theme` presets (system / light / dark), every `native-theme`
+//! Demonstrates every styled iced widget with live theme switching across the
+//! platform presets of `native-theme`'s 0.8.0 model, with any bundled palette
+//! laid over one (system / light / dark), every `native-theme`
 //! metric helper, an icon gallery with icon-theme switching and source
 //! tracking, and a theme map showing all palette colors. The chrome is the
 //! gpui and egui showcases', element by element, drawn from the theme data:
@@ -32,8 +33,11 @@
 //!
 //! # What to look for
 //!
-//! - Sidebar switches theme presets, color modes, and icon sets at runtime —
-//!   no restart needed. Watch how every widget re-themes together.
+//! - Sidebar switches theme presets, palettes, color modes, and icon sets at
+//!   runtime — no restart needed. Watch how every widget re-themes together.
+//!   The iced theme is built from the 0.8.0 model; the pages not yet moved
+//!   to it read the 0.7.2 theme of the same choice, the preset alone under a
+//!   palette (`State::install_in_mode`).
 //! - Hover the Widget Info inspector to see which `ResolvedTheme` fields
 //!   drive the widget currently under the mouse.
 //! - The Theme Map tab exposes iced's 6-field `Palette` plus `Extended`
@@ -68,6 +72,10 @@ use native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSet, IconSetChoice, LucideLoader,
     MaterialLoader, SegoeFluentLoader, SfSymbolsLoader, TransformAnimation, default_icon_choice,
     list_freedesktop_themes, load_icon_indicator,
+};
+use native_theme::next::{
+    Contrast, Direction, MotionPreference, Palette, Preset, Scheme, TextStated, TextStyle,
+    ThemeContext, Typography,
 };
 use native_theme::theme::{
     ArrowSide, FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedListTheme, ResolvedMenuTheme,
@@ -1095,11 +1103,13 @@ fn held_menu(name: &str) -> Result<usize, String> {
         .ok_or_else(|| format!("--open-menu {name}: no menu has that title"))
 }
 
-/// The theme `--theme` names (`cli::theme_key`, whose errors list what the
-/// theme picker offers): `default`, the OS theme, labelled `default_label`,
-/// or a preset of this platform.
+/// The theme `--theme` names (`cli::next_theme_key`, whose errors list what
+/// the theme picker offers): `default`, the OS theme, labelled
+/// `default_label`, or a platform preset of this platform, which the 0.8.0
+/// model has a preset of; a community preset of the 0.7.2 model is refused,
+/// naming the palette its colours are now.
 fn theme_choice(name: &str, default_label: &str) -> Result<ThemeChoice, String> {
-    cli::theme_key(name).map(|key| match key {
+    cli::next_theme_key(name).map(|key| match key {
         ThemeKey::Default => ThemeChoice::OsTheme(default_label.to_string()),
         ThemeKey::Preset(key) => ThemeChoice::Preset(key),
     })
@@ -1312,15 +1322,172 @@ fn preset_display_name(key: &str) -> &str {
 
 /// The theme picker's rows (`rows::preset_rows`): the OS theme, labelled with
 /// `default_preset`, the platform preset it builds on, then this platform's
-/// presets.
+/// presets the 0.8.0 model has a [`Preset`] of, as the gpui showcase's preset
+/// switch offers them (`support::preset_items`). The community presets of
+/// the 0.7.2 model are not offered: their colours are palettes in the 0.8.0
+/// model, chosen in the Palette row ([`palette_choices`]) over any preset.
+/// The Theme row and the command palette both list these.
 fn theme_choices(default_preset: &str) -> Vec<ThemeChoice> {
     rows::preset_rows(default_preset)
         .into_iter()
+        .filter(|row| row.key == "default" || Preset::from_name(&row.key).is_some())
         .map(|row| match row.key.as_str() {
             "default" => ThemeChoice::OsTheme(row.display_name),
             _ => ThemeChoice::Preset(row.key),
         })
         .collect()
+}
+
+/// The Palette row's rows: `none` ([`cli::NO_PALETTE`]), the preset's own
+/// colours, then every bundled palette (`Palette::BUNDLED_NAMES`), by the
+/// name `--palette` takes.
+fn palette_choices() -> Vec<&'static str> {
+    std::iter::once(cli::NO_PALETTE)
+        .chain(Palette::BUNDLED_NAMES.iter().copied())
+        .collect()
+}
+
+/// The palette of the Palette row's row `row`, as `--palette` takes it
+/// (`cli::palette_key`): `None` for [`cli::NO_PALETTE`] and for a name
+/// `Palette::BUNDLED_NAMES` does not hold.
+fn palette_of_row(row: &str) -> Option<&'static str> {
+    cli::palette_key(row).ok().flatten()
+}
+
+/// What the Palette row's tooltip says of the pages still on the 0.7.2
+/// model, which has no palettes.
+const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): the iced theme -- its \
+     palette and the extended palette every iced widget falls back on -- is built from the 0.8.0 \
+     theme with the palette. The pages and the chrome still read the 0.7.2 preset, which has no \
+     palettes, until their page group moves to the 0.8.0 model: their widget styles, fonts, \
+     sizes and padding show the preset alone, in the palette's scheme.";
+
+/// Why the installed 0.8.0 theme is at a lower contrast level than the
+/// context asks for (docs/v0.8.0-spec.md §6, resolution step 1): `asked`,
+/// `used`, and whether the palette laid over the theme holds `High` back,
+/// which the theme without it reaches in the palette's scheme. Otherwise the
+/// theme defines the level asked for in none of its sources, its preset's
+/// levels or the system's settings, for the scheme resolved.
+#[derive(Debug, Clone, PartialEq)]
+struct ContrastHeld {
+    asked: Contrast,
+    used: Contrast,
+    by_palette: bool,
+}
+
+impl ContrastHeld {
+    /// The sentence the Preferences dialog's High contrast row says it in,
+    /// as the gpui showcase's (`support::ContrastHeld::text`).
+    fn sentence(&self) -> String {
+        let Self {
+            asked,
+            used,
+            by_palette,
+        } = self;
+        let why = if *by_palette {
+            "the palette laid over the theme holds High back: a palette stays where High is not \
+             taken, and the theme without it has High in the palette's scheme"
+        } else {
+            "the theme defines no such level for the scheme it is resolved in -- neither its \
+             preset nor the system's settings state one -- so the nearest level below it is used"
+        };
+        format!(
+            "the theme is resolved at {used:?} contrast, not the {asked:?} asked for: {why} \
+             (docs/v0.8.0-spec.md §6, resolution step 1)"
+        )
+    }
+}
+
+/// The context a 0.8.0 theme is installed in (spec §6): `base`, the
+/// desktop's as the 0.8.0 model read it -- where the read failed, the
+/// default context every preset alone is resolved in
+/// (`next::Theme::preset`) -- in the mode `is_dark` names, for an active
+/// window, left to right as the showcase lays itself out, with `prefs` as
+/// its text scale, motion, contrast and reduced transparency: the
+/// accessibility preferences the 0.7.2 theme of the same choice is shown
+/// with, the OS's with the user's over them. A preference set keeps the
+/// desktop's own level where that is one of its kind (a contrast
+/// `Increased`, a motion `None`), as the gpui showcase's
+/// (`Showcase::next_context`).
+fn next_context(
+    base: Option<&ThemeContext>,
+    is_dark: bool,
+    prefs: &AccessibilityPreferences,
+) -> ThemeContext {
+    let mut ctx = base.cloned().unwrap_or_default();
+    ctx.scheme = if is_dark { Scheme::Dark } else { Scheme::Light };
+    ctx.text_scale = prefs.text_scaling_factor;
+    ctx.motion = match (prefs.reduce_motion, ctx.motion) {
+        (false, _) => MotionPreference::Full,
+        (true, MotionPreference::Full) => MotionPreference::Reduced,
+        (true, reduced) => reduced,
+    };
+    ctx.contrast = match (prefs.high_contrast, ctx.contrast) {
+        (false, _) => Contrast::Normal,
+        (true, Contrast::Normal) => Contrast::High,
+        (true, raised) => raised,
+    };
+    ctx.reduced_transparency = prefs.reduce_transparency;
+    ctx.direction = Direction::Ltr;
+    ctx.window_active = true;
+    ctx
+}
+
+/// A 0.8.0 theme as the showcase installs it: the theme of the choice with
+/// the palette laid over it, unresolved, so a change of the preferences
+/// resolves it again ([`State::apply_preferences`]); it resolved in the
+/// context of the mode shown and the preferences ([`next_context`]), and for
+/// an inactive window; the iced theme built from it
+/// (`native_theme_iced::next::to_theme`); and why its contrast is lower than
+/// asked, where it is.
+struct NextInstall {
+    theme: native_theme::next::Theme,
+    resolved: native_theme::next::ResolvedTheme,
+    inactive: native_theme::next::ResolvedTheme,
+    iced: Theme,
+    contrast_held: Option<ContrastHeld>,
+}
+
+impl NextInstall {
+    /// `theme` resolved in `ctx`, and the iced theme built from it; `alone`,
+    /// the same theme without the palette, where a palette is laid over it,
+    /// tells whether the palette holds `High` back. The error to report
+    /// where the connector cannot build an iced theme from it.
+    fn new(
+        theme: native_theme::next::Theme,
+        alone: Option<&native_theme::next::Theme>,
+        ctx: &ThemeContext,
+    ) -> Result<Self, String> {
+        let resolved = theme.resolve(ctx);
+        let mut inactive_ctx = ctx.clone();
+        inactive_ctx.window_active = false;
+        let inactive = theme.resolve(&inactive_ctx);
+        let iced = native_theme_iced::next::to_theme(&resolved).map_err(|e| {
+            format!(
+                "Theme '{}' cannot be installed: it states no {}",
+                resolved.name,
+                e.home()
+            )
+        })?;
+        let (asked, used) = (ctx.contrast, resolved.context.contrast);
+        let contrast_held = (used != asked).then(|| ContrastHeld {
+            asked,
+            used,
+            by_palette: asked == Contrast::High
+                && alone.is_some_and(|alone| {
+                    let mut in_scheme = ctx.clone();
+                    in_scheme.scheme = resolved.context.scheme;
+                    alone.resolve(&in_scheme).context.contrast == Contrast::High
+                }),
+        });
+        Ok(Self {
+            theme,
+            resolved,
+            inactive,
+            iced,
+            contrast_held,
+        })
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1614,9 +1781,39 @@ impl PreferenceOverrides {
 struct State {
     // Theme
     current_choice: ThemeChoice,
+    /// The iced theme installed: built from the 0.8.0 theme of the choice
+    /// (`next_resolved`, `native_theme_iced::next::to_theme`), the palette
+    /// chosen laid over it.
     current_theme: Theme,
     color_mode: AppColorMode,
+    /// The mode shown: the scheme the 0.8.0 theme resolved to, which a
+    /// palette locks to its own.
     is_dark: bool,
+    /// The palette laid over the theme chosen (`Palette::BUNDLED_NAMES`),
+    /// by its name; `None` for the preset's own colours.
+    theme_palette: Option<&'static str>,
+    /// The 0.8.0 theme of the choice with the palette laid over it,
+    /// unresolved: resolved again at every change of the preferences.
+    next_theme: native_theme::next::Theme,
+    /// `next_theme` resolved in the context of the mode shown and the
+    /// preferences ([`next_context`]): what the iced theme is built from,
+    /// and what a page on the 0.8.0 model reads ([`State::next_shown`]).
+    next_resolved: native_theme::next::ResolvedTheme,
+    /// `next_theme` resolved for an inactive window, beside it.
+    next_inactive: native_theme::next::ResolvedTheme,
+    /// Why `next_resolved` is at a lower contrast than the preferences ask
+    /// for, where it is ([`ContrastHeld`]).
+    contrast_held: Option<ContrastHeld>,
+    /// The desktop's settings as the 0.8.0 model reads them
+    /// (`next::Theme::from_system`, through `read_next_system`), read where
+    /// none is kept and kept until Reload System Theme reads them again;
+    /// the error to report where the read failed. No preset stands in for
+    /// them.
+    next_system: Option<Result<native_theme::next::Theme, String>>,
+    /// The 0.7.2 theme of the same choice, which the pages not yet on the
+    /// 0.8.0 model read: the preset alone under a palette, which the 0.7.2
+    /// model has no equivalent of, in the scheme the 0.8.0 theme resolved
+    /// to. Built with the 0.8.0 one, in [`State::install_in_mode`].
     current_resolved: native_theme::theme::ResolvedTheme,
     /// `current_resolved` as a listed element's Widget Info reads its values
     /// ([`theme_json`]), serialised once per install. Written only with
@@ -1869,6 +2066,10 @@ struct State {
     /// read kept (`system`): `SystemTheme::from_system`, which a test
     /// replaces with a read that fails, changes or counts.
     read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
+    /// Reads the desktop's settings as the 0.8.0 model reads them, where
+    /// none are kept (`next_system`): `next::Theme::from_system`, which a
+    /// test replaces with a read that fails or is fixed.
+    read_next_system: fn() -> native_theme::next::Result<native_theme::next::Theme>,
     /// Detects the system icon theme the Icons page names:
     /// `system_icon_theme`, which a test replaces with a detection that
     /// fails.
@@ -1890,9 +2091,20 @@ impl State {
     /// The showcase at startup, with the OS theme `read_system_theme` reads
     /// installed in the mode the read reports (the colour mode is System),
     /// or the platform's preset ([`platform_fallback_preset`]) where that
-    /// read fails.
+    /// read fails, or where the 0.8.0 model's read of the desktop
+    /// (`next::Theme::from_system`) fails: both models are installed
+    /// through [`State::install_in_mode`], as every later switch is.
     fn starting_with(
         read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
+    ) -> Self {
+        Self::starting_with_reads(read_system_theme, native_theme::next::Theme::from_system)
+    }
+
+    /// [`starting_with`](Self::starting_with), the 0.8.0 model reading the
+    /// desktop through `read_next_system`.
+    fn starting_with_reads(
+        read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
+        read_next_system: fn() -> native_theme::next::Result<native_theme::next::Theme>,
     ) -> Self {
         let color_mode = AppColorMode::System;
         let (
@@ -2016,12 +2228,39 @@ impl State {
         #[cfg(feature = "watch")]
         let watch_os_theme = !cfg!(test) && CLI_ARGS.get().is_none_or(CliArgs::follows_os);
 
+        // The platform's preset on the 0.8.0 model, so the state is whole
+        // before the install below replaces it with the 0.8.0 theme of the
+        // choice the showcase starts with.
+        let fallback_key = platform_fallback_preset();
+        let start_next = match Preset::from_name(fallback_key)
+            .ok_or_else(|| format!("the 0.8.0 model has no preset '{fallback_key}'"))
+            .and_then(|preset| {
+                NextInstall::new(
+                    native_theme::next::Theme::preset(preset),
+                    None,
+                    &next_context(None, is_dark, &os_accessibility),
+                )
+            }) {
+            Ok(next) => next,
+            Err(e) => {
+                eprintln!("Fatal: the {fallback_key} fallback failed ({e}). Cannot start.");
+                std::process::exit(1);
+            }
+        };
+        let start_choice = fallback_choice
+            .unwrap_or_else(|| ThemeChoice::OsTheme(rows::default_label(&system_preset)));
+
         let mut state = Self {
-            current_choice: fallback_choice
-                .unwrap_or_else(|| ThemeChoice::OsTheme(rows::default_label(&system_preset))),
+            current_choice: start_choice.clone(),
             current_theme: theme,
             color_mode,
             is_dark,
+            theme_palette: None,
+            next_theme: start_next.theme,
+            next_resolved: start_next.resolved,
+            next_inactive: start_next.inactive,
+            contrast_held: start_next.contrast_held,
+            next_system: None,
             theme_json: theme_json(&resolved),
             current_resolved: resolved,
             layout,
@@ -2132,12 +2371,34 @@ impl State {
             held_menu: None,
             #[cfg(all(target_os = "macos", not(test)))]
             system_menu: None,
-            error_message: initial_error,
+            error_message: None,
             read_system_theme,
+            read_next_system,
             detect_icon_theme: native_theme::detect::system_icon_theme,
             #[cfg(feature = "watch")]
             watch_os_theme,
         };
+
+        // Both models of the choice, through the one install path; where
+        // the 0.8.0 model cannot install the desktop's own, the platform's
+        // preset, as where the 0.7.2 read failed.
+        if state.install_in_mode(start_choice, color_mode) {
+            state.error_message = initial_error;
+        } else {
+            let failed = state.error_message.take();
+            if !state.install_in_mode(ThemeChoice::Preset(fallback_key.to_string()), color_mode) {
+                eprintln!(
+                    "Fatal: {} and the {fallback_key} fallback also failed ({}). Cannot start.",
+                    failed.as_deref().unwrap_or("the OS theme failed"),
+                    state
+                        .error_message
+                        .as_deref()
+                        .unwrap_or("no error reported"),
+                );
+                std::process::exit(1);
+            }
+            state.error_message = failed.map(|e| format!("{e}. Using {fallback_key} fallback."));
+        }
 
         if let Some(cli) = CLI_ARGS.get() {
             apply_cli_args(&mut state, cli);
@@ -2148,16 +2409,19 @@ impl State {
 }
 
 /// Put the showcase into the state the command line asks for: its colour
-/// mode, theme, tab and icons.
+/// mode, theme, palette, tab and icons.
 ///
-/// Each flag takes exactly what the matching picker offers. A value the
-/// showcase cannot honour is reported on stderr and ignored: the setting
-/// stays what it would have been without the flag. `--variant` installs
-/// the theme in the mode it names: the one `--theme` names, or, where
-/// `--theme` is absent or rejected here, the one installed. A `--theme`
-/// accepted here that then fails to load changes neither the theme nor the
-/// mode, `--variant`'s included: the install is all or nothing
-/// (`State::install_in_mode`).
+/// Each flag takes exactly what the matching picker offers: `--theme`
+/// `default` or a platform preset of this platform (`cli::next_theme_key`),
+/// `--palette` `none` or a bundled palette (`cli::palette_key`), laid over
+/// the theme. A value the showcase cannot honour is reported on stderr and
+/// ignored: the setting stays what it would have been without the flag.
+/// `--variant` installs the theme in the mode it names: the one `--theme`
+/// names, or, where `--theme` is absent or rejected here, the one
+/// installed; a palette locks the mode to its own scheme. A `--theme` or
+/// `--palette` accepted here that then fails to load changes neither the
+/// theme, the palette nor the mode, `--variant`'s included: the install is
+/// all or nothing (`State::install_in_mode`).
 fn apply_cli_args(state: &mut State, cli: &CliArgs) {
     let mode = cli
         .variant
@@ -2167,10 +2431,22 @@ fn apply_cli_args(state: &mut State, cli: &CliArgs) {
         .theme
         .as_deref()
         .and_then(|name| reported(theme_choice(name, &state.default_label())));
-    if mode.is_some() || choice.is_some() {
+    // `--palette` lays its palette over the theme installed with the other
+    // two flags, as a choice in the Palette row does, which then shows it.
+    let palette = cli
+        .palette
+        .as_deref()
+        .and_then(|name| reported(cli::palette_key(name)));
+    if mode.is_some() || choice.is_some() || palette.is_some() {
         let choice = choice.unwrap_or_else(|| state.current_choice.clone());
         let mode = mode.unwrap_or(state.color_mode);
-        state.install_in_mode(choice, mode);
+        let kept = state.theme_palette;
+        if let Some(palette) = palette {
+            state.theme_palette = palette;
+        }
+        if !state.install_in_mode(choice, mode) {
+            state.theme_palette = kept;
+        }
     }
 
     // Override tab
@@ -2241,16 +2517,24 @@ impl State {
         }
     }
 
-    /// Install `choice` in `mode`: every theme and colour-mode switch
-    /// installs through here. The pickers then show `choice` and `mode`.
+    /// Install `choice` in `mode`, with the palette chosen laid over it:
+    /// every theme, palette and colour-mode switch installs through here,
+    /// the one place that builds both models from the theme settings'
+    /// choice. The 0.8.0 theme is resolved in the context of the mode and
+    /// the preferences ([`State::next_install`]) and its iced theme
+    /// installed; the mode shown becomes the scheme it resolved to, the
+    /// palette's where one is chosen. The 0.7.2 theme of the same choice --
+    /// the preset alone under a palette -- is resolved in that scheme and
+    /// kept beside it for the pages not yet on the 0.8.0 model
+    /// ([`State::load_theme`]). The pickers then show `choice` and `mode`.
     ///
-    /// A theme that fails to load leaves the installed one on screen, and
-    /// the pickers showing it and the mode it is drawn in, with the error in
-    /// the banner; false is returned.
+    /// A theme that fails to load in either model leaves the installed one
+    /// on screen, and the pickers showing it and the mode it is drawn in,
+    /// with the error in the banner; false is returned.
     fn install_in_mode(&mut self, choice: ThemeChoice, mode: AppColorMode) -> bool {
         // The OS theme in System mode is drawn in the mode its read reports
         // (`SystemTheme::mode`); every other install in the mode named.
-        let is_dark = match (&choice, mode) {
+        let asked_dark = match (&choice, mode) {
             (ThemeChoice::OsTheme(_), AppColorMode::System) => match self.os_theme() {
                 Ok(system) => system.mode.is_dark(),
                 Err(error) => {
@@ -2260,6 +2544,15 @@ impl State {
             },
             _ => mode.is_dark(),
         };
+        let prefs = self.preferences();
+        let next = match self.next_install(&choice, asked_dark, &prefs) {
+            Ok(next) => next,
+            Err(error) => {
+                self.error_message = Some(error);
+                return false;
+            }
+        };
+        let is_dark = next.resolved.is_dark();
         let icon_theme = match self.load_theme(&choice, is_dark) {
             Ok(icon_theme) => icon_theme,
             Err(error) => {
@@ -2267,13 +2560,15 @@ impl State {
                 return false;
             }
         };
+        self.keep_next(next);
         self.current_choice = match choice {
             ThemeChoice::OsTheme(_) => ThemeChoice::OsTheme(self.default_label()),
             preset @ ThemeChoice::Preset(_) => preset,
         };
         self.color_mode = mode;
         self.is_dark = is_dark;
-        self.apply_preferences();
+        self.accessibility = prefs;
+        self.label_widths.clear();
 
         // Only a choice that follows the preset is re-derived; the user's
         // pick of an icon theme stays chosen across theme switches.
@@ -2325,6 +2620,8 @@ impl State {
         let failed = (self.detect_icon_theme)().is_err();
         native_theme::detect::invalidate_caches();
         self.icon_theme_redetected(failed);
+        // The 0.8.0 model reads the desktop again at the install below.
+        self.next_system = None;
         match (self.read_system_theme)() {
             Ok(system) => {
                 self.keep_os_theme(system);
@@ -2373,17 +2670,125 @@ impl State {
         self.apply_preferences();
     }
 
-    /// Apply the accessibility preferences: the ones the user set in the
-    /// Preferences dialog over the OS's, at every install and every change
-    /// in the dialog.
+    /// The accessibility preferences a theme is installed with: the ones the
+    /// user set in the Preferences dialog over the OS's.
+    fn preferences(&self) -> AccessibilityPreferences {
+        self.preference_overrides
+            .over(self.os_accessibility.clone())
+    }
+
+    /// Apply the accessibility preferences ([`State::preferences`]) at a
+    /// change in the dialog: the 0.8.0 theme is resolved again in the
+    /// context they give ([`next_context`]) and its iced theme installed,
+    /// and the 0.7.2 theme's pages read them. Where the connector cannot
+    /// build the iced theme of the new resolve, the error is in the banner
+    /// and the installed one stays.
     fn apply_preferences(&mut self) {
-        self.accessibility = self
-            .preference_overrides
-            .over(self.os_accessibility.clone());
+        let prefs = self.preferences();
+        match self.next_install(&self.current_choice.clone(), self.is_dark, &prefs) {
+            Ok(next) => self.keep_next(next),
+            Err(error) => self.error_message = Some(error),
+        }
+        self.accessibility = prefs;
         self.label_widths.clear();
     }
 
-    /// Load `choice` in the mode `is_dark` names into the theme fields.
+    /// Keep `next`, the 0.8.0 theme an install or a change of the
+    /// preferences built, and install its iced theme.
+    fn keep_next(&mut self, next: NextInstall) {
+        self.next_theme = next.theme;
+        self.next_resolved = next.resolved;
+        self.next_inactive = next.inactive;
+        self.contrast_held = next.contrast_held;
+        self.current_theme = next.iced;
+    }
+
+    /// The desktop's settings as the 0.8.0 model reads them
+    /// (`next::Theme::from_system`), read where no read is kept
+    /// (`State::next_system`); the error to report, as the 0.7.2 read's is
+    /// reported, where the read failed. The failure is kept as the settings
+    /// are, so a preset switch or a preference change does not read the
+    /// desktop again; Reload System Theme does.
+    fn next_system(&mut self) -> Result<&native_theme::next::Theme, String> {
+        let read = self.read_next_system;
+        self.next_system
+            .get_or_insert_with(|| read().map_err(|e| format!("Failed to load OS theme: {e}")))
+            .as_ref()
+            .map_err(String::clone)
+    }
+
+    /// The 0.8.0 theme of `choice` -- the desktop's own as the 0.8.0 model
+    /// read it ([`State::next_system`]), or a preset alone -- with the
+    /// palette chosen laid over it (`next::Theme::with_palette`, which locks
+    /// the scheme to the palette's), resolved in the context of the mode
+    /// `is_dark` names and `prefs` ([`next_context`], on the desktop's
+    /// context where it was read); the error to report where there is none.
+    fn next_install(
+        &mut self,
+        choice: &ThemeChoice,
+        is_dark: bool,
+        prefs: &AccessibilityPreferences,
+    ) -> Result<NextInstall, String> {
+        let alone = match choice {
+            ThemeChoice::OsTheme(_) => self.next_system()?.clone(),
+            ThemeChoice::Preset(name) => {
+                native_theme::next::Theme::preset(Preset::from_name(name).ok_or_else(|| {
+                    format!(
+                        "Failed to load preset '{name}': the 0.8.0 model has no preset of that name"
+                    )
+                })?)
+            }
+        };
+        let base = self
+            .next_system()
+            .ok()
+            .map(|system| system.context().clone());
+        let ctx = next_context(base.as_ref(), is_dark, prefs);
+        match self.theme_palette {
+            None => NextInstall::new(alone, None, &ctx),
+            Some(name) => {
+                let palette = Palette::from_name(name).ok_or_else(|| {
+                    format!("Failed to load palette '{name}': no bundled palette")
+                })?;
+                NextInstall::new(alone.clone().with_palette(palette), Some(&alone), &ctx)
+            }
+        }
+    }
+
+    /// Lay `palette` over the theme chosen (`None`: its own colours) and
+    /// install it again; where it does not install, the palette installed
+    /// stays, with the error in the banner.
+    fn choose_palette(&mut self, palette: Option<&'static str>) -> bool {
+        let kept = std::mem::replace(&mut self.theme_palette, palette);
+        let installed = self.install_in_mode(self.current_choice.clone(), self.color_mode);
+        if !installed {
+            self.theme_palette = kept;
+        }
+        installed
+    }
+
+    /// The installed 0.8.0 theme a page on the 0.8.0 model reads: resolved
+    /// for an inactive window while the window is not active
+    /// ([`State::window_active`]), else for an active one.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "the page groups call it as they move to the 0.8.0 model"
+        )
+    )]
+    fn next_shown(&self) -> &native_theme::next::ResolvedTheme {
+        if self.window_active {
+            &self.next_resolved
+        } else {
+            &self.next_inactive
+        }
+    }
+
+    /// Load the 0.7.2 theme of `choice` in the mode `is_dark` names into the
+    /// theme fields the pages not yet on the 0.8.0 model read
+    /// (`current_resolved`, `layout`, the icon set and theme); the iced
+    /// theme installed is the 0.8.0 one's ([`State::keep_next`]).
     ///
     /// `Ok` holds the icon theme the theme states (`None` where its TOML
     /// states none); `Err` the error, with the theme fields untouched. The
@@ -2410,14 +2815,12 @@ impl State {
                 // Each variant's own icon theme: KDE names one per variant.
                 let icon_theme = system.icon_theme_for(mode).map(str::to_owned);
                 let resolved = system.pick(mode).clone();
-                let theme = native_theme_iced::to_theme_in(&resolved, &system.name, mode);
                 self.current_icon_set = icon_set;
                 self.layout = layout;
                 self.current_icon_theme = icon_theme;
                 self.theme_json = theme_json(&resolved);
                 self.current_resolved = resolved;
                 self.label_widths.clear();
-                self.current_theme = theme;
                 self.error_message = None;
                 Ok(self.current_icon_theme.clone())
             }
@@ -2438,8 +2841,6 @@ impl State {
                 self.current_resolved = r.variant;
                 self.label_widths.clear();
                 self.layout = nt.layout.clone();
-                self.current_theme =
-                    native_theme_iced::to_theme_in(&self.current_resolved, &nt.name, r.mode);
                 self.error_message = None;
                 Ok(icon_theme)
             }
@@ -2589,6 +2990,8 @@ enum Message {
 
     // Theme
     ThemeSelected(ThemeChoice),
+    /// A row of the Palette row's drop-down ([`palette_choices`]).
+    ThemePaletteSelected(&'static str),
     ColorModeSelected(AppColorMode),
 
     // Widget Info hover
@@ -3015,6 +3418,9 @@ fn update_inner(state: &mut State, message: Message) {
         Message::ThemeSelected(choice) => {
             let mode = state.color_mode;
             state.install_in_mode(choice, mode);
+        }
+        Message::ThemePaletteSelected(row) => {
+            state.choose_palette(palette_of_row(row));
         }
         Message::ColorModeSelected(mode) => {
             let choice = state.current_choice.clone();
@@ -6000,6 +6406,46 @@ fn setting<'a>(
     .into()
 }
 
+/// The Palette row of the theme settings, between Theme and Mode as the gpui
+/// showcase's: its label, set as [`setting`] sets one, over a
+/// [`setting_picker`] of [`palette_choices`], `none` where no palette is
+/// laid over the theme. Neither is an element of the list, which has no
+/// palette row. The label carries the tooltip saying what the pages still
+/// on the 0.7.2 model show under a palette ([`PALETTE_TOOLTIP`]) and, where
+/// High contrast resolved the theme without the palette chosen (spec §6,
+/// resolution step 1), that too: on the label, not the drop-down, so it
+/// never covers the drop-down's open menu ([`icon_theme_picker`]).
+fn palette_setting(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let mut tip = PALETTE_TOOLTIP.to_string();
+    if let Some(palette) = state
+        .theme_palette
+        .filter(|_| state.next_resolved.context.contrast == Contrast::High)
+    {
+        tip.push_str(&format!(
+            " High contrast is on: the theme is resolved at High without the palette {palette}, \
+             which a resolve for High does not take (docs/v0.8.0-spec.md §6, resolution step 1)."
+        ));
+    }
+    let label = showcase_tooltip(
+        state,
+        text("Palette").themed(&resolved.sidebar.font, resolved, &state.accessibility),
+        text(tip).themed(&resolved.tooltip.font, resolved, &state.accessibility),
+        tooltip::Position::Bottom,
+        true,
+    );
+    let picker = setting_picker(
+        state,
+        palette_choices(),
+        Some(state.theme_palette.unwrap_or(cli::NO_PALETTE)),
+        Message::ThemePaletteSelected,
+        None,
+    );
+    column![label, picker]
+        .spacing(settings_gap(&state.layout))
+        .into()
+}
+
 /// The gap between the theme settings' rows, and between each row's label
 /// and its control: `layout.widget_gap`, or [`THEME_SETTINGS_GAP`] where that
 /// is unstated, as the gpui showcase's settings.
@@ -6288,6 +6734,7 @@ fn side_panel(state: &State) -> Element<'_, Message> {
             "Theme",
             probe(probes::THEME, Fill, theme_picker(state)),
         ),
+        palette_setting(state),
         setting(
             state,
             (
@@ -9788,13 +10235,26 @@ fn command_palette(state: &State) -> Element<'_, Message> {
     .into()
 }
 
+/// What the Preferences dialog's High contrast row says: the switch shows
+/// the preference asked for, and the 0.8.0 theme, which the iced theme is
+/// built from, is resolved at High contrast where it defines that level;
+/// where it is resolved at a lower one, why ([`ContrastHeld::sentence`]).
+fn high_contrast_text(state: &State) -> String {
+    let asked = "high_contrast: the 0.8.0 theme, which iced's colours are built from, is resolved \
+                 at High contrast where its preset or the desktop defines that level";
+    match &state.contrast_held {
+        Some(held) => format!("{asked}; {}", held.sentence()),
+        None => asked.to_string(),
+    }
+}
+
 /// One row of the Preferences dialog: `title` in the dialog's body font and
 /// `description` in `text_scale.caption` and `defaults.muted_color` on the
 /// left, `control` on the right.
 fn preference<'a>(
     state: &'a State,
     title: &'static str,
-    description: &'static str,
+    description: impl text::IntoFragment<'a>,
     control: Element<'a, Message>,
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
@@ -9863,13 +10323,13 @@ fn preferences(state: &State) -> Element<'_, Message> {
         preference(
             state,
             "High contrast",
-            "high_contrast: stored with the theme, which the connector builds no differently for it",
+            high_contrast_text(state),
             switch(a11y.high_contrast, Message::HighContrastToggled),
         ),
         preference(
             state,
             "Reduce transparency",
-            "reduce_transparency: stored with the theme; no dialog here draws a backdrop to leave out",
+            "reduce_transparency: the 0.8.0 theme is resolved with it; no dialog here draws a backdrop to leave out",
             switch(a11y.reduce_transparency, Message::ReduceTransparencyToggled),
         ),
     ]
@@ -17775,6 +18235,31 @@ trait Typeset {
         resolved: &ResolvedTheme,
         a11y: &AccessibilityPreferences,
     ) -> Self;
+    /// `themed` on the 0.8.0 model: `style`, one of the 0.8.0 theme's text
+    /// styles (a `typography` role's, [`next_section_title`],
+    /// [`next_page_title`], or a widget's label), at its size as the theme
+    /// resolved it, the context's text scale already applied, on its line
+    /// box ([`next_line_box`]), in its font ([`next_font_from_database`])
+    /// where it gives one iced can draw, else in iced's own (spec §10,
+    /// rule 0).
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "the page groups call it as they move to the 0.8.0 model"
+        )
+    )]
+    fn next_text(self, style: &TextStyle, typography: &Typography) -> Self;
+    /// `body` on the 0.8.0 model: [`next_text`](Typeset::next_text) in
+    /// `typography.body`.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "the page groups call it as they move to the 0.8.0 model"
+        )
+    )]
+    fn next_body(self, r: &native_theme::next::ResolvedTheme) -> Self;
 }
 
 impl Typeset for iced::widget::Text<'_> {
@@ -17810,6 +18295,108 @@ impl Typeset for iced::widget::Text<'_> {
         self.typeset(font, a11y)
             .line_height(native_theme_iced::line_height(resolved))
     }
+
+    fn next_text(self, style: &TextStyle, typography: &Typography) -> Self {
+        let text = self
+            .size(style.size_px)
+            .line_height(iced::Pixels(next_line_box(typography, style)));
+        match next_font_from_database(style, false) {
+            Some(drawn) => text.font(drawn.font),
+            None => text,
+        }
+    }
+
+    fn next_body(self, r: &native_theme::next::ResolvedTheme) -> Self {
+        self.next_text(&r.typography.body, &r.typography)
+    }
+}
+
+/// The line box of `style`, one of the 0.8.0 theme's text styles: its
+/// `line_height` where stated, else its size by
+/// `typography.line_height_multiplier` (spec §4, `Typography`; §5, "A text
+/// part's `line_height`"), as the gpui showcase's (`demo::line_box`).
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+fn next_line_box(typography: &Typography, style: &TextStyle) -> f32 {
+    if style.stated.contains(TextStated::LINE_HEIGHT) {
+        style.line_height
+    } else {
+        style.size_px * typography.line_height_multiplier
+    }
+}
+
+/// [`page_title`] on the 0.8.0 model: `typography.title1`, or the body
+/// style where the theme defines none (`native_theme_iced::next::text_scale`,
+/// the table of homes' `text_scale.dialog_title`).
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+fn next_page_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
+    native_theme_iced::next::text_scale(r).dialog_title
+}
+
+/// [`section_title`] on the 0.8.0 model: `typography.headline`, or the body
+/// style where the theme defines none (`native_theme_iced::next::text_scale`,
+/// the table of homes' `text_scale.section_heading`).
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+fn next_section_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
+    native_theme_iced::next::text_scale(r).section_heading
+}
+
+/// [`theme_mono_font`] on the 0.8.0 model: `typography.monospace` as iced
+/// can draw it ([`next_font_from_database`]); `None` where it gives no font
+/// iced can draw, and iced's own monospace stays.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+fn next_theme_mono_font(r: &native_theme::next::ResolvedTheme) -> Option<iced::Font> {
+    next_font_from_database(&r.typography.monospace, true).map(|drawn| drawn.font)
+}
+
+/// [`gpui_rems`] on the 0.8.0 model: `rems` of gpui-component's rem, which
+/// the gpui connector fills with the body size the 0.8.0 theme resolved,
+/// the text scale already applied (`typography.body.size_px`).
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+fn next_gpui_rems(rems: f32, r: &native_theme::next::ResolvedTheme) -> f32 {
+    r.typography.body.size_px * rems
+}
+
+/// [`arrow_handle`] on the 0.8.0 model: the drop-down's chevron at the size
+/// `native_theme_iced::next::pick_list_handle` reads.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+fn next_arrow_handle(r: &native_theme::next::ResolvedTheme) -> pick_list::Handle<iced::Font> {
+    native_theme_iced::next::pick_list_handle::<iced::Renderer>(r)
 }
 
 /// Gives a tooltip the theme's show delay.
@@ -18132,9 +18719,10 @@ struct Drawn {
 /// the showcase leaks none of its own.
 static FONTS: Mutex<BTreeMap<FontKey, Drawn>> = Mutex::new(BTreeMap::new());
 
-/// A theme font by its stated family, weight, style ([`style_key`]) and
-/// whether it is the monospace one.
-type FontKey = (Arc<str>, u16, u8, bool);
+/// A theme font by its stated family, weight, style ([`style_key`]), whether
+/// it is the monospace one, and the width class a 0.8.0 text style states
+/// (`None` where it states none, and for every 0.7.2 font, which has none).
+type FontKey = (Arc<str>, u16, u8, bool, Option<u16>);
 
 /// A `FontStyle` as a map key.
 fn style_key(style: FontStyle) -> u8 {
@@ -18158,13 +18746,69 @@ fn font_from_database(spec: &ResolvedFontSpec, mono: bool) -> Drawn {
         spec.weight,
         style_key(spec.style),
         mono,
+        None,
     );
+    drawn_from_database(
+        key,
+        || native_theme_iced::font(spec),
+        || native_theme::fonts::system_face(&spec.family, spec.weight, spec.style).is_some(),
+        mono,
+    )
+}
+
+/// [`font_from_database`] on the 0.8.0 model: how iced draws `style`, a
+/// text style of the 0.8.0 theme, from the font
+/// [`native_theme_iced::next::font`] builds for it (its family, weight and
+/// slant, at its width class where it states one). `None` where the style
+/// gives no font iced can draw (`next::font`'s `Unmapped`): the text then
+/// keeps iced's own font (spec §10, rule 0).
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+fn next_font_from_database(style: &TextStyle, mono: bool) -> Option<Drawn> {
+    let asked = native_theme_iced::next::font(style).ok()?;
+    let slant = match style.style {
+        native_theme::next::FontStyle::Normal => FontStyle::Normal,
+        native_theme::next::FontStyle::Italic => FontStyle::Italic,
+        native_theme::next::FontStyle::Oblique => FontStyle::Oblique,
+        _ => return None,
+    };
+    let key = (
+        style.family.clone(),
+        style.weight,
+        style_key(slant),
+        mono,
+        style
+            .stated
+            .contains(TextStated::WIDTH)
+            .then(|| style.width.value()),
+    );
+    Some(drawn_from_database(
+        key,
+        || asked,
+        || native_theme::fonts::system_face(&style.family, style.weight, slant).is_some(),
+        mono,
+    ))
+}
+
+/// How iced draws the font `asked` gives, kept under `key` ([`FONTS`]):
+/// `own` tells whether the system has a face of the stated family itself.
+fn drawn_from_database(
+    key: FontKey,
+    asked: impl FnOnce() -> iced::Font,
+    own: impl FnOnce() -> bool,
+    mono: bool,
+) -> Drawn {
     let mut fonts = FONTS.lock().unwrap_or_else(PoisonError::into_inner);
     if let Some(drawn) = fonts.get(&key) {
         return drawn.clone();
     }
-    let asked = native_theme_iced::font(spec);
-    let own = native_theme::fonts::system_face(&spec.family, spec.weight, spec.style).is_some();
+    let asked = asked();
+    let own = own();
     let drawn = {
         let mut system = iced::advanced::graphics::text::font_system()
             .write()
@@ -18601,8 +19245,9 @@ fn main() -> iced::Result {
 }
 
 /// Why the command line `cli` is refused before the window opens: a
-/// `--pointer` value that is not `X,Y`, `--palette`, which this showcase on
-/// the 0.7.2 model does not take (`cli::palette_support`), or `--screenshot`
+/// `--pointer` value that is not `X,Y`, `--palette` where the showcase
+/// does not take it (`cli::palette_support`, which this showcase, on the
+/// 0.8.0 model, passes), or `--screenshot`
 /// where the window cannot be captured with its frame
 /// (`cli::screenshot_support`: Linux, where iced's own capture is its
 /// content alone).
@@ -19634,37 +20279,42 @@ mod tests {
             "theme preset: the installed theme did not follow the choice"
         );
 
-        // Typing filters the presets: `nord` leaves the Nord preset alone on
-        // offer, and Enter installs the row highlighted. ArrowDown moves the
-        // highlight to the next row offered, back to the first after the
-        // last (`combo_box.rs:706-730`), so Enter after it picks the first
-        // row again only where that row is the one offered.
-        let nord = ThemeChoice::Preset("nord".to_string());
+        // Typing filters the presets: `material` leaves the Material preset
+        // alone on offer, and Enter installs the row highlighted. ArrowDown
+        // moves the highlight to the next row offered, back to the first
+        // after the last (`combo_box.rs:706-730`), so Enter after it picks
+        // the first row again only where that row is the one offered.
+        let nord = ThemeChoice::Preset("material-3".to_string());
         assert_ne!(
             state.current_choice, nord,
-            "the theme picker shows Nord already"
+            "the theme picker shows Material already"
         );
-        let expected = native_theme_iced::from_preset("nord", state.is_dark)
-            .map(|(theme, _)| theme.to_string())
-            .map_err(|error| error.to_string());
+        let expected = Preset::from_name("material-3")
+            .map(|preset| {
+                native_theme::next::Theme::preset(preset)
+                    .resolve_current()
+                    .name
+                    .to_string()
+            })
+            .ok_or_else(|| "the 0.8.0 model has no preset material-3".to_string());
         let messages = drive(state, |ui| {
             click_probe(ui, probes::THEME);
-            let _ = ui.typewrite("nord");
+            let _ = ui.typewrite("material");
             let _ = ui.tap_key(iced::keyboard::key::Named::ArrowDown);
             let _ = ui.tap_key(iced::keyboard::key::Named::Enter);
         });
         assert!(
             matches!(messages.as_slice(), [Message::ThemeSelected(choice)] if *choice == nord),
-            "typing nord: {messages:?}"
+            "typing material: {messages:?}"
         );
         assert_eq!(
             state.current_choice, nord,
-            "typing nord: the choice did not reach the state"
+            "typing material: the choice did not reach the state"
         );
         assert_eq!(
             Ok(theme(state).to_string()),
             expected,
-            "typing nord: another theme is installed"
+            "typing material: another theme is installed"
         );
     }
 
@@ -20400,7 +21050,7 @@ mod tests {
         }
         let _ = update(
             &mut state,
-            Message::ThemeSelected(ThemeChoice::Preset("nord".to_owned())),
+            Message::ThemeSelected(ThemeChoice::Preset("material-3".to_owned())),
         );
         let _ = update(&mut state, Message::ColorModeSelected(AppColorMode::Dark));
         let _ = update(
@@ -20447,7 +21097,7 @@ mod tests {
             ("Reload System Theme", Message::ReloadSystemTheme),
             (
                 "a switch to a preset",
-                Message::ThemeSelected(ThemeChoice::Preset("nord".to_owned())),
+                Message::ThemeSelected(ThemeChoice::Preset("material-3".to_owned())),
             ),
             (
                 "a switch to the OS theme",
@@ -20556,7 +21206,7 @@ mod tests {
         assert_eq!(reads(), 1, "a switch to Light under the OS theme");
         let _ = update(&mut state, Message::ReloadSystemTheme);
         assert_eq!(reads(), 2, "Reload System Theme");
-        let nord = ThemeChoice::Preset("nord".to_owned());
+        let nord = ThemeChoice::Preset("material-3".to_owned());
         let _ = update(&mut state, Message::ThemeSelected(nord.clone()));
         assert_eq!(reads(), 2, "a switch to a preset");
         let _ = update(
@@ -20672,20 +21322,15 @@ mod tests {
             assert_eq!(state.is_dark, wanted, "the mode of the OS theme in {mode}");
             assert_eq!(drawn_dark(&state), wanted, "the OS theme drawn in {mode}");
         }
-        for info in native_theme::theme::Theme::list_presets() {
+        // Every preset the Theme row can install, the 0.8.0 model's.
+        for key in Preset::ALL.iter().map(|preset| preset.as_str()) {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 assert!(
-                    state.install_in_mode(ThemeChoice::Preset(info.key.to_owned()), mode),
-                    "{} in {mode}",
-                    info.key
+                    state.install_in_mode(ThemeChoice::Preset(key.to_owned()), mode),
+                    "{key} in {mode}"
                 );
-                assert_eq!(state.is_dark, mode.is_dark(), "{} in {mode}", info.key);
-                assert_eq!(
-                    drawn_dark(&state),
-                    mode.is_dark(),
-                    "{} drawn in {mode}",
-                    info.key
-                );
+                assert_eq!(state.is_dark, mode.is_dark(), "{key} in {mode}");
+                assert_eq!(drawn_dark(&state), mode.is_dark(), "{key} drawn in {mode}");
             }
         }
     }
@@ -23876,7 +24521,11 @@ mod tests {
         };
         let mut seen = BTreeSet::new();
         let mut faults = Vec::new();
-        for preset in native_theme::theme::Theme::list_presets() {
+        // Every preset the Theme row can install, the 0.8.0 model's.
+        for preset in native_theme::theme::Theme::list_presets()
+            .iter()
+            .filter(|preset| Preset::from_name(preset.key).is_some())
+        {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 assert!(
                     state.install_in_mode(ThemeChoice::Preset(preset.key.to_owned()), mode),
@@ -26411,12 +27060,12 @@ mod tests {
 
     /// The showcase in the states a route depends on, each with no bundled
     /// combination installed, as under the OS theme: a preset that states the
-    /// check mark's line (kde-breeze) and one that does not (nord), each with
-    /// the side panel shown and hidden, with its icon set's icons and with
-    /// none.
+    /// check mark's line (kde-breeze) and one that does not (windows-11),
+    /// each with the side panel shown and hidden, with its icon set's icons
+    /// and with none.
     fn route_states() -> Vec<State> {
         let mut states = Vec::new();
-        for preset in ["kde-breeze", "nord"] {
+        for preset in ["kde-breeze", "windows-11"] {
             for visible in [true, false] {
                 for bare in [false, true] {
                     let mut state = State {
@@ -27146,7 +27795,11 @@ mod tests {
             };
             let mut failures = Vec::new();
             let mut seen = BTreeSet::new();
-            for preset in native_theme::theme::Theme::list_presets() {
+            // Every preset the Theme row can install, the 0.8.0 model's.
+            for preset in native_theme::theme::Theme::list_presets()
+                .iter()
+                .filter(|preset| Preset::from_name(preset.key).is_some())
+            {
                 for mode in [AppColorMode::Light, AppColorMode::Dark] {
                     let choice = ThemeChoice::Preset(preset.key.to_owned());
                     assert!(
@@ -27796,14 +28449,14 @@ mod tests {
 
     /// M9-147 (M9b T5 fix round 1): the layout dump records a check box's
     /// mark where it is drawn. Where the theme states no check-mark line
-    /// (nord), iced draws its own glyph, centred in the whole box (iced_widget
-    /// 0.14.2 `src/checkbox.rs:420-436`), so the mark is the box. Where it
-    /// states one (kde-breeze), the mark is the showcase's [`CheckMark`] box,
-    /// inside the box.
+    /// (windows-11), iced draws its own glyph, centred in the whole box
+    /// (iced_widget 0.14.2 `src/checkbox.rs:420-436`), so the mark is the
+    /// box. Where it states one (kde-breeze), the mark is the showcase's
+    /// [`CheckMark`] box, inside the box.
     #[test]
     fn the_check_mark_is_laid_out_where_it_is_drawn() {
         recording(|| {
-            for (preset, stated) in [("nord", false), ("kde-breeze", true)] {
+            for (preset, stated) in [("windows-11", false), ("kde-breeze", true)] {
                 let mut state = State {
                     accessibility: native_theme_iced::AccessibilityPreferences::default(),
                     ..State::default()
@@ -33305,16 +33958,19 @@ mod tests {
         };
         let label = rect("chrome.side_panel.settings.theme_label");
         let control = rect("chrome.side_panel.settings.theme");
-        let next = rect("chrome.side_panel.settings.mode_label");
+        // The Palette row, between Theme and Mode, is no element of the
+        // list: the rows' gap is measured from Mode to Icon theme.
+        let mode = rect("chrome.side_panel.settings.mode");
+        let next = rect("chrome.side_panel.settings.icon_theme_label");
         assert!(
             near(control.y - (label.y + label.height), THEME_SETTINGS_GAP),
             "the Theme label and its control are {}px apart",
             control.y - (label.y + label.height)
         );
         assert!(
-            near(next.y - (control.y + control.height), THEME_SETTINGS_GAP),
-            "the Theme and Mode rows are {}px apart",
-            next.y - (control.y + control.height)
+            near(next.y - (mode.y + mode.height), THEME_SETTINGS_GAP),
+            "the Mode and Icon theme rows are {}px apart",
+            next.y - (mode.y + mode.height)
         );
         let palette = rect("chrome.toolbar.command_palette");
         let reload = rect("chrome.toolbar.reload_theme");
@@ -35267,7 +35923,15 @@ mod tests {
             // The one glyph in an icon's slot, `placeholder_icon`'s "?", is
             // sized as the icon.
             let sized = calls.iter().any(|(name, args)| {
-                ["role", "body", "typeset", "themed"].contains(name)
+                [
+                    "role",
+                    "body",
+                    "typeset",
+                    "themed",
+                    "next_text",
+                    "next_body",
+                ]
+                .contains(name)
                     || (*name == "size" && *args == "(icon_px)")
             });
             if !sized {
@@ -35858,6 +36522,239 @@ thing(0);
                 )
             })?;
         }
+        Ok(())
+    }
+
+    /// A read of the desktop by the 0.8.0 model that fails, as the test's
+    /// does.
+    fn failing_next_read() -> native_theme::next::Result<native_theme::next::Theme> {
+        Err(native_theme::next::Error::PlatformUnsupported {
+            platform: "the test's failing 0.8.0 read",
+        })
+    }
+
+    /// `kde-breeze` light installed on a state whose 0.8.0 read of the
+    /// desktop fails, so the context it is resolved in is the default one
+    /// every preset alone is resolved in, whatever the host's desktop.
+    fn next_state() -> Result<State, String> {
+        let mut state =
+            State::starting_with_reads(native_theme::SystemTheme::from_system, failing_next_read);
+        if state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light,
+        ) {
+            Ok(state)
+        } else {
+            Err(format!(
+                "kde-breeze does not install: {:?}",
+                state.error_message
+            ))
+        }
+    }
+
+    /// The Theme row and the command palette offer the desktop's own theme
+    /// and this platform's presets the 0.8.0 model has, every one of
+    /// `Preset::ALL`; a community preset of the 0.7.2 model is no theme
+    /// choice: `--theme` refuses it, naming the palette its colours are now.
+    #[test]
+    fn the_theme_picker_offers_the_platform_presets_of_the_08_model() {
+        let offered: Vec<String> = theme_choices("kde-breeze")
+            .into_iter()
+            .filter_map(|choice| match choice {
+                ThemeChoice::Preset(key) => Some(key),
+                ThemeChoice::OsTheme(_) => None,
+            })
+            .collect();
+        let platform: Vec<String> = native_theme::theme::Theme::list_presets_for_platform()
+            .iter()
+            .map(|info| info.key)
+            .filter(|key| Preset::from_name(key).is_some())
+            .map(str::to_owned)
+            .collect();
+        assert!(!offered.is_empty(), "no preset is offered");
+        assert_eq!(offered, platform);
+        for key in &offered {
+            assert!(
+                Preset::ALL.iter().any(|preset| preset.as_str() == key),
+                "{key} is not a preset of the 0.8.0 model"
+            );
+        }
+        assert!(
+            matches!(theme_choice("nord", "default (kde-breeze)"), Err(e) if e.contains("--palette nord")),
+            "--theme nord is refused, naming the palette"
+        );
+        assert_eq!(
+            palette_choices().len(),
+            Palette::BUNDLED_NAMES.len() + 1,
+            "none and every bundled palette"
+        );
+    }
+
+    /// The iced theme installed is the 0.8.0 theme's; a palette laid over
+    /// the preset recolours it and locks the mode to the palette's scheme,
+    /// while the 0.7.2 theme the pages still read is the preset alone in
+    /// that scheme; `none` takes the palette off again.
+    #[test]
+    fn a_palette_is_laid_over_the_preset_in_the_08_model_only() -> Result<(), String> {
+        let mut state = next_state()?;
+        let installed = |state: &State| -> Result<Color, String> {
+            native_theme_iced::next::to_theme(&state.next_resolved)
+                .map(|theme| theme.palette().background)
+                .map_err(|e| e.home().to_string())
+        };
+        assert_eq!(state.current_theme.palette().background, installed(&state)?);
+        let dracula = Palette::from_name("dracula").ok_or("no bundled palette dracula")?;
+        assert!(
+            state.choose_palette(Some("dracula")),
+            "{:?}",
+            state.error_message
+        );
+        assert_eq!(state.theme_palette, Some("dracula"));
+        assert_eq!(
+            state.next_resolved.colors.window.background,
+            Some(dracula.window_bg)
+        );
+        assert_eq!(state.current_theme.palette().background, installed(&state)?);
+        assert_eq!(state.is_dark, dracula.scheme == Scheme::Dark);
+        let mode = if state.is_dark {
+            native_theme_iced::ColorMode::Dark
+        } else {
+            native_theme_iced::ColorMode::Light
+        };
+        let alone = native_theme::theme::Theme::preset("kde-breeze")
+            .and_then(|theme| theme.resolve(mode))
+            .map_err(|e| e.to_string())?;
+        assert_eq!(
+            state.current_resolved.defaults.text_color,
+            alone.variant.defaults.text_color
+        );
+        assert!(state.choose_palette(palette_of_row(cli::NO_PALETTE)));
+        assert_eq!(state.theme_palette, None);
+        Ok(())
+    }
+
+    /// `--palette` lays its palette over the theme as the Palette row does;
+    /// a name that is no palette is reported and leaves the palette as it
+    /// was; `none` takes it off.
+    #[test]
+    fn the_palette_flag_lays_its_palette_over_the_theme() -> Result<(), String> {
+        let mut state = next_state()?;
+        let with = |name: &str| CliArgs {
+            palette: Some(name.to_owned()),
+            ..CliArgs::default()
+        };
+        apply_cli_args(&mut state, &with("nord"));
+        assert_eq!(state.theme_palette, Some("nord"));
+        apply_cli_args(&mut state, &with("no-such-palette"));
+        assert_eq!(state.theme_palette, Some("nord"));
+        apply_cli_args(&mut state, &with(cli::NO_PALETTE));
+        assert_eq!(state.theme_palette, None);
+        Ok(())
+    }
+
+    /// A change of the preferences resolves the 0.8.0 theme again in the
+    /// context they give: the text scale reaches its text styles.
+    #[test]
+    fn a_preference_resolves_the_08_theme_again() -> Result<(), String> {
+        let mut state = next_state()?;
+        let before = state.next_resolved.typography.body.size_px;
+        let scale = TEXT_SCALES
+            .iter()
+            .map(|scale| scale.0)
+            .find(|&scale| scale > 1.0)
+            .ok_or("no text scale above 1")?;
+        state.set_preference(|set| set.text_scaling_factor = Some(scale));
+        assert_eq!(state.next_resolved.context.text_scale, scale);
+        assert!(
+            state.next_resolved.typography.body.size_px > before,
+            "the body text grows at {scale}"
+        );
+        assert_eq!(state.accessibility.text_scaling_factor, scale);
+        Ok(())
+    }
+
+    /// The High contrast switch shows the preference asked for; where the
+    /// theme is resolved at a lower level -- kde-breeze defines no High
+    /// level, and the test's context comes from no desktop -- its row says
+    /// why.
+    #[test]
+    fn high_contrast_held_back_is_said() -> Result<(), String> {
+        let mut state = next_state()?;
+        assert_eq!(state.contrast_held, None);
+        state.set_preference(|set| set.high_contrast = Some(true));
+        assert!(state.accessibility.high_contrast, "the switch reads on");
+        let held = state
+            .contrast_held
+            .clone()
+            .ok_or("kde-breeze is resolved at High contrast")?;
+        assert_eq!(held.asked, Contrast::High);
+        assert_eq!(held.used, state.next_resolved.context.contrast);
+        assert!(!held.by_palette);
+        assert!(high_contrast_text(&state).ends_with(&held.sentence()));
+        Ok(())
+    }
+
+    /// Where the 0.8.0 model cannot read the desktop, the showcase starts on
+    /// the platform's preset in both models and says why, as where the
+    /// 0.7.2 read fails.
+    #[test]
+    fn a_failed_08_desktop_read_starts_on_the_platform_preset() {
+        let state =
+            State::starting_with_reads(native_theme::SystemTheme::from_system, failing_next_read);
+        let key = platform_fallback_preset();
+        assert_eq!(state.current_choice, ThemeChoice::Preset(key.to_owned()));
+        assert!(
+            state
+                .error_message
+                .as_deref()
+                .is_some_and(|e| e.ends_with(&format!("Using {key} fallback."))),
+            "{:?}",
+            state.error_message
+        );
+    }
+
+    /// The support helpers of the 0.8.0 model read the installed 0.8.0
+    /// theme: the window's state picks the active or inactive resolve, the
+    /// roles fall back on the body, a line box is the stated line height or
+    /// the size by the multiplier, and the fonts are the connector's.
+    #[test]
+    fn the_08_helpers_read_the_installed_08_theme() -> Result<(), String> {
+        let mut state = next_state()?;
+        assert!(std::ptr::eq(state.next_shown(), &state.next_resolved));
+        state.window_active = false;
+        assert!(std::ptr::eq(state.next_shown(), &state.next_inactive));
+        let r = &state.next_resolved;
+        let t = &r.typography;
+        assert!(std::ptr::eq(
+            next_page_title(r),
+            t.title1.as_ref().unwrap_or(&t.body)
+        ));
+        assert!(std::ptr::eq(
+            next_section_title(r),
+            t.headline.as_ref().unwrap_or(&t.body)
+        ));
+        assert_eq!(
+            next_gpui_rems(TOOLTIP_GAP_REMS, r),
+            t.body.size_px * TOOLTIP_GAP_REMS
+        );
+        let mut style = t.body.clone();
+        style.stated = TextStated::LINE_HEIGHT;
+        assert_eq!(next_line_box(t, &style), style.line_height);
+        style.stated = TextStated::default();
+        assert_eq!(
+            next_line_box(t, &style),
+            style.size_px * t.line_height_multiplier
+        );
+        let body = native_theme_iced::next::font(&t.body).map_err(|e| e.home().to_string())?;
+        let drawn = next_font_from_database(&t.body, false).ok_or("the body gives no font")?;
+        assert_eq!(drawn.font.style, body.style);
+        next_theme_mono_font(r).ok_or("the monospace style gives no font")?;
+        assert!(
+            next_font_from_database(&style, false).is_none(),
+            "an unstated family gives none"
+        );
+        assert!(matches!(next_arrow_handle(r), pick_list::Handle::Static(_)));
+        let _: Element<'_, Message> = text("Body").next_body(r).into();
         Ok(())
     }
 }
