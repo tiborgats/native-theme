@@ -178,11 +178,13 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
             thumb_background,
             unchecked_thumb_background,
             disabled_thumb_color,
+            disabled_checked_thumb_color,
             unchecked_track_border_color,
             checked_track_border_color,
             disabled_unchecked_track_border_color,
             disabled_checked_track_border_color,
             thumb_border_color,
+            checked_thumb_border_color,
             text,
             disabled_text,
             background,
@@ -201,6 +203,7 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
             unchecked_thumb,
             track_border,
             thumb_border,
+            checked_thumb_border,
             label_gap,
         ]
     );

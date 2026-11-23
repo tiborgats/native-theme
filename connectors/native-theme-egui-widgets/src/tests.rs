@@ -3541,7 +3541,10 @@ const WIDGET_READS: &[(&str, &[Read])] = &[
             ),
             (
                 "switch.disabled_thumb_color",
-                &["switch.thumb(DISABLED).fill"],
+                &[
+                    "switch.thumb(DISABLED).fill",
+                    "switch.thumb(DISABLED|CHECKED).fill",
+                ],
             ),
             (
                 "switch.unchecked_track_border_color",
@@ -3561,7 +3564,10 @@ const WIDGET_READS: &[(&str, &[Read])] = &[
             ),
             (
                 "switch.thumb_border_color",
-                &["switch.thumb(NONE).stroke.color"],
+                &[
+                    "switch.thumb(NONE).stroke.color",
+                    "switch.thumb(CHECKED).stroke.color",
+                ],
             ),
             ("defaults.font.color", &["typography.body.color"]),
             ("defaults.disabled_text_color", &["colors.disabled_text"]),

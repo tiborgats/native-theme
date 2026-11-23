@@ -522,6 +522,48 @@ fn a_switch_label_is_at_the_stated_gap_in_the_stated_colour() -> TestResult {
     Ok(())
 }
 
+/// A checked switch reads its own states: a disabled checked track and thumb at
+/// `DISABLED|CHECKED`, from a rule for that state alone, and a checked thumb's outline at
+/// `thumb(CHECKED)`, drawn so.
+#[test]
+fn a_checked_switch_reads_its_checked_disabled_and_outlined_thumb() -> TestResult {
+    use crate::switch::{Geometry, Look};
+    let (red, green, blue) = (
+        Rgba::new(255, 0, 0, 255),
+        Rgba::new(0, 255, 0, 255),
+        Rgba::new(0, 0, 255, 255),
+    );
+    let patch = "[[widgets.switch.rules]]\nstates = [\"disabled\", \"checked\"]\n\
+                 track.fill = \"#0000ff\"\nthumb.fill = \"#ff0000\"\n\n\
+                 [[widgets.switch.rules]]\nstates = [\"checked\"]\n\
+                 thumb.stroke = { width = 2.0, color = \"#00ff00\" }\n";
+    let r = patched(Preset::KdeBreeze, patch)?;
+    let look = Look::next_of(&r).ok_or("no look")?;
+    assert_eq!(look.disabled_checked_background, Some(blue));
+    assert_eq!(look.disabled_checked_thumb_color, Some(red));
+    assert!(look.disabled_thumb_color != Some(red), "{look:?}");
+    assert_eq!(look.checked_thumb_border_color, Some(green));
+    assert!(look.thumb_border_color != Some(green), "{look:?}");
+    let g = Geometry::next_of(&r).ok_or("no geometry")?;
+    assert_eq!(g.checked_thumb_border, Some(2.0));
+    let ctx = patched_installed(Preset::KdeBreeze, patch)?;
+    let add = |ui: &mut egui::Ui| ui.add(Switch::new(&mut true));
+    let _ = response(&ctx, at(1.0), add);
+    let (out, _) = response(&ctx, at(1.0), add);
+    let thumb = flat(&out.shapes)
+        .into_iter()
+        .find_map(|s| match s {
+            egui::Shape::Circle(c) => Some(c),
+            _ => None,
+        })
+        .ok_or("no thumb drawn")?;
+    assert_eq!(
+        thumb.stroke,
+        egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 255, 0))
+    );
+    Ok(())
+}
+
 /// A track with pill corners is rounded by half its shorter side.
 #[test]
 fn a_pill_switch_track_is_rounded_by_half_its_height() -> TestResult {
