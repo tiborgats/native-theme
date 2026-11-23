@@ -975,10 +975,10 @@ mod tests {
 
     use super::*;
 
-    /// kde-breeze light, which states no switch label nor label gap, with
-    /// `patch` laid over it.
-    fn breeze(patch: &ThemePatch) -> ResolvedTheme {
-        let mut r = Theme::preset(Preset::KdeBreeze)
+    /// ios-13 light, which states no switch label nor label gap (no
+    /// source), with `patch` laid over it.
+    fn unlabelled(patch: &ThemePatch) -> ResolvedTheme {
+        let mut r = Theme::preset(Preset::Ios13)
             .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
         r.apply_patch(patch);
         r
@@ -1025,7 +1025,7 @@ mod tests {
     fn a_stated_switch_label_is_read_at_its_homes() -> Mapped<()> {
         let red = Color::rgb(1.0, 0.0, 0.0);
         let blue = Color::rgb(0.0, 0.0, 1.0);
-        let r = breeze(
+        let r = unlabelled(
             &ThemePatch::new()
                 .widget_rules(WidgetPatchMap::new().switch(SwitchPatch::new().label_gap(13.0)))
                 .switch(
@@ -1061,7 +1061,7 @@ mod tests {
     #[test]
     fn a_checked_label_colour_is_not_the_disabled_checked_one() -> Mapped<()> {
         let red = Color::rgb(1.0, 0.0, 0.0);
-        let r = breeze(
+        let r = unlabelled(
             &ThemePatch::new().switch(
                 SwitchRule::new()
                     .states(WidgetState::CHECKED)

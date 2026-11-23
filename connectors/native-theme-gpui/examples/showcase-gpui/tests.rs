@@ -20065,10 +20065,12 @@ fn checkbox_homes(
 /// kde-breeze light patched so that a rule with no required state clears
 /// the hovered track's fill (`not_states(CHECKED)`, spec §2: a later rule
 /// without required states clears the `from_state` bit) and the tracks are
-/// translucent, so that a hover layer laid over the track shows: a `HOVER`
-/// rule; one beside a `HOVER|CHECKED` rule differing from the checked
-/// track, and beside one equal to it; a `HOVER|CHECKED` rule alone, which
-/// the query with `HOVER` alone does not see (spec §2, `from_state`); none.
+/// translucent: a `HOVER` rule; one beside a `HOVER|CHECKED` rule differing
+/// from the checked track, and beside one equal to it; a `HOVER|CHECKED`
+/// rule alone, which the query with `HOVER` alone does not see (spec §2,
+/// `from_state`); none. The look draws the hovered track's own fill (spec
+/// §9, step 2), so a hover stated equal to the checked track is stated but
+/// draws as that track.
 #[cfg(feature = "widgets")]
 #[test]
 fn switch_hover_stated_decides_as_the_switch_look_does() {
@@ -20087,9 +20089,15 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
             .track(PartPatch::new().fill(fill.clone()))
     };
     let hovered_on = WidgetState::HOVER | WidgetState::CHECKED;
+    // (case, rules, stated, drawn checked): unchecked, a stated hover draws
     let cases = [
-        ("no hover rule", vec![], false),
-        ("a HOVER rule", vec![rule(WidgetState::HOVER, &hover)], true),
+        ("no hover rule", vec![], false, false),
+        (
+            "a HOVER rule",
+            vec![rule(WidgetState::HOVER, &hover)],
+            true,
+            true,
+        ),
         (
             "a HOVER rule and a HOVER|CHECKED rule differing from CHECKED",
             vec![
@@ -20097,19 +20105,22 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
                 rule(hovered_on, &hover_on),
             ],
             true,
+            true,
         ),
         (
             "a HOVER rule and a HOVER|CHECKED rule equal to CHECKED",
             vec![rule(WidgetState::HOVER, &hover), rule(hovered_on, &on)],
             true,
+            false,
         ),
         (
             "a HOVER|CHECKED rule alone",
             vec![rule(hovered_on, &hover_on)],
             false,
+            false,
         ),
     ];
-    for (case, rules, stated) in cases {
+    for (case, rules, stated, drawn_checked) in cases {
         let patch = rules.into_iter().fold(
             ThemePatch::new()
                 .switch(
@@ -20129,7 +20140,7 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
                 .map_err(|unstated| unstated.home());
             assert_eq!(
                 layered,
-                Ok(stated),
+                Ok(if checked { drawn_checked } else { stated }),
                 "{case}, checked {checked}: SwitchLook::next_of"
             );
             assert_eq!(
