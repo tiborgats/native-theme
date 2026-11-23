@@ -311,10 +311,7 @@
     "body": {
       "base": {
         "fill": "#00000014",
-        "stroke": {
-          "width": 0.5,
-          "color": "#c8c8c8"
-        },
+        "stroke": "none",
         "corners": 6.0,
         "shadows": "none",
         "padding": {
@@ -334,7 +331,17 @@
             "hover"
           ],
           "body": {
-            "fill": "#e0e0e5"
+            "fill": "#00000014",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "body": {
+            "fill": "#0000002a",
+            "stroke": "none"
           }
         },
         {
@@ -391,6 +398,22 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#000000d8"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#000000d8"
+          }
+        },
         {
           "states": [
             "checked"
@@ -667,9 +690,9 @@
   },
   "switch": {
     "origin": "native",
-    "label_side": null,
+    "label_side": "leading",
     "label_gap": null,
-    "label_gap_stretches": null,
+    "label_gap_stretches": false,
     "show_state_glyphs": null,
     "disabled_opacity": 1.0,
     "track": {
@@ -747,7 +770,16 @@
       ]
     },
     "label": {
-      "base": {}
+      "base": {
+        "family": "SF Pro",
+        "color": "#000000",
+        "size_px": 13.0,
+        "weight": 400,
+        "style": "normal",
+        "defined_size": {
+          "pt": 13.0
+        }
+      }
     }
   },
   "slider": {

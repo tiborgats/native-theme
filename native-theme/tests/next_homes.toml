@@ -477,6 +477,10 @@ homes = ["button.disabled_opacity"]
 [[row]]
 key = "button.hover_background"
 homes = ["button.body(HOVER).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's #e0e0e5 / #444446 is uncited (macos-tahoe's 'no macOS 26 source'); 0.8.0 states the rest fill for HOVER: hover draws nothing on a push button (spec §2, from_state)"
+difference_citation = "docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis); every hovered push button differs from its normal capture in 0 pixels (os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, button-pass/probe.toml `…hovered.regular-*.diff_from_normal`)"
+difference_values = { "macos-monterey" = { light = "#ffffff", dark = "#ffffff3f" }, "macos-tahoe" = { light = "#00000014", dark = "#ffffff14" } }
 
 [[row]]
 key = "button.hover_text_color"
@@ -485,6 +489,10 @@ homes = ["button.label(HOVER).color"]
 [[row]]
 key = "button.active_text_color"
 homes = ["button.label(PRESSED).color"]
+difference_presets = ["macos-monterey"]
+difference_reason = "0.7.2 keeps the rest label (#000000d8); 0.8.0 states macOS 15's measured pressed label in the light scheme, the rest label in the dark one, where no pressed fact is stated"
+difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.label.text.fill` scheme:light states [pressed] #242424ff (os-probe run 41006842699, macOS 15, layers-key-push.toml `key.push.aqua.pressed.regular-plain.label`)"
+difference_values = { "macos-monterey" = { light = "#242424", dark = "#ffffffd8" } }
 
 [[row]]
 key = "button.disabled_text_color"
@@ -493,6 +501,10 @@ homes = ["button.label(DISABLED).color"]
 [[row]]
 key = "button.active_background"
 homes = ["button.body(PRESSED).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macos-monterey #d6d6db / #4e4e50 is a soft option (uncited), and macos-tahoe leaves it unset (the rest fill); 0.8.0 states the measured pressed fill"
+difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.fill` states [pressed], macos-monterey #f0f0f0ff / #ffffff5c (os-probe run 41006842699, macOS 15), macos-tahoe #0000002a / #ffffff2a (the same run, macOS 26, layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.fill`)"
+difference_values = { "macos-monterey" = { light = "#f0f0f0", dark = "#ffffff5c" }, "macos-tahoe" = { light = "#0000002a", dark = "#ffffff2a" } }
 
 [[row]]
 key = "button.disabled_background"
@@ -521,10 +533,10 @@ homes = [
     "button.body(PRESSED).stroke.color",
 ]
 note = "a pressed button keeps the hover border (0.7.2's field doc)"
-difference_presets = ["adwaita", "windows-11"]
-difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the outline for the state (spec §2, from_state): adwaita the rest outline for HOVER and PRESSED, where libadwaita keeps it; windows-11 the rest outline for HOVER, where WinUI keeps it, and for PRESSED WinUI's flat ControlStrokeColorDefault"
-difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136), ButtonBorderBrushPressed = ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45)"
-difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { "button.body(HOVER).stroke.color" = { light = "#0000000f", dark = "#00000019" }, "button.body(PRESSED).stroke.color" = { light = "#0000000f", dark = "#ffffff12" } } }
+difference_presets = ["adwaita", "windows-11", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the outline for the state (spec §2, from_state): adwaita the rest outline for HOVER and PRESSED, where libadwaita keeps it; windows-11 the rest outline for HOVER, where WinUI keeps it, and for PRESSED WinUI's flat ControlStrokeColorDefault; macos-monterey the rest outline for HOVER, where hover draws nothing, and the rest outline pressed, which no rule changes; macos-tahoe no stroke for HOVER and PRESSED, as at rest"
+difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136), ButtonBorderBrushPressed = ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45); macOS: docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis; os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, `…hovered.regular-*.diff_from_normal` 0 pixels); docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd) `button.body.stroke` absent on macos-tahoe (layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.stroke` absent, run 41006842699, macOS 26)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { "button.body(HOVER).stroke.color" = { light = "#0000000f", dark = "#00000019" }, "button.body(PRESSED).stroke.color" = { light = "#0000000f", dark = "#ffffff12" } }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none" }
 
 [[row]]
 key = "button.focus_border_color"
@@ -569,6 +581,10 @@ homes = ["button.label(NONE).color"]
 [[row]]
 key = "button.border.color"
 homes = ["button.body(NONE).stroke.color"]
+difference_presets = ["macos-tahoe"]
+difference_reason = "0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the push button's outline as none, as macOS 26 draws it"
+difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent)"
+difference_values = { "macos-tahoe" = "none" }
 
 [[row]]
 key = "button.border.corner_radius"
@@ -578,6 +594,10 @@ note = "Corners::uniform(radius)"
 [[row]]
 key = "button.border.line_width"
 homes = ["button.body(NONE).stroke.width"]
+difference_presets = ["macos-tahoe"]
+difference_reason = "0.7.2's macos-tahoe states the default line (0.5); 0.8.0 states the push button's outline as none, as macOS 26 draws it"
+difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent)"
+difference_values = { "macos-tahoe" = "none" }
 
 [[row]]
 key = "button.border.shadow_enabled"

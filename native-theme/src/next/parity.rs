@@ -3651,6 +3651,14 @@ fn reader_parity_macos() -> TestResult {
             snapshot.preset = preset;
         }
         let (old, unresolved, old_name) = old_macos_reader(&settings, snapshot.preset)?;
+        // M2.FS4: macos-monterey's hovered push button keeps its outline in the separator the
+        // reader states, where the table's listed difference gives the preset's own line.
+        let listed: Vec<&str> = (snapshot.preset == crate::next::preset::Preset::MacosMonterey
+            && !MACOS_CASES_PRESET_BORDER.contains(&name))
+        .then_some(MONTEREY_HOVER_BORDER)
+        .into_iter()
+        .chain(listed.iter().copied())
+        .collect();
         assert_reader_parity(
             name,
             &old,
@@ -3658,11 +3666,19 @@ fn reader_parity_macos() -> TestResult {
             &old_name,
             &snapshot,
             &table,
-            &macos_reader_expected(snapshot.preset, listed),
+            &macos_reader_expected(snapshot.preset, &listed),
         )?;
     }
     Ok(())
 }
+
+/// M2.FS4: the row of a hovered push button's outline on macos-monterey, a listed difference of the table
+/// whose value is the preset's default line; a reader's separator replaces that line.
+const MONTEREY_HOVER_BORDER: &str = "button.hover_border_color";
+
+/// The macOS reader cases on macos-monterey whose scheme has no separator of the reader's, so the
+/// preset's own line stays: [`MONTEREY_HOVER_BORDER`] is listed on every other one.
+const MACOS_CASES_PRESET_BORDER: &[&str] = &["a custom accent, light", "Aqua alone, dark"];
 
 /// What macOS' reader parity expects of a case on `preset` whose listed differences are `listed`: every
 /// other row of the ported groups compared and equal but the rows [`macos_expected_skip`] skips with a

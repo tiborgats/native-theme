@@ -333,7 +333,11 @@
             "hover"
           ],
           "body": {
-            "fill": "#444446"
+            "fill": "#ffffff3f",
+            "stroke": {
+              "width": 0.5,
+              "color": "#ffffff19"
+            }
           }
         },
         {
@@ -341,7 +345,7 @@
             "pressed"
           ],
           "body": {
-            "fill": "#4e4e50"
+            "fill": "#ffffff5c"
           }
         },
         {
@@ -372,6 +376,22 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#ffffffd8"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#ffffffd8"
+          }
+        },
         {
           "variant": "primary",
           "label": {
@@ -667,9 +687,9 @@
   },
   "switch": {
     "origin": "native",
-    "label_side": null,
+    "label_side": "leading",
     "label_gap": null,
-    "label_gap_stretches": null,
+    "label_gap_stretches": false,
     "show_state_glyphs": null,
     "disabled_opacity": 1.0,
     "track": {
@@ -763,7 +783,16 @@
       ]
     },
     "label": {
-      "base": {}
+      "base": {
+        "family": "SF Pro",
+        "color": "#ffffffd8",
+        "size_px": 13.0,
+        "weight": 400,
+        "style": "normal",
+        "defined_size": {
+          "pt": 13.0
+        }
+      }
     }
   },
   "slider": {

@@ -66,7 +66,9 @@
 use std::fmt::Debug;
 
 use gpui::{Hsla, Length, SharedString, px};
-use gpui_component::theme::{Theme as GpuiTheme, ThemeConfig, ThemeToken};
+use gpui_component::theme::{
+    Theme as GpuiTheme, ThemeColor, ThemeConfig, ThemeConfigColors, ThemeToken, ThemeTokens,
+};
 use native_theme::next::{Preset, ThemeContext};
 use native_theme::theme::LayoutTheme;
 
@@ -430,7 +432,245 @@ const DIFFERENCES: &[Difference] = &[
                  :136 at microsoft-ui-xaml 8463f45); so the hover outline is \
                  button.body(NONE)'s stroke colour",
     },
+    Difference {
+        leaf: "variants::bordered_button",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 states no button.hover_border_color, so the bordered variant gets no \
+                 hover border (`None`) and the caller keeps gpui-component's Default variant; \
+                 the 0.8.0 macOS presets state the push button's rest outline for HOVER, where \
+                 hover draws nothing (spec §2, from_state; native-theme/tests/next_homes.toml, \
+                 row button.hover_border_color, a listed difference): every hovered push \
+                 button differs from its normal capture in 0 pixels \
+                 (docs/facts/macos/state-models.toml on v0.8.0-rc1, hover not an axis; \
+                 os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, \
+                 button-pass/probe.toml `…hovered.regular-*.diff_from_normal`); so the hover \
+                 outline is button.body(NONE)'s stroke colour, on macos-tahoe transparent, \
+                 its push button drawing no stroke (docs/facts/macos/button.toml on \
+                 v0.8.0-rc1 at 78ee0efd, `button.body.stroke` absent)",
+    },
+    Difference {
+        leaf: BUTTON_STATES,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's button.hover_background (#e0e0e5 / #444446) is uncited, its \
+                 macos-monterey button.active_background (#d6d6db / #4e4e50) a soft option, and \
+                 macos-tahoe leaves the latter unset (the connector's derived pressed layer); \
+                 the 0.8.0 macOS presets state the rest fill for HOVER, where hover draws \
+                 nothing (docs/facts/macos/state-models.toml on v0.8.0-rc1, hover not an axis; \
+                 os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, \
+                 button-pass/probe.toml `…hovered.regular-*.diff_from_normal` 0 pixels), and \
+                 the measured pressed fill (docs/facts/macos/button.toml on v0.8.0-rc1 at \
+                 78ee0efd, `button.body.fill` states [pressed]: macos-monterey #f0f0f0 / \
+                 #ffffff5c, run 41006842699, macOS 15; macos-tahoe #0000002a / #ffffff2a, the \
+                 same run, macOS 26, layers-key-push.toml \
+                 `key.push.<appearance>.pressed.regular-plain.fill`); native-theme/tests/\
+                 next_homes.toml, rows button.hover_background and button.active_background, \
+                 listed differences. So secondary_hover is the rest fill and secondary_active \
+                 the pressed one, and button_hover, button_active, button_secondary_hover and \
+                 button_secondary_active those composited over the rest fill as the connector \
+                 layers every state (crate::colors::assign_buttons), their tokens and their \
+                 stored config strings; every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, which the BUTTON_STATES entry's sources set to the push \
+                 button's rest fill (hover draws nothing on macOS) and its measured pressed fill \
+                 (docs/facts/macos/state-models.toml and docs/facts/macos/button.toml on \
+                 v0.8.0-rc1 at 78ee0efd; os-probe runs 41006842699 and 40969040283), where \
+                 0.7.2 gives #e0e0e5 / #444446 and its soft option or derived layer; \
+                 secondary_foreground is equal",
+    },
+    Difference {
+        leaf: "geometry::button_checked",
+        presets: &["macos-monterey"],
+        reason: "neither model states a checked toggle on macos-monterey (a checked toggle in \
+                 a key window of macOS 12-15 draws a gradient, pending U141 in \
+                 docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd), so the refinement is \
+                 the pressed pair that stands in for it (crate::geometry::button_checked); the \
+                 0.8.0 preset states the measured pressed fill, #f0f0f0 / #ffffff5c, and the \
+                 light scheme's measured pressed label, #242424 (the same file, \
+                 `button.body.fill` and `button.label.text.fill` states [pressed]; os-probe run \
+                 41006842699, macOS 15; native-theme/tests/next_homes.toml, rows \
+                 button.active_background and button.active_text_color, listed differences), \
+                 where 0.7.2 gives its soft option #d6d6db / #4e4e50 and the rest label; so the \
+                 refinement's background and text colour are those of button.body(PRESSED) and \
+                 button.label(PRESSED)",
+    },
+    Difference {
+        leaf: "geometry::toolbar_button_checked",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "neither model states a toolbar button's checked or pressed fill on the macOS \
+                 presets, so the refinement's fill is the push button's pressed one \
+                 (crate::geometry::toolbar_button_checked); the 0.8.0 presets state the \
+                 measured pressed fill (docs/facts/macos/button.toml on v0.8.0-rc1 at \
+                 78ee0efd, `button.body.fill` states [pressed]: macos-monterey #f0f0f0 / \
+                 #ffffff5c, os-probe run 41006842699, macOS 15; macos-tahoe #0000002a / \
+                 #ffffff2a, the same run, macOS 26; native-theme/tests/next_homes.toml, row \
+                 button.active_background, a listed difference), where 0.7.2 gives \
+                 macos-monterey's soft option #d6d6db / #4e4e50 and on macos-tahoe none (no \
+                 fill); so the refinement's background is button.body(PRESSED)'s fill; every \
+                 other field of the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::button",
+        presets: &["macos-tahoe"],
+        reason: "0.7.2's macos-tahoe outlines the push button in the default line (0.5 px, \
+                 #00000019 / #ffffff19); the 0.8.0 preset states its stroke as none, as macOS 26 \
+                 draws it (docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd, \
+                 `button.body.stroke` absent; os-probe run 41006842699, layers-key-push.toml \
+                 `key.push.<appearance>.normal.regular-plain.stroke` absent; \
+                 native-theme/tests/next_homes.toml, rows button.border.color and \
+                 button.border.line_width, listed differences), so the refinement's border is 0 \
+                 wide and transparent (crate::next::stroke_color of a stroke stated as none); \
+                 every other field of the refinement is equal",
+    },
 ];
+
+/// The presets of [`DIFFERENCES`]' `geometry::button_checked` entries on
+/// which no model states a checked toggle, so the pressed pair stands in.
+const PRESSED_STANDS_IN: &[&str] = &["macos-monterey"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
+/// button the 0.8.0 preset strokes as none.
+const UNSTROKED_BUTTON: &[&str] = &["macos-tahoe"];
+
+/// The leaf of [`DIFFERENCES`]' entry for the push button's hovered and
+/// pressed fills: the `ThemeColor` slots of [`STATE_SLOTS`], their tokens
+/// and their stored config strings, compared by [`button_states_as`].
+const BUTTON_STATES: &str = "to_theme: the push button's hovered and pressed slots";
+
+/// One `ThemeColor` slot of [`BUTTON_STATES`]: its colour, its token and its
+/// stored config string, and what the connector makes of the push button's
+/// hovered and pressed fills for it (`colors::assign_secondary`,
+/// `colors::assign_buttons`) where the hovered fill is the rest fill.
+struct StateSlot {
+    color: fn(&mut ThemeColor) -> &mut Hsla,
+    token: fn(&mut ThemeTokens) -> &mut ThemeToken,
+    config: fn(&mut ThemeConfigColors) -> &mut Option<SharedString>,
+    derived: fn(Hsla, Hsla) -> Hsla,
+}
+
+/// The slots of [`BUTTON_STATES`].
+const STATE_SLOTS: [StateSlot; 6] = [
+    StateSlot {
+        color: |c| &mut c.secondary_hover,
+        token: |t| &mut t.secondary_hover,
+        config: |s| &mut s.secondary_hover,
+        derived: |hover, _| hover,
+    },
+    StateSlot {
+        color: |c| &mut c.secondary_active,
+        token: |t| &mut t.secondary_active,
+        config: |s| &mut s.secondary_active,
+        derived: |_, pressed| pressed,
+    },
+    StateSlot {
+        color: |c| &mut c.button_hover,
+        token: |t| &mut t.button_hover,
+        config: |s| &mut s.button_hover,
+        derived: |hover, _| crate::colors::over(hover, hover),
+    },
+    StateSlot {
+        color: |c| &mut c.button_active,
+        token: |t| &mut t.button_active,
+        config: |s| &mut s.button_active,
+        derived: crate::colors::over,
+    },
+    StateSlot {
+        color: |c| &mut c.button_secondary_hover,
+        token: |t| &mut t.button_secondary_hover,
+        config: |s| &mut s.button_secondary_hover,
+        derived: |hover, _| crate::colors::over(hover, hover),
+    },
+    StateSlot {
+        color: |c| &mut c.button_secondary_active,
+        token: |t| &mut t.button_secondary_active,
+        config: |s| &mut s.button_secondary_active,
+        derived: crate::colors::over,
+    },
+];
+
+/// The push button's hovered and pressed fills of `new`, where a rule states
+/// each for its state and the hovered one is the rest fill (hover draws
+/// nothing): the form [`DIFFERENCES`]' [`BUTTON_STATES`] entry describes;
+/// `None` where they are not.
+fn button_states_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
+    use native_theme::next::WidgetState;
+    let b = &new.button;
+    let hover = super::state_fill_of(&b.body(WidgetState::HOVER))?;
+    let pressed = super::state_fill_of(&b.body(WidgetState::PRESSED))?;
+    (super::fill_of(&b.body(WidgetState::NONE)) == Some(hover)).then_some((hover, pressed))
+}
+
+/// The push button's hovered and pressed fills of each scheme, light and
+/// dark ([`button_states_of`]), `None` where a scheme's are not given.
+type SchemeStates = [Option<(Hsla, Hsla)>; 2];
+
+/// `theme` with the slots of [`BUTTON_STATES`] as 0.7.2 gives them: the
+/// colours and tokens of `from`, a theme of the same scheme, and the stored
+/// config strings of `stored` (light, dark), where `theme` holds what the
+/// connector derives from `states`, each scheme's hovered fill (its rest
+/// fill) and pressed fill ([`button_states_of`]); `None` where it does not.
+/// A scheme without `states` keeps its stored config, which is to be
+/// `stored`'s already. The colours are compared by their hex strings, which
+/// an upstream rebuild of the theme from its stored config
+/// (`Theme::change`) round-trips them through.
+fn button_states_as(
+    theme: &GpuiTheme,
+    from: &GpuiTheme,
+    stored: [&ThemeConfig; 2],
+    states: SchemeStates,
+) -> Option<GpuiTheme> {
+    let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
+    let [light, dark] = states;
+    let (hover, pressed) = if theme.is_dark() { dark } else { light }?;
+    let c = &theme.colors;
+    if [c.secondary, c.button, c.button_secondary]
+        .iter()
+        .any(|&rest| hex(rest) != hex(hover))
+    {
+        return None;
+    }
+    let mut patched = theme.clone();
+    let mut from = from.clone();
+    for slot in &STATE_SLOTS {
+        let derived = (slot.derived)(hover, pressed);
+        let color = (slot.color)(&mut patched.colors);
+        let own = *color;
+        if hex(own) != hex(derived) {
+            return None;
+        }
+        *color = *(slot.color)(&mut from.colors);
+        let token = (slot.token)(&mut patched.tokens);
+        if *token != ThemeToken::from(own) {
+            return None;
+        }
+        *token = *(slot.token)(&mut from.tokens);
+    }
+    for ((config, source), states) in [&mut patched.light_theme, &mut patched.dark_theme]
+        .into_iter()
+        .zip(stored)
+        .zip([light, dark])
+    {
+        let mut colors = config.colors.clone();
+        let mut source = source.colors.clone();
+        for slot in &STATE_SLOTS {
+            let (have, old) = ((slot.config)(&mut colors), (slot.config)(&mut source));
+            match states {
+                Some((hover, pressed)) if *have == hex((slot.derived)(hover, pressed)) => {
+                    *have = old.clone();
+                }
+                None if have == old => {}
+                _ => return None,
+            }
+        }
+        let mut stored = (**config).clone();
+        stored.colors = colors;
+        *config = std::rc::Rc::new(stored);
+    }
+    Some(patched)
+}
 
 /// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
 /// whose card leaves its corners unstated beside its stroke.
@@ -683,6 +923,42 @@ fn compare_theme(
         }
         None => new_theme,
     };
+    // `variants::ghost_button` reads these three fields and nothing else.
+    let ghost = |t: &GpuiTheme| {
+        (
+            t.colors.secondary_foreground,
+            t.colors.secondary_hover,
+            t.colors.secondary_active,
+        )
+    };
+    let new_ghost = ghost(&new_theme);
+    let new_theme = match report.listed(BUTTON_STATES) {
+        Some(listed) => {
+            report.count(BUTTON_STATES);
+            let states = button_states_of(new);
+            let states = if is_dark {
+                [None, states]
+            } else {
+                [states, None]
+            };
+            let stored = [&*old_theme.light_theme, &*old_theme.dark_theme];
+            match button_states_as(&new_theme, &old_theme, stored, states) {
+                Some(patched) => patched,
+                None => {
+                    report.failures.push(format!(
+                        "{}: {BUTTON_STATES}: the listed difference ({}) no longer describes \
+                         it: 0.8.0 secondary_hover {:?}, secondary_active {:?}",
+                        report.label,
+                        listed.reason,
+                        new_theme.colors.secondary_hover,
+                        new_theme.colors.secondary_active
+                    ));
+                    new_theme
+                }
+            }
+        }
+        None => new_theme,
+    };
     let failures = report.failures.len();
     let config = |t: &GpuiTheme, own: bool| {
         if is_dark == own {
@@ -745,15 +1021,24 @@ fn compare_theme(
         format!("{:?}", config(o, false)),
         format!("{:?}", config(n, false)),
     );
-    // `variants::ghost_button` reads these three fields and nothing else.
-    let ghost = |t: &GpuiTheme| {
-        (
-            t.colors.secondary_foreground,
-            t.colors.secondary_hover,
-            t.colors.secondary_active,
-        )
-    };
-    report.leaf("variants::ghost_button", ghost(o), ghost(n));
+    let ghost_button = "variants::ghost_button";
+    match report.listed(ghost_button) {
+        Some(listed) => {
+            report.count(ghost_button);
+            let stated = button_states_of(new)
+                .map(|(hover, pressed)| (o.colors.secondary_foreground, hover, pressed));
+            if stated != Some(new_ghost) {
+                report.failures.push(format!(
+                    "{}: {ghost_button}: the listed difference ({}) no longer describes it: \
+                     0.7.2 {:?}, 0.8.0 {new_ghost:?}",
+                    report.label,
+                    listed.reason,
+                    ghost(o)
+                ));
+            }
+        }
+        None => report.leaf(ghost_button, ghost(o), ghost(n)),
+    }
     let (o, n) = (&old_config, &new_config);
     report.leaf("config.is_default", o.is_default, n.is_default);
     report.leaf("config.name", &o.name, &n.name);
@@ -936,6 +1221,32 @@ fn compare_builders(
     if let Some(n) = report.mapped(button, super::builders::button(new)) {
         let o = crate::geometry::button(Native::unscaled(old));
         match report.listed(button) {
+            Some(listed) if UNSTROKED_BUTTON.contains(&report.preset) => {
+                use gpui::Styled as _;
+                use native_theme::next::{PartStated, Stroke, WidgetState};
+                report.count(button);
+                let body = new.button.body(WidgetState::NONE);
+                let none =
+                    body.stated.contains(PartStated::STROKE) && matches!(body.stroke, Stroke::None);
+                let mut corrected = o.clone();
+                corrected.border_widths = n.border_widths.clone();
+                corrected.border_color = n.border_color;
+                if !none
+                    || o.border_widths == n.border_widths
+                    || n.border_widths
+                        != gpui::StyleRefinement::default()
+                            .border(px(0.0))
+                            .border_widths
+                    || n.border_color != super::stroke_color(&body, "button.body(NONE)").ok()
+                    || corrected != n
+                {
+                    report.failures.push(format!(
+                        "{}: {button}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
             Some(listed) => {
                 report.count(button);
                 let mut corrected = o.clone();
@@ -957,6 +1268,33 @@ fn compare_builders(
     builder!(report, old, new, button_disabled);
     let button_checked = "geometry::button_checked";
     match report.listed(button_checked) {
+        Some(listed) if PRESSED_STANDS_IN.contains(&report.preset) => {
+            if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
+                use native_theme::next::WidgetState;
+                report.count(button_checked);
+                let o = crate::geometry::button_checked(Native::unscaled(old));
+                let b = &new.button;
+                let unstated = old.button.checked_background.is_none()
+                    && old.button.checked_text_color.is_none()
+                    && super::state_fill_of(&b.body(WidgetState::CHECKED)).is_none()
+                    && super::state_text_color_of(&b.label(WidgetState::CHECKED)).is_none();
+                let pressed = super::text_color_of(&b.label(WidgetState::PRESSED)).map(|text| {
+                    crate::geometry::button_checked_from(
+                        None,
+                        text,
+                        None,
+                        super::state_fill_of(&b.body(WidgetState::PRESSED)),
+                    )
+                });
+                if !unstated || n.background.is_none() || pressed.as_ref() != Some(&n) {
+                    report.failures.push(format!(
+                        "{}: {button_checked}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
         Some(listed) => {
             if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
                 use native_theme::next::{PartStated, TextStated, WidgetState};
@@ -1116,7 +1454,36 @@ fn compare_builders(
     builder!(report, old, new, toolbar);
     builder!(report, old, new, icon_size_toolbar);
     builder!(report, old, new, toolbar_button_rest);
-    builder!(report, old, new, toolbar_button_checked);
+    let toolbar_checked = "geometry::toolbar_button_checked";
+    match report.listed(toolbar_checked) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(
+                toolbar_checked,
+                super::builders::toolbar_button_checked(new),
+            ) {
+                use gpui::Styled as _;
+                use native_theme::next::WidgetState;
+                report.count(toolbar_checked);
+                let o = crate::geometry::toolbar_button_checked(Native::unscaled(old));
+                let t = &new.toolbar;
+                let unstated = super::state_fill_of(&t.button(WidgetState::CHECKED)).is_none()
+                    && super::state_fill_of(&t.button(WidgetState::PRESSED)).is_none();
+                let pressed = super::state_fill_of(&new.button.body(WidgetState::PRESSED));
+                let mut corrected = o.clone();
+                corrected.background = n.background.clone();
+                let filled =
+                    pressed.map(|fill| gpui::StyleRefinement::default().bg(fill).background);
+                if !unstated || filled != Some(n.background.clone()) || corrected != n {
+                    report.failures.push(format!(
+                        "{}: {toolbar_checked}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, toolbar_button_checked),
+    }
     compare_mapped(
         report,
         "variants::toolbar_button",
@@ -1187,7 +1554,9 @@ fn compare_builders(
                 use native_theme::next::WidgetState;
                 report.count(bordered);
                 let o = crate::variants::hover_border(Native::unscaled(old));
-                let rest = super::stroke_color_of(&new.button.body(WidgetState::NONE));
+                let rest =
+                    super::stroke_color(&new.button.body(WidgetState::NONE), "button.body(NONE)")
+                        .ok();
                 if o.is_some() || n.is_none() || n != rest {
                     report.failures.push(format!(
                         "{}: {bordered}: the listed difference ({}) no longer describes \
@@ -1557,18 +1926,35 @@ fn every_listed_difference_names_a_covered_preset() {
 /// delay, reduced motion, the stored preferences and the focus band's rule.
 /// Where `row_hover_listed`, the styled theme is given with its hovered row
 /// as 0.7.2's ([`row_hover_as_list`]), or as a failure where it does not
-/// hold gpui-component's own.
-fn installed(cx: &gpui::App, row_hover_listed: bool) -> Vec<(&'static str, String)> {
+/// hold gpui-component's own; where `button_states` is given, the 0.7.2
+/// side's styled theme at the same point and the 0.8.0 preset's hovered and
+/// pressed fills of each scheme ([`button_states_of`]), with the push
+/// button's hovered and pressed slots as that theme's ([`button_states_as`]),
+/// or as a failure where they are not what the connector derives from the
+/// fills. The styled theme itself is returned beside.
+fn installed(
+    cx: &gpui::App,
+    row_hover_listed: bool,
+    button_states: Option<(&GpuiTheme, SchemeStates)>,
+) -> (Vec<(&'static str, String)>, GpuiTheme) {
     let styled = GpuiTheme::global(cx);
     let is_dark = styled.is_dark();
-    let styled_debug = if row_hover_listed {
-        row_hover_as_list(styled).map_or_else(
-            || format!("{ROW_HOVER}: not gpui-component's own hovered row"),
-            |patched| format!("{patched:?}"),
-        )
+    let row_hover = if row_hover_listed {
+        row_hover_as_list(styled)
+            .ok_or_else(|| format!("{ROW_HOVER}: not gpui-component's own hovered row"))
     } else {
-        format!("{styled:?}")
+        Ok(styled.clone())
     };
+    let patched = row_hover.and_then(|theme| match button_states {
+        Some((from, states)) => {
+            let stored = [&*from.light_theme, &*from.dark_theme];
+            button_states_as(&theme, from, stored, states).ok_or_else(|| {
+                format!("{BUTTON_STATES}: not what the connector derives from the preset")
+            })
+        }
+        None => Ok(theme),
+    });
+    let styled_debug = patched.map_or_else(|failure| failure, |theme| format!("{theme:?}"));
     let base = gpui_base::Theme::global(cx);
     let nt = cx.try_global::<crate::NativeTheme>();
     let overrides = nt
@@ -1577,7 +1963,7 @@ fn installed(cx: &gpui::App, row_hover_listed: bool) -> Vec<(&'static str, Strin
     let band = nt
         .and_then(|nt| nt.source(is_dark))
         .map(crate::Variant::keyboard_focus_band);
-    vec![
+    let parts = vec![
         ("styled theme", styled_debug),
         (
             "base handles",
@@ -1597,19 +1983,29 @@ fn installed(cx: &gpui::App, row_hover_listed: bool) -> Vec<(&'static str, Strin
             format!("{:?}", nt.map(|nt| nt.accessibility())),
         ),
         ("focus band", format!("{band:?}")),
-    ]
+    ];
+    (parts, styled.clone())
 }
+
+/// What [`apply_both`] gives for each point: the installed parts
+/// ([`installed`]) and the styled theme.
+type Installed = [(Vec<(&'static str, String)>, GpuiTheme); 2];
 
 /// The two schemes of `key` (0.7.2) or `preset` (0.8.0) applied, light then
 /// dark, with no variant stored before: what is installed after the calls,
 /// and after an upstream switch to light mode (`Theme::change`), which the
-/// connector's observer answers from the stored variants.
+/// connector's observer answers from the stored variants. `old` is `None`
+/// for the 0.7.2 side, and for the 0.8.0 side what the 0.7.2 side installed,
+/// whose styled themes the push button's hovered and pressed slots are
+/// patched from where [`DIFFERENCES`]' [`BUTTON_STATES`] entry names the
+/// preset.
 fn apply_both(
     cx: &mut gpui::TestAppContext,
     key: &str,
     preset: Preset,
-    next: bool,
-) -> Result<[Vec<(&'static str, String)>; 2], String> {
+    old: Option<&Installed>,
+) -> Result<Installed, String> {
+    let next = old.is_some();
     let mut themes = Vec::new();
     for is_dark in [false, true] {
         themes.push((
@@ -1640,9 +2036,24 @@ fn apply_both(
         && DIFFERENCES
             .iter()
             .any(|d| d.leaf == ROW_HOVER && d.presets.contains(&key));
-    let after = cx.update(|cx| installed(cx, row_hover_listed));
+    let states = {
+        let mut schemes = themes
+            .iter()
+            .map(|(_, (_, _, _, new))| button_states_of(new));
+        [schemes.next().flatten(), schemes.next().flatten()]
+    };
+    let button_states = |at: usize| {
+        old.filter(|_| {
+            DIFFERENCES
+                .iter()
+                .any(|d| d.leaf == BUTTON_STATES && d.presets.contains(&key))
+        })
+        .and_then(|old| old.get(at))
+        .map(|(_, from)| (from, states))
+    };
+    let after = cx.update(|cx| installed(cx, row_hover_listed, button_states(0)));
     cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
-    let switched = cx.update(|cx| installed(cx, row_hover_listed));
+    let switched = cx.update(|cx| installed(cx, row_hover_listed, button_states(1)));
     Ok([after, switched])
 }
 
@@ -1652,11 +2063,11 @@ fn apply_both(
 fn next_apply_installs_what_apply_installs(cx: &mut gpui::TestAppContext) {
     let mut failures = Vec::new();
     for &(key, preset) in PRESETS {
-        let both = apply_both(cx, key, preset, false)
-            .and_then(|old| apply_both(cx, key, preset, true).map(|new| (old, new)));
+        let both = apply_both(cx, key, preset, None)
+            .and_then(|old| apply_both(cx, key, preset, Some(&old)).map(|new| (old, new)));
         match both {
             Ok((old, new)) => {
-                for (when, (o, n)) in ["after apply", "after Theme::change"]
+                for (when, ((o, _), (n, _))) in ["after apply", "after Theme::change"]
                     .iter()
                     .zip(old.iter().zip(new.iter()))
                 {
