@@ -372,14 +372,9 @@ pub(crate) fn old_native(cx: &App) -> Option<Native<'_>> {
     })
 }
 
-/// The 0.7.2 resolved theme of [`old_native`].
-#[cfg_attr(
-    not(any(test, feature = "widgets")),
-    expect(
-        dead_code,
-        reason = "only the theme-drawn widgets still read the 0.7.2 theme so, until their Looks move to the 0.8.0 model"
-    )
-)]
+/// The 0.7.2 resolved theme of [`old_native`], which only the tests still
+/// read.
+#[cfg(test)]
 pub(crate) fn old_resolved(cx: &App) -> Option<&native_theme::theme::ResolvedTheme> {
     old_native(cx).map(|n| n.resolved)
 }
@@ -461,7 +456,7 @@ pub(crate) fn next_geometry<
     next_resolved(cx).map(build)
 }
 
-/// [`native_color`] on the 0.8.0 model: the colour `pick` gives for the
+/// `native_color` on the 0.8.0 model: the colour `pick` gives for the
 /// installed 0.8.0 theme, as gpui paints it; `None` before
 /// `native_theme_gpui::next::apply` ran, or where the theme states no such
 /// colour (`pick` gives `None`).
@@ -601,7 +596,8 @@ pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) ->
 
 /// A colour of the installed native theme, as gpui paints it, or `None`
 /// before `apply` ran: for a widget whose own setter or refinement takes a
-/// colour the connector's tokens do not carry.
+/// colour the connector's tokens do not carry. Only the tests still read it.
+#[cfg(test)]
 pub(crate) fn native_color<F: FnOnce(Native<'_>) -> native_theme::color::Rgba>(
     cx: &App,
     pick: F,
