@@ -12,6 +12,8 @@ use super::motion::{CaretSpec, MotionTokens, UiTimings};
 use super::palette::Palette;
 use super::patch::ThemePatch;
 use super::presets::kde;
+#[cfg(target_os = "linux")]
+use super::query::MotionPreference;
 use super::query::{Contrast, Scheme, ThemeContext, sanitized_text_scale};
 use super::reader::{DiagnosticEntry, OsColors, SystemOverrides, SystemSnapshot};
 use super::roles::{
@@ -278,7 +280,12 @@ impl Theme {
     ///
     /// The KDE reader (the `kde` feature) and the GNOME reader (the `portal`
     /// feature) are written, on Linux; each other platform's comes with its
-    /// preset's builder (plan, M2).
+    /// preset's builder (plan, M2). On Linux the reader is chosen as 0.7.2's
+    /// pipeline chooses it, by the desktop it refines (`linux_reader_kind`):
+    /// the GNOME reader on GNOME and Budgie, the KDE reader on KDE, and on any
+    /// other desktop no reader: the theme is then the `adwaita` preset alone,
+    /// with no system settings, in the scheme and the motion level the system
+    /// is in (0.7.2's `linux_fallback`).
     ///
     /// # Errors
     ///
@@ -306,29 +313,74 @@ impl Theme {
         Self::from_system().unwrap_or_else(|_| Self::for_current_platform())
     }
 
-    /// The theme of `read`, a reader's snapshot, with `preset` in place of
-    /// its preset where given; `read`'s error where it failed.
-    fn from_read(
-        read: Result<SystemSnapshot, Error>,
-        preset: Option<Preset>,
-    ) -> Result<Self, Error> {
-        let snapshot = read?;
-        Ok(Self::preset(preset.unwrap_or(snapshot.preset))
-            .with_context(snapshot.context)
-            .with_system_overrides(snapshot.overrides))
+    /// The theme of `read`, a reader's snapshot or the preset alone, with
+    /// `preset` in place of its preset where given; `read`'s error where it
+    /// failed.
+    fn from_read(read: Result<SystemRead, Error>, preset: Option<Preset>) -> Result<Self, Error> {
+        match read? {
+            SystemRead::Snapshot(snapshot) => Ok(Self::preset(preset.unwrap_or(snapshot.preset))
+                .with_context(snapshot.context)
+                .with_system_overrides(snapshot.overrides)),
+            SystemRead::PresetOnly(read_preset, context) => {
+                Ok(Self::preset(preset.unwrap_or(read_preset)).with_context(context))
+            }
+        }
     }
 
     /// The system's settings, read by the reader of `detected`, the
-    /// platform's preset: KDE's for `kde-breeze`, the XDG portal's for
-    /// `adwaita`. The other platforms' readers are not written yet (plan,
-    /// M2): `PlatformUnsupported`.
-    fn read_system(detected: Preset) -> Result<SystemSnapshot, Error> {
+    /// platform's preset: KDE's for `kde-breeze`; for `adwaita` the reader
+    /// of the desktop `read_linux_desktop` chooses. The other platforms'
+    /// readers are not written yet (plan, M2): `PlatformUnsupported`.
+    fn read_system(detected: Preset) -> Result<SystemRead, Error> {
         match detected {
-            Preset::KdeBreeze => Self::read_kde(),
-            Preset::Adwaita => Self::read_gnome(),
+            Preset::KdeBreeze => Self::read_kde().map(SystemRead::Snapshot),
+            Preset::Adwaita => Self::read_adwaita_desktop(),
             _ => Err(Error::PlatformUnsupported {
                 platform: std::env::consts::OS,
             }),
+        }
+    }
+
+    /// The read of a desktop whose preset is `adwaita`: on Linux, by the
+    /// desktop 0.7.2's pipeline refines (`refined_linux_desktop`, which asks
+    /// the portal's backend where `XDG_CURRENT_DESKTOP` names none), as
+    /// [`read_linux_desktop`](Self::read_linux_desktop) chooses; elsewhere
+    /// the GNOME reader's error.
+    fn read_adwaita_desktop() -> Result<SystemRead, Error> {
+        #[cfg(target_os = "linux")]
+        {
+            let refined = pollster::block_on(crate::detect::system().refined_linux_desktop());
+            Self::read_linux_desktop(
+                refined.desktop,
+                Self::read_gnome,
+                Self::read_kde,
+                readerless_context,
+            )
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            Self::read_gnome().map(SystemRead::Snapshot)
+        }
+    }
+
+    /// The read on the Linux desktop `desktop`, by 0.7.2's choice of reader
+    /// (`pipeline::linux_reader_kind`): `gnome` on GNOME and Budgie, `kde`
+    /// on KDE, and on every other desktop no reader, the `adwaita` preset
+    /// alone in the context `readerless` gives (0.7.2's `linux_fallback`:
+    /// the preset in the scheme and with the reduced motion detected without
+    /// a reader).
+    #[cfg(target_os = "linux")]
+    fn read_linux_desktop(
+        desktop: crate::detect::LinuxDesktop,
+        gnome: impl FnOnce() -> Result<SystemSnapshot, Error>,
+        kde: impl FnOnce() -> Result<SystemSnapshot, Error>,
+        readerless: impl FnOnce() -> ThemeContext,
+    ) -> Result<SystemRead, Error> {
+        use crate::detect::LinuxDesktop;
+        match desktop {
+            LinuxDesktop::Gnome | LinuxDesktop::Budgie => gnome().map(SystemRead::Snapshot),
+            LinuxDesktop::Kde => kde().map(SystemRead::Snapshot),
+            _ => Ok(SystemRead::PresetOnly(Preset::Adwaita, readerless())),
         }
     }
 
@@ -604,6 +656,37 @@ impl Theme {
     pub fn resolve_current(&self) -> ResolvedTheme {
         self.resolve(self.context())
     }
+}
+
+/// What a system read gives: a reader's snapshot, or, on a desktop no reader
+/// reads, a preset alone in the context the system is in.
+#[derive(Debug)]
+enum SystemRead {
+    /// A reader's snapshot.
+    Snapshot(SystemSnapshot),
+    /// The preset alone, with no system settings, in the context.
+    // Built only on Linux, where a desktop may have no reader.
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+    PresetOnly(Preset, ThemeContext),
+}
+
+/// The context of a Linux desktop no reader reads, as 0.7.2's
+/// `linux_fallback` takes it: dark where `detect_is_dark` (uncached, as the
+/// readers read the mode fresh), and `MotionPreference::Reduced` where
+/// `detect_reduced_motion` (0.7.2's `readerless_accessibility`); every other
+/// field the default.
+#[cfg(target_os = "linux")]
+fn readerless_context() -> ThemeContext {
+    let scheme = if crate::detect::detect_is_dark() {
+        Scheme::Dark
+    } else {
+        Scheme::Light
+    };
+    let mut context = ThemeContext::default().with_scheme(scheme);
+    if crate::detect::detect_reduced_motion() {
+        context.motion = MotionPreference::Reduced;
+    }
+    context
 }
 
 /// The preset's builder run for `context` and `inputs`: for a preset whose
@@ -918,7 +1001,7 @@ mod tests {
             let mut ini = crate::kde::create_kde_parser();
             crate::kde::read_kconfig(&mut ini, &std::fs::read_to_string(&path)?);
             let snapshot = snapshot_from_kdeglobals(&ini, None, None);
-            let theme = Theme::from_read(Ok(snapshot.clone()), None)?;
+            let theme = Theme::from_read(Ok(SystemRead::Snapshot(snapshot.clone())), None)?;
             assert_eq!(theme.preset_id(), Preset::KdeBreeze, "{path:?}");
             assert_eq!(theme.context(), &snapshot.context, "{path:?}");
             assert_eq!(
@@ -935,7 +1018,10 @@ mod tests {
                 .with_system_overrides(snapshot.overrides.clone())
                 .resolve(&snapshot.context);
             assert_eq!(theme.resolve_current(), expected, "{path:?}");
-            let pinned = Theme::from_read(Ok(snapshot.clone()), Some(Preset::Adwaita))?;
+            let pinned = Theme::from_read(
+                Ok(SystemRead::Snapshot(snapshot.clone())),
+                Some(Preset::Adwaita),
+            )?;
             assert_eq!(pinned.preset_id(), Preset::Adwaita, "{path:?}");
             assert_eq!(pinned.context(), &snapshot.context, "{path:?}");
             assert_eq!(
@@ -961,7 +1047,7 @@ mod tests {
             ..SystemOverrides::default()
         };
         let snapshot = SystemSnapshot::new(Preset::KdeBreeze, ThemeContext::dark(), overrides);
-        let theme = Theme::from_read(Ok(snapshot), None)?;
+        let theme = Theme::from_read(Ok(SystemRead::Snapshot(snapshot)), None)?;
         assert_eq!(theme.diagnostics(), [entry].as_slice());
         assert_eq!(theme.context(), &ThemeContext::dark());
         Ok(())
@@ -1008,7 +1094,7 @@ mod tests {
     #[cfg(all(target_os = "linux", not(feature = "portal")))]
     #[test]
     fn gnome_without_its_feature_is_a_disabled_feature() {
-        let read = Theme::read_system(Preset::Adwaita);
+        let read = Theme::read_gnome();
         assert!(
             matches!(
                 read,
@@ -1021,14 +1107,124 @@ mod tests {
         );
     }
 
+    /// On Linux the reader is 0.7.2's for the desktop: the GNOME reader, which reads the portal,
+    /// on GNOME and Budgie alone, the KDE reader on KDE; on every other desktop no reader runs and
+    /// the theme is `adwaita` alone, with no system settings, in the readerless context.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn the_reader_is_chosen_by_the_desktop_as_0_7_2_chooses_it()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::detect::LinuxDesktop;
+        use std::cell::Cell;
+
+        let gnome_context = ThemeContext::light().with_contrast(Contrast::High);
+        let readerless = ThemeContext::dark();
+        let read_on = |desktop: LinuxDesktop| {
+            let runs = Cell::new([0u8; 3]);
+            let ran = |i: usize| {
+                let mut counts = runs.get();
+                if let Some(count) = counts.get_mut(i) {
+                    *count = count.saturating_add(1);
+                }
+                runs.set(counts);
+            };
+            let read = Theme::read_linux_desktop(
+                desktop,
+                || {
+                    ran(0);
+                    Ok(SystemSnapshot::new(
+                        Preset::Adwaita,
+                        gnome_context.clone(),
+                        SystemOverrides::default(),
+                    ))
+                },
+                || {
+                    ran(1);
+                    Ok(SystemSnapshot::new(
+                        Preset::KdeBreeze,
+                        ThemeContext::light(),
+                        SystemOverrides::default(),
+                    ))
+                },
+                || {
+                    ran(2);
+                    readerless.clone()
+                },
+            );
+            (read, runs.get())
+        };
+        for desktop in [LinuxDesktop::Gnome, LinuxDesktop::Budgie] {
+            let (read, runs) = read_on(desktop);
+            assert_eq!(runs, [1, 0, 0], "{desktop:?}");
+            let theme = Theme::from_read(read, None)?;
+            assert_eq!(theme.preset_id(), Preset::Adwaita, "{desktop:?}");
+            assert_eq!(theme.context(), &gnome_context, "{desktop:?}");
+            assert!(theme.system_overrides().is_some(), "{desktop:?}");
+        }
+        let (read, runs) = read_on(LinuxDesktop::Kde);
+        assert_eq!(runs, [0, 1, 0]);
+        assert_eq!(Theme::from_read(read, None)?.preset_id(), Preset::KdeBreeze);
+        for desktop in [
+            LinuxDesktop::Xfce,
+            LinuxDesktop::Cinnamon,
+            LinuxDesktop::Mate,
+            LinuxDesktop::LxQt,
+            LinuxDesktop::Hyprland,
+            LinuxDesktop::Sway,
+            LinuxDesktop::River,
+            LinuxDesktop::Niri,
+            LinuxDesktop::Wayfire,
+            LinuxDesktop::CosmicDe,
+            LinuxDesktop::Unknown,
+        ] {
+            let (read, runs) = read_on(desktop);
+            assert_eq!(runs, [0, 0, 1], "{desktop:?}");
+            let theme = Theme::from_read(read, None)?;
+            assert_eq!(theme.preset_id(), Preset::Adwaita, "{desktop:?}");
+            assert_eq!(theme.context(), &readerless, "{desktop:?}");
+            assert!(theme.system_overrides().is_none(), "{desktop:?}");
+            assert!(theme.diagnostics().is_empty(), "{desktop:?}");
+            assert_eq!(
+                theme.resolve_current(),
+                Theme::preset(Preset::Adwaita).resolve(&readerless),
+                "{desktop:?}"
+            );
+        }
+        // Without the `portal` feature the GNOME reader's own error stands on GNOME and Budgie.
+        #[cfg(not(feature = "portal"))]
+        {
+            let read = Theme::read_linux_desktop(
+                LinuxDesktop::Gnome,
+                Theme::read_gnome,
+                Theme::read_kde,
+                ThemeContext::light,
+            );
+            assert!(
+                matches!(
+                    read,
+                    Err(Error::FeatureDisabled {
+                        feature: "portal",
+                        ..
+                    })
+                ),
+                "{read:?}"
+            );
+        }
+        Ok(())
+    }
+
     /// Where no reader reads the desktop (neither the `kde` nor the `portal` feature, or not
-    /// Linux), `from_system` fails without a read and `from_system_or_default` is the platform's
-    /// preset alone, which resolves.
+    /// Linux), `from_system_or_default` is the platform's preset alone, which resolves; off Linux
+    /// `from_system` fails without a read (on Linux a desktop without a reader is the preset alone
+    /// too: `the_reader_is_chosen_by_the_desktop_as_0_7_2_chooses_it`).
     #[cfg(not(all(target_os = "linux", any(feature = "kde", feature = "portal"))))]
     #[test]
     fn from_system_or_default_falls_back_to_the_platform_preset() {
-        assert!(Theme::from_system().is_err());
-        assert!(Theme::from_system_with_preset(Preset::Adwaita).is_err());
+        #[cfg(not(target_os = "linux"))]
+        {
+            assert!(Theme::from_system().is_err());
+            assert!(Theme::from_system_with_preset(Preset::Adwaita).is_err());
+        }
         let theme = Theme::from_system_or_default();
         assert_eq!(theme.preset_id(), Preset::detect());
         assert!(theme.system_overrides().is_none());
