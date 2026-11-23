@@ -191,6 +191,7 @@ mod install_tests;
 mod mapping_doc;
 #[cfg(test)]
 mod mapping_tests;
+pub mod next;
 mod plugin;
 mod roles;
 mod style;

@@ -781,3 +781,16 @@ connector = "egui"
 name = ["toolbar_padding", "toolbar_item_gap", "toolbar_bar_height", "toolbar_border_line_width"]
 kind = "absent"
 reason = "the atlas writes the toolbar's leaves to the toolbar role and the top panel (src/mapping.md, `toolbar.border.padding.*`: SCOPED to `[panel_top]` `inner_margin`, `toolbar.item_gap`: SCOPED to «toolbar» `spacing.item_spacing.x`, `toolbar.bar_height`: DERIVED to `spacing.interact_size.y`, `toolbar.border.line_width`: SCOPED to «toolbar» `visuals.widgets.noninteractive.bg_stroke.width`), so no crate-root accessor is needed; iced has no toolbar, so its consumer reads them through these accessors"
+
+# ── egui's `next` ───────────────────────────────────────────────────────────
+[[exception]]
+connector = "egui"
+name = ["next::apply", "next::border_line_width", "next::border_opacity", "next::border_shadow_enabled", "next::button_content_min_size", "next::button_padding", "next::combo_box_padding", "next::control_line_height", "next::dialog_button_gap", "next::dialog_max_height", "next::dialog_max_width", "next::dialog_min_height", "next::dialog_min_width", "next::dialog_padding", "next::dialog_title_font_color", "next::expander_arrow_color", "next::focus_ring", "next::font", "next::icon_sizes", "next::input_padding", "next::is_dark_resolved", "next::link_color", "next::pick_list_handle", "next::radio", "next::selection_background", "next::selection_text_color", "next::spinner", "next::switch", "next::switch_over", "next::system_font_family", "next::tab_flares", "next::tab_indicator", "next::tab_indicator_line", "next::text_area_padding", "next::text_scale", "next::toolbar_bar_height", "next::toolbar_border_line_width", "next::toolbar_item_gap", "next::toolbar_padding"]
+kind = "absent"
+reason = "egui's `next` gives each function of egui's crate root a twin on the 0.8.0 model (connectors/native-theme-egui/src/next/mod.rs, the module's doc), and egui's crate root has none of these, each for the reason its entry above gives for the root name (the spinner's: iced's `next::spinner` is `Spinner::new`'s twin, and egui draws its own `Spinner`)"
+
+[[exception]]
+connector = ["iced", "gpui"]
+name = ["next::list_header_font", "next::role_font_is_italic", "next::role_font_weight", "next::text_role_font", "next::text_role_line_height", "next::text_role_weight", "next::toolbar_button_checked_background", "next::toolbar_button_checked_border_color", "next::window_title_bar_font", "next::window_title_bar_text_color"]
+kind = "absent"
+reason = "egui's `next` gives each function of egui's crate root a twin on the 0.8.0 model, and iced's and gpui's crate roots have none of these, each for the reason its entry above gives for the root name"
