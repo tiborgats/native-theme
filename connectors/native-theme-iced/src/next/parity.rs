@@ -37,7 +37,10 @@
 //! style changes it for the status (spec §2, `from_state`); one whose
 //! outline or corners the
 //! 0.8.0 theme leaves unstated where 0.7.2's resolver made them up, which
-//! are iced's own (spec §5, §10 rule 0). The entry asserts, in every status
+//! are iced's own (spec §5, §10 rule 0); one whose part the 0.8.0 theme
+//! states a property for that 0.7.2 has no field for, drawn as iced can
+//! ([`Added`], its exact value laid into the 0.7.2 side's source). The
+//! entry asserts, in every status
 //! of the style function on the preset it names (a key with `/light` or
 //! `/dark` names one scheme), the value the 0.8.0 side must give, whether
 //! or not it differs there: the 0.7.2 side's own output with each of its
@@ -80,10 +83,11 @@ struct Difference {
 /// How a listed style function's 0.8.0 side differs from the 0.7.2 side:
 /// where its strokes lie, which of its state options the 0.8.0 theme
 /// leaves to iced, whether it leaves the corners or the stroke and its
-/// width to iced, and whether it rounds a menu's popup by the menu's own
-/// corners. The expected value is the 0.7.2 side's output with its strokes
-/// laid there, those options unset and the menu's popup rounded by 0.7.2's
-/// `menu.border.corner_radius`.
+/// width to iced, whether it rounds a menu's popup by the menu's own
+/// corners, and what it states that 0.7.2 has no field for. The expected
+/// value is the 0.7.2 side's output with its strokes laid there, those
+/// options unset, the menu's popup rounded by 0.7.2's
+/// `menu.border.corner_radius` and the added property's value laid in.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Listed {
     pub align: LineAlign,
@@ -94,6 +98,25 @@ pub(crate) struct Listed {
     pub iced_stroke: bool,
     #[cfg_attr(not(feature = "iced_aw"), allow(dead_code))]
     pub menu_corners: bool,
+    pub added: Added,
+}
+
+/// A property the 0.8.0 theme states that 0.7.2 has no field for, with the
+/// exact value the 0.8.0 side must draw, laid into the 0.7.2 side's source
+/// for the expected value.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Added {
+    Nothing,
+    /// A scroll bar handle's outline: the pen's width and alignment, its
+    /// colour at rest, under the pointer and dragged, round a pill
+    /// ([`crate::styles::pill`]).
+    ScrollerOutline {
+        width: f32,
+        align: LineAlign,
+        rest: iced_core::Color,
+        hovered: iced_core::Color,
+        dragged: iced_core::Color,
+    },
 }
 
 /// The state options of a style function's source that the 0.8.0 theme
@@ -139,6 +162,7 @@ impl Listed {
             iced_corners: false,
             iced_stroke: false,
             menu_corners: false,
+            added: Added::Nothing,
         }
     }
 }
@@ -186,6 +210,7 @@ const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Differe
             iced_corners: false,
             iced_stroke: false,
             menu_corners: false,
+            added: Added::Nothing,
         },
         reason: &[INSIDE],
     }
@@ -259,6 +284,7 @@ const fn aw(
             iced_corners: own.1,
             iced_stroke: own.0,
             menu_corners: false,
+            added: Added::Nothing,
         },
         reason,
     }
@@ -336,6 +362,7 @@ const fn hover(
             iced_corners: false,
             iced_stroke: false,
             menu_corners: false,
+            added: Added::Nothing,
         },
         reason: match align {
             LineAlign::Outside => &[HOVER],
@@ -398,11 +425,100 @@ const HOVER_FILL_ONLY: &[&str] = &["adwaita", "material-3", "ios-13"];
 /// hover fill and no hover stroke, the stroke inside the box.
 const HOVER_FILL_ONLY_INSIDE: &[&str] = &["windows-11", "macos-monterey"];
 
+/// The reason of a pressed widget the 0.8.0 theme states no fill for.
+const PRESSED: &str = "the theme states no fill for the pressed widget: 0.7.2's connector \
+     drew a pressed button, toolbar button, segment or expander header the theme states no \
+     pressed fill for as the hovered one (button.active_background unset: the hover layer; \
+     toolbar.button_active_background unset: the button's; a segment's and a header's \
+     pressed look the hovered one); the 0.8.0 theme has no rule for PRESSED that states the \
+     part's fill (the from_state bit clear when queried with PRESSED alone), so the fill is \
+     as styles::in_state gives it: iced's own where iced's own style changes it for the \
+     status, else the fill at rest; neither iced's secondary button, which the button and \
+     the toolbar button are drawn against, nor the segment's and the header's \
+     button::Style::default() changes the fill between Active and Pressed, so it is the \
+     fill at rest (iced_widget 0.14.2 src/button.rs, fn secondary; docs/v0.8.0-spec.md §2, \
+     from_state; §10, rule 0)";
+
+/// A style function whose pressed fill the theme states nothing for on
+/// `presets`, its strokes laid at `align`.
+const fn pressed(
+    leaf: &'static str,
+    presets: &'static [&'static str],
+    align: LineAlign,
+) -> Difference {
+    Difference {
+        leaf,
+        presets,
+        listed: Listed {
+            states: States {
+                pressed_fill: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(align)
+        },
+        reason: match align {
+            LineAlign::Outside => &[PRESSED],
+            LineAlign::Inside => &[INSIDE, PRESSED],
+            LineAlign::Center => &[CENTER, PRESSED],
+        },
+    }
+}
+
+/// The reason of a scroll bar handle whose outline and corners the 0.8.0
+/// theme states.
+const SCROLLER_OUTLINE: &str = "the theme states the scroll bar handle's outline and \
+     corners, which 0.7.2 has no field for (its scrollbar states the handle's fills and \
+     width alone), so its connector drew iced's own scroller border, none round corners of \
+     2; the kde-breeze preset states Breeze's handle (native-theme's kde-breeze preset, S2: \
+     Helper::renderScrollBarHandle and scrollBarHandleColor, breezehelper.cpp at breeze \
+     f0b1d75): a pen 1.001 wide centred on the edge in the handle's colour at alpha \
+     frameContrast, 0.2, WindowText in a view without the focus, DecorationHover #3daee9 \
+     under the pointer and dragged, round a pill, which iced draws as the pen over the fill \
+     at half its alpha (CENTER) and as a radius its renderers clamp to half the shorter side \
+     (styles::pill; docs/v0.8.0-plan.md §2, M4 step 1: each visible property the new model \
+     states and the toolkit can draw wired through)";
+
+/// Breeze's WindowText at frameContrast, the handle's outline at rest in a
+/// view without the focus: #232629 light, #fcfcfc dark, at alpha 0.2.
+const BREEZE_TEXT_FRAME_LIGHT: iced_core::Color =
+    iced_core::Color::from_rgba8(0x23, 0x26, 0x29, 0.2);
+const BREEZE_TEXT_FRAME_DARK: iced_core::Color =
+    iced_core::Color::from_rgba8(0xfc, 0xfc, 0xfc, 0.2);
+
+/// Breeze's DecorationHover at frameContrast, the handle's outline under
+/// the pointer and dragged: #3daee9 at alpha 0.2.
+const BREEZE_HOVER_FRAME: iced_core::Color = iced_core::Color::from_rgba8(0x3d, 0xae, 0xe9, 0.2);
+
+/// Breeze's scrollable on the scheme `presets` names, its handle outlined
+/// at rest in `rest`.
+const fn breeze_scroller(presets: &'static [&'static str], rest: iced_core::Color) -> Difference {
+    Difference {
+        leaf: "scrollable",
+        presets,
+        listed: Listed {
+            added: Added::ScrollerOutline {
+                width: 1.001,
+                align: LineAlign::Center,
+                rest,
+                hovered: BREEZE_HOVER_FRAME,
+                dragged: BREEZE_HOVER_FRAME,
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        reason: &[SCROLLER_OUTLINE],
+    }
+}
+
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[
-    // button.body(NONE), its states and its variants.
-    inside("button", MACOS),
-    inside("button_toggle", MACOS),
+    // button.body(NONE), its states and its variants; macos-tahoe states a
+    // hovered fill and no pressed one (`body(PRESSED)`), nor does the
+    // toolbar (`toolbar.button(PRESSED)`).
+    inside("button", &["macos-monterey"]),
+    inside("button_toggle", &["macos-monterey"]),
+    pressed("button", &["macos-tahoe"], LineAlign::Inside),
+    pressed("button_toggle", &["macos-tahoe"], LineAlign::Inside),
+    pressed("toolbar_button", &["macos-tahoe"], LineAlign::Outside),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
     // default button is the primary one.
@@ -437,6 +553,7 @@ const DIFFERENCES: &[Difference] = &[
             iced_corners: false,
             iced_stroke: false,
             menu_corners: false,
+            added: Added::Nothing,
         },
         reason: &[CENTER],
     },
@@ -567,6 +684,10 @@ const DIFFERENCES: &[Difference] = &[
         },
         reason: &[SLIDER_RAIL],
     },
+    // Breeze's handle outline (scrollbar.thumb(UNFOCUSED_VIEW), (HOVER) and
+    // (PRESSED): stroke and corners).
+    breeze_scroller(&["kde-breeze/light"], BREEZE_TEXT_FRAME_LIGHT),
+    breeze_scroller(&["kde-breeze/dark"], BREEZE_TEXT_FRAME_DARK),
     // scrollbar.thumb(PRESSED) and scrollbar.thumb(HOVER).
     Difference {
         leaf: "scrollable",
@@ -580,6 +701,7 @@ const DIFFERENCES: &[Difference] = &[
             iced_corners: false,
             iced_stroke: false,
             menu_corners: false,
+            added: Added::Nothing,
         },
         reason: &[PRESSED_THUMB],
     },
@@ -596,11 +718,31 @@ const DIFFERENCES: &[Difference] = &[
             iced_corners: false,
             iced_stroke: false,
             menu_corners: false,
+            added: Added::Nothing,
         },
         reason: &[PRESSED_THUMB, INHERITED_THUMB_HOVER],
     },
     // segmented_control.track(NONE).stroke over the group fill.
     inside("segmented_control", MACOS_WINDOWS),
+    // segmented_control.segment(PRESSED) and expander.header(PRESSED): no
+    // preset states them; macos-tahoe states no hovered fill either.
+    pressed(
+        "segment",
+        &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "material-3",
+            "ios-13",
+        ],
+        LineAlign::Outside,
+    ),
+    pressed(
+        "expander",
+        &["adwaita", "macos-monterey", "material-3", "ios-13"],
+        LineAlign::Outside,
+    ),
     // iced_aw: card.container(NONE).
     inside("aw::card", &["windows-11"]),
     aw(
@@ -1260,13 +1402,13 @@ fn compare_styles(
                 SegmentPosition::Last,
                 SegmentPosition::Only,
             ] {
-                style!(
+                listed_style!(
                     report,
                     themes,
                     "segment",
                     o::segment(old, selected, position),
                     n::segment(new, selected, position),
-                    |a| o::segment_from(&sc.listed(Listed::aligned(a)), selected, position),
+                    |l: Listed| o::segment_from(&sc.listed(l), selected, position),
                     button
                 );
             }

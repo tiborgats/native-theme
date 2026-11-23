@@ -85,8 +85,9 @@ pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> 
     }
 }
 
-/// A part's corner radius, where stated as one circular radius, or as square
-/// corners, which are no radius.
+/// A part's corner radius, where stated as one circular radius, as square
+/// corners, which are no radius, or as a pill, which iced rounds by a radius
+/// its renderers clamp to half the shorter side ([`crate::styles::pill`]).
 pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return Err(Unmapped(home));
@@ -94,6 +95,7 @@ pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     match (part.corners.radius, part.corners.curve) {
         (CornerRadius::None, _) => Ok(0.0),
         (CornerRadius::Uniform(r), CornerCurve::Circular) => Ok(r),
+        (CornerRadius::Pill, CornerCurve::Circular) => Ok(crate::styles::pill().top_left),
         _ => Err(Unmapped(home)),
     }
 }

@@ -6,10 +6,10 @@ use std::sync::Arc;
 use iced_core::Background;
 use iced_core::Color as IcedColor;
 use native_theme::next::{
-    ButtonRule, ButtonVariant, CheckboxRule, Color, InputRule, LinkRule, MenuRule, Paint,
-    PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme, ScrollbarRule,
-    SegmentedControlRule, ShadowLayer, SliderRule, Stroke, StrokeAlign, SwitchRule, TextPatch,
-    TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
+    ButtonRule, ButtonVariant, CheckboxRule, Color, Corners, ExpanderRule, InputRule, LinkRule,
+    MenuRule, Paint, PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme,
+    ScrollbarRule, SegmentedControlRule, ShadowLayer, SliderRule, Stroke, StrokeAlign, SwitchRule,
+    TextPatch, TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
 };
 
 use super::super::borders::line;
@@ -740,6 +740,275 @@ fn a_scroller_no_state_rule_states_is_iceds_own() -> TestResult {
                 .scroller
                 .background,
             Background::Color(to_color(LABEL)),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// A scroller is outlined and rounded as the theme states, its stroke laid
+/// over the fill each status paints and a state's own stroke where one is
+/// stated; a floating bar hidden at rest draws no stroke; an outline or
+/// corners the theme leaves unstated are iced's own, and a pill is iced's.
+#[test]
+fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
+    use iced_widget::scrollable::Status;
+    let active = Status::Active {
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    let hovered = Status::Hovered {
+        is_horizontal_scrollbar_hovered: false,
+        is_vertical_scrollbar_hovered: true,
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let rest = r.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
+        let border = super::scrollable(&r)?(&theme, active)
+            .vertical_rail
+            .scroller
+            .border;
+        let own = iced_widget::scrollable::default(&theme, active)
+            .vertical_rail
+            .scroller
+            .border;
+        if rest.stated.contains(PartStated::CORNERS) {
+            assert_eq!(border.radius, crate::styles::pill(), "{preset:?}");
+        } else {
+            assert_eq!(border.radius, own.radius, "{preset:?}");
+        }
+        if !rest.stated.contains(PartStated::STROKE) {
+            assert_eq!(
+                (border.color, border.width),
+                (own.color, own.width),
+                "{preset:?}"
+            );
+        }
+    }
+
+    let translucent = Color::new(0.0, 0.0, 0.0, 0.25);
+    let opaque = Color::new(0.9, 0.1, 0.1, 1.0);
+    let patch = ThemePatch::new()
+        .scrollbar(
+            ScrollbarRule::new().thumb(
+                PartPatch::new()
+                    .fill(Paint::Solid(DISTINCT))
+                    .stroke(Stroke::uniform_aligned(
+                        2.0,
+                        translucent,
+                        StrokeAlign::Inside,
+                    ))
+                    .corners(Corners::uniform(3.0)),
+            ),
+        )
+        .scrollbar(
+            ScrollbarRule::new()
+                .states(WidgetState::HOVER)
+                .thumb(PartPatch::new().stroke(Stroke::uniform(2.0, opaque))),
+        );
+    for (preset, mut r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        r.scrollbar.overlay_mode = false;
+        let style = super::scrollable(&r)?;
+        let at_rest = style(&theme, active).vertical_rail.scroller.border;
+        assert_eq!(
+            at_rest.color,
+            crate::styles::composite_over(to_color(translucent), to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        assert_eq!(at_rest.width, 2.0, "{preset:?}");
+        assert_eq!(
+            at_rest.radius,
+            iced_core::border::Radius::new(3.0),
+            "{preset:?}"
+        );
+        let under = style(&theme, hovered);
+        assert_eq!(
+            under.vertical_rail.scroller.border.color,
+            to_color(opaque),
+            "{preset:?}"
+        );
+        assert_eq!(under.horizontal_rail.scroller.border, at_rest, "{preset:?}");
+
+        r.scrollbar.overlay_mode = true;
+        let hidden = super::scrollable(&r)?(&theme, active)
+            .vertical_rail
+            .scroller
+            .border;
+        assert_eq!(hidden.width, 0.0, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// The segmented control's track and the expander's frame cast the first
+/// outset layer of the shadows the theme states, its spread dropped; a
+/// disabled control's shadow fades with it, and the frame casts it only
+/// where it is drawn.
+#[test]
+fn the_segmented_track_and_the_expander_frame_cast_their_first_outset_shadow() -> TestResult {
+    use iced_core::{Shadow, Vector};
+    let layer = |inset| ShadowLayer {
+        offset_x: 1.0,
+        offset_y: 2.0,
+        blur: 8.0,
+        spread: 3.0,
+        color: LABEL,
+        inset,
+    };
+    let shadows = || Some(Arc::from([layer(true), layer(false)]));
+    let patch = ThemePatch::new()
+        .segmented_control(SegmentedControlRule::new().track(PartPatch::new().shadows(shadows())))
+        .expander(ExpanderRule::new().container(PartPatch::new().shadows(shadows())));
+    let expected = Shadow {
+        color: to_color(LABEL),
+        offset: Vector::new(1.0, 2.0),
+        blur_radius: 8.0,
+    };
+    for (preset, mut r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        r.segmented_control.disabled_opacity = Some(0.5);
+        assert_eq!(
+            super::segmented_control(&r, false)?(&theme).shadow,
+            expected,
+            "{preset:?}"
+        );
+        assert_eq!(
+            super::segmented_control(&r, true)?(&theme).shadow,
+            Shadow {
+                color: IcedColor {
+                    a: 0.5,
+                    ..to_color(LABEL)
+                },
+                ..expected
+            },
+            "{preset:?}"
+        );
+        r.expander.frame_enabled = Some(true);
+        assert_eq!(
+            super::expander_frame(&r)?(&theme).shadow,
+            expected,
+            "{preset:?}"
+        );
+        r.expander.frame_enabled = Some(false);
+        assert_eq!(
+            super::expander_frame(&r)?(&theme).shadow,
+            Shadow::default(),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// A press the theme states no fill or stroke for is as `in_state` gives
+/// it, not the hovered look: the button's fill at rest (iced's secondary
+/// button does not change it pressed), no fill for a segment and an
+/// expander header, and the slider thumb's stroke at rest.
+#[test]
+fn an_unstated_press_is_not_the_hovered_look() -> TestResult {
+    use iced_widget::button::Status;
+    let layer = Color::new(0.0, 0.0, 0.0, 0.5);
+    let fill = |color| PartPatch::new().fill(Paint::Solid(color));
+    let patch = ThemePatch::new()
+        .button(ButtonRule::new().body(fill(DISTINCT)))
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::HOVER)
+                .body(fill(layer)),
+        )
+        .segmented_control(SegmentedControlRule::new().segment(fill(DISTINCT)))
+        .segmented_control(
+            SegmentedControlRule::new()
+                .states(WidgetState::HOVER)
+                .segment(fill(LABEL)),
+        )
+        .expander(ExpanderRule::new().header(fill(DISTINCT)))
+        .expander(
+            ExpanderRule::new()
+                .states(WidgetState::HOVER)
+                .header(fill(LABEL)),
+        )
+        .slider(SliderRule::new().thumb(PartPatch::new().stroke(Stroke::uniform(1.0, DISTINCT))))
+        .slider(
+            SliderRule::new()
+                .states(WidgetState::HOVER)
+                .thumb(PartPatch::new().stroke(Stroke::uniform(1.0, LABEL))),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let button = super::button(&r)?;
+        assert_eq!(
+            background_color(button(&theme, Status::Hovered).background),
+            Some(crate::styles::composite_over(
+                to_color(layer),
+                to_color(DISTINCT)
+            )),
+            "{preset:?}"
+        );
+        assert_eq!(
+            background_color(button(&theme, Status::Pressed).background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        let segment = super::segment(&r, false, crate::styles::SegmentPosition::Only)?;
+        assert_eq!(
+            background_color(segment(&theme, Status::Hovered).background),
+            Some(to_color(LABEL)),
+            "{preset:?}"
+        );
+        assert_eq!(
+            segment(&theme, Status::Pressed).background,
+            None,
+            "{preset:?}"
+        );
+        let header = super::expander(&r)?;
+        assert_eq!(
+            background_color(header(&theme, Status::Hovered).background),
+            Some(to_color(LABEL)),
+            "{preset:?}"
+        );
+        assert_eq!(
+            header(&theme, Status::Pressed).background,
+            None,
+            "{preset:?}"
+        );
+        let slider = super::slider(&r)?;
+        let edge = |status| slider(&theme, status).handle.border_color;
+        assert_eq!(
+            edge(iced_widget::slider::Status::Hovered),
+            to_color(LABEL),
+            "{preset:?}"
+        );
+        assert_eq!(
+            edge(iced_widget::slider::Status::Dragged),
+            to_color(DISTINCT),
+            "{preset:?}"
+        );
+    }
+
+    let stated = patch
+        .segmented_control(
+            SegmentedControlRule::new()
+                .states(WidgetState::PRESSED)
+                .segment(fill(DISTINCT)),
+        )
+        .expander(
+            ExpanderRule::new()
+                .states(WidgetState::PRESSED)
+                .header(fill(DISTINCT)),
+        );
+    for (preset, r) in every_preset_with(&stated) {
+        let theme = to_theme(&r)?;
+        let segment = super::segment(&r, false, crate::styles::SegmentPosition::Only)?;
+        assert_eq!(
+            background_color(segment(&theme, Status::Pressed).background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        assert_eq!(
+            background_color(super::expander(&r)?(&theme, Status::Pressed).background),
+            Some(to_color(DISTINCT)),
             "{preset:?}"
         );
     }

@@ -323,6 +323,16 @@ pub(crate) fn in_state<T: PartialEq>(stated: Option<T>, rest: T, iced: (T, T)) -
     }
 }
 
+/// A pill's corners, half the shorter side, as iced rounds one: a radius
+/// larger than any side, which both renderers clamp to half the shorter
+/// side (iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl`, `solid_vs_main`;
+/// iced_tiny_skia 0.14.1 `src/engine.rs`, `draw_quad`), as iced rounds its
+/// own pill, the scrollable's autoscroll overlay (iced_widget 0.14.2
+/// `src/scrollable.rs`, fn default: `border::rounded(u32::MAX)`).
+pub(crate) fn pill() -> Radius {
+    Radius::from(u32::MAX)
+}
+
 /// The alpha iced's own button classes scale a disabled button's fill and
 /// label by (iced_widget 0.14.2 `src/button.rs`, `fn disabled`:
 /// `scale_alpha(0.5)`), its disabled look where a theme states no opacity.
@@ -438,6 +448,8 @@ pub fn button(
 pub(crate) struct ButtonSource {
     pub background: Color,
     pub hover_background: Option<Layer>,
+    /// The pressed fill: 0.7.2's `active_background`, its hover layer where
+    /// that is unset, which its connector drew as the pressed one.
     pub active_background: Option<Layer>,
     pub disabled_background: Option<Color>,
     pub checked_background: Option<Color>,
@@ -477,10 +489,11 @@ impl ButtonSource {
         let b = &resolved.button;
         let d = &resolved.defaults;
         let line = |c: Option<Rgba>| c.map(|c| Line::outside(to_color(c)));
+        let hover = to_color(b.hover_background);
         Self {
             background: to_color(b.background_color),
-            hover_background: Some(Layer::Color(to_color(b.hover_background))),
-            active_background: b.active_background.map(|c| Layer::Color(to_color(c))),
+            hover_background: Some(Layer::Color(hover)),
+            active_background: Some(Layer::Color(b.active_background.map_or(hover, to_color))),
             disabled_background: b.disabled_background.map(to_color),
             checked_background: b.checked_background.map(to_color),
             label: to_color(b.font.color),
@@ -528,18 +541,13 @@ impl ButtonSource {
         }
     }
 
-    /// The hovered and the pressed fill: each layer over the idle fill.
-    /// `active_background` is a soft option: `None` is the platform saying
-    /// the pressed state has no fill of its own, so it copies the hover
-    /// layer. With no hover layer either, the theme states nothing for the
-    /// state, and its fill is `None`: iced's own for that status (spec §2,
+    /// The hovered and the pressed fill: each layer over the idle fill. A
+    /// layer `None` is a state the theme states no fill for, whose fill is
+    /// then as [`in_state`] gives it against iced's own (spec §2,
     /// `from_state`; spec §10, rule 0).
     fn layered(&self) -> (Option<Color>, Option<Color>) {
         let over = |layer: Option<Layer>| layer.map(|layer| layer.over(self.background));
-        (
-            over(self.hover_background),
-            over(self.active_background.or(self.hover_background)),
-        )
+        (over(self.hover_background), over(self.active_background))
     }
 
     /// Every stroke where it lies `align`, for the parity test's expected
@@ -880,7 +888,6 @@ pub(crate) fn toolbar_button_from(
     let pressed = t
         .active_background
         .or(b.active_background)
-        .or(b.hover_background)
         .map(Layer::as_given);
     let checked_fill = t.checked_background;
 
@@ -2747,8 +2754,10 @@ pub(crate) struct SliderSource {
     pub thumb_border_line_width: Option<f32>,
     /// The thumb's stroke at rest.
     pub thumb_border_color: Option<Line>,
-    /// The thumb's stroke under the pointer and while dragged, each the one
-    /// under the pointer where unstated, and that one the stroke at rest.
+    /// The thumb's stroke under the pointer and while dragged, where the
+    /// theme states one for the state, else as [`in_state`] gives it: the
+    /// stroke at rest, iced's own handle not changing its border. 0.7.2's
+    /// dragged thumb keeps the hovered stroke, and its reads state that.
     pub thumb_hover_border_color: Option<Line>,
     pub thumb_pressed_border_color: Option<Line>,
 }
@@ -2793,7 +2802,8 @@ impl SliderSource {
             thumb_border_color: line(self.thumb_border_color),
             thumb_hover_border_color: line(self.thumb_hover_border_color)
                 .filter(|_| !s.hover_stroke),
-            thumb_pressed_border_color: line(self.thumb_pressed_border_color),
+            thumb_pressed_border_color: line(self.thumb_pressed_border_color)
+                .filter(|_| !s.pressed_stroke),
             ..self
         }
     }
@@ -2822,10 +2832,9 @@ pub(crate) fn slider_from(
         .thumb_border_line_width
         .filter(|w| w.is_finite() && *w > 0.0);
     let edge = move |line: Option<Line>| width.zip(line);
-    let rest_line = s.thumb_border_color;
-    let hovered_line = s.thumb_hover_border_color.or(rest_line);
-    let pressed_line = s.thumb_pressed_border_color.or(hovered_line);
-    let rest_edge = edge(rest_line);
+    let rest_edge = edge(s.thumb_border_color);
+    let hovered_edge = edge(s.thumb_hover_border_color);
+    let pressed_edge = edge(s.thumb_pressed_border_color);
 
     move |theme, status| {
         let iced = iced_widget::slider::default(theme, status);
@@ -2848,14 +2857,28 @@ pub(crate) fn slider_from(
             Background::Color(filled),
             (rest.rail.backgrounds.0, iced.rail.backgrounds.0),
         );
-        let (border_width, border_color) = match status {
-            Status::Active => rest_edge,
-            Status::Hovered => edge(hovered_line),
-            Status::Dragged => edge(pressed_line),
-        }
-        .map_or(
-            (iced.handle.border_width, iced.handle.border_color),
-            |(width, line)| (width, line.over(painted(Some(handle_background)))),
+        // The thumb's stroke over the fill it paints in this status: the
+        // state's own where the theme states one, else each of the width
+        // and the colour as [`in_state`] gives it against iced's own handle,
+        // the theme's at rest where iced makes no change.
+        let under = painted(Some(handle_background));
+        let drawn = |edge: Option<(f32, Line)>| edge.map(|(width, line)| (width, line.over(under)));
+        let stated = drawn(match status {
+            Status::Active => None,
+            Status::Hovered => hovered_edge,
+            Status::Dragged => pressed_edge,
+        });
+        let (rest_width, rest_color) =
+            drawn(rest_edge).unwrap_or((rest.handle.border_width, rest.handle.border_color));
+        let border_width = in_state(
+            stated.map(|(width, _)| width),
+            rest_width,
+            (rest.handle.border_width, iced.handle.border_width),
+        );
+        let border_color = in_state(
+            stated.map(|(_, color)| color),
+            rest_color,
+            (rest.handle.border_color, iced.handle.border_color),
         );
         Style {
             rail: Rail {
@@ -2938,6 +2961,17 @@ pub(crate) struct ScrollbarSource {
     /// nothing for the pressed thumb.
     pub dragged_thumb: Option<Color>,
     pub overlay_mode: bool,
+    /// The scroller's stroke at rest and its width, laid over its fill;
+    /// `None`, iced's own, where the theme states none (0.7.2 has no
+    /// field for it).
+    pub thumb_edge: Option<(f32, Line)>,
+    /// The scroller's corners; `None`, iced's own, where the theme states
+    /// none (0.7.2 has no field for them).
+    pub thumb_radius: Option<Radius>,
+    /// The scroller's stroke under the pointer and dragged, where the theme
+    /// states one for the state; else as [`in_state`] gives it.
+    pub hovered_thumb_line: Option<Line>,
+    pub dragged_thumb_line: Option<Line>,
 }
 
 impl ScrollbarSource {
@@ -2952,24 +2986,53 @@ impl ScrollbarSource {
             hovered_thumb: Some(hovered),
             dragged_thumb: Some(s.thumb_active_color.map_or(hovered, to_color)),
             overlay_mode: s.overlay_mode,
+            thumb_edge: None,
+            thumb_radius: None,
+            hovered_thumb_line: None,
+            dragged_thumb_line: None,
         }
     }
 
-    /// The state options `listed` names unset, for the parity test's
+    /// The state options `listed` names unset, and the scroller's outline
+    /// where it names one the 0.8.0 theme states, for the parity test's
     /// expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        use crate::next::parity::Added;
         let s = listed.states;
-        Self {
+        let listed_self = Self {
             hovered_thumb: self.hovered_thumb.filter(|_| !s.hover_fill),
             dragged_thumb: self.dragged_thumb.filter(|_| !s.pressed_fill),
             ..self
+        };
+        match listed.added {
+            Added::Nothing => listed_self,
+            Added::ScrollerOutline {
+                width,
+                align,
+                rest,
+                hovered,
+                dragged,
+            } => {
+                let line = |color| Line {
+                    align,
+                    ..Line::outside(color)
+                };
+                Self {
+                    thumb_edge: Some((width, line(rest))),
+                    thumb_radius: Some(pill()),
+                    hovered_thumb_line: Some(line(hovered)),
+                    dragged_thumb_line: Some(line(dragged)),
+                    ..listed_self
+                }
+            }
         }
     }
 }
 
 /// [`scrollable`] of what it reads. A hovered or dragged scroller the theme
-/// states nothing for is iced's own for the status.
+/// states nothing for is iced's own for the status; a scroller's outline or
+/// corners it states nothing for are iced's own.
 pub(crate) fn scrollable_from(
     s: &ScrollbarSource,
 ) -> impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>
@@ -2980,6 +3043,10 @@ pub(crate) fn scrollable_from(
     let thumb = Background::Color(s.thumb);
     let hovered_thumb = s.hovered_thumb.map(Background::Color);
     let dragged_thumb = s.dragged_thumb.map(Background::Color);
+    let thumb_edge = s.thumb_edge;
+    let thumb_radius = s.thumb_radius;
+    let hovered_line = s.hovered_thumb_line;
+    let dragged_line = s.dragged_thumb_line;
     let overlay_mode = s.overlay_mode;
     // A floating bar is hidden at rest: iced 0.14 has no auto-hide and draws
     // a floating bar in every status (iced_widget 0.14.2
@@ -3006,54 +3073,63 @@ pub(crate) fn scrollable_from(
                 is_vertical_scrollbar_disabled: false,
             },
         );
-        let vertical_own = |stated: Option<Background>| {
-            in_state(
-                stated,
-                thumb,
-                (
-                    rest.vertical_rail.scroller.background,
-                    iced.vertical_rail.scroller.background,
+        // Each scroller as its axis's state draws it: the fill the theme
+        // states for the state, else as [`in_state`] gives it, and the
+        // stroke over that fill, the state's own where the theme states one,
+        // else each of its colour, width and radius as [`Outline::in_state`]
+        // gives it, against iced's own scroller on that axis. A hidden bar
+        // draws no stroke.
+        let scroller = |axis: fn(&Style) -> Scroller,
+                        state: Option<(Option<Background>, Option<Line>)>| {
+            let (rest, now) = (axis(&rest), axis(&iced));
+            let outline = Outline {
+                line: thumb_edge.map_or(Line::outside(rest.border.color), |(_, line)| line),
+                width: thumb_edge.map_or(rest.border.width, |(width, _)| width),
+                radius: thumb_radius.unwrap_or(rest.border.radius),
+            };
+            let (fill, line) = match state {
+                Some((fill, line)) => (
+                    in_state(fill, thumb, (rest.background, now.background)),
+                    line,
                 ),
-            )
+                None => (thumb, None),
+            };
+            let border = outline.in_state(line, painted(Some(fill)), (rest.border, now.border));
+            if shown {
+                Scroller {
+                    background: fill,
+                    border,
+                }
+            } else {
+                Scroller {
+                    background: Background::Color(Color::TRANSPARENT),
+                    border: Border {
+                        width: 0.0,
+                        ..border
+                    },
+                }
+            }
         };
-        let horizontal_own = |stated: Option<Background>| {
-            in_state(
-                stated,
-                thumb,
-                (
-                    rest.horizontal_rail.scroller.background,
-                    iced.horizontal_rail.scroller.background,
-                ),
-            )
-        };
+        let vertical = |s: &Style| s.vertical_rail.scroller;
+        let horizontal = |s: &Style| s.horizontal_rail.scroller;
+        let hovered = Some((hovered_thumb, hovered_line));
+        let dragged = Some((dragged_thumb, dragged_line));
         let (vertical, horizontal) = match status {
             Status::Active {
                 is_horizontal_scrollbar_disabled: _,
                 is_vertical_scrollbar_disabled: _,
-            } if floats => (
-                Background::Color(Color::TRANSPARENT),
-                Background::Color(Color::TRANSPARENT),
-            ),
-            Status::Active {
-                is_horizontal_scrollbar_disabled: _,
-                is_vertical_scrollbar_disabled: _,
-            } => (thumb, thumb),
+            } => (scroller(vertical, None), scroller(horizontal, None)),
             Status::Hovered {
                 is_horizontal_scrollbar_hovered,
                 is_vertical_scrollbar_hovered,
                 is_horizontal_scrollbar_disabled: _,
                 is_vertical_scrollbar_disabled: _,
             } => (
-                if is_vertical_scrollbar_hovered {
-                    vertical_own(hovered_thumb)
-                } else {
-                    thumb
-                },
-                if is_horizontal_scrollbar_hovered {
-                    horizontal_own(hovered_thumb)
-                } else {
-                    thumb
-                },
+                scroller(vertical, hovered.filter(|_| is_vertical_scrollbar_hovered)),
+                scroller(
+                    horizontal,
+                    hovered.filter(|_| is_horizontal_scrollbar_hovered),
+                ),
             ),
             Status::Dragged {
                 is_horizontal_scrollbar_dragged,
@@ -3061,16 +3137,11 @@ pub(crate) fn scrollable_from(
                 is_horizontal_scrollbar_disabled: _,
                 is_vertical_scrollbar_disabled: _,
             } => (
-                if is_vertical_scrollbar_dragged {
-                    vertical_own(dragged_thumb)
-                } else {
-                    thumb
-                },
-                if is_horizontal_scrollbar_dragged {
-                    horizontal_own(dragged_thumb)
-                } else {
-                    thumb
-                },
+                scroller(vertical, dragged.filter(|_| is_vertical_scrollbar_dragged)),
+                scroller(
+                    horizontal,
+                    dragged.filter(|_| is_horizontal_scrollbar_dragged),
+                ),
             ),
         };
         Style {
@@ -3084,18 +3155,12 @@ pub(crate) fn scrollable_from(
             vertical_rail: Rail {
                 background: Some(Background::Color(rail)),
                 border: iced.vertical_rail.border,
-                scroller: Scroller {
-                    background: vertical,
-                    border: iced.vertical_rail.scroller.border,
-                },
+                scroller: vertical,
             },
             horizontal_rail: Rail {
                 background: Some(Background::Color(rail)),
                 border: iced.horizontal_rail.border,
-                scroller: Scroller {
-                    background: horizontal,
-                    border: iced.horizontal_rail.scroller.border,
-                },
+                scroller: horizontal,
             },
             gap: iced.gap,
             auto_scroll: AutoScroll {
@@ -3479,9 +3544,16 @@ pub(crate) struct SegmentedSource {
     /// An unselected segment's fill under the pointer, painted as given over
     /// the group; `None` where the theme states none, no fill then.
     pub hover_background: Option<Color>,
+    /// An unselected segment's fill while pressed, painted as given; `None`
+    /// where the theme states none, as [`in_state`] gives it then. 0.7.2's
+    /// pressed segment is the hovered one, and its reads state that.
+    pub pressed_background: Option<Color>,
     /// The opacity a disabled control is faded by as one widget; `None`
     /// where the theme states none, its colours then drawn as stated.
     pub disabled_opacity: Option<f32>,
+    /// The control's shadow as iced draws one; `None`, iced's own, where
+    /// the theme states none (0.7.2 has no shadow geometry).
+    pub shadow: Option<Shadow>,
 }
 
 impl SegmentedSource {
@@ -3497,16 +3569,21 @@ impl SegmentedSource {
             active_background: to_color(s.active_background),
             active_text_color: to_color(s.active_text_color),
             hover_background: s.hover_background.map(to_color),
+            pressed_background: s.hover_background.map(to_color),
             disabled_opacity: Some(s.disabled_opacity),
+            shadow: None,
         }
     }
 
-    /// The outline's stroke where it lies as `listed` says, for the parity
-    /// test's expected values.
+    /// The outline's stroke where it lies as `listed` says, and the pressed
+    /// fill unset where it names it, for the parity test's expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
         Self {
             border: self.border.aligned(listed.align),
+            pressed_background: self
+                .pressed_background
+                .filter(|_| !listed.states.pressed_fill),
             ..self
         }
     }
@@ -3528,6 +3605,12 @@ pub(crate) fn segmented_control_from(
     // ([`Line::over`]), the pair on the window, faded with the control.
     let mut border = s.border.over(s.background);
     border.color = fade.over_ground(border.color);
+    // The shadow where the theme states one, faded with the control: a
+    // widget's opacity scales its shadow's alpha.
+    let shadow = s.shadow.map(|shadow| Shadow {
+        color: faded(shadow.color, fade.opacity),
+        ..shadow
+    });
 
     move |_theme| {
         let iced = Style::default();
@@ -3535,7 +3618,7 @@ pub(crate) fn segmented_control_from(
             text_color: Some(label),
             background: Some(Background::Color(group)),
             border,
-            shadow: iced.shadow,
+            shadow: shadow.unwrap_or(iced.shadow),
             snap: iced.snap,
         }
     }
@@ -3669,11 +3752,16 @@ pub(crate) fn segment_from(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
-    let (idle, hovered, label) = if selected {
+    let (idle, hovered, pressed, label) = if selected {
         let fill = Some(s.active_background);
-        (fill, fill, s.active_text_color)
+        (fill, fill, None, s.active_text_color)
     } else {
-        (None, s.hover_background, s.label)
+        (
+            None,
+            s.hover_background,
+            s.pressed_background.map(Some),
+            s.label,
+        )
     };
     let fade = SegmentedFade::of(s, true);
     let disabled = idle.map(|fill| fade.over_group(fill));
@@ -3692,13 +3780,25 @@ pub(crate) fn segment_from(
 
     move |_theme, status| {
         let iced = Style::default();
+        let fill = |fill: Option<Color>| fill.map(Background::Color);
         let (background, text_color) = match status {
-            Status::Active => (idle, label),
-            Status::Hovered | Status::Pressed => (hovered, label),
-            Status::Disabled => (disabled, disabled_label),
+            Status::Active => (fill(idle), label),
+            Status::Hovered => (fill(hovered), label),
+            // A pressed fill the theme states nothing for is as
+            // [`in_state`] gives it against iced's own for a segment,
+            // `button::Style::default()` in every status: the fill at rest.
+            Status::Pressed => (
+                in_state(
+                    pressed.map(fill),
+                    fill(idle),
+                    (iced.background, iced.background),
+                ),
+                label,
+            ),
+            Status::Disabled => (fill(disabled), disabled_label),
         };
         Style {
-            background: background.map(Background::Color),
+            background,
             text_color,
             border: Border {
                 radius,
@@ -3755,6 +3855,10 @@ pub(crate) struct ExpanderSource {
     /// The header's fill under the pointer, painted as given; `None` where
     /// the theme states none, no fill then.
     pub hover_background: Option<Color>,
+    /// The header's fill while pressed, painted as given; `None` where the
+    /// theme states none, as [`in_state`] gives it then. 0.7.2's pressed
+    /// header is the hovered one, and its reads state that.
+    pub pressed_background: Option<Color>,
     pub label: Color,
     /// The opacity a disabled header is faded by: the expander states none
     /// of its own, so the theme's.
@@ -3762,6 +3866,9 @@ pub(crate) struct ExpanderSource {
     /// The frame's stroke, width and corners.
     pub border: Outline,
     pub frame_enabled: Option<bool>,
+    /// The frame's shadow as iced draws one; `None`, iced's own, where the
+    /// theme states none (0.7.2 has no shadow geometry).
+    pub shadow: Option<Shadow>,
 }
 
 impl ExpanderSource {
@@ -3770,20 +3877,25 @@ impl ExpanderSource {
         let x = &resolved.expander;
         Self {
             hover_background: x.hover_background.map(to_color),
+            pressed_background: x.hover_background.map(to_color),
             label: to_color(x.font.color),
             // `ExpanderTheme` states no `disabled_opacity`: the defaults' fades it.
             disabled_opacity: resolved.defaults.disabled_opacity,
             border: Outline::of(&x.border),
             frame_enabled: x.frame_enabled,
+            shadow: None,
         }
     }
 
-    /// The frame's stroke where it lies as `listed` says, for the parity
-    /// test's expected values.
+    /// The frame's stroke where it lies as `listed` says, and the pressed
+    /// fill unset where it names it, for the parity test's expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
         Self {
             border: self.border.aligned(listed.align),
+            pressed_background: self
+                .pressed_background
+                .filter(|_| !listed.states.pressed_fill),
             ..self
         }
     }
@@ -3796,6 +3908,7 @@ pub(crate) fn expander_from(
     use iced_widget::button::{Status, Style};
 
     let hovered = x.hover_background;
+    let pressed = x.pressed_background;
     let label = x.label;
     let opacity = x.disabled_opacity;
 
@@ -3812,11 +3925,23 @@ pub(crate) fn expander_from(
         let iced = Style::default();
         let (background, text_color, border) = match status {
             Status::Active => (None, label, border),
-            Status::Hovered | Status::Pressed => (hovered, label, border),
+            Status::Hovered => (hovered.map(Background::Color), label, border),
+            // A pressed fill the theme states nothing for is as
+            // [`in_state`] gives it against iced's own for the header,
+            // `button::Style::default()` in every status: no fill.
+            Status::Pressed => (
+                in_state(
+                    pressed.map(|fill| Some(Background::Color(fill))),
+                    None,
+                    (iced.background, iced.background),
+                ),
+                label,
+                border,
+            ),
             Status::Disabled => (None, faded(label, opacity), faded_border(border, opacity)),
         };
         Style {
-            background: background.map(Background::Color),
+            background,
             text_color,
             border,
             shadow: iced.shadow,
@@ -3872,14 +3997,14 @@ pub(crate) fn expander_frame_from(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
-    // The frame paints no fill: its stroke lies over nothing.
+    // The frame paints no fill: its stroke lies over nothing. Its shadow,
+    // where the theme states one, is drawn with the frame alone.
+    let framed = matches!(x.frame_enabled, Some(true));
     let border = Border {
-        width: match x.frame_enabled {
-            Some(true) => x.border.width,
-            Some(false) | None => 0.0,
-        },
+        width: if framed { x.border.width } else { 0.0 },
         ..x.border.over(Color::TRANSPARENT)
     };
+    let shadow = x.shadow.filter(|_| framed);
 
     move |_theme| {
         let iced = Style::default();
@@ -3887,7 +4012,7 @@ pub(crate) fn expander_frame_from(
             text_color: iced.text_color,
             background: iced.background,
             border,
-            shadow: iced.shadow,
+            shadow: shadow.unwrap_or(iced.shadow),
             snap: iced.snap,
         }
     }

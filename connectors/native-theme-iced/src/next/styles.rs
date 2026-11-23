@@ -5,6 +5,7 @@
 //!
 //! Requires the `widgets` feature (on by default).
 
+use iced_core::border::Radius;
 use iced_core::theme::Theme;
 use iced_core::{Shadow, Vector};
 use native_theme::next::{
@@ -681,11 +682,11 @@ pub fn pick_list(
 }
 
 /// A part's shadow as iced draws one, where the theme states the part's
-/// shadows: iced's menu draws one outset shadow by its offset, blur and
-/// colour, so it is the first outset layer, its spread and every other
-/// layer dropped, and no shadow
-/// (`Shadow::default()`, transparent) where the theme states none outset.
-/// `None` where the theme states no shadow, iced's own then.
+/// shadows: iced's menu and container draw one outset shadow by its offset,
+/// blur and colour, so it is the first outset layer, its spread and every
+/// other layer dropped, and no shadow (`Shadow::default()`, transparent)
+/// where the theme states none outset. `None` where the theme states no
+/// shadow, iced's own then.
 fn shadow(part: &PartStyle) -> Option<Shadow> {
     if !part.stated.contains(PartStated::SHADOWS) {
         return None;
@@ -830,31 +831,35 @@ pub fn slider(
 /// [`crate::styles::scrollable`]: the rail's fill, the scroller at rest (the
 /// handle of a view without the focus, which is the plain handle on every
 /// preset: spec §5, S3; iced knows no view focus), under the pointer and
-/// dragged (`thumb(PRESSED)`, spec §5, `scrollbar.thumb_active_color`), each
-/// state the theme states nothing for iced's own, and whether the bar
-/// floats.
+/// dragged (`thumb(PRESSED)`, spec §5, `scrollbar.thumb_active_color`), with
+/// its outline and corners where the theme states them (Breeze's pen round
+/// a pill), each value the theme states nothing for iced's own, and whether
+/// the bar floats.
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no rail or thumb fill.
+/// [`super::Unmapped`] where the theme states no rail or thumb fill, or a
+/// stroke or corners iced cannot take.
 pub fn scrollable(
     r: &ResolvedTheme,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>,
 > {
     let s = &r.scrollbar;
+    let thumb = s.thumb(WidgetState::UNFOCUSED_VIEW);
+    let hover = s.thumb(WidgetState::HOVER);
+    let pressed = s.thumb(WidgetState::PRESSED);
     Ok(old::scrollable_from(&ScrollbarSource {
         track: fill(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
-        thumb: fill(
-            &s.thumb(WidgetState::UNFOCUSED_VIEW),
-            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
-        )?,
-        hovered_thumb: state_fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
-        dragged_thumb: state_fill(
-            &s.thumb(WidgetState::PRESSED),
-            "scrollbar.thumb(PRESSED).fill",
-        )?,
+        thumb: fill(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).fill")?,
+        hovered_thumb: state_fill(&hover, "scrollbar.thumb(HOVER).fill")?,
+        dragged_thumb: state_fill(&pressed, "scrollbar.thumb(PRESSED).fill")?,
         overlay_mode: s.overlay_mode,
+        thumb_edge: edge(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).stroke")?,
+        thumb_radius: radius_or_iced(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).corners")?
+            .map(Radius::new),
+        hovered_thumb_line: state_line(&hover, "scrollbar.thumb(HOVER).stroke.color")?,
+        dragged_thumb_line: state_line(&pressed, "scrollbar.thumb(PRESSED).stroke.color")?,
     }))
 }
 
@@ -909,12 +914,19 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
             "segmented_control.segment(HOVER).fill",
         )?
         .map(Layer::as_given),
+        pressed_background: state_layer(
+            &s.segment(WidgetState::PRESSED),
+            "segmented_control.segment(PRESSED).fill",
+        )?
+        .map(Layer::as_given),
         disabled_opacity: s.disabled_opacity,
+        shadow: shadow(&track),
     })
 }
 
 /// [`crate::styles::segmented_control`]: the group fill and the outline,
-/// its stroke laid over the group by its alignment.
+/// its stroke laid over the group by its alignment, and the track's shadow
+/// as [`shadow`] gives it.
 ///
 /// # Errors
 ///
@@ -938,8 +950,9 @@ pub fn segment_separator(
     Ok(old::segment_separator_from(&segmented_source(r)?, disabled))
 }
 
-/// [`crate::styles::segment`]: a hovered segment's fill where the theme
-/// states one, no fill where it states none.
+/// [`crate::styles::segment`]: a hovered or pressed segment's fill where
+/// the theme states one for the state, else no fill: iced's own for a
+/// segment, `button::Style::default()`, changes nothing between statuses.
 ///
 /// # Errors
 ///
@@ -964,6 +977,11 @@ fn expander_source(r: &ResolvedTheme) -> Mapped<ExpanderSource> {
             "expander.header(HOVER).fill",
         )?
         .map(Layer::as_given),
+        pressed_background: state_layer(
+            &x.header(WidgetState::PRESSED),
+            "expander.header(PRESSED).fill",
+        )?
+        .map(Layer::as_given),
         label: text_color(
             &x.header_label(WidgetState::NONE),
             "expander.header_label(NONE).color",
@@ -971,10 +989,12 @@ fn expander_source(r: &ResolvedTheme) -> Mapped<ExpanderSource> {
         disabled_opacity: r.colors.disabled_opacity,
         border: outline!(frame, "expander.container(NONE)")?,
         frame_enabled: x.frame_enabled,
+        shadow: shadow(&frame),
     })
 }
 
-/// [`crate::styles::expander`].
+/// [`crate::styles::expander`]: a hovered or pressed header's fill where
+/// the theme states one for the state, else no fill.
 ///
 /// # Errors
 ///
@@ -987,7 +1007,8 @@ pub fn expander(
     Ok(old::expander_from(&expander_source(r)?))
 }
 
-/// [`crate::styles::expander_frame`].
+/// [`crate::styles::expander_frame`], with the container's shadow as
+/// [`shadow`] gives it where the frame is drawn.
 ///
 /// # Errors
 ///
