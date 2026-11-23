@@ -9699,6 +9699,52 @@ impl MenuRowsLook {
     }
 }
 
+/// What the Overlays page's menu rows and their frame are painted with:
+/// `look`'s, or, where the installed theme gives none -- it leaves a home
+/// the look needs without a value gpui can take, or none is installed --
+/// the popover's tokens of `t`, the accent under the pointer and square
+/// rows (spec §10, rule 0).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct MenuRowsPaint {
+    pub(crate) background: Hsla,
+    pub(crate) text: Hsla,
+    pub(crate) hover: Hsla,
+    pub(crate) hover_text: Hsla,
+    pub(crate) row_radius: Option<Pixels>,
+    /// The frame's edge width and colour and its corner radius, from the
+    /// menu's panel or the popover's ([`MenuRowsFrame`]); `None` where the
+    /// rows keep the popover's tokens, and the frame is the showcase's own
+    /// (`NativeStyled::demo_frame`).
+    pub(crate) frame: Option<(Pixels, Option<Hsla>, Pixels)>,
+}
+
+impl MenuRowsPaint {
+    pub(crate) fn of(look: Option<&MenuRowsLook>, t: &gpui_component::theme::Theme) -> Self {
+        match look {
+            Some(look) => Self {
+                background: look.background,
+                text: look.text,
+                hover: look.hover,
+                hover_text: look.hover_text,
+                row_radius: look.radius,
+                frame: Some((
+                    px(look.frame.width.0),
+                    look.frame.colour,
+                    px(look.frame.radius.0),
+                )),
+            },
+            None => Self {
+                background: t.popover,
+                text: t.popover_foreground,
+                hover: t.accent,
+                hover_text: t.accent_foreground,
+                row_radius: None,
+                frame: None,
+            },
+        }
+    }
+}
+
 /// The menu rows an application draws itself, one per `(id, icon, label)`
 /// of `rows`, in a frame painted as the showcase's menus are, from the
 /// installed 0.8.0 theme ([`MenuRowsLook`]): `menu.panel(NONE).fill` edged
@@ -9722,35 +9768,25 @@ pub(crate) fn menu_rows(
     let t = cx.theme();
     let native = next_resolved(cx);
     let look = native.and_then(|r| MenuRowsLook::next_of(r).ok());
-    let frame = v_flex().w(MENU_ROWS_WIDTH);
-    let (frame, hover_bg, hover_text, radius) = match &look {
-        Some(look) => (
-            padded(
-                frame
-                    .bg(look.background)
-                    .text_color(look.text)
-                    .border(px(look.frame.width.0))
-                    .border_color(look.frame.colour.unwrap_or(t.transparent))
-                    .rounded(px(look.frame.radius.0))
-                    .overflow_hidden(),
-                &look.panel_padding,
-                None::<Pixels>,
-                None,
-            ),
-            look.hover,
-            look.hover_text,
-            look.radius,
-        ),
-        None => (
+    let paint = MenuRowsPaint::of(look.as_ref(), t);
+    let frame = v_flex()
+        .w(MENU_ROWS_WIDTH)
+        .bg(paint.background)
+        .text_color(paint.text);
+    let frame = match (paint.frame, &look) {
+        (Some((width, colour, radius)), Some(look)) => padded(
             frame
-                .bg(t.popover)
-                .text_color(t.popover_foreground)
-                .demo_frame(cx),
-            t.accent,
-            t.accent_foreground,
+                .border(width)
+                .border_color(colour.unwrap_or(t.transparent))
+                .rounded(radius)
+                .overflow_hidden(),
+            &look.panel_padding,
+            None::<Pixels>,
             None,
         ),
+        _ => frame.demo_frame(cx),
     };
+    let (hover_bg, hover_text, radius) = (paint.hover, paint.hover_text, paint.row_radius);
     frame
         .debug_selector(|| MENU_ROWS_FRAME.into())
         .children(rows.iter().map(|(id, icon, label)| {

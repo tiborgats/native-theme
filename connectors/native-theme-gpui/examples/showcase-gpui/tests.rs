@@ -12561,6 +12561,53 @@ fn the_menu_rows_frame_falls_back_to_the_popovers(cx: &mut TestAppContext) {
     assert_eq!(menu_frame_value(none, none, stroke_width_of), None);
 }
 
+/// The menu rows are painted with the menu's look where the theme gives
+/// one, and with the popover's tokens, the accent under the pointer, square
+/// rows and the showcase's own frame where it leaves a home the look needs
+/// without a value gpui can take, which no bundled preset does
+/// (`demo::MenuRowsPaint::of`): read on kde-breeze light's look and on none.
+#[gpui::test]
+fn the_menu_rows_keep_the_popovers_tokens_without_a_menu_look(cx: &mut TestAppContext) {
+    use crate::demo::{MenuRowsLook, MenuRowsPaint};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let r = next_theme(&mut cx, &showcase);
+    let look = r.as_ref().map(MenuRowsLook::next_of);
+    assert!(
+        matches!(look, Some(Ok(_))),
+        "kde-breeze light gives the menu rows no look: {:?}",
+        look.as_ref().map(|look| look.as_ref().err())
+    );
+    let Some(Ok(look)) = look else { return };
+    let t = cx.update(|_w, cx| Theme::global(cx).clone());
+    let menu = MenuRowsPaint::of(Some(&look), &t);
+    assert_eq!(
+        (menu.background, menu.text, menu.hover, menu.hover_text),
+        (look.background, look.text, look.hover, look.hover_text)
+    );
+    assert_eq!(menu.row_radius, look.radius);
+    assert_eq!(
+        menu.frame,
+        Some((
+            px(look.frame.width.0),
+            look.frame.colour,
+            px(look.frame.radius.0)
+        ))
+    );
+    let popover = MenuRowsPaint::of(None, &t);
+    assert_eq!(
+        popover,
+        MenuRowsPaint {
+            background: t.popover,
+            text: t.popover_foreground,
+            hover: t.accent,
+            hover_text: t.accent_foreground,
+            row_radius: None,
+            frame: None,
+        }
+    );
+}
+
 /// The Overlays page's menu rows' info claims the 0.8.0 homes the rows are
 /// painted with (M9-007), and no popover or accent token; its frame's edge
 /// where the theme strokes one (adwaita), and where it states the stroke as
