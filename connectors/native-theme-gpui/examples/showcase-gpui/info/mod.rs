@@ -254,18 +254,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.min_row_height as a least height the content grows past, the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
     ),
     (
-        "tooltip",
-        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border, the edge tooltip.border.line_width wide in place of upstream's border_1, and shadow_md's two layers in defaults.shadow_color where tooltip.border.shadow_enabled holds, no shadow where it does not, in place of upstream's shadow_md (gpui-component/tooltip.rs, Tooltip::render: bg, text_color, border_1, border_color and shadow_md, then refine_style)",
-    ),
-    (
-        "tooltip_content",
-        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its edge, tooltip.border.line_width on each side, which geometry::tooltip draws in place of upstream's border_1 (gpui-component/tooltip.rs, Tooltip::render), as the max width of the element passed to Tooltip::element, which the text wraps at",
-    ),
-    (
-        "status_bar",
-        "the status_bar.border.padding sides the theme states, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style) — and defaults.line_height as the line height",
-    ),
-    (
         "dialog",
         "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_width as the least width, which the width upstream sets after the refinement keeps, min_height, max_height, border.corner_radius, and background_color and border.color over the window's background and border upstream paints the surface with first; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
     ),
@@ -276,10 +264,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "dialog_title",
         "dialog.title_font including its colour, which displaces nothing, upstream setting none on the title, and defaults.line_height as the line height, which replaces upstream's relative(1.25) (dialog/title.rs, RenderOnce for DialogTitle: line_height then refine_style)",
-    ),
-    (
-        "dialog_description",
-        "dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render), and defaults.line_height as the line height",
     ),
     (
         "group_box_content",
@@ -296,14 +280,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "combobox",
         "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font (native-theme-gpui/geometry.rs, combobox)",
-    ),
-    (
-        "title_bar",
-        "window.title_bar_font's family, size, weight and style, and its colour, and defaults.line_height as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
-    ),
-    (
-        "title_bar_inactive",
-        "window.inactive_title_bar_background, drawn as upstream's gradient is from title_bar, and window.inactive_title_bar_text_color over geometry::title_bar's text, for a TitleBar while Window::is_window_active is false: TitleBar reads no window activation, painting every bar alike (title_bar.rs, default_title_bar_background and RenderOnce for TitleBar)",
     ),
     (
         "toolbar",
@@ -340,10 +316,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "default_button_rest",
         "button.default_button_background as the fill and button.default_button_border_color (button.border.color where unstated) as the border colour of a dialog's default Button at rest, over variants::default_button, whose rest fill is a fifth of its border colour (button/button.rs, ButtonVariant::bg_color); nothing where the theme states no fill, and the Button is .primary()",
-    ),
-    (
-        "link",
-        "link.font's family, size, weight and style, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (gpui-component/link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (gpui-component/link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),
 ];
 
@@ -393,6 +365,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
         "window.title(normal)'s family, size, weight and style, and its colour, and typography.line_height_multiplier as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
     ),
     (
+        "title_bar_inactive",
+        "window.title_bar(normal).fill of the theme resolved for an inactive window, drawn as upstream's gradient is from title_bar and the background, window.frame(normal).fill here, and its window.title(normal).color over next::geometry::title_bar's text, for a TitleBar while Window::is_window_active is false: TitleBar reads no window activation, painting every bar alike (title_bar.rs, default_title_bar_background and RenderOnce for TitleBar)",
+    ),
+    (
         "editor",
         "typography.line_height_multiplier as the line height, over the relative(1.5) upstream's Editor sets on its Input first: the Editor refines the caller's style last (input/editor.rs, Editor::render). Its font is the mono font the theme sets, mono_font_family at mono_font_size, typography.monospace's family and size (native-theme-gpui next/mod.rs, theme_scalars)",
     ),
@@ -426,6 +402,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "menu_item",
         "menu.item(NONE).max_size[1], where the theme states one, by the control-height rule (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.item(NONE).min_size[1] as a least height the content grows past, the padding sides menu.item(NONE) states, menu.icon_text_gap, and menu.item_label(NONE)'s family, size, weight and style but not its colour",
+    ),
+    (
+        "status_bar",
+        "the padding sides status_bar.bar states, and status_bar.label's family, size, weight and style, and its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style), and typography.line_height_multiplier as the line height",
     ),
     (
         "popover",

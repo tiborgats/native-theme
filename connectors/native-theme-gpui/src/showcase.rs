@@ -855,18 +855,18 @@ fn the_text_builder_reader_does_its_job() {
 }
 
 /// The tooltip builders' notes name what geometry.rs sets beyond the font
-/// and the colours: `geometry::tooltip` draws the edge
-/// `tooltip.border.line_width` wide over upstream's `border_1`, and
-/// `shadow_md`'s layers in `defaults.shadow_color` where
-/// `tooltip.border.shadow_enabled` holds; `geometry::tooltip_content`
-/// subtracts that width on each side, which a `1px border` would misstate
-/// under any other (material-3 states 0) (M9-038, M9-039).
+/// and the colours: `next::geometry::tooltip` draws the edge
+/// `tooltip.panel.stroke.width` wide over upstream's `border_1`, and
+/// `shadow_md`'s layers in `colors.shadow` where `tooltip.panel` states no
+/// shadows; `next::geometry::tooltip_content` subtracts that width on each
+/// side, which a `1px border` would misstate under any other (material-3
+/// states 0) (M9-038, M9-039).
 #[test]
 fn the_tooltip_notes_name_the_edge_and_the_shadow() {
-    let (entries, unreadable) = geometry_note_entries(geometry_notes_source());
+    let (entries, unreadable) = next_geometry_note_entries(geometry_notes_source());
     assert!(
         unreadable.is_empty(),
-        "GEOMETRY_NOTES could not be read:\n  {}",
+        "NEXT_GEOMETRY_NOTES could not be read:\n  {}",
         unreadable.join("\n  ")
     );
     let note = |builder: &str| {
@@ -877,24 +877,24 @@ fn the_tooltip_notes_name_the_edge_and_the_shadow() {
     };
     let tooltip = note("tooltip");
     let missing: Vec<&str> = [
-        "tooltip.border.line_width",
+        "tooltip.panel.stroke.width",
         "border_1",
         "shadow_md",
-        "defaults.shadow_color",
-        "tooltip.border.shadow_enabled",
+        "colors.shadow",
+        "tooltip.panel states no shadows",
     ]
     .into_iter()
     .filter(|part| !tooltip.contains(part))
     .collect();
     assert!(
         missing.is_empty(),
-        "geometry::tooltip's note does not name {missing:?}: {tooltip}"
+        "next::geometry::tooltip's note does not name {missing:?}: {tooltip}"
     );
     let content = note("tooltip_content");
     assert!(
-        content.contains("tooltip.border.line_width on each side")
+        content.contains("tooltip.panel.stroke.width on each side")
             && !content.contains("1px border"),
-        "geometry::tooltip_content's note does not subtract tooltip.border.line_width on each side: {content}"
+        "next::geometry::tooltip_content's note does not subtract tooltip.panel.stroke.width on each side: {content}"
     );
 }
 

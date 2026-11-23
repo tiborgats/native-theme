@@ -568,22 +568,13 @@ pub(crate) fn open_preferences(app: &Showcase, window: &mut Window, cx: &mut App
 /// This crate's name and version, as the About dialog states them.
 const ABOUT_NAME_VERSION: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
 
-/// Open the About dialog, unless an overlay is open. Its lines are
-/// `app.overlay_gap` apart, read as each frame draws it, so a theme switched
-/// while it is open reaches it.
+/// Open the About dialog, unless an overlay is open.
 pub(crate) fn open_about(app: &Showcase, window: &mut Window, cx: &mut App) {
     if an_overlay_is_open(window, cx) {
         return;
     }
-    let (ui, gap) = (app.info_ui.clone(), app.overlay_gap.clone());
+    let ui = app.info_ui.clone();
     window.open_dialog(cx, move |dialog, _window, cx| {
-        demo::about(
-            &ui,
-            cx,
-            dialog,
-            ABOUT_NAME_VERSION,
-            COMPATIBILITY_URL,
-            gap.get(),
-        )
+        demo::about(&ui, cx, dialog, ABOUT_NAME_VERSION, COMPATIBILITY_URL)
     });
 }

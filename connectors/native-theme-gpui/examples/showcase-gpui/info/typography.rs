@@ -208,20 +208,7 @@ pub fn text_style_font(
 }
 
 /// A `Link`, wherever the showcase shows one; the caller adds what it reads
-/// and where it goes. `underline` is the `link.underline_enabled` that
-/// `geometry::link` refined it by, `None` where no native theme is installed
-/// and none refines it.
-pub fn link(t: &Theme, underline: Option<bool>) -> WidgetInfo {
-    let info = link_colours(t, underline);
-    let info = match underline {
-        Some(true) => info.config("underline", "at rest, as upstream draws it: link.underline_enabled is true, so geometry::link leaves the underline gpui-component sets on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link)"),
-        Some(false) => info.config("underline", "none at rest: link.underline_enabled is false, so geometry::link removes the resting underline; hover and press still underline. The refinement sets the underline's thickness to 0, which paints none, over the text_decoration_1 upstream sets on the base style first, and upstream's hover and active styles set it again over the refinement (gpui-component/link.rs, RenderOnce for Link)"),
-        None => info.not_themeable("underline", "always on: gpui-component sets it on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link), and no native theme is installed, so no geometry::link refines it, which removes it at rest where link.underline_enabled is false"),
-    };
-    link_states(info, "link.hover_text_color", "link.active_text_color")
-}
-
-/// [`link`] on the 0.8.0 model: `underline` is whether
+/// and where it goes. `underline` is whether
 /// `link.label(NONE).decoration` underlines the resting Link, as
 /// `next::geometry::link` refined it, `None` where no 0.8.0 theme is
 /// installed or the builder took none of it (its geometry line names the

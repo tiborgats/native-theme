@@ -251,16 +251,7 @@ impl gpui::Global for OldModel {}
 /// The 0.8.0 theme of the installed choice resolved for an inactive window
 /// (`ThemeContext::window_active` false), beside the one installed, for the
 /// views of an inactive window (`native_theme_gpui::next::geometry::title_bar_inactive`).
-pub(crate) struct NextInactive(
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups read it as they move to the 0.8.0 model"
-        )
-    )]
-    pub(crate) native_theme::next::ResolvedTheme,
-);
+pub(crate) struct NextInactive(pub(crate) native_theme::next::ResolvedTheme);
 
 impl gpui::Global for NextInactive {}
 
@@ -410,13 +401,6 @@ pub(crate) fn toolbar_variant(cx: &App) -> ButtonCustomVariant {
 
 /// The installed 0.8.0 theme resolved for an inactive window
 /// ([`NextInactive`]), or `None` before `native_theme_gpui::next::apply` ran.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 pub(crate) fn next_inactive(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
     next_resolved(cx)?;
     cx.try_global::<NextInactive>().map(|inactive| &inactive.0)
@@ -1218,7 +1202,7 @@ pub(crate) struct DialogIcons {
 /// anew for every frame, from a builder that cannot borrow the view (root.rs,
 /// `WindowState::dialog_layer`), so
 /// this is how a dialog shows the icon theme installed now, not the one it
-/// opened under. `Showcase::overlay_gap` does the same for the gap.
+/// opened under.
 #[derive(Clone, Default)]
 pub(crate) struct SharedDialogIcons(Rc<Cell<Option<Rc<DialogIcons>>>>);
 

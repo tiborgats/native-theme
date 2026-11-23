@@ -1085,7 +1085,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "defaults.line_height",
-        "gpui: geometry::status_bar's line height, status_bar.font's size by it, which the bar's text takes (demo::status_bar)",
+        "gpui: next::geometry::status_bar's line height, status_bar.label's size by it, which the bar's text takes (demo::status_bar)",
     ),
     (
         "chrome.info",
@@ -2267,32 +2267,32 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "status_bar.border.padding_top_px",
-        "gpui: geometry::status_bar pads the stated side; upstream's py_1 the rest",
+        "gpui: next::geometry::status_barpads the stated side; upstream's py_1 the rest",
     ),
     (
         "",
         "status_bar.border.padding_right_px",
-        "gpui: geometry::status_bar pads the stated side; upstream's px_2 the rest",
+        "gpui: next::geometry::status_barpads the stated side; upstream's px_2 the rest",
     ),
     (
         "",
         "status_bar.border.padding_bottom_px",
-        "gpui: geometry::status_bar pads the stated side; upstream's py_1 the rest",
+        "gpui: next::geometry::status_barpads the stated side; upstream's py_1 the rest",
     ),
     (
         "",
         "status_bar.border.padding_left_px",
-        "gpui: geometry::status_bar pads the stated side; upstream's px_2 the rest",
+        "gpui: next::geometry::status_barpads the stated side; upstream's px_2 the rest",
     ),
     (
         "",
         "status_bar.font",
-        "gpui: geometry::status_bar's family, size, weight and style",
+        "gpui: next::geometry::status_bar'sfamily, size, weight and style",
     ),
     (
         "",
         "status_bar.font.color",
-        "gpui: geometry::status_bar's text colour",
+        "gpui: next::geometry::status_bar'stext colour",
     ),
     // --- switch: widgets::Switch ---------------------------------------------------
     (
@@ -2662,62 +2662,62 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tooltip.background_color",
-        "gpui: geometry::tooltip's fill",
+        "gpui: next::geometry::tooltip's fill",
     ),
     (
         "",
         "tooltip.border.color",
-        "gpui: geometry::tooltip's border colour",
+        "gpui: next::geometry::tooltip's border colour",
     ),
     (
         "",
         "tooltip.border.corner_radius_px",
-        "gpui: geometry::tooltip's corner radius",
+        "gpui: next::geometry::tooltip's corner radius",
     ),
     (
         "",
         "tooltip.border.line_width_px",
-        "gpui: geometry::tooltip's border width",
+        "gpui: next::geometry::tooltip's border width",
     ),
     (
         "",
         "tooltip.border.padding_top_px",
-        "gpui: geometry::tooltip pads the stated side",
+        "gpui: next::geometry::tooltip pads the stated side",
     ),
     (
         "",
         "tooltip.border.padding_right_px",
-        "gpui: geometry::tooltip pads the stated side",
+        "gpui: next::geometry::tooltip pads the stated side",
     ),
     (
         "",
         "tooltip.border.padding_bottom_px",
-        "gpui: geometry::tooltip pads the stated side",
+        "gpui: next::geometry::tooltip pads the stated side",
     ),
     (
         "",
         "tooltip.border.padding_left_px",
-        "gpui: geometry::tooltip pads the stated side",
+        "gpui: next::geometry::tooltip pads the stated side",
     ),
     (
         "",
         "tooltip.border.shadow_enabled",
-        "gpui: geometry::tooltip's shadow: shadow_md's layers in defaults.shadow_color, or none",
+        "gpui: next::geometry::tooltip's shadow: shadow_md's layers in defaults.shadow_color, or none",
     ),
     (
         "",
         "tooltip.font",
-        "gpui: geometry::tooltip's family, size, weight and style",
+        "gpui: next::geometry::tooltip's family, size, weight and style",
     ),
     (
         "",
         "tooltip.font.color",
-        "gpui: geometry::tooltip's text colour",
+        "gpui: next::geometry::tooltip's text colour",
     ),
     (
         "",
         "tooltip.max_width_px",
-        "gpui: geometry::tooltip_content, less the bubble's padding and border",
+        "gpui: next::geometry::tooltip_content, less the bubble's padding and border",
     ),
     (
         "",

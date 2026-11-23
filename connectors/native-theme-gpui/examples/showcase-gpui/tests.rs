@@ -5316,9 +5316,9 @@ fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     let padding = read(&mut cx, &showcase, |_this, cx| {
-        crate::support::old_native(cx).map(|n| n.resolved.status_bar.border.padding)
+        crate::support::next_resolved(cx).map(|r| next::padding_of(&r.status_bar.bar))
     });
-    let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
+    let (left, right) = (padding.and_then(|p| p[3]), padding.and_then(|p| p[1]));
     assert_eq!(
         (left, right),
         (Some(2.0), Some(14.0)),
@@ -5348,14 +5348,15 @@ fn device_pixel(cx: &mut VisualTestContext) -> Pixels {
 }
 
 /// The width gpui's text system gives `text` at the status bar's text size,
-/// which `geometry::status_bar` sets from `status_bar.font`, rounded up to a
-/// whole pixel as gpui lays a text element out (gpui-pre 0.3.12
+/// which `next::geometry::status_bar` sets from `status_bar.label`, rounded
+/// up to a whole pixel as gpui lays a text element out (gpui-pre 0.3.12
 /// src/elements/text.rs:772; gpui-fast 0.1.16 src/fast/text.rs:526): the
 /// width the bar draws that text at. `None` before a native theme is
-/// installed.
+/// installed, or where it leaves the bar's text unmapped.
 fn status_text_width(cx: &mut VisualTestContext, text: &str) -> Option<Pixels> {
     cx.update(|window, cx| {
-        let size = native_geometry(cx, geometry::status_bar)?
+        let size = crate::support::next_geometry(cx, next::geometry::status_bar)?
+            .ok()?
             .text
             .font_size?
             .to_pixels(window.rem_size());
@@ -5389,7 +5390,7 @@ fn the_status_bar_items_abut(
     environment: &str,
 ) {
     let right_padding = read(cx, showcase, |_this, cx| {
-        crate::support::old_native(cx).and_then(|n| n.resolved.status_bar.border.padding.right)
+        crate::support::next_resolved(cx).and_then(|r| next::padding_of(&r.status_bar.bar)[1])
     });
     assert!(
         right_padding.is_some(),
@@ -8673,17 +8674,23 @@ fn the_dialog_entrance_and_the_tooltip_delay_follow_the_theme(cx: &mut TestAppCo
         ("macos-tahoe", "catppuccin-mocha", false),
     ] {
         use_preset_with_palette(&mut cx, &showcase, preset, palette);
-        let (entrance, delay) = read(&mut cx, &showcase, |_, cx| {
-            native_value(cx, |n| {
+        let stated_now = read(&mut cx, &showcase, |_, cx| {
+            crate::support::next_value(cx, |r| {
                 (
-                    geometry::dialog_entrance(n),
-                    native_theme_gpui::tooltip_show_delay(n.resolved),
+                    next::geometry::dialog_entrance(r),
+                    next::tooltip_show_delay(r),
                 )
             })
-        })
-        .unwrap_or_else(|| panic!("{preset}: no native theme is installed"));
+        });
+        assert!(
+            stated_now.is_some(),
+            "{preset}: no native theme is installed"
+        );
+        let Some((entrance, delay)) = stated_now else {
+            return;
+        };
         assert_eq!(
-            (entrance.is_some(), delay.is_some()),
+            (entrance.is_ok_and(|e| e.is_some()), delay.is_some()),
             (stated, stated),
             "precondition: what {preset} states"
         );
@@ -8784,7 +8791,7 @@ fn a_dialog_reads_the_themes_entrance_once(cx: &mut TestAppContext) {
         }),
         ("the About dialog", |(ui, ..), cx| {
             let dialog = gpui_component::dialog::Dialog::new(cx);
-            let _ = crate::demo::about(ui, cx, dialog, "name", "url", None);
+            let _ = crate::demo::about(ui, cx, dialog, "name", "url");
         }),
         ("the Overlays page's Dialog", |(ui, _, icon, _), cx| {
             let dialog = gpui_component::dialog::Dialog::new(cx);
@@ -22312,7 +22319,7 @@ fn a_badges_overhang_is_its_printed_counts() {
 }
 
 /// Under a native theme the status bar's top edge is
-/// `status_bar.border.line_width` thick (`demo::status_bar`), as the listed
+/// `status_bar.bar.stroke.width` thick (`demo::status_bar`), as the listed
 /// panel's leaf row states it: no note says upstream's `border_t_1` stands
 /// there (M9-033). Without a native theme it does stand, and the info says so.
 #[gpui::test]
@@ -22328,19 +22335,21 @@ fn the_status_bars_info_names_upstreams_edge_only_without_a_theme(cx: &mut TestA
         .collect();
     assert!(
         upstream.is_empty(),
-        "under adwaita the status bar's info says upstream's 1px edge stands, which demo::status_bar draws status_bar.border.line_width wide: {upstream:?}"
+        "under adwaita the status bar's info says upstream's 1px edge stands, which demo::status_bar draws status_bar.bar.stroke.width wide: {upstream:?}"
     );
-    let width =
-        cx.update(|_window, cx| native_value(cx, |n| n.resolved.status_bar.border.line_width));
+    let width = cx.update(|_window, cx| {
+        crate::support::next_resolved(cx).and_then(|r| next::stroke_width_of(&r.status_bar.bar))
+    });
     let edge = shown_note(info.as_ref(), "top edge");
     assert!(
         width.is_some_and(|w| edge
             .as_deref()
-            .is_some_and(|t| t.contains("status_bar.border.line_width")
+            .is_some_and(|t| t.contains("status_bar.bar.stroke.width")
                 && t.contains(&format!("{}px", crate::info::px_text(w))))),
-        "the status bar's info does not give its top edge as status_bar.border.line_width, {width:?}: {edge:?}"
+        "the status bar's info does not give its top edge as status_bar.bar.stroke.width, {width:?}: {edge:?}"
     );
-    let bare = cx.update(|_window, cx| crate::info::status_bar(Theme::global(cx), false, ""));
+    let bare =
+        cx.update(|_window, cx| crate::info::status_bar(Theme::global(cx), false, false, ""));
     assert!(
         bare.not_themeable
             .iter()

@@ -31,9 +31,7 @@ use gpui_component::{
     v_flex,
 };
 use std::borrow::Cow;
-use std::cell::Cell;
 use std::num::NonZeroU32;
-use std::rc::Rc;
 use std::time::Duration;
 
 use native_theme::detect::{system_icon_set, system_icon_theme};
@@ -63,7 +61,7 @@ use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE, GPUI_ICONS,
     GRID_LAYOUT_ITEMS, IconEntry, IconSource, PresetDelegate, SampleIcon, SampleListDelegate,
     SampleTableDelegate, SharedDialogIcons, initial_chat_messages, load_all_icons, load_gpui_icons,
-    next_metric, parse_icon_set_choice, release_sources, role_for_gpui_icon,
+    parse_icon_set_choice, release_sources, role_for_gpui_icon,
 };
 use crate::{
     CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT,
@@ -452,16 +450,11 @@ pub(crate) struct Showcase {
     /// window.rs:6755-6763), out of the view's handlers' reach.
     _refocus: Subscription,
 
-    /// The installed 0.8.0 theme's `layout.widget_gap`, set as each frame starts, for the
-    /// overlays: gpui-component's `WindowState` root plugin builds them anew
-    /// for every frame from builders that cannot borrow the view (root.rs,
-    /// `WindowState::dialog_layer`), so this
-    /// is how the gap they read is the installed theme's, not the one they
-    /// opened under.
-    pub(crate) overlay_gap: Rc<Cell<Option<Pixels>>>,
-
     /// The icons of the Overlays page's dialogs, of the chosen icon theme,
-    /// set as each frame starts for the reason `overlay_gap` is.
+    /// set as each frame starts: gpui-component's `WindowState` root plugin
+    /// builds them anew for every frame from builders that cannot borrow the
+    /// view (root.rs, `WindowState::dialog_layer`), so this is how they show
+    /// the icon theme installed now, not the one they opened under.
     pub(crate) dialog_icons: SharedDialogIcons,
 
     /// Layout spacing of the installed theme. It lives on the model, not on
@@ -763,7 +756,7 @@ thread_local! {
     /// How often a tick of the animation timer (`start_animation_timer`)
     /// stepped the frames and asked for a redraw on this thread; a test reads
     /// how much an action adds to it.
-    pub(crate) static ANIMATION_STEPS: Cell<usize> = const { Cell::new(0) };
+    pub(crate) static ANIMATION_STEPS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 /// What the Icons page's icons were loaded as (`Showcase::reload_icons`),
@@ -1959,7 +1952,6 @@ impl Showcase {
             palette_state,
             focus_handle,
             _refocus,
-            overlay_gap: Rc::new(Cell::new(None)),
             dialog_icons: SharedDialogIcons::default(),
             // Nothing was read yet, so nothing is claimed: every key stays
             // `None` and the layout accessors report it as such.
@@ -2775,10 +2767,6 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.overlay_gap.set(next_metric(
-            cx,
-            native_theme_gpui::next::geometry::widget_gap,
-        ));
         // Before the inspector, a child view, renders and borrows it.
         if self.panel_look.is_none() {
             self.panel_look = PanelLook::of(self, cx);

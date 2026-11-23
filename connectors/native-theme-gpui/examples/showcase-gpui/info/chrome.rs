@@ -35,7 +35,7 @@ pub fn title_bar(t: &Theme, label: &str, inactive: bool) -> WidgetInfo {
     )
     .instance(
         "label",
-        format!("\"{label}\", this crate's name and version: the same string, WINDOW_TITLE, is the title the OS shows and the one the Windows screenshot capture finds the window by. The installed preset and colour mode are in the status bar. Plain text rather than a Label: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour geometry::title_bar gives the bar"),
+        format!("\"{label}\", this crate's name and version: the same string, WINDOW_TITLE, is the title the OS shows and the one the Windows screenshot capture finds the window by. The installed preset and colour mode are in the status bar. Plain text rather than a Label: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour next::geometry::title_bar gives the bar"),
     )
     .instance(
         "window controls",
@@ -134,7 +134,7 @@ pub fn menu_row_window(os: &str) -> String {
 
 /// What a `TitleBar` paints: its fill and border, and with `controls` drawn,
 /// its window controls' colours. `inactive` is whether
-/// `geometry::title_bar_inactive` refined it, whose geometry line then names
+/// `next::geometry::title_bar_inactive` refined it, whose geometry line then names
 /// the fill.
 fn title_bar_colours(t: &Theme, controls: bool, inactive: bool) -> WidgetInfo {
     let info = WidgetInfo::new("TitleBar");
@@ -211,12 +211,12 @@ fn title_bar_notes(info: WidgetInfo, inactive: bool) -> WidgetInfo {
     if inactive {
         info.config(
             "fill",
-            "a gradient between window.inactive_title_bar_background and background, upstream's gradient drawn from the inactive colour, which geometry::title_bar_inactive gives the bar while the window is not the active one, and window.inactive_title_bar_text_color over geometry::title_bar's text (title_bar.rs, default_title_bar_background)",
+            "a gradient between window.title_bar(normal).fill of the theme resolved for an inactive window and window.frame(normal).fill, upstream's gradient drawn from the inactive colour, which next::geometry::title_bar_inactive gives the bar while the window is not the active one, and that theme's window.title(normal).color over next::geometry::title_bar's text (title_bar.rs, default_title_bar_background)",
         )
     } else {
         info.not_themeable(
             "fill",
-            "a gradient between title_bar and background (title_bar.rs, default_title_bar_background); while the window is not the active one, the same gradient from window.inactive_title_bar_background, through geometry::title_bar_inactive",
+            "a gradient between title_bar and background (title_bar.rs, default_title_bar_background); while the window is not the active one, the same gradient from window.title_bar(normal).fill of the theme resolved for an inactive window, through next::geometry::title_bar_inactive, where that theme states it",
         )
     }
 }
@@ -1303,9 +1303,9 @@ pub fn toolbar_button(
 
 /// What a chrome Button's tooltip paints: built by the application on the
 /// element around the Button (`demo::action_tooltip`) and refined by
-/// `geometry::tooltip` where `styled`, whose line the helper records;
+/// `next::geometry::tooltip` where `styled`, whose line the helper records;
 /// upstream's colours where no native theme refined it. `delay` is the
-/// theme's `tooltip.show_delay_ms`, which the element is given.
+/// theme's `timings.tooltip_show_ms`, which the element is given.
 fn action_tooltip(
     info: WidgetInfo,
     t: &Theme,
@@ -1319,19 +1319,19 @@ fn action_tooltip(
     };
     let info = info.instance(
         "tooltip",
-        "Tooltip::new with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. Where a native theme is installed the bubble is given tooltip.max_width as its max width, so the bubble, the key binding included, keeps within it and the text wraps beside the key. The text as an element refined by geometry::tooltip_content would not: that width counts the text alone, so with a key binding the bubble would be wider than tooltip.max_width by the key and the gap before it; without one the two are the same bubble (gpui-component/tooltip.rs, Tooltip::render)",
+        "Tooltip::new with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. Where the installed theme states it, the bubble is given tooltip.panel.max_size[0] as its max width, so the bubble, the key binding included, keeps within it and the text wraps beside the key. The text as an element refined by next::geometry::tooltip_content would not: that width counts the text alone, so with a key binding the bubble would be wider than tooltip.panel.max_size[0] by the key and the gap before it; without one the two are the same bubble (gpui-component/tooltip.rs, Tooltip::render)",
 );
     match delay {
         Some(delay) => info.config(
             "tooltip delay",
             format!(
-                "tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through the Button, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay)",
+                "timings.tooltip_show_ms, {}ms: gpui's own tooltip, set on an element rather than through the Button, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/next/mod.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay)",
                 delay.as_millis()
             ),
         ),
         None => info.not_themeable(
             "tooltip delay",
-            "500ms: gpui's own tooltip, set on an element rather than through the Button, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed",
+            "500ms: gpui's own tooltip, set on an element rather than through the Button, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase sets to the theme's timings.tooltip_show_ms where the theme states one; this one states none, or no native theme is installed",
         ),
     }
 }
@@ -1379,11 +1379,12 @@ pub(crate) fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> St
 }
 
 /// The window's `StatusBar` (spec §2.7). Its geometry line is recorded by
-/// `native_info` where `demo::status_bar` applies the builder; `styled` is
-/// whether it does, which decides the colour of the text. `environment` is
-/// the whole text the bar draws after its toggle, which a bar too narrow
-/// for it cuts short.
-pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
+/// `next_native_info` where `demo::status_bar` applies the builder; `styled`
+/// is whether it does, which decides the colour of the text, and `edge`
+/// whether the theme states the top edge's width. `environment` is the whole
+/// text the bar draws after its toggle, which a bar too narrow for it cuts
+/// short.
+pub fn status_bar(t: &Theme, styled: bool, edge: bool, environment: &str) -> WidgetInfo {
     let info = WidgetInfo::new("StatusBar")
         .color(claim(
             "bg",
@@ -1397,7 +1398,7 @@ pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
             t.status_bar_border,
             "gpui-component/status_bar.rs:101",
         ));
-    // geometry::status_bar paints the text with status_bar.font's colour,
+    // next::geometry::status_bar paints the text with status_bar.label's colour,
     // which no ThemeColor field holds, over upstream's.
     let info = if styled {
         info
@@ -1412,21 +1413,21 @@ pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
     let info = info
         .not_themeable(
             "region gap",
-            "gap_2, 0.5rem, between the regions: upstream sets it on the bar before refine_style (status_bar.rs:88, :96), so a refinement could replace it, but the model states no status-bar item gap and geometry::status_bar sets none",
+            "gap_2, 0.5rem, between the regions: upstream sets it on the bar before refine_style (status_bar.rs:88, :96), so a refinement could replace it, but the model states no status-bar item gap and next::geometry::status_bar sets none",
         )
         .not_themeable(
             "item gap",
             "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84); the middle region opens with one item, the side-panel toggle and the environment text, which demo::status_bar spaces by layout.widget_gap, none where it is unstated",
         );
-    // Under a native theme demo::status_bar draws the top edge
-    // status_bar.border.line_width thick, over upstream's border_t_1, and
+    // Where the theme states it, demo::status_bar draws the top edge
+    // status_bar.bar.stroke.width thick, over upstream's border_t_1, and
     // says so in its "top edge" line.
-    let info = if styled {
+    let info = if edge {
         info
     } else {
         info.not_themeable(
             "edge",
-            "border_t_1, upstream's 1px rule along the top: with no native theme installed, demo::status_bar sets no status_bar.border.line_width over it (status_bar.rs, StatusBar::render)",
+            "border_t_1, upstream's 1px rule along the top: where the installed theme states no status_bar.bar.stroke.width, or none is installed, demo::status_bar sets none over it (status_bar.rs, StatusBar::render)",
         )
     };
     info.instance(
@@ -1449,7 +1450,7 @@ pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
     )
     .instance(
         "text",
-        "the environment and the shown title are plain text rather than Labels: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour geometry::status_bar gives the bar",
+        "the environment and the shown title are plain text rather than Labels: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour next::geometry::status_bar gives the bar",
     )
 }
 
@@ -2008,10 +2009,10 @@ pub fn about_dialog(
 
 /// The About dialog's link to the README's Compatibility table: the
 /// Typography page's Link, pointing somewhere else, refined by
-/// `geometry::link` by `underline`, the `link.underline_enabled` of the
-/// installed native theme, as every Link is.
+/// `next::geometry::link` by `underline`, whether the installed 0.8.0
+/// theme's `link.label(NONE).decoration` underlines it, as every Link is.
 pub fn about_link(t: &Theme, underline: Option<bool>) -> WidgetInfo {
-    super::typography::link(t, underline).instance(
+    super::typography::next_link(t, underline).instance(
         "target",
         "the connector README at this version's tag, v-prefixed as the text says, at its Compatibility heading. The tag exists once the version is released; before that the page is missing",
     )

@@ -118,8 +118,8 @@ use crate::info::{
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
-    SampleListDelegate, SampleTableDelegate, contrast_held, native_geometry, native_value,
-    next_geometry, next_metric, next_resolved, next_value, old_native, refined,
+    SampleListDelegate, SampleTableDelegate, contrast_held, native_value, next_geometry,
+    next_inactive, next_metric, next_resolved, next_value, old_native, refined,
     requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
@@ -319,12 +319,13 @@ fn next_sized_glyph(
     }
 }
 
-/// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
-/// the application's menus (`app_menus`) where the platform has no menu bar
-/// of its own, and quitting
-/// the application from its close button: the window's title bar, where the
-/// window was granted client-side decorations (spec S8). While the window is
-/// not `active` it is refined by `geometry::title_bar_inactive` as well.
+/// A `TitleBar` refined by `next::geometry::title_bar`, reading `label`,
+/// holding the application's menus (`app_menus`) where the platform has no
+/// menu bar of its own, and quitting the application from its close button:
+/// the window's title bar, where the window was granted client-side
+/// decorations (spec S8). While the window is not `active` it is refined by
+/// `next::geometry::title_bar_inactive` as well, from the theme resolved for
+/// an inactive window (`support::next_inactive`).
 pub(crate) fn title_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -333,30 +334,39 @@ pub(crate) fn title_bar(
     active: bool,
 ) -> Stateful<Div> {
     let label: SharedString = label.into();
-    // After `geometry::title_bar`: the inactive window's fill and text,
-    // over upstream's gradient (title_bar.rs:345-349).
+    // After `next::geometry::title_bar`: the inactive window's fill and
+    // text, over upstream's gradient (title_bar.rs:345-349), from the theme
+    // resolved for an inactive window; upstream's where it leaves one
+    // unmapped (spec §10, rule 0).
     let inactive = (!active)
-        .then(|| native_geometry(cx, geometry::title_bar_inactive))
+        .then(|| {
+            next_resolved(cx)
+                .zip(next_inactive(cx))
+                .map(|(r, inactive)| next::geometry::title_bar_inactive(r, inactive))
+        })
         .flatten();
-    let mut bar_info = info::title_bar(cx.theme(), &label, inactive.is_some());
-    let bar = native_info(
+    let applied = inactive.as_ref().and_then(|built| built.as_ref().ok());
+    let mut bar_info = info::title_bar(cx.theme(), &label, applied.is_some());
+    let bar = next_native_info(
         TitleBar::new(),
         cx,
-        geometry::title_bar,
+        next::geometry::title_bar,
         "title_bar",
         &mut bar_info,
     );
-    if inactive.is_some() {
-        bar_info = bar_info.geometry("title_bar_inactive");
-    }
-    let bar = refined(bar, inactive.as_ref())
+    bar_info = match &inactive {
+        Some(Ok(_)) => bar_info.next_geometry("title_bar_inactive"),
+        Some(Err(unstated)) => bar_info.next_unmapped("title_bar_inactive", *unstated),
+        None => bar_info,
+    };
+    let bar = refined(bar, applied)
         // Linux only: upstream drops the handler on every other platform
         // (title_bar.rs:96-105). On Windows the OS acts on the X itself; macOS
         // draws its own controls.
         .on_close_window(|_, window, cx| window.dispatch_action(Box::new(Quit), cx))
         // Plain text, not a Label: `Label::render` sets `foreground` on its own
         // element (label.rs:213), which would hide the title-bar font's colour
-        // `geometry::title_bar` just gave the bar.
+        // `next::geometry::title_bar` just gave the bar.
         .child(label)
         .when(cfg!(not(target_os = "macos")), |bar| {
             bar.child(app_menus(ui, cx, info::MenuHost::TitleBar, menus))
@@ -1345,7 +1355,7 @@ pub(crate) fn toolbar(
 }
 
 /// The window's `StatusBar` (spec §2.7, §3.2), refined by
-/// `geometry::status_bar`: on the left `toggle`, then `environment_text`
+/// `next::geometry::status_bar`: on the left `toggle`, then `environment_text`
 /// drawing `environment`; on the right `shown`, the title of what the
 /// inspector shows, where it shows one.
 pub(crate) fn status_bar(
@@ -1357,38 +1367,41 @@ pub(crate) fn status_bar(
     shown: Option<SharedString>,
     widget_gap: Option<Pixels>,
 ) -> Stateful<Div> {
-    // What `native_info` applies the builder under.
-    let styled = old_native(cx).is_some();
-    let mut bar_info = info::status_bar(cx.theme(), styled, environment);
-    let text_line = native_value(cx, |n| line_height_of(&n, &n.resolved.status_bar.font));
-    // Its top edge `status_bar.border.line_width` thick, over upstream's
+    // What `next_native_info` applies the builder under.
+    let styled = next_value(cx, next::geometry::status_bar).is_some_and(|built| built.is_ok());
+    // Its top edge `status_bar.bar.stroke.width` thick, over upstream's
     // `border_t_1` (status_bar.rs, `RenderOnce for StatusBar`), which the
-    // bar's style is refined over.
-    let edge = native_value(cx, |n| px(n.resolved.status_bar.border.line_width));
+    // bar's style is refined over; upstream's where the theme states none.
+    let edge = next_value(cx, |r| next::stroke_width_of(&r.status_bar.bar))
+        .flatten()
+        .map(px);
+    let mut bar_info = info::status_bar(cx.theme(), styled, edge.is_some(), environment);
+    let text_line =
+        next_value(cx, |r| px(line_box(&r.typography, &r.status_bar.label))).filter(|_| styled);
     if let Some(edge) = edge {
         bar_info = bar_info.config(
             "top edge",
             format!(
-                "status_bar.border.line_width, {}px",
+                "status_bar.bar.stroke.width, {}px",
                 info::px_text(edge.as_f32())
             ),
         );
     }
-    let bar = native_info(
+    let bar = next_native_info(
         StatusBar::new(),
         cx,
-        geometry::status_bar,
+        next::geometry::status_bar,
         "status_bar",
         &mut bar_info,
     )
     .when_some(edge, |bar, edge| bar.border_t(edge))
-    // Its text one line of `status_bar.font` tall (`line_height_of`).
+    // Its text one line of `status_bar.label` tall (`line_box`).
     .when_some(text_line, |bar, line| bar.line_height(line))
     // The toggle and the environment as one item, `layout.widget_gap`
     // apart: a region spaces its items by a `gap_2` of its own (status_bar.rs,
     // `RenderOnce for StatusBar`), which no style reaches. Plain text, not
     // Labels, as in the title bar: a Label would paint foreground over the
-    // colour `geometry::status_bar` gives the bar.
+    // colour `next::geometry::status_bar` gives the bar.
     //
     // The item opens the middle region, before an empty box that fills the
     // rest of it, so its edges are where the two ends stop. Upstream's left
@@ -1511,8 +1524,8 @@ pub(crate) fn icon_set_select(
 /// `control` of the theme settings with a tooltip reading `text`, built as
 /// [`built_tooltip_button`]'s is.
 fn settings_tooltip(cx: &App, control: Stateful<Div>, text: SharedString) -> Stateful<Div> {
-    let style = native_geometry(cx, geometry::tooltip);
-    let content = native_geometry(cx, geometry::tooltip_content);
+    let style = next_geometry(cx, next::geometry::tooltip).and_then(Result::ok);
+    let content = next_geometry(cx, next::geometry::tooltip_content).and_then(Result::ok);
     control
         .tooltip(move |window, cx| {
             let (text, content) = (text.clone(), content.clone());
@@ -1524,7 +1537,7 @@ fn settings_tooltip(cx: &App, control: Stateful<Div>, text: SharedString) -> Sta
             )
             .build(window, cx)
         })
-        .when_some(tooltip_delay(cx), |control, delay| {
+        .when_some(next_tooltip_delay(cx), |control, delay| {
             control.tooltip_show_delay(delay)
         })
 }
@@ -1614,7 +1627,7 @@ pub(crate) fn toolbar_button(
         about,
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
-    let delay = tooltip_delay(cx);
+    let delay = next_tooltip_delay(cx);
     let native = old_native(cx);
     let mut button_info = info::toolbar_button(
         cx.theme(),
@@ -1626,7 +1639,7 @@ pub(crate) fn toolbar_button(
         native.as_ref().map(|n| n.resolved),
     );
     if styled {
-        button_info = button_info.geometry("tooltip");
+        button_info = button_info.next_geometry("tooltip");
     }
     let icon = chrome_glyph(&drawn, &icon)
         .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_toolbar));
@@ -1761,34 +1774,27 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
 }
 
-/// The installed theme's `tooltip.show_delay_ms`, for GPUI's own
+/// The installed 0.8.0 theme's `timings.tooltip_show_ms`, for GPUI's own
 /// `.tooltip()` on an element, which waits GPUI's 500 ms unless the element
 /// is given another (gpui-pre `elements/div.rs:53, 1755`); `None` where the
-/// theme states none or no native theme is installed.
-pub(crate) fn tooltip_delay(cx: &App) -> Option<Duration> {
-    native_value(cx, |n| native_theme_gpui::tooltip_show_delay(n.resolved)).flatten()
-}
-
-/// [`tooltip_delay`] on the 0.8.0 model: the installed theme's
-/// `timings.tooltip_show_ms`, `None` where it states none or before
-/// `next::apply` ran.
+/// theme states none or before `next::apply` ran.
 pub(crate) fn next_tooltip_delay(cx: &App) -> Option<Duration> {
     next_value(cx, next::tooltip_show_delay).flatten()
 }
 
 /// A tooltip reading `text` and the key binding of `action`, built by the
-/// application and refined by `geometry::tooltip`, for the element that
+/// application and refined by `next::geometry::tooltip`, for the element that
 /// wraps a chrome Button; and whether a native theme refined it.
 ///
 /// Not `Button::tooltip_with_action`: the Button builds that Tooltip itself
 /// as it renders (button/button.rs, `RenderOnce for Button`), so the
 /// platform's tooltip fill, edge, padding, radius and text colour would not
-/// reach it. It is `Tooltip::new(text)` with `tooltip.max_width` on the
-/// bubble, which keeps the bubble, key binding included, within the
+/// reach it. It is `Tooltip::new(text)` with `tooltip.panel.max_size[0]` on
+/// the bubble, which keeps the bubble, key binding included, within the
 /// platform's outer width and wraps the text beside the key. The text as an
-/// element refined by `geometry::tooltip_content` would not: that width
+/// element refined by `next::geometry::tooltip_content` would not: that width
 /// counts the text alone, and with a key binding the bubble grows past
-/// `tooltip.max_width` by the key and the gap before it; without one the two
+/// `tooltip.panel.max_size[0]` by the key and the gap before it; without one the two
 /// are the same bubble (`tests/seams.rs`, `geometry::tooltip`).
 fn action_tooltip(
     cx: &App,
@@ -1798,8 +1804,13 @@ fn action_tooltip(
     impl Fn(&mut Window, &mut App) -> gpui::AnyView + 'static,
     bool,
 ) {
-    let style = native_geometry(cx, geometry::tooltip);
-    let max_width = native_value(cx, |n| px(n.resolved.tooltip.max_width));
+    let style = next_geometry(cx, next::geometry::tooltip).and_then(Result::ok);
+    let max_width = next_value(cx, |r| {
+        let [width, _] = r.tooltip.panel.max_size;
+        width
+    })
+    .flatten()
+    .map(px);
     let styled = style.is_some();
     let action = action.boxed_clone();
     let build = move |window: &mut Window, cx: &mut App| {
@@ -1847,7 +1858,7 @@ pub(crate) fn panel_toggle(
     spec: PanelToggle<'_>,
 ) -> Stateful<Div> {
     let (tip, styled) = action_tooltip(cx, spec.tooltip, spec.action);
-    let delay = tooltip_delay(cx);
+    let delay = next_tooltip_delay(cx);
     let native = old_native(cx);
     let mut button_info = info::panel_toggle(
         cx.theme(),
@@ -1866,7 +1877,7 @@ pub(crate) fn panel_toggle(
         ..
     } = spec;
     if styled {
-        button_info = button_info.geometry("tooltip");
+        button_info = button_info.next_geometry("tooltip");
     }
     let icon = chrome_glyph(&drawn, &icon)
         .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_small));
@@ -3178,36 +3189,38 @@ pub(crate) fn command_palette(
 }
 
 /// The About dialog (spec §2.8): `dialog`, titled, stating `name_version`
-/// and linking to `compatibility`, its lines `gap` apart. The Dialog reports
-/// itself on its title and on its content, the link on its own.
+/// and linking to `compatibility`, its lines the installed theme's
+/// `layout.widget_gap` apart, read as each frame builds the content, so a
+/// theme switched while it is open reaches it. The Dialog reports itself on
+/// its title and on its content, the link on its own.
 pub(crate) fn about(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     dialog: Dialog,
     name_version: &'static str,
     compatibility: &'static str,
-    gap: Option<Pixels>,
 ) -> Dialog {
-    let entrance = themed_entrance(cx);
+    let gapped = next_metric(cx, next::geometry::widget_gap).is_some();
+    let entrance = next_themed_entrance(cx);
     let mut dialog_info = info::about_dialog(
         cx.theme(),
-        gap.is_some(),
+        gapped,
         cx.reduce_motion(),
-        entrance.is_some(),
-        old_native(cx).is_some(),
+        next_entrance_applies(&entrance),
+        next_applies(cx, next::geometry::dialog),
     );
-    let dialog = dialog_frame(dialog, entrance, cx, &mut dialog_info);
-    let title = dialog_title(cx, "About", &mut dialog_info);
+    let dialog = next_dialog_frame(dialog, entrance, cx, &mut dialog_info);
+    let title = next_dialog_title(cx, "About", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
     // refinement records is recorded once, here, and applied there.
-    let description_style = native_info(
+    let description_style = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::dialog_description,
+        next::geometry::dialog_description,
         "dialog_description",
         &mut dialog_info,
     );
-    if gap.is_some() {
+    if gapped {
         dialog_info = dialog_info.next_geometry("widget_gap");
     }
     let title = title
@@ -3215,12 +3228,22 @@ pub(crate) fn about(
         .debug_selector(|| OVERLAY_ABOUT_TITLE.into());
     let ui = ui.clone();
     dialog.title(title).content(move |content, _window, cx| {
-        // Refined as `demo::link` refines every Link: `geometry::link`, and
-        // one line of `link.font` tall.
-        let underline = native_value(cx, |n| n.resolved.link.underline_enabled);
-        let mut link_info = info::about_link(cx.theme(), underline);
-        let line = native_value(cx, |n| line_height_of(&n, &n.resolved.link.font));
-        let link = native_info(
+        let gap = next_metric(cx, next::geometry::widget_gap);
+        // Refined as `demo::link` refines every Link: `next::geometry::link`,
+        // the underline it leaves or removes at rest, and one line of
+        // `link.label(NONE)` tall.
+        let refined_link = next_value(cx, |r| {
+            let label = r.link.label(WidgetState::NONE);
+            next::geometry::link(r).ok().map(|_| {
+                (
+                    label.decoration.kind == native_theme::next::DecorationKind::Underline,
+                    px(line_box(&r.typography, &label)),
+                )
+            })
+        })
+        .flatten();
+        let mut link_info = info::about_link(cx.theme(), refined_link.map(|(u, _)| u));
+        let link = next_native_info(
             Link::new("about-compatibility")
                 .href(compatibility)
                 .child(concat!(
@@ -3228,11 +3251,11 @@ pub(crate) fn about(
                     env!("CARGO_PKG_VERSION")
                 )),
             cx,
-            geometry::link,
+            next::geometry::link,
             "link",
             &mut link_info,
         )
-        .when_some(line, |link, line| link.line_height(line))
+        .when_some(refined_link, |link, (_, line)| link.line_height(line))
         .info(&ui, "overlay-about-link", link_info)
         .debug_selector(|| OVERLAY_ABOUT_LINK.into());
         content.child(
