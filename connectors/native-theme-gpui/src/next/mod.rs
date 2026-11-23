@@ -41,20 +41,24 @@ use std::fmt;
 use std::rc::Rc;
 use std::time::Duration;
 
-use gpui::{Hsla, SharedString};
+use gpui::{App, Hsla, SharedString};
 use gpui_base::ResizableTheme;
+use gpui_base::input::CursorBlink;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig, ThemeMode};
 use native_theme::next::{
-    ButtonQuery, Color, CornerCurve, CornerRadius, DialogButtonOrder, FocusTrigger, FontStyle,
-    IconSizes, ListQuery, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke,
-    StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
+    ButtonQuery, Color, Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FocusTrigger,
+    FontStyle, IconSizes, ListQuery, MotionPreference, Orientation, Paint, PartStated, PartStyle,
+    ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
 
 use crate::base_layer::{ScrollbarGeometry, ScrollbarSource, geometry_of, resizable_theme_of};
-use crate::colors::{SliceColors, WidgetColors, channels_to_hsla, focus_band, theme_color_of};
+use crate::colors::{
+    CappedNatives, SliceColors, WidgetColors, capped_natives_of, channels_to_hsla, focus_band,
+    theme_color_of,
+};
 use crate::config::{apply_config_scalars, highlight_style_of, theme_color_to_config_colors};
 use crate::geometry::Font;
-use crate::{ThemeScalars, apply_scalars, caret_blink_of, font_family};
+use crate::{AccessibilityPreferences, ThemeScalars, apply_scalars, caret_blink_of, font_family};
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to gpui (a gradient fill, a per-side
@@ -540,6 +544,118 @@ pub fn to_theme(r: &ResolvedTheme) -> Mapped<GpuiTheme> {
         theme.light_theme = Rc::new(config);
     }
     Ok(theme)
+}
+
+// ---------------------------------------------------------------------------
+// Installation
+// ---------------------------------------------------------------------------
+
+/// What [`apply`] installs from a 0.8.0 resolved theme beside the styled
+/// theme, computed when it stores the theme in [`crate::NativeTheme`], for
+/// the connector's observer to restore after an upstream rebuild: what
+/// [`crate::apply`] computes from a stored 0.7.2 theme at each restore.
+pub(crate) struct Installed {
+    pub(crate) resolved: ResolvedTheme,
+    /// The `ThemeConfig` [`to_theme`] stores in the slot of the theme's mode.
+    pub(crate) config: Rc<ThemeConfig>,
+    pub(crate) scrollbar: ScrollbarGeometry,
+    pub(crate) resizable: ResizableTheme,
+    /// The styled theme's colours, whose 12 base-palette fields the observer
+    /// restores.
+    pub(crate) palette: ThemeColor,
+    pub(crate) capped: CappedNatives,
+    pub(crate) caret_blink: Option<CursorBlink>,
+    pub(crate) tooltip_delay: Option<Duration>,
+    /// Whether the platform shows its focus ring for keyboard focus only,
+    /// and the ring has a width.
+    pub(crate) keyboard_focus_band: bool,
+}
+
+impl fmt::Debug for Installed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Installed")
+            .field("resolved", &self.resolved)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Installed {
+    /// What [`apply`] installs from `r`, whose styled theme is `theme`
+    /// ([`to_theme`] of `r`).
+    fn of(r: &ResolvedTheme, theme: &GpuiTheme) -> Mapped<Self> {
+        let config = if r.is_dark() {
+            theme.dark_theme.clone()
+        } else {
+            theme.light_theme.clone()
+        };
+        Ok(Self {
+            resolved: r.clone(),
+            config,
+            scrollbar: scrollbar_geometry(r)?,
+            resizable: resizable_theme(r)?,
+            palette: theme.colors.clone(),
+            capped: capped_natives_of(
+                widget_colors(r)?.selection,
+                slice_colors(r)?.list_selection_bg,
+            ),
+            caret_blink: caret_blink_of(
+                r.caret.blink_on_ms,
+                r.caret.blink_off_ms,
+                r.caret.blink_timeout_ms,
+            ),
+            tooltip_delay: tooltip_show_delay(r),
+            keyboard_focus_band: r.focus_ring.trigger == Some(FocusTrigger::KeyboardOnly)
+                && focus_ring_width(r)? > 0.0,
+        })
+    }
+}
+
+/// The accessibility preferences a 0.8.0 theme was resolved for, as 0.7.2's
+/// (docs/v0.8.0-spec.md §5, the table of homes: `reduce_motion` is a motion
+/// other than `Full`, `high_contrast` a contrast other than `Normal`).
+fn accessibility_of(r: &ResolvedTheme) -> AccessibilityPreferences {
+    let ctx = &r.context;
+    let mut prefs = AccessibilityPreferences::DEFAULT.clone();
+    prefs.text_scaling_factor = ctx.text_scale;
+    prefs.reduce_motion = ctx.motion != MotionPreference::Full;
+    prefs.high_contrast = ctx.contrast != Contrast::Normal;
+    prefs.reduce_transparency = ctx.reduced_transparency;
+    prefs
+}
+
+/// [`crate::apply`] for a 0.8.0 resolved theme: installs [`to_theme`] of `r`
+/// as gpui-component's global theme with the native base-layer overrides,
+/// and keeps them installed across upstream rebuilds, in the ten steps
+/// [`crate::apply`] lists, each from `r` where [`crate::apply`] reads its
+/// 0.7.2 theme.
+///
+/// The theme carries the context it was resolved for, so no accessibility
+/// preferences are passed: reduced motion is requested where its motion is
+/// other than `Full`, and [`crate::NativeTheme::accessibility`] holds the
+/// context as 0.7.2's preferences. Text scaling and reduced transparency are
+/// in the resolved values already; to follow a change of the context,
+/// resolve the theme again and call `apply` with it.
+/// [`crate::apply_accessibility`] stores the preferences it is given and
+/// forwards their reduced motion, but rebuilds no 0.8.0 theme.
+/// [`crate::NativeTheme::next_resolved`] returns the stored theme, and
+/// [`crate::NativeTheme::resolved`] and [`crate::ActiveNativeTheme::native`],
+/// which give a 0.7.2 theme, return `None` for it.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme leaves a value the connector installs
+/// unstated, or states it in a form gpui cannot take; nothing is installed
+/// then.
+pub fn apply(r: &ResolvedTheme, cx: &mut App) -> Mapped<()> {
+    let theme = to_theme(r)?;
+    let installed = crate::Variant::Next(Box::new(Installed::of(r, &theme)?));
+    let (light, dark) = if r.is_dark() {
+        (None, Some(installed))
+    } else {
+        (Some(installed), None)
+    };
+    crate::apply_inner(theme, light, dark, &accessibility_of(r), cx);
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

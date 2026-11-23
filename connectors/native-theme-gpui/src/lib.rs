@@ -1168,7 +1168,101 @@ impl Global for NativeTheme {}
 #[derive(Debug)]
 struct StoredVariant {
     name: SharedString,
-    resolved: ResolvedTheme,
+    variant: Variant,
+}
+
+/// A stored variant: a 0.7.2 resolved theme, which [`apply`] stores, or a
+/// 0.8.0 one with what the connector installs from it, which
+/// [`next::apply`] stores.
+#[derive(Debug)]
+pub(crate) enum Variant {
+    Old(ResolvedTheme),
+    Next(Box<next::Installed>),
+}
+
+impl Variant {
+    /// The 0.7.2 resolved theme, where the variant is one.
+    fn old(&self) -> Option<&ResolvedTheme> {
+        match self {
+            Self::Old(resolved) => Some(resolved),
+            Self::Next(_) => None,
+        }
+    }
+
+    /// The tooltip show delay to install ([`tooltip_show_delay`]).
+    fn tooltip_show_delay(&self) -> Option<Duration> {
+        match self {
+            Self::Old(resolved) => tooltip_show_delay(resolved),
+            Self::Next(installed) => installed.tooltip_delay,
+        }
+    }
+
+    /// The caret's blink to install ([`caret_blink`]).
+    fn caret_blink(&self) -> Option<CursorBlink> {
+        match self {
+            Self::Old(resolved) => caret_blink(resolved),
+            Self::Next(installed) => installed.caret_blink,
+        }
+    }
+
+    /// The variant's `ThemeConfig`, under the display name `name` and in the
+    /// mode `mode`.
+    fn config(
+        &self,
+        name: &SharedString,
+        mode: GpuiThemeMode,
+        prefs: &AccessibilityPreferences,
+    ) -> Rc<gpui_component::theme::ThemeConfig> {
+        match self {
+            Self::Old(resolved) => Rc::new(config::to_theme_config(resolved, name, mode, prefs)),
+            Self::Next(installed) => {
+                let mut config = (*installed.config).clone();
+                config.name = name.clone();
+                config.mode = mode;
+                Rc::new(config)
+            }
+        }
+    }
+
+    /// The scroll bar's and the resize handles' values for gpui-base.
+    fn base_overrides(&self) -> (base_layer::ScrollbarGeometry, gpui_base::ResizableTheme) {
+        match self {
+            Self::Old(resolved) => (
+                base_layer::scrollbar_geometry(resolved),
+                base_layer::resizable_theme(resolved),
+            ),
+            Self::Next(installed) => (installed.scrollbar.clone(), installed.resizable),
+        }
+    }
+
+    /// The colours whose 12 base-palette fields the observer restores.
+    fn base_palette(&self, is_dark: bool) -> gpui_component::theme::ThemeColor {
+        match self {
+            Self::Old(resolved) => colors::base_palette(resolved, is_dark),
+            Self::Next(installed) => installed.palette.clone(),
+        }
+    }
+
+    /// The native colours of the three fields gpui-component caps.
+    fn capped_natives(&self) -> colors::CappedNatives {
+        match self {
+            Self::Old(resolved) => colors::capped_natives(resolved),
+            Self::Next(installed) => installed.capped,
+        }
+    }
+
+    /// Whether the platform shows its focus ring for keyboard focus only,
+    /// and the ring has a width (`defaults.focus_ring_keyboard_only`,
+    /// `defaults.focus_ring_width`).
+    fn keyboard_focus_band(&self) -> bool {
+        match self {
+            Self::Old(resolved) => {
+                let d = &resolved.defaults;
+                d.focus_ring_keyboard_only == Some(true) && d.focus_ring_width > 0.0
+            }
+            Self::Next(installed) => installed.keyboard_focus_band,
+        }
+    }
 }
 
 impl NativeTheme {
@@ -1186,14 +1280,29 @@ impl NativeTheme {
         }
     }
 
-    fn variant(&self, is_dark: bool) -> Option<&ResolvedTheme> {
-        self.stored(is_dark).map(|stored| &stored.resolved)
+    fn source(&self, is_dark: bool) -> Option<&Variant> {
+        self.stored(is_dark).map(|stored| &stored.variant)
     }
 
-    /// The stored variant for the styled theme's current mode, if any.
+    fn variant(&self, is_dark: bool) -> Option<&ResolvedTheme> {
+        self.source(is_dark).and_then(Variant::old)
+    }
+
+    /// The stored variant for the styled theme's current mode, if any and
+    /// [`apply`] stored it; `None` for a 0.8.0 theme [`next::apply`] stored.
     #[must_use]
     pub fn resolved(&self, cx: &App) -> Option<&ResolvedTheme> {
         self.variant(self.is_dark(cx))
+    }
+
+    /// The 0.8.0 theme [`next::apply`] stored for the styled theme's current
+    /// mode, if any; `None` for a 0.7.2 theme [`apply`] stored.
+    #[must_use]
+    pub fn next_resolved(&self, cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
+        match self.source(self.is_dark(cx))? {
+            Variant::Next(installed) => Some(&installed.resolved),
+            Variant::Old(_) => None,
+        }
     }
 
     /// The preferences `apply` / `apply_accessibility` last installed.
@@ -1368,10 +1477,11 @@ pub fn apply(
     cx: &mut App,
 ) {
     let is_dark = theme.is_dark();
+    let variant = Variant::Old(resolved.clone());
     let (light, dark) = if is_dark {
-        (None, Some(resolved))
+        (None, Some(variant))
     } else {
-        (Some(resolved), None)
+        (Some(variant), None)
     };
     apply_inner(theme, light, dark, prefs, cx);
 }
@@ -1398,8 +1508,8 @@ pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
     let theme = system_gpui_theme(sys);
     apply_inner(
         theme,
-        Some(&sys.light),
-        Some(&sys.dark),
+        Some(Variant::Old(sys.light.clone())),
+        Some(Variant::Old(sys.dark.clone())),
         &sys.accessibility,
         cx,
     );
@@ -1418,7 +1528,8 @@ pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {
     let rebuilt = cx.try_global::<NativeTheme>().and_then(|nt| {
         let is_dark = nt.is_dark(cx);
         let stored = nt.stored(is_dark)?;
-        Some(to_theme(&stored.resolved, &stored.name, is_dark, prefs))
+        let resolved = stored.variant.old()?;
+        Some(to_theme(resolved, &stored.name, is_dark, prefs))
     });
     match rebuilt {
         // `None, None` keeps the stored variants; apply_inner stores `prefs`.
@@ -1533,15 +1644,15 @@ fn cursor_blink_to_install(theme: Option<CursorBlink>, cx: &mut App) -> CursorBl
 fn install_variant_tooltip_delay(cx: &mut App) {
     let delay = cx
         .try_global::<NativeTheme>()
-        .and_then(|nt| nt.resolved(cx))
-        .and_then(tooltip_show_delay);
+        .and_then(|nt| nt.source(nt.is_dark(cx)))
+        .and_then(Variant::tooltip_show_delay);
     install_tooltip_delay(delay, cx);
 }
 
-fn apply_inner(
+pub(crate) fn apply_inner(
     mut theme: GpuiTheme,
-    light: Option<&ResolvedTheme>,
-    dark: Option<&ResolvedTheme>,
+    light: Option<Variant>,
+    dark: Option<Variant>,
     prefs: &AccessibilityPreferences,
     cx: &mut App,
 ) {
@@ -1549,6 +1660,12 @@ fn apply_inner(
     // The display name of the config `to_theme` built for this mode; the other
     // variant's config takes the same name.
     let name: SharedString = theme.theme_name().clone();
+    // The blink of the variant handed for the styled theme's mode: `apply` and
+    // `apply_system_theme` hand it, `apply_accessibility` hands none and
+    // leaves the installed blink.
+    let variant_blink = if is_dark { &dark } else { &light }
+        .as_ref()
+        .map(Variant::caret_blink);
     {
         let nt = cx.default_global::<NativeTheme>();
         // The stored pair is the two modes of one theme: another theme's
@@ -1558,13 +1675,13 @@ fn apply_inner(
         if let Some(light) = light {
             nt.light = Some(StoredVariant {
                 name: name.clone(),
-                resolved: light.clone(),
+                variant: light,
             });
         }
         if let Some(dark) = dark {
             nt.dark = Some(StoredVariant {
                 name: name.clone(),
-                resolved: dark.clone(),
+                variant: dark,
             });
         }
         nt.accessibility = prefs.clone();
@@ -1575,12 +1692,8 @@ fn apply_inner(
     if !cx.has_global::<GpuiTheme>() {
         gpui_component::init(cx);
     }
-    // The variant handed for the styled theme's mode: `apply` and
-    // `apply_system_theme` hand it, `apply_accessibility` hands none and
-    // leaves the installed blink.
-    let variant = if is_dark { dark } else { light };
-    let cursor_blink = match variant {
-        Some(variant) => cursor_blink_to_install(caret_blink(variant), cx),
+    let cursor_blink = match variant_blink {
+        Some(blink) => cursor_blink_to_install(blink, cx),
         None => GpuiTheme::global(cx).cursor_blink,
     };
     // The four settings are the application's, not theme data: upstream's own
@@ -1598,13 +1711,13 @@ fn apply_inner(
     // D34: the other mode's config from its stored variant, so Theme::change
     // reproduces the native palette instead of the registry default.
     let other_config = cx.try_global::<NativeTheme>().and_then(|nt| {
-        nt.variant(!is_dark).map(|other| {
+        nt.source(!is_dark).map(|other| {
             let mode = if is_dark {
                 GpuiThemeMode::Light
             } else {
                 GpuiThemeMode::Dark
             };
-            Rc::new(config::to_theme_config(other, &name, mode, prefs))
+            other.config(&name, mode, prefs)
         })
     });
     if let Some(cfg) = other_config {
@@ -1644,15 +1757,10 @@ fn base_overrides_for(
     is_dark: bool,
     styled: Option<&GpuiTheme>,
 ) -> Option<(base_layer::ScrollbarGeometry, gpui_base::ResizableTheme)> {
-    if let Some(resolved) = nt.variant(is_dark) {
-        return Some((
-            base_layer::scrollbar_geometry(resolved),
-            base_layer::resizable_theme(resolved),
-        ));
+    if let Some(variant) = nt.source(is_dark) {
+        return Some(variant.base_overrides());
     }
-    let other = nt.variant(!is_dark)?;
-    let mut geometry = base_layer::scrollbar_geometry(other);
-    let mut resizable = base_layer::resizable_theme(other);
+    let (mut geometry, mut resizable) = nt.source(!is_dark)?.base_overrides();
     if let Some(styled) = styled {
         geometry.track = styled.scrollbar;
         geometry.track_active_border = styled.border;
@@ -1728,10 +1836,10 @@ fn repair_base_palette(cx: &mut App) {
         return;
     };
     let is_dark = nt.is_dark(cx);
-    let Some(resolved) = nt.variant(is_dark) else {
+    let Some(variant) = nt.source(is_dark) else {
         return;
     };
-    let native = colors::base_palette(resolved, is_dark);
+    let native = variant.base_palette(is_dark);
     // Probe a copy first so an unchanged palette causes no notification.
     let differs = cx.try_global::<GpuiTheme>().is_some_and(|styled| {
         let mut probe = styled.clone();
@@ -1770,10 +1878,10 @@ fn restore_capped_colors(cx: &mut App) -> bool {
         return false;
     };
     let is_dark = nt.is_dark(cx);
-    let Some(resolved) = nt.variant(is_dark) else {
+    let Some(variant) = nt.source(is_dark) else {
         return false;
     };
-    let native = colors::capped_natives(resolved);
+    let native = variant.capped_natives();
     let capped = cx.try_global::<GpuiTheme>().is_some_and(|styled| {
         let mut probe = styled.clone();
         colors::restore_capped(&native, &mut probe)
@@ -1906,11 +2014,11 @@ impl gpui_base::RootPlugin for FocusBand {
             self.by_key = now.is_some() && window.last_input_was_keyboard();
             self.focus = now;
         }
-        let Some(n) = cx.native() else {
-            return;
-        };
-        let d = &n.resolved.defaults;
-        if d.focus_ring_keyboard_only != Some(true) || d.focus_ring_width <= 0.0 {
+        let keyboard_only = cx
+            .native_theme()
+            .and_then(|nt| nt.source(nt.is_dark(cx)))
+            .is_some_and(Variant::keyboard_focus_band);
+        if !keyboard_only {
             return;
         }
         let want = self.by_key;
@@ -4292,7 +4400,7 @@ mod apply_tests {
         let nt = NativeTheme {
             dark: Some(StoredVariant {
                 name: theme.theme_name().clone(),
-                resolved: resolved.clone(),
+                variant: Variant::Old(resolved.clone()),
             }),
             ..NativeTheme::default()
         };

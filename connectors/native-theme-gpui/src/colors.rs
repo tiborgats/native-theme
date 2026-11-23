@@ -939,9 +939,17 @@ pub(crate) struct CappedNatives {
 
 /// [`CappedNatives`] of `resolved`.
 pub(crate) fn capped_natives(resolved: &ResolvedTheme) -> CappedNatives {
-    let row = rgba_to_hsla(resolved.list.selection_background);
+    capped_natives_of(
+        rgba_to_hsla(resolved.input.selection_background),
+        rgba_to_hsla(resolved.list.selection_background),
+    )
+}
+
+/// [`CappedNatives`] of the text selection's fill and the selected row's,
+/// read from either model.
+pub(crate) fn capped_natives_of(selection: Hsla, row: Hsla) -> CappedNatives {
     CappedNatives {
-        selection: rgba_to_hsla(resolved.input.selection_background),
+        selection,
         list_active: row,
         table_active: row,
     }

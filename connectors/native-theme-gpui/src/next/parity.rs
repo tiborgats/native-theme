@@ -1221,3 +1221,110 @@ fn every_listed_difference_names_a_covered_preset() {
         }
     }
 }
+
+/// What `apply` leaves installed, each part in its `Debug` form: the styled
+/// theme (its configs included), gpui-base's resize handles, the base
+/// overrides the connector writes for the current mode, the tooltip show
+/// delay, reduced motion, the stored preferences and the focus band's rule.
+fn installed(cx: &gpui::App) -> Vec<(&'static str, String)> {
+    let styled = GpuiTheme::global(cx);
+    let is_dark = styled.is_dark();
+    let base = gpui_base::Theme::global(cx);
+    let nt = cx.try_global::<crate::NativeTheme>();
+    let overrides = nt
+        .and_then(|nt| crate::base_overrides_for(nt, is_dark, Some(styled)))
+        .map(|(g, r)| format!("{g:?} {:?} {:?}", r.handle, r.active_handle));
+    let band = nt
+        .and_then(|nt| nt.source(is_dark))
+        .map(crate::Variant::keyboard_focus_band);
+    vec![
+        ("styled theme", format!("{styled:?}")),
+        (
+            "base handles",
+            format!(
+                "{:?} {:?}",
+                base.resizable.handle, base.resizable.active_handle
+            ),
+        ),
+        ("base overrides", format!("{overrides:?}")),
+        (
+            "tooltip delay",
+            format!("{:?}", gpui_base::TooltipDefaults::global(cx).show_delay()),
+        ),
+        ("reduce motion", format!("{}", cx.reduce_motion())),
+        (
+            "preferences",
+            format!("{:?}", nt.map(|nt| nt.accessibility())),
+        ),
+        ("focus band", format!("{band:?}")),
+    ]
+}
+
+/// The two schemes of `key` (0.7.2) or `preset` (0.8.0) applied, light then
+/// dark, with no variant stored before: what is installed after the calls,
+/// and after an upstream switch to light mode (`Theme::change`), which the
+/// connector's observer answers from the stored variants.
+fn apply_both(
+    cx: &mut gpui::TestAppContext,
+    key: &str,
+    preset: Preset,
+    next: bool,
+) -> Result<[Vec<(&'static str, String)>; 2], String> {
+    let mut themes = Vec::new();
+    for is_dark in [false, true] {
+        themes.push((
+            is_dark,
+            resolve(key, preset, is_dark).map_err(|e| e.to_string())?,
+        ));
+    }
+    cx.update(|cx| -> Result<(), String> {
+        if let Some(nt) = cx.try_global::<crate::NativeTheme>()
+            && (nt.light.is_some() || nt.dark.is_some())
+        {
+            let nt = cx.global_mut::<crate::NativeTheme>();
+            nt.light = None;
+            nt.dark = None;
+        }
+        for (is_dark, (old, name, _, new)) in &themes {
+            if next {
+                super::apply(new, cx).map_err(|e| e.to_string())?;
+            } else {
+                let prefs = AccessibilityPreferences::DEFAULT;
+                let theme = crate::to_theme(old, name, *is_dark, &prefs);
+                crate::apply(theme, old, &prefs, cx);
+            }
+        }
+        Ok(())
+    })?;
+    let after = cx.update(|cx| installed(cx));
+    cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
+    let switched = cx.update(|cx| installed(cx));
+    Ok([after, switched])
+}
+
+/// `next::apply` installs what `apply` installs, on every covered preset:
+/// after both schemes are applied, and after upstream switches the mode.
+#[gpui::test]
+fn next_apply_installs_what_apply_installs(cx: &mut gpui::TestAppContext) {
+    let mut failures = Vec::new();
+    for &(key, preset) in PRESETS {
+        let both = apply_both(cx, key, preset, false)
+            .and_then(|old| apply_both(cx, key, preset, true).map(|new| (old, new)));
+        match both {
+            Ok((old, new)) => {
+                for (when, (o, n)) in ["after apply", "after Theme::change"]
+                    .iter()
+                    .zip(old.iter().zip(new.iter()))
+                {
+                    for ((part, o), (_, n)) in o.iter().zip(n.iter()) {
+                        if o != n {
+                            failures.push(format!("{key} {when}: {part}: 0.7.2 {o}, 0.8.0 {n}"));
+                        }
+                    }
+                }
+            }
+            Err(e) => failures.push(format!("{key}: {e}")),
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
