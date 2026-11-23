@@ -109,8 +109,16 @@ are in the evidence repository and in this repository's commit `b38c1795`
 | Run | Date | Commit | Why |
 |-----|------|--------|-----|
 | [`2026-11-06-run-42275028573/`](ios-host/2026-11-06-run-42275028573/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42275028573)) | 2026-11-06 | `7bb1e784` on `v0.8.0-tools-ios-m2` | ios-13's caret blink ([specification](../archive/todo_v0.7.2_caret-blink-spec.md) Part 0) |
+| [`2026-11-23-run-45230061151/`](ios-host/2026-11-23-run-45230061151/) ([run](https://github.com/tiborgats/native-theme/actions/runs/45230061151)) | 2026-11-23 | `befc13ab` on `m2-fs4d` | the list set on iOS 18 (ios-13): a table row, a segment, a sidebar row, a tab bar item, an outline header, a slider's thumb and a switch row pressed, the inset-grouped card, and the labelled switch (a UIKit list row and SwiftUI's `Toggle` in a `Form`) (M2.FS4 of the 0.8.0 plan); the iOS 26 job failed and is not kept |
 
 `python3 -I docs/evidence/ios-host/2026-11-06-run-42275028573/analysis/behavior_values.py docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15`
 writes `behavior_values.toml` again from the kept inputs (Pillow). A citation
 links the file and its line
 (`evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#L11`).
+
+From run 45230061151 the host is this repository's own `tools/ios-host`, run
+by the ios-host job of `.github/workflows/os-probe.yml` at the run's commit.
+That run's folder keeps of the image `ios-host-macos-15` the inputs its
+scripts read (the indexes, the crops over the system background, the solved
+layers) and their outputs, `measure_lists.toml` and `changed_parts.toml`;
+its README gives the commands.

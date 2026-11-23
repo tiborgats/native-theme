@@ -1,0 +1,144 @@
+[press1."light".table_row.pressed]
+normal_commonest = "#ffffffff"
+changed_px = 137238
+max_level_change = 46
+changed_box_pt = [0.0, 0.0, 346.0, 44.333]
+normal_ink = "#0e0e0eff"
+pressed_ink = "#0b0b0cff"
+pressed_commonest_changed = "#d1d1d6ff"
+pressed_commonest_changed_px = 136780
+
+[press1."light".segmented_control.pressed]
+normal_commonest = "#73737b1f"
+changed_px = 1023
+max_level_change = 179
+changed_box_pt = [0.0, 4.667, 39.667, 23.333]
+normal_ink = "#000000ff"
+pressed_ink = "#2525284c"
+pressed_commonest_changed = "#2525284c"
+pressed_commonest_changed_px = 411
+
+[press1."light".tab_bar.pressed]
+normal_commonest = "#f4f5f4ba"
+changed_px = 1160
+max_level_change = 5
+changed_box_pt = [0.333, 0.0, 115.0, 48.333]
+normal_ink = "#858581dd"
+pressed_ink = "#838682dd"
+pressed_commonest_changed = "#f4f4f4ba"
+pressed_commonest_changed_px = 207
+
+[press1."light".slider.pressed]
+normal_commonest = "#ffffffff"
+changed_px = 0
+max_level_change = 0
+
+[press1."light".sidebar_row.pressed]
+normal_commonest = "#00000000"
+changed_px = 1256
+max_level_change = 178
+changed_box_pt = [9.0, 16.0, 30.0, 12.667]
+normal_ink = "#000000ff"
+pressed_ink = "#0000004d"
+pressed_commonest_changed = "#0000004d"
+pressed_commonest_changed_px = 745
+
+[press1."light".outline_header.pressed]
+normal_commonest = "#00000000"
+changed_px = 2756
+max_level_change = 128
+changed_box_pt = [9.333, 15.667, 56.0, 13.0]
+normal_ink = "#3c3c4399"
+pressed_ink = "#3d3d432e"
+pressed_commonest_changed = "#3d3d432e"
+pressed_commonest_changed_px = 1813
+
+[press1."light".switch_row.pressed]
+normal_commonest = "#00000000"
+changed_px = 3778
+max_level_change = 214
+changed_box_pt = [254.333, 6.667, 25.667, 31.0]
+normal_ink = "#fffffffc"
+pressed_ink = "#ffffffff"
+pressed_commonest_changed = "#ffffffff"
+pressed_commonest_changed_px = 1655
+
+[press1."dark".table_row.pressed]
+normal_commonest = "#000000ff"
+changed_px = 137248
+max_level_change = 60
+changed_box_pt = [0.0, 0.0, 346.0, 44.333]
+normal_ink = "#f4f4f4ff"
+pressed_ink = "#f7f7f7ff"
+pressed_commonest_changed = "#3a3a3cff"
+pressed_commonest_changed_px = 136780
+
+[press1."dark".segmented_control.pressed]
+normal_commonest = "#7575823d"
+changed_px = 797
+max_level_change = 116
+changed_box_pt = [15.667, 11.333, 24.0, 9.667]
+normal_ink = "#ffffffff"
+pressed_ink = "#dadade8b"
+pressed_commonest_changed = "#dadade8b"
+pressed_commonest_changed_px = 411
+
+[press1."dark".tab_bar.pressed]
+normal_commonest = "#191a1aba"
+changed_px = 1758
+max_level_change = 3
+changed_box_pt = [0.0, 0.333, 115.333, 48.667]
+normal_ink = "#8e8e91e0"
+pressed_ink = "#8e8f91e0"
+pressed_commonest_changed = "#1a1a1abb"
+pressed_commonest_changed_px = 298
+
+[press1."dark".slider.pressed]
+normal_commonest = "#ffffffff"
+changed_px = 0
+max_level_change = 0
+
+[press1."dark".sidebar_row.pressed]
+normal_commonest = "#00000000"
+changed_px = 1256
+max_level_change = 178
+changed_box_pt = [9.0, 16.0, 30.0, 12.667]
+normal_ink = "#ffffffff"
+pressed_ink = "#ffffff4d"
+pressed_commonest_changed = "#ffffff4d"
+pressed_commonest_changed_px = 745
+
+[press1."dark".outline_header.pressed]
+normal_commonest = "#00000000"
+changed_px = 2732
+max_level_change = 107
+changed_box_pt = [9.333, 15.667, 56.0, 13.0]
+normal_ink = "#ebebf599"
+pressed_ink = "#e9e9f42e"
+pressed_commonest_changed = "#e9e9f42e"
+pressed_commonest_changed_px = 1813
+
+[press1."dark".switch_row.pressed]
+normal_commonest = "#00000000"
+changed_px = 3369
+max_level_change = 174
+changed_box_pt = [242.333, 7.0, 37.0, 30.667]
+normal_ink = "#fefefefd"
+pressed_ink = "#ffffffff"
+pressed_commonest_changed = "#ffffffff"
+pressed_commonest_changed_px = 1654
+
+[run1."light".card.normal.edges]
+fill = "#ffffffff"
+top_rows = ['#ffffffff', '#ffffffff', '#ffffffff']
+bottom_rows = ['#ffffffff', '#ffffffff', '#ffffffff']
+left_columns = ['#ffffffff', '#ffffffff', '#ffffffff']
+right_columns = ['#ffffffff', '#ffffffff', '#ffffffff']
+
+[run1."dark".card.normal.edges]
+fill = "#1c1c1eff"
+top_rows = ['#1c1c1eff', '#1c1c1eff', '#1c1c1eff']
+bottom_rows = ['#1c1c1eff', '#1c1c1eff', '#1c1c1eff']
+left_columns = ['#1c1c1eff', '#1c1c1eff', '#1c1c1eff']
+right_columns = ['#1c1c1eff', '#1c1c1eff', '#1c1c1eff']
+

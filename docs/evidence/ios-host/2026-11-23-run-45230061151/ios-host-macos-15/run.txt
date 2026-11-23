@@ -1,0 +1,66 @@
+quick: 0
+passes: render,press
+specimen set: lists; device: iphone; settings: none
+headers: 72 files
+simctl help io: exit 0
+colour names from UIColor.h and UIInterface.h: exit 0, 58
+choose the runtime and device: exit 0
+runtime: com.apple.CoreSimulator.SimRuntime.iOS-18-6 (18.6, 22G86)
+device: iPhone 16 Pro (com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro)
+xcodebuild build-for-testing: exit 0
+xctestrun: /Users/runner/work/_temp/ios-host-build/Build/Products/IosHost_iphonesimulator18.5-arm64.xctestrun
+Info.plist DTXcodeBuild: 16F6
+simctl create: exit 0, 8027D4B8-6076-492E-91A3-E5C26E055C73
+simctl bootstatus -b: exit 0
+simctl install: exit 0
+warm-up screenshot: exit 0, 46 s
+simctl launch run 1: exit 0
+run 1: 24 screenshots, done: ok 
+run 1: 102 drawn, 102 cropped PNGs
+simctl launch run 2: exit 0
+run 2: 24 screenshots, done: ok 
+run 2: 102 drawn, 102 cropped PNGs
+press 1 xcodebuild test-without-building: exit 0
+press 1: 48 screenshots, done: ok 
+press 1 retake: light/table_row/default/system/pressed press 0: the touch ended before the screenshot arrived
+press 1 retake: light/table_row/default/system/pressed press 1: the touch ended before the screenshot arrived
+press 1 retake: light/table_row/default/black/pressed press 3: the touch ended before the screenshot arrived
+press 1 retake: light/table_row/default/black/pressed press 4: the touch ended before the screenshot arrived
+press 1 retake: light/table_row/default/black/pressed press 5: the touch ended before the screenshot arrived
+press 1 retake: dark/sidebar_row/default/system/pressed press 38: the touch ended before the screenshot arrived
+press 1: 42 drawn, 84 cropped PNGs
+press 2 xcodebuild test-without-building: exit 0
+press 2: 42 screenshots, done: ok 
+press 2: 42 drawn, 84 cropped PNGs
+choose the iPad: exit 0
+focus: not run
+run1 and run2 byte-identical (205 files)
+compare.swift run1 run2: exit 0
+press1 and press2 differ: 1 of 127 files, 1 outside draw/
+./index.toml:66: page = "pages/2.png" | page = "pages/0.png"
+./index.toml:69: press_number = 2 | press_number = 0
+./index.toml:584: page = "pages/2.png" | page = "pages/0.png"
+./index.toml:1097: page = "pages/2.png" | page = "pages/0.png"
+./index.toml:1120: page = "pages/2.png" | page = "pages/0.png"
+./index.toml:1143: page = "pages/6.png" | page = "pages/1.png"
+./index.toml:1146: press_number = 6 | press_number = 1
+./index.toml:1171: page = "pages/7.png" | page = "pages/2.png"
+./index.toml:1174: press_number = 7 | press_number = 2
+./index.toml:1199: page = "pages/8.png" | page = "pages/3.png"
+./index.toml:1202: press_number = 8 | press_number = 3
+./index.toml:1720: page = "pages/8.png" | page = "pages/3.png"
+./index.toml:2236: page = "pages/8.png" | page = "pages/3.png"
+./index.toml:2259: page = "pages/8.png" | page = "pages/3.png"
+./index.toml:2282: page = "pages/9.png" | page = "pages/4.png"
+./index.toml:2285: press_number = 9 | press_number = 4
+./index.toml:2310: page = "pages/10.png" | page = "pages/5.png"
+./index.toml:2313: press_number = 10 | press_number = 5
+./index.toml:2338: page = "pages/11.png" | page = "pages/6.png"
+./index.toml:2341: press_number = 11 | press_number = 6
+./index.toml: differs (15958 and 15849 lines)
+compare.swift press1 press2: exit 0
+34 pairs solved
+solve.swift run1: exit 0
+28 pairs solved
+solve.swift press1: exit 0
+crash reports: 0
