@@ -115,14 +115,12 @@ use crate::elements::{self, ListedExt as _};
 use crate::info::{
     self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, native_info, next_native_info,
 };
-#[cfg(feature = "widgets")]
-use crate::support::old_resolved;
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
-    SampleListDelegate, SampleTableDelegate, contrast_held, native_color, native_geometry,
-    native_value, next_geometry, next_resolved, next_value, old_native, refined,
-    requested_preferences, toolbar_variant, with_gap, with_padding,
+    SampleListDelegate, SampleTableDelegate, contrast_held, native_geometry, native_value,
+    next_geometry, next_resolved, next_value, old_native, refined, requested_preferences,
+    toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -8009,10 +8007,11 @@ pub(crate) fn spacing_box(
 /// showcase draws its own lines with, the menu separator and the table's grid
 /// lines (M9-165): a stand-in for `native_theme_gpui::widgets::Separator`
 /// drawn as that one draws (connectors/native-theme-gpui/src/widgets/separator.rs,
-/// `RenderOnce for Separator`), a box filled in `separator.line_color` (or
-/// the colour a caller's `bg` gives), `separator.line_width` thick and at
-/// least one device pixel, which every gpui renderer draws; gpui-component's
-/// `Separator` without a native theme or with a width that is not finite.
+/// `RenderOnce for Separator`), a box filled in the installed 0.8.0 theme's
+/// `separator.color` (or the colour a caller's `bg` gives),
+/// `separator.thickness` thick and at least one device pixel, which every
+/// gpui renderer draws; gpui-component's `Separator` without a 0.8.0 theme
+/// or with a thickness that is not finite.
 #[cfg(not(feature = "widgets"))]
 mod widgets {
     use gpui::{
@@ -8054,9 +8053,17 @@ mod widgets {
 
     impl RenderOnce for Separator {
         fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-            let width = crate::support::native_value(cx, |n| n.resolved.separator.line_width)
+            let width = crate::support::next_value(cx, |r| r.separator.thickness)
                 .filter(|w| w.is_finite() && *w >= 0.0);
-            let color = crate::support::native_color(cx, |n| n.resolved.separator.line_color);
+            let color = crate::support::next_value(cx, |r| {
+                let c = r.separator.color;
+                gpui::Hsla::from(gpui::Rgba {
+                    r: c.r,
+                    g: c.g,
+                    b: c.b,
+                    a: c.a,
+                })
+            });
             let look = color.zip(width.map(px));
             let Some((color, width)) = look else {
                 return match self.axis {
