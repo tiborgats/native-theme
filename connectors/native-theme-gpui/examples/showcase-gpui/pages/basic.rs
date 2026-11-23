@@ -16,7 +16,7 @@ use gpui::{
     AnyElement, AvailableSpace, Axis, Context, IntoElement, ParentElement, Pixels, Styled, Window,
     div, prelude::*, px, size,
 };
-use gpui_component::{IconName, h_flex, v_flex};
+use gpui_component::{ActiveTheme as _, IconName, h_flex, v_flex};
 
 use native_theme::icons::IconRole;
 use native_theme_gpui::next;
@@ -27,7 +27,7 @@ use crate::demo::{
     SeparatorKind, SpinnerKind, StepIcons, TypeRole,
 };
 use crate::elements;
-use crate::support::{native_value, next_metric, next_value, with_gap, with_padding};
+use crate::support::{next_metric, next_value, with_gap, with_padding};
 
 /// The width, in logical pixels, of the Basic page's text fields, drop-down,
 /// number input, slider and progress bar. The model states no such width;
@@ -877,9 +877,8 @@ impl Showcase {
             .map(Some)
             .collect();
         let content_width = self.content_width(window, cx);
-        let segmented = native_value(cx, |n| demo::segmented_width(window, &n, &BASIC_SEGMENTS))
-            .unwrap_or_default();
         let count = next_value(cx, |r| {
+            let segmented = demo::segmented_width(window, cx.theme(), r, &BASIC_SEGMENTS);
             basic_column_count(r, f32::from(content_width), segmented)
         })
         .unwrap_or(MAX_COLUMNS);

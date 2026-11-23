@@ -6704,10 +6704,13 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
                 "{preset} {mode}: the content width the page counts columns from is not the panel's"
             );
             let count = cx.update(|window, cx| {
-                let segmented = native_value(cx, |n| {
-                    crate::demo::segmented_width(window, &n, &crate::pages::basic::BASIC_SEGMENTS)
-                })?;
                 crate::support::next_value(cx, |r| {
+                    let segmented = crate::demo::segmented_width(
+                        window,
+                        Theme::global(cx),
+                        r,
+                        &crate::pages::basic::BASIC_SEGMENTS,
+                    );
                     basic_column_count(r, f32::from(computed), segmented)
                 })
             });
@@ -6756,10 +6759,13 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
         let viewport = read(&mut cx, &showcase, |this, _| this.content_scroll.bounds());
         let content = bounds_of(&mut cx, CONTENT_PANEL);
         let count = cx.update(|window, cx| {
-            let segmented = native_value(cx, |n| {
-                crate::demo::segmented_width(window, &n, &crate::pages::basic::BASIC_SEGMENTS)
-            })?;
             crate::support::next_value(cx, |r| {
+                let segmented = crate::demo::segmented_width(
+                    window,
+                    Theme::global(cx),
+                    r,
+                    &crate::pages::basic::BASIC_SEGMENTS,
+                );
                 basic_column_count(r, content.size.width.as_f32(), segmented)
             })
         });
@@ -18759,30 +18765,40 @@ fn the_container_margin_routes_say_none_where_it_is_unstated() {
 }
 
 /// The segmented control's padding line says what pads each side of a
-/// segment (M9-048): a stated `segmented_control.border.padding` side by its
-/// value, an unstated left or right by `SEGMENT_PADDING`, upstream's 12px,
-/// and an unstated top or bottom by nothing -- under material-3, which states
-/// only the horizontal sides, in both modes, and with its left side taken
-/// out.
+/// segment (M9-048): a stated `segmented_control.segment(NONE)` padding side
+/// by its value, an unstated left or right by `SEGMENT_PADDING`, upstream's
+/// 12px, and an unstated top or bottom by nothing -- under material-3, which
+/// states only the horizontal sides, in both modes (the line of the
+/// control's info), and with its left side taken out (the line itself).
 #[test]
 fn the_segmented_controls_padding_line_names_each_side() {
     use crate::info::px_text;
     let mut cases = (false, false);
-    for (name, r, t) in every_bundled_variant()
+    for (name, r, t) in every_next_variant()
         .into_iter()
         .filter(|(name, _, _)| name.starts_with("material-3 "))
     {
-        let mut spliced = r.clone();
-        spliced.segmented_control.border.padding.left = None;
-        for (case, r) in [("as stated", r), ("left unstated", spliced)] {
-            let info = crate::info::layout::segmented(&t, &["One", "Two"], 0, Some(&r));
-            let line = note_of(&info.config, "padding").unwrap_or_default();
-            let p = &r.segmented_control.border.padding;
+        let stated = crate::demo::SegmentedLook::next_of(&r).padding;
+        let [top, right, bottom, _] = stated;
+        let spliced = [top, right, bottom, None];
+        let info = crate::info::layout::segmented(&t, &["One", "Two"], 0, Some(&r));
+        let drawn = note_of(&info.config, "padding")
+            .unwrap_or_default()
+            .to_string();
+        for (case, padding, line) in [
+            ("as stated", stated, drawn),
+            (
+                "left unstated",
+                spliced,
+                crate::info::layout::segment_padding(spliced),
+            ),
+        ] {
+            let [top, right, bottom, left] = padding;
             for (side, value, across) in [
-                ("top", p.top, false),
-                ("right", p.right, true),
-                ("bottom", p.bottom, false),
-                ("left", p.left, true),
+                ("top", top, false),
+                ("right", right, true),
+                ("bottom", bottom, false),
+                ("left", left, true),
             ] {
                 let want = match (value, across) {
                     (Some(v), _) => format!("{side} {}px", px_text(v)),
@@ -18811,6 +18827,92 @@ fn the_segmented_controls_padding_line_names_each_side() {
         (true, true),
         "material-3 no longer covers an unstated left or right and an unstated top or bottom"
     );
+}
+
+/// Where a theme states none of the segmented control's height, label font,
+/// corners, frame and separator colour, which no bundled preset leaves
+/// unstated, the theme-drawn control's info lines name upstream's own for
+/// each (spec §10, rule 0): `SEGMENT_HEIGHT`, `text_sm`, `radius_lg`, no
+/// frame and the `border` its Separator draws in; and where the theme states
+/// them, the stated values instead.
+#[test]
+fn a_segmented_control_the_theme_leaves_unstated_names_upstreams_own() {
+    use crate::demo::SegmentedLook;
+    use crate::info::layout::segmented_lines;
+    let t = Theme::default();
+    let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let unstated = SegmentedLook {
+        track: None,
+        frame: None,
+        radius: None,
+        segment_height: None,
+        padding: [None; 4],
+        selected: None,
+        hover: None,
+        font: native_theme::next::TextStyle::default(),
+        text: None,
+        selected_text: None,
+        separator: None,
+        separator_width: 1.,
+    };
+    let stated = SegmentedLook {
+        frame: Some((t.border, 2.)),
+        radius: Some(3.),
+        segment_height: Some(30.),
+        separator: Some(t.border),
+        font: r
+            .segmented_control
+            .label(native_theme::next::WidgetState::NONE),
+        ..unstated.clone()
+    };
+    let line = |look: &SegmentedLook, what: &str| {
+        let [size, font, border, separators] = segmented_lines(look, &r.typography, &t);
+        match what {
+            "size" => size,
+            "font" => font,
+            "border" => border,
+            _ => separators,
+        }
+    };
+    for (look, what, want) in [
+        (&unstated, "size", "upstream's own for a segmented tab"),
+        (&unstated, "font", "upstream's text_sm"),
+        (
+            &unstated,
+            "border",
+            "none, as upstream's segmented TabBar draws none",
+        ),
+        (&unstated, "border", "upstream's radius_lg"),
+        (&unstated, "separators", "upstream's border"),
+        (
+            &stated,
+            "size",
+            "segmented_control.segment(NONE).min_size[1], 30px",
+        ),
+        (&stated, "font", "segmented_control.label(NONE): "),
+        (
+            &stated,
+            "border",
+            "segmented_control.track(NONE).stroke: 2px",
+        ),
+        (
+            &stated,
+            "border",
+            "segmented_control.track(NONE).corners, 3px",
+        ),
+        (
+            &stated,
+            "separators",
+            "in segmented_control.separator(NONE).fill",
+        ),
+    ] {
+        let line = line(look, what);
+        assert!(
+            line.contains(want),
+            "the {what} line {line:?} does not say {want:?}"
+        );
+    }
 }
 
 /// `--open-menu theme` opens the Theme menu, so the layout dump holds its
@@ -19140,7 +19242,11 @@ fn the_line_height_and_status_gap_routes_name_what_applies_them() {
             "widgets::TabBar",
         ),
         ("basic.tabs.", "defaults.line_height", "widgets::TabBar"),
-        ("basic.segmented.", "defaults.line_height", "demo::text_in"),
+        (
+            "basic.segmented.",
+            "defaults.line_height",
+            "demo::next_text_in",
+        ),
         ("basic.expander.", "defaults.line_height", "demo::text_in"),
         (
             "chrome.status_bar",
@@ -24350,8 +24456,13 @@ fn the_segmented_width_is_the_drawn_controls(cx: &mut TestAppContext) {
                 continue;
             };
             let counted = cx.update(|window, cx| {
-                native_value(cx, |n| {
-                    crate::demo::segmented_width(window, &n, &crate::pages::basic::BASIC_SEGMENTS)
+                crate::support::next_value(cx, |r| {
+                    crate::demo::segmented_width(
+                        window,
+                        Theme::global(cx),
+                        r,
+                        &crate::pages::basic::BASIC_SEGMENTS,
+                    )
                 })
             });
             let Some(counted) = counted else {

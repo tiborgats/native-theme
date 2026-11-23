@@ -3,7 +3,6 @@
 use gpui::Pixels;
 use gpui_component::theme::Theme;
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
-use native_theme::theme::ResolvedPadding;
 #[cfg(feature = "widgets")]
 use native_theme::theme::TabIndicatorSide;
 use native_theme_gpui::ResolvedTheme;
@@ -11,16 +10,18 @@ use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of}
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{SeparatorLook, TabLook};
 
+#[cfg(feature = "widgets")]
+use super::stated;
 use super::{
     WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours},
-    claim, drawn_font, edge_claim, icon_color_of, px_text, stated, stated_claim, stroke_color_of,
+    claim, drawn_font, edge_claim, icon_color_of, px_text, stated_claim, stroke_color_of,
     stroke_width_of,
 };
 use crate::Page;
 use crate::demo::{
-    ExpanderLook, FOLDER_TAB_HEIGHT, GroupBoxKind, SEGMENT_PADDING, SeparatorKind, SpacingBox,
-    StepperKind,
+    ExpanderLook, FOLDER_TAB_HEIGHT, GroupBoxKind, SEGMENT_PADDING, SegmentedLook, SeparatorKind,
+    SpacingBox, StepperKind,
 };
 use crate::support::{ChromeIcon, GRID_LAYOUT_ITEMS, SampleIcon, layout_value};
 
@@ -1157,66 +1158,146 @@ fn tab_bar_ring(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
 }
 
 /// Each side of a segment's padding as `demo::segmented` draws it: a side
-/// `segmented_control.border.padding` states by its value, an unstated left
+/// `segmented_control.segment(NONE)` states by its value, an unstated left
 /// or right by `SEGMENT_PADDING`, upstream's own, and an unstated top or
-/// bottom by none.
-fn segment_padding(p: &ResolvedPadding) -> String {
+/// bottom by none, upstream's too.
+pub(crate) fn segment_padding(padding: [Option<f32>; 4]) -> String {
+    let [top, right, bottom, left] = padding;
     let side = |name: &str, stated: Option<f32>, across: bool| match (stated, across) {
         (Some(v), _) => format!("{name} {}px", px_text(v)),
         (None, true) => format!("{name} {}px, unstated", px_text(SEGMENT_PADDING.as_f32())),
         (None, false) => format!("{name} none, unstated"),
     };
     format!(
-        "segmented_control.border.padding per side: {}; {}; {}; {}. An unstated left or right side takes {}px and an unstated top or bottom none, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)",
-        side("top", p.top, false),
-        side("right", p.right, true),
-        side("bottom", p.bottom, false),
-        side("left", p.left, true),
+        "segmented_control.segment(NONE).padding per side: {}; {}; {}; {}. An unstated left or right side takes {}px and an unstated top or bottom none, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)",
+        side("top", top, false),
+        side("right", right, true),
+        side("bottom", bottom, false),
+        side("left", left, true),
         px_text(SEGMENT_PADDING.as_f32()),
     )
 }
 
+/// The size, font, border and separator lines of the theme-drawn segmented
+/// control `s`, in that order, its labels lettered over `typography`, on
+/// `t`: each the stated value where `s` gives one, else upstream's own,
+/// named.
+pub(crate) fn segmented_lines(
+    s: &SegmentedLook,
+    typography: &native_theme::next::Typography,
+    t: &Theme,
+) -> [String; 4] {
+    let size = match s.segment_height {
+        Some(height) => format!(
+            "each segment at least segmented_control.segment(NONE).min_size[1], {}px, tall",
+            px_text(height)
+        ),
+        None => format!(
+            "each segment at least {}px tall, upstream's own for a segmented tab at the default Size: the theme states no segmented_control.segment(NONE).min_size[1] (tab/tab.rs, TabVariant::height)",
+            px_text(crate::demo::SEGMENT_HEIGHT.as_f32())
+        ),
+    };
+    let font = match native_theme_gpui::next::label_font_unmapped(
+        &s.font,
+        "segmented_control.label(NONE)",
+    ) {
+        None => format!(
+            "segmented_control.label(NONE): {}",
+            super::typography::text_style_font(typography, &s.font)
+        ),
+        Some(unstated) => format!(
+            "upstream's text_sm, {}: the theme states no value gpui can take at {} (tab/tab.rs, RenderOnce for Tab; spec §10, rule 0)",
+            super::rems_text(crate::demo::SEGMENT_LABEL_SIZE, t),
+            unstated.home()
+        ),
+    };
+    let radius = match s.radius {
+        Some(radius) => format!(
+            "segmented_control.track(NONE).corners, {}px",
+            px_text(radius.max(0.0))
+        ),
+        None => format!(
+            "upstream's radius_lg, {}px, as the theme states no segmented_control.track(NONE).corners (tab/tab.rs, TabVariant::tab_bar_radius)",
+            px_text(t.radius_lg.as_f32())
+        ),
+    };
+    let border = match s.frame_width() {
+        Some(width) if width > 0.0 => format!(
+            "segmented_control.track(NONE).stroke: {}px, radius {radius}",
+            px_text(width)
+        ),
+        Some(_) => format!(
+            "none: segmented_control.track(NONE).stroke.width is 0; the track is still rounded by {radius}"
+        ),
+        None => format!(
+            "none, as upstream's segmented TabBar draws none: the theme states no segmented_control.track(NONE).stroke gpui can draw (tab/tab_bar.rs, TabBar::render); the track is rounded by {radius}"
+        ),
+    };
+    let colour = match s.separator {
+        Some(_) => "segmented_control.separator(NONE).fill",
+        None => {
+            "upstream's border, the colour its Separator draws a line in, as the theme states no segmented_control.separator(NONE).fill (separator.rs, Separator::render)"
+        }
+    };
+    let separators = if s.separator_width > 0.0 {
+        format!(
+            "segmented_control.separator_width, {}px, in {colour} between segments",
+            px_text(s.separator_width)
+        )
+    } else {
+        "none: segmented_control.separator_width is 0".to_string()
+    };
+    [size, font, border, separators]
+}
+
 /// The segmented control over `labels`, the one at `selected` shown: drawn
-/// by the showcase from `native`'s `segmented_control` where a native theme
-/// is installed, upstream's segmented `TabBar` where none is
+/// by the showcase from `native`'s `segmented_control` where a 0.8.0 theme
+/// is installed (`demo::SegmentedLook`), each value it leaves unstated
+/// upstream's own, read on `t`; upstream's segmented `TabBar` where none is
 /// (`demo::segmented`).
 pub fn segmented(
     t: &Theme,
     labels: &[&'static str],
     selected: usize,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let shown = labels.get(selected).copied().unwrap_or("none");
     let info = match native {
         Some(r) => {
-            let s = &r.segmented_control;
+            let s = SegmentedLook::next_of(r);
+            let track = stated_claim("track", "segmented_control.track(NONE).fill", fill_of(&r.segmented_control.track(WidgetState::NONE)), "showcase")
+                .unwrap_or_else(|| claim("track", "tab_bar_segmented", t.tab_bar_segmented, "showcase"));
+            let label = stated_claim("label", "segmented_control.label(NONE).color", text_color_of(&r.segmented_control.label(WidgetState::NONE)), "showcase")
+                .unwrap_or_else(|| claim("label", "tab_foreground", t.tab_foreground, "showcase"));
+            let selected_fill = stated_claim("selected segment", "segmented_control.segment(SELECTED).fill", fill_of(&r.segmented_control.segment(WidgetState::SELECTED)), "showcase")
+                .unwrap_or_else(|| claim("selected segment", "background", t.background, "showcase"));
+            let selected_label = stated_claim("selected label", "segmented_control.label(SELECTED).color", text_color_of(&r.segmented_control.label(WidgetState::SELECTED)), "showcase")
+                .unwrap_or_else(|| claim("selected label", "tab_active_foreground", t.tab_active_foreground, "showcase"));
+            // The line left of every segment but the first.
+            let lines = (labels.len() > 1).then_some(s.separator_width);
+            let separators = match s.separator {
+                Some(_) => edge_claim("separators", "segmented_control.separator(NONE).fill", fill_of(&r.segmented_control.separator(WidgetState::NONE)), lines, "showcase"),
+                None => edge_claim("separators", "border", Some(t.border), lines, "showcase"),
+            };
             let info = WidgetInfo::new("Segmented control")
                 .variant("drawn by the showcase")
-                .color(claim("track", "background_color", stated(s.background_color), "showcase"))
-                .color(claim("label", "color", stated(s.font.color), "showcase"))
-                .color(claim("selected segment", "active_background", stated(s.active_background), "showcase"))
-                .color(claim("selected label", "active_text_color", stated(s.active_text_color), "showcase"))
-                .colors(edge_claim("border", "border", Some(s.border.color), Some(s.border.line_width), "showcase"))
-                // The line left of every segment but the first.
-                .colors(edge_claim("separators", "border", Some(s.border.color), (labels.len() > 1).then_some(s.separator_width), "showcase"));
-            let info = match stated_claim("hovered segment", "hover_background", s.hover_background, "showcase") {
+                .color(track)
+                .color(label)
+                .color(selected_fill)
+                .color(selected_label)
+                .colors(edge_claim("border", "segmented_control.track(NONE).stroke.color", stroke_color_of(&r.segmented_control.track(WidgetState::NONE)), s.frame_width(), "showcase"))
+                .colors(separators);
+            let info = match stated_claim("hovered segment", "segmented_control.segment(HOVER).fill", state_fill_of(&r.segmented_control.segment(WidgetState::HOVER)), "showcase") {
                 Some(hover) => info.color(hover),
-                None => info.not_themeable("hover", "none: the theme states no segmented_control.hover_background"),
+                None => info.not_themeable("hover", "none: no rule states segmented_control.segment(HOVER).fill, and upstream's unselected segment keeps a transparent fill under the pointer (tab/tab.rs, TabVariant::hovered)"),
             };
-            info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.active_background, hover_background, font.color and active_text_color would have no receiver there")
-                .config("size", format!("each segment at least segmented_control.segment_height, {}px, tall", px_text(s.segment_height)))
-                .config("padding", segment_padding(&s.border.padding))
-                .config("font", format!("segmented_control.font: {}", drawn_font(&s.font)))
-                .config("border", if s.border.line_width > 0.0 {
-                    format!("segmented_control.border: {}px, radius {}px", px_text(s.border.line_width), px_text(s.border.corner_radius))
-                } else {
-                    format!("none: segmented_control.border.line_width is 0; the track is still rounded by its corner_radius, {}px", px_text(s.border.corner_radius))
-                })
-                .config("separators", if s.separator_width > 0.0 {
-                    format!("segmented_control.separator_width, {}px, in border.color between segments", px_text(s.separator_width))
-                } else {
-                    "none: segmented_control.separator_width is 0".to_string()
-                })
+            let [size, font, border, separators] = segmented_lines(&s, &r.typography, t);
+            info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.segment(SELECTED).fill, segment(HOVER).fill and the labels' colours would have no receiver there")
+                .config("size", size)
+                .config("padding", segment_padding(s.padding))
+                .config("font", font)
+                .config("border", border)
+                .config("separators", separators)
         }
         None => WidgetInfo::new("TabBar")
             .variant("Segmented")

@@ -1035,7 +1035,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.segmented",
         "defaults.line_height",
-        "gpui: a segment's line box, segmented_control.font's size by it (demo::text_in)",
+        "gpui: a segment's line box, segmented_control.label(NONE)'s line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "basic.list",
@@ -2011,77 +2011,77 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "segmented_control.active_background",
-        "gpui: the selected segment's fill (demo::segmented)",
+        "gpui: segmented_control.segment(SELECTED).fill, the selected segment's fill; upstream's background where unstated (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.active_text_color",
-        "gpui: the selected segment's text (demo::segmented)",
+        "gpui: segmented_control.label(SELECTED).color, the selected segment's text; upstream's tab_active_foreground where unstated (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.background_color",
-        "gpui: the control's fill (demo::segmented)",
+        "gpui: segmented_control.track(NONE).fill, the control's fill; upstream's tab_bar_segmented where unstated (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.border.color",
-        "gpui: the frame and the lines between segments (demo::segmented)",
+        "gpui: segmented_control.track(NONE).stroke.color, the frame, none where unstated as upstream's; the lines between segments in segmented_control.separator(NONE).fill, upstream's border where unstated (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.border.corner_radius_px",
-        "gpui: the frame's corner radius (demo::segmented)",
+        "gpui: segmented_control.track(NONE).corners, the frame's corner radius; upstream's radius_lg where unstated (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.border.line_width_px",
-        "gpui: the frame's width (demo::segmented)",
+        "gpui: segmented_control.track(NONE).stroke.width, the frame's width; none where unstated, as upstream's (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.border.padding_top_px",
-        "gpui: pads each segment by the stated side (demo::segmented)",
+        "gpui: segmented_control.segment(NONE)'s padding side, pads each segment where stated; none where not, as upstream's (demo::segmented)",
     ),
     (
         "",
         "segmented_control.border.padding_right_px",
-        "gpui: pads each segment, SEGMENT_PADDING where unstated (demo::segmented)",
+        "gpui: segmented_control.segment(NONE)'s padding side, pads each segment, SEGMENT_PADDING, upstream's, where unstated (demo::segmented)",
     ),
     (
         "",
         "segmented_control.border.padding_bottom_px",
-        "gpui: pads each segment by the stated side (demo::segmented)",
+        "gpui: segmented_control.segment(NONE)'s padding side, pads each segment where stated; none where not, as upstream's (demo::segmented)",
     ),
     (
         "",
         "segmented_control.border.padding_left_px",
-        "gpui: pads each segment, SEGMENT_PADDING where unstated (demo::segmented)",
+        "gpui: segmented_control.segment(NONE)'s padding side, pads each segment, SEGMENT_PADDING, upstream's, where unstated (demo::segmented)",
     ),
     (
         "",
         "segmented_control.font",
-        "gpui: each label's family, size, weight and style (demo::segmented)",
+        "gpui: segmented_control.label(NONE), each label's family, size, weight and slant; upstream's text_sm where gpui can take none (demo::segmented, demo::next_text_in)",
     ),
     (
         "",
         "segmented_control.font.color",
-        "gpui: an unselected segment's text (demo::segmented)",
+        "gpui: segmented_control.label(NONE).color, an unselected segment's text; upstream's tab_foreground where unstated (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.hover_background",
-        "gpui: an unselected segment's fill under the pointer (demo::segmented)",
+        "gpui: segmented_control.segment(HOVER).fill, an unselected segment's fill under the pointer, where a rule states it (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.segment_height_px",
-        "gpui: each segment's min_h (demo::segmented)",
+        "gpui: segmented_control.segment(NONE).min_size[1], each segment's min_h; SEGMENT_HEIGHT, upstream's, where unstated (demo::segmented, SegmentedLook)",
     ),
     (
         "",
         "segmented_control.separator_width_px",
-        "gpui: the line left of each segment after the first (demo::segmented)",
+        "gpui: segmented_control.separator_width, the line left of each segment after the first (demo::segmented)",
     ),
     // --- separator ------------------------------------------------------------------
     (

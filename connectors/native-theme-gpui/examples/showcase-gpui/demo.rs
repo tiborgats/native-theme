@@ -2723,35 +2723,162 @@ pub(crate) fn folder_tab_row(
         .debug_selector(move || id.into())
 }
 
-/// A segment's side padding where `segmented_control.border` states none:
-/// upstream's own for a segment at the default Size (tab/tab.rs:113-118,
-/// `TabVariant::inner_paddings`), which a `TabBar::segmented` would give it.
+/// A segment's side padding where `segmented_control.segment(NONE)` states
+/// none: upstream's own for a segment at the default Size
+/// (tab/tab.rs:113-118, `TabVariant::inner_paddings`), which a
+/// `TabBar::segmented` would give it.
 pub(crate) const SEGMENT_PADDING: Pixels = px(12.);
 
-/// The width [`segmented`] lays its control over `labels` out at under `n`:
-/// each label as gpui's text system shapes it in `segmented_control.font`
-/// (its family, weight, style and scaled size, as [`text_in`] sets them),
-/// its width rounded up, as gpui's text element rounds a line's width up
-/// (gpui-pre 0.3.12 `src/elements/text.rs:772`), inside the segment's stated
-/// side padding ([`SEGMENT_PADDING`] on a side left unstated), the
+/// A segment's height where `segmented_control.segment(NONE)` states no
+/// `min_size[1]`: upstream's own for a segmented tab at the default Size
+/// (tab/tab.rs, `TabVariant::height`).
+pub(crate) const SEGMENT_HEIGHT: Pixels = px(32.);
+
+/// A segment's label size where `segmented_control.label(NONE)` gives no
+/// font gpui can letter it in: upstream's `text_sm`, which a Tab at the
+/// default Size sets on itself (tab/tab.rs, `RenderOnce for Tab`; gpui-pre
+/// styled.rs, `text_sm`).
+pub(crate) const SEGMENT_LABEL_SIZE: Rems = rems(0.875);
+
+/// What [`segmented`] draws under an installed 0.8.0 theme, each value read
+/// at its home, `None` where the theme states none; the control then takes
+/// upstream's segmented `TabBar`'s own for that property alone (spec §10,
+/// rule 0), as each field says.
+#[derive(Clone, Debug)]
+pub(crate) struct SegmentedLook {
+    /// `segmented_control.track(NONE).fill`; else upstream's
+    /// `tab_bar_segmented` (tab/tab_bar.rs, `TabBar::render`).
+    pub track: Option<Hsla>,
+    /// `segmented_control.track(NONE)`'s stroke, its colour and width, where
+    /// the theme states both; else no frame, as upstream's segmented
+    /// `TabBar` draws none (tab/tab_bar.rs, `TabBar::render`: only the Tab
+    /// and Underline bars get a line).
+    pub frame: Option<(Hsla, f32)>,
+    /// `segmented_control.track(NONE).corners`; else upstream's `radius_lg`
+    /// (tab/tab.rs, `TabVariant::tab_bar_radius`).
+    pub radius: Option<f32>,
+    /// `segmented_control.segment(NONE).min_size[1]`; else
+    /// [`SEGMENT_HEIGHT`].
+    pub segment_height: Option<f32>,
+    /// `segmented_control.segment(NONE)`'s padding, top, right, bottom,
+    /// left (`next::padding_of`); else [`SEGMENT_PADDING`] on the left and
+    /// right and none above and below, as upstream's `inner_paddings`.
+    pub padding: [Option<f32>; 4],
+    /// `segmented_control.segment(SELECTED).fill`; else upstream's
+    /// `background`, its selected segment's indicator (tab/tab_bar.rs,
+    /// `TabBar::render_indicator`).
+    pub selected: Option<Hsla>,
+    /// `segmented_control.segment(HOVER).fill` where a rule states it for
+    /// `HOVER`; else none, as upstream's unselected segment keeps a
+    /// transparent fill under the pointer (tab/tab.rs, `TabVariant::hovered`).
+    pub hover: Option<Hsla>,
+    /// `segmented_control.label(NONE)`, the labels' font where it gives one
+    /// gpui can letter them in (`next_text_in`); else upstream's `text_sm`
+    /// ([`SEGMENT_LABEL_SIZE`]) in the window's font.
+    pub font: native_theme::next::TextStyle,
+    /// `segmented_control.label(NONE).color`; else upstream's
+    /// `tab_foreground` (tab/tab.rs, `TabVariant::normal`).
+    pub text: Option<Hsla>,
+    /// `segmented_control.label(SELECTED).color`; else upstream's
+    /// `tab_active_foreground` (tab/tab.rs, `TabVariant::selected`).
+    pub selected_text: Option<Hsla>,
+    /// `segmented_control.separator(NONE).fill`, the line before each
+    /// segment after the first; else upstream's `border`, the colour its
+    /// `Separator` draws a line in (separator.rs, `Separator::render`).
+    pub separator: Option<Hsla>,
+    /// `segmented_control.separator_width`, the line's width.
+    pub separator_width: f32,
+}
+
+impl SegmentedLook {
+    /// The segmented control's look under `r`.
+    pub(crate) fn next_of(r: &native_theme::next::ResolvedTheme) -> Self {
+        let s = &r.segmented_control;
+        let track = s.track(WidgetState::NONE);
+        let segment = s.segment(WidgetState::NONE);
+        Self {
+            track: next::fill_of(&track),
+            frame: next::stroke_color_of(&track).zip(next::stroke_width_of(&track)),
+            radius: next::radius_of(&track),
+            segment_height: segment.min_size[1],
+            padding: next::padding_of(&segment),
+            selected: next::fill_of(&s.segment(WidgetState::SELECTED)),
+            hover: next::state_fill_of(&s.segment(WidgetState::HOVER)),
+            font: s.label(WidgetState::NONE),
+            text: next::text_color_of(&s.label(WidgetState::NONE)),
+            selected_text: next::text_color_of(&s.label(WidgetState::SELECTED)),
+            separator: next::fill_of(&s.separator(WidgetState::NONE)),
+            separator_width: s.separator_width,
+        }
+    }
+
+    /// The frame's line width; none where no frame is drawn.
+    pub(crate) fn frame_width(&self) -> Option<f32> {
+        self.frame.map(|(_, width)| width.max(0.0))
+    }
+}
+
+/// `label` as a segment of the theme-drawn segmented control letters it:
+/// in `segmented_control.label(NONE)` where it gives a font gpui can letter
+/// it in ([`next_text_in`]), else in upstream's `text_sm`.
+fn segment_label(
+    typography: &native_theme::next::Typography,
+    look: &SegmentedLook,
+    label: &'static str,
+) -> Div {
+    next_text_in(
+        typography,
+        &look.font,
+        "segmented_control.label(NONE)",
+        label,
+    )
+    .unwrap_or_else(|| div().text_size(SEGMENT_LABEL_SIZE).child(label))
+}
+
+/// The width [`segmented`] lays its control over `labels` out at under `r`,
+/// on `t`, the gpui-component theme whose own values stand where `r` states
+/// none: each label as gpui's text system shapes it in the font
+/// [`segment_label`] sets (`segmented_control.label(NONE)`'s family, weight,
+/// slant and size, else upstream's `text_sm` in `t`'s font), its width
+/// rounded up, as gpui's text element rounds a line's width up (gpui-pre
+/// 0.3.12 `src/elements/text.rs:772`), inside the segment's stated side
+/// padding ([`SEGMENT_PADDING`] on a side left unstated), the
 /// `separator_width` line before each segment after the first, and the
-/// frame's `border.line_width` at both ends. The Basic page's
-/// column count holds it (M9-166): the segments stay on one row.
-pub(crate) fn segmented_width(window: &Window, n: &Native<'_>, labels: &[&str]) -> f32 {
-    let s = &n.resolved.segmented_control;
-    let b = &s.border;
-    let font = gpui::Font {
-        weight: FontWeight(f32::from(s.font.weight)),
-        style: match s.font.style {
-            FontStyle::Normal => gpui::FontStyle::Normal,
-            FontStyle::Italic => gpui::FontStyle::Italic,
-            FontStyle::Oblique => gpui::FontStyle::Oblique,
-        },
-        ..gpui::font(native_theme_gpui::font_family(&s.font.family))
+/// frame's line width at both ends. The Basic page's column count holds it
+/// (M9-166): the segments stay on one row.
+pub(crate) fn segmented_width(
+    window: &Window,
+    t: &gpui_component::theme::Theme,
+    r: &native_theme::next::ResolvedTheme,
+    labels: &[&str],
+) -> f32 {
+    use native_theme::next::FontStyle as NextFontStyle;
+    let look = SegmentedLook::next_of(r);
+    let style = &look.font;
+    let lettered = next::label_font_unmapped(style, "segmented_control.label(NONE)").is_none();
+    let slant = match style.style {
+        NextFontStyle::Normal => Some(gpui::FontStyle::Normal),
+        NextFontStyle::Italic => Some(gpui::FontStyle::Italic),
+        NextFontStyle::Oblique => Some(gpui::FontStyle::Oblique),
+        _ => None,
     };
-    let size = text_size_of(n, &s.font);
+    let (font, size) = match slant.filter(|_| lettered) {
+        Some(slant) => (
+            gpui::Font {
+                weight: FontWeight(f32::from(style.weight)),
+                style: slant,
+                ..gpui::font(native_theme_gpui::font_family(&style.family))
+            },
+            px(style.size_px),
+        ),
+        None => (
+            gpui::font(t.font_family.clone()),
+            SEGMENT_LABEL_SIZE.to_pixels(window.rem_size()),
+        ),
+    };
+    let [_, right, _, left] = look.padding;
     let side = |stated: Option<f32>| stated.unwrap_or(f32::from(SEGMENT_PADDING));
-    let padding = side(b.padding.left) + side(b.padding.right);
+    let padding = side(left) + side(right);
     #[allow(
         clippy::disallowed_methods,
         reason = "shape_line's panic is a debug_assert! on a newline (gpui-pre 0.3.12 \
@@ -2778,27 +2905,31 @@ pub(crate) fn segmented_width(window: &Window, n: &Native<'_>, labels: &[&str]) 
         )
     };
     let segments: f32 = labels.iter().map(|label| shaped(label) + padding).sum();
-    let lines = labels.len().saturating_sub(1) as f32 * s.separator_width;
-    segments + lines + b.line_width + b.line_width
+    let lines = labels.len().saturating_sub(1) as f32 * look.separator_width;
+    // No frame, as upstream's, takes no room.
+    let edges: f32 = look.frame_width().iter().map(|width| width + width).sum();
+    segments + lines + edges
 }
 
 /// A segmented control over `labels`, `selected` the one shown; a click
 /// hands `on_click` the index of the segment clicked.
 ///
-/// Drawn by the showcase where a native theme is installed: upstream's
+/// Drawn by the showcase where a 0.8.0 theme is installed: upstream's
 /// segmented `TabBar` paints its selected segment with the window's
 /// background through a sliding indicator and its hovered one inside
 /// render (tab/tab_bar.rs, `TabBar::render_indicator`; tab/tab.rs,
 /// `TabVariant::hovered`), and labels its segments from the tab tokens, so
-/// `segmented_control.active_background`, `hover_background`, `font.color`
-/// and `active_text_color` have no receiver there. Here every segment is
-/// `segmented_control.segment_height` tall at least, padded by the stated
-/// `border.padding` sides ([`SEGMENT_PADDING`] on a side left unstated), in
-/// `font`; the selected one filled with `active_background` and labelled in
-/// `active_text_color`; the others filled with `hover_background` under the
-/// pointer; neighbours parted by a `separator_width` line in
-/// `border.color`; the whole framed by `border` on `background_color`.
-/// Without a native theme it is upstream's segmented `TabBar`.
+/// `segmented_control.segment(SELECTED).fill`, `segment(HOVER).fill` and the
+/// labels' colours have no receiver there. Here, as [`SegmentedLook`] reads
+/// it, every segment is `segmented_control.segment(NONE).min_size[1]` tall
+/// at least, padded by the sides `segment(NONE)` states ([`SEGMENT_PADDING`]
+/// on a left or right side left unstated), in `label(NONE)`; the selected
+/// one filled with `segment(SELECTED).fill` and labelled in
+/// `label(SELECTED).color`; the others filled with `segment(HOVER).fill`
+/// under the pointer; neighbours parted by a `separator_width` line in
+/// `separator(NONE).fill`; the whole framed by `track(NONE)`'s stroke on its
+/// fill. A value the theme leaves unstated is upstream's own (spec §10, rule
+/// 0). Without a 0.8.0 theme it is upstream's segmented `TabBar`.
 pub(crate) fn segmented(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2807,14 +2938,10 @@ pub(crate) fn segmented(
     selected: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let control_info = info::layout::segmented(
-        cx.theme(),
-        labels,
-        selected,
-        native.as_ref().map(|n| n.resolved),
-    );
-    let Some(n) = native else {
+    let native = next_resolved(cx);
+    let t = cx.theme();
+    let control_info = info::layout::segmented(t, labels, selected, native);
+    let Some(r) = native else {
         return TabBar::new(id)
             .segmented()
             .children(labels.iter().map(|&label| Tab::new().label(label)))
@@ -2823,62 +2950,71 @@ pub(crate) fn segmented(
             .info(ui, id, control_info)
             .debug_selector(move || id.into());
     };
-    let s = &n.resolved.segmented_control;
-    let b = &s.border;
+    let look = SegmentedLook::next_of(r);
+    let separator_width = look.separator_width;
+    let separator = look.separator.unwrap_or(t.border);
+    let selected_fill = look.selected.unwrap_or(t.background);
+    let text = look.text.unwrap_or(t.tab_foreground);
+    let selected_text = look.selected_text.unwrap_or(t.tab_active_foreground);
+    let segment_height = look.segment_height.map_or(SEGMENT_HEIGHT, px);
     let on_click = Rc::new(on_click);
-    let colour = info::stated;
     let segments = labels.iter().enumerate().map(|(ix, &label)| {
         let on_click = on_click.clone();
         let active = ix == selected;
-        padded(div().id((id, ix)), &b.padding, Some(SEGMENT_PADDING), None)
-            .flex()
-            .flex_none()
-            .items_center()
-            .min_h(px(s.segment_height))
-            .when(ix > 0, |segment| {
-                segment
-                    .border_l(px(s.separator_width))
-                    .border_color(colour(b.color))
-            })
-            .map(|segment| match (active, s.hover_background) {
-                (true, _) => segment
-                    .bg(colour(s.active_background))
-                    .text_color(colour(s.active_text_color)),
-                (false, Some(hover)) => segment
-                    .text_color(colour(s.font.color))
-                    .hover(move |style| style.bg(colour(hover))),
-                (false, None) => segment.text_color(colour(s.font.color)),
-            })
-            .child(text_in(&n, &s.font, label))
-            // The segment inside its dividing line -- an absolute child is
-            // laid out inside the border -- and the line, the segment's left
-            // border, `separator_width` wide, out over it.
-            .children(elements::segment_of(id, ix).map(|(segment, divider)| {
-                div()
-                    .absolute()
-                    .inset_0()
-                    .child(elements::record(ui, segment))
-                    .children(divider.map(|divider| {
-                        div()
-                            .absolute()
-                            .top_0()
-                            .bottom_0()
-                            .left(px(-s.separator_width))
-                            .w(px(s.separator_width))
-                            .child(elements::record(ui, divider))
-                    }))
-            }))
-            .on_click(move |_, window, cx| on_click(&ix, window, cx))
+        next_padded(
+            div().id((id, ix)),
+            look.padding,
+            Some(SEGMENT_PADDING),
+            None,
+        )
+        .flex()
+        .flex_none()
+        .items_center()
+        .min_h(segment_height)
+        .when(ix > 0, |segment| {
+            segment
+                .border_l(px(separator_width))
+                .border_color(separator)
+        })
+        .map(|segment| match (active, look.hover) {
+            (true, _) => segment.bg(selected_fill).text_color(selected_text),
+            (false, Some(hover)) => segment.text_color(text).hover(move |style| style.bg(hover)),
+            (false, None) => segment.text_color(text),
+        })
+        .child(segment_label(&r.typography, &look, label))
+        // The segment inside its dividing line -- an absolute child is
+        // laid out inside the border -- and the line, the segment's left
+        // border, `separator_width` wide, out over it.
+        .children(elements::segment_of(id, ix).map(|(segment, divider)| {
+            div()
+                .absolute()
+                .inset_0()
+                .child(elements::record(ui, segment))
+                .children(divider.map(|divider| {
+                    div()
+                        .absolute()
+                        .top_0()
+                        .bottom_0()
+                        .left(px(-separator_width))
+                        .w(px(separator_width))
+                        .child(elements::record(ui, divider))
+                }))
+        }))
+        .on_click(move |_, window, cx| on_click(&ix, window, cx))
     });
+    let radius = look
+        .radius
+        .map_or(t.radius_lg, |radius| px(radius.max(0.0)));
     // The segments stay on one row at their own widths, as the platforms'
     // segmented controls do; the Basic page's column count gives the control
     // a column it overruns by at most the section gap less
     // `layout.widget_gap` (`pages::basic::basic_column_count`, M9-166).
     h_flex()
-        .bg(colour(s.background_color))
-        .border(px(b.line_width))
-        .border_color(colour(b.color))
-        .rounded(px(b.corner_radius.max(0.0)))
+        .bg(look.track.unwrap_or(t.tab_bar_segmented))
+        .when_some(look.frame, |track, (line, width)| {
+            track.border(px(width.max(0.0))).border_color(line)
+        })
+        .rounded(radius)
         .overflow_hidden()
         .children(segments)
         .info(ui, id, control_info)
