@@ -280,6 +280,44 @@ impl<T, P, M> RuleSet<T, P, M> {
             .collect()
     }
 
+    /// The rule set with `rules` appended after its own, in order, each a
+    /// selector and the properties it applies (a theme patch's rules, spec
+    /// §6, resolution step 3): evaluated after the builder's, so that where
+    /// both match, the appended rule wins. The rule and property buffers are
+    /// rebuilt, once for the whole batch; with no rule given, nothing is.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by ResolvedTheme::apply_patch, the next commit of M1.8"
+        )
+    )]
+    pub(crate) fn append<Q>(&mut self, rules: impl IntoIterator<Item = (RuleSelector<M>, Q)>)
+    where
+        Q: IntoIterator<Item = P>,
+        P: Clone,
+        M: Clone,
+    {
+        let mut rules = rules.into_iter().peekable();
+        if rules.peek().is_none() {
+            return;
+        }
+        let mut entries = self.rules.to_vec();
+        let mut props = self.props.to_vec();
+        for (selector, new) in rules {
+            let start = props.len();
+            props.extend(new);
+            let (start, len) = stored_range(start, props.len().saturating_sub(start));
+            entries.push(RuleEntry {
+                selector,
+                start,
+                len,
+            });
+        }
+        self.rules = Arc::from(entries);
+        self.props = Arc::from(props);
+    }
+
     /// Steps 0 to 4 of the evaluation contract, applying each property with
     /// `apply`, told whether the rule as written requires a state.
     fn eval_with<V>(&self, query: &StyleQuery<V>, apply: fn(&mut T, &P, bool)) -> T

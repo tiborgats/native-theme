@@ -1739,3 +1739,56 @@ fn icon_from_state_follows_the_rules() {
     assert_eq!(disabled.opacity, 0.25);
     assert_eq!(disabled.from_state, IconStated::COLOR);
 }
+
+#[test]
+fn an_appended_rule_wins_over_the_builders() {
+    let mut rules = built_body();
+    let hover = ButtonQuery::new(WidgetState::HOVER);
+    let before = rules.eval(&hover);
+    assert_eq!(before.fill, Paint::Solid(GREEN));
+    rules.append([
+        (
+            RuleSelector::on(WidgetState::HOVER),
+            vec![fill(RED), PartProp::Opacity(0.5)],
+        ),
+        (
+            RuleSelector::on(WidgetState::HOVER),
+            vec![PartProp::Opacity(0.75)],
+        ),
+    ]);
+    let after = rules.eval(&hover);
+    assert_eq!(after.fill, Paint::Solid(RED));
+    assert_eq!(after.opacity, 0.75);
+    assert_eq!(after.from_state, before.from_state | PartStated::OPACITY);
+    assert_eq!(after.stroke, before.stroke);
+    // A query the appended rules do not match is what it was.
+    let rest = ButtonQuery::default();
+    assert_eq!(rules.eval(&rest), built_body().eval(&rest));
+}
+
+#[test]
+fn appending_nothing_keeps_the_buffers() {
+    let mut rules = built_body();
+    let (own_rules, own_props) = (Arc::clone(&rules.rules), Arc::clone(&rules.props));
+    rules.append(std::iter::empty::<(
+        RuleSelector<ButtonMatcher>,
+        Vec<PartProp>,
+    )>());
+    assert!(Arc::ptr_eq(&rules.rules, &own_rules));
+    assert!(Arc::ptr_eq(&rules.props, &own_props));
+}
+
+#[test]
+fn dead_rules_cover_the_appended_rules() {
+    let mut rules = built_body();
+    assert!(rules.dead_rules().is_empty());
+    let count = rules.rules.len();
+    rules.append([
+        (RuleSelector::on(WidgetState::HOVER), vec![fill(RED)]),
+        (
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::HOVER),
+            vec![fill(RED)],
+        ),
+    ]);
+    assert_eq!(rules.dead_rules(), vec![count + 1]);
+}
