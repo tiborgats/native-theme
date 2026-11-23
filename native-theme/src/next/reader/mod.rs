@@ -711,3 +711,13 @@ pub(super) mod portal;
 mod qfont_from_string;
 #[cfg(test)]
 mod tests;
+/// Built on every target, as 0.7.2's `windows` module, so that reader parity
+/// runs its pure entry on every host; only `read` calls Windows.
+#[cfg_attr(
+    not(any(test, all(target_os = "windows", feature = "windows"))),
+    allow(
+        dead_code,
+        reason = "called by the Windows reader's `read()` and the reader parity test"
+    )
+)]
+pub(super) mod windows;

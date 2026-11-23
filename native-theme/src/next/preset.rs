@@ -279,8 +279,9 @@ impl Theme {
     /// [`diagnostics`](Self::diagnostics) returns.
     ///
     /// The KDE reader (the `kde` feature) and the GNOME reader (the `portal`
-    /// feature) are written, on Linux; each other platform's comes with its
-    /// preset's builder (plan, M2). On Linux the reader is chosen as 0.7.2's
+    /// feature) are written, on Linux, and the Windows reader (the `windows`
+    /// feature); each other platform's comes with its preset's builder (plan,
+    /// M2). On Linux the reader is chosen as 0.7.2's
     /// pipeline chooses it, by the desktop it refines (`linux_reader_kind`):
     /// the GNOME reader on GNOME and Budgie, the KDE reader on KDE, and on any
     /// other desktop no reader: the theme is then the `adwaita` preset alone,
@@ -332,12 +333,14 @@ impl Theme {
 
     /// The system's settings, read by the reader of `detected`, the
     /// platform's preset: KDE's for `kde-breeze`; for `adwaita` the reader
-    /// of the desktop `read_linux_desktop` chooses. The other platforms'
-    /// readers are not written yet (plan, M2): `PlatformUnsupported`.
+    /// of the desktop `read_linux_desktop` chooses; Windows' for
+    /// `windows-11`. The other platforms' readers are not written yet (plan,
+    /// M2): `PlatformUnsupported`.
     fn read_system(detected: Preset) -> Result<SystemRead, Error> {
         match detected {
             Preset::KdeBreeze => Self::read_kde().map(SystemRead::from),
             Preset::Adwaita => Self::read_adwaita_desktop(),
+            Preset::Windows11 => Self::read_windows().map(SystemRead::from),
             _ => Err(Error::PlatformUnsupported {
                 platform: std::env::consts::OS,
             }),
@@ -426,6 +429,29 @@ impl Theme {
             })
         }
         #[cfg(not(target_os = "linux"))]
+        {
+            Err(Error::PlatformUnsupported {
+                platform: std::env::consts::OS,
+            })
+        }
+    }
+
+    /// The Windows reader's snapshot (`reader::windows::read`): on Windows
+    /// with the `windows` feature; `FeatureDisabled` on Windows without it,
+    /// `PlatformUnsupported` elsewhere.
+    fn read_windows() -> Result<SystemSnapshot, Error> {
+        #[cfg(all(target_os = "windows", feature = "windows"))]
+        {
+            super::reader::windows::read()
+        }
+        #[cfg(all(target_os = "windows", not(feature = "windows")))]
+        {
+            Err(Error::FeatureDisabled {
+                feature: "windows",
+                needed_for: "reading the Windows settings",
+            })
+        }
+        #[cfg(not(target_os = "windows"))]
         {
             Err(Error::PlatformUnsupported {
                 platform: std::env::consts::OS,
@@ -706,7 +732,7 @@ fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> R
         Preset::KdeBreeze => kde::resolve(&context, inputs),
         Preset::MacosMonterey => nothing_stated(preset, context),
         Preset::MacosTahoe => nothing_stated(preset, context),
-        Preset::Windows11 => nothing_stated(preset, context),
+        Preset::Windows11 => super::presets::windows::resolve(&context, inputs),
         Preset::Material3 => nothing_stated(preset, context),
         Preset::Ios13 => nothing_stated(preset, context),
     }
@@ -718,13 +744,12 @@ fn contrast_levels(preset: Preset) -> &'static [Contrast] {
     match preset {
         Preset::Adwaita => super::presets::adwaita::CONTRAST_LEVELS,
         Preset::KdeBreeze => kde::CONTRAST_LEVELS,
+        Preset::Windows11 => super::presets::windows::CONTRAST_LEVELS,
         // The theme with nothing stated (`nothing_stated`) defines `Normal`
         // only.
-        Preset::MacosMonterey
-        | Preset::MacosTahoe
-        | Preset::Windows11
-        | Preset::Material3
-        | Preset::Ios13 => &[Contrast::Normal],
+        Preset::MacosMonterey | Preset::MacosTahoe | Preset::Material3 | Preset::Ios13 => {
+            &[Contrast::Normal]
+        }
     }
 }
 
@@ -1062,14 +1087,15 @@ mod tests {
         Ok(())
     }
 
-    /// A platform without a written reader, every preset but `kde-breeze` and `adwaita`, is
-    /// unsupported, and both entry points' pure part passes the reader's error on.
+    /// A platform without a written reader, every preset but `kde-breeze` and `adwaita`, and
+    /// `windows-11` on Windows, is unsupported, and both entry points' pure part passes the
+    /// reader's error on.
     #[test]
     fn a_platform_without_a_reader_is_unsupported() {
-        for preset in Preset::ALL
-            .iter()
-            .filter(|p| !matches!(p, Preset::KdeBreeze | Preset::Adwaita))
-        {
+        for preset in Preset::ALL.iter().filter(|p| {
+            !matches!(p, Preset::KdeBreeze | Preset::Adwaita)
+                && !(cfg!(target_os = "windows") && **p == Preset::Windows11)
+        }) {
             let read = Theme::read_system(*preset);
             assert!(
                 matches!(
@@ -1086,6 +1112,23 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// On Windows without the `windows` feature, the Windows reader is a disabled feature.
+    #[cfg(all(target_os = "windows", not(feature = "windows")))]
+    #[test]
+    fn windows_without_its_feature_is_a_disabled_feature() {
+        let read = Theme::read_system(Preset::Windows11);
+        assert!(
+            matches!(
+                read,
+                Err(Error::FeatureDisabled {
+                    feature: "windows",
+                    ..
+                })
+            ),
+            "{read:?}"
+        );
     }
 
     /// On Linux without the `kde` feature, the KDE desktop's reader is a disabled feature.
@@ -1222,11 +1265,15 @@ mod tests {
         Ok(())
     }
 
-    /// Where no reader reads the desktop (neither the `kde` nor the `portal` feature, or not
-    /// Linux), `from_system_or_default` is the platform's preset alone, which resolves; off Linux
-    /// `from_system` fails without a read (on Linux a desktop without a reader is the preset alone
-    /// too: `the_reader_is_chosen_by_the_desktop_as_0_7_2_chooses_it`).
-    #[cfg(not(all(target_os = "linux", any(feature = "kde", feature = "portal"))))]
+    /// Where no reader reads the desktop (on Linux neither the `kde` nor the `portal` feature, on
+    /// Windows not the `windows` feature, or another platform), `from_system_or_default` is the
+    /// platform's preset alone, which resolves; off Linux `from_system` fails without a read (on
+    /// Linux a desktop without a reader is the preset alone too:
+    /// `the_reader_is_chosen_by_the_desktop_as_0_7_2_chooses_it`).
+    #[cfg(not(any(
+        all(target_os = "linux", any(feature = "kde", feature = "portal")),
+        all(target_os = "windows", feature = "windows")
+    )))]
     #[test]
     fn from_system_or_default_falls_back_to_the_platform_preset() {
         #[cfg(not(target_os = "linux"))]
@@ -1783,9 +1830,12 @@ mod tests {
         let ctx = ThemeContext::dark();
         for preset in Preset::ALL {
             let resolved = Theme::preset(*preset).resolve(&ctx);
-            // kde-breeze's and adwaita's builders are written; every other preset states
-            // nothing yet.
-            let built = matches!(preset, Preset::KdeBreeze | Preset::Adwaita);
+            // kde-breeze's, adwaita's and windows-11's builders are written; every other
+            // preset states nothing yet.
+            let built = matches!(
+                preset,
+                Preset::KdeBreeze | Preset::Adwaita | Preset::Windows11
+            );
             assert_eq!(
                 resolved != nothing_stated(*preset, ctx.clone()),
                 built,

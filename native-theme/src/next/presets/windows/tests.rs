@@ -1,0 +1,877 @@
+use super::*;
+
+use crate::next::preset::Theme;
+use crate::next::query::{ButtonQuery, ListQuery, MotionPreference};
+use crate::next::window::WindowState;
+
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+fn both_schemes() -> [ResolvedTheme; 2] {
+    [ThemeContext::light(), ThemeContext::dark()]
+        .map(|ctx| Theme::preset(Preset::Windows11).resolve(&ctx))
+}
+
+#[test]
+fn the_preset_defines_the_normal_contrast_alone() {
+    assert_eq!(CONTRAST_LEVELS, &[Contrast::Normal]);
+    let ctx = ThemeContext::light().with_contrast(Contrast::High);
+    let high = Theme::preset(Preset::Windows11).resolve(&ctx);
+    assert_eq!(high.context.contrast, Contrast::Normal);
+}
+
+#[test]
+fn the_constant_colours_are_their_8_bit_channels() {
+    assert_eq!(LIGHT.window_foreground.to_srgb8(), [0x00, 0x00, 0x00, 0xe4]);
+    assert_eq!(DARK.switch_hover_on.to_srgb8(), [0x20, 0x20, 0x20, 0x19]);
+    assert_eq!(DARK.scrollbar_thumb, None);
+}
+
+/// The push button's and the text field's outlines lie outside their fills
+/// (`InnerBorderEdge`), the primary button's inside (`OuterBorderEdge`).
+#[test]
+fn the_default_button_and_the_text_field_fill_to_the_outline_s_inner_edge() {
+    let align = |stroke: &Stroke| match stroke {
+        Stroke::Uniform { align, .. } => Some(*align),
+        _ => None,
+    };
+    for theme in both_schemes() {
+        let rest = ButtonQuery::new(WidgetState::NONE);
+        assert_eq!(
+            align(&theme.button.body(rest).stroke),
+            Some(StrokeAlign::Outside)
+        );
+        assert_eq!(
+            align(&theme.button.body(ButtonQuery::primary()).stroke),
+            Some(StrokeAlign::Inside)
+        );
+        for state in [WidgetState::NONE, WidgetState::FOCUSED] {
+            assert_eq!(
+                align(&theme.input.field(state).stroke),
+                Some(StrokeAlign::Outside),
+                "{state:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_primary_button_keeps_the_accent_fill_until_disabled() {
+    for theme in both_schemes() {
+        let accent_fill = theme
+            .button
+            .body(ButtonQuery::new(WidgetState::CHECKED))
+            .fill;
+        for state in [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+        ] {
+            let query = ButtonQuery::primary().state(state);
+            assert_eq!(theme.button.body(query).fill, accent_fill, "{state:?}");
+        }
+        let disabled = ButtonQuery::primary().state(WidgetState::DISABLED);
+        assert_eq!(
+            theme.button.body(disabled).fill,
+            theme
+                .button
+                .body(ButtonQuery::new(WidgetState::DISABLED))
+                .fill
+        );
+        assert_eq!(
+            theme.button.label(disabled).color,
+            theme.colors.disabled_text
+        );
+        let pressed_hover = ButtonQuery::new(WidgetState::PRESSED | WidgetState::HOVER);
+        assert_eq!(
+            theme.button.body(pressed_hover),
+            theme.button.body(ButtonQuery::new(WidgetState::PRESSED))
+        );
+        let pressed_checked = ButtonQuery::new(WidgetState::PRESSED | WidgetState::CHECKED);
+        assert_eq!(
+            theme.button.label(pressed_checked).color,
+            theme
+                .button
+                .label(ButtonQuery::new(WidgetState::PRESSED))
+                .color
+        );
+    }
+}
+
+#[test]
+fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_loses_it_when_disabled() {
+    for theme in both_schemes() {
+        let checked = WidgetState::CHECKED;
+        let hovered = checked | WidgetState::HOVER;
+        assert_ne!(
+            theme.checkbox.indicator(WidgetState::HOVER),
+            theme.checkbox.indicator(checked)
+        );
+        assert_eq!(
+            theme.checkbox.indicator(hovered),
+            theme.checkbox.indicator(checked)
+        );
+        assert_eq!(
+            theme.radio.indicator(hovered),
+            theme.radio.indicator(checked)
+        );
+        assert_eq!(
+            theme
+                .checkbox
+                .indicator(checked | WidgetState::DISABLED)
+                .fill,
+            theme.checkbox.indicator(WidgetState::DISABLED).fill
+        );
+    }
+}
+
+#[test]
+fn the_switch_s_track_has_no_outline_when_on() {
+    for theme in both_schemes() {
+        let on_hover = theme
+            .switch
+            .track(WidgetState::HOVER | WidgetState::CHECKED);
+        assert_ne!(on_hover, theme.switch.track(WidgetState::HOVER));
+        assert_ne!(on_hover, theme.switch.track(WidgetState::CHECKED));
+        for state in [
+            WidgetState::CHECKED,
+            WidgetState::CHECKED | WidgetState::HOVER,
+            WidgetState::CHECKED | WidgetState::DISABLED,
+            WidgetState::CHECKED | WidgetState::DISABLED | WidgetState::HOVER,
+        ] {
+            assert_eq!(theme.switch.track(state).stroke, Stroke::None, "{state:?}");
+        }
+        assert_ne!(
+            theme.switch.track(WidgetState::DISABLED).stroke,
+            Stroke::None
+        );
+    }
+}
+
+#[test]
+fn a_selected_item_wins_over_the_pointer() {
+    for theme in both_schemes() {
+        let selected = WidgetState::SELECTED;
+        let hovered = selected | WidgetState::HOVER;
+        let row = |state| theme.list.highlight(ListQuery::new(state));
+        assert_eq!(row(hovered), row(selected));
+        assert_eq!(theme.sidebar.item(hovered), theme.sidebar.item(selected));
+        assert_ne!(theme.tab.tab(WidgetState::HOVER), theme.tab.tab(selected));
+        assert_eq!(theme.tab.tab(hovered), theme.tab.tab(selected));
+        assert_eq!(theme.tab.label(hovered), theme.tab.label(selected));
+        assert_eq!(
+            theme.segmented_control.segment(hovered),
+            theme.segmented_control.segment(selected)
+        );
+    }
+}
+
+#[test]
+fn a_checked_toolbar_button_keeps_its_fill() {
+    for theme in both_schemes() {
+        let checked = theme.toolbar.button(WidgetState::CHECKED);
+        for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+            assert_ne!(theme.toolbar.button(state), checked, "{state:?}");
+            assert_eq!(
+                theme.toolbar.button(state | WidgetState::CHECKED),
+                checked,
+                "{state:?}"
+            );
+        }
+        assert_eq!(
+            theme
+                .toolbar
+                .button(WidgetState::PRESSED | WidgetState::HOVER),
+            theme.toolbar.button(WidgetState::PRESSED)
+        );
+    }
+}
+
+#[test]
+fn a_pressed_link_wins_over_the_pointer_and_a_disabled_one_over_both() {
+    for theme in both_schemes() {
+        let pressed = theme.link.label(WidgetState::PRESSED);
+        assert_eq!(
+            theme.link.label(WidgetState::PRESSED | WidgetState::HOVER),
+            pressed
+        );
+        assert_eq!(
+            theme
+                .link
+                .label(WidgetState::DISABLED | WidgetState::PRESSED)
+                .color,
+            theme.link.label(WidgetState::DISABLED).color
+        );
+    }
+}
+
+#[test]
+fn an_inactive_window_has_the_inactive_title() {
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let theme = Theme::preset(Preset::Windows11);
+        let active = theme.resolve(&ctx);
+        let inactive = theme.resolve(&ctx.clone().with_window_active(false));
+        let state = WindowState::default();
+        assert_eq!(
+            inactive.window.title_bar(state),
+            active.window.title_bar(state)
+        );
+        assert_ne!(
+            inactive.window.title(state).color,
+            active.window.title(state).color
+        );
+    }
+}
+
+/// Right to left mirrors the per-side values the preset states unequal on
+/// the left and the right, and nothing else.
+#[test]
+fn right_to_left_mirrors_the_unequal_sides() {
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let theme = Theme::preset(Preset::Windows11);
+        let ltr = theme.resolve(&ctx);
+        let rtl = theme.resolve(&ctx.clone().with_direction(Direction::Rtl));
+        let mirrored = |e: Edges| Edges::new(e.top, e.left, e.bottom, e.right);
+        let row = ListQuery::new(WidgetState::NONE);
+        assert_eq!(ltr.list.row(row).padding.left, LIST_ROW_PADDING_LEFT);
+        assert_eq!(
+            rtl.list.row(row).padding,
+            mirrored(ltr.list.row(row).padding)
+        );
+        assert_eq!(
+            rtl.input.field(WidgetState::NONE).padding,
+            mirrored(ltr.input.field(WidgetState::NONE).padding)
+        );
+        assert_eq!(
+            rtl.toolbar.bar(WidgetState::NONE).padding,
+            mirrored(ltr.toolbar.bar(WidgetState::NONE).padding)
+        );
+        let mut same = rtl.clone();
+        same.context = ltr.context.clone();
+        same.list = ltr.list.clone();
+        same.input = ltr.input.clone();
+        same.text_area = ltr.text_area.clone();
+        same.toolbar = ltr.toolbar.clone();
+        same.combo_box = ltr.combo_box.clone();
+        same.expander = ltr.expander.clone();
+        assert_eq!(same, ltr);
+    }
+}
+
+/// The text scale of the test below.
+const TEXT_SCALE_TWO: f32 = 2.0;
+
+/// The text scale is linear on Windows and not rounded: at 2.0 every font
+/// size and line height is twice the one at 1.0, each `defined_size` stays
+/// the unscaled size, and nothing but the text changes.
+#[test]
+fn at_text_scale_2_every_font_size_is_doubled() -> TestResult {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let base = Theme::preset(Preset::Windows11).resolve(&ctx);
+        let double = Theme::preset(Preset::Windows11).resolve(&ctx.with_text_scale(TEXT_SCALE_TWO));
+        let slots = |t: &ResolvedTheme| -> Result<Vec<TextStyle>, String> {
+            let entry = |slot: &Option<TextStyle>, name: &str| {
+                slot.clone().ok_or_else(|| format!("no {name}"))
+            };
+            Ok(vec![
+                t.typography.body.clone(),
+                t.typography.monospace.clone(),
+                entry(&t.typography.display, "display")?,
+                entry(&t.typography.title1, "title1")?,
+                entry(&t.typography.headline, "headline")?,
+                entry(&t.typography.caption, "caption")?,
+                t.button.label(ButtonQuery::new(WidgetState::NONE)),
+                t.tooltip.text.clone(),
+                t.dialog.title.clone(),
+                t.window.title(WindowState::default()),
+            ])
+        };
+        for (one, two) in slots(&base)?.into_iter().zip(slots(&double)?) {
+            let size = one.defined_size.ok_or("no defined size")?;
+            assert_eq!(two.defined_size, Some(size), "{scheme:?}");
+            assert_eq!(two.size_px, one.size_px * TEXT_SCALE_TWO, "{scheme:?}");
+            assert_eq!(
+                two.line_height,
+                one.line_height * TEXT_SCALE_TWO,
+                "{scheme:?}"
+            );
+        }
+        let rest = ButtonQuery::new(WidgetState::NONE);
+        assert_eq!(double.button.body(rest), base.button.body(rest));
+        assert_eq!(double.layout, base.layout);
+        assert_eq!(double.icons, base.icons);
+    }
+    Ok(())
+}
+
+/// `MotionPreference::None` sets the dialog's entrance to
+/// `DialogEntranceStyle::None`; WinUI's `ScaleFade` stays under full and
+/// under reduced motion. The preset states no motion token.
+#[test]
+fn no_motion_removes_the_dialog_s_entrance() {
+    let resolve = |motion: MotionPreference| {
+        Theme::preset(Preset::Windows11).resolve(&ThemeContext::light().with_motion(motion))
+    };
+    let none = resolve(MotionPreference::None);
+    assert_eq!(none.dialog.entrance, Some(DialogEntranceStyle::None));
+    assert_eq!(none.motion_tokens, MotionTokens::default());
+    for motion in [MotionPreference::Full, MotionPreference::Reduced] {
+        let theme = resolve(motion);
+        assert_eq!(
+            theme.dialog.entrance,
+            Some(DialogEntranceStyle::ScaleFade),
+            "{motion:?}"
+        );
+        assert_eq!(theme.motion_tokens, MotionTokens::default(), "{motion:?}");
+    }
+}
+
+/// The system's settings of `accent` and, for `(Scheme::Light, Contrast::High)`, of the
+/// selection's colours `highlight` alone.
+fn system_with(accent: Color, highlight: Option<(Color, Color)>) -> SystemOverrides {
+    use crate::next::reader::{OsColors, OsSelectionColors};
+    let color_schemes = highlight
+        .map(|(background, foreground)| {
+            let colors = OsColors {
+                selection: Some(OsSelectionColors::new(
+                    Some(background),
+                    Some(foreground),
+                    None,
+                    None,
+                )),
+                ..OsColors::default()
+            };
+            vec![((Scheme::Light, Contrast::High), colors)]
+        })
+        .unwrap_or_default();
+    SystemOverrides {
+        accent: Some(accent),
+        color_schemes,
+        ..SystemOverrides::default()
+    }
+}
+
+/// The system's accent is one value for both schemes: without a shade it is
+/// the accent and the accent's fill in either scheme.
+#[test]
+fn the_system_s_accent_applies_in_either_scheme() {
+    let accent = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system_with(accent, None));
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let resolved = theme.resolve(&ctx);
+        assert_eq!(resolved.colors.accent.fill, accent, "{:?}", ctx.scheme);
+        assert_eq!(
+            resolved.button.body(ButtonQuery::primary()).fill,
+            Paint::Solid(accent),
+            "{:?}",
+            ctx.scheme
+        );
+    }
+}
+
+/// The system's high-contrast colours make `Contrast::High` available for
+/// their scheme alone; there a stated colour replaces the accent's values,
+/// and a key whose colour is not stated keeps the preset's.
+#[test]
+fn the_system_s_high_contrast_colours_make_high_available() {
+    let accent = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    let highlight = Color::from_srgb8(5, 5, 5, 0xff);
+    let highlight_text = Color::from_srgb8(6, 6, 6, 0xff);
+    let theme = Theme::preset(Preset::Windows11)
+        .with_system_overrides(system_with(accent, Some((highlight, highlight_text))));
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    assert_eq!(high.colors.accent.fill, highlight);
+    assert_eq!(high.colors.selection.foreground, highlight_text);
+    assert_eq!(
+        high.button.body(ButtonQuery::primary()).fill,
+        Paint::Solid(highlight)
+    );
+    let preset = Theme::preset(Preset::Windows11).resolve(&ThemeContext::light());
+    assert_eq!(
+        high.button.body(ButtonQuery::new(WidgetState::NONE)).fill,
+        preset.button.body(ButtonQuery::new(WidgetState::NONE)).fill
+    );
+    assert_eq!(high.layout.border_opacity, preset.layout.border_opacity);
+    let dark = theme.resolve(&ThemeContext::dark().with_contrast(Contrast::High));
+    assert_eq!(dark.context.contrast, Contrast::Normal);
+    assert_eq!(dark.colors.accent.fill, accent);
+}
+
+// ---------------------------------------------------------------------------
+// The palette and the explicit accent
+// ---------------------------------------------------------------------------
+
+/// The 8-bit opaque colour `0xRRGGBB`.
+fn hex(rgb: u32) -> Color {
+    let [_, r, g, b] = rgb.to_be_bytes();
+    Color::from_srgb8(r, g, b, u8::MAX)
+}
+
+/// An explicit accent whose text is white in both schemes
+/// (`accent-decision.md`, W4's cases).
+const PURPLE: u32 = 0x5c2d91;
+
+/// A palette for `scheme` whose every slot has a colour of its own.
+fn distinct_palette(scheme: Scheme) -> Palette {
+    Palette {
+        name: Arc::from("distinct"),
+        scheme,
+        window_bg: hex(0xf0e0d0),
+        view_bg: hex(0xfaf5f0),
+        surface_bg: hex(0xe8f0e8),
+        header_bg: hex(0xd8d0f0),
+        sidebar_bg: hex(0xe0f0f8),
+        tooltip_bg: hex(0xf8f0c0),
+        foreground: hex(0x201810),
+        foreground_muted: hex(0x605850),
+        border: hex(0xa09080),
+        divider: hex(0xb0a8a0),
+        accent: hex(0x8020c0),
+        accent_fg: hex(0xfff8e0),
+        selection_bg: hex(0x40a060),
+        selection_fg: hex(0x002010),
+        link: hex(0x1040a0),
+        caret: hex(0xc04010),
+        error: hex(0xc00020),
+        warning: hex(0xc08000),
+        success: hex(0x208020),
+        info: hex(0x2080c0),
+    }
+}
+
+/// The preset's constants of `scheme`.
+fn constants(scheme: Scheme) -> SchemeColors {
+    match scheme {
+        Scheme::Light => LIGHT,
+        Scheme::Dark => DARK,
+    }
+}
+
+/// The colour of a solid paint.
+fn solid(paint: &Paint) -> Option<Color> {
+    match paint {
+        Paint::Solid(color) => Some(*color),
+        _ => None,
+    }
+}
+
+/// The colour of a uniform stroke.
+fn stroke_color(stroke: &Stroke) -> Option<Color> {
+    match stroke {
+        Stroke::Uniform { color, .. } => Some(*color),
+        _ => None,
+    }
+}
+
+/// Every colour the theme draws in the accent's fill of the resolved scheme
+/// (WinUI's `AccentFillColorDefault`), each by its name.
+fn accent_fills(theme: &ResolvedTheme) -> [(&'static str, Option<Color>); 10] {
+    let checked = WidgetState::CHECKED;
+    [
+        (
+            "primary button",
+            solid(&theme.button.body(ButtonQuery::primary()).fill),
+        ),
+        (
+            "checked button",
+            solid(&theme.button.body(ButtonQuery::new(checked)).fill),
+        ),
+        (
+            "checked check box",
+            solid(&theme.checkbox.indicator(checked).fill),
+        ),
+        (
+            "checked radio button",
+            solid(&theme.radio.indicator(checked).fill),
+        ),
+        ("on switch", solid(&theme.switch.track(checked).fill)),
+        (
+            "checked toolbar button",
+            solid(&theme.toolbar.button(checked).fill),
+        ),
+        (
+            "slider's filled part",
+            solid(&theme.slider.active_track(WidgetState::NONE).fill),
+        ),
+        (
+            "progress",
+            solid(&theme.progress_bar.fill(WidgetState::NONE).fill),
+        ),
+        ("spinner", Some(theme.spinner.color)),
+        (
+            "focused text field's outline",
+            stroke_color(&theme.input.field(WidgetState::FOCUSED).stroke),
+        ),
+    ]
+}
+
+/// The link's colours at rest, hovered and pressed.
+fn link_trio(theme: &ResolvedTheme) -> [Color; 3] {
+    [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED]
+        .map(|state| theme.link.label(state).color)
+}
+
+/// Every text and mark the theme draws on the accent's fill, each by its
+/// name.
+fn on_accent(theme: &ResolvedTheme) -> [(&'static str, Option<Color>); 5] {
+    let checked = WidgetState::CHECKED;
+    [
+        (
+            "primary button's label",
+            Some(theme.button.label(ButtonQuery::primary()).color),
+        ),
+        (
+            "checked button's label",
+            Some(theme.button.label(ButtonQuery::new(checked)).color),
+        ),
+        ("check mark", Some(theme.checkbox.checkmark(checked).color)),
+        ("radio button's dot", solid(&theme.radio.dot(checked).fill)),
+        ("on switch's knob", solid(&theme.switch.thumb(checked).fill)),
+    ]
+}
+
+/// An explicit accent is written as given: the accent, every use of the
+/// accent's fill, the informational fill and the selection; the link and its
+/// hovered and pressed colours, and every other role, keep the preset's.
+#[test]
+fn an_explicit_accent_is_written_as_given() {
+    let accent = hex(PURPLE);
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let preset = Theme::preset(Preset::Windows11).resolve(&ctx);
+        let theme = Theme::preset(Preset::Windows11)
+            .with_accent(accent)
+            .resolve(&ctx);
+        for (name, got) in accent_fills(&theme) {
+            assert_eq!(got, Some(accent), "{scheme:?} {name}");
+        }
+        assert_eq!(link_trio(&theme), link_trio(&preset), "{scheme:?}");
+        let mut want = preset.colors.clone();
+        want.accent.fill = accent;
+        want.accent.foreground = text_on_accent(accent, scheme);
+        want.info.fill = accent;
+        want.selection.background = accent;
+        want.selection.unfocused_background = Some(accent);
+        want.text_selection.background = accent;
+        assert_eq!(theme.colors, want, "{scheme:?}");
+    }
+}
+
+/// An explicit accent stands over the system's accent and its six shades:
+/// none of the shades is drawn as the accent's fill, and the link's three
+/// colours are the system's text shades.
+#[test]
+fn an_explicit_accent_stands_over_the_system_s_shades() {
+    use crate::next::reader::WindowsAccentRamp;
+    let accent = hex(PURPLE);
+    let [light1, light2, light3] = [hex(0xa0c0e0), hex(0xb0d0f0), hex(0xc0e0ff)];
+    let [dark1, dark2, dark3] = [hex(0x103050), hex(0x082840), hex(0x002030)];
+    let shades = [light1, light2, light3, dark1, dark2, dark3];
+    let system = SystemOverrides {
+        accent: Some(hex(0x2060a0)),
+        windows_accent_ramp: Some(WindowsAccentRamp {
+            light: [Some(light1), Some(light2), Some(light3)],
+            dark: [Some(dark1), Some(dark2), Some(dark3)],
+        }),
+        ..SystemOverrides::default()
+    };
+    for (scheme, link) in [
+        (Scheme::Light, [dark2, dark3, dark1]),
+        (Scheme::Dark, [light3, light3, light2]),
+    ] {
+        let theme = Theme::preset(Preset::Windows11)
+            .with_system_overrides(system.clone())
+            .with_accent(accent)
+            .resolve(&ThemeContext::default().with_scheme(scheme));
+        assert_eq!(theme.colors.accent.fill, accent, "{scheme:?}");
+        assert_eq!(theme.colors.info.fill, accent, "{scheme:?}");
+        assert_eq!(theme.colors.selection.background, accent, "{scheme:?}");
+        for (name, got) in accent_fills(&theme) {
+            assert_eq!(got, Some(accent), "{scheme:?} {name}");
+            assert!(
+                got.is_none_or(|got| !shades.contains(&got)),
+                "{scheme:?} {name}"
+            );
+        }
+        assert_eq!(theme.colors.link, link[0], "{scheme:?}");
+        assert_eq!(link_trio(&theme), link, "{scheme:?}");
+    }
+}
+
+/// The text on an explicit accent is the scheme's
+/// `TextOnAccentFillColorPrimary` where it reads at 3:1 or better, else the
+/// other scheme's (`accent-decision.md`, W4's four cases), and every text and
+/// mark on the accent's fill is that role.
+#[test]
+fn the_text_on_an_explicit_accent_reads_on_it() {
+    let white = [0xff, 0xff, 0xff, 0xff];
+    let black = [0x00, 0x00, 0x00, 0xff];
+    assert_eq!(LIGHT.accent_foreground.to_srgb8(), white);
+    assert_eq!(DARK.accent_foreground.to_srgb8(), black);
+    for (scheme, accent, want) in [
+        (Scheme::Light, 0x0078d4, white),
+        (Scheme::Light, 0xffb900, black),
+        (Scheme::Dark, 0x7b2ff7, black),
+        (Scheme::Dark, PURPLE, white),
+    ] {
+        let theme = Theme::preset(Preset::Windows11)
+            .with_accent(hex(accent))
+            .resolve(&ThemeContext::default().with_scheme(scheme));
+        let role = theme.colors.accent.foreground;
+        assert_eq!(role.to_srgb8(), want, "{scheme:?} {accent:06x}");
+        for (name, got) in on_accent(&theme) {
+            assert_eq!(got, Some(role), "{scheme:?} {accent:06x} {name}");
+        }
+    }
+}
+
+/// A palette states the roles its slots name (spec §7), its accent written
+/// as given; the link's hovered and pressed colours are its link.
+#[test]
+fn a_palette_states_its_roles() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let p = distinct_palette(scheme);
+        let theme = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .resolve(&ThemeContext::default().with_scheme(scheme));
+        let colors = &theme.colors;
+        for (name, surface, background) in [
+            ("window", colors.window, p.window_bg),
+            ("view", colors.view, p.view_bg),
+            ("header", colors.header, p.header_bg),
+            ("sidebar", colors.sidebar, p.sidebar_bg),
+            ("card", colors.card, p.surface_bg),
+            ("dialog", colors.dialog, p.surface_bg),
+            ("popover", colors.popover, p.surface_bg),
+            ("tooltip", colors.tooltip, p.tooltip_bg),
+        ] {
+            assert_eq!(surface.background, Some(background), "{scheme:?} {name}");
+            assert_eq!(surface.foreground, Some(p.foreground), "{scheme:?} {name}");
+        }
+        assert_eq!(colors.window.foreground_muted, Some(p.foreground_muted));
+        assert_eq!(colors.window.border, Some(p.border));
+        assert_eq!(colors.window.divider, Some(p.divider));
+        assert_eq!(colors.accent.fill, p.accent);
+        assert_eq!(colors.accent.foreground, p.accent_fg);
+        assert_eq!(
+            colors.selection,
+            SelectionColors::new(
+                p.selection_bg,
+                p.selection_fg,
+                Some(p.selection_bg),
+                Some(p.selection_fg)
+            )
+        );
+        assert_eq!(
+            colors.text_selection,
+            SelectionColors::new(p.selection_bg, p.selection_fg, None, None)
+        );
+        assert_eq!(colors.link, p.link);
+        assert_eq!(colors.caret, p.caret);
+        let c = constants(scheme);
+        for (status, fill) in [
+            (colors.error, p.error),
+            (colors.warning, p.warning),
+            (colors.success, p.success),
+            (colors.info, p.info),
+        ] {
+            assert_eq!(status.fill, fill, "{scheme:?}");
+            assert_eq!(status.foreground, c.status_foreground, "{scheme:?}");
+            assert_eq!(status.origin, RoleOrigin::Custom, "{scheme:?}");
+        }
+        assert_eq!(colors.focus_ring, c.focus_ring);
+        assert_eq!(colors.disabled_text, c.disabled_text);
+        assert_eq!(colors.shadow, c.shadow);
+        for (name, got) in accent_fills(&theme) {
+            assert_eq!(got, Some(p.accent), "{scheme:?} {name}");
+        }
+        for (name, got) in on_accent(&theme) {
+            assert_eq!(got, Some(p.accent_fg), "{scheme:?} {name}");
+        }
+        assert_eq!(link_trio(&theme), [p.link; 3], "{scheme:?}");
+        assert_eq!(
+            theme.link.label(WidgetState::DISABLED).color,
+            c.link_disabled
+        );
+    }
+}
+
+/// The widgets the preset draws in a colour a slot replaces take the slot's
+/// colour; the control fills, the hover layers, the strokes of their own and
+/// the disabled colours keep the preset's.
+#[test]
+fn a_palette_recolours_what_it_states_and_nothing_else() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let p = distinct_palette(scheme);
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let preset = Theme::preset(Preset::Windows11).resolve(&ctx);
+        let theme = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        let normal = WindowState::default();
+        let none = WidgetState::NONE;
+        for (name, got, want) in [
+            (
+                "window frame",
+                solid(&theme.window.frame(normal).fill),
+                p.window_bg,
+            ),
+            (
+                "title bar",
+                solid(&theme.window.title_bar(normal).fill),
+                p.window_bg,
+            ),
+            (
+                "list's header",
+                solid(&theme.list.header(ListQuery::new(none)).fill),
+                p.window_bg,
+            ),
+            (
+                "sidebar",
+                solid(&theme.sidebar.container(none).fill),
+                p.sidebar_bg,
+            ),
+            (
+                "card",
+                solid(&theme.card.container(none).fill),
+                p.surface_bg,
+            ),
+            ("popover", solid(&theme.popover.panel.fill), p.surface_bg),
+            ("dialog", solid(&theme.dialog.panel.fill), p.surface_bg),
+            ("tooltip", solid(&theme.tooltip.panel.fill), p.tooltip_bg),
+            (
+                "card's outline",
+                stroke_color(&theme.card.container(none).stroke),
+                p.border,
+            ),
+            (
+                "button's outline",
+                stroke_color(&theme.button.body(ButtonQuery::new(none)).stroke),
+                p.border,
+            ),
+            ("separator", Some(theme.separator.color), p.border),
+            ("list's grid", Some(theme.list.grid_color), p.border),
+        ] {
+            assert_eq!(got, Some(want), "{scheme:?} {name}");
+        }
+        assert_eq!(theme.typography.body.color, p.foreground);
+        assert_eq!(theme.tooltip.text.color, p.foreground);
+        assert_eq!(theme.popover.text.color, p.foreground);
+        assert_eq!(
+            theme.button.label(ButtonQuery::new(none)).color,
+            p.foreground
+        );
+        assert_eq!(theme.input.placeholder(none).color, p.foreground_muted);
+        let unchanged = |t: &ResolvedTheme| {
+            [
+                solid(&t.button.body(ButtonQuery::new(none)).fill),
+                solid(&t.button.body(ButtonQuery::new(WidgetState::HOVER)).fill),
+                solid(&t.button.body(ButtonQuery::new(WidgetState::DISABLED)).fill),
+                solid(&t.input.field(none).fill),
+                solid(&t.checkbox.indicator(none).fill),
+                stroke_color(&t.checkbox.indicator(none).stroke),
+                solid(
+                    &t.switch
+                        .track(WidgetState::HOVER | WidgetState::CHECKED)
+                        .fill,
+                ),
+                solid(
+                    &t.switch
+                        .track(WidgetState::DISABLED | WidgetState::CHECKED)
+                        .fill,
+                ),
+                solid(&t.slider.thumb(none).fill),
+                solid(&t.slider.active_track(WidgetState::DISABLED).fill),
+                solid(&t.menu.panel(none).fill),
+                solid(&t.list.highlight(ListQuery::new(WidgetState::HOVER)).fill),
+                solid(&t.toolbar.button(WidgetState::HOVER).fill),
+                Some(
+                    t.button
+                        .label(ButtonQuery::new(WidgetState::DISABLED))
+                        .color,
+                ),
+                Some(t.colors.focus_ring),
+                Some(t.colors.disabled_text),
+            ]
+        };
+        assert_eq!(unchanged(&theme), unchanged(&preset), "{scheme:?}");
+    }
+}
+
+/// An explicit accent over a palette replaces the palette's accent, its
+/// text, its informational colour and its selection, whose text is then the
+/// preset's; every other slot of the palette stands, its link with it.
+#[test]
+fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
+    let accent = hex(PURPLE);
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let p = distinct_palette(scheme);
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .with_accent(accent)
+            .resolve(&ctx);
+        let palette_only = Theme::preset(Preset::Windows11)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        let c = constants(scheme);
+        let colors = &theme.colors;
+        assert_eq!(colors.accent.fill, accent);
+        assert_eq!(colors.accent.foreground, text_on_accent(accent, scheme));
+        assert_eq!(
+            colors.selection,
+            SelectionColors::new(
+                accent,
+                c.selection_foreground,
+                Some(accent),
+                Some(c.selection_foreground)
+            )
+        );
+        assert_eq!(colors.info.fill, accent);
+        assert_eq!(colors.info.origin, RoleOrigin::Custom);
+        for (name, got) in accent_fills(&theme) {
+            assert_eq!(got, Some(accent), "{scheme:?} {name}");
+        }
+        assert_eq!(colors.window, palette_only.colors.window);
+        assert_eq!(colors.card, palette_only.colors.card);
+        assert_eq!(colors.tooltip, palette_only.colors.tooltip);
+        assert_eq!(colors.error, palette_only.colors.error);
+        assert_eq!(colors.caret, p.caret);
+        assert_eq!(link_trio(&theme), [p.link; 3], "{scheme:?}");
+    }
+}
+
+/// An application with shades of its own states them as the system's accent
+/// and ramp and gives no explicit accent: the accent's fill is the scheme's
+/// shade and the link's colours the text shades (spec §8, "The Windows
+/// part").
+#[test]
+fn an_application_s_own_shades_run_the_system_s_rule() {
+    use crate::next::reader::WindowsAccentRamp;
+    let accent = hex(PURPLE);
+    let [light1, light2, light3] = [hex(0x8a5cc0), hex(0xa880d8), hex(0xc8a8f0)];
+    let [dark1, dark2, dark3] = [hex(0x4a2078), hex(0x3a1860), hex(0x2a1048)];
+    let system = SystemOverrides {
+        accent: Some(accent),
+        windows_accent_ramp: Some(WindowsAccentRamp {
+            light: [Some(light1), Some(light2), Some(light3)],
+            dark: [Some(dark1), Some(dark2), Some(dark3)],
+        }),
+        ..SystemOverrides::default()
+    };
+    for (scheme, fill, info, link) in [
+        (Scheme::Light, dark1, accent, [dark2, dark3, dark1]),
+        (Scheme::Dark, light2, light2, [light3, light3, light2]),
+    ] {
+        let theme = Theme::preset(Preset::Windows11)
+            .with_system_overrides(system.clone())
+            .resolve(&ThemeContext::default().with_scheme(scheme));
+        assert_eq!(theme.colors.accent.fill, accent, "{scheme:?}");
+        assert_eq!(theme.colors.info.fill, info, "{scheme:?}");
+        for (name, got) in accent_fills(&theme) {
+            assert_eq!(got, Some(fill), "{scheme:?} {name}");
+        }
+        assert_eq!(link_trio(&theme), link, "{scheme:?}");
+    }
+}
