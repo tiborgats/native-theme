@@ -104,7 +104,7 @@ pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     stated(fill_of(part), home)
 }
 
-/// A part's fill as [`fill`] reads it, `None` where it is not stated, or
+/// A part's fill as `fill` reads it, `None` where it is not stated, or
 /// stated in a form gpui cannot paint (not one colour): for a reader that
 /// shows the toolkit's own there (spec §10, rule 0), as the showcase's
 /// Widget Info does.
@@ -133,7 +133,7 @@ pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla>
     stated(stroke_color_of(part), home)
 }
 
-/// A part's stroke colour as [`stroke_color`] reads it, `None` where it is
+/// A part's stroke colour as `stroke_color` reads it, `None` where it is
 /// not stated, or stated in a form gpui cannot draw (not one stroke of one
 /// colour).
 pub fn stroke_color_of(part: &PartStyle) -> Option<Hsla> {
@@ -152,7 +152,7 @@ pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> 
     stated(stroke_width_of(part), home)
 }
 
-/// A part's stroke width as [`stroke_width`] reads it, `None` where it is
+/// A part's stroke width as `stroke_width` reads it, `None` where it is
 /// not stated, or stated in a form gpui cannot draw (not one stroke, nor
 /// none).
 pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
@@ -172,7 +172,7 @@ pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     stated(radius_of(part), home)
 }
 
-/// A part's corner radius as [`radius`] reads it, `None` where it is not
+/// A part's corner radius as `radius` reads it, `None` where it is not
 /// stated, or stated in a form gpui cannot draw (not one circular radius,
 /// nor square corners: pill, per-corner or concentric corners, a continuous
 /// curve).
@@ -205,7 +205,7 @@ pub(crate) fn text_color(text: &TextStyle, home: &'static str) -> Mapped<Hsla> {
     stated(text_color_of(text), home)
 }
 
-/// A text style's colour as [`text_color`] reads it, `None` where it is not
+/// A text style's colour as `text_color` reads it, `None` where it is not
 /// stated.
 pub fn text_color_of(text: &TextStyle) -> Option<Hsla> {
     text.stated
@@ -236,7 +236,7 @@ fn state_option(value: Option<Hsla>, ruled: bool, home: &'static str) -> Mapped<
     }
 }
 
-/// A part's fill as [`state_fill`] reads it, `None` where no rule states it
+/// A part's fill as `state_fill` reads it, `None` where no rule states it
 /// for the queried state, or it is stated in a form gpui cannot paint (not
 /// one colour). The rule is for some flag of the query, not a given one
 /// (spec §2, `from_state`): a reader that keeps the toolkit's own treatment
@@ -249,7 +249,7 @@ pub fn state_fill_of(part: &PartStyle) -> Option<Hsla> {
         .flatten()
 }
 
-/// A part's stroke colour as [`state_stroke_color`] reads it, `None` where
+/// A part's stroke colour as `state_stroke_color` reads it, `None` where
 /// no rule states it for the queried state, or it is stated in a form gpui
 /// cannot draw (not one stroke of one colour). The rule is for some flag of
 /// the query, not a given one (spec §2, `from_state`): a reader that keeps
@@ -262,7 +262,7 @@ pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
         .flatten()
 }
 
-/// A text style's colour as [`state_text_color`] reads it, `None` where no
+/// A text style's colour as `state_text_color` reads it, `None` where no
 /// rule states it for the queried state or it is not stated. The rule is
 /// for some flag of the query, not a given one (spec §2, `from_state`): a
 /// reader that keeps the toolkit's own treatment of one flag over a value
