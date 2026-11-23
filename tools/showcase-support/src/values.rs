@@ -20,17 +20,19 @@ use native_theme::theme::{IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTheme}
 pub const NOT_STATED: &str = "not stated";
 
 /// A leaf's value: its text, and its colour where it is one, which the
-/// showcase draws as the row's swatch in its own colour type.
+/// showcase draws as the row's swatch in its own colour type. `C` is the
+/// model's colour type: `Rgba` here, `native_theme::next::Color` in
+/// [`crate::next::values`].
 #[derive(Clone, Debug, PartialEq)]
-pub struct LeafValue {
+pub struct LeafValue<C = Rgba> {
     /// The value's text.
     pub text: String,
     /// The colour, where the value is one.
-    pub colour: Option<Rgba>,
+    pub colour: Option<C>,
 }
 
-impl LeafValue {
-    fn text(text: String) -> Self {
+impl<C> LeafValue<C> {
+    pub(crate) fn text(text: String) -> Self {
         Self { text, colour: None }
     }
 }
@@ -179,7 +181,7 @@ fn value_of(
 
 /// The unit a leaf's number is shown in: `px` for a `_px` leaf, `ms` for a
 /// `_ms` one.
-fn unit(leaf: &str) -> Option<&'static str> {
+pub(crate) fn unit(leaf: &str) -> Option<&'static str> {
     if leaf.ends_with("_px") {
         Some("px")
     } else if leaf.ends_with("_ms") {
@@ -192,7 +194,7 @@ fn unit(leaf: &str) -> Option<&'static str> {
 /// A number of the theme's JSON, printed: an unsigned integer as itself (a
 /// `u32` above 2^24 would print rounded as an `f32`), any other number as the
 /// f32 the theme holds.
-fn number(value: Option<&serde_json::Value>) -> String {
+pub(crate) fn number(value: Option<&serde_json::Value>) -> String {
     let Some(value) = value else {
         return NOT_STATED.to_string();
     };

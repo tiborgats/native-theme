@@ -21,7 +21,9 @@
 //!   check that AppKit holds them;
 //! - [`rows`]: the preset and icon-theme pickers' rows, and a table row's
 //!   height under the OS text scale;
-//! - [`status`]: the status bar's environment items.
+//! - [`status`]: the status bar's environment items;
+//! - [`next`]: the counterparts of `values`, `info`, `rows` and `status` that
+//!   read the 0.8.0 model, kept beside them until the showcases are ported.
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
@@ -35,6 +37,7 @@ pub mod dump;
 pub mod elements;
 pub mod info;
 pub mod menu;
+pub mod next;
 pub mod rows;
 pub mod status;
 pub mod values;
