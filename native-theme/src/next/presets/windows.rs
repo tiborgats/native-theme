@@ -8,8 +8,50 @@
 //! same WinUI brush, is taken from the roles, not from a second copy of the
 //! constant. The system's settings ([`ResolveInputs::system`]) are laid over
 //! the constants as the 0.7.2 reader writes them (spec §8, "The Windows
-//! part", *Derived by the `windows-11` builder*; see [`resolve`]); the
-//! active palette and an explicit accent are not read yet.
+//! part", *Derived by the `windows-11` builder*; see [`resolve`]).
+//!
+//! The active palette ([`ResolveInputs::palette`]) and then an explicit
+//! accent ([`ResolveInputs::accent`]) are laid over the system's settings
+//! (spec §6, resolution step 2, layer 3), over the high-contrast colours too
+//! where they are kept there. A palette states the roles its slots name
+//! (spec §7, "The roles a palette states"), and each slot whose WinUI colour
+//! has the slot's name replaces that colour and every widget colour the
+//! preset takes from it ([`lay_palette_over`]): `window_bg` is the window's
+//! background, so also the title bar's, the list's header and the dialog's
+//! panel; `view_bg` is the view's (`CardBackgroundFillColorDefault`, 0.7.2's
+//! `defaults.surface_color`); `sidebar_bg` is the sidebar's; `foreground` is
+//! the window's text, in which the preset letters its widgets, and the text
+//! of the eight surfaces (§7: one text colour); `foreground_muted` and
+//! `border` are the window's, so every outline drawn in the default border
+//! and the separator; `link` is the link, whose hovered and pressed colours,
+//! shades of another colour, are then not stated (spec §6, step 2); `error`,
+//! `warning`, `success` and `info` are the status fills; `accent` is the
+//! accent, written as given as an explicit accent is (below), and `accent_fg`
+//! the text on it; `selection_bg` and `selection_fg` are the selection's,
+//! which the text selection takes. A slot with no WinUI colour of its name
+//! states its role alone, and a widget that draws that role takes it:
+//! `header_bg`, `divider` and `caret` state their roles; `tooltip_bg` the
+//! tooltip's, so its panel (the preset's `AcrylicInAppFillColorDefault` is
+//! the popover's too); `surface_bg` the card's, the dialog's and the
+//! popover's, so their panels. Every other colour keeps the value of the
+//! layers below: the control fills, strokes and hover layers, every disabled
+//! colour, the focus ring, the status colours' text.
+//!
+//! An explicit accent, or else a palette's `accent`, is written as given;
+//! no colour is computed from it (spec §6, step 2;
+//! `.superpowers/sdd/v0.8.0-plan/M2/units/accent-decision.md`): it is the
+//! accent, the accent's fill of the resolved scheme (WinUI's
+//! `AccentFillColorDefault`: the primary and checked fills, the slider's,
+//! the progress bar's and the spinner's fill and, outside high contrast, the
+//! focused text field's outline), the informational fill and the selection,
+//! and `SystemOverrides::windows_accent_ramp` is not read for them. Under an
+//! explicit accent the text on the accent's fill is the resolved scheme's
+//! `TextOnAccentFillColorPrimary` where its contrast ratio on the accent is
+//! at least 3, else the other scheme's ([`text_on_accent`]); the link and its
+//! hovered and pressed colours, WinUI's text shades, keep the value of the
+//! layers below. An explicit accent over a palette replaces its `accent`,
+//! `accent_fg`, `info`, `selection_bg` and `selection_fg`; the selection's
+//! text is then the one of the layers below the palette.
 //!
 //! The colours are what WinUI 3 draws (the header of 0.7.2's
 //! `windows-11.toml`): a brush with alpha as the resource gives it (ARGB
@@ -139,6 +181,7 @@ use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
+use crate::next::palette::Palette;
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
     Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
@@ -1336,6 +1379,12 @@ const fn srgb8(rgba: u32) -> Color {
 /// data"): `Normal` alone, as the module documentation says.
 pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal];
 
+/// The least contrast ratio of the text on an explicit accent's fill in the
+/// scheme's own `TextOnAccentFillColorPrimary` ([`text_on_accent`]): the
+/// minimum of spec §11, item 5 (WCAG 2.2's for large text and user-interface
+/// components, SC 1.4.3 and 1.4.11).
+const MIN_TEXT_ON_ACCENT_CONTRAST: f32 = 3.0;
+
 /// The theme of `windows-11` for `ctx.scheme`, from the preset's constants
 /// with the system's settings `inputs.system` laid over them, as the 0.7.2
 /// reader writes them over the preset (spec §8, "The Windows part"; 0.7.2's
@@ -1345,7 +1394,9 @@ pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal];
 /// else `status_bar_font`; the scroll bar's sizes, the border's width, the
 /// icons' small and large sizes and the caret's times; and, where
 /// `Contrast::High` is resolved, the high-contrast mapping of
-/// [`HighContrast`] in place of the accent's values.
+/// [`HighContrast`] in place of the accent's values; then the active palette
+/// ([`lay_palette_over`]) and the explicit accent ([`lay_explicit_accent_over`]),
+/// each over the layer below it (spec §6, resolution step 2).
 pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     let system = inputs.system;
     let (preset_colors, preset_border_opacity) = match ctx.scheme {
@@ -1353,7 +1404,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         Scheme::Dark => (DARK, BORDER_OPACITY_DARK),
     };
     let high_contrast = HighContrast::of(system, ctx);
-    let hc = high_contrast.unwrap_or_default();
+    let mut hc = high_contrast.unwrap_or_default();
     let mut scheme_colors = preset_colors;
     let mut link_pressed = preset_colors.accent_fill;
     if let Some(system) = system {
@@ -1365,9 +1416,23 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         );
     }
     hc.lay_over(&mut scheme_colors);
+    hc.focused_outline = high_contrast.map(|_| scheme_colors.accent_fill);
+    let explicit_accent = inputs.accent.is_some();
+    if let Some(p) = inputs.palette {
+        lay_palette_over(&mut scheme_colors, p, explicit_accent);
+    }
+    if let Some(accent) = inputs.accent {
+        lay_explicit_accent_over(&mut scheme_colors, accent, ctx.scheme);
+    }
     let c = &scheme_colors;
-    let colors = roles(c, &hc);
-    let typography = typography(c, &hc, system, ctx.text_scale);
+    let colors = roles(c, &hc, inputs.palette, explicit_accent);
+    // A palette's link has no hovered or pressed colour of its own.
+    let link_states = inputs
+        .palette
+        .is_none()
+        .then_some((c.link_hover, link_pressed));
+    let text = colors.window.foreground.unwrap_or(c.window_foreground);
+    let typography = typography(text, system, ctx.text_scale);
     let units = FontUnits {
         dpi: typography.font_dpi,
         text_scale: ctx.text_scale,
@@ -1491,7 +1556,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         sidebar: sidebar(c, &colors, &typography, &layout),
         toolbar: toolbar(c, &colors, &typography, direction),
         status_bar: status_bar(&colors, &typography, &layout, units, fonts.status_bar),
-        tooltip: tooltip(c, &hc, &colors, &typography, units, &layout, fonts.tooltip),
+        tooltip: tooltip(&colors, &typography, units, &layout, fonts.tooltip),
         window: window(
             c,
             &hc,
@@ -1534,13 +1599,13 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
             ),
             None,
         ),
-        link: link(c, &colors, &typography, link_pressed),
+        link: link(c, &colors, &typography, link_states),
         slider: slider(c, &colors),
         progress_bar: progress_bar(c, &hc, &colors),
         splitter: splitter(&colors),
-        separator: separator(c, &hc, &layout),
+        separator: separator(c, &colors, &layout),
         spinner: spinner(c),
-        popover: popover(c, &typography, &layout),
+        popover: popover(c, &colors, &typography, &layout),
         switch: switch(c),
         dialog: dialog(c, &colors, &typography, units, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, direction),
@@ -1599,6 +1664,11 @@ struct HighContrast {
     hotlight: Option<Color>,
     /// `COLOR_GRAYTEXT`.
     gray_text: Option<Color>,
+    /// The focused text field's outline: under high contrast the accent's
+    /// fill as the mapping leaves it, which a palette's or an explicit
+    /// accent does not replace (the accent's fill is that outline outside
+    /// high contrast alone, spec §6, step 2).
+    focused_outline: Option<Color>,
 }
 
 impl HighContrast {
@@ -1623,6 +1693,7 @@ impl HighContrast {
             highlight_text: colors.selection.and_then(|s| s.foreground),
             hotlight: colors.link,
             gray_text: colors.disabled_text,
+            focused_outline: None,
         })
     }
 
@@ -1706,6 +1777,59 @@ fn lay_accent_over(
     pick(light2, dark1).unwrap_or(preset_pressed)
 }
 
+/// Lay the palette `p` over `c`: each slot whose WinUI colour has its name
+/// replaces that colour, as the module documentation lists, and the accent's
+/// slots are written as given ([`lay_explicit_accent_over`]'s roles), unless
+/// an explicit accent (`explicit_accent`) replaces them; the slots that state
+/// only their roles are read by [`roles`] and the widgets.
+fn lay_palette_over(c: &mut SchemeColors, p: &Palette, explicit_accent: bool) {
+    c.window_background = p.window_bg;
+    c.view_background = p.view_bg;
+    c.sidebar_background = p.sidebar_bg;
+    c.window_foreground = p.foreground;
+    c.window_foreground_muted = p.foreground_muted;
+    c.window_border = p.border;
+    c.link = p.link;
+    c.error = p.error;
+    c.warning = p.warning;
+    c.success = p.success;
+    if explicit_accent {
+        return;
+    }
+    c.accent = p.accent;
+    c.accent_fill = p.accent;
+    c.accent_foreground = p.accent_fg;
+    c.info = p.info;
+    c.selection_foreground = p.selection_fg;
+}
+
+/// Lay the explicit accent `accent` over `c` for `scheme`, as given (spec
+/// §6, step 2): the accent, the accent's fill and the informational fill,
+/// whatever the system's shades; the text on the accent's fill
+/// [`text_on_accent`].
+fn lay_explicit_accent_over(c: &mut SchemeColors, accent: Color, scheme: Scheme) {
+    c.accent = accent;
+    c.accent_fill = accent;
+    c.info = accent;
+    c.accent_foreground = text_on_accent(accent, scheme);
+}
+
+/// The text on the fill `accent` in `scheme`: the scheme's
+/// `TextOnAccentFillColorPrimary` (the preset's `accent_foreground`,
+/// platform-facts.md (§2.21)) where its contrast ratio on `accent` is at
+/// least [`MIN_TEXT_ON_ACCENT_CONTRAST`], else the other scheme's.
+fn text_on_accent(accent: Color, scheme: Scheme) -> Color {
+    let (own, other) = match scheme {
+        Scheme::Light => (LIGHT.accent_foreground, DARK.accent_foreground),
+        Scheme::Dark => (DARK.accent_foreground, LIGHT.accent_foreground),
+    };
+    if own.contrast_ratio(accent) >= MIN_TEXT_ON_ACCENT_CONTRAST {
+        own
+    } else {
+        other
+    }
+}
+
 /// The system's fonts the widgets take: the menu's (`menu_font`), the
 /// title's (`title_bar_font`), the status bar's (`status_bar_font`) and the
 /// tooltip's (`tooltip_font`, else `status_bar_font`: `lfStatusFont` is "the
@@ -1776,31 +1900,70 @@ fn laid_over(base: TextStyle, os: Option<&OsFont>, units: FontUnits) -> TextStyl
 /// (`background_color`), text (`text_color`) and border (`border.color`),
 /// the view's background (`surface_color`), the tooltip's colours, the
 /// accent's text (`accent_text_color`), the disabled text and the caret.
-fn roles(c: &SchemeColors, hc: &HighContrast) -> ColorRoles {
+///
+/// The active palette `palette`, whose colours `c` holds already, states the
+/// roles its slots name (spec §7, "The roles a palette states"), over the
+/// high-contrast colours too: the eight surfaces with its one text colour,
+/// the window's muted text, border and divider, the caret, the four status
+/// colours' origin, and, unless an explicit accent (`explicit_accent`)
+/// replaces them, the selection's background. The accent's text is `c`'s
+/// wherever a palette or an explicit accent states it.
+fn roles(
+    c: &SchemeColors,
+    hc: &HighContrast,
+    palette: Option<&Palette>,
+    explicit_accent: bool,
+) -> ColorRoles {
+    let origin = if palette.is_some() {
+        RoleOrigin::Custom
+    } else {
+        RoleOrigin::Native
+    };
     let status = |fill| StatusColors {
         fill,
         foreground: c.status_foreground,
         standalone: None,
-        origin: RoleOrigin::Native,
+        origin,
     };
     let unstated = SurfaceColors::default();
-    let text = hc.window_text.unwrap_or(c.window_foreground);
+    // A colour the palette states stands over the high-contrast one.
+    let system = |color: Option<Color>| color.filter(|_| palette.is_none());
+    let text = system(hc.window_text).unwrap_or(c.window_foreground);
+    let surface = |background: fn(&Palette) -> Color| {
+        palette.map_or(unstated, |p| {
+            SurfaceColors::new(Some(background(p)), Some(p.foreground), None, None, None)
+        })
+    };
+    let selection_background = palette
+        .filter(|_| !explicit_accent)
+        .map_or(c.accent, |p| p.selection_bg);
+    let accent_foreground = if palette.is_some() || explicit_accent {
+        c.accent_foreground
+    } else {
+        hc.highlight_text.unwrap_or(c.accent_foreground)
+    };
     ColorRoles {
         window: SurfaceColors::new(
-            Some(hc.window.unwrap_or(c.window_background)),
+            Some(system(hc.window).unwrap_or(c.window_background)),
             Some(text),
             Some(c.window_foreground_muted),
-            Some(hc.window_text.unwrap_or(c.window_border)),
+            Some(system(hc.window_text).unwrap_or(c.window_border)),
+            palette.map(|p| p.divider),
+        ),
+        view: SurfaceColors::new(
+            Some(c.view_background),
+            palette.map(|p| p.foreground),
+            None,
+            None,
             None,
         ),
-        view: SurfaceColors::new(Some(c.view_background), None, None, None, None),
-        header: unstated,
-        sidebar: unstated,
-        card: unstated,
-        dialog: unstated,
-        popover: unstated,
+        header: surface(|p| p.header_bg),
+        sidebar: surface(|p| p.sidebar_bg),
+        card: surface(|p| p.surface_bg),
+        dialog: surface(|p| p.surface_bg),
+        popover: surface(|p| p.surface_bg),
         tooltip: SurfaceColors::new(
-            Some(hc.window.unwrap_or(c.acrylic_fill)),
+            Some(palette.map_or(hc.window.unwrap_or(c.acrylic_fill), |p| p.tooltip_bg)),
             Some(text),
             None,
             None,
@@ -1808,21 +1971,26 @@ fn roles(c: &SchemeColors, hc: &HighContrast) -> ColorRoles {
         ),
         osd: unstated,
         selection: SelectionColors::new(
-            c.accent,
+            selection_background,
             c.selection_foreground,
-            Some(c.accent),
+            Some(selection_background),
             Some(c.selection_foreground),
         ),
-        text_selection: SelectionColors::new(c.accent, c.selection_foreground, None, None),
+        text_selection: SelectionColors::new(
+            selection_background,
+            c.selection_foreground,
+            None,
+            None,
+        ),
         find_highlight: None,
         scrim: None,
         accent: AccentColors {
             fill: c.accent,
-            foreground: hc.highlight_text.unwrap_or(c.accent_foreground),
+            foreground: accent_foreground,
             standalone: None,
         },
         focus_ring: c.focus_ring,
-        caret: text,
+        caret: palette.map_or(text, |p| p.caret),
         link: c.link,
         // 0.7.2: `link.visited_text_color` is `defaults.link_color` where unstated.
         link_visited: None,
@@ -1904,19 +2072,14 @@ fn text_scale_entry(
 /// `text_scale` (spec §6, resolution step 2); each keeps its unscaled size as
 /// its `defined_size`. The system's UI font (`ui_font`, 0.7.2's
 /// `defaults.font` from `lfMessageFont`) is laid over the body, and so its
-/// weight is the caption's and its size gives the body's line height; under
-/// high contrast the text is `hc`'s window text (0.7.2's `defaults.text_color`).
-fn typography(
-    c: &SchemeColors,
-    hc: &HighContrast,
-    system: Option<&SystemOverrides>,
-    text_scale: f32,
-) -> Typography {
+/// weight is the caption's and its size gives the body's line height. The
+/// window's foreground is `text`, the window's role ([`roles`]; under high
+/// contrast the window text, 0.7.2's `defaults.text_color`).
+fn typography(text: Color, system: Option<&SystemOverrides>, text_scale: f32) -> Typography {
     let units = FontUnits {
         dpi: system.and_then(|s| s.font_dpi).unwrap_or(FONT_DPI),
         text_scale,
     };
-    let text = hc.window_text.unwrap_or(c.window_foreground);
     let ui = system.and_then(|s| s.ui_font.as_ref());
     let body_size = FontSize::Pt(FONT_SIZE_PT);
     let mut body = laid_over(
@@ -2316,7 +2479,7 @@ fn list(
         header,
         RuleBuilder::new(label(&typography.body, None)).build(),
         RuleBuilder::new(PartStyle::default()).build(),
-        hc.window_text.unwrap_or(c.window_border),
+        roles.window.border.unwrap_or(c.window_border),
     )
 }
 
@@ -2384,10 +2547,9 @@ fn scrollbar(
 /// and width (`resolve_border_inheritance`; the default shadow, which is on),
 /// padded and of a greatest width; its text in the UI font at its own size,
 /// with the system's tooltip font `os` laid over it (0.7.2's `tooltip.font`),
-/// in the window's text, under high contrast the window text.
+/// in the tooltip's text (the window's text, under high contrast the window
+/// text, [`roles`]).
 fn tooltip(
-    c: &SchemeColors,
-    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     units: FontUnits,
@@ -2419,10 +2581,7 @@ fn tooltip(
         panel,
         laid_over(
             sized(
-                label(
-                    &typography.body,
-                    Some(hc.window_text.unwrap_or(c.window_foreground)),
-                ),
+                label(&typography.body, roles.tooltip.foreground),
                 FontSize::Pt(TOOLTIP_FONT_SIZE_PT),
                 units,
             ),
@@ -2461,7 +2620,9 @@ fn window(
         frame.apply(&prop);
     }
     let mut title_bar = PartStyle::default();
-    title_bar.apply(&fill(hc.window.unwrap_or(c.window_background)));
+    if let Some(prop) = roles.window.background.map(fill) {
+        title_bar.apply(&prop);
+    }
     let title_color = if active {
         hc.button_text.unwrap_or(c.window_foreground)
     } else {
@@ -2489,8 +2650,9 @@ fn window(
 /// (`input.hover_border_color`); focused, the outline in the accent's fill;
 /// disabled, the disabled fill; the window's text, its own disabled colour;
 /// the placeholder in the muted text. Under high contrast the fill is the
-/// button face, the text the button text and the placeholder the window
-/// text ([`HighContrast`]).
+/// button face, the text the button text, the placeholder the window text
+/// and the focused outline the mapping's accent fill
+/// ([`HighContrast::focused_outline`]).
 fn input(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -2526,7 +2688,10 @@ fn input(
     let field = field
         .rule(
             RuleSelector::on(WidgetState::FOCUSED),
-            [outside_stroke(layout.border_width, c.accent_fill)],
+            [outside_stroke(
+                layout.border_width,
+                hc.focused_outline.unwrap_or(c.accent_fill),
+            )],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -2560,13 +2725,15 @@ fn input(
 
 /// The link: a transparent background, at rest and under the pointer; the
 /// link colour (0.7.2: `link.font.color` and `visited_text_color` are
-/// `defaults.link_color` where unstated), underlined; its hovered, pressed
-/// and disabled colours, the pressed one `pressed` ([`lay_accent_over`]).
+/// `defaults.link_color` where unstated), underlined; its hovered and
+/// pressed colours `states`, the pressed one of [`lay_accent_over`],
+/// where given (a palette's link has none: spec §6, step 2); its disabled
+/// colour.
 fn link(
     c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
-    pressed: Color,
+    states: Option<(Color, Color)>,
 ) -> LinkWidget {
     let container = RuleBuilder::new(PartStyle::default())
         .base([fill(LINK_BACKGROUND)])
@@ -2575,26 +2742,31 @@ fn link(
             [fill(LINK_BACKGROUND)],
         )
         .build();
-    let label =
-        RuleBuilder::with_exclusive(label(&typography.body, Some(roles.link)), PRESSED_HOVER)
-            .base([TextProp::Decoration(TextDecoration {
+    let mut label =
+        RuleBuilder::with_exclusive(label(&typography.body, Some(roles.link)), PRESSED_HOVER).base(
+            [TextProp::Decoration(TextDecoration {
                 kind: LINK_DECORATION,
                 color: None,
                 thickness: None,
-            })])
+            })],
+        );
+    if let Some((hover, pressed)) = states {
+        label = label
             .rule(
                 RuleSelector::on(WidgetState::HOVER),
-                [TextProp::Color(c.link_hover)],
+                [TextProp::Color(hover)],
             )
             .rule(
                 RuleSelector::on(WidgetState::PRESSED),
                 [TextProp::Color(pressed)],
-            )
-            .rule(
-                RuleSelector::on(WidgetState::DISABLED),
-                [TextProp::Color(c.link_disabled)],
-            )
-            .build();
+            );
+    }
+    let label = label
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(c.link_disabled)],
+        )
+        .build();
     LinkWidget::new(WidgetOrigin::Native, container, label)
 }
 
@@ -2675,10 +2847,10 @@ fn progress_bar(c: &SchemeColors, hc: &HighContrast, roles: &ColorRoles) -> Prog
 /// The separator: the default border colour at the default border width
 /// (0.7.2: `separator.line_color` and `line_width` are
 /// `defaults.border.color` and `line_width` where unstated).
-fn separator(c: &SchemeColors, hc: &HighContrast, layout: &LayoutMetrics) -> SeparatorWidget {
+fn separator(c: &SchemeColors, roles: &ColorRoles, layout: &LayoutMetrics) -> SeparatorWidget {
     SeparatorWidget::new(
         WidgetOrigin::Native,
-        hc.window_text.unwrap_or(c.window_border),
+        roles.window.border.unwrap_or(c.window_border),
         layout.border_width,
         None,
         None,
@@ -2973,11 +3145,17 @@ fn sidebar(
 /// outline at the default border width, the large corners (0.7.2:
 /// `popover.border.corner_radius` is `defaults.border.corner_radius_lg`
 /// where unstated, `resolve_border_inheritance`; the default shadow, which is
-/// on), padded; its text in the window's.
-fn popover(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) -> PopoverWidget {
+/// on), padded; its text in the window's. A palette's popover background
+/// (`surface_bg`) stands in place of the acrylic's colour.
+fn popover(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> PopoverWidget {
     let mut panel = PartStyle::default();
     for prop in [
-        fill(c.acrylic_fill),
+        fill(roles.popover.background.unwrap_or(c.acrylic_fill)),
         stroke(layout.border_width, c.flyout_stroke),
         corners(layout.corner_radius_lg),
         PartProp::Padding(Edges::new(
@@ -3061,7 +3239,8 @@ fn switch(c: &SchemeColors) -> SwitchWidget {
     )
 }
 
-/// The dialog: its panel in the window's background with the default border,
+/// The dialog: its panel in the dialog's background where a palette states
+/// it (`surface_bg`), else the window's, with the default border,
 /// its colour and width, the large corners (`resolve_border_inheritance`;
 /// the default shadow, which is on), its padding and size limits; its title
 /// in the UI font at its own size and weight, its body in the UI font (0.7.2:
@@ -3075,7 +3254,7 @@ fn dialog(
     motion: Motion,
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
-    for prop in [fill(c.window_background)]
+    for prop in [fill(roles.dialog.background.unwrap_or(c.window_background))]
         .into_iter()
         .chain(border(roles, layout.border_width))
         .chain([
@@ -3228,12 +3407,13 @@ fn segmented_control(
     )
 }
 
-/// The card: the view's background (0.7.2: `card.background_color` is
+/// The card: the card's background where a palette states it
+/// (`surface_bg`), else the view's (0.7.2: `card.background_color` is
 /// `defaults.surface_color` where unstated) in its outline, of its own width
 /// and corners, no shadow, padded.
 fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
     let container = RuleBuilder::new(PartStyle::default())
-        .base(roles.view.background.map(fill))
+        .base(roles.card.background.or(roles.view.background).map(fill))
         .base([
             stroke(CARD_BORDER_WIDTH, c.window_border),
             corners(CARD_CORNER_RADIUS),
