@@ -15,15 +15,17 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::Arc;
 
+use serde::Deserialize;
 use serde::de::value::MapAccessDeserializer;
 use serde::de::{self, DeserializeOwned, Deserializer, MapAccess, Visitor};
-use serde::Deserialize;
 
 use super::color::Color;
 use super::error::Error;
 use super::palette::Palette;
 use super::patch::check;
-use super::patch::{ColorPatch, MetricsSection, PatchFile, ThemePatch, TypographySection, WidgetPatchMap};
+use super::patch::{
+    ColorPatch, MetricsSection, PatchFile, ThemePatch, TypographySection, WidgetPatchMap,
+};
 use super::preset::{Preset, Theme};
 
 /// The value of `base` that picks the platform's preset ([`Preset::detect`]).
