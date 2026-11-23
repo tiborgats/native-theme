@@ -554,3 +554,59 @@ fn every_fixture_carries_every_colour_it_states() -> TestResult {
     assert_eq!(files, 8, "the fixtures of tests/fixtures/kde/");
     Ok(())
 }
+
+/// The fonts of `QFont` strings as the clean-room parser reads them and
+/// [`font_of`] keeps them; what Qt sets is the row of
+/// `tests/vectors/reader.qfont_from_string.tsv` for each string.
+#[test]
+fn fonts_as_qt_reads_them() {
+    let read = |s: &str| qfont_from_string(s).and_then(|fields| font_of(&fields));
+    let font = |size, weight, style| {
+        Some(OsFont {
+            family: Some(Arc::from("Noto Sans")),
+            size,
+            weight,
+            style,
+            width: None,
+        })
+    };
+    // Qt refuses a string of 3 to 9 fields.
+    assert_eq!(read("Noto Sans,10,-1,5,400,0,0,0,0"), None);
+    // Two fields set the family and the point size alone.
+    assert_eq!(
+        read("Noto Sans,11"),
+        font(Some(FontSize::Pt(11.0)), None, None)
+    );
+    // A size that is not above 0 is not set.
+    assert_eq!(
+        read("Noto Sans,0,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"),
+        font(None, Some(400), Some(FontStyle::Normal))
+    );
+    // A pixel size replaces the point size; Qt 5's weight 5 is OpenType's
+    // 100; the style is `QFont::Style` in 2 bits, 50 & 3 = 2, oblique.
+    assert_eq!(
+        read("Noto Sans,1,5,-1,5,50,0,0,0,0,0"),
+        font(Some(FontSize::Px(5.0)), Some(100), Some(FontStyle::Oblique))
+    );
+    // A weight that is not an integer is 0, which Qt bounds to 1: CSS 100.
+    assert_eq!(
+        read("Noto Sans,10,-1,5,abc,0,0,0,0,0,0,0,0,0,0,1"),
+        font(Some(FontSize::Pt(10.0)), Some(100), Some(FontStyle::Normal))
+    );
+}
+
+/// The scheme of a `[Colors:Window] BackgroundNormal` by the clean-room
+/// rule; each answer but the last is the row of
+/// `tests/vectors/reader.kde_color_scheme.tsv` for the value.
+#[test]
+fn scheme_by_the_clean_room_rule() {
+    let scheme_of = |value: &str| scheme(&parsed(&format!("[Colors:Window]\n{value}\n")));
+    // Breeze's accent: its grey, 144, is below 192.
+    assert_eq!(scheme_of("BackgroundNormal=61,174,233"), Scheme::Dark);
+    assert_eq!(scheme_of("BackgroundNormal=35,38,41,255"), Scheme::Dark);
+    // No entry: Breeze Light's window colour.
+    assert_eq!(scheme_of("ForegroundNormal=35,38,41"), Scheme::Light);
+    // A leading `#` is read as unset too, by the rule's own description
+    // (the table's header lists the value among those left out).
+    assert_eq!(scheme_of("BackgroundNormal=#232629"), Scheme::Light);
+}

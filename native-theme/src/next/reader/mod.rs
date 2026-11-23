@@ -668,5 +668,27 @@ impl DiagnosticEntry {
 
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub(super) mod kde;
+/// Plasma's dark-or-light rule: the clean-room function of `v0.8.0-rc1`
+/// (`src/cleanroom_readers/kde_color_scheme.rs`), carried unchanged with its
+/// vector test, `tests/vectors/reader.kde_color_scheme.tsv`.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+#[allow(
+    clippy::integer_division,
+    reason = "the clean room's helper, placed unchanged: Qt's qGray truncates by its definition, and the divisor is the constant 32"
+)]
+mod kde_color_scheme;
+/// Qt's `QFont::fromString`: the clean-room parser of `v0.8.0-rc1`
+/// (`src/cleanroom_readers/qfont_from_string.rs`), carried unchanged with its
+/// vector test, `tests/vectors/reader.qfont_from_string.tsv`.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+#[allow(
+    dead_code,
+    reason = "the clean room's parser, placed unchanged: the fields the reader does not keep are read by its vector test alone"
+)]
+#[allow(
+    clippy::collapsible_if,
+    reason = "the clean room's parser, its style kept as written: a style lint only"
+)]
+mod qfont_from_string;
 #[cfg(test)]
 mod tests;

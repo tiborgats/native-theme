@@ -1,21 +1,29 @@
-//! The KDE part of [`SystemOverrides`] (spec §8, "The KDE part"): the
-//! settings of a parsed `kdeglobals`, each as read, parsed by the 0.7.2
-//! reader's own functions (`crate::kde`). Nothing here reads a file or
-//! D-Bus, and nothing is derived: what the 0.7.2 reader derives from these
-//! settings the `kde-breeze` builder derives.
+//! The KDE reader (spec §8, "The KDE part"): [`read`] reads what the 0.7.2
+//! reader reads, through its own reading functions (`crate::kde`, and
+//! `crate::gnome` for the portal's accent); the rest of this module takes
+//! the settings of a parsed `kdeglobals`, each as read, parsed by the 0.7.2
+//! reader's functions, but the fonts by the clean-room `QFont` parser
+//! ([`qfont_from_string`]) and the scheme by the clean-room dark/light rule
+//! ([`kde_color_scheme`]) (plan, Appendix B). Nothing but [`read`] reads a
+//! file or D-Bus, and nothing is derived: what the 0.7.2 reader derives from
+//! these settings the `kde-breeze` builder derives.
 
 use std::sync::Arc;
 
 use configparser::ini::Ini;
 
+use super::kde_color_scheme::{self, kde_color_scheme};
+use super::qfont_from_string::{QtFontFields, qfont_from_string};
 use super::{
     KdeColorEffects, OsColors, OsFont, OsSelectionColors, OsSurfaceOverrides, SystemOverrides,
     SystemSnapshot,
 };
 use crate::kde::colors::{get_color, kconfig_bool};
-use crate::kde::fonts::parse_qt_font_with_weight;
-use crate::kde::{caret_blink, icon_theme, is_dark_theme};
+use crate::kde::{
+    caret_blink, create_kde_parser, icon_theme, parse_icon_sizes_from_index_theme, read_kdeglobals,
+};
 use crate::next::color::Color;
+use crate::next::error::Error;
 use crate::next::icons::IconSizes;
 use crate::next::preset::Preset;
 use crate::next::query::{Contrast, MotionPreference, Scheme, ThemeContext};
@@ -26,14 +34,39 @@ use crate::next::style::{FontSize, FontStyle};
 /// the 0.7.2 reader names it (`kde::read_kde_ini`).
 const UNNAMED_SCHEME: &str = "KDE";
 
+/// The KDE system's settings: kdeglobals as KConfig cascades it
+/// (`kde::read_kdeglobals`; no file reads as an empty one, as in 0.7.2's
+/// `KdeReader`), the named icon theme's default sizes from its `index.theme`
+/// (`kde::parse_icon_sizes_from_index_theme`) and, with `portal`, the XDG
+/// portal's accent (`gnome::portal_accent`, 0.7.2's
+/// `GnomePortalKdeReader`), as [`snapshot_from_kdeglobals`] takes them. An
+/// icon theme whose `index.theme` is not found states no sizes. No read
+/// fails: what cannot be read is not stated.
+#[expect(
+    dead_code,
+    reason = "called by `Theme::from_system` (plan, M3); a test would read the live desktop"
+)]
+pub(crate) fn read() -> Result<SystemSnapshot, Error> {
+    let ini = read_kdeglobals().unwrap_or_else(create_kde_parser);
+    let icon_sizes = icon_theme(&ini)
+        .map(|theme| parse_icon_sizes_from_index_theme(&theme))
+        .filter(|sizes| *sizes != crate::model::IconSizes::default());
+    #[cfg(feature = "portal")]
+    let portal_accent = pollster::block_on(crate::gnome::portal_accent());
+    #[cfg(not(feature = "portal"))]
+    let portal_accent = None;
+    Ok(snapshot_from_kdeglobals(&ini, icon_sizes, portal_accent))
+}
+
 /// The snapshot of the settings `ini` states: the `kde-breeze` preset,
 /// [`context_from_kdeglobals`] and [`overrides_from_kdeglobals`] with
 /// `icon_sizes` and `portal_accent`.
+// `allow`, not `expect`, for the reason given on `context_from_kdeglobals`.
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "called by the KDE reader's `read()` (plan, M2) and the reader parity test"
+        reason = "called by the KDE reader's `read()` and the reader parity test"
     )
 )]
 pub(crate) fn snapshot_from_kdeglobals(
@@ -78,7 +111,7 @@ pub(crate) fn context_from_kdeglobals(ini: &Ini) -> ThemeContext {
 ///
 /// Every slot is `Some` only where the file states its setting in a form its
 /// parser accepts, except the three the 0.7.2 reader always sets: `scheme`
-/// (dark where `[Colors:Window] BackgroundNormal` is dark, else light),
+/// (by the clean-room rule of [`scheme`]),
 /// `font_dpi` (96) and `theme_name` (`[General] ColorScheme`, else
 /// [`UNNAMED_SCHEME`]). The colours, the two contrast scalars and the colour
 /// effects form the entry of `color_schemes` for `(scheme, Contrast::Normal)`,
@@ -136,13 +169,16 @@ pub(crate) fn overrides_from_kdeglobals(
     }
 }
 
-/// The scheme the 0.7.2 reader finds in `ini` (`kde::is_dark_theme`): dark
-/// where `[Colors:Window] BackgroundNormal` is dark, else light.
+/// The scheme Plasma reports for `ini` by the clean-room rule
+/// ([`kde_color_scheme`], its table `tests/vectors/reader.kde_color_scheme.tsv`):
+/// dark where the grey of `[Colors:Window] BackgroundNormal` is below 192,
+/// else light, Breeze Light's window colour standing in where the entry is
+/// absent or not a colour KConfig reads. It replaces 0.7.2's
+/// `kde::is_dark_theme` (plan, Appendix B).
 fn scheme(ini: &Ini) -> Scheme {
-    if is_dark_theme(ini) {
-        Scheme::Dark
-    } else {
-        Scheme::Light
+    match kde_color_scheme(ini.get("Colors:Window", "BackgroundNormal").as_deref()) {
+        kde_color_scheme::Scheme::Dark => Scheme::Dark,
+        kde_color_scheme::Scheme::Light => Scheme::Light,
     }
 }
 
@@ -258,20 +294,45 @@ fn set(ini: &Ini, section: &str, muted: bool) -> Option<SurfaceColors> {
     )
 }
 
-/// The font `ini` states at `section`/`key`, as its `QFont` string gives it.
+/// The font `ini` states at `section`/`key`, as Qt reads its `QFont` string
+/// ([`qfont_from_string`], [`font_of`]).
 fn font(ini: &Ini, section: &str, key: &str) -> Option<OsFont> {
-    let spec = parse_qt_font_with_weight(&ini.get(section, key)?)?;
-    Some(OsFont {
-        family: spec.family,
-        size: spec.size.map(|size| match size {
-            crate::model::font::FontSize::Pt(v) => FontSize::Pt(v),
-            crate::model::font::FontSize::Px(v) => FontSize::Px(v),
-        }),
-        weight: spec.weight,
-        style: spec.style.map(|style| match style {
-            crate::model::font::FontStyle::Normal => FontStyle::Normal,
-            crate::model::font::FontStyle::Italic => FontStyle::Italic,
-            crate::model::font::FontStyle::Oblique => FontStyle::Oblique,
+    font_of(&qfont_from_string(&ini.get(section, key)?)?)
+}
+
+/// The font of the fields `QFont::fromString` set, `None` where it states
+/// none: the family where it is not empty; the size, a pixel size above 0
+/// as `FontSize::Px`, else a point size that is finite and above 0 as
+/// `FontSize::Pt`; the weight bounded to CSS 100..=900, as 0.7.2's
+/// `kde::fonts::parse_qt_font_with_weight` bounds Qt's; the style
+/// (`QFont::Style`: 0 normal, 1 italic, 2 oblique; 3, no member, `None`).
+fn font_of(fields: &QtFontFields) -> Option<OsFont> {
+    let size = fields
+        .pixel_size
+        .filter(|px| *px > 0)
+        .map(|px| FontSize::Px(px as f32))
+        .or_else(|| {
+            fields
+                .point_size
+                .map(|pt| pt as f32)
+                .filter(|pt| pt.is_finite() && *pt > 0.0)
+                .map(FontSize::Pt)
+        });
+    stated(OsFont {
+        family: fields
+            .family
+            .as_deref()
+            .filter(|family| !family.is_empty())
+            .map(Arc::from),
+        size,
+        weight: fields
+            .weight
+            .and_then(|weight| u16::try_from(weight.clamp(100, 900)).ok()),
+        style: fields.style.and_then(|style| match style {
+            0 => Some(FontStyle::Normal),
+            1 => Some(FontStyle::Italic),
+            2 => Some(FontStyle::Oblique),
+            _ => None,
         }),
         width: None,
     })
