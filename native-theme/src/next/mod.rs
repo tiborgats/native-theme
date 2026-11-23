@@ -115,6 +115,7 @@ mod paint;
 mod palette;
 #[cfg(test)]
 mod parity;
+mod patch;
 mod platform;
 mod preset;
 mod presets;
@@ -143,6 +144,19 @@ pub use paint::{
     BlendMode, ComplexPaint, GradientStop, MaterialKind, MaterialSpec, Paint, PaintLayer,
 };
 pub use palette::Palette;
+pub use patch::{
+    AccentPatch, ColorPatch, IconPatch, PartPatch, SelectionPatch, StatusPatch, SurfacePatch,
+    TextPatch, ThemePatch, WidgetPatchMap,
+};
+pub use patch::{
+    ButtonPatch, ButtonRule, CardPatch, CardRule, CheckboxPatch, CheckboxRule, ComboBoxPatch,
+    ComboBoxRule, DialogPatch, ExpanderPatch, ExpanderRule, InputPatch, InputRule, LinkPatch,
+    LinkRule, ListPatch, ListRule, MenuBarPatch, MenuBarRule, MenuPatch, MenuRule, PopoverPatch,
+    ProgressBarPatch, ProgressBarRule, RadioPatch, RadioRule, ScrollbarPatch, ScrollbarRule,
+    SegmentedControlPatch, SegmentedControlRule, SeparatorPatch, SidebarPatch, SidebarRule,
+    SliderPatch, SliderRule, SpinnerPatch, SplitterPatch, SplitterRule, StatusBarPatch,
+    SwitchPatch, SwitchRule, TabPatch, TabRule, ToolbarPatch, ToolbarRule, TooltipPatch,
+};
 pub use preset::{Preset, Theme};
 pub use query::{
     ButtonKind, ButtonQuery, ButtonShape, ButtonVariant, Contrast, ControlSize, Direction,
