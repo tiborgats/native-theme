@@ -760,10 +760,10 @@ fn disabled(label: &TextStyle, part: &PartStyle, home: &'static str, rest: &Part
 }
 
 /// [`VariantSource`] of the 0.8.0 model. A disabled or checked value is the one a rule states
-/// for that state. The checked box under the pointer or pressed keeps egui's own treatment of
-/// the hover or the press unless the theme states one for it (spec §2, `from_state`: the
-/// state asked alone), and is then the combined state's value; a checked box's disabled fill
-/// likewise.
+/// for that state. The checked box's fill and outline under the pointer or pressed keep egui's
+/// own treatment of the hover or the press, each property apart, unless the theme states one
+/// for it (spec §2, `from_state`: the state asked alone), and are then the combined state's
+/// value; a checked box's disabled fill likewise.
 pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
     use WidgetState as S;
     let b = &r.button;
@@ -775,6 +775,11 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
     // the combined state's outline where a rule states one for `state` alone
     let checked_state_line = |state: WidgetState| {
         state_line(&k.indicator(state)).and_then(|_| line(&k.indicator(state | S::CHECKED)))
+    };
+    // the combined state's fill where a rule states one for `state` alone
+    let checked_state_fill = |state: WidgetState, home: &'static str| {
+        state_fill(&k.indicator(state))
+            .and_then(|_| fill_at(&k.indicator(state | S::CHECKED), home))
     };
     VariantSource {
         button: disabled(
@@ -800,6 +805,10 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
             fill: state_fill_at(&checked, "checkbox.indicator(CHECKED).fill"),
             outline: checked_outline.color,
             align: checked_align,
+            state_fill: [
+                checked_state_fill(S::HOVER, "checkbox.indicator(HOVER|CHECKED).fill"),
+                checked_state_fill(S::PRESSED, "checkbox.indicator(PRESSED|CHECKED).fill"),
+            ],
             state_border: [checked_state_line(S::HOVER), checked_state_line(S::PRESSED)],
             disabled_fill: state_fill(&k.indicator(S::DISABLED)).and_then(|_| {
                 fill_at(

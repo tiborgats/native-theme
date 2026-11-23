@@ -541,6 +541,19 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         ".visuals.widgets.active.bg_stroke.color",
         "checkbox.indicator(PRESSED).stroke.color",
     ),
+    // the checked box's hover and press fill, the state asked alone (spec §2, `from_state`)
+    r0(
+        "Checkbox/Selected",
+        &[K, T],
+        ".visuals.widgets.hovered.bg_fill",
+        "checkbox.indicator(HOVER).fill",
+    ),
+    r0(
+        "Checkbox/Selected",
+        ALL,
+        ".visuals.widgets.active.bg_fill",
+        "checkbox.indicator(PRESSED).fill",
+    ),
     r0(
         "Checkbox",
         ALL,

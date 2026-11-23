@@ -37,6 +37,8 @@ pub(crate) struct CheckedBox {
     pub fill: Read<Rgba>,
     pub outline: Option<Rgba>,
     pub align: LineAlign,
+    /// The hovered and the pressed checked box's fill.
+    pub state_fill: [Read<Rgba>; 2],
     /// The hovered and the pressed checked box's outline.
     pub state_border: [Option<Rgba>; 2],
     /// The checked box's fill where the theme states a disabled fill.
@@ -104,6 +106,7 @@ impl VariantSource {
                 fill: Some((k.checked_background, "checkbox.checked_background")),
                 outline: Some(k.border.color),
                 align: LineAlign::Outside,
+                state_fill: [None; 2],
                 state_border: [k.hover_border_color; 2],
                 disabled_fill: k
                     .disabled_background
@@ -163,6 +166,15 @@ fn outline_over(
     }
 }
 
+/// A fill read as egui's colour, reported where its alpha is `0` (§6.4).
+fn noted(read: Read<Rgba>, notes: &mut Vec<Note>) -> Option<egui::Color32> {
+    read.map(|(c, path)| {
+        let c = to_color32(c);
+        note_transparent_fill(c, path, notes);
+        c
+    })
+}
+
 /// A disabled label's colour, where stated, in the entries a disabled widget's and a plain
 /// label's text are painted from: `inactive` and `noninteractive`.
 fn labels(w: &mut egui::style::Widgets, text: Option<Rgba>) {
@@ -191,12 +203,32 @@ pub(crate) fn selected_cell(
     // outline, where stated, under the pointer; the mark keeps `indicator_color` in `fg_stroke`
     // (§5.3). `checkbox.hover_background` is the unchecked box's hover fill, so the hovered
     // entry holds the checked fill too (§6.4).
-    let fill = k.fill.map(|(c, path)| {
-        let c = to_color32(c);
-        note_transparent_fill(c, path, notes);
-        c
-    });
+    let own = input.scheme.default_style();
+    let unstated = if input.rule_0 {
+        Unstated::Egui(&own.visuals.widgets)
+    } else {
+        Unstated::Copy
+    };
     let w = &mut style.visuals.widgets;
+    if let Some(fill) = noted(k.fill, notes) {
+        for entry in [
+            &mut w.noninteractive,
+            &mut w.inactive,
+            &mut w.hovered,
+            &mut w.active,
+            &mut w.open,
+        ] {
+            entry.bg_fill = fill;
+        }
+        // Under the pointer and on a press, the fill the theme states for the state, else what
+        // `unstated` gives for the checked fill at rest.
+        let own_fill = |e: &WidgetVisuals| e.bg_fill;
+        let [hover, press] = k.state_fill;
+        let hovered = noted(hover, notes).unwrap_or_else(|| unstated.hovered(fill, own_fill));
+        w.active.bg_fill =
+            noted(press, notes).unwrap_or_else(|| unstated.active(fill, hovered, own_fill));
+        w.hovered.bg_fill = hovered;
+    }
     for entry in [
         &mut w.noninteractive,
         &mut w.inactive,
@@ -204,17 +236,8 @@ pub(crate) fn selected_cell(
         &mut w.active,
         &mut w.open,
     ] {
-        if let Some(fill) = fill {
-            entry.bg_fill = fill;
-        }
         outline_over(entry, k.outline, k.align, FillField::Bg);
     }
-    let own = input.scheme.default_style();
-    let unstated = if input.rule_0 {
-        Unstated::Egui(&own.visuals.widgets)
-    } else {
-        Unstated::Copy
-    };
     state_borders(w, k.state_border, k.align, Some(FillField::Bg), unstated);
     Some(style)
 }
