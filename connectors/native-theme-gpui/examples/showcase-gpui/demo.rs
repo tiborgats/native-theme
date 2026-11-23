@@ -1502,8 +1502,8 @@ fn settings_tooltip(cx: &App, control: Stateful<Div>, text: SharedString) -> Sta
 pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): \
      gpui-component's theme colours and the connector's own widgets are drawn from the 0.8.0 \
      theme with the palette. Still read from the 0.7.2 preset, which has no palettes, until \
-     their pages move to the 0.8.0 model: the button variants the showcase gives the Buttons \
-     page's Bordered Button and a dialog's default button, the checked track of the Switches \
+     their pages move to the 0.8.0 model: the button variant and rest fill the showcase gives \
+     the Basic page's default-button sample, the checked track of the Switches \
      built without the widgets feature (Basic, Inputs and Preferences), and the showcase's own \
      refinements -- its colours, geometry, menus and the side panel's padding and label font.";
 

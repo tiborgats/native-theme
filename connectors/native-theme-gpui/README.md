@@ -1501,9 +1501,8 @@ mode to the palette's scheme. Under a palette, gpui-component's theme colours
 and the connector's own widgets are drawn from the 0.8.0 theme with the
 palette. Still read from the 0.7.2 preset, which has no palettes, until their
 pages move to the 0.8.0 model, as the palette's tooltip says: the button
-variants the showcase gives the Buttons page's Bordered Button
-(`variants::bordered_button`) and a dialog's default button
-(`variants::default_button`, `geometry::default_button_rest`), the checked
+variant and rest fill the showcase gives the Basic page's default-button
+sample (`variants::default_button`, `geometry::default_button_rest`), the checked
 track of the Switches built without the `widgets` feature
 (`variants::switch_color`: Basic, Inputs and Preferences), and the
 showcase's own refinements -- its colours and geometry, its menus, and the

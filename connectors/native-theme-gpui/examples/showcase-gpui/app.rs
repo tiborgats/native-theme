@@ -431,7 +431,9 @@ pub(crate) struct Showcase {
     /// in, which a preset install then resolves it in in place of the
     /// platform's (`Showcase::old_resolution_context`): its font DPI is the
     /// host's, 72 on macOS and 96 elsewhere, which would make a measurement
-    /// differ from one machine to the next.
+    /// differ from one machine to the next. It also pins the dialog button
+    /// order and the icon theme, as `ResolutionContext::for_tests()` gives
+    /// them, in place of the platform's order and the detected icon theme.
     #[cfg(test)]
     pub(crate) resolution_context_for_test: Option<native_theme::ResolutionContext>,
     /// The system icon theme's detection as the self-tests say it went,
@@ -2457,8 +2459,10 @@ impl Showcase {
     ///
     /// `default` installs the desktop's theme kept from its last install
     /// (`Showcase::system`, `Showcase::next_system`), in the mode now shown,
-    /// and reads the OS only where none is kept: at the first install, where
-    /// the last read failed, and after a reload (`reload_system_theme`).
+    /// and reads the OS only where none is kept: at the first install and
+    /// after a reload (`reload_system_theme`). The 0.7.2 read is made again
+    /// where the last one failed; the 0.8.0 read keeps a failed read, as it
+    /// keeps the settings, until the reload (`Showcase::next_system`).
     pub(crate) fn apply_theme_by_name(
         &mut self,
         name: &str,

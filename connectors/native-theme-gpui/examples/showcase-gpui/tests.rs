@@ -1778,7 +1778,10 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
 /// own platform (native-theme src/resolve/context.rs,
 /// `ResolutionContext::font_dpi`), as the seams test resolves the native
 /// presets (tests/seams.rs, `NATIVE`). A preset of an Apple platform is one
-/// whose `platforms` name `macos` or `ios` (`Theme::list_presets`).
+/// whose `platforms` name `macos` or `ios` (`Theme::list_presets`). It also
+/// pins the dialog button order (`PrimaryRight`) and the icon theme (none
+/// detected), as `ResolutionContext::for_tests()` gives them, where the
+/// host's would differ from one machine to the next.
 fn preset_resolution_context(preset: &str) -> native_theme::ResolutionContext {
     let apple = native_theme::theme::Theme::list_presets()
         .iter()
@@ -2035,6 +2038,35 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
                 "{at}: the inspector's first info row at {row:?} does not end inside its scroll \
                  area at {room:?}"
             );
+            // With the info shown, the inspector stays at its least height
+            // where the panel's content is taller than its scroll area, and
+            // at text scale 1 nothing of the panel scrolls.
+            let inspector = bounds_of(&mut cx, INSPECTOR_PANEL);
+            let tabs = bounds_of(&mut cx, INSPECTOR_TABS);
+            let content = bounds_of(&mut cx, CHROME_SIDE_PANEL_CONTENT);
+            let (area, max_offset) = read(&mut cx, &showcase, |this, _| {
+                (
+                    this.side_panel_scroll.bounds(),
+                    this.side_panel_scroll.max_offset(),
+                )
+            });
+            if content.size.height > area.size.height + px(0.01) {
+                assert!(
+                    body.is_some_and(
+                        |body| inspector.size.height <= tabs.size.height + body + px(0.5)
+                    ),
+                    "{at}: with the info shown, the inspector at {inspector:?} is taller than its \
+                     TabBar at {tabs:?} and its info down to the first row, {body:?}, while the \
+                     side panel scrolls"
+                );
+            }
+            if text_scale == 1.0 {
+                assert_eq!(
+                    max_offset.y,
+                    px(0.),
+                    "{at}: with the info shown, the side panel scrolls"
+                );
+            }
         }
     }
 

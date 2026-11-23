@@ -1029,17 +1029,16 @@ impl Render for Inspector {
             .child(
                 // The room below the tabs, grown from nothing over the rest
                 // of the inspector, and never shorter than its info down to
-                // the first row (`PanelLook::body_min_height`): a box that
-                // tall is all of its content that counts in the side panel's
-                // height, the scroll area being laid over the room, out of
-                // the flow, so the info it scrolls never makes the panel
-                // taller.
+                // the first row (`PanelLook::body_min_height`): that minimum
+                // is all of it that counts in the side panel's height, the
+                // scroll area being laid over the room, out of the flow, so
+                // the info it scrolls never makes the panel taller.
                 div()
                     .relative()
                     .w_full()
                     .flex_grow_1()
                     .flex_basis(gpui::px(0.))
-                    .child(div().h(body_min.unwrap_or_default()))
+                    .min_h(body_min.unwrap_or_default())
                     .child(
                         // The bar is drawn over the right edge of the scroll
                         // area, as on the content panel (`gutter_scroll`).
