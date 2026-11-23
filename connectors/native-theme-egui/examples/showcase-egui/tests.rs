@@ -1607,7 +1607,28 @@ const UNSTATED_PRESET: &str = "ios-13";
 /// preference (`App::apply`), and under `System` egui draws the scheme the integration reports,
 /// which the harness reports none of, so egui's fallback, dark (`egui::Options::fallback_theme`).
 fn open_page_under(page: Page, theme: egui::Theme, preset: &str) -> Harness<'static, App> {
+    open_page_under_at(page, theme, preset, None)
+}
+
+/// [`open_page_under`] in light at a text-scaling factor of `factor`, the Preferences dialog's
+/// override over the preferences the showcase opened with (`Settings::prefs`), so both models'
+/// themes of the choice are built at it (`App::rebuild_atlas`).
+fn open_page_scaled(page: Page, preset: &str, factor: f32) -> Harness<'static, App> {
+    open_page_under_at(page, egui::Theme::Light, preset, Some(factor))
+}
+
+fn open_page_under_at(
+    page: Page,
+    theme: egui::Theme,
+    preset: &str,
+    factor: Option<f32>,
+) -> Harness<'static, App> {
     let mut harness = open_page(page, theme);
+    if let Some(factor) = factor {
+        let mut prefs = harness.state().atlas.asked().clone();
+        prefs.text_scaling_factor = factor;
+        harness.state_mut().settings.prefs = Some(prefs);
+    }
     let ctx = harness.ctx.clone();
     let mode = match theme {
         egui::Theme::Light => ModeChoice::Light,
@@ -4368,10 +4389,12 @@ fn galley_font(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) ->
 /// scaled size, on all three tables: under material-3 (`list.header_font.weight` 500 over a 400
 /// body) at a text-scaling factor of 1.5, the Basic table's "Name" is `list_header_font`'s size
 /// in the face registered at 500 (`demo::weighted_family`), and the Data and Theme Map tables'
-/// header labels are in that font. The face at 500 is held on every host ([`hold_weights`]),
-/// so a header drawn at the body's weight fails here whatever faces the OS has.
+/// header labels, which read the installed 0.8.0 theme, are in `list.header_label(NONE)`'s
+/// size (`next::list_header_font`) and the face at its weight, stated apart from the body's.
+/// The faces are held on every host ([`hold_weights`]), so a header drawn at the body's weight
+/// fails here whatever faces the OS has.
 #[test]
-fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
+fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() -> Result<(), String> {
     let preset = "material-3";
     let mut basic = open_scaled(preset, "basic", 1.5);
     let t = basic.state().atlas.old_resolved(egui::Theme::Light).clone();
@@ -4393,12 +4416,33 @@ fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
         want,
         "{preset}: the Basic table's header"
     );
-    for (tab, kind, title) in [
-        ("data", "table header", "Theme"),
-        ("theme-map", "theme map header", "Leaf"),
+    for (tab, page, kind, title) in [
+        ("data", Page::Data, "table header", "Theme"),
+        ("theme-map", Page::ThemeMap, "theme map header", "Leaf"),
     ] {
-        let mut page = open_scaled(preset, tab, 1.5);
-        hold_weights(&mut page, &[header_weight]);
+        let mut page = open_page_scaled(page, preset, 1.5);
+        let r = page
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or("no 0.8.0 theme installed")?
+            .clone();
+        let label = r.list.header_label(native_theme::next::WidgetState::NONE);
+        let body = native_theme_egui::next::font_weight(&r).map_err(|e| e.to_string())?;
+        assert!(
+            label
+                .stated
+                .contains(native_theme::next::TextStated::WEIGHT)
+                && label.weight != body,
+            "{preset}: the 0.8.0 header's weight is not stated apart from the body's"
+        );
+        hold_weights(&mut page, &[label.weight]);
+        let want = egui::FontId::new(
+            native_theme_egui::next::list_header_font(&r)
+                .map_err(|e| e.to_string())?
+                .size,
+            weighted(label.weight, body),
+        );
         let cells: Vec<egui::Rect> = page
             .state()
             .registry
@@ -4410,9 +4454,80 @@ fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
         assert_eq!(
             galley_font(&page, title, &cells),
             want,
-            "{preset} {tab}: the header is not the Basic table's font"
+            "{preset} {tab}: the header is not list.header_label(NONE)'s font"
         );
     }
+    Ok(())
+}
+
+/// The Data and Theme Map tables' headers read the installed 0.8.0 theme, not the 0.7.2 one
+/// beside it: under kde-breeze with `list.header_label(NONE)` patched to twice the preset's
+/// size and to `colors.window.border`, a colour of the same theme ([`open_patched`]), neither
+/// of which the 0.7.2 `list.header_font` states, "Theme" and "Leaf" are drawn at the patched
+/// size in the patched colour.
+#[test]
+fn the_tables_headers_take_the_patched_08_header_label() -> Result<(), String> {
+    use native_theme::next::{ListRule, TextPatch, ThemePatch, WidgetState};
+    for (page, kind, title) in [
+        (Page::Data, "table header", "Theme"),
+        (Page::ThemeMap, "theme map header", "Leaf"),
+    ] {
+        let (harness, r) = open_patched(page, egui::Theme::Light, "kde-breeze", |r| {
+            let size = r.list.header_label(WidgetState::NONE).size_px;
+            Some(
+                ThemePatch::new().list(
+                    ListRule::new().header_label(
+                        TextPatch::new()
+                            .size_px(2.0 * size)
+                            .color(r.colors.window.border?),
+                    ),
+                ),
+            )
+        })?;
+        let old = harness
+            .state()
+            .atlas
+            .old_resolved(egui::Theme::Light)
+            .list
+            .header_font
+            .clone();
+        let label = r.list.header_label(WidgetState::NONE);
+        let colour = native_theme_egui::next::text_color_of(&label)
+            .ok_or("the patch states no list.header_label(NONE).color")?;
+        assert!(
+            colour != native_theme_egui::convert::to_color32(old.color)
+                && label.size_px != old.size,
+            "the patched header is the 0.7.2 header's, so the test could not tell them apart"
+        );
+        let cells: Vec<egui::Rect> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .collect();
+        assert_eq!(
+            galley_font(&harness, title, &cells).size,
+            label.size_px,
+            "{kind}: not at the patched size"
+        );
+        let painted = harness
+            .output()
+            .shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Text(text)
+                    if text.galley.job.text == title
+                        && cells.iter().any(|r| r.contains(text.pos)) =>
+                {
+                    text.galley.job.sections.first().map(|s| s.format.color)
+                }
+                _ => None,
+            });
+        assert_eq!(painted, Some(colour), "{kind}: not in the patched colour");
+    }
+    Ok(())
 }
 
 /// M9-107: the Text page's text-role labels are drawn at the weight they name, as the Basic
@@ -4469,10 +4584,10 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
 /// (material-3, macos-monterey), else a row's height where the theme states one, else a row
 /// ([`UNSTATED_PRESET`]): on the Basic page's painted table (its `basic.table.header` place) a row
 /// of the header font, `list.border.padding` above and below its line (`pages/basic.rs`,
-/// `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s egui's own
-/// `interact_size.y` where the theme states no `list.row_height`, or the header font's line
-/// box, `defaults.line_height` of its scaled size rounded up, where that is taller
-/// ([`table_row`]). There
+/// `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s, which read the installed
+/// 0.8.0 theme, its `list.header(NONE).min_size[1]`, else `list.row(NONE).min_size[1]`, else
+/// egui's own `interact_size.y`, or the header font's line box rounded up, where that is taller
+/// ([`next_table_row`]). There
 /// the header pushes the first body row down by exactly its height: its cells are one line in
 /// that line box, each centred in its row (`pages/data.rs`, `centred_cells`), and the rows lie
 /// with no spacing between them, so a first-row cell's centre lies half the header and half a
@@ -4480,7 +4595,7 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
 /// factor of 1.5 a stated height grows to hold its label, as gpui's table rows grow
 /// ([`grown`]), and an unstated Basic header is a row of the header font at its scaled size.
 #[test]
-fn the_tables_headers_take_the_themes_header_height() {
+fn the_tables_headers_take_the_themes_header_height() -> Result<(), String> {
     for (preset, factor) in [
         ("material-3", 1.0),
         (UNSTATED_PRESET, 1.0),
@@ -4519,23 +4634,40 @@ fn the_tables_headers_take_the_themes_header_height() {
             placed.height()
         );
 
-        let header = table_row(
-            &t,
-            factor,
-            stated.or(l.row_height),
-            l.header_font.size,
-            size,
-        );
-        let drawn = native_theme_egui::scaled_text_size(
-            l.item_font.size,
-            basic.state().atlas.accessibility(),
-        );
-        let row = table_row(&t, factor, l.row_height, l.item_font.size, drawn);
-        for (tab, header_kind, cell_kind) in [
-            ("data", "table header", "table cell"),
-            ("theme-map", "theme map header", "theme map cell"),
+        for (tab, page, header_kind, cell_kind) in [
+            ("data", Page::Data, "table header", "table cell"),
+            (
+                "theme-map",
+                Page::ThemeMap,
+                "theme map header",
+                "theme map cell",
+            ),
         ] {
-            let page = open_scaled(preset, tab, factor);
+            use native_theme::next::WidgetState;
+            let page = open_page_scaled(page, preset, factor);
+            let r = page
+                .state()
+                .atlas
+                .next_resolved(egui::Theme::Light)
+                .ok_or("no 0.8.0 theme installed")?
+                .clone();
+            let l = &r.list;
+            let [_, stated_row] = l.row(WidgetState::NONE).min_size;
+            let stated = native_theme_egui::next::list_header_height(&r);
+            assert_eq!(
+                stated.is_some(),
+                preset != UNSTATED_PRESET,
+                "{preset}: the 0.8.0 preset's header height"
+            );
+            let (label, item) = (
+                l.header_label(WidgetState::NONE),
+                l.item_label(WidgetState::NONE),
+            );
+            let size = native_theme_egui::next::list_header_font(&r)
+                .map_err(|e| format!("{preset}: {e}"))?
+                .size;
+            let header = next_table_row(&r, stated.or(stated_row), &label, size);
+            let row = next_table_row(&r, stated_row, &item, item.size_px);
             let records = page.state().registry.records();
             let centre = |kind: &str| {
                 records
@@ -4553,6 +4685,7 @@ fn the_tables_headers_take_the_themes_header_height() {
             );
         }
     }
+    Ok(())
 }
 
 /// The painted galley of `text` whose top left lies in one of `within`, where it is drawn.
@@ -4577,9 +4710,9 @@ fn galley_rect(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) ->
 /// windows-11, whose `list.row_height` is taller than a body line, so are the Data table's and
 /// the Theme Map's first body texts in their row. The Basic header row is its place
 /// (`basic.table.header`); a `TableBuilder`'s header row begins at its table's top, its first
-/// body row under it, each [`table_row`] tall.
+/// body row under it, each [`next_table_row`] of the installed 0.8.0 theme tall.
 #[test]
-fn the_tables_centre_their_text_in_its_row() {
+fn the_tables_centre_their_text_in_its_row() -> Result<(), String> {
     let mut wrong = Vec::new();
     let mut check = |what: String, galley: egui::Rect, row: egui::Rect| {
         if (galley.center().y - row.center().y).abs() > 0.5 {
@@ -4598,20 +4731,32 @@ fn the_tables_centre_their_text_in_its_row() {
     check("material-3 basic header".to_string(), name, header);
 
     for (preset, body) in [("material-3", false), ("windows-11", true)] {
-        for (tab, container, header_kind, cell_kind) in [
-            ("data", "Table", "table header", "table cell"),
+        for (tab, page, container, header_kind, cell_kind) in [
+            ("data", Page::Data, "Table", "table header", "table cell"),
             (
                 "theme-map",
+                Page::ThemeMap,
                 "theme map",
                 "theme map header",
                 "theme map cell",
             ),
         ] {
-            let page = open_scaled(preset, tab, 1.0);
-            let t = page.state().atlas.old_resolved(egui::Theme::Light).clone();
-            let l = &t.list;
-            let stated = native_theme_egui::list_header_height(&t).or(l.row_height);
-            let header_height = table_row(&t, 1.0, stated, l.header_font.size, l.header_font.size);
+            use native_theme::next::WidgetState;
+            let page = open_page_under(page, egui::Theme::Light, preset);
+            let r = page
+                .state()
+                .atlas
+                .next_resolved(egui::Theme::Light)
+                .ok_or("no 0.8.0 theme installed")?
+                .clone();
+            let l = &r.list;
+            let [_, stated_row] = l.row(WidgetState::NONE).min_size;
+            let stated = native_theme_egui::next::list_header_height(&r).or(stated_row);
+            let (label, item) = (
+                l.header_label(WidgetState::NONE),
+                l.item_label(WidgetState::NONE),
+            );
+            let header_height = next_table_row(&r, stated, &label, label.size_px);
             let records = page.state().registry.records();
             let top = records
                 .iter()
@@ -4638,8 +4783,7 @@ fn the_tables_centre_their_text_in_its_row() {
                     let [leaf, ..] = crate::info::row_cells(&manifest.rows[0], &json);
                     leaf
                 };
-                let row_height =
-                    table_row(&t, 1.0, l.row_height, l.item_font.size, l.item_font.size);
+                let row_height = next_table_row(&r, stated_row, &item, item.size_px);
                 let row = egui::Rect::from_x_y_ranges(
                     0.0..=crate::WINDOW_SIZE.x,
                     header.bottom()..=header.bottom() + row_height,
@@ -4650,6 +4794,7 @@ fn the_tables_centre_their_text_in_its_row() {
         }
     }
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    Ok(())
 }
 
 /// How far a table row's measured height may lie from its expected one: the layout's float
@@ -5006,39 +5151,52 @@ fn a_narrow_colour_cell_is_cut_short_and_whole_on_hover() {
 }
 
 /// The height of a row of the Data and Theme Map pages' `TableBuilder`s (`pages/data.rs`,
-/// `TableRows::of`), from the theme: `stated` grown above a text scale of 1 as gpui's table rows
-/// grow ([`grown`], no padding or rule: the cells draw none); where the theme states none, egui's
-/// own `interact_size.y` for the scheme (src/style/roles.rs, `row_height`), or the line box of
-/// the row's font, `defaults.line_height` of `drawn`, its size as drawn, rounded up as [`grown`]
-/// rounds it, where that is taller, as egui's own rows are at least `interact_size.y` and as
-/// tall as their line.
-fn table_row(
-    t: &native_theme_egui::ResolvedTheme,
-    factor: f32,
+/// `TableRows::of`), of the installed 0.8.0 theme `r`: `stated` verbatim at a text scale of 1 or
+/// less, above it at least the line box of `style` at its size, which the resolve has scaled
+/// already, rounded up, as gpui's table rows grow (no padding or rule: the cells draw none);
+/// where the theme states none, egui's own `interact_size.y` for the scheme
+/// (src/style/roles.rs, `row_height`), or the line box of `style` drawn at `drawn` rounded up,
+/// where that is taller, as egui's own rows are at least `interact_size.y` and as tall as their
+/// line. A line box is the style's stated `line_height`, else its size times
+/// `typography.line_height_multiplier`.
+fn next_table_row(
+    r: &native_theme::next::ResolvedTheme,
     stated: Option<f32>,
-    size: f32,
+    style: &native_theme::next::TextStyle,
     drawn: f32,
 ) -> f32 {
-    let line_height = t.defaults.line_height;
+    let line_box = |size: f32| {
+        if style
+            .stated
+            .contains(native_theme::next::TextStated::LINE_HEIGHT)
+        {
+            style.line_height
+        } else {
+            size * r.typography.line_height_multiplier
+        }
+    };
     match stated {
-        Some(h) => grown(h, factor, size, line_height, 0.0, 0.0),
+        Some(h) if r.context.text_scale <= 1.0 => h,
+        Some(h) => h.max(line_box(style.size_px).ceil()),
         None => {
             let own = egui::Theme::Light.default_style().spacing.interact_size.y;
-            own.max((drawn * line_height).ceil())
+            own.max(line_box(drawn).ceil())
         }
     }
 }
 
 /// docs/todo.md's G1/G2 item for M9c ("the egui showcase's body rows grow past
 /// `list.row_height`"): the Data and Theme Map tables' body rows are each exactly a row tall,
-/// [`table_row`], one after another with no spacing between them, at text scales 1 and 1.5,
-/// where the theme states `list.row_height` (windows-11, macos-monterey) and where it states
-/// none (catppuccin-mocha): every cell is one line in its line box, the auto-sized columns as
-/// wide as their text and the last column's text cut short with egui's ellipsis, where a cell
-/// wrapped in its column and grew its row (egui_extras `layout.rs:160-168`).
+/// [`next_table_row`] of the installed 0.8.0 theme, one after another with no spacing between
+/// them, at text scales 1 and 1.5, where the theme states `list.row(NONE).min_size[1]`
+/// (windows-11, macos-monterey) and where it states none ([`TEST_PRESET`]): every cell is one
+/// line in its line box, the auto-sized columns as wide as their text and the last column's
+/// text cut short with egui's ellipsis, where a cell wrapped in its column and grew its row
+/// (egui_extras `layout.rs:160-168`).
 #[test]
-fn the_data_and_theme_map_rows_are_the_themes_row_height() {
+fn the_data_and_theme_map_rows_are_the_themes_row_height() -> Result<(), String> {
     let mut wrong = Vec::new();
+    let mut covered = std::collections::BTreeSet::new();
     for (preset, factor) in [
         ("windows-11", 1.0),
         ("macos-monterey", 1.0),
@@ -5047,15 +5205,22 @@ fn the_data_and_theme_map_rows_are_the_themes_row_height() {
         ("macos-monterey", 1.5),
         (TEST_PRESET, 1.5),
     ] {
-        for (tab, kind) in [("data", "table cell"), ("theme-map", "theme map cell")] {
-            let page = open_scaled(preset, tab, factor);
-            let t = page.state().atlas.old_resolved(egui::Theme::Light).clone();
-            let l = &t.list;
-            let drawn = native_theme_egui::scaled_text_size(
-                l.item_font.size,
-                page.state().atlas.accessibility(),
-            );
-            let want = table_row(&t, factor, l.row_height, l.item_font.size, drawn);
+        for (tab, page, kind) in [
+            ("data", Page::Data, "table cell"),
+            ("theme-map", Page::ThemeMap, "theme map cell"),
+        ] {
+            let page = open_page_scaled(page, preset, factor);
+            let r = page
+                .state()
+                .atlas
+                .next_resolved(egui::Theme::Light)
+                .ok_or("no 0.8.0 theme installed")?
+                .clone();
+            assert_eq!(r.context.text_scale, factor, "{preset}: the text scale");
+            let item = r.list.item_label(native_theme::next::WidgetState::NONE);
+            let [_, stated] = r.list.row(native_theme::next::WidgetState::NONE).min_size;
+            covered.insert(stated.is_some());
+            let want = next_table_row(&r, stated, &item, item.size_px);
             let cells: Vec<egui::Rect> = page
                 .state()
                 .registry
@@ -5100,6 +5265,12 @@ fn the_data_and_theme_map_rows_are_the_themes_row_height() {
         }
     }
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    assert_eq!(
+        covered.len(),
+        2,
+        "the presets do not cover a stated and an unstated row height"
+    );
+    Ok(())
 }
 
 /// A Theme Map cell too long for its column is cut short with egui's ellipsis and shows its

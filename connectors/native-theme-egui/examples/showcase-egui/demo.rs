@@ -1594,6 +1594,42 @@ pub(crate) fn next_lined(
     }
 }
 
+/// The line box of text in the 0.8.0 text style `style` of the theme `r`, drawn at `drawn`
+/// points: the style's own `line_height` where the theme states one, else `drawn` times the
+/// theme's line height (`next::line_height`), as the gpui showcase's `demo::line_box`.
+pub(crate) fn next_line_box(
+    r: &native_theme::next::ResolvedTheme,
+    style: &native_theme::next::TextStyle,
+    drawn: f32,
+) -> f32 {
+    if style
+        .stated
+        .contains(native_theme::next::TextStated::LINE_HEIGHT)
+    {
+        style.line_height
+    } else {
+        drawn * native_theme_egui::next::line_height(r)
+    }
+}
+
+/// A stated row height of the 0.8.0 theme `r` by the control-height rule, as the gpui
+/// connector's rows take one (`geometry::row_height_fit`): verbatim at a text scale of 1 or
+/// less; above 1 at least `line`, the row's line box at the theme's text size, which its resolve
+/// has scaled already, rounded up, with `padding` (the row's top and bottom together) and
+/// `rule`, the width of a line drawn inside the row.
+pub(crate) fn next_grown(
+    r: &native_theme::next::ResolvedTheme,
+    stated: f32,
+    line: f32,
+    padding: f32,
+    rule: f32,
+) -> f32 {
+    if r.context.text_scale <= 1.0 {
+        return stated;
+    }
+    stated.max(line.ceil() + padding + rule)
+}
+
 /// The value `build` gives for the installed 0.8.0 theme the window shows
 /// (`OldAtlas::next_shown`: the scheme egui draws, for an inactive window while it is not
 /// focused), as the gpui showcase's `support::next_value`; `None` without an installed 0.8.0

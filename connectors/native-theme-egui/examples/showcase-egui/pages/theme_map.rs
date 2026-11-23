@@ -2,8 +2,7 @@
 //! `Role::List` — the siblings' Theme Map pages list their toolkit's slots; this one lists the
 //! manifest that maps egui's.
 
-use native_theme_egui::convert::to_color32;
-use native_theme_egui::{Role, RoleVariant, list_header_font};
+use native_theme_egui::{Role, RoleVariant};
 
 use super::{DemoState, caption};
 use crate::app::OldAtlas;
@@ -57,16 +56,12 @@ pub(crate) fn show(
         .iter()
         .filter(|r| state.theme_map_filter.is_none_or(|v| r.verdict == v))
         .collect();
+    // The 0.7.2 theme for the swatches alone (`info::swatch_cell`, which moves with Widget Info).
     let t = atlas.old_resolved(theme);
-    // The header as the Data page's table has it: `list.header_font` at its weight
-    // (`demo::weighted_family`) and scaled size (`list_header_font`), in
-    // `list.header_font.color` (§10.4's Data row), not `RichText::strong`, which is the scope's
-    // active-state text colour (`egui/src/style.rs:1147-1149`).
-    let header_font = egui::FontId::new(
-        list_header_font(t, atlas.accessibility()).size,
-        demo::weighted_family(ui, t.list.header_font.weight, t.defaults.font.weight),
-    );
-    let header_color = to_color32(t.list.header_font.color);
+    let r = atlas.next_shown(ui.ctx());
+    // The header as the Data page's table has it (`TableHeader`).
+    let head = super::data::TableHeader::of(ui, r);
+    let (header_font, header_color) = (head.font.clone(), head.color);
     demo::scoped_container(
         reg,
         ui,
@@ -74,7 +69,7 @@ pub(crate) fn show(
         RoleVariant::Normal,
         "theme map",
         |ui, list, reg| {
-            let heights = super::data::TableRows::of(ui, atlas, t, &header_font);
+            let heights = super::data::TableRows::of(ui, r, &header_font);
             const TITLES: [&str; 4] = ["Leaf", "Value", "Verdict", "Sinks / upstream"];
             // A header's text as drawn, its width rounded up to a whole point.
             let title_width = |ui: &egui::Ui, title: &str| {
@@ -122,12 +117,7 @@ pub(crate) fn show(
                                 for title in TITLES {
                                     header.col(|ui| {
                                         list.add(reg, ui, "theme map header", |ui| {
-                                            ui.label(
-                                                egui::RichText::new(title)
-                                                    .font(header_font.clone())
-                                                    .color(header_color)
-                                                    .line_height(Some(heights.header_line)),
-                                            )
+                                            ui.label(heights.title(&head, title))
                                         });
                                     });
                                 }

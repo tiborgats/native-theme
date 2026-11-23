@@ -2,9 +2,9 @@
 //! and `StripBuilder` in the base style.
 
 use egui_extras::{Column, Size, StripBuilder, TableBuilder};
-use native_theme_egui::convert::to_color32;
-use native_theme_egui::{Role, RoleVariant, list_header_font, list_header_height};
-use native_theme_showcase_support::rows;
+use native_theme::next::{ResolvedTheme, TextStated, WidgetState};
+use native_theme_egui::next::{self, list_header_height};
+use native_theme_egui::{Role, RoleVariant};
 
 use super::{DemoState, caption};
 use crate::app::OldAtlas;
@@ -19,14 +19,8 @@ const ROWS: [(&str, &str); 4] = [
 ];
 
 pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
-    // `list.header_font` at its weight, as the Basic table's header is
-    // (`demo::weighted_family`), and at its scaled size (`list_header_font`)
-    let header_font = egui::FontId::new(
-        list_header_font(t, atlas.accessibility()).size,
-        demo::weighted_family(ui, t.list.header_font.weight, t.defaults.font.weight),
-    );
-    let header_color = to_color32(t.list.header_font.color);
+    let r = atlas.next_shown(ui.ctx());
+    let head = TableHeader::of(ui, r);
     let normal = RoleVariant::Normal;
 
     caption(
@@ -37,7 +31,7 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
     demo::scoped_container(reg, ui, Role::List, normal, "Table", |ui, list, reg| {
         // A table's row and header heights are call arguments no `Style` field reaches (§5.4
         // `list.row_height`); a header the theme gives no height is a row.
-        let heights = TableRows::of(ui, atlas, t, &header_font);
+        let heights = TableRows::of(ui, r, &head.font);
         ui.scope(|ui| {
             one_line_cells(ui);
             TableBuilder::new(ui)
@@ -53,12 +47,7 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
                     for title in ["Theme", "Platform"] {
                         header.col(|ui| {
                             list.add(reg, ui, "table header", |ui| {
-                                ui.label(
-                                    egui::RichText::new(title)
-                                        .font(header_font.clone())
-                                        .color(header_color)
-                                        .line_height(Some(heights.header_line)),
-                                )
+                                ui.label(heights.title(&head, title))
                             });
                         });
                     }
@@ -138,62 +127,119 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
     });
 }
 
+/// The font and colour of an egui_extras table's header, the Data and Theme Map tables' alike:
+/// `list.header_label(NONE)` of the installed 0.8.0 theme, its size (`next::list_header_font`)
+/// at its weight (`demo::weighted_family` over the body's, `next::font_weight`), as the Basic
+/// table's header is, in its colour (§10.4's Data row), not `RichText::strong`, which is the
+/// scope's active-state text colour (`egui/src/style.rs:1147-1149`). Each property the theme
+/// leaves unstated, and all of them without an installed 0.8.0 theme, egui's own: the scope's
+/// `Body` size, the body's face and the scope's text colour (`Visuals::text_color`).
+pub(crate) struct TableHeader {
+    pub(crate) font: egui::FontId,
+    pub(crate) color: egui::Color32,
+}
+
+impl TableHeader {
+    pub(crate) fn of(ui: &egui::Ui, r: Option<&ResolvedTheme>) -> Self {
+        let size = egui::TextStyle::Body.resolve(ui.style()).size;
+        let color = ui.visuals().text_color();
+        let Some(r) = r else {
+            return Self {
+                font: egui::FontId::proportional(size),
+                color,
+            };
+        };
+        let label = r.list.header_label(WidgetState::NONE);
+        let weight = label
+            .stated
+            .contains(TextStated::WEIGHT)
+            .then_some(label.weight);
+        let family = match (weight, next::font_weight(r)) {
+            (Some(weight), Ok(body)) => demo::weighted_family(ui, weight, body),
+            _ => egui::FontFamily::Proportional,
+        };
+        Self {
+            font: egui::FontId::new(
+                next::list_header_font(r).map_or(size, |font| font.size),
+                family,
+            ),
+            color: next::text_color_of(&label).unwrap_or(color),
+        }
+    }
+}
+
 /// An egui_extras table's body row and header heights, the Data and Theme Map tables' alike,
-/// with the line box each row's text is drawn in: `list.row_height` and `list.header_height`
-/// (else the row's, as a header the theme gives no height is a row), each grown above a text
-/// scale of 1 to hold its line, in `list.item_font` and `list.header_font` at
-/// `defaults.line_height`, as gpui's table rows grow and the Basic table's
-/// (`rows::scaled_height`); where the theme states neither, egui's own `interact_size.y`, or
-/// the line box rounded up, as that rule rounds it, where that is taller, as egui's own rows
-/// are at least `interact_size.y` (`egui/src/widgets/button.rs:306-309`) and as tall as their
-/// line. The cells draw no padding and no line inside the row, and each is one line in its
-/// line box, `defaults.line_height` of its font's drawn size ([`one_line_cells`]), so a row is
-/// these heights tall, except a stated one shorter than its line box at a text scale of 1 or
-/// less, which grows to hold its line (egui_extras `layout.rs:160-168`); in a row taller than
-/// its line the text is centred ([`centred_cells`]).
+/// with the line box each row's text is drawn in, of the installed 0.8.0 theme:
+/// `list.row(NONE).min_size[1]` and `list.header(NONE).min_size[1]` (else the row's, as a header
+/// the theme gives no height is a row), each grown above a text scale of 1 to hold its line, in
+/// `list.item_label(NONE)` and `list.header_label(NONE)` (`demo::next_line_box`), as gpui's
+/// table rows grow (`demo::next_grown`); where the theme states neither, egui's own
+/// `interact_size.y`, or the line box rounded up, as that rule rounds it, where that is taller,
+/// as egui's own rows are at least `interact_size.y` (`egui/src/widgets/button.rs:306-309`) and
+/// as tall as their line. The cells draw no padding and no line inside the row, and each is one
+/// line in its line box, of its font's drawn size ([`one_line_cells`]), so a row is these
+/// heights tall, except a stated one shorter than its line box at a text scale of 1 or less,
+/// which grows to hold its line (egui_extras `layout.rs:160-168`); in a row taller than its line
+/// the text is centred ([`centred_cells`]). Without an installed 0.8.0 theme, egui's own rows
+/// and the text's own line.
 pub(crate) struct TableRows {
     pub(crate) body: f32,
     pub(crate) header: f32,
-    pub(crate) body_line: f32,
-    pub(crate) header_line: f32,
+    pub(crate) body_line: Option<f32>,
+    pub(crate) header_line: Option<f32>,
 }
 
 impl TableRows {
     /// The heights in `ui`, the table's `Role::List` scope, whose `TextStyle::Body` is the cells'
-    /// font and whose `interact_size.y` egui's own where the theme states no `list.row_height`;
-    /// the header drawn in `header_font`.
-    pub(crate) fn of(
-        ui: &egui::Ui,
-        atlas: &OldAtlas,
-        t: &native_theme_egui::ResolvedTheme,
-        header_font: &egui::FontId,
-    ) -> Self {
-        let l = &t.list;
-        let line_height = t.defaults.line_height;
+    /// font and whose `interact_size.y` egui's own where the theme states no
+    /// `list.row(NONE).min_size[1]`; the header drawn in `header_font`.
+    pub(crate) fn of(ui: &egui::Ui, r: Option<&ResolvedTheme>, header_font: &egui::FontId) -> Self {
         let own = ui.spacing().interact_size.y;
-        let body_line = egui::TextStyle::Body.resolve(ui.style()).size * line_height;
-        let header_line = header_font.size * line_height;
+        let Some(r) = r else {
+            return Self {
+                body: own,
+                header: own,
+                body_line: None,
+                header_line: None,
+            };
+        };
+        let l = &r.list;
+        let (item, label) = (
+            l.item_label(WidgetState::NONE),
+            l.header_label(WidgetState::NONE),
+        );
+        let body_line =
+            demo::next_line_box(r, &item, egui::TextStyle::Body.resolve(ui.style()).size);
+        let header_line = demo::next_line_box(r, &label, header_font.size);
         // a stated row shorter than one line box still grows to its line, as the connector's
         // List rows do (mapping.toml, `list.row_height`): no bundled preset states one
-        let height = |stated: Option<f32>, size: f32, line: f32| match stated {
-            Some(h) => rows::scaled_height(h, atlas.accessibility(), size, line_height, 0.0, 0.0),
-            None => own.max(line.ceil()),
-        };
+        let height =
+            |stated: Option<f32>, style: &native_theme::next::TextStyle, line: f32| match stated {
+                Some(h) => {
+                    demo::next_grown(r, h, demo::next_line_box(r, style, style.size_px), 0.0, 0.0)
+                }
+                None => own.max(line.ceil()),
+            };
+        let [_, row] = l.row(WidgetState::NONE).min_size;
         Self {
-            body: height(l.row_height, l.item_font.size, body_line),
-            header: height(
-                list_header_height(t).or(l.row_height),
-                l.header_font.size,
-                header_line,
-            ),
-            body_line,
-            header_line,
+            body: height(row, &item, body_line),
+            header: height(list_header_height(r).or(row), &label, header_line),
+            body_line: Some(body_line),
+            header_line: Some(header_line),
         }
     }
 
     /// A body cell's text, in its line box.
     pub(crate) fn cell(&self, text: impl Into<String>) -> egui::RichText {
-        egui::RichText::new(text).line_height(Some(self.body_line))
+        egui::RichText::new(text).line_height(self.body_line)
+    }
+
+    /// A header's `title`, in `header`'s font and colour and its line box.
+    pub(crate) fn title(&self, header: &TableHeader, title: &str) -> egui::RichText {
+        egui::RichText::new(title)
+            .font(header.font.clone())
+            .color(header.color)
+            .line_height(self.header_line)
     }
 }
 
