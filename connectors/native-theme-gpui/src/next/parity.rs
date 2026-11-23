@@ -6,8 +6,8 @@
 //! resize handles, and every public builder of `src/geometry.rs` and
 //! `src/variants.rs`.
 //!
-//! Presets covered: kde-breeze and adwaita, light and dark ([`PRESETS`]). The 0.7.2 side
-//! is resolved as the connector's tests resolve it
+//! Presets covered: kde-breeze, adwaita and windows-11, light and dark
+//! ([`PRESETS`]). The 0.7.2 side is resolved as the connector's tests resolve it
 //! (`ResolutionContext::for_tests`), with no accessibility scaling; the
 //! 0.8.0 side for the scheme's default context, whose text scale is 1, and,
 //! for `geometry::title_bar_inactive`, for that context with an inactive
@@ -74,6 +74,7 @@ use crate::{AccessibilityPreferences, ColorMode, Native, ResolvedTheme};
 const PRESETS: &[(&str, Preset)] = &[
     ("kde-breeze", Preset::KdeBreeze),
     ("adwaita", Preset::Adwaita),
+    ("windows-11", Preset::Windows11),
 ];
 
 /// One `ThemeColor` field: its colour, the token
@@ -358,7 +359,7 @@ const FALLBACK_ONLY: &[FallbackOnly] = &[
     FallbackOnly {
         leaf: "geometry::list_header_height",
         field: "list.header_height",
-        presets: &["kde-breeze"],
+        presets: &["kde-breeze", "windows-11"],
         unset: |t| t.list.header_height.is_none(),
     },
 ];
