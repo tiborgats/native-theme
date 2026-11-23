@@ -3235,6 +3235,14 @@ fn button(
             )),
             PartProp::MinSize([Some(BUTTON_MIN_WIDTH), None]),
         ])
+        // `button.hover_background`: platform-facts.md (§2.3), "← background_color, no hover
+        // fill: a non-flat button's fill is palette.button() unless it is down, checked or the
+        // default button, and hover only sets the pen to Highlight", stated for `HOVER` (spec §2,
+        // `from_state`), before the rules of the states that replace it.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.button_background)],
+        )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(c.button_checked)],
@@ -3271,7 +3279,18 @@ fn button(
             [fill(c.button_disabled_background)],
         )
         .build();
+    // `button.hover_text_color` and `checked_text_color`: platform-facts.md (§2.3), a non-flat
+    // button's label is ButtonText in every state; `default_button_text_color`: platform-facts.md
+    // (§2.3), `[Colors:Button]` ForegroundNormal; each stated for its state (spec §2, `from_state`).
     let label = RuleBuilder::new(label(&typography.body, Some(c.button_foreground)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::CHECKED),
+                RuleSelector::on(WidgetState::DEFAULT),
+            ],
+            [TextProp::Color(c.button_foreground)],
+        )
         .rule(primary(), [TextProp::Color(roles.accent.foreground)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -3348,9 +3367,18 @@ fn checkbox(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> CheckboxWidget {
+    // `checkbox.indicator_color`: platform-facts.md (§2.5), palette.text(), `[Colors:View]`
+    // ForegroundNormal, the checked box's mark, stated for `CHECKED` (spec §2, `from_state`).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base(roles.view.foreground.map(IconProp::Color))
         .base([IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH))])
+        .rules(
+            roles
+                .view
+                .foreground
+                .map(|_| RuleSelector::on(WidgetState::CHECKED)),
+            roles.view.foreground.map(IconProp::Color),
+        )
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
@@ -3371,12 +3399,21 @@ fn radio(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> RadioWidget {
+    // `checkbox.indicator_color`: platform-facts.md (§2.5), palette.text(), `[Colors:View]`
+    // ForegroundNormal, the checked radio's dot, stated for `CHECKED` (spec §2, `from_state`).
     let dot = RuleBuilder::new(PartStyle::default())
         .base(roles.view.foreground.map(fill))
         .base([
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
+        .rules(
+            roles
+                .view
+                .foreground
+                .map(|_| RuleSelector::on(WidgetState::CHECKED)),
+            roles.view.foreground.map(fill),
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
@@ -3496,7 +3533,17 @@ fn list(
         )
         .rule(table, [PartProp::Corners(Corners::NONE)])
         .build();
+    // `list.hover_text_color`: platform-facts.md (§2.15), "← item_font.color, `[Colors:View]`
+    // ForegroundNormal: a hovered row is lettered QPalette::Text", stated for `HOVER` (spec §2,
+    // `from_state`), before the rules of the states that replace it.
     let item_label = RuleBuilder::new(label(&typography.body, roles.view.foreground))
+        .rules(
+            roles
+                .view
+                .foreground
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            roles.view.foreground.map(TextProp::Color),
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -3616,12 +3663,12 @@ fn scrollbar(c: &SchemeColors, direction: Direction) -> ScrollbarWidget {
         ]),
         SCROLLBAR_THUMB_WIDTH,
     )
+    // `scrollbar.thumb_color`: platform-facts.md (§2.8), the handle at rest with the pointer off
+    // the bar, stated for `UNFOCUSED_VIEW` (spec §2, `from_state`) also where the view with the
+    // focus has no handle colour of its own.
     .rule(
         RuleSelector::on(WidgetState::UNFOCUSED_VIEW),
-        c.scrollbar_thumb_focused
-            .map(|_| fill(c.scrollbar_thumb))
-            .into_iter()
-            .chain([pen(c.window_foreground)]),
+        [fill(c.scrollbar_thumb), pen(c.window_foreground)],
     )
     .rules(
         c.scrollbar_thumb_bar_hover.map(|_| {
@@ -4046,7 +4093,14 @@ fn menu(
         )
         .rule(RuleSelector::on(WidgetState::PRESSED), [fill(c.accent)])
         .build();
+    // `menu.hover_text_color`: platform-facts.md (§2.6), `[Colors:Window]` ForegroundNormal, "a
+    // hovered item keeps the window text; only a pressed one is HighlightedText", stated for
+    // `HOVER` (spec §2, `from_state`), before the pressed rule that replaces it.
     let item_label = RuleBuilder::new(label(font, Some(c.window_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.window_foreground)],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(roles.accent.foreground)],
@@ -4380,6 +4434,10 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
             PartProp::MinSize([Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)]),
             PartProp::MaxSize([Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)]),
         ])
+        // `switch.hover_unchecked_background`: platform-facts.md (§2.21), no fill reads `hovered`,
+        // "the same, the rest fill", stated for `HOVER` (spec §2, `from_state`), before the rules of
+        // the states that replace it.
+        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.switch_off)])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(c.switch_on), track_outline(c.selection_background)],
@@ -4399,13 +4457,28 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
             ],
         )
         .build();
+    let thumb_outline =
+        PartProp::Stroke(Stroke::uniform(SWITCH_THUMB_BORDER_WIDTH, c.switch_frame));
     let thumb = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.button_background),
-            PartProp::Stroke(Stroke::uniform(SWITCH_THUMB_BORDER_WIDTH, c.switch_frame)),
+            thumb_outline.clone(),
             PartProp::MinSize([Some(SWITCH_THUMB_DIAMETER), Some(SWITCH_THUMB_DIAMETER)]),
             PartProp::MaxSize([Some(SWITCH_THUMB_DIAMETER), Some(SWITCH_THUMB_DIAMETER)]),
         ])
+        // The on thumb: `switch.thumb_background`, platform-facts.md (§2.21), `[Colors:Button]`
+        // BackgroundNormal, `thumb_border_color`, platform-facts.md (§2.21), handleBorderColor,
+        // the off track's, and `thumb_diameter` (the constant's citation); stated for `CHECKED`
+        // (spec §2, `from_state`), before the disabled rule.
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [
+                fill(c.button_background),
+                thumb_outline,
+                PartProp::MinSize([Some(SWITCH_THUMB_DIAMETER), Some(SWITCH_THUMB_DIAMETER)]),
+                PartProp::MaxSize([Some(SWITCH_THUMB_DIAMETER), Some(SWITCH_THUMB_DIAMETER)]),
+            ],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.button_disabled_background)],

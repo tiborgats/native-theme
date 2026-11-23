@@ -600,21 +600,95 @@ fn an_old_null_under_a_state_needs_its_from_state_bit_as_at_the_reference() -> T
     Ok(())
 }
 
+/// A row whose home is at its own `null_reference` state.
+const AT_THE_REFERENCE: &str = r#"
+[[row]]
+key = "s.at_reference"
+homes = ["button.body(PRESSED).fill"]
+null_reference = "PRESSED"
+"#;
+
+/// The values of the keys of [`STATED_FOR_A_STATE`] and [`AT_THE_REFERENCE`] in [`stated_for_a_state`],
+/// with the pressed fill `pressed`.
+fn stated_old(pressed: &str) -> Value {
+    json!({ "s": {
+        "hover_fill": "#fcfcfc",
+        "pressed_fill": pressed,
+        "checked_hover": "#3daee9",
+        "at_reference": "#fcfcfc",
+    } })
+}
+
+/// The report of [`STATED_FOR_A_STATE`] and [`AT_THE_REFERENCE`] on [`stated_for_a_state`]: `old` against
+/// it, `unresolved` the unresolved 0.7.2 theme where one is given.
+fn stated_report(
+    old: &Value,
+    unresolved: Option<&Value>,
+) -> Result<Report, Box<dyn std::error::Error>> {
+    let mut table = rows(STATED_FOR_A_STATE)?;
+    table.extend(rows(AT_THE_REFERENCE)?);
+    let extra = Extra {
+        unresolved,
+        with_context: None,
+    };
+    Ok(compare_rows_with(
+        &table,
+        old,
+        &stated_for_a_state(),
+        None,
+        Preset::KdeBreeze,
+        &extra,
+    )?)
+}
+
 #[test]
-fn an_old_value_under_a_state_is_compared_whatever_its_from_state_bit() -> TestResult {
-    // FACE, the value stated for `HOVER`.
-    let report = one_row(
-        "button.body(HOVER).fill",
-        json!("#fcfcfc"),
-        &stated_for_a_state(),
-    )?;
+fn an_old_value_the_unresolved_theme_states_under_a_state_needs_its_from_state_bit() -> TestResult {
+    let old = stated_old("#fcfcfc");
+    // Every key stated: the hover fill, equal to the rest fill, is a `HOVER` rule's; the checked hover
+    // stroke is the `CHECKED` rule's (the bit says a rule for some flag of the query wrote it); the
+    // pressed fill has no `PRESSED` rule, so its bit is clear. The home at its row's `null_reference`
+    // state is not checked.
+    let report = stated_report(&old, Some(&old))?;
+    assert_eq!(report.mismatched_keys(), vec!["s.pressed_fill"], "{report}");
+    let Some(Outcome::Mismatch(homes)) = report.rows.get(1).map(|r| &r.outcome) else {
+        return Err(format!("the second row does not mismatch: {report}").into());
+    };
+    assert_eq!(
+        homes
+            .iter()
+            .map(|m| (m.home.as_str(), m.new.ends_with("`from_state` clear")))
+            .collect::<Vec<_>>(),
+        vec![("button.body(PRESSED).fill", true)]
+    );
+    // A field 0.7.2 serialises with a unit suffix (`thumb_diameter_px`) is stated by that name.
+    let suffixed = json!({ "s": { "pressed_fill_px": "#fcfcfc" } });
+    let report = stated_report(&old, Some(&suffixed))?;
+    assert_eq!(report.mismatched_keys(), vec!["s.pressed_fill"], "{report}");
+    Ok(())
+}
+
+#[test]
+fn an_old_value_the_unresolved_theme_leaves_unset_under_a_state_is_compared_by_its_value()
+-> TestResult {
+    // 0.7.2's resolver filled every key in: no rule needed, the values are compared.
+    let unset = json!({ "s": {} });
+    let report = stated_report(&stated_old("#fcfcfc"), Some(&unset))?;
     assert!(report.mismatched_keys().is_empty(), "{report}");
-    let other = one_row(
-        "button.body(HOVER).fill",
-        json!("#000000"),
-        &stated_for_a_state(),
-    )?;
-    assert_eq!(other.mismatched_keys(), vec!["x.v"], "{other}");
+    let other = stated_report(&stated_old("#000000"), Some(&unset))?;
+    assert_eq!(other.mismatched_keys(), vec!["s.pressed_fill"], "{other}");
+    let Some(Outcome::Mismatch(homes)) = other.rows.get(1).map(|r| &r.outcome) else {
+        return Err(format!("the second row does not mismatch: {other}").into());
+    };
+    assert_eq!(
+        homes
+            .iter()
+            .map(|m| (m.home.as_str(), m.new.contains("from_state")))
+            .collect::<Vec<_>>(),
+        vec![("button.body(PRESSED).fill", false)]
+    );
+    // Without the unresolved theme, the values alone.
+    let report = stated_report(&stated_old("#fcfcfc"), None)?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
     Ok(())
 }
 

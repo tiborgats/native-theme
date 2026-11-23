@@ -330,6 +330,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "body": {
+            "fill": "#fcfcfc"
+          }
+        },
+        {
+          "states": [
             "checked"
           ],
           "body": {
@@ -417,6 +425,30 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#232629"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#232629"
+          }
+        },
+        {
+          "states": [
+            "default"
+          ],
+          "label": {
+            "color": "#232629"
+          }
+        },
         {
           "variant": "primary",
           "label": {
@@ -685,7 +717,17 @@
       "base": {
         "color": "#232629",
         "stroke_width": 2.0
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "checked"
+          ],
+          "checkmark": {
+            "color": "#232629"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -782,7 +824,17 @@
           6.0,
           6.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "checked"
+          ],
+          "dot": {
+            "fill": "#232629"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -830,6 +882,14 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "track": {
+            "fill": "#e6e7e7"
+          }
+        },
         {
           "states": [
             "checked"
@@ -886,6 +946,26 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "checked"
+          ],
+          "thumb": {
+            "fill": "#fcfcfc",
+            "stroke": {
+              "width": 1.0,
+              "color": "#cccfd2"
+            },
+            "min_size": [
+              18.0,
+              18.0
+            ],
+            "max_size": [
+              18.0,
+              18.0
+            ]
+          }
+        },
         {
           "states": [
             "disabled"
@@ -1415,6 +1495,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#232629"
+          }
+        },
+        {
+          "states": [
             "pressed"
           ],
           "item_label": {
@@ -1652,6 +1740,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#232629"
+          }
+        },
         {
           "states": [
             "selected"

@@ -3396,6 +3396,17 @@ fn switch(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> SwitchWidget 
             .base([fill(c.switch_thumb), PartProp::Stroke(Stroke::None)]),
         g.switch_thumb_diameter,
     )
+    // The on thumb, `switch.thumb_background`: platform-facts.md (§2.21), white, in the dark scheme
+    // at an alpha (measured), and `thumb_diameter` (the generation's citation), stated for
+    // `CHECKED` (spec §2, `from_state`), before the disabled rule.
+    .rule(
+        RuleSelector::on(WidgetState::CHECKED),
+        [
+            fill(c.switch_thumb),
+            PartProp::MinSize([Some(g.switch_thumb_diameter); 2]),
+            PartProp::MaxSize([Some(g.switch_thumb_diameter); 2]),
+        ],
+    )
     .rules(
         c.switch_disabled_thumb
             .map(|_| RuleSelector::on(WidgetState::DISABLED)),

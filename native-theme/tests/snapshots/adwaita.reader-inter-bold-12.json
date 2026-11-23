@@ -379,6 +379,30 @@
       },
       "rules": [
         {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#2e3436"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#2e3436"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#2e3436"
+          }
+        },
+        {
           "variant": "primary",
           "label": {
             "color": "#ffffff"
@@ -762,7 +786,15 @@
             "checked"
           ],
           "thumb": {
-            "fill": "#ffffff"
+            "fill": "#ffffff",
+            "min_size": [
+              20.0,
+              20.0
+            ],
+            "max_size": [
+              20.0,
+              20.0
+            ]
           }
         }
       ]
@@ -1019,7 +1051,25 @@
         "defined_size": {
           "pt": 12.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#2e3436"
+          }
+        },
+        {
+          "states": [
+            "selected"
+          ],
+          "label": {
+            "color": "#2e3436"
+          }
+        }
+      ]
     },
     "indicator": {
       "base": {},
@@ -1097,6 +1147,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#2e3436"
+          }
+        },
         {
           "states": [
             "disabled"
@@ -1203,6 +1261,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#2e3436"
+          }
+        },
         {
           "states": [
             "selected"
@@ -1790,7 +1856,33 @@
         "defined_size": {
           "pt": 12.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#1b6acb"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#1b6acb"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "label": {
+            "color": "#1b6acb"
+          }
+        }
+      ]
     }
   },
   "custom_colors": {},

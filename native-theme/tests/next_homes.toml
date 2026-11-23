@@ -31,7 +31,8 @@
 #                        reader parity the preset merged with the reader's output) leaves the field `None`, the row
 #                        is compared as if `key` were null; where it states a value, as any other row. The field's
 #                        path there is the key's, a border's leaf by its serde name (`corner_radius_px`,
-#                        `line_width_px`).
+#                        `line_width_px`), another leaf by its name or by its serde name with a unit suffix
+#                        (`thumb_diameter_px`, `show_delay_ms`).
 #   null_means           optional. `"none"`: where `key` is null, the theme states that the home has no outline: the
 #                        home's `stroke` is `Stroke::None` with the `STROKE` bit set (0.7.2: "`None` draws no
 #                        outline"), whatever the reference state holds.
@@ -78,7 +79,11 @@
 # `None` at a part's property is the
 # property's `stated` bit clear; for a state, no rule, so the query returns what it returns without that state
 # (spec §5, notes to the table): the test compares the property at the home's state, value and `stated` bit,
-# with the same property at the reference state, `NONE` unless `null_reference` names another. `checkbox.*` serves `checkbox` and `radio`: such a row names a home on each.
+# with the same property at the reference state, `NONE` unless `null_reference` names another. A value the
+# unresolved 0.7.2 theme states (its preset, or in reader parity the preset merged with the reader's output) at a
+# part's property under a state other than `NONE` and the row's `null_reference` is a rule for that state, even
+# where it equals the rest value: the property's `from_state` bit is set there (spec §2); a value only 0.7.2's
+# resolver fills in is compared by its value alone. `checkbox.*` serves `checkbox` and `radio`: such a row names a home on each.
 
 # --- defaults ---
 
