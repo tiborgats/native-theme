@@ -802,6 +802,16 @@ rule 0).
   (`iced_aw` 0.14.1 `src/widget/selection_list/list.rs`), so
   `list.highlight`'s margin and corners (spec §5, issue #4's leftovers,
   `L4`) are not drawn.
+- **A focus indicator that is not a ring.** The model's `FocusIndicator`
+  is a ring round the part, a fill of it or a line under it (spec §2,
+  `FocusKind`: `Ring`, `Fill`, `Underline`). `focus_ring` draws a ring,
+  bordered quads round the field (the theme's `inner_stroke` as a second
+  ring inside the first, its `corners` as the ring's outer corners), so
+  `next::focus_ring` returns `Unmapped("focus_ring.kind")` for `Fill` and
+  `Underline`; no preset states either. A ring inset at the field's edge
+  (`offset` minus its width, adwaita's) is drawn by `next::styles::text_input`
+  and `text_editor` as the focused field's border, whose corners are the
+  field's, so its `inner_stroke` and `corners` are not drawn there.
 - **A checked button.** iced's button has no checked status. iced marks a
   chosen button by its primary class: its own `todos` example draws the
   chosen filter with `button::primary` (iced 0.14.0
@@ -811,7 +821,10 @@ rule 0).
   `next::styles::toolbar_button` draw a checked button in the primary
   button's fill and label in the same status, a label the theme states for
   `CHECKED` laid over; its outline, corners and shadow are the unchecked
-  button's (spec §10, rule 0a).
+  button's. A checked fill the theme states is lettered in the label it
+  states for `CHECKED`, else in the label at rest, never in the pressed
+  one (spec §10, rule 0a: "a stated `CHECKED` fill is lettered in the
+  stated `CHECKED` label, else in the label at rest").
 
 ## Common recipes
 

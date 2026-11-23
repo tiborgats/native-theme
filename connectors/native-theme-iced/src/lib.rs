@@ -1354,13 +1354,13 @@ where
     )
 }
 
-/// The sizes and the dot a [`radio()`] draws: the circle's width, the gap
-/// to the label, and the dot's diameter and colour where the theme states a
-/// dot size.
+/// The sizes and the dot a [`radio()`] draws: the circle's width (iced's
+/// own, `Radio::DEFAULT_SIZE`, where `None`), the gap to the label, and the
+/// dot's diameter and colour where the theme states a dot size.
 #[cfg(feature = "widgets")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct RadioLook {
-    pub(crate) width: f32,
+    pub(crate) width: Option<f32>,
     pub(crate) label_gap: f32,
     pub(crate) dot: Option<(f32, iced_core::Color)>,
 }
@@ -1370,7 +1370,7 @@ pub(crate) struct RadioLook {
 pub(crate) fn radio_look(resolved: &native_theme::theme::ResolvedTheme) -> RadioLook {
     let c = &resolved.checkbox;
     RadioLook {
-        width: c.radio_indicator_width.unwrap_or(c.indicator_width),
+        width: Some(c.radio_indicator_width.unwrap_or(c.indicator_width)),
         label_gap: c.label_gap,
         dot: c
             .radio_dot_diameter
@@ -1392,8 +1392,14 @@ where
 {
     use iced_widget::container;
 
-    let width = look.width;
-    let radio = radio.size(width).spacing(look.label_gap);
+    let (radio, width) = match look.width {
+        Some(width) => (radio.size(width), width),
+        None => (
+            radio,
+            iced_widget::Radio::<'a, Message, iced_core::Theme, Renderer>::DEFAULT_SIZE,
+        ),
+    };
+    let radio = radio.spacing(look.label_gap);
     let Some((dot, colour)) = look.dot.filter(|(d, _)| d.is_finite() && *d >= 0.0) else {
         return radio.style(style).into();
     };

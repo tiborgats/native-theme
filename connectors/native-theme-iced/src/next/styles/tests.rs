@@ -1449,7 +1449,8 @@ fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
 
 /// A stated checked fill the theme states no checked label for is lettered
 /// in the label at rest, not in a stated pressed label (spec §10, rule 0a:
-/// no chain of the connector's own), on the toggle and the toolbar button.
+/// "a stated `CHECKED` fill is lettered in the stated `CHECKED` label, else
+/// in the label at rest"), on the toggle and the toolbar button.
 #[test]
 fn a_stated_checked_fill_without_a_checked_label_is_lettered_at_rest() -> TestResult {
     use iced_widget::button::Status;
@@ -1505,5 +1506,105 @@ fn a_stated_checked_fill_without_a_checked_label_is_lettered_at_rest() -> TestRe
         }
     }
     assert!(covered > 0, "a theme with no checked label covered");
+    Ok(())
+}
+
+/// A border in a status no rule states the stroke for: each of its colour,
+/// width and radius as [`unstated`] gives it against iced's own border at
+/// rest (`own_rest`) and in the status (`own`).
+fn unstated_border(
+    rest: iced_core::Border,
+    own_rest: iced_core::Border,
+    own: iced_core::Border,
+    iceds: &mut usize,
+) -> iced_core::Border {
+    iced_core::Border {
+        color: unstated(rest.color, own_rest.color, own.color, iceds),
+        width: unstated(rest.width, own_rest.width, own.width, iceds),
+        radius: unstated(rest.radius, own_rest.radius, own.radius, iceds),
+    }
+}
+
+/// A text input's and a text editor's border, hovered and focused, is
+/// iced's own change where no rule states the field's stroke for the state
+/// (iced_widget 0.14.2 `text_input::default` and `text_editor::default`:
+/// `background.base.text` hovered, `primary.strong` focused), each value
+/// iced leaves as at rest the theme's at rest. The focus ring is moved off
+/// the field's edge, so no field draws it as its focused border.
+#[test]
+fn a_field_stroke_no_hover_or_focus_rule_states_is_iceds_own() -> TestResult {
+    let stroke = || PartPatch::new().stroke(Stroke::uniform(1.0, LABEL));
+    let patch = ThemePatch::new()
+        .input(InputRule::new().field(stroke()))
+        .text_area(InputRule::new().field(stroke()));
+    let mut iceds = 0;
+    for (preset, mut r) in every_preset_with(&patch) {
+        r.focus_ring.offset = 0.0;
+        let theme = to_theme(&r)?;
+        {
+            use iced_widget::text_input::{Status, default};
+            let style = super::text_input(&r)?;
+            let rest = style(&theme, Status::Active).border;
+            let own_rest = default(&theme, Status::Active).border;
+            for status in [Status::Hovered, Status::Focused { is_hovered: false }] {
+                let own = default(&theme, status).border;
+                assert_eq!(
+                    style(&theme, status).border,
+                    unstated_border(rest, own_rest, own, &mut iceds),
+                    "text_input {preset:?} {status:?}"
+                );
+            }
+        }
+        {
+            use iced_widget::text_editor::{Status, default};
+            let style = super::text_editor(&r)?;
+            let rest = style(&theme, Status::Active).border;
+            let own_rest = default(&theme, Status::Active).border;
+            for status in [Status::Hovered, Status::Focused { is_hovered: false }] {
+                let own = default(&theme, status).border;
+                assert_eq!(
+                    style(&theme, status).border,
+                    unstated_border(rest, own_rest, own, &mut iceds),
+                    "text_editor {preset:?} {status:?}"
+                );
+            }
+        }
+    }
+    assert!(iceds > 0, "iced's own field border covered");
+    Ok(())
+}
+
+/// The field styles read the focus ring's colour from its stroke
+/// (`focus_ring.stroke`), as `next::focus_ring` does, not from the colour
+/// role: an inset ring of a stated colour is the focused field's border in
+/// that colour, whatever `colors.focus_ring` is.
+#[test]
+fn a_field_takes_its_inset_rings_colour_from_the_rings_stroke() -> TestResult {
+    use iced_widget::{text_editor, text_input};
+    let opaque = Color::new(0.6, 0.1, 0.4, 1.0);
+    let mut covered = 0;
+    for (preset, mut r) in every_preset() {
+        r.colors.focus_ring = DISTINCT;
+        r.focus_ring.stroke = Stroke::uniform(2.0, opaque);
+        r.focus_ring.offset = -2.0;
+        let theme = to_theme(&r)?;
+        let input =
+            super::text_input(&r)?(&theme, text_input::Status::Focused { is_hovered: false })
+                .border;
+        let editor =
+            super::text_editor(&r)?(&theme, text_editor::Status::Focused { is_hovered: false })
+                .border;
+        let unstated =
+            |part: native_theme::next::PartStyle| !part.from_state.contains(PartStated::STROKE);
+        if unstated(r.input.field(WidgetState::FOCUSED)) {
+            covered += 1;
+            assert_eq!(input.color, to_color(opaque), "text_input {preset:?}");
+        }
+        if unstated(r.text_area.field(WidgetState::FOCUSED)) {
+            covered += 1;
+            assert_eq!(editor.color, to_color(opaque), "text_editor {preset:?}");
+        }
+    }
+    assert!(covered > 0, "a field with no focused stroke covered");
     Ok(())
 }

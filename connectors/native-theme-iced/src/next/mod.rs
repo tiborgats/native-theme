@@ -57,6 +57,8 @@ pub mod styles;
 pub(crate) mod parity;
 #[cfg(test)]
 mod root_parity;
+#[cfg(test)]
+mod tests;
 
 use std::fmt;
 use std::time::Duration;
@@ -756,6 +758,13 @@ pub fn text_area_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
 /// [`Unmapped`] where the field's stroke is per side.
 #[cfg(feature = "widgets")]
 pub fn combo_box_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
+    combo_box_padding_with(r, chevron_size(r))
+}
+
+/// [`combo_box_padding`] with the chevron `chevron` wide, or none where
+/// `None`.
+#[cfg(feature = "widgets")]
+fn combo_box_padding_with(r: &ResolvedTheme, chevron: Option<f32>) -> Mapped<iced_core::Padding> {
     let c = &r.combo_box;
     let field = c.field(WidgetState::NONE);
     let pad = padding_inside(
@@ -767,7 +776,7 @@ pub fn combo_box_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
         match (
             field.stated.contains(PartStated::PADDING_RIGHT),
             c.arrow_area_width,
-            chevron_size(r),
+            chevron,
         ) {
             (true, Some(column), Some(chevron)) => {
                 pad.right(pad.right + crate::arrow_column_margin(column, chevron))
@@ -822,20 +831,31 @@ pub fn control_line_height(
 
 /// [`crate::SwitchLook`] of the 0.8.0 model: the track's least size
 /// (`switch.track(NONE).min_size`), the thumb's diameter on
-/// (`switch.thumb(CHECKED).min_size[0]`) and off (`switch.thumb(NONE)`'s,
-/// the thumb's on where the theme states none).
+/// (`switch.thumb(CHECKED).min_size[0]`) and off
+/// (`switch.thumb(NONE).min_size[0]`).
 #[cfg(feature = "widgets")]
 pub(crate) fn switch_look(r: &ResolvedTheme) -> Mapped<crate::SwitchLook> {
     let s = &r.switch;
-    let [track_width, track_height] = s.track(WidgetState::NONE).min_size;
-    let [thumb_on, _] = s.thumb(WidgetState::CHECKED).min_size;
-    let [thumb_off, _] = s.thumb(WidgetState::NONE).min_size;
-    let thumb_diameter = stated(thumb_on, "switch.thumb(CHECKED).min_size[0]")?;
+    switch_look_of(
+        s.track(WidgetState::NONE).min_size,
+        s.thumb(WidgetState::CHECKED).min_size,
+        s.thumb(WidgetState::NONE).min_size,
+    )
+}
+
+/// [`switch_look`] of the least sizes of the track, the checked thumb and
+/// the unchecked one, each `Unmapped` where unstated.
+#[cfg(feature = "widgets")]
+fn switch_look_of(
+    [track_width, track_height]: [Option<f32>; 2],
+    [thumb_on, _]: [Option<f32>; 2],
+    [thumb_off, _]: [Option<f32>; 2],
+) -> Mapped<crate::SwitchLook> {
     Ok(crate::SwitchLook {
         track_width: stated(track_width, "switch.track(NONE).min_size[0]")?,
         track_height: stated(track_height, "switch.track(NONE).min_size[1]")?,
-        thumb_diameter,
-        unchecked_thumb_diameter: thumb_off.unwrap_or(thumb_diameter),
+        thumb_diameter: stated(thumb_on, "switch.thumb(CHECKED).min_size[0]")?,
+        unchecked_thumb_diameter: stated(thumb_off, "switch.thumb(NONE).min_size[0]")?,
     })
 }
 
@@ -886,9 +906,10 @@ where
 
 /// [`crate::RadioLook`] of the 0.8.0 model: the circle's width
 /// (`radio.indicator(NONE).min_size[0]`, the check box's
-/// `checkbox.indicator(NONE).min_size[0]` where the theme states none), the
-/// gap to the label (`radio.label_gap`), and, where the theme states the
-/// dot's size (`radio.dot(NONE).min_size[0]`), the dot in its checked fill
+/// `checkbox.indicator(NONE).min_size[0]` where the theme states none,
+/// iced's own where it states neither), the gap to the label
+/// (`radio.label_gap`), and, where the theme states the dot's size
+/// (`radio.dot(NONE).min_size[0]`), the dot in its checked fill
 /// (`radio.dot(CHECKED).fill`).
 #[cfg(feature = "widgets")]
 pub(crate) fn radio_look(r: &ResolvedTheme) -> Mapped<crate::RadioLook> {
@@ -904,7 +925,7 @@ pub(crate) fn radio_look(r: &ResolvedTheme) -> Mapped<crate::RadioLook> {
         None => None,
     };
     Ok(crate::RadioLook {
-        width: stated(own.or(check), "radio.indicator(NONE).min_size[0]")?,
+        width: own.or(check),
         label_gap: w.label_gap,
         dot,
     })
@@ -1047,11 +1068,14 @@ where
 /// The flares [`tab_flares`] draws: the outward radius
 /// (`tab.active_outward_corner_radius`), the selected tab's fill and
 /// outline (`tab.tab(SELECTED)`); `None` where the theme states no positive,
-/// finite radius.
+/// finite radius, whatever it states for the tab.
 #[cfg(feature = "widgets")]
 pub(crate) fn tab_flares_look(r: &ResolvedTheme) -> Mapped<Option<crate::tab_flares::FlareLook>> {
     let t = &r.tab;
-    let Some(radius) = t.active_outward_corner_radius else {
+    let Some(radius) = t
+        .active_outward_corner_radius
+        .filter(|radius| radius.is_finite() && *radius > 0.0)
+    else {
         return Ok(None);
     };
     let tab = t.tab(WidgetState::SELECTED);
@@ -1096,23 +1120,47 @@ where
     Ok(crate::tab_flares_with(tab_flares_look(r)?, tabs, selected))
 }
 
+/// A focus ring's stroke (`focus_ring.stroke`, or its `inner_stroke` at
+/// `home`): its width and colour, `None` where the theme states none.
+pub(crate) fn ring_stroke(stroke: &Stroke, home: &'static str) -> Mapped<Option<(f32, IcedColor)>> {
+    match stroke {
+        Stroke::None => Ok(None),
+        Stroke::Uniform { width, color, .. } => Ok(Some((*width, to_color(*color)))),
+        _ => Err(Unmapped(home)),
+    }
+}
+
 /// The ring [`focus_ring`] draws round a field of corner `radius`: the
-/// ring's stroke (`focus_ring.stroke`), its offset (`focus_ring.offset`)
-/// and whether it shows for keyboard focus only (`focus_ring.trigger`);
-/// `None` where the theme states no stroke, or one inset at the field's
-/// edge.
+/// ring's stroke (`focus_ring.stroke`), its offset (`focus_ring.offset`),
+/// whether it shows for keyboard focus only (`focus_ring.trigger`), a
+/// second ring inside it (`focus_ring.inner_stroke`) and its outer corners
+/// (`focus_ring.corners`, the field's grown by the offset and the width
+/// where the theme states none); `None` where the theme states no stroke,
+/// or one inset at the field's edge.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the indicator is not a ring (`focus_ring.kind`), or a
+/// stroke is per side or the corners a squircle.
 #[cfg(feature = "widgets")]
 pub(crate) fn ring_look(
     r: &ResolvedTheme,
     radius: f32,
 ) -> Mapped<Option<crate::focus_ring::RingLook>> {
-    use native_theme::next::FocusTrigger;
+    use native_theme::next::{FocusKind, FocusTrigger};
 
     let f = &r.focus_ring;
-    let (width, color) = match &f.stroke {
-        Stroke::None => return Ok(None),
-        Stroke::Uniform { width, color, .. } => (*width, to_color(*color)),
-        _ => return Err(Unmapped("focus_ring.stroke")),
+    if f.kind != FocusKind::Ring {
+        return Err(Unmapped("focus_ring.kind"));
+    }
+    let Some((width, color)) = ring_stroke(&f.stroke, "focus_ring.stroke")? else {
+        return Ok(None);
+    };
+    let inner = ring_stroke(&f.inner_stroke, "focus_ring.inner_stroke")?
+        .map(|(width, color)| (color, width));
+    let corners = match &f.corners {
+        Some(corners) => Some(borders::corner_radii(corners, "focus_ring.corners")?),
+        None => None,
     };
     Ok(crate::focus_ring::ring_look_from(
         color,
@@ -1120,16 +1168,19 @@ pub(crate) fn ring_look(
         f.offset,
         radius,
         f.trigger == Some(FocusTrigger::KeyboardOnly),
-    ))
+    )
+    .map(|look| look.with(inner, corners)))
 }
 
 /// [`crate::focus_ring`]: `field`, and round it while it holds the keyboard
 /// focus, the theme's focus ring, its curves the field's `corner_radius`
-/// grown by the ring's offset.
+/// grown by the ring's offset, or the ring's own corners where the theme
+/// states them, and the second ring inside it where the theme states one.
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the ring's stroke is per side.
+/// [`Unmapped`] where the indicator is not a ring, a stroke is per side or
+/// the corners a squircle.
 #[cfg(feature = "widgets")]
 pub fn focus_ring<'a, Message, Renderer>(
     r: &ResolvedTheme,
@@ -1143,28 +1194,35 @@ where
     Ok(crate::focus_ring::FocusRing::new(field.into(), ring_look(r, corner_radius)?).into())
 }
 
-/// What [`spinner`] reads: its diameter, stroke width and colour
+/// What [`spinner`] reads: its diameter, stroke width, colour and period
 /// (`spinner`), and the window's text colour (`colors.window.foreground`)
 /// for a freedesktop indicator's `currentColor`.
 #[cfg(feature = "spinner")]
 pub(crate) fn spinner_look(r: &ResolvedTheme) -> Mapped<crate::spinner::Look> {
     let s = &r.spinner;
     let text = stated(r.colors.window.foreground, "colors.window.foreground")?;
+    let period_ms = match s.period_ms {
+        Some(ms) => Some(std::num::NonZeroU32::new(ms).ok_or(Unmapped("spinner.period_ms"))?),
+        None => None,
+    };
     Ok(crate::spinner::Look {
         diameter: s.diameter,
         stroke_width: s.stroke_width,
         color: to_color(s.color),
         current_color: to_color(text),
+        period_ms,
     })
 }
 
 /// [`crate::Spinner::new`]: the spinner of `icon_set` (for
 /// `IconSet::Freedesktop` the indicator of `icon_theme`, the system's icon
-/// theme where `None`), or an arc at the theme's stroke.
+/// theme where `None`), or an arc at the theme's stroke, turning once per
+/// `spinner.period_ms` where the theme states it, else a turn a second.
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the theme states no window text colour.
+/// [`Unmapped`] where the theme states no window text colour, or a period
+/// of 0.
 #[cfg(feature = "spinner")]
 pub fn spinner(
     r: &ResolvedTheme,
@@ -1205,6 +1263,9 @@ fn face_style(text: &TextStyle) -> Mapped<native_theme::theme::FontStyle> {
 /// [`crate::system_font_family`] of a text style (`typography.body`,
 /// `button.label(NONE)`, ...): the family iced draws its family, weight and
 /// slant in, the platform's substitute where the system lacks the family.
+/// A width class the style states does not choose the family: iced picks
+/// the face of that width within the family by the `Font`'s stretch
+/// (iced_graphics 0.14.0 `src/text.rs`, `to_stretch`), which [`font`] sets.
 ///
 /// # Errors
 ///
@@ -1223,7 +1284,8 @@ pub fn system_font_family(text: &TextStyle) -> Mapped<std::sync::Arc<str>> {
 
 /// [`crate::font`] of a text style (`typography.body`,
 /// `button.label(NONE)`, ...): the iced `Font` its family, weight and slant
-/// are drawn in.
+/// are drawn in, at its width class ([`stretch`]) where the style states
+/// one, iced's normal stretch where it states none.
 ///
 /// # Errors
 ///
@@ -1232,5 +1294,34 @@ pub fn system_font_family(text: &TextStyle) -> Mapped<std::sync::Arc<str>> {
 #[cfg(feature = "system-fonts")]
 pub fn font(text: &TextStyle) -> Mapped<iced_core::Font> {
     let style = face_style(text)?;
-    Ok(crate::font_of(&text.family, text.weight, style))
+    let font = crate::font_of(&text.family, text.weight, style);
+    if !text.stated.contains(TextStated::WIDTH) {
+        return Ok(font);
+    }
+    Ok(iced_core::Font {
+        stretch: stretch(text.width)?,
+        ..font
+    })
+}
+
+/// iced's stretch of a width class: OpenType's `usWidthClass` 1 to 9,
+/// ultra-condensed to ultra-expanded (the OpenType `OS/2` table's
+/// `usWidthClass`, as `FontWidth` states), each the variant of
+/// `iced_core::font::Stretch` (0.14.0 `src/font.rs`) of that name.
+#[cfg(feature = "system-fonts")]
+fn stretch(width: native_theme::next::FontWidth) -> Mapped<iced_core::font::Stretch> {
+    use iced_core::font::Stretch;
+
+    Ok(match width.value() {
+        1 => Stretch::UltraCondensed,
+        2 => Stretch::ExtraCondensed,
+        3 => Stretch::Condensed,
+        4 => Stretch::SemiCondensed,
+        5 => Stretch::Normal,
+        6 => Stretch::SemiExpanded,
+        7 => Stretch::Expanded,
+        8 => Stretch::ExtraExpanded,
+        9 => Stretch::UltraExpanded,
+        _ => return Err(Unmapped("TextStyle.width")),
+    })
 }

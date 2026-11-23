@@ -325,6 +325,11 @@ macro_rules! input_source {
         let r: &ResolvedTheme = $r;
         let i = &r.$w;
         let ring = &r.focus_ring;
+        // A ring the theme states none of is 0 wide, which no field draws
+        // ([`crate::styles::text_input`]'s inset ring), so its colour is
+        // never shown.
+        let (ring_width, ring_color) = super::ring_stroke(&ring.stroke, "focus_ring.stroke")?
+            .unwrap_or((0.0, iced_core::Color::TRANSPARENT));
         let rest = i.field(WidgetState::NONE);
         Ok::<InputSource, Unmapped>(InputSource {
             background: fill(&rest, concat!($home, ".field(NONE).fill"))?,
@@ -350,12 +355,8 @@ macro_rules! input_source {
                 &i.field(WidgetState::FOCUSED),
                 concat!($home, ".field(FOCUSED).stroke.color"),
             )?,
-            focus_ring_color: to_color(r.colors.focus_ring),
-            focus_ring_width: match &ring.stroke {
-                Stroke::None => 0.0,
-                Stroke::Uniform { width, .. } => *width,
-                _ => return Err(Unmapped("focus_ring.stroke.width")),
-            },
+            focus_ring_color: ring_color,
+            focus_ring_width: ring_width,
             focus_ring_offset: ring.offset,
             placeholder: text_color(
                 &i.placeholder(WidgetState::NONE),

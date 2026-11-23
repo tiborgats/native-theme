@@ -5,7 +5,9 @@
 
 use iced_core::Border;
 use iced_core::border::Radius;
-use native_theme::next::{CornerCurve, CornerRadius, PartStated, PartStyle, Stroke, StrokeAlign};
+use native_theme::next::{
+    CornerCurve, CornerRadius, Corners, PartStated, PartStyle, Stroke, StrokeAlign,
+};
 
 use super::{Mapped, Unmapped, to_color};
 use crate::styles::{Line, LineAlign, Outline};
@@ -96,6 +98,37 @@ pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
         (CornerRadius::None, _) => Ok(0.0),
         (CornerRadius::Uniform(r), CornerCurve::Circular) => Ok(r),
         (CornerRadius::Pill, CornerCurve::Circular) => Ok(crate::styles::pill().top_left),
+        _ => Err(Unmapped(home)),
+    }
+}
+
+/// Stated `corners` as iced rounds a quad, corner by corner: square corners
+/// are no radius, a pill a radius iced clamps to half the shorter side
+/// ([`crate::styles::pill`]).
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` for a squircle (`CornerCurve::Continuous`) or a
+/// radius of a kind iced has no form for.
+pub(crate) fn corner_radii(corners: &Corners, home: &'static str) -> Mapped<Radius> {
+    match (corners.radius, corners.curve) {
+        (CornerRadius::None, _) => Ok(Radius::from(0.0)),
+        (CornerRadius::Uniform(r), CornerCurve::Circular) => Ok(Radius::from(r)),
+        (
+            CornerRadius::PerCorner {
+                top_left,
+                top_right,
+                bottom_right,
+                bottom_left,
+            },
+            CornerCurve::Circular,
+        ) => Ok(Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        }),
+        (CornerRadius::Pill, CornerCurve::Circular) => Ok(crate::styles::pill()),
         _ => Err(Unmapped(home)),
     }
 }
