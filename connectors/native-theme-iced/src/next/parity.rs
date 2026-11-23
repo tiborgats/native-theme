@@ -5,8 +5,8 @@
 //! function returns, in every status of its widget.
 //!
 //! Presets covered: kde-breeze, adwaita, windows-11, macos-monterey,
-//! macos-tahoe, material-3 and ios-13, light and dark ([`PRESETS`]). The 0.7.2 side
-//! is resolved as the connector's tests resolve it
+//! macos-tahoe, material-3 and ios-13, light and dark ([`PRESETS`]). The
+//! 0.7.2 side is resolved as the connector's tests resolve it
 //! (`ResolutionContext::for_tests`), with no accessibility scaling; the
 //! 0.8.0 side for the scheme's default context, whose text scale is 1.
 //!
@@ -15,31 +15,27 @@
 //! - `iced_core::Theme` (with its `Palette` and `palette::Extended`) derives
 //!   `PartialEq`: the palette, the extended palette and the name are each
 //!   compared by it, the name being the theme's own on either side.
-//! - Each widget's `Style` that a style function returns —
-//!   `button::Style`, `text_input::Style`, `text_editor::Style`,
-//!   `checkbox::Style`, `radio::Style`, `toggler::Style`,
-//!   `pick_list::Style`, `overlay::menu::Style`, `slider::Style`,
-//!   `scrollable::Style`, `progress_bar::Style`, `rule::Style`,
-//!   `pane_grid::Style`, `container::Style` — derives `PartialEq` and is
-//!   compared by it, the function called with its side's own iced theme in
-//!   every `Status` of the widget (the style functions read iced's own
-//!   fields from the theme in effect).
-//! - `scrollable::Scrollbar`, which [`crate::styles::scrollbar`] returns,
-//!   has `Debug` but no `PartialEq`, and is compared in its `Debug` form.
-//! - The `iced_aw` styles (feature `iced_aw`) derive `PartialEq` and are
-//!   compared by it, as the widget styles are.
-//! - The scalar helpers of the crate root (`f32`, `Option<f32>`,
-//!   `iced_core::Padding`, `iced_core::Size`, `iced_core::Color`, `u16`,
-//!   `&str`, `DialogButtonOrder`) by their `PartialEq`.
+//! - Each widget's `Style` that a ported style function returns derives
+//!   `PartialEq` and is compared by it, the function called with its side's
+//!   own iced theme in every `Status` of the widget (the style functions
+//!   read iced's own fields from the theme in effect).
 //!
 //! A difference is allowed only as an entry of [`DIFFERENCES`], with its
-//! reason; an entry that no longer differs fails.
+//! reason: a style function whose 0.8.0 stroke lies inside or across the
+//! widget's edge, where 0.7.2 stated no alignment. The entry asserts the
+//! value the 0.8.0 side must give: the 0.7.2 side's own output with each of
+//! its strokes laid where the entry says ([`crate::styles::Line::aligned`]),
+//! so the stroke is composited over the fill each status paints, or over it
+//! at half its alpha; any other value fails. Each (style function, preset)
+//! pair an entry lists must differ in some status, or the entry is stale and
+//! fails.
 
 use std::fmt::Debug;
 
 use iced_core::theme::Theme;
 use native_theme::next::{Preset, ThemeContext};
 
+use super::LineAlign;
 use crate::{ColorMode, ResolvedTheme};
 
 /// The presets the test covers: the 0.7.2 key and the 0.8.0 preset.
@@ -53,59 +49,75 @@ const PRESETS: &[(&str, Preset)] = &[
     ("ios-13", Preset::Ios13),
 ];
 
-/// A listed difference (plan, section 1, rule 2): the leaf, the presets on
-/// which it differs, and why.
+/// A listed difference (plan, section 1, rule 2): the style function, the
+/// presets on which it differs, where the 0.8.0 stroke lies, and why.
 struct Difference {
-    /// The style functions or theme leaves that differ.
-    leaves: &'static [&'static str],
+    leaf: &'static str,
     presets: &'static [&'static str],
-    /// The one part of the output that differs: a prefix of the path
-    /// `debug_diff` gives each differing field; any other field differing
-    /// fails.
-    field: &'static str,
+    align: LineAlign,
     reason: &'static str,
+}
+
+/// The reason of a translucent stroke the theme lays inside the box.
+const INSIDE: &str = "the part's border is a translucent stroke the theme lays inside the \
+     box, over the fill (StrokeAlign::Inside, the alignment Stroke::uniform gives); iced on \
+     wgpu ends the fill at the border's inner edge, so the connector hands iced the stroke \
+     composited over the fill the status paints, where 0.7.2 handed it the stated colour, \
+     which showed the window through the band (docs/v0.8.0-spec.md §2, StrokeAlign; the M2 \
+     fill/stroke decision, connector table, iced row)";
+
+/// The reason of a translucent stroke centred on the box's edge.
+const CENTER: &str = "the part's border is a translucent pen centred on the edge \
+     (StrokeAlign::Center); iced on wgpu ends the fill at the border's inner edge, so the \
+     connector hands iced the band's mean, the stroke over the fill at half its alpha, where \
+     0.7.2 handed it the stated colour (docs/v0.8.0-spec.md §2, StrokeAlign; the M2 \
+     fill/stroke decision, connector table, iced row)";
+
+/// The macOS presets, whose control strokes are translucent and inside the
+/// box.
+const MACOS: &[&str] = &["macos-monterey", "macos-tahoe"];
+
+/// The macOS presets and windows-11, whose surface strokes are translucent
+/// and inside the box (windows-11's push button and text field strokes lie
+/// outside it, `StrokeAlign::Outside`, and do not differ).
+const MACOS_WINDOWS: &[&str] = &["windows-11", "macos-monterey", "macos-tahoe"];
+
+/// A style function whose stroke lies inside the box on `presets`.
+const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Difference {
+    Difference {
+        leaf,
+        presets,
+        align: LineAlign::Inside,
+        reason: INSIDE,
+    }
 }
 
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[
+    // button.body(NONE), its states and its variants.
+    inside("button", MACOS),
+    inside("button_toggle", MACOS),
+    inside("button_primary", MACOS),
+    inside("button_default", MACOS),
+    inside("button_danger", MACOS),
+    inside("button_success", MACOS),
+    inside("button_warning", MACOS),
+    // input.field(NONE) and text_area.field(NONE).
+    inside("text_input", MACOS),
+    inside("text_editor", MACOS),
+    // tooltip.panel, dialog.panel, progress_bar.track(NONE).
+    inside("tooltip", MACOS_WINDOWS),
+    inside("dialog", MACOS_WINDOWS),
+    inside("progress_bar", MACOS_WINDOWS),
+    // card.container(NONE).
+    inside("container_card", &["windows-11"]),
+    // Breeze's progress groove, a pen centred on its edge
+    // (progress_bar.track(NONE).stroke).
     Difference {
-        leaves: &[
-            "button",
-            "button_toggle",
-            "button_primary",
-            "button_default",
-            "button_danger",
-            "button_success",
-            "button_warning",
-            "progress_bar",
-            "tooltip",
-            "container_card",
-            "dialog",
-            "text_input",
-            "text_editor",
-        ],
-        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
-        field: "Style.border: Border.color",
-        reason: "the part's border is a translucent stroke the theme lays inside the box, over the \
-             fill (button.body(NONE), progress_bar.track(NONE), tooltip.panel, \
-             card.container(NONE), dialog.panel, input.field(NONE), text_area.field(NONE): \
-             stroke with StrokeAlign::Inside, the \
-             alignment Stroke::uniform gives); iced on wgpu ends the fill at \
-             the border's inner edge, so the connector hands iced the stroke composited over the \
-             fill, where 0.7.2 handed it the stated colour, which showed the window through the \
-             band (docs/v0.8.0-spec.md §2, StrokeAlign; the M2 fill/stroke decision, \
-             connector table, iced row)",
-    },
-    Difference {
-        leaves: &["progress_bar"],
+        leaf: "progress_bar",
         presets: &["kde-breeze"],
-        field: "Style.border: Border.color",
-        reason: "Breeze's progress groove is a translucent pen centred on the groove's edge \
-                 (progress_bar.track(NONE).stroke, StrokeAlign::Center); iced on wgpu ends the \
-                 fill at the border's inner edge, so the connector hands iced the band's mean, \
-                 the stroke over the fill at half its alpha, where 0.7.2 handed it the stated \
-                 colour (docs/v0.8.0-spec.md §2, StrokeAlign; the M2 fill/stroke decision, \
-                 connector table, iced row)",
+        align: LineAlign::Center,
+        reason: CENTER,
     },
 ];
 
@@ -114,9 +126,9 @@ struct Report {
     label: String,
     preset: &'static str,
     compared: usize,
-    /// The listed differences found differing.
-    /// The listed differences found differing, by index, with the preset.
-    listed_seen: Vec<(usize, &'static str)>,
+    /// The listed differences found differing: the entry's index, the style
+    /// function and the preset.
+    listed_seen: Vec<(usize, String, &'static str)>,
     failures: Vec<String>,
 }
 
@@ -132,24 +144,41 @@ impl Report {
         }
     }
 
-    /// Compare one leaf; one that differs fails unless listed.
-    fn leaf<T: PartialEq + Debug>(&mut self, leaf: &str, old: T, new: T) {
+    /// Compare one leaf; one that differs fails unless an entry lists its
+    /// style function on this preset and the 0.8.0 value is the one
+    /// `expected` gives for the entry's alignment.
+    fn leaf<T: PartialEq + Debug>(
+        &mut self,
+        leaf: &str,
+        old: T,
+        new: T,
+        expected: impl Fn(LineAlign) -> T,
+    ) {
         self.compared += 1;
         if old == new {
             return;
         }
-        let diff = debug_diff(&format!("{old:?}"), &format!("{new:?}"));
         let function = leaf.split('(').next().unwrap_or(leaf);
-        let listed = DIFFERENCES.iter().position(|d| {
-            d.leaves.contains(&function)
-                && d.presets.contains(&self.preset)
-                && diff.split("; ").all(|part| part.starts_with(d.field))
-        });
-        match listed {
-            Some(i) => self.listed_seen.push((i, self.preset)),
-            None => self
-                .failures
-                .push(format!("{}: {leaf}: {diff}", self.label)),
+        let listed = DIFFERENCES
+            .iter()
+            .position(|d| d.leaf == function && d.presets.contains(&self.preset));
+        let Some(i) = listed else {
+            let diff = debug_diff(&format!("{old:?}"), &format!("{new:?}"));
+            self.failures
+                .push(format!("{}: {leaf}: {diff}", self.label));
+            return;
+        };
+        let align = DIFFERENCES.get(i).map_or(LineAlign::Outside, |d| d.align);
+        let expected = expected(align);
+        if expected == new {
+            self.listed_seen.push((i, function.to_owned(), self.preset));
+        } else {
+            let diff = debug_diff(&format!("{expected:?}"), &format!("{new:?}"));
+            self.failures.push(format!(
+                "{}: {leaf}: listed as {align:?}, but not the expected value (expected -> \
+                 0.8.0): {diff}",
+                self.label
+            ));
         }
     }
 
@@ -167,8 +196,8 @@ impl Report {
 }
 
 /// Where two `Debug` forms differ: each differing field, as the path of
-/// the struct names and field names that lead to it, 0.7.2's value and
-/// 0.8.0's.
+/// the struct names and field names that lead to it, the first value and
+/// the second.
 fn debug_diff(old: &str, new: &str) -> String {
     let split = |s: &str| -> Vec<String> {
         let mut path: Vec<String> = Vec::new();
@@ -199,7 +228,7 @@ fn debug_diff(old: &str, new: &str) -> String {
     };
     let (o, n) = (split(old), split(new));
     if o.len() != n.len() {
-        return format!("0.7.2 {old}, 0.8.0 {new}");
+        return format!("{old}, {new}");
     }
     o.iter()
         .zip(&n)
@@ -240,42 +269,64 @@ fn compare_theme(report: &mut Report, old: &Theme, new: &super::Mapped<Theme>) {
     let Some(new) = report.mapped("to_theme", new.clone()) else {
         return;
     };
-    report.leaf("to_theme.palette", old.palette(), new.palette());
+    let unlisted = |_| old.palette();
+    report.leaf("to_theme.palette", old.palette(), new.palette(), unlisted);
     report.leaf(
         "to_theme.extended_palette",
         *old.extended_palette(),
         *new.extended_palette(),
+        |_| *old.extended_palette(),
     );
-    report.leaf("to_theme.name", old.to_string(), new.to_string());
+    report.leaf("to_theme.name", old.to_string(), new.to_string(), |_| {
+        old.to_string()
+    });
 }
 
 /// Compare a style function's two outputs in each of `$statuses`, each side
-/// called with its own iced theme.
+/// called with its own iced theme; `$aligned` gives the 0.7.2 side's
+/// function with its strokes laid at an alignment, the expected value of a
+/// listed difference. A function of no status is called through `surface`.
+#[cfg(feature = "widgets")]
 macro_rules! style {
-    ($report:expr, $themes:expr, $name:literal, $old:expr, $new:expr, $statuses:expr) => {{
+    ($report:expr, $themes:expr, $name:literal, $old:expr, $new:expr, $aligned:expr, $statuses:expr) => {{
         let (old_theme, new_theme): (&Theme, &Theme) = $themes;
         let old = $old;
+        let aligned = $aligned;
         if let Some(new) = $report.mapped($name, $new) {
             for status in $statuses {
                 $report.leaf(
                     &format!("{}({status:?})", $name),
                     old(old_theme, status),
                     new(new_theme, status),
+                    |align| aligned(align)(old_theme, status),
                 );
             }
         }
     }};
 }
 
-/// Compare a style function of no status, each side called with its own
-/// iced theme.
-macro_rules! surface {
-    ($report:expr, $themes:expr, $name:literal, $old:expr, $new:expr) => {{
-        let (old_theme, new_theme): (&Theme, &Theme) = $themes;
+/// A style function of no status as one of a single status.
+#[cfg(feature = "widgets")]
+fn surface<T>(f: impl Fn(&Theme) -> T + Clone) -> impl Fn(&Theme, ()) -> T + Clone {
+    move |theme, ()| f(theme)
+}
+
+/// Compare a style function that has no stroke the theme aligns: an
+/// unlisted difference fails.
+#[cfg(feature = "widgets")]
+macro_rules! plain {
+    ($report:expr, $themes:expr, $name:literal, $old:expr, $new:expr, $statuses:expr) => {{
         let old = $old;
-        if let Some(new) = $report.mapped($name, $new) {
-            $report.leaf($name, old(old_theme), new(new_theme));
-        }
+        let unaligned = old.clone();
+        style!(
+            $report,
+            $themes,
+            $name,
+            old,
+            $new,
+            move |_| unaligned.clone(),
+            $statuses
+        )
     }};
 }
 
@@ -287,18 +338,22 @@ fn compare_styles(
     old: &ResolvedTheme,
     new: &native_theme::next::ResolvedTheme,
 ) {
-    use crate::styles as o;
+    use crate::palette::to_color;
+    use crate::styles::{self as o, ButtonSource, InputSource, Outline, ToolbarButtonSource};
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
 
     use super::styles as n;
 
     let button = [Active, Hovered, Pressed, Disabled];
+    let b = ButtonSource::of(old);
+    let at = move |a| b.aligned(a);
     style!(
         report,
         themes,
         "button",
         o::button(old),
         n::button(new),
+        |a| o::button_from(&at(a)),
         button
     );
     for checked in [false, true] {
@@ -308,14 +363,17 @@ fn compare_styles(
             "button_toggle",
             o::button_toggle(old, checked),
             n::button_toggle(new, checked),
+            |a| o::button_toggle_from(&at(a), checked),
             button
         );
+        let t = ToolbarButtonSource::of(old);
         style!(
             report,
             themes,
             "toolbar_button",
             o::toolbar_button(old, checked),
             n::toolbar_button(new, checked),
+            |a| o::toolbar_button_from(&at(a), &t.aligned(a), checked),
             button
         );
     }
@@ -325,6 +383,7 @@ fn compare_styles(
         "button_primary",
         o::button_primary(old),
         n::button_primary(new),
+        |a| o::button_primary_from(&at(a)),
         button
     );
     style!(
@@ -333,33 +392,51 @@ fn compare_styles(
         "button_default",
         o::button_default(old),
         n::button_default(new),
+        |a| o::button_default_from(&at(a)),
         button
     );
-    style!(
-        report,
-        themes,
-        "button_danger",
-        o::button_danger(old),
-        n::button_danger(new),
-        button
-    );
-    style!(
-        report,
-        themes,
-        "button_success",
-        o::button_success(old),
-        n::button_success(new),
-        button
-    );
-    style!(
-        report,
-        themes,
-        "button_warning",
-        o::button_warning(old),
-        n::button_warning(new),
-        button
-    );
-    style!(
+    let d = &old.defaults;
+    for (name, fill, label, class, new_fn) in [
+        (
+            "button_danger",
+            d.danger_color,
+            d.danger_text_color,
+            iced_widget::button::danger as fn(&Theme, _) -> _,
+            n::button_danger(new).map(|f| Box::new(f) as Box<dyn Fn(&Theme, _) -> _>),
+        ),
+        (
+            "button_success",
+            d.success_color,
+            d.success_text_color,
+            iced_widget::button::success,
+            n::button_success(new).map(|f| Box::new(f) as Box<dyn Fn(&Theme, _) -> _>),
+        ),
+        (
+            "button_warning",
+            d.warning_color,
+            d.warning_text_color,
+            iced_widget::button::warning,
+            n::button_warning(new).map(|f| Box::new(f) as Box<dyn Fn(&Theme, _) -> _>),
+        ),
+    ] {
+        let (old_theme, new_theme) = themes;
+        let class_old = |a: Option<LineAlign>| {
+            let source = a.map_or(b, |a| b.aligned(a));
+            o::class_button(&source, to_color(fill), to_color(label), class)
+        };
+        let old_fn = class_old(None);
+        if let Some(new_fn) = report.mapped(name, new_fn) {
+            for status in button {
+                report.leaf(
+                    &format!("{name}({status:?})"),
+                    old_fn(old_theme, status),
+                    new_fn(new_theme, status),
+                    |a| class_old(Some(a))(old_theme, status),
+                );
+            }
+        }
+    }
+    plain!(
         report,
         themes,
         "button_link",
@@ -377,12 +454,14 @@ fn compare_styles(
             Status::Focused { is_hovered: true },
             Status::Disabled,
         ];
+        let i = InputSource::of(&old.input, &old.input.border, &old.defaults);
         style!(
             report,
             themes,
             "text_input",
             o::text_input(old),
             n::text_input(new),
+            |a| o::text_input_from(&i.aligned(a)),
             field
         );
     }
@@ -395,54 +474,110 @@ fn compare_styles(
             Status::Focused { is_hovered: true },
             Status::Disabled,
         ];
+        let i = InputSource::of(&old.input, &old.text_area.border, &old.defaults);
         style!(
             report,
             themes,
             "text_editor",
             o::text_editor(old),
             n::text_editor(new),
+            |a| o::text_editor_from(&i.aligned(a)),
             field
         );
     }
 
-    surface!(
+    let p = &old.progress_bar;
+    style!(
         report,
         themes,
         "progress_bar",
-        o::progress_bar(old),
-        n::progress_bar(new)
+        surface(o::progress_bar(old)),
+        n::progress_bar(new).map(surface),
+        |a| surface(o::progress_bar_from(
+            to_color(p.track_color),
+            to_color(p.fill_color),
+            Outline::of(&p.border).aligned(a),
+        )),
+        [()]
     );
-    surface!(report, themes, "rule", o::rule(old), Ok(n::rule(new)));
-    surface!(
+    plain!(
+        report,
+        themes,
+        "rule",
+        surface(o::rule(old)),
+        Ok(surface(n::rule(new))),
+        [()]
+    );
+    plain!(
         report,
         themes,
         "toolbar_rule",
-        o::toolbar_rule(old),
-        n::toolbar_rule(new)
+        surface(o::toolbar_rule(old)),
+        n::toolbar_rule(new).map(surface),
+        [()]
     );
-    surface!(
+    plain!(
         report,
         themes,
         "pane_grid",
-        o::pane_grid(old),
-        n::pane_grid(new)
+        surface(o::pane_grid(old)),
+        n::pane_grid(new).map(surface),
+        [()]
     );
-    surface!(report, themes, "tooltip", o::tooltip(old), n::tooltip(new));
-    surface!(
+    let panel = |fill, label: Option<_>, border| {
+        move |a: LineAlign| {
+            surface(o::panel_from(
+                to_color(fill),
+                label.map(to_color),
+                Some(Outline::of(border).aligned(a)),
+            ))
+        }
+    };
+    let t = &old.tooltip;
+    style!(
+        report,
+        themes,
+        "tooltip",
+        surface(o::tooltip(old)),
+        n::tooltip(new).map(surface),
+        panel(t.background_color, Some(t.font.color), &t.border),
+        [()]
+    );
+    let c = &old.card;
+    style!(
         report,
         themes,
         "container_card",
-        o::container_card(old),
-        n::container_card(new)
+        surface(o::container_card(old)),
+        n::container_card(new).map(surface),
+        panel(c.background_color, None, &c.border),
+        [()]
     );
-    surface!(report, themes, "dialog", o::dialog(old), n::dialog(new));
-    surface!(report, themes, "toolbar", o::toolbar(old), n::toolbar(new));
-    surface!(
+    let dl = &old.dialog;
+    style!(
+        report,
+        themes,
+        "dialog",
+        surface(o::dialog(old)),
+        n::dialog(new).map(surface),
+        panel(dl.background_color, Some(dl.body_font.color), &dl.border),
+        [()]
+    );
+    plain!(
+        report,
+        themes,
+        "toolbar",
+        surface(o::toolbar(old)),
+        n::toolbar(new).map(surface),
+        [()]
+    );
+    plain!(
         report,
         themes,
         "application",
-        o::application(old),
-        n::application(new)
+        surface(o::application(old)),
+        n::application(new).map(surface),
+        [()]
     );
 }
 
@@ -474,10 +609,13 @@ fn the_connector_hands_iced_the_same_from_both_models() -> crate::Result<()> {
     }
     for (i, d) in DIFFERENCES.iter().enumerate() {
         for &p in d.presets {
-            if !listed_seen.contains(&(i, p)) {
+            if !listed_seen
+                .iter()
+                .any(|(j, leaf, q)| *j == i && leaf == d.leaf && *q == p)
+            {
                 failures.push(format!(
-                    "{:?} on {p}: listed, but differs nowhere: remove the preset from the entry",
-                    d.leaves
+                    "{} on {p}: listed, but differs nowhere: remove the preset from the entry",
+                    d.leaf
                 ));
             }
         }
@@ -492,14 +630,22 @@ fn the_connector_hands_iced_the_same_from_both_models() -> crate::Result<()> {
 }
 
 #[test]
-fn every_listed_difference_names_a_covered_preset() {
-    for d in DIFFERENCES {
-        assert!(!d.reason.is_empty(), "{:?}: no reason", d.leaves);
+fn every_listed_difference_names_a_covered_preset_once() {
+    for (i, d) in DIFFERENCES.iter().enumerate() {
+        assert!(!d.reason.is_empty(), "{}: no reason", d.leaf);
         for p in d.presets {
             assert!(
                 PRESETS.iter().any(|(key, _)| key == p),
-                "{:?}: {p} is not covered",
-                d.leaves
+                "{}: {p} is not covered",
+                d.leaf
+            );
+            assert!(
+                !DIFFERENCES
+                    .iter()
+                    .skip(i + 1)
+                    .any(|e| e.leaf == d.leaf && e.presets.contains(p)),
+                "{} on {p}: listed twice",
+                d.leaf
             );
         }
     }

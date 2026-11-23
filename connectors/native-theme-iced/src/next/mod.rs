@@ -10,7 +10,10 @@
 //! source it needs that the theme leaves unstated, where the 0.7.2 function,
 //! whose fields are always set, returns the value alone. Where the theme
 //! states nothing for a value iced has one of its own for, iced's stays
-//! (spec §10, rule 0).
+//! (spec §10, rule 0): a value whose home the table of homes allows to be
+//! unstated (`unstated_if_unset`, a soft option of a state) keeps iced's,
+//! and only a value a resolved theme always states is [`Unmapped`] where it
+//! is missing.
 //!
 //! Each function reads the model where the table of homes
 //! (`native-theme/tests/next_homes.toml`) places the 0.7.2 field the old
@@ -28,20 +31,25 @@
 //! (spec §2), and is `None` otherwise, so the old path's own fallback for the
 //! unset option is taken from both models.
 //!
-//! A border's colour is the stroke as iced on wgpu paints it, which ends a
-//! widget's fill at the border's inner edge (`iced_wgpu` 0.14.0,
-//! `src/shader/quad/solid.wgsl`): an `Outside` stroke is drawn as stated; an
-//! `Inside` one, which the theme lays over the fill, is the stroke composited
-//! over the fill; a `Center` one, over the fill at half its alpha, the band's
-//! mean (spec §2, `StrokeAlign`). Under an opaque stroke the three are the
-//! stated colour. iced on tiny-skia fills the whole bounds under the border,
-//! as gpui does; a style function does not know the renderer, so the
-//! connector computes for wgpu and its README records tiny-skia.
+//! A border's stroke is read as stated, with its alignment
+//! ([`crate::styles::Line`]), and the shared style function hands iced its
+//! colour as iced on wgpu paints it over the fill that state paints: iced
+//! ends a widget's fill at the border's inner edge (`iced_wgpu` 0.14.0,
+//! `src/shader/quad/solid.wgsl`), so an `Outside` stroke is drawn as stated;
+//! an `Inside` one, which the theme lays over the fill, is the stroke
+//! composited over the fill; a `Center` one, over the fill at half its
+//! alpha, the band's mean (spec §2, `StrokeAlign`). Under an opaque stroke
+//! the three are the stated colour. iced on tiny-skia fills the whole bounds
+//! under the border, as gpui does; a style function does not know the
+//! renderer, so the connector computes for wgpu and its README records
+//! tiny-skia.
 
 // The part readers serve the style functions, which the `widgets` feature
 // builds.
 #![cfg_attr(not(feature = "widgets"), allow(dead_code))]
 
+#[cfg(feature = "widgets")]
+pub(crate) mod borders;
 #[cfg(feature = "widgets")]
 pub mod styles;
 
@@ -50,25 +58,14 @@ mod parity;
 
 use std::fmt;
 
-use iced_core::border::Radius;
-use iced_core::{Border, Color as IcedColor};
+use iced_core::Color as IcedColor;
 use native_theme::next::{
-    Color, CornerCurve, CornerRadius, InputQuery, Paint, PartStated, PartStyle, ResolvedTheme,
-    Scheme, Stroke, StrokeAlign, TextStated, TextStyle, WidgetState,
+    Color, InputQuery, Paint, PartStated, PartStyle, ResolvedTheme, Scheme, TextStated, TextStyle,
+    WidgetState,
 };
 
 use crate::ColorMode;
 use crate::extended::OverrideColors;
-
-/// `layer` composited over `base`, as [`crate::styles::composite_over`]
-/// composites them.
-fn composite_over(layer: IcedColor, base: IcedColor) -> IcedColor {
-    let [r, g, b, a] = native_theme::color::composite_over(
-        [layer.r, layer.g, layer.b, layer.a],
-        [base.r, base.g, base.b, base.a],
-    );
-    IcedColor { r, g, b, a }
-}
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to iced (a gradient fill, a per-side
@@ -98,6 +95,17 @@ impl std::error::Error for Unmapped {}
 /// A value of the 0.8.0 mapping, or the source it lacks.
 pub type Mapped<T> = Result<T, Unmapped>;
 
+/// Where a border's stroke lies against the widget's edge, as the 0.8.0
+/// model states it (`docs/v0.8.0-spec.md` §2, `StrokeAlign`), in the form
+/// the shared style functions take it. The 0.7.2 model states none and its
+/// stroke is handed to iced as given, which is what `Outside` gives.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum LineAlign {
+    Outside,
+    Inside,
+    Center,
+}
+
 /// A colour of the model as iced's: the same four gamma-encoded channels
 /// with straight alpha.
 pub(crate) fn to_color(c: Color) -> IcedColor {
@@ -114,10 +122,16 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
     v.ok_or(Unmapped(home))
 }
 
-/// A part's fill, where stated as one colour.
+/// A part's fill, where stated: its one colour, or, for a layered paint,
+/// the colour a toolkit that paints one colour renders in its place
+/// (spec §10, rule 2; [`Paint::fallback_color`]).
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<IcedColor> {
+    if !part.stated.contains(PartStated::FILL) {
+        return Err(Unmapped(home));
+    }
     match &part.fill {
-        Paint::Solid(c) if part.stated.contains(PartStated::FILL) => Ok(to_color(*c)),
+        Paint::Solid(c) => Ok(to_color(*c)),
+        paint @ Paint::Complex(_) => paint.fallback_color().map(to_color).ok_or(Unmapped(home)),
         _ => Err(Unmapped(home)),
     }
 }
@@ -132,114 +146,6 @@ pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<
         Ok(None)
     }
 }
-
-/// A part's stroke colour as iced on wgpu shows it (the module's doc), where
-/// stated as one stroke of one colour: as stated where it is opaque or
-/// `Outside`; otherwise composited over the part's own fill, which must then
-/// be stated as one colour too.
-pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<IcedColor> {
-    let (color, align) = match &part.stroke {
-        Stroke::Uniform { color, align, .. } if part.stated.contains(PartStated::STROKE) => {
-            (to_color(*color), *align)
-        }
-        _ => return Err(Unmapped(home)),
-    };
-    if color.a >= 1.0 {
-        return Ok(color);
-    }
-    match align {
-        StrokeAlign::Outside => Ok(color),
-        StrokeAlign::Inside => Ok(composite_over(color, fill(part, home)?)),
-        StrokeAlign::Center => {
-            let under = fill(part, home)?;
-            Ok(composite_over(
-                color,
-                IcedColor {
-                    a: under.a / 2.0,
-                    ..under
-                },
-            ))
-        }
-        _ => Err(Unmapped(home)),
-    }
-}
-
-/// A part's stroke colour where a rule states it for the queried state, as
-/// [`stroke_color`] reads it; `None` where none does.
-pub(crate) fn state_stroke_color(
-    part: &PartStyle,
-    home: &'static str,
-) -> Mapped<Option<IcedColor>> {
-    if part.from_state.contains(PartStated::STROKE) {
-        stroke_color(part, home).map(Some)
-    } else {
-        Ok(None)
-    }
-}
-
-/// A part's stroke width, where stated as one stroke, in any alignment, or
-/// as none, which is no width.
-pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
-    if !part.stated.contains(PartStated::STROKE) {
-        return Err(Unmapped(home));
-    }
-    match &part.stroke {
-        Stroke::None => Ok(0.0),
-        Stroke::Uniform { width, .. } => Ok(*width),
-        _ => Err(Unmapped(home)),
-    }
-}
-
-/// A part's corner radius, where stated as one circular radius, or as square
-/// corners, which are no radius.
-pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
-    if !part.stated.contains(PartStated::CORNERS) {
-        return Err(Unmapped(home));
-    }
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Ok(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Ok(r),
-        _ => Err(Unmapped(home)),
-    }
-}
-
-/// A part's border as iced outlines a widget, [`crate::styles::border_of`]'s
-/// three values: the stroke's colour ([`stroke_color`]) and width where the
-/// stroke is stated (a stated `Stroke::None` is no width, its colour
-/// iced's), the corner radius where the corners are, and iced's own
-/// (`Border::default()`, no line and square corners) where they are not
-/// (spec §10, rule 0).
-pub(crate) fn border_of(
-    part: &PartStyle,
-    color_home: &'static str,
-    width_home: &'static str,
-    corners_home: &'static str,
-) -> Mapped<Border> {
-    let mut border = Border::default();
-    if part.stated.contains(PartStated::STROKE) {
-        border.width = stroke_width(part, width_home)?;
-        if !matches!(part.stroke, Stroke::None) {
-            border.color = stroke_color(part, color_home)?;
-        }
-    }
-    if part.stated.contains(PartStated::CORNERS) {
-        border.radius = Radius::new(radius(part, corners_home)?);
-    }
-    Ok(border)
-}
-
-/// [`border_of`] the part at `$home`, each value's home under it.
-macro_rules! border {
-    ($part:expr, $home:literal) => {
-        $crate::next::border_of(
-            &$part,
-            concat!($home, ".stroke.color"),
-            concat!($home, ".stroke.width"),
-            concat!($home, ".corners"),
-        )
-    };
-}
-pub(crate) use border;
 
 /// A text style's colour, where stated.
 pub(crate) fn text_color(text: &TextStyle, home: &'static str) -> Mapped<IcedColor> {
@@ -263,8 +169,8 @@ pub(crate) fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<O
 /// The theme's colour mode.
 fn mode_of(r: &ResolvedTheme) -> ColorMode {
     match r.context.scheme {
+        Scheme::Light => ColorMode::Light,
         Scheme::Dark => ColorMode::Dark,
-        _ => ColorMode::Light,
     }
 }
 

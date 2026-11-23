@@ -5,27 +5,22 @@
 //!
 //! Requires the `widgets` feature (on by default).
 
-use iced_core::Border;
 use iced_core::theme::Theme;
 use native_theme::next::{
     ButtonQuery, PartStated, ResolvedTheme, Stroke, WidgetState, WindowState,
 };
 
-use super::{
-    Mapped, Unmapped, border, fill, state_fill, state_stroke_color, state_text_color, stated,
-    text_color, to_color,
-};
+use super::borders::{outline, outline_or_iced, state_line};
+use super::{Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, to_color};
 use crate::styles::{
-    self as old, ButtonSource, InputSource, LinkSource, ToolbarButtonSource, UNFADED,
+    self as old, ButtonSource, InputSource, LinkSource, Outline, ToolbarButtonSource,
 };
 
-/// A widget's disabled opacity: the stated one, or, where the theme states
-/// none, [`UNFADED`], iced's own disabled look, which fades nothing.
-fn opacity(stated: Option<f32>) -> f32 {
-    stated.unwrap_or(UNFADED)
-}
-
-/// [`ButtonSource`] of the 0.8.0 model.
+/// [`ButtonSource`] of the 0.8.0 model. A hover fill no `HOVER` rule states
+/// is `None`: the query then returns the resting fill, which the hovered
+/// button keeps rather than that fill composited over itself. A button that
+/// states no disabled opacity takes iced's own disabled look (spec §10,
+/// rule 0).
 fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let b = &r.button;
     let rest = b.body(WidgetState::NONE);
@@ -34,7 +29,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let c = &r.colors;
     Ok(ButtonSource {
         background: fill(&rest, "button.body(NONE).fill")?,
-        hover_background: fill(&hover, "button.body(HOVER).fill")?,
+        hover_background: state_fill(&hover, "button.body(HOVER).fill")?,
         active_background: state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
         disabled_background: state_fill(
             &b.body(WidgetState::DISABLED),
@@ -55,9 +50,13 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.label(WidgetState::CHECKED),
             "button.label(CHECKED).color",
         )?,
-        disabled_opacity: opacity(b.disabled_opacity),
-        border: border!(rest, "button.body(NONE)")?,
-        hover_border_color: state_stroke_color(&hover, "button.body(HOVER).stroke.color")?,
+        disabled_opacity: b.disabled_opacity,
+        border: outline!(rest, "button.body(NONE)")?,
+        hover_border_color: state_line(&hover, "button.body(HOVER).stroke.color")?,
+        pressed_border_color: state_line(
+            &b.body(WidgetState::PRESSED),
+            "button.body(PRESSED).stroke.color",
+        )?,
         primary_background: fill(
             &b.body(ButtonQuery::primary()),
             "button.body(NONE; variant=Primary).fill",
@@ -71,7 +70,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.label(WidgetState::DEFAULT),
             "button.label(DEFAULT).color",
         )?,
-        default_border_color: state_stroke_color(&default, "button.body(DEFAULT).stroke.color")?,
+        default_border_color: state_line(&default, "button.body(DEFAULT).stroke.color")?,
         window_background: to_color(stated(c.window.background, "colors.window.background")?),
         window_text: to_color(stated(c.window.foreground, "colors.window.foreground")?),
     })
@@ -89,8 +88,20 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
             "toolbar.button(PRESSED).fill",
         )?,
         checked_background: state_fill(&checked, "toolbar.button(CHECKED).fill")?,
-        hover_border_color: state_stroke_color(&hover, "toolbar.button(HOVER).stroke.color")?,
-        checked_border_color: state_stroke_color(&checked, "toolbar.button(CHECKED).stroke.color")?,
+        hover_border_color: state_line(&hover, "toolbar.button(HOVER).stroke.color")?,
+        checked_border_color: state_line(&checked, "toolbar.button(CHECKED).stroke.color")?,
+        pressed_border_color: state_line(
+            &t.button(WidgetState::PRESSED),
+            "toolbar.button(PRESSED).stroke.color",
+        )?,
+        checked_hover_border_color: state_line(
+            &t.button(WidgetState::HOVER | WidgetState::CHECKED),
+            "toolbar.button(HOVER|CHECKED).stroke.color",
+        )?,
+        checked_pressed_border_color: state_line(
+            &t.button(WidgetState::PRESSED | WidgetState::HOVER | WidgetState::CHECKED),
+            "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color",
+        )?,
     })
 }
 
@@ -225,7 +236,8 @@ pub fn button_warning(
 }
 
 /// [`crate::styles::button_link`]: faded when disabled by the theme's
-/// `colors.disabled_opacity`, the link stating none of its own.
+/// `colors.disabled_opacity`, the link stating none of its own. A hover
+/// fill no `HOVER` rule states keeps the resting fill under the pointer.
 ///
 /// # Errors
 ///
@@ -238,7 +250,7 @@ pub fn button_link(
     let l = &r.link;
     Ok(old::button_link_from(&LinkSource {
         background: fill(&l.container(WidgetState::NONE), "link.container(NONE).fill")?,
-        hover_background: fill(
+        hover_background: state_fill(
             &l.container(WidgetState::HOVER),
             "link.container(HOVER).fill",
         )?,
@@ -253,43 +265,53 @@ pub fn button_link(
     }))
 }
 
-/// [`InputSource`] of the 0.8.0 model: `input`'s colours, with `border` as
-/// the field's border (`input`'s or `text_area`'s field at rest), and the
+/// [`InputSource`] of the 0.8.0 model, of the field `$w` of `$r` (`input`
+/// or `text_area`, each its own widget), every home under `$home`, and the
 /// focus indicator.
-fn input_source(r: &ResolvedTheme, border: Border) -> Mapped<InputSource> {
-    let i = &r.input;
-    let ring = &r.focus_ring;
-    Ok(InputSource {
-        background: fill(&i.field(WidgetState::NONE), "input.field(NONE).fill")?,
-        disabled_background: state_fill(
-            &i.field(WidgetState::DISABLED),
-            "input.field(DISABLED).fill",
-        )?,
-        text: text_color(&i.text(WidgetState::NONE), "input.text(NONE).color")?,
-        disabled_text: text_color(&i.text(WidgetState::DISABLED), "input.text(DISABLED).color")?,
-        disabled_opacity: opacity(i.disabled_opacity),
-        border,
-        hover_border_color: state_stroke_color(
-            &i.field(WidgetState::HOVER),
-            "input.field(HOVER).stroke.color",
-        )?,
-        focus_border_color: state_stroke_color(
-            &i.field(WidgetState::FOCUSED),
-            "input.field(FOCUSED).stroke.color",
-        )?,
-        focus_ring_color: to_color(r.colors.focus_ring),
-        focus_ring_width: match &ring.stroke {
-            Stroke::None => 0.0,
-            Stroke::Uniform { width, .. } => *width,
-            _ => return Err(Unmapped("focus_ring.stroke.width")),
-        },
-        focus_ring_offset: ring.offset,
-        placeholder: text_color(
-            &i.placeholder(WidgetState::NONE),
-            "input.placeholder(NONE).color",
-        )?,
-        selection: to_color(r.colors.text_selection.background),
-    })
+macro_rules! input_source {
+    ($r:expr, $w:ident, $home:literal) => {{
+        let r: &ResolvedTheme = $r;
+        let i = &r.$w;
+        let ring = &r.focus_ring;
+        let rest = i.field(WidgetState::NONE);
+        Ok::<InputSource, Unmapped>(InputSource {
+            background: fill(&rest, concat!($home, ".field(NONE).fill"))?,
+            disabled_background: state_fill(
+                &i.field(WidgetState::DISABLED),
+                concat!($home, ".field(DISABLED).fill"),
+            )?,
+            text: text_color(
+                &i.text(WidgetState::NONE),
+                concat!($home, ".text(NONE).color"),
+            )?,
+            disabled_text: text_color(
+                &i.text(WidgetState::DISABLED),
+                concat!($home, ".text(DISABLED).color"),
+            )?,
+            disabled_opacity: i.disabled_opacity,
+            border: outline!(rest, concat!($home, ".field(NONE)"))?,
+            hover_border_color: state_line(
+                &i.field(WidgetState::HOVER),
+                concat!($home, ".field(HOVER).stroke.color"),
+            )?,
+            focus_border_color: state_line(
+                &i.field(WidgetState::FOCUSED),
+                concat!($home, ".field(FOCUSED).stroke.color"),
+            )?,
+            focus_ring_color: to_color(r.colors.focus_ring),
+            focus_ring_width: match &ring.stroke {
+                Stroke::None => 0.0,
+                Stroke::Uniform { width, .. } => *width,
+                _ => return Err(Unmapped("focus_ring.stroke.width")),
+            },
+            focus_ring_offset: ring.offset,
+            placeholder: text_color(
+                &i.placeholder(WidgetState::NONE),
+                concat!($home, ".placeholder(NONE).color"),
+            )?,
+            selection: to_color(r.colors.text_selection.background),
+        })
+    }};
 }
 
 /// [`crate::styles::text_input`].
@@ -302,15 +324,10 @@ pub fn text_input(
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::text_input::Status) -> iced_widget::text_input::Style + Clone + use<>,
 > {
-    let field = r.input.field(WidgetState::NONE);
-    Ok(old::text_input_from(&input_source(
-        r,
-        border!(field, "input.field(NONE)")?,
-    )?))
+    Ok(old::text_input_from(&input_source!(r, input, "input")?))
 }
 
-/// [`crate::styles::text_editor`]: `input`'s colours on the text area's
-/// border.
+/// [`crate::styles::text_editor`]: the text area's own colours and border.
 ///
 /// # Errors
 ///
@@ -320,10 +337,10 @@ pub fn text_editor(
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::text_editor::Status) -> iced_widget::text_editor::Style + Clone + use<>,
 > {
-    let field = r.text_area.field(WidgetState::NONE);
-    Ok(old::text_editor_from(&input_source(
+    Ok(old::text_editor_from(&input_source!(
         r,
-        border!(field, "text_area.field(NONE)")?,
+        text_area,
+        "text_area"
     )?))
 }
 
@@ -340,7 +357,7 @@ pub fn progress_bar(
     Ok(old::progress_bar_from(
         fill(&track, "progress_bar.track(NONE).fill")?,
         fill(&p.fill(WidgetState::NONE), "progress_bar.fill(NONE).fill")?,
-        border!(track, "progress_bar.track(NONE)")?,
+        outline!(track, "progress_bar.track(NONE)")?,
     ))
 }
 
@@ -397,11 +414,13 @@ pub fn tooltip(
     Ok(old::panel_from(
         fill(&t.panel, "tooltip.panel.fill")?,
         Some(text_color(&t.text, "tooltip.text.color")?),
-        Some(border!(t.panel, "tooltip.panel")?),
+        Some(outline!(t.panel, "tooltip.panel")?),
     ))
 }
 
-/// [`crate::styles::container_card`].
+/// [`crate::styles::container_card`]. The card's border is iced's own where
+/// the theme states none (the table of homes, `card.border.*`:
+/// `unstated_if_unset`).
 ///
 /// # Errors
 ///
@@ -413,7 +432,7 @@ pub fn container_card(
     Ok(old::panel_from(
         fill(&card, "card.container(NONE).fill")?,
         None,
-        Some(border!(card, "card.container(NONE)")?),
+        Some(outline_or_iced!(card, "card.container(NONE)")?),
     ))
 }
 
@@ -429,7 +448,7 @@ pub fn dialog(
     Ok(old::panel_from(
         fill(&d.panel, "dialog.panel.fill")?,
         Some(text_color(&d.body, "dialog.body.color")?),
-        Some(border!(d.panel, "dialog.panel")?),
+        Some(outline!(d.panel, "dialog.panel")?),
     ))
 }
 
@@ -449,7 +468,7 @@ pub fn toolbar(
             &t.button_label(WidgetState::NONE),
             "toolbar.button_label(NONE).color",
         )?),
-        None,
+        None::<Outline>,
     ))
 }
 
