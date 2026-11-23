@@ -1503,6 +1503,111 @@ fn model_parity_adwaita() -> TestResult {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// The value half on the windows-11 builder (plan, M2's Windows unit), static path: the same comparator and
+// table.
+// ---------------------------------------------------------------------------------------------------------
+
+/// The groups of the table whose rows the windows-11 builder ports so far: each of their rows is compared
+/// and equal, or skipped for a reason [`windows_11_expected_skip`] names.
+const WINDOWS_11_PORTED_GROUPS: &[&str] = PORTED_GROUPS;
+
+/// The groups of the table whose values the windows-11 builder does not state yet: their rows are
+/// compared, counted and reported, not asserted.
+const WINDOWS_11_NOT_PORTED_GROUPS: &[&str] = &[];
+
+/// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
+/// every row equal but those [`windows_11_expected_skip`] names, skipped.
+const WINDOWS_11_PORTED_TOTALS: [usize; 5] = [563, 558, 558, 0, 5];
+
+/// The reason a row of the table is skipped on 0.7.2's `windows-11` without a reader's snapshot: the
+/// reader's context rows (`accessibility.*`); `checkbox.background_color`, compared only where
+/// `checkbox.unchecked_background` is unset, which `windows-11.toml` states.
+fn windows_11_expected_skip(key: &str) -> Option<compare::Skip> {
+    if key.starts_with("accessibility.") {
+        Some(compare::Skip::NoSnapshot)
+    } else if key == "checkbox.background_color" {
+        Some(compare::Skip::OtherKeyStated)
+    } else {
+        None
+    }
+}
+
+/// Model parity of the windows-11 builder (plan, section 1, rule 2): 0.7.2's `windows-11` and
+/// `Theme::preset(Preset::Windows11)`, light and dark, over the table of homes. Every row's group is one
+/// of [`WINDOWS_11_PORTED_GROUPS`] or one of [`WINDOWS_11_NOT_PORTED_GROUPS`]; zero mismatches in the
+/// ported groups, every skip for its named reason; the rows of the groups not ported yet are counted and
+/// reported, and the two counts make the whole table. No dead rule in any rule set of the widgets.
+#[test]
+fn model_parity_windows_11() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::query::ThemeContext;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for row in &table.row {
+        let group = row.key.split('.').next().unwrap_or("");
+        assert!(
+            WINDOWS_11_PORTED_GROUPS.contains(&group)
+                != WINDOWS_11_NOT_PORTED_GROUPS.contains(&group),
+            "`{}`: its group is not exactly one of the ported and the not ported groups",
+            row.key
+        );
+    }
+    for (mode, ctx) in [
+        (ColorMode::Light, ThemeContext::light()),
+        (ColorMode::Dark, ThemeContext::dark()),
+    ] {
+        let theme_072 = Theme::preset("windows-11")?;
+        let old = old_resolved(&theme_072, mode)?;
+        let unresolved = old_unresolved(&theme_072, mode)?;
+        let theme = NextTheme::preset(Preset::Windows11);
+        let new = theme.resolve(&ctx);
+        let with_context = |context: RowContext| theme.resolve(&context.applied_to(&ctx));
+        let extra = compare::Extra {
+            unresolved: Some(&unresolved),
+            with_context: Some(&with_context),
+        };
+        let report = compare::compare(&old, &new, None, Preset::Windows11, &extra)?;
+        println!("{mode:?}: {report}");
+        assert_eq!(report.totals.rows, table.row.len());
+        for row in report
+            .rows
+            .iter()
+            .filter(|row| in_groups(&row.key, WINDOWS_11_PORTED_GROUPS))
+        {
+            let skip = match row.outcome {
+                compare::Outcome::Skipped(skip) => Some(skip),
+                _ => None,
+            };
+            assert_eq!(
+                skip,
+                windows_11_expected_skip(&row.key),
+                "{mode:?}: `{}`",
+                row.key
+            );
+        }
+        let ported = totals_in(&report, WINDOWS_11_PORTED_GROUPS, true);
+        let not_ported = totals_in(&report, WINDOWS_11_NOT_PORTED_GROUPS, true);
+        println!(
+            "{mode:?}: [rows, compared, equal, mismatching, skipped] in the ported groups {ported:?}, \
+             in the groups not ported yet {not_ported:?}"
+        );
+        assert_eq!(ported, WINDOWS_11_PORTED_TOTALS, "{mode:?}\n{report}");
+        assert_eq!(
+            ported[0].saturating_add(not_ported[0]),
+            table.row.len(),
+            "{mode:?}"
+        );
+        let dead: Vec<_> = new
+            .dead_rules()
+            .into_iter()
+            .filter(|(_, rules)| !rules.is_empty())
+            .collect();
+        assert!(dead.is_empty(), "{mode:?}: dead rules {dead:?}");
+    }
+    Ok(())
+}
+
 // Reader parity (plan, section 1, rule 2) on the KDE fixtures: the theme the 0.7.2 KDE reader path produces
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------

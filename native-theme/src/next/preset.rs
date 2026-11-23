@@ -706,7 +706,7 @@ fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> R
         Preset::KdeBreeze => kde::resolve(&context, inputs),
         Preset::MacosMonterey => nothing_stated(preset, context),
         Preset::MacosTahoe => nothing_stated(preset, context),
-        Preset::Windows11 => nothing_stated(preset, context),
+        Preset::Windows11 => super::presets::windows::resolve(&context, inputs),
         Preset::Material3 => nothing_stated(preset, context),
         Preset::Ios13 => nothing_stated(preset, context),
     }
@@ -718,13 +718,12 @@ fn contrast_levels(preset: Preset) -> &'static [Contrast] {
     match preset {
         Preset::Adwaita => super::presets::adwaita::CONTRAST_LEVELS,
         Preset::KdeBreeze => kde::CONTRAST_LEVELS,
+        Preset::Windows11 => super::presets::windows::CONTRAST_LEVELS,
         // The theme with nothing stated (`nothing_stated`) defines `Normal`
         // only.
-        Preset::MacosMonterey
-        | Preset::MacosTahoe
-        | Preset::Windows11
-        | Preset::Material3
-        | Preset::Ios13 => &[Contrast::Normal],
+        Preset::MacosMonterey | Preset::MacosTahoe | Preset::Material3 | Preset::Ios13 => {
+            &[Contrast::Normal]
+        }
     }
 }
 
@@ -1783,9 +1782,12 @@ mod tests {
         let ctx = ThemeContext::dark();
         for preset in Preset::ALL {
             let resolved = Theme::preset(*preset).resolve(&ctx);
-            // kde-breeze's and adwaita's builders are written; every other preset states
-            // nothing yet.
-            let built = matches!(preset, Preset::KdeBreeze | Preset::Adwaita);
+            // kde-breeze's, adwaita's and windows-11's builders are written; every other
+            // preset states nothing yet.
+            let built = matches!(
+                preset,
+                Preset::KdeBreeze | Preset::Adwaita | Preset::Windows11
+            );
             assert_eq!(
                 resolved != nothing_stated(*preset, ctx.clone()),
                 built,
