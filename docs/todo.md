@@ -5348,6 +5348,40 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
 - [ ] [1.0] The spec does not say what `StrokeAlign` means on a `FocusIndicator`'s stroke
       (`docs/v0.8.0-spec.md` §2; the fill/stroke rule covers a part's stroke only).
 
+### 0.8.0's platform units: what has no source yet (2026-11-23)
+
+- [ ] [0.8.x] **adwaita** (`native-theme/src/next/presets/adwaita.rs`): libadwaita 1.10.0's high-contrast values beyond
+      the focus ring (border opacity 50 %, disabled opacity 40 %, dim opacity 90 %, trough, window outline, dimmer
+      variants) are not applied, as in 0.7.2; the link colour #1b6acb has no source and does not follow the accent
+      (libadwaita derives it from the accent, `_colors.scss`); under a palette the preset's pre-mixed fills (button,
+      hover, toolbar, switch) keep their values (no rule recomputes them); white status text on dark palettes' status
+      fills falls as low as 1.27:1 (spec §7 keeps a status role's text from the layer below); the light placeholder is
+      2.42:1 on its field; GNOME without the `portal` feature gives `FeatureDisabled` where 0.7.2 gave the preset.
+- [ ] [0.8.x] **windows-11**: a checked toolbar button's label has no checked colour (window text on the accent fill);
+      under an explicit accent the selection text stays white (1.72:1 on #ffb900); `colors.info`'s origin stays `Native`
+      when only an explicit accent sets it; under high contrast with a palette kept, high-contrast colours no palette
+      slot restates stay.
+- [ ] [0.8.x] **macos-monterey / macos-tahoe**: under a palette the title bar keeps its measured fill (AppKit names no
+      colour for `header_bg`); colours no palette slot names keep the preset's (alternate row, list header, field,
+      button, pop-up, placeholder, hover fills); white text on a light explicit accent; the text selection under an
+      accent differs from AppKit's pale variant (a fit on two accents is not built: a probe pass over the other six
+      `AppleAccentColor` values would settle it); a palette accent's alpha is replaced in the focus ring and the
+      disabled switch track (no source); 19 reader colours are checked only by the live CI run.
+- [ ] [0.8.x] **material-3**: about 110 0.7.2 keys are carried `(uncited)` in `material.rs`; five state colours (expander
+      hover; link hover, pressed and disabled; scroll bar pressed handle) have no source for what they become under a
+      seed; whether `surface_bg` reaches the menu panel (the popover's token in Material) is not settled; many fields are
+      unstated (default button, combo box arrow area and open states, list row height and header states, menu active
+      and bar states, tab gaps and borders, toolbar padding and button states, card border and padding, expander arrow
+      and indent, `font_whole_pixels`).
+- [ ] [0.8.x] **ios-13**: every widget padding, the button's checked pair and default colours, the check mark's stroke,
+      the radio dot's size, list and menu row heights, the tab indicator, toolbar height, dialog entrance, tooltip delay,
+      card outline and corners are unstated; whether UIKit's link, focus ring and caret follow the tint is unverified.
+      **ios-26** is not bundled: rc1's facts leave at least 30 of the 38 fields without an iOS 26 source (no dialog,
+      spinner, expander, splitter, scroll bar, segmented control, tab, tooltip, progress bar, slider thumb, switch,
+      icon sizes, check box and menu gaps).
+- [ ] [0.8.x] Motion tokens: no bundled preset states any, so no connector maps them yet (gpui-component's
+      `MotionTokens` slots and the model's tokens are not paired; built in the first unit that states them).
+
 ### Showcases: gpui's keyboard shield also stops its own macOS menu shortcuts
 - [ ] [1.0] For the maintainer to decide. Under `--capture`, `--screenshot` and `--dump-layout` on macOS, gpui's keyboard shield stops ⌘Q, ⌘H, ⌥⌘H, ⌘M and ⌘W too, which are its own keymap bindings: a key equivalent reaches gpui's window first (gpui-pre-macos 0.3.9 `src/window.rs:2572-2574`, `handle_key_equivalent`, and `:2659-2668`, the event reported as handled where it did not propagate), and the shield stops every keystroke (`cx.intercept_keystrokes`, gpui-pre 0.3.9 `src/window.rs:6075-6092`, installed by the gpui showcase's `apply_cli_args`). The egui showcase leaves AppKit's predefined items (Close, Quit, Hide, Hide Others, Minimize) running there, as its `shields_keyboard` doc says since M9c B1 FR-M3 (d2e34ccc), and drops only the showcase's own menu actions. Read from the source, not run on macOS. Settle before 1.0 whether the two shields cover the same keys.
 
