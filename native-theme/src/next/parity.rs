@@ -1839,9 +1839,26 @@ fn old_merged_reader(
     mode: ColorMode,
     accessibility: &crate::AccessibilityPreferences,
 ) -> Result<(serde_json::Value, serde_json::Value), Box<dyn std::error::Error>> {
+    old_merged_reader_in(
+        preset,
+        reader,
+        mode,
+        accessibility,
+        &ResolutionContext::for_tests(),
+    )
+}
+
+/// [`old_merged_reader`] resolved in the resolution context `context`.
+fn old_merged_reader_in(
+    preset: &str,
+    reader: &Theme,
+    mode: ColorMode,
+    accessibility: &crate::AccessibilityPreferences,
+    context: &ResolutionContext,
+) -> Result<(serde_json::Value, serde_json::Value), Box<dyn std::error::Error>> {
     let mut merged = Theme::preset(preset)?;
     merged.merge(reader);
-    let mut old = old_resolved(&merged, mode)?;
+    let mut old = old_resolved_in(&merged, mode, context)?;
     let unresolved = old_unresolved(&merged, mode)?;
     let map = old
         .as_object_mut()
@@ -2882,6 +2899,481 @@ fn live_system_parity_windows() -> TestResult {
         &snapshot,
         &table,
         &windows_reader_expected(&[]),
+    )?;
+    println!("the live system: equal through the 0.7.2 and the 0.8.0 path");
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Reader parity (plan, section 1, rule 2) on macOS: the theme the 0.7.2 macOS reader path produces from the
+// settings it read (`macos::reader_result`), and the macOS builders fed the same settings as
+// `SystemOverrides` (`reader::macos::snapshot_from_settings`). On every host through the pure entry with
+// the data of 0.7.2's macOS reader tests and inputs built from the reader's list of reads; the live
+// comparison runs on macOS (`live_system_parity_macos`).
+// ---------------------------------------------------------------------------------------------------------
+
+/// The rows of the ported groups on every case of `macos-monterey` and the rows of them compared: all but
+/// `checkbox.background_color` and `menu.min_row_height`, skipped as in the model parity.
+const MACOS_MONTEREY_READER_ROWS: [usize; 2] = [563, 561];
+
+/// The rows of the ported groups on every case of `macos-tahoe` and the rows of them compared: all but
+/// `checkbox.background_color`, skipped as in the model parity.
+const MACOS_TAHOE_READER_ROWS: [usize; 2] = [563, 562];
+
+/// The 0.7.2 macOS reader path on the settings `settings`, as the comparator reads it, and the name it
+/// gives the theme: the reader's pure function (`macos::reader_result`), its theme merged over the preset
+/// `preset` as the pipeline merges a reader's result (the running version's generation, or the preset
+/// `from_system_with_preset` pins, `pipeline::pinned_pipeline`), resolved for the reader's scheme at the
+/// reader's font DPI, 72 ([`MACOS_RESOLUTION_CONTEXT`]), with the rows written by hand and the reader's
+/// `accessibility` block ([`old_merged_reader_in`]); also the merged theme's variant unresolved.
+fn old_macos_reader(
+    settings: &crate::macos::MacosSettings,
+    preset: crate::next::preset::Preset,
+) -> Result<(serde_json::Value, serde_json::Value, String), Box<dyn std::error::Error>> {
+    let result = crate::macos::reader_result(settings);
+    let reader = result
+        .output
+        .to_theme(&result.name, result.icon_set, &result.layout);
+    let (old, unresolved) = old_merged_reader_in(
+        preset.as_str(),
+        &reader,
+        result.output.mode(),
+        &result.accessibility,
+        &MACOS_RESOLUTION_CONTEXT,
+    )?;
+    Ok((old, unresolved, result.name.to_string()))
+}
+
+/// A font of 0.7.2's macOS reader tests' shape (`macos.rs`, `sample_widget_fonts`): a family, a size in
+/// points and a weight where given.
+fn macos_font(family: &str, size: f32, weight: Option<u16>) -> crate::model::FontSpec {
+    crate::model::FontSpec {
+        family: Some(family.into()),
+        size: Some(crate::model::font::FontSize::Pt(size)),
+        weight,
+        ..Default::default()
+    }
+}
+
+/// The settings of 0.7.2's macOS reader tests (`macos.rs`: `sample_light_defaults`,
+/// `sample_dark_defaults`, `sample_widget_fonts`): under Aqua the accent `#007AFF`, the window `#F6F6F6`,
+/// black text, a white view and the separator `#C8C8C8`; under Dark Aqua the accent `#0A84FF`, the window
+/// `#1E1E1E`, white text, the view `#2C2C2E` and the separator `#38383A`; no other colour; SF Pro and SF
+/// Mono at 13 pt without a weight, the menu's SF Pro 14 pt at 400, the tooltip's 11 pt at 400 and the
+/// title bar's 13 pt at 700; light, on macOS 15.7.9 (the version 0.7.2's tests give `macos-monterey`);
+/// no scroller and no accessibility flag read.
+fn default_macos_settings() -> crate::macos::MacosSettings {
+    use crate::macos::{AppearanceColors, MacosSettings, WidgetFontData};
+    MacosSettings {
+        light: Some(AppearanceColors {
+            control_accent: Some(crate::Rgba::rgb(0, 122, 255)),
+            window_background: Some(crate::Rgba::rgb(246, 246, 246)),
+            label: Some(crate::Rgba::rgb(0, 0, 0)),
+            control_background: Some(crate::Rgba::rgb(255, 255, 255)),
+            separator: Some(crate::Rgba::rgb(200, 200, 200)),
+            ..AppearanceColors::default()
+        }),
+        dark: Some(AppearanceColors {
+            control_accent: Some(crate::Rgba::rgb(10, 132, 255)),
+            window_background: Some(crate::Rgba::rgb(30, 30, 30)),
+            label: Some(crate::Rgba::rgb(255, 255, 255)),
+            control_background: Some(crate::Rgba::rgb(44, 44, 46)),
+            separator: Some(crate::Rgba::rgb(56, 56, 58)),
+            ..AppearanceColors::default()
+        }),
+        font: macos_font("SF Pro", 13.0, None),
+        mono_font: macos_font("SF Mono", 13.0, None),
+        widget_fonts: WidgetFontData {
+            menu_font: macos_font("SF Pro", 14.0, Some(400)),
+            tooltip_font: macos_font("SF Pro", 11.0, Some(400)),
+            title_bar_font: macos_font("SF Pro", 13.0, Some(700)),
+        },
+        scrollbar: None,
+        reduce_motion: None,
+        increase_contrast: None,
+        reduce_transparency: None,
+        is_dark: false,
+        version: crate::pipeline::OsVersion::new(15, 7, 9),
+    }
+}
+
+/// A distinct colour for each of the 24 colours the reader reads (spec §8, "The macOS part",
+/// *Colours*), `(n, n + offset, 2n)` for the `n`th in the order of `macos::AppearanceColors`, as 0.7.2's
+/// Windows reader tests make a distinct value per system colour; no 0.7.2 test reads these colours, so
+/// they are test inputs, which only the live comparison on macOS replaces with AppKit's.
+fn every_macos_colour(offset: u8) -> crate::macos::AppearanceColors {
+    let c = |n: u8| {
+        Some(crate::Rgba::rgb(
+            n,
+            n.saturating_add(offset),
+            n.saturating_mul(2),
+        ))
+    };
+    crate::macos::AppearanceColors {
+        label: c(1),
+        control_accent: c(2),
+        window_background: c(3),
+        control_background: c(4),
+        separator: c(5),
+        secondary_label: c(6),
+        alternate_selected_control_text: c(7),
+        system_red: c(8),
+        system_orange: c(9),
+        system_green: c(10),
+        system_blue: c(11),
+        selected_content_background: c(12),
+        unemphasized_selected_content_background: c(13),
+        selected_text_background: c(14),
+        selected_text: c(15),
+        link: c(16),
+        keyboard_focus_indicator: c(17),
+        disabled_control_text: c(18),
+        placeholder_text: c(19),
+        text_insertion_point: c(20),
+        alternate_row: c(21),
+        header_text: c(22),
+        grid: c(23),
+        window_frame_text: c(24),
+    }
+}
+
+/// The cases of macOS' reader parity: the data of 0.7.2's macOS reader tests (`macos.rs`: the sample
+/// defaults and fonts, the versions of its generation tests, the custom accent `#E0383E`, the scroller
+/// widths its scroll bar test cites), and, for the reads no 0.7.2 test gives a value, a distinct colour
+/// per read ([`every_macos_colour`]) and other fonts, so that equality proves the builder reads the
+/// setting; each named, with the preset it is pinned to (else the running version's generation) and the
+/// keys of the rows that differ, each a listed difference.
+pub(crate) fn macos_cases() -> Vec<(
+    &'static str,
+    crate::macos::MacosSettings,
+    Option<crate::next::preset::Preset>,
+    &'static [&'static str],
+)> {
+    use crate::macos::{AppearanceColors, MacosSettings, WidgetFontData};
+    use crate::next::preset::Preset;
+    use crate::pipeline::OsVersion;
+    // D-R4 (spec §8, "The macOS part", *Derived by the macOS builders*): 0.7.2 takes the disabled on
+    // switch's alpha from the running version, the builder from its own generation.
+    const PINNED: &[&str] = &["switch.disabled_checked_background"];
+    let base = default_macos_settings;
+    let every = || MacosSettings {
+        light: Some(every_macos_colour(100)),
+        dark: Some(every_macos_colour(200)),
+        ..base()
+    };
+    let scroller = |overlay: bool, width: f32| {
+        Some(crate::ScrollbarTheme {
+            groove_width: Some(width),
+            overlay_mode: Some(overlay),
+            ..Default::default()
+        })
+    };
+    let red = Some(crate::Rgba::rgb(224, 56, 62));
+    let tahoe = OsVersion::new(26, 6, 2);
+    vec![
+        ("0.7.2's sample data, light", base(), None, &[]),
+        (
+            "0.7.2's sample data, dark",
+            MacosSettings {
+                is_dark: true,
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        ("every colour, light", every(), None, &[]),
+        (
+            "every colour, dark",
+            MacosSettings {
+                is_dark: true,
+                ..every()
+            },
+            None,
+            &[],
+        ),
+        (
+            "macOS 26, every colour, light",
+            MacosSettings {
+                version: tahoe,
+                ..every()
+            },
+            None,
+            &[],
+        ),
+        (
+            "macOS 26, every colour, dark",
+            MacosSettings {
+                version: tahoe,
+                is_dark: true,
+                ..every()
+            },
+            None,
+            &[],
+        ),
+        (
+            "macOS 13, no insertion point colour",
+            MacosSettings {
+                light: Some(AppearanceColors {
+                    text_insertion_point: None,
+                    ..every_macos_colour(100)
+                }),
+                version: OsVersion::new(13, 7, 8),
+                ..every()
+            },
+            None,
+            &[],
+        ),
+        (
+            "a custom accent, light",
+            MacosSettings {
+                light: Some(AppearanceColors {
+                    control_accent: red,
+                    ..AppearanceColors::default()
+                }),
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        (
+            "macOS 26, a custom accent, dark",
+            MacosSettings {
+                dark: Some(AppearanceColors {
+                    control_accent: red,
+                    ..AppearanceColors::default()
+                }),
+                is_dark: true,
+                version: tahoe,
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        (
+            "other fonts",
+            MacosSettings {
+                font: macos_font("Helvetica Neue", 12.0, Some(300)),
+                mono_font: macos_font("Menlo", 11.0, Some(500)),
+                widget_fonts: WidgetFontData {
+                    menu_font: macos_font("Avenir", 15.0, Some(600)),
+                    tooltip_font: macos_font("Optima", 10.0, Some(200)),
+                    title_bar_font: macos_font("Futura", 14.0, Some(800)),
+                },
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        (
+            "fonts without a family or a weight",
+            MacosSettings {
+                font: crate::model::FontSpec {
+                    size: Some(crate::model::font::FontSize::Pt(12.0)),
+                    ..Default::default()
+                },
+                mono_font: crate::model::FontSpec::default(),
+                widget_fonts: WidgetFontData {
+                    menu_font: crate::model::FontSpec::default(),
+                    tooltip_font: crate::model::FontSpec::default(),
+                    title_bar_font: crate::model::FontSpec::default(),
+                },
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        (
+            "the overlay scroller",
+            MacosSettings {
+                scrollbar: scroller(true, 16.0),
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        (
+            "the legacy scroller",
+            MacosSettings {
+                scrollbar: scroller(false, 15.0),
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        (
+            "macOS 26's legacy scroller",
+            MacosSettings {
+                scrollbar: scroller(false, 17.0),
+                version: tahoe,
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        (
+            "the accessibility flags",
+            MacosSettings {
+                reduce_motion: Some(true),
+                increase_contrast: Some(true),
+                reduce_transparency: Some(true),
+                ..every()
+            },
+            None,
+            &[],
+        ),
+        (
+            "Aqua alone",
+            MacosSettings {
+                dark: None,
+                ..every()
+            },
+            None,
+            &[],
+        ),
+        (
+            "Aqua alone, dark",
+            MacosSettings {
+                dark: None,
+                is_dark: true,
+                ..base()
+            },
+            None,
+            &[],
+        ),
+        (
+            "macOS 26 pinned to macos-monterey",
+            MacosSettings {
+                version: tahoe,
+                ..every()
+            },
+            Some(Preset::MacosMonterey),
+            PINNED,
+        ),
+        (
+            "macOS 15 pinned to macos-tahoe, dark",
+            MacosSettings {
+                is_dark: true,
+                ..every()
+            },
+            Some(Preset::MacosTahoe),
+            PINNED,
+        ),
+    ]
+}
+
+/// Reader parity of the macOS builders: for every case of [`macos_cases`], the 0.7.2 reader path
+/// ([`old_macos_reader`], over the case's preset) against `Theme::preset` of that preset given the case's
+/// `SystemOverrides` and resolved for its context (its motion level and text scale at their defaults, as
+/// 0.7.2 applies neither), over the table of homes, the snapshot's context compared. Over every row of
+/// the ported groups: the rows of the case's listed differences differ, every other row is equal or
+/// skipped for its named reason (as in the model parity), the four `accessibility.*` rows compared and
+/// equal; the resolved theme's name is the reader's.
+#[test]
+fn reader_parity_macos() -> TestResult {
+    use crate::next::reader::macos::snapshot_from_settings;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for (name, settings, pinned, listed) in macos_cases() {
+        let mut snapshot = snapshot_from_settings(&settings);
+        if let Some(preset) = pinned {
+            snapshot.preset = preset;
+        }
+        let (old, unresolved, old_name) = old_macos_reader(&settings, snapshot.preset)?;
+        assert_reader_parity(
+            name,
+            &old,
+            &unresolved,
+            &old_name,
+            &snapshot,
+            &table,
+            &macos_reader_expected(snapshot.preset, listed),
+        )?;
+    }
+    Ok(())
+}
+
+/// What macOS' reader parity expects of a case on `preset` whose listed differences are `listed`: every
+/// other row of the ported groups compared and equal but the rows [`macos_expected_skip`] skips with a
+/// snapshot (`checkbox.background_color`, and on `macos-monterey` `menu.min_row_height`).
+fn macos_reader_expected<'a>(
+    preset: crate::next::preset::Preset,
+    listed: &'a [&'a str],
+) -> ReaderExpected<'a> {
+    use crate::next::preset::Preset;
+    let monterey = preset == Preset::MacosMonterey;
+    let [rows, compared] = if monterey {
+        MACOS_MONTEREY_READER_ROWS
+    } else {
+        MACOS_TAHOE_READER_ROWS
+    };
+    ReaderExpected {
+        totals: [
+            rows,
+            compared,
+            compared.saturating_sub(listed.len()),
+            listed.len(),
+            rows.saturating_sub(compared),
+        ],
+        skip: if monterey {
+            |key| {
+                macos_expected_skip(crate::next::preset::Preset::MacosMonterey, key)
+                    .filter(|_| !key.starts_with("accessibility."))
+            }
+        } else {
+            |key| {
+                macos_expected_skip(crate::next::preset::Preset::MacosTahoe, key)
+                    .filter(|_| !key.starts_with("accessibility."))
+            }
+        },
+        listed,
+    }
+}
+
+/// The live check on macOS: the theme from the live system through the 0.7.2 path (the reader 0.7.2's
+/// `from_system` chooses, its theme merged over the running version's preset as its pipeline merges it,
+/// at the reader's font DPI) and through the 0.8.0 path (`Theme::from_system`), compared as
+/// [`reader_parity_macos`] compares a case's, with no listed difference. It prints the comparator's
+/// report and the 0.8.0 reader's diagnostics, and fails where the two differ. Runs on every macOS test
+/// run with the `macos` feature (the CI runners).
+#[cfg(all(target_os = "macos", feature = "macos"))]
+#[test]
+fn live_system_parity_macos() -> TestResult {
+    use crate::next::preset::Theme as NextTheme;
+    use crate::next::reader::SystemSnapshot;
+
+    let table: Table = toml::from_str(HOMES)?;
+    let selected = pollster::block_on(crate::pipeline::select_reader())
+        .ok_or("0.7.2 chooses no reader on this system")?;
+    let result = pollster::block_on(selected.reader.read())?;
+    let reader = result
+        .output
+        .to_theme(&result.name, result.icon_set, &result.layout);
+    let (old, unresolved) = old_merged_reader_in(
+        selected.preset,
+        &reader,
+        result.output.mode(),
+        &result.accessibility,
+        &MACOS_RESOLUTION_CONTEXT,
+    )?;
+    let theme = NextTheme::from_system()?;
+    println!("0.8.0 diagnostics: {:?}", theme.diagnostics());
+    assert_eq!(theme.preset_id().as_str(), selected.preset);
+    let overrides = theme
+        .system_overrides()
+        .ok_or("the theme from the system has no system settings")?;
+    let snapshot = SystemSnapshot::new(
+        theme.preset_id(),
+        theme.context().clone(),
+        overrides.clone(),
+    );
+    assert_reader_parity(
+        "the live system",
+        &old,
+        &unresolved,
+        &result.name,
+        &snapshot,
+        &table,
+        &macos_reader_expected(snapshot.preset, &[]),
     )?;
     println!("the live system: equal through the 0.7.2 and the 0.8.0 path");
     Ok(())

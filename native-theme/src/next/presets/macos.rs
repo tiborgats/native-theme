@@ -6,12 +6,13 @@
 //! has its own table of colours per scheme ([`SchemeColors`]) and its own
 //! generation of metrics, fonts and other constants ([`Generation`]), each
 //! constant with the citation its 0.7.2 TOML gives it. The builder runs in
-//! three steps: the preset's constants for the scheme resolved for; the
-//! colour roles and the globals made from them; the widgets derived from the
-//! roles, the globals and the constants. A widget's colour that is a role's
-//! colour is taken from the roles, not from a second copy of the constant.
-//! This is the static path: the system's settings, the active palette and an
-//! explicit accent ([`ResolveInputs`]) are not laid over the constants yet.
+//! three steps: the preset's constants for the scheme resolved for, with the
+//! system's settings ([`ResolveInputs`]) laid over them as the 0.7.2 reader
+//! writes them over its preset ([`resolve`]); the colour roles and the
+//! globals made from them; the widgets derived from the roles, the globals
+//! and the constants. A widget's colour that is a role's colour is taken
+//! from the roles, not from a second copy of the constant. The active
+//! palette and an explicit accent are not laid over the constants yet.
 //!
 //! Defined by the presets (spec §1, "Axis values without data"): the
 //! variant `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's
@@ -68,7 +69,7 @@
 //! where unstated, `resolve_widget_to_widget`).
 //!
 //! Of the context it acts on the scheme and on the text scale: every font
-//! size, converted at the font DPI ([`FONT_DPI`]), times the text scale, not
+//! size, converted at the font DPI (the system's, else [`FONT_DPI`]), times the text scale, not
 //! rounded, as macOS draws fonts at fractional sizes (0.7.2 states no
 //! whole-pixel rounding for it), and every line height times it too; each
 //! `defined_size` stays the unscaled size (spec §6, resolution step 2). The
@@ -120,6 +121,7 @@ use crate::next::presets::helpers::{
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, Orientation, Scheme, ThemeContext, WidgetState,
 };
+use crate::next::reader::{OsColors, OsFont, SystemOverrides};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
@@ -209,6 +211,7 @@ struct SchemeColors {
     menu_hover_foreground: Color,
     tab_hover: Option<Color>,
     sidebar_background: Color,
+    sidebar_foreground: Option<Color>,
     switch_unchecked: Color,
     switch_thumb: Color,
     switch_hover_unchecked: Option<Color>,
@@ -392,6 +395,8 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
     // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
     sidebar_background: srgb8(0xf6f6_f6ff),
+    // `sidebar.font.color`: platform-facts.md (§2.12): ← defaults.font.color, labelColor (probe)
+    sidebar_foreground: Some(srgb8(0x0000_00d8)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 26/255 (measured,
     // renders/aqua/switch-regular-off@2x.png); over background_color #d4d4d4
     switch_unchecked: srgb8(0x0000_001a),
@@ -602,6 +607,8 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
     // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
     sidebar_background: srgb8(0x3838_38ff),
+    // `sidebar.font.color`: platform-facts.md (§2.12): ← defaults.font.color, labelColor (probe)
+    sidebar_foreground: Some(srgb8(0xffff_ffd8)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 26/255 (measured,
     // renders/darkAqua/switch-regular-off@2x.png); over background_color #474747
     switch_unchecked: srgb8(0xffff_ff1a),
@@ -802,6 +809,7 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749,
     // os-probe-macos-26/probe.toml)
     sidebar_background: srgb8(0xf6f6_f6ff),
+    sidebar_foreground: None,
     // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 25/255 (measured),
     // systemFillColor's value (probe); over background_color #e6e6e6
     switch_unchecked: srgb8(0x0000_0019),
@@ -986,6 +994,7 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749,
     // os-probe-macos-26/probe.toml)
     sidebar_background: srgb8(0x3838_38ff),
+    sidebar_foreground: None,
     // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 25/255 (measured),
     // systemFillColor's value (probe); over background_color #343434
     switch_unchecked: srgb8(0xffff_ff19),
@@ -1760,26 +1769,47 @@ const fn srgb8(rgba: u32) -> Color {
 /// data"): `Normal` only, as the module documentation says.
 pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal];
 
-/// The theme of `macos-monterey` for `ctx.scheme`, from the preset's
-/// constants (the static path: `inputs` is not applied yet).
+/// The theme of `macos-monterey` for `ctx.scheme` ([`resolve`]).
 pub(crate) fn resolve_monterey(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     resolve(&MONTEREY, ctx, inputs)
 }
 
-/// The theme of `macos-tahoe` for `ctx.scheme`, from the preset's constants
-/// (the static path: `inputs` is not applied yet).
+/// The theme of `macos-tahoe` for `ctx.scheme` ([`resolve`]).
 pub(crate) fn resolve_tahoe(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     resolve(&TAHOE, ctx, inputs)
 }
 
-/// The theme of the preset of `g` for `ctx.scheme`.
-fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> ResolvedTheme {
-    let c = match ctx.scheme {
-        Scheme::Light => &g.light,
-        Scheme::Dark => &g.dark,
+/// The theme of the preset of `g` for `ctx.scheme`, from the preset's
+/// constants with the system's settings `inputs.system` laid over them, as
+/// the 0.7.2 reader writes them over the preset (spec §8, "The macOS part";
+/// 0.7.2's `macos::reader_result`): the colours of the entry for the
+/// resolved scheme and contrast ([`lay_system_over`]), the title bar's text
+/// among them; the fonts ([`laid_over`]); the scroller's style and width;
+/// the font DPI. The disabled on switch's track is the accent at the
+/// alpha of `g`'s own generation ([`switch`]). The active palette and an
+/// explicit accent are not applied yet.
+fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
+    let system = inputs.system;
+    let mut scheme_colors = match ctx.scheme {
+        Scheme::Light => g.light,
+        Scheme::Dark => g.dark,
     };
+    let os = system.and_then(|s| s.colors_for(ctx.scheme, ctx.contrast));
+    if let Some(os) = os {
+        lay_system_over(&mut scheme_colors, os);
+    }
+    let title_bar_foreground = os
+        .and_then(|os| os.surfaces.as_ref())
+        .and_then(|s| s.title_bar)
+        .and_then(|s| s.foreground);
+    let c = &scheme_colors;
     let colors = roles(c, g);
-    let typography = typography(g, &colors, ctx.text_scale);
+    let units = FontUnits {
+        dpi: system.and_then(|s| s.font_dpi).unwrap_or(FONT_DPI),
+        text_scale: ctx.text_scale,
+    };
+    let typography = typography(g, &colors, system, units);
+    let fonts = SystemFonts::of(system);
     let motion = motion(ctx.motion, None);
     let layout = LayoutMetrics {
         widget_gap: Some(g.widget_gap),
@@ -1828,10 +1858,37 @@ fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> R
         button: button(c, g, &colors, &typography, &layout),
         checkbox: checkbox(c, g, &colors, &typography, &layout),
         radio: radio(c, g, &colors, &typography, &layout),
-        scrollbar: scrollbar(c, g, &colors),
+        scrollbar: scrollbar(
+            c,
+            g,
+            &colors,
+            system
+                .and_then(|s| s.scrollbar_width_px)
+                .unwrap_or(g.scrollbar_groove_width),
+            system
+                .and_then(|s| s.overlay_scrollbars)
+                .unwrap_or(g.scrollbar_overlay),
+        ),
         list: list(c, g, &colors, &typography, &layout),
-        tooltip: tooltip(c, g, &layout, ctx.text_scale),
-        window: window(c, g, &colors, &layout, ctx),
+        tooltip: tooltip(c, g, &layout, &typography, fonts.tooltip, units),
+        window: window(
+            c,
+            laid_over(
+                resized(
+                    label(
+                        &typography.body,
+                        title_bar_foreground.or(colors.window.foreground),
+                    ),
+                    None,
+                    g.title_bar_font_weight,
+                    units,
+                ),
+                fonts.title_bar,
+                units,
+            ),
+            &layout,
+            ctx,
+        ),
         input: input(
             c,
             g,
@@ -1851,7 +1908,7 @@ fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> R
         splitter: splitter(c, g),
         separator: separator(c, &layout),
         spinner: spinner(c, g),
-        menu: menu(c, g, &colors, &typography),
+        menu: menu(c, g, &colors, &typography, fonts.menu, units),
         menu_bar: menu_bar(c),
         tab: tab(c, g, &colors, &typography),
         sidebar: sidebar(c, &colors, &typography, &layout),
@@ -1859,7 +1916,7 @@ fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> R
         status_bar: status_bar(c, &typography, &layout),
         popover: popover(c, &typography, &layout),
         switch: switch(c, g, &colors),
-        dialog: dialog(c, g, &colors, &typography, &layout, motion, ctx.text_scale),
+        dialog: dialog(c, g, &colors, &typography, &layout, motion, units),
         combo_box: combo_box(c, g, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, g, &colors, &typography, &layout),
         card: card(g, &colors),
@@ -1937,10 +1994,152 @@ fn roles(c: &SchemeColors, g: &Generation) -> ColorRoles {
     }
 }
 
-/// A font size in logical pixels: converted at [`FONT_DPI`], times the text
+/// The colours of the system's entry `os` laid over the preset's colours
+/// `c`, each where `os` states it, as the 0.7.2 reader writes its reads over
+/// the preset (spec §8, "The macOS part"; 0.7.2's `macos::defaults_of` and
+/// `apply_per_widget`): the window's background, text, muted text and
+/// border (`labelColor` also the status roles' text and the unfocused
+/// selection's text, as the 0.7.2 reader copies it); the view's background;
+/// the selection's background, text (also the accent's text, one read that
+/// 0.7.2 writes to both) and unfocused background; the text selection; the
+/// accent; the focus ring; the link; the four status colours; the disabled
+/// text; the placeholder; the caret; the alternate row; the table header's
+/// text; the grid. A stated unfocused selection text replaces the copy.
+fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
+    fn set(slot: &mut Color, value: Option<Color>) {
+        if let Some(value) = value {
+            *slot = value;
+        }
+    }
+    let surfaces = os.surfaces.as_ref();
+    if let Some(window) = surfaces.and_then(|s| s.window) {
+        set(&mut c.background, window.background);
+        set(&mut c.foreground, window.foreground);
+        set(&mut c.status_foreground, window.foreground);
+        set(&mut c.selection_inactive_foreground, window.foreground);
+        set(&mut c.muted, window.foreground_muted);
+        set(&mut c.border, window.border);
+    }
+    if let Some(view) = surfaces.and_then(|s| s.view) {
+        set(&mut c.surface, view.background);
+    }
+    if let Some(selection) = os.selection {
+        set(&mut c.selection_background, selection.background);
+        set(&mut c.selection_foreground, selection.foreground);
+        set(&mut c.accent_foreground, selection.foreground);
+        set(
+            &mut c.selection_inactive_background,
+            selection.unfocused_background,
+        );
+        set(
+            &mut c.selection_inactive_foreground,
+            selection.unfocused_foreground,
+        );
+    }
+    if let Some(text_selection) = os.text_selection {
+        set(&mut c.text_selection_background, text_selection.background);
+        set(&mut c.text_selection_foreground, text_selection.foreground);
+    }
+    set(&mut c.accent, os.accent);
+    set(&mut c.focus_ring, os.focus_ring);
+    set(&mut c.link, os.link);
+    if let Some([error, warning, success, info]) = os.status {
+        set(&mut c.error, error);
+        set(&mut c.warning, warning);
+        set(&mut c.success, success);
+        set(&mut c.info, info);
+    }
+    set(&mut c.disabled_text, os.disabled_text);
+    set(&mut c.placeholder, os.placeholder);
+    set(&mut c.caret, os.caret);
+    set(&mut c.list_alternate, os.alternate_row_background);
+    set(&mut c.list_header_foreground, os.list_header_foreground);
+    set(&mut c.list_grid, os.grid);
+}
+
+/// The fonts the system states for widgets of their own: the menu's
+/// (`menu_font`), the tooltip's (`tooltip_font`) and the window title's
+/// (`title_bar_font`).
+#[derive(Clone, Copy, Default)]
+struct SystemFonts<'a> {
+    /// The menu's.
+    menu: Option<&'a OsFont>,
+    /// The tooltip's.
+    tooltip: Option<&'a OsFont>,
+    /// The window title's.
+    title_bar: Option<&'a OsFont>,
+}
+
+impl<'a> SystemFonts<'a> {
+    /// The fonts `system` states.
+    fn of(system: Option<&'a SystemOverrides>) -> Self {
+        let Some(s) = system else {
+            return Self::default();
+        };
+        Self {
+            menu: s.menu_font.as_ref(),
+            tooltip: s.tooltip_font.as_ref(),
+            title_bar: s.title_bar_font.as_ref(),
+        }
+    }
+}
+
+/// `base` with the system's font `os` laid over it, where given: each of
+/// its family, size, weight and style that `os` states replaces `base`'s,
+/// as 0.7.2 merges a reader's font over the preset's (`Theme::merge`).
+fn laid_over(base: TextStyle, os: Option<&OsFont>, units: FontUnits) -> TextStyle {
+    let mut font = base;
+    let Some(os) = os else {
+        return font;
+    };
+    if let Some(family) = &os.family {
+        font.family = family.clone();
+    }
+    if let Some(size) = os.size {
+        font.size_px = font_px(size, units);
+        font.defined_size = Some(size);
+    }
+    if let Some(weight) = os.weight {
+        font.weight = weight;
+    }
+    if let Some(style) = os.style {
+        font.style = style;
+    }
+    font
+}
+
+/// `text` at the size `size`, where given, and the weight `weight`: a
+/// widget's font that states its size or weight and takes its other fields
+/// from the UI font (0.7.2's `resolve_font_inheritance`).
+fn resized(
+    mut text: TextStyle,
+    size: Option<FontSize>,
+    weight: u16,
+    units: FontUnits,
+) -> TextStyle {
+    if let Some(size) = size {
+        text.size_px = font_px(size, units);
+        text.defined_size = Some(size);
+    }
+    text.weight = weight;
+    text
+}
+
+/// How a font size becomes logical pixels: the font DPI and the text scale
+/// (spec §6, resolution step 2).
+#[derive(Clone, Copy)]
+struct FontUnits {
+    /// The font DPI: the system's (`SystemOverrides::font_dpi`), else
+    /// [`FONT_DPI`].
+    dpi: f32,
+    /// The text scale, `effective.text_scale`.
+    text_scale: f32,
+}
+
+/// A font size in logical pixels: converted at the font DPI, times the text
 /// scale, not rounded (spec §6, resolution step 2).
-fn font_px(size: FontSize, text_scale: f32) -> f32 {
-    linear_font_px(size, FONT_DPI, text_scale, None)
+fn font_px(size: FontSize, units: FontUnits) -> f32 {
+    linear_font_px(size, units.dpi, units.text_scale, None)
 }
 
 /// The line height of a style of `size` at the multiplier `multiplier`, in
@@ -1948,12 +2147,12 @@ fn font_px(size: FontSize, text_scale: f32) -> f32 {
 /// the font DPI (0.7.2's `resolve_text_scale_entry`,
 /// `src/resolve/inheritance.rs`, then its conversion in `validate`; spec §4,
 /// `Typography`), times the text scale.
-fn line_height_px(size: FontSize, multiplier: f32, text_scale: f32) -> f32 {
+fn line_height_px(size: FontSize, multiplier: f32, units: FontUnits) -> f32 {
     let size = match size {
         FontSize::Pt(v) => FontSize::Pt(v * multiplier),
         FontSize::Px(v) => FontSize::Px(v * multiplier),
     };
-    linear_font_px(size, FONT_DPI, text_scale, None)
+    font_px(size, units)
 }
 
 /// A font as 0.7.2 resolves it: its family, size, weight and style stated,
@@ -1964,11 +2163,11 @@ fn font(
     size: FontSize,
     weight: u16,
     color: Option<Color>,
-    text_scale: f32,
+    units: FontUnits,
 ) -> TextStyle {
     let mut font = TextStyle {
         family: Arc::from(family),
-        size_px: font_px(size, text_scale),
+        size_px: font_px(size, units),
         defined_size: Some(size),
         weight,
         style: FontStyle::Normal,
@@ -1984,13 +2183,13 @@ fn font(
 
 /// A text-scale entry as 0.7.2 resolves it: its size, weight and line height
 /// stated, nothing else (0.7.2's `TextScaleEntry`).
-fn text_scale_entry(g: &Generation, size_pt: f32, weight: u16, text_scale: f32) -> TextStyle {
+fn text_scale_entry(g: &Generation, size_pt: f32, weight: u16, units: FontUnits) -> TextStyle {
     let size = FontSize::Pt(size_pt);
     TextStyle {
-        size_px: font_px(size, text_scale),
+        size_px: font_px(size, units),
         defined_size: Some(size),
         weight,
-        line_height: line_height_px(size, g.line_height, text_scale),
+        line_height: line_height_px(size, g.line_height, units),
         stated: TextStated::SIZE_PX | TextStated::WEIGHT | TextStated::LINE_HEIGHT,
         ..TextStyle::default()
     }
@@ -2002,15 +2201,31 @@ fn text_scale_entry(g: &Generation, size_pt: f32, weight: u16, text_scale: f32) 
 /// `resolve_defaults_internal`), the body's line height by the text-scale
 /// rule (spec §4); 0.7.2's text scale as the caption (`caption`), the
 /// headline (`section_heading`), the first title (`dialog_title`) and the
-/// display (`display`). Sizes convert at [`FONT_DPI`] and scale by
-/// `text_scale`; each keeps its unscaled size as its `defined_size`.
-fn typography(g: &Generation, colors: &ColorRoles, text_scale: f32) -> Typography {
+/// display (`display`). Sizes convert at the font DPI and scale by the text
+/// scale (`units`); each keeps its unscaled size as its `defined_size`. The
+/// system's UI font (`ui_font`, 0.7.2's `defaults.font` from
+/// `NSFont.systemFontOfSize`) is laid over the body, and so its size gives
+/// the body's line height; the system's monospaced font (`monospace_font`,
+/// `defaults.mono_font`) over the monospace.
+fn typography(
+    g: &Generation,
+    colors: &ColorRoles,
+    system: Option<&SystemOverrides>,
+    units: FontUnits,
+) -> Typography {
+    let ui = system.and_then(|s| s.ui_font.as_ref());
+    let mono = system.and_then(|s| s.monospace_font.as_ref());
     let body_size = FontSize::Pt(g.font_size_pt);
     let text = colors.window.foreground;
-    let mut body = font(g.font_family, body_size, g.font_weight, text, text_scale);
-    body.line_height = line_height_px(body_size, g.line_height, text_scale);
+    let mut body = laid_over(
+        font(g.font_family, body_size, g.font_weight, text, units),
+        ui,
+        units,
+    );
+    let line_size = ui.and_then(|f| f.size).unwrap_or(body_size);
+    body.line_height = line_height_px(line_size, g.line_height, units);
     body.stated |= TextStated::LINE_HEIGHT;
-    let entry = |size, weight| Some(text_scale_entry(g, size, weight, text_scale));
+    let entry = |size, weight| Some(text_scale_entry(g, size, weight, units));
     Typography {
         display: entry(g.display_size_pt, g.display_weight),
         title1: entry(g.dialog_title_size_pt, g.dialog_title_weight),
@@ -2022,18 +2237,22 @@ fn typography(g: &Generation, colors: &ColorRoles, text_scale: f32) -> Typograph
         callout: None,
         subheadline: None,
         caption: entry(g.caption_size_pt, g.caption_weight),
-        monospace: font(
-            g.mono_family,
-            FontSize::Pt(g.mono_size_pt),
-            g.mono_weight,
-            text,
-            text_scale,
+        monospace: laid_over(
+            font(
+                g.mono_family,
+                FontSize::Pt(g.mono_size_pt),
+                g.mono_weight,
+                text,
+                units,
+            ),
+            mono,
+            units,
         ),
         line_height_multiplier: g.line_height,
         fallbacks: Arc::from([]),
         emoji_family: None,
         rendering: TextRendering::default(),
-        font_dpi: FONT_DPI,
+        font_dpi: units.dpi,
         font_whole_pixels: None,
     }
 }
@@ -2348,11 +2567,19 @@ fn list(
 /// `scrollbar.thumb_color` is `defaults.muted_color` where unstated), with
 /// the hovered handle's fill (`macos-tahoe`: `thumb_hover_color` is
 /// `defaults.muted_color` where unstated, so no rule) and
-/// `macos-monterey`'s pressed one.
-fn scrollbar(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> ScrollbarWidget {
+/// `macos-monterey`'s pressed one. The groove is `groove_width` thick and
+/// the bar overlays the content where `overlay` (the system's scroller
+/// width and style, else the preset's).
+fn scrollbar(
+    c: &SchemeColors,
+    g: &Generation,
+    roles: &ColorRoles,
+    groove_width: f32,
+    overlay: bool,
+) -> ScrollbarWidget {
     let track = across(
         RuleBuilder::new(PartStyle::default()).base([fill(c.scrollbar_track)]),
-        g.scrollbar_groove_width,
+        groove_width,
     )
     .build();
     let thumb = across(
@@ -2375,7 +2602,7 @@ fn scrollbar(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> ScrollbarW
         track,
         thumb,
         g.scrollbar_min_thumb_length,
-        g.scrollbar_overlay,
+        overlay,
     )
 }
 
@@ -2383,12 +2610,15 @@ fn scrollbar(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> ScrollbarW
 /// `tooltip.border` is `defaults.border` where unstated) with
 /// `macos-monterey`'s padding and the preset's greatest width; its text in
 /// the UI font's family, weight and style at the tooltip's size (0.7.2:
-/// `tooltip.font`'s unstated fields are `defaults.font`'s) in its colour.
+/// `tooltip.font`'s unstated fields are `defaults.font`'s) in its colour,
+/// with the system's tooltip font `os` laid over it.
 fn tooltip(
     c: &SchemeColors,
     g: &Generation,
     layout: &LayoutMetrics,
-    text_scale: f32,
+    typography: &Typography,
+    os: Option<&OsFont>,
+    units: FontUnits,
 ) -> TooltipWidget {
     let mut panel = PartStyle::default();
     let padding = g
@@ -2406,15 +2636,19 @@ fn tooltip(
     {
         panel.apply(&prop);
     }
+    let body = &typography.body;
     TooltipWidget::new(
         WidgetOrigin::Native,
         panel,
-        font(
-            g.font_family,
-            FontSize::Pt(g.tooltip_font_size_pt),
-            g.font_weight,
-            Some(c.tooltip_foreground),
-            text_scale,
+        laid_over(
+            resized(
+                label(body, Some(c.tooltip_foreground)),
+                Some(FontSize::Pt(g.tooltip_font_size_pt)),
+                body.weight,
+                units,
+            ),
+            os,
+            units,
         ),
     )
 }
@@ -2425,16 +2659,16 @@ fn tooltip(
 /// `defaults.background_color` and `window.border` `defaults.border` with
 /// `corner_radius_lg` where unstated); the title bar's fill, inactive where
 /// the preset states one (else the active one, 0.7.2's
-/// `resolve_widget_to_widget`); the title in the UI font at the title bar's
-/// weight (0.7.2: `window.title_bar_font` is `defaults.font` where unstated)
-/// in the window's text, active or not (0.7.2:
+/// `resolve_widget_to_widget`); the title `title`, active or not (0.7.2:
 /// `inactive_title_bar_text_color` is `title_bar_font.color` where
-/// unstated). A maximized or full-screen window has no data of its own and
-/// takes the normal window's styles; no caption button is stated.
+/// unstated): the UI font at the title bar's weight (0.7.2:
+/// `window.title_bar_font` is `defaults.font` where unstated) in the
+/// system's title bar text, else the window's, with the system's title-bar
+/// font laid over it. A maximized or full-screen window has no data of its
+/// own and takes the normal window's styles; no caption button is stated.
 fn window(
     c: &SchemeColors,
-    g: &Generation,
-    roles: &ColorRoles,
+    title: TextStyle,
     layout: &LayoutMetrics,
     ctx: &ThemeContext,
 ) -> WindowChrome {
@@ -2461,13 +2695,7 @@ fn window(
         frame,
         title_bar.clone(),
         title_bar,
-        font(
-            g.font_family,
-            FontSize::Pt(g.font_size_pt),
-            g.title_bar_font_weight,
-            roles.window.foreground,
-            ctx.text_scale,
-        ),
+        title,
         RuleBuilder::new(PartStyle::default()).build(),
         RuleBuilder::new(IconStyle::default()).build(),
     )
@@ -2710,8 +2938,9 @@ fn spinner(c: &SchemeColors, g: &Generation) -> SpinnerWidget {
 /// items of `macos-monterey`'s exact height and padding, hovered in the
 /// selection (`menu.hover_background`: `defaults.selection_background` where
 /// unstated); the UI font in the window's text (0.7.2: `menu.font` is
-/// `defaults.font` where unstated), hovered in its own colour, the disabled
-/// text when disabled (`defaults.disabled_text_color`); icons at their size;
+/// `defaults.font` where unstated) with the system's menu font `os` laid over
+/// it, hovered in its own colour, the disabled text when disabled
+/// (`defaults.disabled_text_color`); icons at their size;
 /// separators in the default border colour (`menu.separator_color`:
 /// `defaults.border.color` where unstated). 0.7.2 states no outline,
 /// corners or shadow of the panel.
@@ -2720,6 +2949,8 @@ fn menu(
     g: &Generation,
     roles: &ColorRoles,
     typography: &Typography,
+    os: Option<&OsFont>,
+    units: FontUnits,
 ) -> MenuWidget {
     let panel = RuleBuilder::new(PartStyle::default())
         .base([fill(c.background)])
@@ -2742,7 +2973,7 @@ fn menu(
             [fill(roles.selection.background)],
         )
         .build();
-    let item_label = RuleBuilder::new(label(&typography.body, None))
+    let item_label = RuleBuilder::new(laid_over(label(&typography.body, None), os, units))
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [TextProp::Color(c.menu_hover_foreground)],
@@ -2837,9 +3068,10 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
 /// and width (0.7.2's partial border inheritance: colour and width only); a
 /// selected item in the selection's colours (0.7.2:
 /// `sidebar.selection_background` and `selection_text_color` are the
-/// selection's where unstated); the UI font in the window's text (0.7.2:
-/// `sidebar.font` is `defaults.font` where unstated; `macos-monterey` states
-/// its colour as that inheritance, labelColor). No hover fill (0.7.2:
+/// selection's where unstated); the UI font (0.7.2: `sidebar.font` is
+/// `defaults.font` where unstated) in `macos-monterey`'s own colour, which its
+/// TOML states as labelColor's constant and so keeps under the system's
+/// colours, else in the window's text. No hover fill (0.7.2:
 /// `sidebar.hover_background` unset is the pane's fill, "no tint").
 fn sidebar(
     c: &SchemeColors,
@@ -2856,7 +3088,7 @@ fn sidebar(
             [fill(roles.selection.background)],
         )
         .build();
-    let item_label = RuleBuilder::new(label(&typography.body, None))
+    let item_label = RuleBuilder::new(label(&typography.body, c.sidebar_foreground))
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -3042,7 +3274,7 @@ fn dialog(
     typography: &Typography,
     layout: &LayoutMetrics,
     motion: Motion,
-    text_scale: f32,
+    units: FontUnits,
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
     for prop in [
@@ -3064,12 +3296,11 @@ fn dialog(
     DialogWidget::new(
         WidgetOrigin::Native,
         panel,
-        font(
-            g.font_family,
-            FontSize::Pt(g.alert_title_size_pt),
+        resized(
+            label(&typography.body, roles.window.foreground),
+            Some(FontSize::Pt(g.alert_title_size_pt)),
             g.alert_title_weight,
-            roles.window.foreground,
-            text_scale,
+            units,
         ),
         label(&typography.body, None),
         icon,
