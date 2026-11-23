@@ -12,43 +12,8 @@
 
 use std::fmt::Debug;
 
-use native_theme::ResolutionContext;
-use native_theme::next::{Preset, ThemeContext};
-
-use super::parity::PRESETS;
+use super::parity::{PRESETS, resolve};
 use super::{Mapped, Unmapped};
-
-/// The two resolved themes of `preset` for `is_dark`. The 0.7.2 side is
-/// resolved at the font DPI 0.7.2 resolves the platform's theme at, 72
-/// "where a point is a pixel" for the Apple presets and 96 for the others
-/// (`ResolutionContext::for_tests`), as native-theme's model parity resolves
-/// it (native-theme/src/next/parity.rs, `MACOS_RESOLUTION_CONTEXT`,
-/// `IOS_RESOLUTION_CONTEXT`): a text size is compared in the pixels both
-/// models state it in.
-fn resolve(
-    key: &str,
-    preset: Preset,
-    is_dark: bool,
-) -> crate::Result<(crate::ResolvedTheme, native_theme::next::ResolvedTheme)> {
-    let (mode, ctx) = if is_dark {
-        (crate::ColorMode::Dark, ThemeContext::dark())
-    } else {
-        (crate::ColorMode::Light, ThemeContext::light())
-    };
-    let apple = matches!(
-        preset,
-        Preset::MacosMonterey | Preset::MacosTahoe | Preset::Ios13
-    );
-    let context = ResolutionContext {
-        font_dpi: if apple { 72.0 } else { 96.0 },
-        ..ResolutionContext::for_tests()
-    };
-    let old = crate::Theme::preset(key)?
-        .into_variant(mode)?
-        .into_resolved(&context)?;
-    let new = native_theme::next::Theme::preset(preset).resolve(&ctx);
-    Ok((old, new))
-}
 
 /// A listed difference: the function, the preset's key, the 0.8.0 side's
 /// value it asserts there (its `Debug` form), and why.
@@ -477,7 +442,7 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
     let mut seen = Vec::new();
     for &(key, preset) in PRESETS {
         for is_dark in [false, true] {
-            let (old, new) = resolve(key, preset, is_dark)?;
+            let (old, _, _, new) = resolve(key, preset, is_dark)?;
             let mut p = Pairs {
                 label: format!("{key} {}", if is_dark { "dark" } else { "light" }),
                 preset: key,

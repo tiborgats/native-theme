@@ -775,8 +775,13 @@ rule 0).
 - **The menu's corners.** iced's menu `Style` has one border, whose radius
   rounds both the popup and the highlighted row (`iced_widget` 0.14.2
   `src/overlay/menu.rs`). It is `menu.item`'s corners, the highlight's (spec
-  §5, `menu.border`), so material-3's container shape, `menu.panel`'s
-  corners (docs/platform-facts.md §2.6), is not drawn.
+  §5, `menu.border`), where the theme states them, else `menu.panel`'s. So
+  where the theme states both, the panel's corners are dropped; and on
+  material-3, which states the container's 4 px corners and no item
+  corners (docs/platform-facts.md §2.6, `container-shape`), the popup is
+  drawn with its corners and the highlighted row is rounded by them too,
+  where Material 3 gives that shape to the container alone and its
+  highlight is square.
 - **The scroll bar.** A rail's `border` is one `Border` round all four
   sides (`iced_widget` 0.14.2 `src/scrollable.rs`, `Rail`), so the line
   Breeze draws along the bar's inner edge alone (spec §5, issue #4's

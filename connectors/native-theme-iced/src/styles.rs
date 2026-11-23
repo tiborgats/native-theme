@@ -1336,19 +1336,31 @@ pub(crate) fn button_link_from(
 }
 
 /// The values [`text_input`] and [`text_editor`] each emit, of the field's
-/// [`InputSource`]: the fill, the border and the value of a field at rest,
-/// hovered, focused and disabled, and the two colours every state shares.
-/// The 0.7.2 model states one `InputTheme` for both fields, the multi-line
-/// one's border at rest being its own `text_area.border`; the 0.8.0 model
-/// gives the editor every colour of its own, from `text_area`.
+/// [`InputSource`]: the fill, the border and the value of a field at rest
+/// and disabled, the hovered and focused fields' strokes, and the two
+/// colours every state shares. The 0.7.2 model states one `InputTheme` for
+/// both fields, the multi-line one's border at rest being its own
+/// `text_area.border`; the 0.8.0 model gives the editor every colour of its
+/// own, from `text_area`.
 #[derive(Clone, Copy)]
 struct InputColors {
     active: (Color, Border, Color),
-    hovered: (Color, Border, Color),
-    focused: (Color, Border, Color),
+    border: Outline,
+    hover_line: Option<Line>,
+    focus_line: Option<Line>,
+    /// The focused field's border where an inset focus ring is drawn as
+    /// it.
+    focus_ring: Option<Border>,
     disabled: (Color, Border, Color),
     placeholder: Color,
     selection: Color,
+}
+
+/// Whether a focus ring `width` wide at `offset` from the field's edge is
+/// inset at that edge (offset minus the width: libadwaita's), which iced
+/// draws as the field's border.
+fn inset_ring(width: f32, offset: f32) -> bool {
+    width > 0.0 && offset == -width
 }
 
 impl InputColors {
@@ -1360,10 +1372,7 @@ impl InputColors {
         let text = i.text;
         let opacity = i.disabled_opacity;
 
-        // Both border soft options fall back to the border's own color: the
-        // platform saying the field does not change outline in that state.
         let border = i.border;
-        let outlined = |line: Option<Line>| border.with(line).over(idle);
         // An inset focus ring (offset -width: libadwaita's `outline-offset:
         // -$width`, `docs/platform-facts.md` §2.1.5) lies inside the field's
         // edge, where iced paints a border (`renderer::Quad { bounds, border,
@@ -1376,18 +1385,15 @@ impl InputColors {
         // outside the edge (offset 0 or more: Windows' +1), straddles it
         // (macOS's -1 with width 3, KDE's -1 with width 2) or lies inside it
         // with a gap (an offset below minus the width) is not a border iced
-        // can draw; there a focused field recolours its rest line, and
-        // `crate::focus_ring` draws the ring round the field it wraps.
+        // can draw; there a focused field takes its focused stroke
+        // ([`Self::focused`]), and `crate::focus_ring` draws the ring round
+        // the field it wraps.
         let focus_color = i.focus_border_color.map_or(i.focus_ring_color, |l| l.color);
-        let focused = if i.focus_ring_width > 0.0 && i.focus_ring_offset == -i.focus_ring_width {
-            Border {
-                color: composite_over(focus_color, idle),
-                width: border.width.max(i.focus_ring_width),
-                radius: border.radius,
-            }
-        } else {
-            outlined(i.focus_border_color)
-        };
+        let focus_ring = inset_ring(i.focus_ring_width, i.focus_ring_offset).then(|| Border {
+            color: composite_over(focus_color, idle),
+            width: border.width.max(i.focus_ring_width),
+            radius: border.radius,
+        });
         // A field the theme states no opacity for is faded as iced's own
         // disabled field is: not at all (iced_widget 0.14.2
         // `src/text_input.rs`, `default`, `Status::Disabled`).
@@ -1396,8 +1402,10 @@ impl InputColors {
 
         Self {
             active: (idle, border.over(idle), text),
-            hovered: (idle, outlined(i.hover_border_color), text),
-            focused: (idle, focused, text),
+            border,
+            hover_line: i.hover_border_color,
+            focus_line: i.focus_border_color,
+            focus_ring,
             disabled: (
                 fade(disabled),
                 Border {
@@ -1409,6 +1417,31 @@ impl InputColors {
             placeholder: i.placeholder,
             selection: i.selection,
         }
+    }
+
+    /// The hovered field: its fill and value at rest, and its stroke where
+    /// the theme states one for the state, else the border as
+    /// [`Outline::in_state`] gives it against `iced`, iced's own field's
+    /// border at rest and hovered.
+    fn hovered(&self, iced: (Border, Border)) -> (Color, Border, Color) {
+        let (idle, _, text) = self.active;
+        (
+            idle,
+            self.border.in_state(self.hover_line, idle, iced),
+            text,
+        )
+    }
+
+    /// The focused field: its fill and value at rest, and the inset focus
+    /// ring drawn as its border, else its stroke where the theme states one
+    /// for the state, else the border as [`Outline::in_state`] gives it
+    /// against `iced`, iced's own field's border at rest and focused.
+    fn focused(&self, iced: (Border, Border)) -> (Color, Border, Color) {
+        let (idle, _, text) = self.active;
+        let border = self
+            .focus_ring
+            .unwrap_or_else(|| self.border.in_state(self.focus_line, idle, iced));
+        (idle, border, text)
     }
 }
 
@@ -1433,21 +1466,30 @@ pub(crate) struct InputSource {
 
 impl InputSource {
     /// The 0.7.2 model's reads: `input.*` with `border` as the field's
-    /// border.
+    /// border. 0.7.2's field keeps its line at rest in a state it states no
+    /// border colour for (its hovered and focused colours are soft
+    /// options), but under an inset focus ring, which takes the ring's
+    /// colour.
     pub(crate) fn of(
         i: &ResolvedInputTheme,
         border: &ResolvedWidgetBorder,
         d: &ResolvedDefaults,
     ) -> Self {
+        let border = Outline::of(border);
+        let line = |c: Rgba| Line::outside(to_color(c));
+        let inset = inset_ring(d.focus_ring_width, d.focus_ring_offset);
         Self {
             background: to_color(i.background_color),
             disabled_background: i.disabled_background.map(to_color),
             text: to_color(i.font.color),
             disabled_text: to_color(i.disabled_text_color),
             disabled_opacity: Some(i.disabled_opacity),
-            border: Outline::of(border),
-            hover_border_color: i.hover_border_color.map(|c| Line::outside(to_color(c))),
-            focus_border_color: i.focus_border_color.map(|c| Line::outside(to_color(c))),
+            border,
+            hover_border_color: Some(i.hover_border_color.map_or(border.line, line)),
+            focus_border_color: i
+                .focus_border_color
+                .map(line)
+                .or((!inset).then_some(border.line)),
             focus_ring_color: to_color(d.focus_ring_color),
             focus_ring_width: d.focus_ring_width,
             focus_ring_offset: d.focus_ring_offset,
@@ -1456,15 +1498,17 @@ impl InputSource {
         }
     }
 
-    /// Every stroke where it lies `align`, for the parity test's expected
-    /// values.
+    /// Every stroke where it lies as `listed` says, and the hovered and the
+    /// focused stroke unset where it names them, for the parity test's
+    /// expected values.
     #[cfg(test)]
-    pub(crate) fn aligned(self, align: LineAlign) -> Self {
-        let line = |l: Option<Line>| l.map(|l| l.aligned(align));
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let (align, s) = (listed.align, listed.states);
+        let line = |l: Option<Line>, unset: bool| l.map(|l| l.aligned(align)).filter(|_| !unset);
         Self {
             border: self.border.aligned(align),
-            hover_border_color: line(self.hover_border_color),
-            focus_border_color: line(self.focus_border_color),
+            hover_border_color: line(self.hover_border_color, s.hover_stroke),
+            focus_border_color: line(self.focus_border_color, s.focus_stroke),
             ..self
         }
     }
@@ -1516,13 +1560,19 @@ pub(crate) fn text_input_from(
 
     move |theme, status| {
         let iced = iced_widget::text_input::default(theme, status);
+        let own = || {
+            (
+                iced_widget::text_input::default(theme, Status::Active).border,
+                iced.border,
+            )
+        };
         let (background, border, value) = match status {
             Status::Active => input.active,
-            Status::Hovered => input.hovered,
+            Status::Hovered => input.hovered(own()),
             // A field that is focused *and* hovered takes the focus border,
             // as iced's own default does: its `Focused` arm ignores
             // `is_hovered` (`text_input.rs:1783-1789`).
-            Status::Focused { is_hovered: _ } => input.focused,
+            Status::Focused { is_hovered: _ } => input.focused(own()),
             Status::Disabled => input.disabled,
         };
         Style {
@@ -1571,13 +1621,19 @@ pub(crate) fn text_editor_from(
 
     let input = InputColors::new(s);
 
-    move |_theme, status| {
+    move |theme, status| {
+        let own = || {
+            (
+                iced_widget::text_editor::default(theme, Status::Active).border,
+                iced_widget::text_editor::default(theme, status).border,
+            )
+        };
         let (background, border, value) = match status {
             Status::Active => input.active,
-            Status::Hovered => input.hovered,
+            Status::Hovered => input.hovered(own()),
             // Focused and hovered takes the focus border here too, as iced's
             // own default does (`text_editor.rs:1490`).
-            Status::Focused { is_hovered: _ } => input.focused,
+            Status::Focused { is_hovered: _ } => input.focused(own()),
             Status::Disabled => input.disabled,
         };
         Style {
@@ -3537,8 +3593,9 @@ pub(crate) struct SegmentedSource {
     pub label: Color,
     /// The control's outline, its stroke laid over the group fill.
     pub border: Outline,
-    /// The line between two segments, as stated.
-    pub separator: Color,
+    /// The line between two segments, as stated; `None` where the theme
+    /// states no line, which is then drawn as none.
+    pub separator: Option<Color>,
     pub active_background: Color,
     pub active_text_color: Color,
     /// An unselected segment's fill under the pointer, painted as given over
@@ -3565,7 +3622,7 @@ impl SegmentedSource {
             background: to_color(s.background_color),
             label: to_color(s.font.color),
             border: Outline::of(&s.border),
-            separator: to_color(s.border.color),
+            separator: Some(to_color(s.border.color)),
             active_background: to_color(s.active_background),
             active_text_color: to_color(s.active_text_color),
             hover_background: s.hover_background.map(to_color),
@@ -3696,10 +3753,11 @@ pub(crate) fn segment_separator_from(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
-    let line = SegmentedFade::of(s, disabled).over_group(s.separator);
+    let fade = SegmentedFade::of(s, disabled);
+    let line = s.separator.map(|color| fade.over_group(color));
 
     move |_theme| Style {
-        background: Some(Background::Color(line)),
+        background: line.map(Background::Color),
         ..Style::default()
     }
 }

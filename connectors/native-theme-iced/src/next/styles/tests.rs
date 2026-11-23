@@ -6,8 +6,8 @@ use std::sync::Arc;
 use iced_core::Background;
 use iced_core::Color as IcedColor;
 use native_theme::next::{
-    ButtonRule, ButtonVariant, CheckboxRule, Color, Corners, ExpanderRule, InputRule, LinkRule,
-    MenuRule, Paint, PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme,
+    ButtonRule, ButtonVariant, CheckboxRule, Color, ComboBoxRule, Corners, ExpanderRule, InputRule,
+    LinkRule, MenuRule, Paint, PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme,
     ScrollbarRule, SegmentedControlRule, ShadowLayer, SliderRule, Stroke, StrokeAlign, SwitchRule,
     TextPatch, TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
 };
@@ -1042,6 +1042,43 @@ fn a_segment_separator_is_the_separator_parts_fill_where_stated() -> TestResult 
     Ok(())
 }
 
+/// A track stated with no stroke and no separator fill gives no line
+/// between two segments, and the control and its segments are drawn.
+#[test]
+fn a_track_with_no_stroke_and_no_separator_fill_has_no_separator_line() -> TestResult {
+    use iced_widget::button::Status;
+    let patch = ThemePatch::new().segmented_control(
+        SegmentedControlRule::new().track(PartPatch::new().stroke(Stroke::None)),
+    );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        assert!(
+            !r.segmented_control
+                .separator(WidgetState::NONE)
+                .stated
+                .contains(PartStated::FILL),
+            "{preset:?}: no separator fill stated"
+        );
+        let separator = super::segment_separator(&r, false)?(&theme);
+        assert_eq!(separator.background, None, "{preset:?}");
+        assert_eq!(
+            super::segmented_control(&r, false)?(&theme).border.width,
+            0.0,
+            "{preset:?}"
+        );
+        let segment = super::segment(&r, true, crate::styles::SegmentPosition::Only)?;
+        assert_eq!(
+            background_color(segment(&theme, Status::Active).background),
+            Some(fill(
+                &r.segmented_control.segment(WidgetState::SELECTED),
+                "segment(SELECTED).fill"
+            )?),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
 /// A segmented control whose theme states no disabled opacity is drawn
 /// disabled in the colours it states.
 #[test]
@@ -1068,5 +1105,242 @@ fn a_segmented_control_with_no_disabled_opacity_is_drawn_as_stated() -> TestResu
             assert_eq!(disabled.text_color, active.text_color, "{preset:?}");
         }
     }
+    Ok(())
+}
+
+/// The expected value of a property the theme states nothing for in a
+/// status (spec §10, rule 0): iced's own in the status (`own`) where it
+/// differs from iced's own at rest (`own_rest`), counted in `iceds`; else
+/// the theme's at rest (`rest`).
+fn unstated<T: PartialEq>(rest: T, own_rest: T, own: T, iceds: &mut usize) -> T {
+    if own == own_rest {
+        rest
+    } else {
+        *iceds += 1;
+        own
+    }
+}
+
+/// A switch's thumb under the pointer is iced's own where no rule states
+/// the thumb's fill for the state and iced changes it (iced_widget 0.14.2
+/// `toggler::default`: the toggled thumb at half alpha, the other
+/// `background.weak`).
+#[test]
+fn a_switch_thumb_no_hover_rule_states_is_iceds_own() -> TestResult {
+    use iced_widget::toggler::Status;
+    let patch = ThemePatch::new()
+        .switch(SwitchRule::new().thumb(PartPatch::new().fill(Paint::Solid(DISTINCT))));
+    let mut iceds = 0;
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::toggler(&r)?;
+        for is_toggled in [false, true] {
+            let (active, hovered) = (
+                Status::Active { is_toggled },
+                Status::Hovered { is_toggled },
+            );
+            let expected = unstated(
+                style(&theme, active).foreground,
+                iced_widget::toggler::default(&theme, active).foreground,
+                iced_widget::toggler::default(&theme, hovered).foreground,
+                &mut iceds,
+            );
+            assert_eq!(
+                style(&theme, hovered).foreground,
+                expected,
+                "{preset:?} {is_toggled}"
+            );
+        }
+    }
+    assert!(iceds > 0, "iced's own thumb covered");
+    Ok(())
+}
+
+/// A slider's filled rail under the pointer and dragged is iced's own where
+/// no rule states the filled rail's fill for the state (iced_widget 0.14.2
+/// `slider::default`: `primary.strong` and `primary.weak`).
+#[test]
+fn a_slider_rail_no_state_rule_states_is_iceds_own() -> TestResult {
+    use iced_widget::slider::Status;
+    let patch = ThemePatch::new()
+        .slider(SliderRule::new().active_track(PartPatch::new().fill(Paint::Solid(DISTINCT))));
+    let mut iceds = 0;
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::slider(&r)?;
+        let own_rest = iced_widget::slider::default(&theme, Status::Active);
+        for status in [Status::Hovered, Status::Dragged] {
+            let expected = unstated(
+                style(&theme, Status::Active).rail.backgrounds.0,
+                own_rest.rail.backgrounds.0,
+                iced_widget::slider::default(&theme, status)
+                    .rail
+                    .backgrounds
+                    .0,
+                &mut iceds,
+            );
+            assert_eq!(
+                style(&theme, status).rail.backgrounds.0,
+                expected,
+                "{preset:?} {status:?}"
+            );
+        }
+    }
+    assert!(iceds > 0, "iced's own rail covered");
+    Ok(())
+}
+
+/// An open drop-down's border is iced's own colour where no rule states the
+/// field's stroke for the state (iced_widget 0.14.2 `pick_list::default`:
+/// `primary.strong`), its width and corners the theme's at rest, which
+/// iced does not change.
+#[test]
+fn an_open_drop_down_no_open_rule_states_is_iceds_own() -> TestResult {
+    use iced_widget::pick_list::Status;
+    let patch = ThemePatch::new()
+        .combo_box(ComboBoxRule::new().field(PartPatch::new().stroke(Stroke::uniform(1.0, LABEL))));
+    let open = Status::Opened { is_hovered: false };
+    let mut iceds = 0;
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::pick_list(&r)?;
+        let rest = style(&theme, Status::Active).border;
+        let color = unstated(
+            rest.color,
+            iced_widget::pick_list::default(&theme, Status::Active)
+                .border
+                .color,
+            iced_widget::pick_list::default(&theme, open).border.color,
+            &mut iceds,
+        );
+        assert_eq!(
+            style(&theme, open).border,
+            iced_core::Border { color, ..rest },
+            "{preset:?}"
+        );
+    }
+    assert!(iceds > 0, "iced's own open border covered");
+    Ok(())
+}
+
+/// A menu's highlighted item is iced's own fill and label where no rule
+/// states the item's fill or its label's colour for `HOVER` (iced_widget
+/// 0.14.2 `overlay::menu::default`: `primary.strong`).
+#[test]
+fn a_menu_item_no_hover_rule_states_is_iceds_own() -> TestResult {
+    let patch = ThemePatch::new().menu(
+        MenuRule::new()
+            .item(PartPatch::new().fill(Paint::Solid(DISTINCT)))
+            .item_label(TextPatch::new().color(LABEL)),
+    );
+    let (mut fills, mut labels) = (0, 0);
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let own = iced_widget::overlay::menu::default(&theme);
+        let style = super::menu(&r)?(&theme);
+        let background = unstated(
+            style.background,
+            own.background,
+            own.selected_background,
+            &mut fills,
+        );
+        let label = unstated(
+            style.text_color,
+            own.text_color,
+            own.selected_text_color,
+            &mut labels,
+        );
+        assert_eq!(style.selected_background, background, "{preset:?}");
+        assert_eq!(style.selected_text_color, label, "{preset:?}");
+    }
+    assert!(fills > 0 && labels > 0, "iced's own fill and label covered");
+    Ok(())
+}
+
+/// An `iced_aw` tab, sidebar item and list row under the pointer take, of
+/// `iced_aw`'s own, what it changes for the status where no rule states the
+/// part's fill or label for `HOVER` (iced_aw 0.14.1 `tab_bar::primary` and
+/// `sidebar::primary` against a tab at rest, which they style as
+/// `Disabled`: the fill; `selection_list::primary` against `Active`: the
+/// fill and the label), and keep the theme's value at rest for the rest.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_tab_sidebar_and_list_no_hover_rule_states_are_iced_aws_own() -> TestResult {
+    use iced_aw::style::Status;
+    use native_theme::next::{ListRule, SidebarRule, TabRule};
+    let patch = ThemePatch::new()
+        .tab(
+            TabRule::new()
+                .tab(PartPatch::new().fill(Paint::Solid(DISTINCT)))
+                .label(TextPatch::new().color(LABEL)),
+        )
+        .sidebar(SidebarRule::new().item(PartPatch::new().fill(Paint::Solid(DISTINCT))))
+        .list(
+            ListRule::new()
+                .highlight(PartPatch::new().fill(Paint::Solid(DISTINCT)))
+                .item_label(TextPatch::new().color(LABEL)),
+        );
+    let mut iceds = [0; 5];
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let [tab_fill, tab_label, sidebar_fill, list_fill, list_label] = &mut iceds;
+
+        let tab = super::aw::tab_bar(&r)?;
+        let (rest, now) = (tab(&theme, Status::Disabled), tab(&theme, Status::Hovered));
+        let own_rest = iced_aw::style::tab_bar::primary(&theme, Status::Disabled);
+        let own = iced_aw::style::tab_bar::primary(&theme, Status::Hovered);
+        let fill = unstated(
+            rest.tab_label_background,
+            own_rest.tab_label_background,
+            own.tab_label_background,
+            tab_fill,
+        );
+        let label = unstated(
+            rest.text_color,
+            own_rest.text_color,
+            own.text_color,
+            tab_label,
+        );
+        assert_eq!(now.tab_label_background, fill, "{preset:?}");
+        assert_eq!(now.text_color, label, "{preset:?}");
+
+        let sidebar = super::aw::sidebar(&r)?;
+        let fill = unstated(
+            sidebar(&theme, Status::Disabled).tab_label_background,
+            iced_aw::style::sidebar::primary(&theme, Status::Disabled).tab_label_background,
+            iced_aw::style::sidebar::primary(&theme, Status::Hovered).tab_label_background,
+            sidebar_fill,
+        );
+        assert_eq!(
+            sidebar(&theme, Status::Hovered).tab_label_background,
+            fill,
+            "{preset:?}"
+        );
+
+        let list = super::aw::selection_list(&r)?;
+        let (rest, now) = (list(&theme, Status::Active), list(&theme, Status::Hovered));
+        let own_rest = iced_aw::style::selection_list::primary(&theme, Status::Active);
+        let own = iced_aw::style::selection_list::primary(&theme, Status::Hovered);
+        let fill = unstated(
+            rest.background,
+            own_rest.background,
+            own.background,
+            list_fill,
+        );
+        let label = unstated(
+            rest.text_color,
+            own_rest.text_color,
+            own.text_color,
+            list_label,
+        );
+        assert_eq!(now.background, fill, "{preset:?}");
+        assert_eq!(now.text_color, label, "{preset:?}");
+    }
+    let [tab_fill, tab_label, sidebar_fill, list_fill, list_label] = iceds;
+    assert!(
+        tab_fill > 0 && sidebar_fill > 0 && list_fill > 0 && list_label > 0,
+        "iced_aw's own hovered fills and list label covered: {iceds:?}"
+    );
+    assert_eq!(tab_label, 0, "iced_aw changes no hovered tab label");
     Ok(())
 }

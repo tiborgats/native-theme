@@ -269,19 +269,12 @@ impl MenuSource {
         }
     }
 
-    /// The frame's stroke where it lies as `listed` says, and the frame
-    /// rounded by `default_radius` (0.7.2's `defaults.border.corner_radius`)
-    /// where it says the menu's panel states that radius as its own, for the
-    /// parity test's expected values.
+    /// The frame's stroke where it lies as `listed` says, for the parity
+    /// test's expected values.
     #[cfg(test)]
-    pub(crate) fn listed(self, listed: crate::next::parity::Listed, default_radius: f32) -> Self {
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
         Self {
             frame_line: self.frame_line.map(|l| l.aligned(listed.align)),
-            frame_radius: if listed.menu_corners {
-                Some(default_radius)
-            } else {
-                self.frame_radius
-            },
             ..self
         }
     }

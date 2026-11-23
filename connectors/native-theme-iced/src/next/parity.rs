@@ -7,7 +7,8 @@
 //! Presets covered: kde-breeze, adwaita, windows-11, macos-monterey,
 //! macos-tahoe, material-3 and ios-13, light and dark ([`PRESETS`]). The
 //! 0.7.2 side is resolved as the connector's tests resolve it
-//! (`ResolutionContext::for_tests`), with no accessibility scaling; the
+//! (`ResolutionContext::for_tests`), with no accessibility scaling, at the
+//! font DPI native-theme's model parity resolves it at ([`resolve`]); the
 //! 0.8.0 side for the scheme's default context, whose text scale is 1.
 //!
 //! The form of comparison per iced type the connector produces:
@@ -83,21 +84,17 @@ struct Difference {
 /// How a listed style function's 0.8.0 side differs from the 0.7.2 side:
 /// where its strokes lie, which of its state options the 0.8.0 theme
 /// leaves to iced, whether it leaves the corners or the stroke and its
-/// width to iced, whether it rounds a menu's popup by the menu's own
-/// corners, and what it states that 0.7.2 has no field for. The expected
-/// value is the 0.7.2 side's output with its strokes laid there, those
-/// options unset, the menu's popup rounded by 0.7.2's
-/// `menu.border.corner_radius` and the added property's value laid in.
+/// width to iced, and what it states that 0.7.2 has no field for. The
+/// expected value is the 0.7.2 side's output with its strokes laid there,
+/// those options unset and the added property's value laid in.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Listed {
     pub align: LineAlign,
     pub states: States,
     pub iced_corners: bool,
-    // The two read by the `iced_aw` sources alone.
+    // Read by the `iced_aw` sources alone.
     #[cfg_attr(not(feature = "iced_aw"), allow(dead_code))]
     pub iced_stroke: bool,
-    #[cfg_attr(not(feature = "iced_aw"), allow(dead_code))]
-    pub menu_corners: bool,
     pub added: Added,
 }
 
@@ -122,8 +119,9 @@ pub(crate) enum Added {
 /// The state options of a style function's source that the 0.8.0 theme
 /// states nothing for (spec §2, `from_state`), each then as
 /// [`crate::styles::in_state`] gives it: the hovered and the pressed fill,
-/// stroke and label, an open drop-down's stroke, a switch's hovered thumb
-/// and a slider's filled rail under the pointer and dragged.
+/// stroke and label, a focused field's and an open drop-down's stroke, a
+/// switch's hovered thumb and a slider's filled rail under the pointer and
+/// dragged.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct States {
     pub hover_fill: bool,
@@ -132,6 +130,7 @@ pub(crate) struct States {
     pub pressed_fill: bool,
     pub pressed_stroke: bool,
     pub pressed_label: bool,
+    pub focus_stroke: bool,
     pub open_stroke: bool,
     pub hover_thumb: bool,
     pub rail: bool,
@@ -146,6 +145,7 @@ impl States {
         pressed_fill: false,
         pressed_stroke: false,
         pressed_label: false,
+        focus_stroke: false,
         open_stroke: false,
         hover_thumb: false,
         rail: false,
@@ -161,7 +161,6 @@ impl Listed {
             states: States::STATED,
             iced_corners: false,
             iced_stroke: false,
-            menu_corners: false,
             added: Added::Nothing,
         }
     }
@@ -209,7 +208,6 @@ const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Differe
             states: States::STATED,
             iced_corners: false,
             iced_stroke: false,
-            menu_corners: false,
             added: Added::Nothing,
         },
         reason: &[INSIDE],
@@ -283,7 +281,6 @@ const fn aw(
             states,
             iced_corners: own.1,
             iced_stroke: own.0,
-            menu_corners: false,
             added: Added::Nothing,
         },
         reason,
@@ -361,7 +358,6 @@ const fn hover(
             states,
             iced_corners: false,
             iced_stroke: false,
-            menu_corners: false,
             added: Added::Nothing,
         },
         reason: match align {
@@ -414,6 +410,58 @@ const fn open(presets: &'static [&'static str], align: LineAlign, states: States
             (LineAlign::Center, _) => &[CENTER, HOVER, OPEN],
         },
         ..hovered
+    }
+}
+
+/// The reason of a hovered text field whose stroke the 0.8.0 theme states
+/// nothing for.
+const FIELD_HOVER: &str = "the theme states no stroke for the hovered field: 0.7.2 leaves \
+     input.hover_border_color unset (docs/inheritance-rules.toml, [no_inheritance]), which its \
+     connector drew as the field's border at rest; the 0.8.0 theme has no rule for HOVER that \
+     states input.field's or text_area.field's stroke (the from_state bit clear when queried \
+     with HOVER alone), and iced's own text input and text editor recolour the hovered \
+     field's border (iced_widget 0.14.2 src/text_input.rs and src/text_editor.rs, fn \
+     default: background.base.text), so its colour is iced's own for the status, its width \
+     and corners the theme's at rest (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+
+/// The reason of a focused text field whose stroke the 0.8.0 theme states
+/// nothing for.
+const FIELD_FOCUS: &str = "nor for the focused field: 0.7.2 leaves input.focus_border_color \
+     unset (docs/inheritance-rules.toml, [no_inheritance]), which its connector drew as the \
+     field's border at rest where the focus ring is no inset border (the macOS ring, 3 wide \
+     at offset -1, straddles the edge and crate::focus_ring draws it); the 0.8.0 theme has no \
+     rule for FOCUSED that states the field's stroke, and iced's own text input and text \
+     editor recolour the focused field's border (iced_widget 0.14.2 src/text_input.rs and \
+     src/text_editor.rs, fn default: primary.strong), so its colour is iced's own for the \
+     status";
+
+/// A text field whose hovered stroke, and with `focus` its focused one,
+/// the theme states nothing for on `presets`, its strokes laid at `align`.
+const fn field(
+    leaf: &'static str,
+    presets: &'static [&'static str],
+    align: LineAlign,
+    focus: bool,
+) -> Difference {
+    Difference {
+        leaf,
+        presets,
+        listed: Listed {
+            states: States {
+                hover_stroke: true,
+                focus_stroke: focus,
+                ..States::STATED
+            },
+            ..Listed::aligned(align)
+        },
+        reason: match (align, focus) {
+            (LineAlign::Outside, false) => &[FIELD_HOVER],
+            (LineAlign::Outside, true) => &[FIELD_HOVER, FIELD_FOCUS],
+            (LineAlign::Inside, false) => &[INSIDE, FIELD_HOVER],
+            (LineAlign::Inside, true) => &[INSIDE, FIELD_HOVER, FIELD_FOCUS],
+            (LineAlign::Center, false) => &[CENTER, FIELD_HOVER],
+            (LineAlign::Center, true) => &[CENTER, FIELD_HOVER, FIELD_FOCUS],
+        },
     }
 }
 
@@ -533,9 +581,14 @@ const DIFFERENCES: &[Difference] = &[
     inside("button_danger", MACOS),
     inside("button_success", MACOS),
     inside("button_warning", MACOS),
-    // input.field(NONE) and text_area.field(NONE).
-    inside("text_input", MACOS),
-    inside("text_editor", MACOS),
+    // input.field(NONE) and text_area.field(NONE), the macOS presets'
+    // inside the box; input.field(HOVER), text_area.field(HOVER) and
+    // (FOCUSED): adwaita states no hovered stroke, the macOS presets
+    // neither a hovered nor a focused one.
+    field("text_input", &["adwaita"], LineAlign::Outside, false),
+    field("text_editor", &["adwaita"], LineAlign::Outside, false),
+    field("text_input", MACOS, LineAlign::Inside, true),
+    field("text_editor", MACOS, LineAlign::Inside, true),
     // tooltip.panel, dialog.panel, progress_bar.track(NONE).
     inside("tooltip", MACOS_WINDOWS),
     inside("dialog", MACOS_WINDOWS),
@@ -552,7 +605,6 @@ const DIFFERENCES: &[Difference] = &[
             states: States::STATED,
             iced_corners: false,
             iced_stroke: false,
-            menu_corners: false,
             added: Added::Nothing,
         },
         reason: &[CENTER],
@@ -700,7 +752,6 @@ const DIFFERENCES: &[Difference] = &[
             },
             iced_corners: false,
             iced_stroke: false,
-            menu_corners: false,
             added: Added::Nothing,
         },
         reason: &[PRESSED_THUMB],
@@ -717,7 +768,6 @@ const DIFFERENCES: &[Difference] = &[
             },
             iced_corners: false,
             iced_stroke: false,
-            menu_corners: false,
             added: Added::Nothing,
         },
         reason: &[PRESSED_THUMB, INHERITED_THUMB_HOVER],
@@ -762,7 +812,7 @@ const DIFFERENCES: &[Difference] = &[
         &[CARD_STROKE, CARD_CORNERS],
     ),
     // iced_aw: the menu's frame, popover.panel's stroke over menu.panel's
-    // fill; ios-13's menu.panel(NONE).corners.
+    // fill.
     inside(
         "aw::menu",
         &["adwaita", "windows-11", "macos-monterey", "macos-tahoe"],
@@ -945,8 +995,14 @@ fn debug_diff(old: &str, new: &str) -> String {
 }
 
 /// The two resolved themes of `preset` for `is_dark`, and 0.7.2's name and
-/// mode, which its theme holds beside the variants.
-fn resolve(
+/// mode, which its theme holds beside the variants. The 0.7.2 side is
+/// resolved at the font DPI 0.7.2 resolves the platform's theme at, 72
+/// "where a point is a pixel" for the Apple presets and 96 for the others
+/// (`ResolutionContext::for_tests`), as native-theme's model parity resolves
+/// it (native-theme/src/next/parity.rs, `MACOS_RESOLUTION_CONTEXT`,
+/// `IOS_RESOLUTION_CONTEXT`): a text size is compared in the pixels both
+/// models state it in.
+pub(crate) fn resolve(
     key: &str,
     preset: Preset,
     is_dark: bool,
@@ -961,11 +1017,17 @@ fn resolve(
     } else {
         (ColorMode::Light, ThemeContext::light())
     };
+    let apple = matches!(
+        preset,
+        Preset::MacosMonterey | Preset::MacosTahoe | Preset::Ios13
+    );
+    let context = native_theme::ResolutionContext {
+        font_dpi: if apple { 72.0 } else { 96.0 },
+        ..native_theme::ResolutionContext::for_tests()
+    };
     let theme = crate::Theme::preset(key)?;
     let name = theme.name.to_string();
-    let old = theme
-        .into_variant(mode)?
-        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let old = theme.into_variant(mode)?.into_resolved(&context)?;
     let new = native_theme::next::Theme::preset(preset).resolve(&ctx);
     Ok((old, name, mode, new))
 }
@@ -1186,13 +1248,13 @@ fn compare_styles(
             Status::Disabled,
         ];
         let i = InputSource::of(&old.input, &old.input.border, &old.defaults);
-        style!(
+        listed_style!(
             report,
             themes,
             "text_input",
             o::text_input(old),
             n::text_input(new),
-            |a| o::text_input_from(&i.aligned(a)),
+            |l: Listed| o::text_input_from(&i.listed(l)),
             field
         );
     }
@@ -1206,13 +1268,13 @@ fn compare_styles(
             Status::Disabled,
         ];
         let i = InputSource::of(&old.input, &old.text_area.border, &old.defaults);
-        style!(
+        listed_style!(
             report,
             themes,
             "text_editor",
             o::text_editor(old),
             n::text_editor(new),
-            |a| o::text_editor_from(&i.aligned(a)),
+            |l: Listed| o::text_editor_from(&i.listed(l)),
             field
         );
     }
@@ -1760,10 +1822,7 @@ fn compare_aw(
         "aw::menu",
         leaves(o::menu(old), aw_leaves::menu),
         n::menu(new).map(|f| leaves(f, aw_leaves::menu)),
-        |l: Listed| leaves(
-            o::menu_from(&menu.listed(l, old.defaults.border.corner_radius)),
-            aw_leaves::menu
-        ),
+        |l: Listed| leaves(o::menu_from(&menu.listed(l)), aw_leaves::menu),
         statuses
     );
     let tab = TabBarSource::of(old);

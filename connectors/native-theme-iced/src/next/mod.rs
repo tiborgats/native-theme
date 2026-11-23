@@ -748,8 +748,8 @@ pub fn text_area_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
 /// (`combo_box.field(NONE)`), iced's `button::DEFAULT_PADDING` side where
 /// the theme states none, the right side widened to centre the chevron
 /// (`combo_box.chevron(NONE).size`) in its column
-/// (`combo_box.arrow_area_width`) where the theme states both the column
-/// and the right side.
+/// (`combo_box.arrow_area_width`) where the theme states the column, the
+/// right side and the chevron's size.
 ///
 /// # Errors
 ///
@@ -763,14 +763,14 @@ pub fn combo_box_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
         iced_widget::button::DEFAULT_PADDING,
         "combo_box.field(NONE).stroke.width",
     )?;
-    let chevron = c.chevron(WidgetState::NONE);
     Ok(
         match (
             field.stated.contains(PartStated::PADDING_RIGHT),
             c.arrow_area_width,
+            chevron_size(r),
         ) {
-            (true, Some(column)) => {
-                pad.right(pad.right + crate::arrow_column_margin(column, chevron.size))
+            (true, Some(column), Some(chevron)) => {
+                pad.right(pad.right + crate::arrow_column_margin(column, chevron))
             }
             _ => pad,
         },

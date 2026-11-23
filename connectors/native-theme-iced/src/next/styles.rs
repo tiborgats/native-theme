@@ -355,7 +355,11 @@ macro_rules! input_source {
     }};
 }
 
-/// [`crate::styles::text_input`].
+/// [`crate::styles::text_input`]: a hovered or focused field's stroke the
+/// theme states nothing for is iced's own field's (`text_input::default`
+/// recolours the border under the pointer and when focused), its width and
+/// corners the theme's at rest (spec §2, `from_state`); an inset focus ring
+/// is still drawn as the focused field's border.
 ///
 /// # Errors
 ///
@@ -368,7 +372,9 @@ pub fn text_input(
     Ok(old::text_input_from(&input_source!(r, input, "input")?))
 }
 
-/// [`crate::styles::text_editor`]: the text area's own colours and border.
+/// [`crate::styles::text_editor`]: the text area's own colours and border,
+/// a hovered or focused stroke the theme states nothing for as
+/// [`text_input`]'s, against iced's own `text_editor::default`.
 ///
 /// # Errors
 ///
@@ -599,13 +605,14 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
             |p| edge(p, "switch.track(DISABLED|CHECKED).stroke"),
         )?
         .flatten(),
-        disabled_unchecked_track_border: flagged(
-            &s.track(disabled),
-            &s.track(disabled),
-            PartStated::STROKE,
-            |p| edge(p, "switch.track(DISABLED).stroke"),
-        )?
-        .flatten(),
+        disabled_unchecked_track_border: {
+            let track = s.track(disabled);
+            if track.from_state.contains(PartStated::STROKE) {
+                edge(&track, "switch.track(DISABLED).stroke")?
+            } else {
+                None
+            }
+        },
         thumb_border: edge(&thumb_off, "switch.thumb(NONE).stroke")?,
         track_radius: radius_or_iced(&off, "switch.track(NONE).corners")?,
         track_height,
@@ -880,7 +887,8 @@ pub fn scrollbar(r: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar {
 /// is the separator part's fill (spec §5, notes to the table: a separator
 /// part is the line itself), and where the theme states none, the
 /// outline's colour, the one line colour 0.7.2 states for the control (the
-/// table of homes, `segmented_control.border.color`).
+/// table of homes, `segmented_control.border.color`); no line where the
+/// outline is stated as none.
 fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
     let s = &r.segmented_control;
     let track = s.track(WidgetState::NONE);
@@ -897,9 +905,12 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
         )?,
         border: outline!(track, "segmented_control.track(NONE)")?,
         separator: if separator.stated.contains(PartStated::FILL) {
-            fill(&separator, "segmented_control.separator(NONE).fill")?
+            Some(fill(&separator, "segmented_control.separator(NONE).fill")?)
+        } else if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None)
+        {
+            None
         } else {
-            line(&track, "segmented_control.track(NONE).stroke.color")?.color
+            Some(line(&track, "segmented_control.track(NONE).stroke.color")?.color)
         },
         active_background: fill(
             &s.segment(WidgetState::SELECTED),
