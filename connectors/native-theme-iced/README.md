@@ -745,6 +745,61 @@ outside the field's edge, `tab_indicator` and `tab_flares` for the active
 tab's line and WinUI 3's folder-tab corners, and `pick_list_handle` for the
 platforms' open chevron.
 
+### What the 0.8.0 model states that iced cannot draw
+
+The `next` module maps the 0.8.0 model (`native_theme::next`), which states
+more than 0.7.2 did. Where iced has a receiver, `next` wires the value
+through; where it has none, the value is dropped as listed here, and a
+value the theme leaves unstated is iced's own (docs/v0.8.0-spec.md §10,
+rule 0).
+
+- **Borders on the tiny-skia renderer.** iced on wgpu ends a widget's fill
+  at the border's inner edge (`iced_wgpu` 0.14.0
+  `src/shader/quad/solid.wgsl`); iced on tiny-skia fills the whole bounds
+  and strokes the border over it (`iced_tiny_skia` 0.14.1 `src/engine.rs`),
+  as gpui does. A style function does not know the renderer, so `next`
+  computes a border's colour for wgpu: an `Inside` stroke composited over
+  the fill, a `Center` one over the fill at half its alpha, the band's mean
+  (spec §2, `StrokeAlign`). On tiny-skia the computed `Inside` colour is
+  still exact over an opaque fill, and a translucent `Center` or `Outside`
+  border shows the fill under it. Breeze's scroll bar handle, a pen 1.001
+  wide centred on its edge, is drawn as that band's mean.
+- **Shadows.** iced's `Shadow` is one outset shadow: a colour, an offset and
+  a blur (`iced_core` 0.14.0 `src/shadow.rs`). The menu, the segmented
+  control's track and the expander's frame cast the first outset layer the
+  theme states; its spread, an inset layer and every further layer are
+  dropped. The expander casts its shadow only where its frame is drawn
+  (`next::styles::expander_frame`). `iced_aw`'s `card::Style` has no shadow
+  (`iced_aw` 0.14.1 `src/style/card.rs`), so `card.container`'s shadow
+  reaches nothing.
+- **The menu's corners.** iced's menu `Style` has one border, whose radius
+  rounds both the popup and the highlighted row (`iced_widget` 0.14.2
+  `src/overlay/menu.rs`). It is `menu.item`'s corners, the highlight's (spec
+  §5, `menu.border`), so material-3's container shape, `menu.panel`'s
+  corners (docs/platform-facts.md §2.6), is not drawn.
+- **The scroll bar.** A rail's `border` is one `Border` round all four
+  sides (`iced_widget` 0.14.2 `src/scrollable.rs`, `Rail`), so the line
+  Breeze draws along the bar's inner edge alone (spec §5, issue #4's
+  leftovers, `S1`: `scrollbar.track.stroke`, one side) is not drawn. iced's
+  `Status::Hovered` says whether the pointer is over the bar, not whether it
+  is over the handle, so the handle while the pointer is on the bar but off
+  the handle (`S4`, `scrollbar.thumb(HOVER_WITHIN)`) is drawn as the hovered
+  handle. The groove's and the handle's widths are set once, on the
+  `Scrollbar` (`width`, `scroller_width`), and the `Style` has none, so a
+  width the theme states for a hovered or dragged bar is not drawn. A pill
+  (Breeze's handle) is drawn as a radius larger than any side, which both
+  renderers clamp to half the shorter side, as iced rounds its own
+  autoscroll overlay (`iced_widget` 0.14.2 `src/scrollable.rs`).
+- **`iced_aw`'s sidebar and selection list.** Neither `sidebar::Style` nor
+  `selection_list::Style` has a border radius (`iced_aw` 0.14.1
+  `src/style/sidebar.rs`, `src/style/selection_list.rs`), so the corners
+  the theme states for their outline are not drawn.
+- **A list row's highlight.** A `SelectionList` fills a hovered or selected
+  row with a quad over the row's whole bounds, square and unframed
+  (`iced_aw` 0.14.1 `src/widget/selection_list/list.rs`), so
+  `list.highlight`'s margin and corners (spec §5, issue #4's leftovers,
+  `L4`) are not drawn.
+
 ## Common recipes
 
 ### Apply user overrides to the OS theme
