@@ -327,16 +327,22 @@ fn text_size(text: &TextStyle, home: &'static str) -> Mapped<f32> {
 /// (reduced motion where the motion is other than `Full`; the text sizes are
 /// already scaled). The atlas holds `light`'s name, preferences
 /// ([`crate::ThemeAtlas::accessibility`]), layout gaps and icon set, each
-/// scheme's icon theme, egui's default faces and no OS colour mode;
+/// scheme's icon theme and no OS colour mode;
 /// [`crate::ThemeAtlas::next_resolved_for`] returns each scheme's theme, and
-/// [`crate::ThemeAtlas::resolved_for`] `None`.
+/// [`crate::ThemeAtlas::resolved_for`] `None`. With feature `system-fonts`
+/// the atlas installs the OS's faces for `light`'s body and monospace text
+/// ([`font_definitions`] of `font_plan_from_system`'s plan), as
+/// [`crate::from_preset`] does for the 0.7.2 model; without it, it leaves the
+/// `Context`'s fonts alone, egui's default faces until the application sets
+/// others.
 ///
 /// # Errors
 ///
 /// [`Unmapped`] `focus_ring.kind` where either theme's focus indicator is
 /// not a ring (a fill, an underline), which the install plugin's ring
-/// cannot draw. Every other value the mapping reads is optional, egui's own
-/// standing in where the theme states none.
+/// cannot draw, and [`font_definitions`]' error. Every other value the
+/// mapping reads is optional, egui's own standing in where the theme states
+/// none.
 pub fn to_theme(
     light: &ResolvedTheme,
     light_inactive: &ResolvedTheme,
@@ -711,6 +717,72 @@ pub fn mono_font_family(r: &ResolvedTheme) -> &str {
 #[must_use]
 pub fn mono_font_size(r: &ResolvedTheme) -> f32 {
     text_size_or_stock(r.typography.monospace.size_px, &egui::TextStyle::Monospace)
+}
+
+/// The face `text` asks its chain for, where it states its family, weight
+/// and style; `None` where it leaves one of them unstated, so the chain
+/// keeps egui's own face (spec §10, rule 0).
+fn face_request<'a>(
+    text: &'a TextStyle,
+    home: &'static str,
+) -> Mapped<Option<crate::fonts::FaceRequest<'a>>> {
+    use native_theme::theme::FontStyle as Slant;
+
+    let asked = TextStated::FAMILY | TextStated::WEIGHT | TextStated::STYLE;
+    if !text.stated.contains(asked) {
+        return Ok(None);
+    }
+    let style = match text.style {
+        FontStyle::Normal => Slant::Normal,
+        FontStyle::Italic => Slant::Italic,
+        FontStyle::Oblique => Slant::Oblique,
+        _ => return Err(Unmapped(home)),
+    };
+    Ok(Some(crate::fonts::FaceRequest {
+        family: &text.family,
+        weight: text.weight,
+        style,
+    }))
+}
+
+/// The faces the body text (`typography.body`) and the monospace text
+/// (`typography.monospace`) ask the `Proportional` and the `Monospace`
+/// chain for, as 0.7.2's `defaults.font` and `defaults.mono_font`.
+fn face_requests(r: &ResolvedTheme) -> Mapped<crate::fonts::FaceRequests<'_>> {
+    Ok([
+        face_request(&r.typography.body, "typography.body.style")?,
+        face_request(&r.typography.monospace, "typography.monospace.style")?,
+    ])
+}
+
+/// [`crate::fonts::font_definitions`]: the plan's faces for the body text's
+/// family, weight and style at the head of egui's `Proportional` chain, and
+/// for the monospace text's at the head of its `Monospace` chain. A chain
+/// whose text leaves its family, weight or style unstated keeps egui's own
+/// face, the plan's base chain.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the body or monospace text states a slant egui's faces
+/// are not matched by.
+pub fn font_definitions(
+    r: &ResolvedTheme,
+    plan: &crate::fonts::FontPlan,
+) -> Mapped<(egui::FontDefinitions, Vec<crate::Note>)> {
+    Ok(crate::fonts::definitions_for(&face_requests(r)?, plan))
+}
+
+/// [`crate::fonts::FontPlan::from_system`]: the OS's own faces for the body
+/// text's and the monospace text's family, weight and style, through
+/// `native_theme::fonts::system_face`; none for a text that leaves one of
+/// them unstated. Feature `system-fonts`.
+///
+/// # Errors
+///
+/// As [`font_definitions`].
+#[cfg(feature = "system-fonts")]
+pub fn font_plan_from_system(r: &ResolvedTheme) -> Mapped<crate::fonts::FontPlan> {
+    Ok(crate::fonts::FontPlan::from_system_for(&face_requests(r)?))
 }
 
 // ---------------------------------------------------------------------------

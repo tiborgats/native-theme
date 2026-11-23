@@ -359,6 +359,53 @@ fn parts(p: &mut Pairs, old: &ResolvedTheme, new: &native_theme::next::ResolvedT
     }
 }
 
+/// What a `FontDefinitions` a plan made holds, in a form `Debug` compares: each family's
+/// chain, each face's key, index in its file, tweak and byte count, and the notes.
+fn defs_form((defs, notes): &(egui::FontDefinitions, Vec<crate::Note>)) -> String {
+    let faces: Vec<_> = defs
+        .font_data
+        .iter()
+        .map(|(key, data)| (key, data.index, &data.tweak, data.bytes().len()))
+        .collect();
+    format!("{:?} {faces:?} {notes:?}", defs.families)
+}
+
+/// The fonts a plan installs: [`super::font_definitions`] beside
+/// [`crate::fonts::font_definitions`], for a plan holding egui's `Hack` under the body text's
+/// and the monospace text's family, weight and style as the 0.7.2 theme states them, and,
+/// with feature `system-fonts`, for each model's plan of the OS's own faces.
+fn font_definitions(p: &mut Pairs, old: &ResolvedTheme, new: &native_theme::next::ResolvedTheme) {
+    use crate::fonts::{FontBytes, FontPlan};
+
+    let hack = epaint_default_fonts::HACK_REGULAR;
+    let plan = [&old.defaults.font, &old.defaults.mono_font]
+        .into_iter()
+        .fold(FontPlan::new(), |plan, spec| {
+            plan.face(
+                &spec.family,
+                spec.weight,
+                spec.style,
+                FontBytes::Static(hack),
+            )
+        });
+    p.pair(
+        "fonts::font_definitions",
+        ok(defs_form(&crate::fonts::font_definitions(old, &plan))),
+        super::font_definitions(new, &plan).map(|d| defs_form(&d)),
+    );
+    #[cfg(feature = "system-fonts")]
+    p.pair(
+        "fonts::FontPlan::from_system",
+        ok(defs_form(&crate::fonts::font_definitions(
+            old,
+            &FontPlan::from_system(old),
+        ))),
+        super::font_plan_from_system(new)
+            .and_then(|plan| super::font_definitions(new, &plan))
+            .map(|d| defs_form(&d)),
+    );
+}
+
 /// The inactive window's title colour, from each model's inactive theme.
 fn inactive_title(p: &mut Pairs, old: &ResolvedTheme, preset: Preset, is_dark: bool) {
     let mut ctx = if is_dark {
@@ -390,6 +437,7 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
             };
             values(&mut p, &old, &new);
             fonts(&mut p, &old, &new);
+            font_definitions(&mut p, &old, &new);
             parts(&mut p, &old, &new);
             inactive_title(&mut p, &old, preset, is_dark);
             failures.append(&mut p.failures);

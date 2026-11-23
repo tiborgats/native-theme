@@ -511,8 +511,11 @@ fn play_pause_icon(ui: &mut egui::Ui) {
         return;
     };
     let scheme = ui.ctx().theme();
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
     let set = atlas.icon_set();
-    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let side = icon_size(theme, IconContext::Toolbar);
     let icon = AppIcon::PlayPause;
     let mut key = IconKey::name(icon.icon_name(set).unwrap_or("play-pause"), set)
         .size(side)
@@ -540,8 +543,11 @@ fn warning_icon(ui: &mut egui::Ui) {
         return;
     };
     let scheme = ui.ctx().theme();
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
     let role = IconRole::DialogWarning;
-    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let side = icon_size(theme, IconContext::Toolbar);
     let mut key = IconKey::role(role, atlas.icon_set())
         .size(side)
         .tint(ui.visuals().warn_fg_color);
@@ -585,7 +591,10 @@ fn spinner(ui: &mut egui::Ui, anim: &AnimatedIcon) {
         return;
     };
     let scheme = ui.ctx().theme();
-    let side = atlas.resolved_for(scheme).spinner.diameter;
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
+    let side = theme.spinner.diameter;
     let reduce_motion = atlas.accessibility().reduce_motion;
     // The text colour: a Material or Lucide frame is tinted it, and a
     // freedesktop frame's `currentColor` takes it where the frame sets no

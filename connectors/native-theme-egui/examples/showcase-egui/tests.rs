@@ -2131,6 +2131,43 @@ fn a_failed_rebuild_keeps_the_installed_fonts() {
     assert_eq!(faces(&harness), before);
 }
 
+/// `adopt` installs no atlas of the 0.8.0 model, whose 0.7.2 themes the pages would lack: the
+/// installed atlas stays, and the theme error says why.
+#[test]
+fn adopt_refuses_an_atlas_of_the_next_model() {
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
+
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let before = harness.state().atlas.name().to_owned();
+    let theme = NextTheme::preset(Preset::Adwaita);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|c| theme.resolve(&c));
+    let next = native_theme_egui::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)
+        .expect("adwaita maps");
+    assert_ne!(
+        next.name(),
+        before,
+        "the two atlases are told apart by name"
+    );
+    harness.state_mut().adopt(&ctx, next);
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        harness.state().theme_error.as_deref(),
+        Some(crate::app::NOT_OLD)
+    );
+    assert_eq!(harness.state().atlas.name(), before);
+    let installed = native_theme_egui::ThemeAtlas::from_ctx(&ctx).expect("an atlas is installed");
+    assert_eq!(installed.name(), before);
+    assert!(installed.resolved_for(egui::Theme::Light).is_some());
+}
+
 /// A preset every platform offers other than [`TEST_PRESET`], and its atlas: the watcher's
 /// rebuilt atlas in the hand-off tests, told from the installed one by its name.
 #[cfg(feature = "watch")]

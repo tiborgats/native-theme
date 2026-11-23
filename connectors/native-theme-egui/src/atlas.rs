@@ -336,6 +336,12 @@ impl ThemeAtlas {
     /// [`Builder::accessibility`] describes, or `AccessibilityPreferences::default()`
     /// (`native-theme/src/lib.rs:448-453`). Hand it to the text-size accessors of spec §4.7, so a
     /// size read at a call site matches the size the atlas installed.
+    ///
+    /// On an atlas of the 0.8.0 model ([`next::to_theme`](crate::next::to_theme)) these are the
+    /// preferences of its light theme's context (`text_scaling_factor` its `text_scale`), whose
+    /// text sizes the theme's resolve has already scaled: a size read with a `next` accessor
+    /// (`next::font_size`, `next::text_role_font`) is the installed size as it is, and scaling
+    /// it again by these preferences scales it twice.
     #[must_use]
     pub fn accessibility(&self) -> &AccessibilityPreferences {
         &self.0.accessibility
@@ -993,13 +999,16 @@ pub(crate) fn row_height(
 /// The atlas of 0.8.0 themes ([`crate::next::to_theme`]): `light` into the light scheme and
 /// `dark` into the dark one, each beside the same theme resolved for a window that is not
 /// active, which its `WindowTitleBar` frame fills from, each scheme compiled with the
-/// preferences of its own theme's context (`next::accessibility_of`), on egui's default faces.
-/// What the atlas holds once (its name, preferences, layout gaps and icon set) is `light`'s;
-/// its icon theme is each scheme's own; it holds no OS colour mode.
+/// preferences of its own theme's context (`next::accessibility_of`), on the faces it installs:
+/// with feature `system-fonts` those `next::font_definitions` makes of
+/// `next::font_plan_from_system`'s plan for `light`, as `from_preset` gives the 0.7.2 builder
+/// `FontPlan::from_system`'s, else egui's default faces, which it leaves the `Context`.
+/// What the atlas holds once (its name, preferences, layout gaps, icon set and fonts) is
+/// `light`'s; its icon theme is each scheme's own; it holds no OS colour mode.
 ///
 /// # Errors
 ///
-/// `next::build::sources`'s.
+/// `next::build::sources`'s, and `next::font_definitions`'.
 pub(crate) fn from_next(
     light: &native_theme::next::ResolvedTheme,
     light_inactive: &native_theme::next::ResolvedTheme,
@@ -1007,7 +1016,18 @@ pub(crate) fn from_next(
     dark_inactive: &native_theme::next::ResolvedTheme,
 ) -> crate::next::Mapped<ThemeAtlas> {
     let mut notes = Vec::new();
-    let defs = egui::FontDefinitions::default();
+    // With `system-fonts`, the OS's faces for `light`'s body and monospace text, as
+    // `from_preset` hands the 0.7.2 builder its plan; without it, egui's default faces.
+    #[cfg(feature = "system-fonts")]
+    let fonts = {
+        let plan = crate::next::font_plan_from_system(light)?;
+        let (defs, plan_notes) = crate::next::font_definitions(light, &plan)?;
+        notes.extend(plan_notes);
+        Some(defs)
+    };
+    #[cfg(not(feature = "system-fonts"))]
+    let fonts: Option<egui::FontDefinitions> = None;
+    let defs = fonts.clone().unwrap_or_default();
     let widest_glyph = crate::fonts::widest_glyph(&defs);
     let mut compiled = |scheme, theme, inactive| {
         let prefs = crate::next::accessibility_of(theme);
@@ -1038,7 +1058,7 @@ pub(crate) fn from_next(
         os_mode: None,
         icon_set: light.icons.set,
         icon_theme: [icon_theme(light), icon_theme(dark)],
-        fonts: None,
+        fonts,
         widest_glyph,
         text_size_cap: AtomicU32::new(f32::INFINITY.to_bits()),
         notes,

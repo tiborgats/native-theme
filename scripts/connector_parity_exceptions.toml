@@ -796,6 +796,12 @@ kind = "absent"
 reason = "egui's `next` gives each function of egui's crate root a twin on the 0.8.0 model, and iced's and gpui's crate roots have none of these, each for the reason its entry above gives for the root name"
 
 [[exception]]
+connector = ["iced", "gpui"]
+name = ["next::font_definitions", "next::font_plan_from_system"]
+kind = "absent"
+reason = "the 0.8.0 twins of egui's `fonts::font_definitions` and `fonts::FontPlan::from_system`: egui draws no family by name, so the atlas installs the faces' bytes under `FontFamily::Proportional` and `Monospace` (the egui spec §4.9). iced draws through its own font database by the family fontdb filed the face under (connectors/native-theme-iced/src/lib.rs, `system_font_family`'s doc), and gpui by the name `font_family(&Arc<str>)` gives it, so neither has a font plan"
+
+[[exception]]
 connector = "egui"
 name = "next::to_theme"
 kind = "unlike"

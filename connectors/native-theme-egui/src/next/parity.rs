@@ -5,9 +5,11 @@
 //!
 //! The 0.7.2 side is resolved as [`super::root_parity::resolve`] resolves it, and built with
 //! the default preferences, whose text scale is 1, as the 0.8.0 theme is resolved for, the
-//! preset's `LayoutTheme` and no font plan, so both atlases measure the Body row on egui's
-//! default faces. The 0.8.0 side is built from each scheme's theme and the same theme resolved
-//! for a window that is not active.
+//! preset's `LayoutTheme` and, with feature `system-fonts`, `fonts::FontPlan::from_system`'s
+//! plan for the light theme, as `from_preset` builds it, so both atlases measure the Body row
+//! on the faces [`super::to_theme`] installs (without the feature, on egui's default faces).
+//! The 0.8.0 side is built from each scheme's theme and the same theme resolved for a window
+//! that is not active.
 //!
 //! The form of comparison per egui type the connector produces:
 //!
@@ -23,15 +25,16 @@
 //! - The focus ring the install plugin paints is the crate's own `FocusRing` (its stroke, an
 //!   `egui::Stroke`, its offset and whether it shows for the keyboard only), which derives
 //!   `PartialEq` and `Debug`, compared as the style is.
-//! - The fonts: `egui::FontDefinitions` are made from a `fonts::FontPlan`, which the
-//!   application passes to the 0.7.2 builder; neither `to_theme` makes one, so none is
-//!   compared. The text sizes the mapping writes are the `FontId`s of the styles above.
+//! - The fonts: the `egui::FontDefinitions` each atlas installs (`None` where it installs
+//!   none) are compared by `PartialEq` (epaint 0.37.0 `src/text/font_data.rs`, `FontData`'s by
+//!   index, tweak and bytes); a difference fails, as no listed one names them. The text sizes
+//!   the mapping writes are the `FontId`s of the styles above.
 //! - The notes (`Note`) name the leaf whose value was sanitised, saturated or transparent, a
 //!   0.7.2 leaf on one side and its 0.8.0 home on the other: not compared.
 //!
-//! Compared, per preset, what the atlas holds once (its accessibility preferences, layout gaps
-//! and icon set) and each scheme's icon theme, the 0.7.2 atlas given the icon set and themes
-//! `from_preset` gives it; and per scheme of the two atlases: the base style, each role's
+//! Compared, per preset, what the atlas holds once (its accessibility preferences, layout gaps,
+//! icon set and fonts) and each scheme's icon theme, the 0.7.2 atlas given the icon set and
+//! themes `from_preset` gives it; and per scheme of the two atlases: the base style, each role's
 //! `Normal` cell and its
 //! `Selected`, `Disabled` and `SelectedDisabled` cells where the role has one of its own (the
 //! atlas sharing the `Normal` cell, for `SelectedDisabled` the `Disabled` one, in place of a
@@ -50,6 +53,11 @@
 //! A difference that is rule 0 on a state ([`Cause::Rule0`], [`Cause::StateKeepsBase`]) is a
 //! model gap, listed in [`RULE_0_ON_A_PRESET`] with the 0.8.0 home the preset leaves unstated;
 //! every other one in [`DIFFERENCES`].
+//!
+//! What no atlas holds, the crate root's functions, is compared in [`super::root_parity`]:
+//! among them `default_button`, `input_margin`, `input_frame`, `text_area_margin`,
+//! `text_area_frame`, the expander's arrow, `icons::icon_size`, and the fonts a plan makes
+//! (`fonts::font_definitions`, with `system-fonts` of `FontPlan::from_system`'s plan).
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -1351,7 +1359,6 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
         ));
     }
     let prefs = AccessibilityPreferences::default();
-    let defs = egui::FontDefinitions::default();
     for &(key, preset) in PRESETS {
         let spec = native_theme::theme::Theme::preset(key)?;
         let layout = spec.layout.clone();
@@ -1380,8 +1387,20 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(name) = dark_icon_theme.as_deref() {
             builder = builder.icon_theme(egui::Theme::Dark, name);
         }
+        // the OS's faces, as `from_preset` plans them, where `to_theme` installs them too
+        #[cfg(feature = "system-fonts")]
+        {
+            builder = builder.fonts(crate::fonts::FontPlan::from_system(&old_light));
+        }
         let old_atlas = builder.build();
         let new_atlas = super::to_theme(&new_light, &light_inactive, &new_dark, &dark_inactive)?;
+        if old_atlas.fonts() != new_atlas.fonts() {
+            tally
+                .failures
+                .push(format!("{key}: the atlases install different fonts"));
+        }
+        // the faces both atlases measured their rows on
+        let defs = new_atlas.fonts().cloned().unwrap_or_default();
         // what the atlas holds once, and each scheme's icon theme
         let side = |what| Side {
             what,

@@ -310,7 +310,7 @@ pub(crate) fn effective_preferences(
 }
 
 /// The text of the error [`OldAtlas::of`]'s `None` gives.
-const NOT_OLD: &str = "the atlas holds no 0.7.2 theme, which the showcase's pages read";
+pub(crate) const NOT_OLD: &str = "the atlas holds no 0.7.2 theme, which the showcase's pages read";
 
 /// An atlas of the 0.7.2 model with the two themes it was built from, which the showcase's
 /// pages read through [`OldAtlas::old_resolved`] until they are ported to the 0.8.0 model, as

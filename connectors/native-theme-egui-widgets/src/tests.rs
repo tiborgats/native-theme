@@ -13,10 +13,11 @@ use std::path::{Path, PathBuf};
 use native_theme_egui::convert::{composite_over, to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
 use native_theme_egui::native_theme::theme::IconSet;
 use native_theme_egui::{
-    AccessibilityPreferences, ResolvedTheme, ThemeAtlas, focus_ring_color, focus_ring_offset,
-    from_preset,
+    AccessibilityPreferences, NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas,
+    focus_ring_color, focus_ring_offset, from_preset,
 };
 use native_theme_test_fixtures::sources::{every_section_is_named, rendered_lines};
 
@@ -287,6 +288,252 @@ fn with_no_atlas_every_widget_is_its_egui_counterpart() {
             "{name}: not egui's pixels"
         );
     }
+}
+
+/// A context with the atlas `next::to_theme` builds of the 0.8.0 `preset` installed, drawn
+/// light.
+fn next_installed(preset: Preset) -> egui::Context {
+    let theme = NextTheme::preset(preset);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx));
+    let ctx = egui::Context::default();
+    native_theme_egui::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)
+        .unwrap()
+        .install(&ctx);
+    ctx.set_theme(egui::Theme::Light);
+    ctx.enable_accesskit();
+    ctx
+}
+
+/// egui's own `add`, in `role`'s scope of the installed atlas where `role` is given, and
+/// disabled once where `enabled` is false: in that scope's `Disabled` variant, `Selected` or
+/// `SelectedDisabled` where `selected`, as the widgets' `scope::open_faded` opens it.
+fn in_scope(
+    ui: &mut egui::Ui,
+    role: Option<Role>,
+    selected: bool,
+    enabled: bool,
+    add: impl FnOnce(&mut egui::Ui) -> egui::Response,
+) -> egui::Response {
+    let Some(role) = role else {
+        return ui.add_enabled_ui(enabled, add).inner;
+    };
+    let variant = match (enabled, selected) {
+        (false, true) => RoleVariant::SelectedDisabled,
+        (false, false) => RoleVariant::Disabled,
+        (true, true) => RoleVariant::Selected,
+        (true, false) => RoleVariant::Normal,
+    };
+    ui.native_scope(role, variant, |ui| {
+        if !enabled {
+            ui.disable();
+        }
+        add(ui)
+    })
+    .inner
+}
+
+/// Under an atlas of the 0.8.0 model, which holds no 0.7.2 theme, each widget, enabled and
+/// disabled, paints what egui's own counterpart paints: in the caller's `Ui`, or in its
+/// role's scope where the widget opens one. A widget with no `enabled` of its own is disabled
+/// by its calling `Ui`. The disabled expander is faded once, by its scope's `Ui::disable`, not
+/// again by `CollapsingHeader::enabled`.
+#[test]
+fn under_a_next_atlas_every_widget_is_its_egui_counterpart() {
+    type Add = Box<dyn Fn(&mut egui::Ui, bool) -> egui::Response>;
+    let disabled_by_ui = |add: fn(&mut egui::Ui) -> egui::Response| -> Add {
+        Box::new(move |ui, enabled| ui.add_enabled_ui(enabled, add).inner)
+    };
+    let cases: Vec<(&str, Add, Add)> = vec![
+        (
+            "switch",
+            Box::new(|ui, enabled| ui.add(Switch::new(&mut true).label("Wi-Fi").enabled(enabled))),
+            Box::new(|ui, enabled| {
+                in_scope(ui, None, false, enabled, |ui| {
+                    ui.add(egui::Checkbox::new(&mut true, "Wi-Fi"))
+                })
+            }),
+        ),
+        (
+            "slider",
+            Box::new(|ui, enabled| {
+                ui.add(
+                    Slider::new(&mut 40.0, 0.0..=100.0)
+                        .label("Volume")
+                        .enabled(enabled),
+                )
+            }),
+            Box::new(|ui, enabled| {
+                in_scope(ui, None, false, enabled, |ui| {
+                    ui.add(
+                        egui::Slider::new(&mut 40.0, 0.0..=100.0)
+                            .show_value(false)
+                            .text("Volume"),
+                    )
+                })
+            }),
+        ),
+        (
+            "spinner",
+            disabled_by_ui(|ui| ui.add(Spinner::new())),
+            disabled_by_ui(|ui| ui.add(egui::Spinner::new())),
+        ),
+        (
+            "progress bar",
+            disabled_by_ui(|ui| ui.add(ProgressBar::new(0.4))),
+            disabled_by_ui(|ui| ui.add(egui::ProgressBar::new(0.4))),
+        ),
+        (
+            "radio button",
+            Box::new(|ui, enabled| ui.add(RadioButton::new(true, "Radio").enabled(enabled))),
+            Box::new(|ui, enabled| {
+                in_scope(ui, Some(Role::Checkbox), true, enabled, |ui| {
+                    ui.add(egui::RadioButton::new(true, "Radio"))
+                })
+            }),
+        ),
+        (
+            "segmented control",
+            disabled_by_ui(|ui| ui.add(SegmentedControl::new(&mut 1, ["Day", "Week"]))),
+            disabled_by_ui(|ui| {
+                ui.horizontal(|ui| {
+                    ui.add(egui::Button::new("Day").selected(false));
+                    ui.add(egui::Button::new("Week").selected(true));
+                })
+                .response
+            }),
+        ),
+        (
+            "link",
+            disabled_by_ui(|ui| {
+                let w = links::link(ui, "Link");
+                ui.add(w)
+            }),
+            disabled_by_ui(|ui| ui.add(egui::Link::new("Link"))),
+        ),
+        (
+            "hyperlink",
+            disabled_by_ui(|ui| {
+                let w = links::hyperlink(ui, "Docs", "https://example.org");
+                ui.add(w)
+            }),
+            disabled_by_ui(|ui| {
+                ui.add(egui::Hyperlink::from_label_and_url(
+                    "Docs",
+                    "https://example.org",
+                ))
+            }),
+        ),
+        (
+            "combo box",
+            Box::new(|ui, enabled| {
+                ComboBox::from_id_salt("fruit")
+                    .selected_text("Apple")
+                    .width(140.0)
+                    .enabled(enabled)
+                    .show_ui(ui, |ui| ui.label("Banana"))
+                    .response
+            }),
+            Box::new(|ui, enabled| {
+                in_scope(ui, Some(Role::ComboBox), false, enabled, |ui| {
+                    egui::ComboBox::from_id_salt("fruit")
+                        .selected_text("Apple")
+                        .width(140.0)
+                        .show_ui(ui, |ui| ui.label("Banana"))
+                        .response
+                })
+            }),
+        ),
+        (
+            "expander",
+            Box::new(|ui, enabled| {
+                Expander::new("Details")
+                    .default_open(true)
+                    .enabled(enabled)
+                    .show(ui, |ui| ui.label("Body"))
+                    .header_response
+            }),
+            Box::new(|ui, enabled| {
+                let outer = std::sync::Arc::clone(ui.style());
+                in_scope(ui, Some(Role::Expander), false, enabled, |ui| {
+                    egui::CollapsingHeader::new("Details")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            ui.set_style(outer);
+                            ui.label("Body")
+                        })
+                        .header_response
+                })
+            }),
+        ),
+    ];
+    let mut faded_twice_differs = Vec::new();
+    for &preset in Preset::ALL {
+        for enabled in [true, false] {
+            for (name, ours, egui_s) in &cases {
+                let at_ = format!("{preset:?} {name}, enabled {enabled}");
+                let ours_ctx = next_installed(preset);
+                let egui_ctx = next_installed(preset);
+                // two passes: the expander's body shows from the second
+                let _ = response(&ours_ctx, at(1.0), |ui| ours(ui, enabled));
+                let _ = response(&egui_ctx, at(1.0), |ui| egui_s(ui, enabled));
+                let (a, ra) = response(&ours_ctx, at(1.0), |ui| ours(ui, enabled));
+                let (b, rb) = response(&egui_ctx, at(1.0), |ui| egui_s(ui, enabled));
+                assert!(ra.rect.is_finite(), "{at_}");
+                let (a, b) = (flat(&a.shapes), flat(&b.shapes));
+                if *name == "combo box" {
+                    // the drop-down's arrow is the connector's open chevron in egui's arrow
+                    // box, grown to the text's line where that is taller
+                    // (`combo_box::paint_chevron`), where egui fills a triangle; the text keeps
+                    // egui's own padding
+                    let open = |s: &egui::Shape| matches!(s, egui::Shape::Path(p) if !p.closed);
+                    assert_eq!(a.iter().filter(|s| open(s)).count(), 1, "{at_}");
+                    let text_x = |shapes: &[egui::Shape]| {
+                        shapes.iter().find_map(|s| match s {
+                            egui::Shape::Text(t) => Some(t.pos.x),
+                            _ => None,
+                        })
+                    };
+                    assert_eq!(text_x(&a), text_x(&b), "{at_}: not egui's padding");
+                    assert!(text_x(&a).is_some(), "{at_}");
+                    continue;
+                }
+                assert_eq!(ra.rect, rb.rect, "{at_}: a different size from egui's");
+                assert_eq!(a, b, "{at_}: not egui's pixels");
+            }
+        }
+        // where the scope fades, a header faded twice differs
+        let twice = |ui: &mut egui::Ui| {
+            in_scope(ui, Some(Role::Expander), false, false, |ui| {
+                egui::CollapsingHeader::new("Details")
+                    .default_open(true)
+                    .enabled(false)
+                    .show(ui, |ui| ui.label("Body"))
+                    .header_response
+            })
+        };
+        let once = |ui: &mut egui::Ui| {
+            Expander::new("Details")
+                .default_open(true)
+                .enabled(false)
+                .show(ui, |ui| ui.label("Body"))
+                .header_response
+        };
+        let (a, _) = response(&next_installed(preset), at(1.0), once);
+        let (b, _) = response(&next_installed(preset), at(1.0), twice);
+        if flat(&a.shapes) != flat(&b.shapes) {
+            faded_twice_differs.push(preset);
+        }
+    }
+    assert!(
+        !faded_twice_differs.is_empty(),
+        "no preset fades a disabled expander, or the fade check proves nothing"
+    );
 }
 
 // ---- T2: a hostile theme -----------------------------------------------------------------------
@@ -805,13 +1052,24 @@ fn an_expander_with_no_stated_frame_outlines_nothing() {
 /// A widget in an expander's body is drawn in the style the expander was shown in, not in the
 /// expander's header cell (round 4 review, item 17 I1): under catppuccin-mocha, which reaches
 /// egui's own `CollapsingHeader`, and kde-breeze, which the crate lays out, a `Button` in the
-/// open body keeps the base style's button outline, where the header cell's is 0 wide (M9-178).
+/// open body keeps the base style's button outline, where the header cell's is 0 wide (M9-178);
+/// and so under kde-breeze's atlas of the 0.8.0 model, whose expander is egui's own header in
+/// the role's scope.
 #[test]
 fn a_widget_in_the_body_keeps_the_callers_style() {
     let prefs = AccessibilityPreferences::default();
-    for preset in ["catppuccin-mocha", "kde-breeze"] {
-        let t = from_preset(preset, true, &prefs).unwrap().1;
-        let ctx = installed(&t, &prefs);
+    let mut contexts: Vec<(String, egui::Context)> = ["catppuccin-mocha", "kde-breeze"]
+        .into_iter()
+        .map(|preset| {
+            let t = from_preset(preset, true, &prefs).unwrap().1;
+            (preset.to_owned(), installed(&t, &prefs))
+        })
+        .collect();
+    contexts.push((
+        "0.8.0 kde-breeze".to_owned(),
+        next_installed(Preset::KdeBreeze),
+    ));
+    for (preset, ctx) in contexts {
         let mut base = egui::Stroke::NONE;
         let mut button = egui::Rect::NOTHING;
         let mut show = |ui: &mut egui::Ui| {

@@ -404,3 +404,215 @@ fn the_menu_item_takes_the_panels_corners_on_material_3_alone()
     assert!(unstated.len() > 1, "{unstated:?}");
     Ok(())
 }
+
+/// A text that leaves its family, weight or style unstated asks its chain for no face: the
+/// chain keeps the plan's base, egui's own, and no note names it; the other chain takes the
+/// plan's face.
+#[test]
+fn an_unstated_family_keeps_eguis_own_face() -> Result<(), super::Unmapped> {
+    use crate::fonts::{FontBytes, FontPlan};
+    use native_theme::next::TextStated;
+
+    let own = egui::FontDefinitions::default();
+    let chain = |defs: &egui::FontDefinitions, family| defs.families.get(&family).cloned();
+    for unstated in [TextStated::FAMILY, TextStated::WEIGHT, TextStated::STYLE] {
+        for &(key, preset) in PRESETS {
+            let mut r = Theme::preset(preset).resolve(&ThemeContext::light());
+            let (body, mono) = (&r.typography.body, &r.typography.monospace);
+            let face = |text: &native_theme::next::TextStyle| {
+                let style = match text.style {
+                    native_theme::next::FontStyle::Italic => crate::FontStyle::Italic,
+                    native_theme::next::FontStyle::Oblique => crate::FontStyle::Oblique,
+                    _ => crate::FontStyle::Normal,
+                };
+                (text.family.clone(), text.weight, style)
+            };
+            let plan = [face(body), face(mono)].into_iter().fold(
+                FontPlan::new(),
+                |plan, (family, weight, style)| {
+                    plan.face(
+                        &family,
+                        weight,
+                        style,
+                        FontBytes::Static(epaint_default_fonts::HACK_REGULAR),
+                    )
+                },
+            );
+            let (stated, _) = super::font_definitions(&r, &plan)?;
+            assert_ne!(
+                chain(&stated, egui::FontFamily::Proportional),
+                chain(&own, egui::FontFamily::Proportional),
+                "{key}: the stated body takes the plan's face, or the check proves nothing"
+            );
+            r.typography.body.stated = r.typography.body.stated.difference(unstated);
+            let (defs, notes) = super::font_definitions(&r, &plan)?;
+            assert_eq!(
+                chain(&defs, egui::FontFamily::Proportional),
+                chain(&own, egui::FontFamily::Proportional),
+                "{key} {unstated:?}"
+            );
+            assert_eq!(
+                chain(&defs, egui::FontFamily::Monospace),
+                chain(&stated, egui::FontFamily::Monospace),
+                "{key} {unstated:?}"
+            );
+            assert!(notes.is_empty(), "{key} {unstated:?}: {notes:?}");
+        }
+    }
+    Ok(())
+}
+
+/// Each scheme's theme and the same theme for a window that is not active, light then dark.
+fn schemes(theme: &Theme) -> [native_theme::next::ResolvedTheme; 4] {
+    [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx))
+}
+
+/// The text colour of a scheme of a 0.8.0 atlas is its theme's `colors.window.foreground`,
+/// and none where that theme states none.
+#[test]
+fn a_next_atlas_text_colour_is_the_window_foreground() -> Result<(), super::Unmapped> {
+    for &(key, preset) in PRESETS {
+        let [light, light_inactive, dark, dark_inactive] = schemes(&Theme::preset(preset));
+        let atlas = super::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
+        for (scheme, r) in [(egui::Theme::Light, &light), (egui::Theme::Dark, &dark)] {
+            let want = r.colors.window.foreground.map(super::build::rgba);
+            assert!(want.is_some(), "{key} {scheme:?}: the preset states it");
+            assert_eq!(atlas.text_color(scheme), want, "{key} {scheme:?}");
+        }
+        let mut unstated = light.clone();
+        unstated.colors.window.foreground = None;
+        let atlas = super::to_theme(&unstated, &light_inactive, &dark, &dark_inactive)?;
+        assert_eq!(atlas.text_color(egui::Theme::Light), None, "{key}");
+    }
+    Ok(())
+}
+
+/// `menu_bar_modifier` of a 0.8.0 atlas is the `Role::Menu` cell with the menu bar's titles:
+/// the hovered and pressed titles in `menu_bar.item(HOVER)`'s fill and `item_label(HOVER)`'s
+/// colour, the open one in `(OPEN)`'s, each where a rule states it, every title outlined at
+/// rest; where none is stated, the cell as it is.
+#[test]
+fn a_next_atlas_menu_bar_modifier_is_the_menu_cell_with_its_titles()
+-> Result<(), Box<dyn std::error::Error>> {
+    let rgb = egui::Color32::from_rgb;
+    let titles = "[[widgets.menu_bar.rules]]\nstates = [\"hover\"]\nitem.fill = \"#f0a014\"\n\
+                  item_label.color = \"#102030\"\n\
+                  [[widgets.menu_bar.rules]]\nstates = [\"open\"]\nitem.fill = \"#14a0f0\"\n";
+    let atlas = patched_light(Preset::Adwaita, titles)?;
+    let mut bar = egui::Style::default();
+    atlas.menu_bar_modifier(egui::Theme::Light).apply(&mut bar);
+    let mut cell = egui::Style::default();
+    atlas
+        .role_modifier(
+            egui::Theme::Light,
+            crate::Role::Menu,
+            crate::RoleVariant::Normal,
+        )
+        .apply(&mut cell);
+    let w = &bar.visuals.widgets;
+    assert_eq!(w.hovered.weak_bg_fill, rgb(0xf0, 0xa0, 0x14));
+    assert_eq!(w.active.weak_bg_fill, rgb(0xf0, 0xa0, 0x14));
+    assert_eq!(w.open.weak_bg_fill, rgb(0x14, 0xa0, 0xf0));
+    assert_eq!(w.hovered.fg_stroke.color, rgb(0x10, 0x20, 0x30));
+    assert_eq!(w.active.fg_stroke.color, rgb(0x10, 0x20, 0x30));
+    for e in [&w.hovered, &w.active, &w.open] {
+        assert_eq!(e.bg_stroke, w.inactive.bg_stroke);
+    }
+    assert_eq!(w.inactive, cell.visuals.widgets.inactive);
+    assert_eq!(w.noninteractive, cell.visuals.widgets.noninteractive);
+    assert_eq!(bar.text_styles, cell.text_styles);
+
+    for &(key, preset) in PRESETS {
+        let [light, light_inactive, dark, dark_inactive] = schemes(&Theme::preset(preset));
+        let atlas = super::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
+        for (scheme, r) in [(egui::Theme::Light, &light), (egui::Theme::Dark, &dark)] {
+            let mb = &r.menu_bar;
+            let stated = [WidgetState::HOVER, WidgetState::OPEN].iter().any(|&s| {
+                super::build::state_fill(&mb.item(s)).is_some()
+                    || super::state_text_color_of(&mb.item_label(s)).is_some()
+            });
+            if stated {
+                continue;
+            }
+            let mut bar = egui::Style::default();
+            atlas.menu_bar_modifier(scheme).apply(&mut bar);
+            let mut cell = egui::Style::default();
+            atlas
+                .role_modifier(scheme, crate::Role::Menu, crate::RoleVariant::Normal)
+                .apply(&mut cell);
+            crate::style::menu_bar_titles(&atlas.scheme(scheme).menu_bar, &mut cell);
+            assert_eq!(bar, cell, "{key} {scheme:?}");
+        }
+    }
+    Ok(())
+}
+
+/// The checked box's hovered fill by rule 0 per property (spec §10): where a rule states
+/// `checkbox.indicator(HOVER).fill` alone, the combined state's fill; where none does, egui's
+/// own hovered fill where egui's stock entries change it from rest, else the checked fill. The
+/// pressed fill, which neither theme states, follows the same rule on both.
+#[test]
+fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error::Error>> {
+    let own = egui::Theme::Light.default_style();
+    let own = &own.visuals.widgets;
+    let by_rule_0 = |state: &egui::style::WidgetVisuals, checked: egui::Color32| {
+        if state.bg_fill == own.inactive.bg_fill {
+            checked
+        } else {
+            state.bg_fill
+        }
+    };
+    let hover = "[[widgets.checkbox.rules]]\nstates = [\"hover\"]\nindicator.fill = \"#f0a014\"\n";
+    let mut tried = Vec::new();
+    for &(key, preset) in PRESETS {
+        let plain = Theme::preset(preset).resolve(&ThemeContext::light());
+        let k = &plain.checkbox;
+        let unstated = |r: &native_theme::next::ResolvedTheme, s: WidgetState| {
+            super::build::state_fill(&r.checkbox.indicator(s)).is_none()
+        };
+        if !(unstated(&plain, WidgetState::HOVER) && unstated(&plain, WidgetState::PRESSED)) {
+            continue;
+        }
+        let Some(checked) = super::build::fill(&k.indicator(WidgetState::CHECKED)) else {
+            continue;
+        };
+        tried.push(key);
+        let checked = crate::convert::to_color32(checked);
+        let cell = |atlas: &crate::ThemeAtlas| {
+            atlas
+                .scheme(egui::Theme::Light)
+                .cell(crate::Role::Checkbox, crate::RoleVariant::Selected)
+                .visuals
+                .widgets
+                .clone()
+        };
+        let w = cell(&patched_light(preset, "")?);
+        assert_eq!(w.inactive.bg_fill, checked, "{key}");
+        assert_eq!(w.hovered.bg_fill, by_rule_0(&own.hovered, checked), "{key}");
+        assert_eq!(w.active.bg_fill, by_rule_0(&own.active, checked), "{key}");
+
+        let patched = Theme::preset(preset)
+            .with_patch(ThemePatch::from_toml(hover)?)
+            .resolve(&ThemeContext::light());
+        let both = super::build::fill(
+            &patched
+                .checkbox
+                .indicator(WidgetState::HOVER | WidgetState::CHECKED),
+        )
+        .ok_or("the combined state has a fill")?;
+        let w = cell(&patched_light(preset, hover)?);
+        assert_eq!(w.hovered.bg_fill, crate::convert::to_color32(both), "{key}");
+        assert_eq!(w.active.bg_fill, by_rule_0(&own.active, checked), "{key}");
+    }
+    assert!(
+        !tried.is_empty(),
+        "no preset leaves both state fills unstated"
+    );
+    Ok(())
+}
