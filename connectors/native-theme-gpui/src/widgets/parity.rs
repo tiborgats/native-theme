@@ -50,18 +50,6 @@ struct Difference {
     reason: &'static str,
 }
 
-/// Every preset compared, for a difference that no 0.8.0 preset's statement
-/// removes.
-const EVERY_PRESET: &[&str] = &[
-    "kde-breeze",
-    "adwaita",
-    "windows-11",
-    "macos-monterey",
-    "macos-tahoe",
-    "material-3",
-    "ios-13",
-];
-
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[
     Difference {
