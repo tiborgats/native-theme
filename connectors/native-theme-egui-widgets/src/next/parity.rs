@@ -194,8 +194,8 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
         report,
         "switch::Geometry",
         SwitchGeometry,
-        SwitchGeometry::of(&old.switch),
-        SwitchGeometry::next_of(new),
+        SwitchGeometry::of(&old.switch).map(SwitchGeometry::painted),
+        SwitchGeometry::next_of(new).map(SwitchGeometry::painted),
         [
             track,
             radius,

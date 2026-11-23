@@ -2,7 +2,6 @@
 
 use native_theme_egui::convert::{to_color32, to_corner_radius};
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
 use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
@@ -70,13 +69,13 @@ impl ProgressBar {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `progress_bar.border.color`: the outline.
-    pub(crate) border_color: Rgba,
+    pub(crate) border_color: egui::Color32,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            border_color: t.progress_bar.border.color,
+            border_color: to_color32(t.progress_bar.border.color),
         }
     }
 }
@@ -89,7 +88,7 @@ pub(crate) struct Bar {
     pub(crate) min_width: Option<f32>,
     /// `progress_bar.border.corner_radius`, and the outline's width and colour where it has
     /// one wider than nothing.
-    pub(crate) frame: Option<(f32, Option<(f32, Rgba)>)>,
+    pub(crate) frame: Option<(f32, Option<(f32, egui::Color32)>)>,
 }
 
 impl Bar {
@@ -116,7 +115,7 @@ impl Bar {
         let [width, height] = track.min_size;
         let frame = || {
             let radius = next::radius(&track, width, height)?;
-            let outline = match (next::stroke_width(&track), next::stroke(&track)) {
+            let outline = match (next::stroke_width_of(&track), next::stroke_color_of(&track)) {
                 (Some(w), Some(colour)) => {
                     let w = scope::length(w)?;
                     (w > 0.0).then_some((w, colour))
@@ -175,7 +174,7 @@ impl egui::Widget for ProgressBar {
                 ui.painter().rect_stroke(
                     response.rect,
                     radius,
-                    egui::Stroke::new(width, to_color32(color)),
+                    egui::Stroke::new(width, color),
                     egui::StrokeKind::Inside,
                 );
             }

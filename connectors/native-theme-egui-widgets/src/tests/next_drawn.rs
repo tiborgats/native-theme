@@ -484,7 +484,7 @@ fn a_switch_track_stated_as_none_has_no_outline_and_no_fill() -> TestResult {
         "[[widgets.switch.rules]]\nstates = []\ntrack.stroke = \"none\"\ntrack.fill = \"none\"\n";
     let look = Look::next_of(&patched(Preset::Material3, none)?).ok_or("patched material-3")?;
     assert_eq!(look.unchecked_track_border_color, None);
-    assert_eq!(look.unchecked_background, Rgba::new(0, 0, 0, 0));
+    assert_eq!(look.unchecked_background, egui::Color32::TRANSPARENT);
     let (parts, shapes) = drawn_switch(&patched_installed(Preset::Material3, none)?);
     let track = parts.get("track").ok_or("no track")?;
     let rect = painted_rect(&shapes, track).ok_or("no track painted")?;
@@ -569,9 +569,9 @@ fn a_switch_label_takes_its_stated_size() -> TestResult {
 fn a_checked_switch_reads_its_checked_disabled_and_outlined_thumb() -> TestResult {
     use crate::switch::{Geometry, Look};
     let (red, green, blue) = (
-        Rgba::new(255, 0, 0, 255),
-        Rgba::new(0, 255, 0, 255),
-        Rgba::new(0, 0, 255, 255),
+        egui::Color32::from_rgb(255, 0, 0),
+        egui::Color32::from_rgb(0, 255, 0),
+        egui::Color32::from_rgb(0, 0, 255),
     );
     let patch = "[[widgets.switch.rules]]\nstates = [\"disabled\", \"checked\"]\n\
                  track.fill = \"#0000ff\"\nthumb.fill = \"#ff0000\"\n\n\
@@ -756,7 +756,7 @@ fn a_link_takes_its_stated_underline_and_hover_layer() -> TestResult {
         })
     };
     // Breeze underlines its links at rest; the patch states the opposite.
-    let magenta = Rgba::new(255, 0, 255, 255);
+    let magenta = egui::Color32::from_rgb(255, 0, 255);
     let stock = Look::next_of(&patched(Preset::KdeBreeze, "")?);
     assert_eq!(stock.underline_enabled, Some(true), "{stock:?}");
     assert_ne!(stock.hover_background, Some(magenta), "{stock:?}");
@@ -835,7 +835,11 @@ fn a_segmented_control_takes_its_stated_padding_and_hover_layer() -> TestResult 
                  [[widgets.segmented_control.rules]]\nstates = [\"hover\"]\nsegment.fill = \"#ff00ff\"\n";
     let look = Look::next_of(&patched(preset, patch)?);
     assert!(look.padded, "{preset:?}");
-    assert_eq!(look.hover, Some(Rgba::new(255, 0, 255, 255)), "{preset:?}");
+    assert_eq!(
+        look.hover,
+        Some(egui::Color32::from_rgb(255, 0, 255)),
+        "{preset:?}"
+    );
     Ok(())
 }
 
@@ -977,7 +981,7 @@ fn an_expander_arrow_takes_its_stated_colour_and_size() -> TestResult {
         let stock = patched(preset, "")?;
         assert_ne!(
             Look::next_of(&stock).arrow_color,
-            Some(Rgba::new(255, 0, 255, 255)),
+            Some(magenta),
             "{preset:?}: the stated colour is the preset's: the test proves nothing"
         );
         assert_ne!(

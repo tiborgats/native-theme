@@ -1,8 +1,7 @@
 //! [`Switch`]: a two-state switch, a thumb on a track.
 
-use native_theme_egui::convert::{composite_over, to_color32, to_corner_radius};
+use native_theme_egui::convert::{to_color32, to_corner_radius};
 use native_theme_egui::egui::{self, accesskit};
-use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::next::{
     ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
 };
@@ -165,12 +164,26 @@ impl Geometry {
             radius: scope::length(next::radius(&track, Some(width), Some(height))?)?,
             thumb,
             unchecked_thumb,
-            track_border: border(next::stroke_width(&track))?,
-            thumb_border: border(next::stroke_width(&rest_thumb))?,
-            checked_thumb_border: border(next::stroke_width(&checked_thumb))?,
+            track_border: border(next::stroke_width_of(&track))?,
+            thumb_border: border(next::stroke_width_of(&rest_thumb))?,
+            checked_thumb_border: border(next::stroke_width_of(&checked_thumb))?,
             label_gap: border(sw.label_gap)?,
             label_size,
         })
+    }
+
+    /// The geometry as the switch paints it, so two that paint alike compare equal: an outline
+    /// of no width, which paints as none (a stroke stated as none is one, spec §10, rule 2),
+    /// given as none.
+    #[cfg(test)]
+    pub(crate) fn painted(self) -> Self {
+        let drawn = |width: Option<f32>| width.filter(|w| *w > 0.0);
+        Self {
+            track_border: drawn(self.track_border),
+            thumb_border: drawn(self.thumb_border),
+            checked_thumb_border: drawn(self.checked_thumb_border),
+            ..self
+        }
     }
 
     pub(crate) fn of(sw: &ResolvedSwitchTheme) -> Option<Self> {
@@ -204,33 +217,33 @@ impl Geometry {
 /// colour-leaf coverage test sees the widget's reads.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
-    pub(crate) checked_background: Rgba,
-    pub(crate) hover_checked_background: Option<Rgba>,
-    pub(crate) unchecked_background: Rgba,
-    pub(crate) hover_unchecked_background: Option<Rgba>,
-    pub(crate) disabled_checked_background: Option<Rgba>,
-    pub(crate) disabled_unchecked_background: Option<Rgba>,
-    pub(crate) thumb_background: Rgba,
-    pub(crate) unchecked_thumb_background: Option<Rgba>,
-    pub(crate) disabled_thumb_color: Option<Rgba>,
+    pub(crate) checked_background: egui::Color32,
+    pub(crate) hover_checked_background: Option<egui::Color32>,
+    pub(crate) unchecked_background: egui::Color32,
+    pub(crate) hover_unchecked_background: Option<egui::Color32>,
+    pub(crate) disabled_checked_background: Option<egui::Color32>,
+    pub(crate) disabled_unchecked_background: Option<egui::Color32>,
+    pub(crate) thumb_background: egui::Color32,
+    pub(crate) unchecked_thumb_background: Option<egui::Color32>,
+    pub(crate) disabled_thumb_color: Option<egui::Color32>,
     /// A disabled checked switch's thumb: `disabled_thumb_color`, the 0.8.0 theme's
     /// `switch.thumb(DISABLED|CHECKED)`'s fill.
-    pub(crate) disabled_checked_thumb_color: Option<Rgba>,
-    pub(crate) unchecked_track_border_color: Option<Rgba>,
-    pub(crate) checked_track_border_color: Option<Rgba>,
-    pub(crate) disabled_unchecked_track_border_color: Option<Rgba>,
-    pub(crate) disabled_checked_track_border_color: Option<Rgba>,
-    pub(crate) thumb_border_color: Option<Rgba>,
+    pub(crate) disabled_checked_thumb_color: Option<egui::Color32>,
+    pub(crate) unchecked_track_border_color: Option<egui::Color32>,
+    pub(crate) checked_track_border_color: Option<egui::Color32>,
+    pub(crate) disabled_unchecked_track_border_color: Option<egui::Color32>,
+    pub(crate) disabled_checked_track_border_color: Option<egui::Color32>,
+    pub(crate) thumb_border_color: Option<egui::Color32>,
     /// A checked switch's thumb outline: `thumb_border_color`, the 0.8.0 theme's
     /// `switch.thumb(CHECKED)`'s stroke colour.
-    pub(crate) checked_thumb_border_color: Option<Rgba>,
+    pub(crate) checked_thumb_border_color: Option<egui::Color32>,
     /// `defaults.font.color`: the label; `None`, egui's own.
-    pub(crate) text: Option<Rgba>,
+    pub(crate) text: Option<egui::Color32>,
     /// `defaults.disabled_text_color`: a disabled switch's label; `None`, egui's own.
-    pub(crate) disabled_text: Option<Rgba>,
+    pub(crate) disabled_text: Option<egui::Color32>,
     /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
     /// egui's own fade of a disabled widget.
-    pub(crate) background: Option<Rgba>,
+    pub(crate) background: Option<egui::Color32>,
 }
 
 impl Look {
@@ -256,28 +269,29 @@ impl Look {
         );
         let hover = track(WidgetState::HOVER);
         Some(Self {
-            checked_background: next::fill(&track(on))?,
+            checked_background: next::fill_of(&track(on))?,
             hover_checked_background: next::ruled_fill(
                 &hover,
                 &track(WidgetState::HOVER | WidgetState::CHECKED),
             ),
-            unchecked_background: next::fill(&track(WidgetState::NONE))?,
+            unchecked_background: next::fill_of(&track(WidgetState::NONE))?,
             hover_unchecked_background: next::ruled_fill(&hover, &hover),
-            disabled_checked_background: next::fill(&track(off_on)),
-            disabled_unchecked_background: next::fill(&track(off)),
-            thumb_background: next::fill(&thumb(on))?,
-            unchecked_thumb_background: next::fill(&thumb(WidgetState::NONE)),
-            disabled_thumb_color: next::fill(&thumb(off)),
-            disabled_checked_thumb_color: next::fill(&thumb(off_on)),
-            unchecked_track_border_color: next::stroke(&track(WidgetState::NONE)),
-            checked_track_border_color: next::stroke(&track(on)),
-            disabled_unchecked_track_border_color: next::stroke(&track(off)),
-            disabled_checked_track_border_color: next::stroke(&track(off_on)),
-            thumb_border_color: next::stroke(&thumb(WidgetState::NONE)),
-            checked_thumb_border_color: next::stroke(&thumb(on)),
-            text: next::text(&sw.label(WidgetState::NONE)).or_else(|| next::body_text(r)),
+            disabled_checked_background: next::fill_of(&track(off_on)),
+            disabled_unchecked_background: next::fill_of(&track(off)),
+            thumb_background: next::fill_of(&thumb(on))?,
+            unchecked_thumb_background: next::fill_of(&thumb(WidgetState::NONE)),
+            disabled_thumb_color: next::fill_of(&thumb(off)),
+            disabled_checked_thumb_color: next::fill_of(&thumb(off_on)),
+            unchecked_track_border_color: next::stroke_color_of(&track(WidgetState::NONE)),
+            checked_track_border_color: next::stroke_color_of(&track(on)),
+            disabled_unchecked_track_border_color: next::stroke_color_of(&track(off)),
+            disabled_checked_track_border_color: next::stroke_color_of(&track(off_on)),
+            thumb_border_color: next::stroke_color_of(&thumb(WidgetState::NONE)),
+            checked_thumb_border_color: next::stroke_color_of(&thumb(on)),
+            text: next::text_color_of(&sw.label(WidgetState::NONE)).or_else(|| next::body_text(r)),
             disabled_text: Some(
-                next::state_text(&sw.label(off)).unwrap_or(next::rgba(r.colors.disabled_text)),
+                next::state_text_color_of(&sw.label(off))
+                    .unwrap_or_else(|| next::disabled_text_color(r)),
             ),
             background: next::window_background(r),
         })
@@ -289,8 +303,8 @@ impl Look {
     /// layer that paints its track as it is at rest none.
     #[cfg(test)]
     pub(crate) fn painted(self) -> Self {
-        let layer = |hover: Option<Rgba>, base: Rgba| {
-            hover.filter(|&hover| composite_over(hover, base) != to_color32(base))
+        let layer = |hover: Option<egui::Color32>, base: egui::Color32| {
+            hover.filter(|&hover| base.blend(hover) != base)
         };
         let unchecked_thumb = self
             .unchecked_thumb_background
@@ -327,26 +341,27 @@ impl Look {
 
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         let sw = &t.switch;
+        let c = to_color32;
         Self {
-            checked_background: sw.checked_background,
-            hover_checked_background: sw.hover_checked_background,
-            unchecked_background: sw.unchecked_background,
-            hover_unchecked_background: sw.hover_unchecked_background,
-            disabled_checked_background: sw.disabled_checked_background,
-            disabled_unchecked_background: sw.disabled_unchecked_background,
-            thumb_background: sw.thumb_background,
-            unchecked_thumb_background: sw.unchecked_thumb_background,
-            disabled_thumb_color: sw.disabled_thumb_color,
-            disabled_checked_thumb_color: sw.disabled_thumb_color,
-            unchecked_track_border_color: sw.unchecked_track_border_color,
-            checked_track_border_color: sw.checked_track_border_color,
-            disabled_unchecked_track_border_color: sw.disabled_unchecked_track_border_color,
-            disabled_checked_track_border_color: sw.disabled_checked_track_border_color,
-            thumb_border_color: sw.thumb_border_color,
-            checked_thumb_border_color: sw.thumb_border_color,
-            text: Some(t.defaults.font.color),
-            disabled_text: Some(t.defaults.disabled_text_color),
-            background: Some(t.defaults.background_color),
+            checked_background: c(sw.checked_background),
+            hover_checked_background: sw.hover_checked_background.map(c),
+            unchecked_background: c(sw.unchecked_background),
+            hover_unchecked_background: sw.hover_unchecked_background.map(c),
+            disabled_checked_background: sw.disabled_checked_background.map(c),
+            disabled_unchecked_background: sw.disabled_unchecked_background.map(c),
+            thumb_background: c(sw.thumb_background),
+            unchecked_thumb_background: sw.unchecked_thumb_background.map(c),
+            disabled_thumb_color: sw.disabled_thumb_color.map(c),
+            disabled_checked_thumb_color: sw.disabled_thumb_color.map(c),
+            unchecked_track_border_color: sw.unchecked_track_border_color.map(c),
+            checked_track_border_color: sw.checked_track_border_color.map(c),
+            disabled_unchecked_track_border_color: sw.disabled_unchecked_track_border_color.map(c),
+            disabled_checked_track_border_color: sw.disabled_checked_track_border_color.map(c),
+            thumb_border_color: sw.thumb_border_color.map(c),
+            checked_thumb_border_color: sw.thumb_border_color.map(c),
+            text: Some(c(t.defaults.font.color)),
+            disabled_text: Some(c(t.defaults.disabled_text_color)),
+            background: Some(c(t.defaults.background_color)),
         }
     }
 }
@@ -389,9 +404,7 @@ impl egui::Widget for Switch<'_> {
             Some(Paint {
                 geometry,
                 sw,
-                ground: as_one
-                    .then(|| backdrop.or_else(|| sw.background.map(to_color32)))
-                    .flatten(),
+                ground: as_one.then(|| backdrop.or(sw.background)).flatten(),
                 font: geometry
                     .label_size
                     .map(|size| egui::FontId::proportional(cap.map_or(size, |cap| size.min(cap)))),
@@ -497,7 +510,7 @@ fn switch_ui(
         .ctx()
         .animate_bool_with_time(prepared.response.id, checked, time);
     let text = if enabled { sw.text } else { sw.disabled_text };
-    let text = text.map_or(prepared.container.fallback_text_color, to_color32);
+    let text = text.unwrap_or(prepared.container.fallback_text_color);
     prepared.container.fallback_text_color = ground.map_or(text, |ground| as_one(ground, text));
     let laid = prepared.paint(ui);
     let Some(atom_rect) = laid.rect(rect_id) else {
@@ -526,8 +539,8 @@ fn switch_ui(
         ),
     };
     let fill = match hover {
-        Some(layer) if hovered => composite_over(layer, fill),
-        _ => to_color32(fill),
+        Some(layer) if hovered => fill.blend(layer),
+        _ => fill,
     };
     let rest_edge = if checked {
         sw.checked_track_border_color
@@ -573,11 +586,10 @@ fn switch_ui(
         Some(under) => as_one(under, colour),
         None => colour,
     };
-    let edge =
-        edge.map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, to_color32(colour))));
-    let thumb_edge = thumb_edge
-        .map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, to_color32(colour))));
-    let (fill, thumb) = (faded(*ground, fill), faded(on_ground, to_color32(thumb)));
+    let edge = edge.map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, colour)));
+    let thumb_edge =
+        thumb_edge.map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, colour)));
+    let (fill, thumb) = (faded(*ground, fill), faded(on_ground, thumb));
     let painter = ui.painter();
     painter.rect(
         track,

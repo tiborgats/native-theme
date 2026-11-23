@@ -29,9 +29,8 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use native_theme_egui::convert::{composite_over, to_color32};
+use native_theme_egui::convert::to_color32;
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::next::{
     DecorationKind, ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
 };
@@ -57,27 +56,28 @@ fn visited_key() -> egui::Id {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `link.font.color`: the text at rest.
-    pub(crate) text_color: Option<Rgba>,
-    pub(crate) background_color: Option<Rgba>,
-    pub(crate) hover_background: Option<Rgba>,
-    pub(crate) hover_text_color: Option<Rgba>,
-    pub(crate) active_text_color: Option<Rgba>,
-    pub(crate) visited_text_color: Option<Rgba>,
-    pub(crate) disabled_text_color: Option<Rgba>,
+    pub(crate) text_color: Option<egui::Color32>,
+    pub(crate) background_color: Option<egui::Color32>,
+    pub(crate) hover_background: Option<egui::Color32>,
+    pub(crate) hover_text_color: Option<egui::Color32>,
+    pub(crate) active_text_color: Option<egui::Color32>,
+    pub(crate) visited_text_color: Option<egui::Color32>,
+    pub(crate) disabled_text_color: Option<egui::Color32>,
     pub(crate) underline_enabled: Option<bool>,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         let l = &t.link;
+        let c = |colour| Some(to_color32(colour));
         Self {
-            text_color: Some(l.font.color),
-            background_color: Some(l.background_color),
-            hover_background: Some(l.hover_background),
-            hover_text_color: Some(l.hover_text_color),
-            active_text_color: Some(l.active_text_color),
-            visited_text_color: Some(l.visited_text_color),
-            disabled_text_color: Some(l.disabled_text_color),
+            text_color: c(l.font.color),
+            background_color: c(l.background_color),
+            hover_background: c(l.hover_background),
+            hover_text_color: c(l.hover_text_color),
+            active_text_color: c(l.active_text_color),
+            visited_text_color: c(l.visited_text_color),
+            disabled_text_color: c(l.disabled_text_color),
             underline_enabled: Some(l.underline_enabled),
         }
     }
@@ -89,12 +89,12 @@ impl Look {
     /// `link.label(NONE)`'s stated decoration is an underline.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
         let l = &r.link;
-        let label = |s: WidgetState| next::text(&l.label(s));
+        let label = |s: WidgetState| next::text_color_of(&l.label(s));
         let rest = l.label(WidgetState::NONE);
         let hover = l.container(WidgetState::HOVER);
         Self {
-            text_color: next::text(&rest),
-            background_color: next::fill(&l.container(WidgetState::NONE)),
+            text_color: next::text_color_of(&rest),
+            background_color: next::fill_of(&l.container(WidgetState::NONE)),
             hover_background: next::ruled_fill(&hover, &hover),
             hover_text_color: label(WidgetState::HOVER),
             active_text_color: label(WidgetState::PRESSED),
@@ -112,20 +112,26 @@ impl Look {
     /// paints the background as it is at rest given as none.
     #[cfg(test)]
     pub(crate) fn painted(self) -> Self {
-        let clear = |c: Option<Rgba>| c.filter(|c| to_color32(*c) != egui::Color32::TRANSPARENT);
-        let rest = self.background_color.unwrap_or(Rgba::new(0, 0, 0, 0));
+        let clear = |c: Option<egui::Color32>| c.filter(|c| *c != egui::Color32::TRANSPARENT);
+        let rest = self.background_color.unwrap_or(egui::Color32::TRANSPARENT);
         Self {
             background_color: clear(self.background_color),
             hover_background: self
                 .hover_background
-                .filter(|&hover| composite_over(hover, rest) != to_color32(rest)),
+                .filter(|&hover| rest.blend(hover) != rest),
             ..self
         }
     }
 
     /// The text's colour in a state: disabled, pressed, hovered, visited or at rest, each
     /// where the theme states it.
-    fn text(&self, enabled: bool, pressed: bool, hovered: bool, visited: bool) -> Option<Rgba> {
+    fn text(
+        &self,
+        enabled: bool,
+        pressed: bool,
+        hovered: bool,
+        visited: bool,
+    ) -> Option<egui::Color32> {
         if !enabled {
             self.disabled_text_color
         } else if pressed {
@@ -214,15 +220,13 @@ fn themed(
         let enabled = ui.is_enabled();
         let mut text = text;
         if let Some(colour) = l.text(enabled, pressed, hovered, visited) {
-            ui.visuals_mut().hyperlink_color = to_color32(colour);
-            text = text.color(to_color32(colour));
+            ui.visuals_mut().hyperlink_color = colour;
+            text = text.color(colour);
         }
         let hover = l.hover_background.filter(|_| hovered && enabled);
         let background = match (hover, l.background_color) {
-            (Some(hover), rest) => {
-                Some(composite_over(hover, rest.unwrap_or(Rgba::new(0, 0, 0, 0))))
-            }
-            (None, rest) => rest.map(to_color32),
+            (Some(hover), rest) => Some(rest.unwrap_or(egui::Color32::TRANSPARENT).blend(hover)),
+            (None, rest) => rest,
         };
         if let Some(background) = background {
             text = text.background_color(background);

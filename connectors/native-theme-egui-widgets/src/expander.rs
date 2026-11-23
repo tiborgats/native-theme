@@ -2,7 +2,6 @@
 
 use native_theme_egui::convert::{to_color32, to_margin};
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::next::{
     ArrowSide as NextArrowSide, IconStated, ResolvedTheme as NextResolvedTheme, TextStated,
     WidgetState,
@@ -97,17 +96,17 @@ pub struct ExpanderResponse<R> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `expander.arrow_color`: the arrow, egui's `fg_stroke` where unstated.
-    pub(crate) arrow_color: Option<Rgba>,
+    pub(crate) arrow_color: Option<egui::Color32>,
     /// `expander.border.color`: the frame, as stated; the scope's `noninteractive` stroke
     /// colour where unstated.
-    pub(crate) frame: Option<Rgba>,
+    pub(crate) frame: Option<egui::Color32>,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            arrow_color: t.expander.arrow_color,
-            frame: Some(t.expander.border.color),
+            arrow_color: t.expander.arrow_color.map(to_color32),
+            frame: Some(to_color32(t.expander.border.color)),
         }
     }
 
@@ -118,7 +117,7 @@ impl Look {
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
         Self {
             arrow_color: next::icon(&r.expander.arrow(WidgetState::NONE)),
-            frame: next::stroke(&r.expander.container(WidgetState::NONE)),
+            frame: next::stroke_color_of(&r.expander.container(WidgetState::NONE)),
         }
     }
 }
@@ -437,7 +436,7 @@ fn painted<R>(
     let edge = ui.visuals().widgets.noninteractive;
     let framed = layout.frame_enabled == Some(true);
     let frame = if framed {
-        let colour = look.frame.map_or(edge.bg_stroke.color, to_color32);
+        let colour = look.frame.unwrap_or(edge.bg_stroke.color);
         egui::Frame::NONE
             .stroke(egui::Stroke::new(edge.bg_stroke.width, colour))
             .corner_radius(edge.corner_radius)
@@ -575,7 +574,7 @@ fn header(
     let visuals = ui.style().interact(&response);
     let painter = ui.painter();
     painter.rect_filled(rect, visuals.corner_radius, visuals.weak_bg_fill);
-    let colour = look.arrow_color.map_or(visuals.fg_stroke.color, to_color32);
+    let colour = look.arrow_color.unwrap_or(visuals.fg_stroke.color);
     painter.add(egui::Shape::convex_polygon(
         triangle(arrow_box, state.openness(ui.ctx()), trailing),
         colour,

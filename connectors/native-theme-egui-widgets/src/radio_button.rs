@@ -2,7 +2,6 @@
 
 use native_theme_egui::convert::{clamp_length, to_color32, unit_interval};
 use native_theme_egui::egui;
-use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::next::{
     PartStated, PartStyle, ResolvedTheme as NextResolvedTheme, Stroke as NextStroke, StrokeAlign,
     TextStated, WidgetState,
@@ -318,13 +317,13 @@ fn laid_over(colour: egui::Color32, align: StrokeAlign, fill: egui::Color32) -> 
 pub(crate) struct Look {
     /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
     /// egui's own fade of a disabled widget.
-    pub(crate) background: Option<Rgba>,
+    pub(crate) background: Option<egui::Color32>,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            background: Some(t.defaults.background_color),
+            background: Some(to_color32(t.defaults.background_color)),
         }
     }
 
@@ -399,7 +398,7 @@ impl egui::Widget for RadioButton {
             width,
             label_gap,
         } = geometry;
-        let ground = backdrop.or_else(|| look.background.map(to_color32));
+        let ground = backdrop.or(look.background);
         let over = |ui: &mut egui::Ui, disabled: bool| {
             if let Some(r) = next {
                 let stock = ui.ctx().theme().default_visuals().widgets;

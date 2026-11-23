@@ -9,7 +9,6 @@ use native_theme_egui::egui;
 use native_theme_egui::egui::emath::Numeric as _;
 use native_theme_egui::egui::mutex::Mutex;
 use native_theme_egui::icons::{self, IconKey};
-use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::icons::IconSet;
 use native_theme_egui::native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, load_icon_indicator,
@@ -70,10 +69,10 @@ impl Spinner {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `spinner.fill_color`: the arc, and a Material or Lucide indicator's tint.
-    pub(crate) fill_color: Rgba,
+    pub(crate) fill_color: egui::Color32,
     /// `defaults.text_color`: a freedesktop indicator's `currentColor`; `None`, egui's own
     /// text colour.
-    pub(crate) text_color: Option<Rgba>,
+    pub(crate) text_color: Option<egui::Color32>,
     /// `spinner.diameter`.
     pub(crate) diameter: f32,
     /// `spinner.stroke_width`: the arc's width.
@@ -83,8 +82,8 @@ pub(crate) struct Look {
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
-            fill_color: t.spinner.fill_color,
-            text_color: Some(t.defaults.text_color),
+            fill_color: to_color32(t.spinner.fill_color),
+            text_color: Some(to_color32(t.defaults.text_color)),
             diameter: t.spinner.diameter,
             stroke_width: t.spinner.stroke_width,
         }
@@ -95,8 +94,8 @@ impl Look {
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
         let s = &r.spinner;
         Self {
-            fill_color: next::rgba(s.color),
-            text_color: r.colors.window.foreground.map(next::rgba),
+            fill_color: next::color(s.color),
+            text_color: r.colors.window.foreground.map(next::color),
             diameter: s.diameter,
             stroke_width: s.stroke_width,
         }
@@ -126,10 +125,8 @@ impl egui::Widget for Spinner {
             Some(Paint {
                 diameter: scope::length(look.diameter)?,
                 stroke_width: scope::length(look.stroke_width)?,
-                colour: to_color32(look.fill_color),
-                current_colour: look
-                    .text_color
-                    .map_or_else(|| ui.visuals().text_color(), to_color32),
+                colour: look.fill_color,
+                current_colour: look.text_color.unwrap_or_else(|| ui.visuals().text_color()),
                 set: atlas.icon_set(),
                 icon_theme: atlas.icon_theme(theme).map(str::to_string),
                 reduce_motion: atlas.accessibility().reduce_motion,
