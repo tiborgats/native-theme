@@ -3499,6 +3499,89 @@ fn looks(t: &ResolvedTheme) -> Vec<(&'static str, String)> {
     ]
 }
 
+/// Each widget's colour reads of a 0.8.0 theme, as [`looks`] gives the 0.7.2 ones: the look its
+/// `next_of` builds of `r`, as text (the progress bar's outline is its `Bar`'s).
+fn next_looks(
+    r: &native_theme_egui::native_theme::next::ResolvedTheme,
+) -> Vec<(&'static str, String)> {
+    vec![
+        ("Spinner", format!("{:?}", crate::spinner::Look::next_of(r))),
+        ("Switch", format!("{:?}", crate::switch::Look::next_of(r))),
+        ("Slider", format!("{:?}", crate::slider::Look::next_of(r))),
+        ("links", format!("{:?}", crate::links::Look::next_of(r))),
+        (
+            "ProgressBar",
+            format!("{:?}", crate::progress_bar::Bar::next_of(r)),
+        ),
+        (
+            "RadioButton",
+            format!("{:?}", crate::radio_button::Look::next_of(r)),
+        ),
+        (
+            "SegmentedControl",
+            format!("{:?}", crate::segmented_control::Look::next_of(r)),
+        ),
+        (
+            "Expander",
+            format!("{:?}", crate::expander::Look::next_of(r)),
+        ),
+    ]
+}
+
+/// The two colours a home is spliced with, each as 8-bit sRGB channels.
+const SPLICES: [[u8; 3]; 2] = [[0x13, 0x57, 0x9b], [0x24, 0x57, 0x9b]];
+
+/// The 0.8.0 `preset` resolved in `ctx` with the colour at `home` stated as `rgb`: a part's
+/// home (`widget.part(STATES).fill`, `.color` or `.stroke.color`) through a rule for exactly
+/// those states laid over the preset, its stroke 1 px wide; one of the colours no rule holds
+/// set on the resolved theme. `Err` names a home neither way reaches.
+fn next_spliced(
+    preset: Preset,
+    ctx: &ThemeContext,
+    home: &str,
+    [red, green, blue]: [u8; 3],
+) -> Result<native_theme_egui::native_theme::next::ResolvedTheme, String> {
+    use native_theme_egui::native_theme::next::{Color, TextStated, ThemePatch};
+    let hex = format!("#{red:02x}{green:02x}{blue:02x}");
+    if let Some((widget, rest)) = home.split_once('.')
+        && let Some((part, rest)) = rest.split_once('(')
+    {
+        let (states, property) = rest
+            .split_once(").")
+            .ok_or_else(|| format!("{home}: no property after the states"))?;
+        let states: Vec<String> = states
+            .split('|')
+            .filter(|s| *s != "NONE")
+            .map(|s| format!("\"{}\"", s.to_ascii_lowercase()))
+            .collect();
+        let value = match property {
+            "fill" | "color" => format!("{part}.{property} = \"{hex}\""),
+            "stroke.color" => format!("{part}.stroke = {{ width = 1.0, color = \"{hex}\" }}"),
+            _ => return Err(format!("{home}: no splice for its property")),
+        };
+        let patch = format!(
+            "[[widgets.{widget}.rules]]\nstates = [{}]\n{value}\n",
+            states.join(", ")
+        );
+        let patch = ThemePatch::from_toml(&patch).map_err(|e| format!("{home}: {e}"))?;
+        return Ok(NextTheme::preset(preset).with_patch(patch).resolve(ctx));
+    }
+    let mut r = NextTheme::preset(preset).resolve(ctx);
+    let colour = Color::from_srgb8(red, green, blue, u8::MAX);
+    match home {
+        "colors.window.background" => r.colors.window.background = Some(colour),
+        "colors.window.foreground" => r.colors.window.foreground = Some(colour),
+        "colors.disabled_text" => r.colors.disabled_text = colour,
+        "spinner.color" => r.spinner.color = colour,
+        "typography.body.color" => {
+            r.typography.body.color = colour;
+            r.typography.body.stated |= TextStated::COLOR;
+        }
+        _ => return Err(format!("{home}: no splice for it")),
+    }
+    Ok(r)
+}
+
 /// A colour leaf a widget draws in: the 0.7.2 field its `of` reads, and the 0.8.0 homes its
 /// `next_of` reads in its place.
 type Read = (&'static str, &'static [&'static str]);
@@ -3710,11 +3793,23 @@ fn quoted_to_bracket(s: &str) -> Option<Vec<String>> {
 }
 
 /// Every 0.8.0 home `WIDGET_READS` lists beside a 0.7.2 field is one of that field's homes in
-/// the table of homes, and every field lists one at least.
+/// the table of homes, every field lists one at least, and the widget reads each: spliced with
+/// two colours ([`next_spliced`]) in some platform preset, light or dark, the widget's 0.8.0
+/// look ([`next_looks`]) differs between the two.
 #[test]
 fn every_listed_home_is_its_fields_home_in_the_table() -> std::io::Result<()> {
     let table = table_of_homes()?;
     assert!(table.len() > 500, "only {} rows read", table.len());
+    let schemes = [ThemeContext::light(), ThemeContext::dark()];
+    fn look_of(
+        widget: &str,
+        r: &native_theme_egui::native_theme::next::ResolvedTheme,
+    ) -> Option<String> {
+        next_looks(r)
+            .into_iter()
+            .find(|(w, _)| *w == widget)
+            .map(|(_, look)| look)
+    }
     let mut failures = Vec::new();
     for (widget, reads) in WIDGET_READS {
         for (field, homes) in *reads {
@@ -3730,6 +3825,36 @@ fn every_listed_home_is_its_fields_home_in_the_table() -> std::io::Result<()> {
                     failures.push(format!(
                         "{widget}: {field}: {home} is not one of its homes {table_homes:?}"
                     ));
+                }
+                let mut read = Ok(false);
+                'bases: for preset in Preset::ALL {
+                    for ctx in &schemes {
+                        let [a, b] = SPLICES.map(|rgb| next_spliced(*preset, ctx, home, rgb));
+                        match (a, b) {
+                            (Ok(a), Ok(b)) => {
+                                let looks = (look_of(widget, &a), look_of(widget, &b));
+                                if looks.0.is_none() {
+                                    read = Err(format!("{widget} has no 0.8.0 look"));
+                                    break 'bases;
+                                }
+                                if looks.0 != looks.1 {
+                                    read = Ok(true);
+                                    break 'bases;
+                                }
+                            }
+                            (Err(e), _) | (_, Err(e)) => {
+                                read = Err(e);
+                                break 'bases;
+                            }
+                        }
+                    }
+                }
+                match read {
+                    Ok(true) => {}
+                    Ok(false) => failures.push(format!(
+                        "{widget}: {field}: {home} spliced moves its 0.8.0 look in no preset"
+                    )),
+                    Err(e) => failures.push(format!("{widget}: {field}: {e}")),
                 }
             }
         }
