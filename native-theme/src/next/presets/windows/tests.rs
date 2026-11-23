@@ -325,3 +325,75 @@ fn no_motion_removes_the_dialog_s_entrance() {
         assert_eq!(theme.motion_tokens, MotionTokens::default(), "{motion:?}");
     }
 }
+
+/// The system's settings of `accent` and, for `(Scheme::Light, Contrast::High)`, of the
+/// selection's colours `highlight` alone.
+fn system_with(accent: Color, highlight: Option<(Color, Color)>) -> SystemOverrides {
+    use crate::next::reader::{OsColors, OsSelectionColors};
+    let color_schemes = highlight
+        .map(|(background, foreground)| {
+            let colors = OsColors {
+                selection: Some(OsSelectionColors::new(
+                    Some(background),
+                    Some(foreground),
+                    None,
+                    None,
+                )),
+                ..OsColors::default()
+            };
+            vec![((Scheme::Light, Contrast::High), colors)]
+        })
+        .unwrap_or_default();
+    SystemOverrides {
+        accent: Some(accent),
+        color_schemes,
+        ..SystemOverrides::default()
+    }
+}
+
+/// The system's accent is one value for both schemes: without a shade it is
+/// the accent and the accent's fill in either scheme.
+#[test]
+fn the_system_s_accent_applies_in_either_scheme() {
+    let accent = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system_with(accent, None));
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let resolved = theme.resolve(&ctx);
+        assert_eq!(resolved.colors.accent.fill, accent, "{:?}", ctx.scheme);
+        assert_eq!(
+            resolved.button.body(ButtonQuery::primary()).fill,
+            Paint::Solid(accent),
+            "{:?}",
+            ctx.scheme
+        );
+    }
+}
+
+/// The system's high-contrast colours make `Contrast::High` available for
+/// their scheme alone; there a stated colour replaces the accent's values,
+/// and a key whose colour is not stated keeps the preset's.
+#[test]
+fn the_system_s_high_contrast_colours_make_high_available() {
+    let accent = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    let highlight = Color::from_srgb8(5, 5, 5, 0xff);
+    let highlight_text = Color::from_srgb8(6, 6, 6, 0xff);
+    let theme = Theme::preset(Preset::Windows11)
+        .with_system_overrides(system_with(accent, Some((highlight, highlight_text))));
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    assert_eq!(high.colors.accent.fill, highlight);
+    assert_eq!(high.colors.selection.foreground, highlight_text);
+    assert_eq!(
+        high.button.body(ButtonQuery::primary()).fill,
+        Paint::Solid(highlight)
+    );
+    let preset = Theme::preset(Preset::Windows11).resolve(&ThemeContext::light());
+    assert_eq!(
+        high.button.body(ButtonQuery::new(WidgetState::NONE)).fill,
+        preset.button.body(ButtonQuery::new(WidgetState::NONE)).fill
+    );
+    assert_eq!(high.layout.border_opacity, preset.layout.border_opacity);
+    let dark = theme.resolve(&ThemeContext::dark().with_contrast(Contrast::High));
+    assert_eq!(dark.context.contrast, Contrast::Normal);
+    assert_eq!(dark.colors.accent.fill, accent);
+}

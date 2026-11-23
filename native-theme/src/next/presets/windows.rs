@@ -6,8 +6,10 @@
 //! and the globals made from them; the widgets derived from the roles, the
 //! globals and the colours. A widget's colour that is a role's colour, the
 //! same WinUI brush, is taken from the roles, not from a second copy of the
-//! constant. So far the static path: the system's settings, the active
-//! palette and an explicit accent ([`ResolveInputs`]) are not read yet.
+//! constant. The system's settings ([`ResolveInputs::system`]) are laid over
+//! the constants as the 0.7.2 reader writes them (spec §8, "The Windows
+//! part", *Derived by the `windows-11` builder*; see [`resolve`]); the
+//! active palette and an explicit accent are not read yet.
 //!
 //! The colours are what WinUI 3 draws (the header of 0.7.2's
 //! `windows-11.toml`): a brush with alpha as the resource gives it (ARGB
@@ -103,8 +105,10 @@
 //! `DialogEntranceStyle::None` and would collapse every transition, and the
 //! preset states no transition and no motion token; no source the builder
 //! reads states a policy of Windows' for `MotionPreference::Reduced`, which
-//! therefore changes nothing. The contrast and the accessibility flags
-//! change nothing here.
+//! therefore changes nothing. The contrast changes the theme only where the
+//! system's settings make `Contrast::High` available (their high-contrast
+//! colours, spec §6, resolution step 1): the high-contrast mapping of
+//! [`HighContrast`]. The accessibility flags change nothing here.
 //!
 //! Sources: `windows-11.toml` of 0.7.2 (`src/presets/windows-11.toml`), each
 //! constant with the citation the TOML gives it (`docs/platform-facts.md` by
@@ -142,6 +146,7 @@ use crate::next::presets::helpers::{
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, Orientation, Scheme, ThemeContext, WidgetState,
 };
+use crate::next::reader::{OsFont, SystemOverrides};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
@@ -1298,6 +1303,18 @@ const PRESSED_HOVER: &[&[WidgetState]] = &[&[WidgetState::PRESSED, WidgetState::
 /// §4, `Typography::font_dpi`).
 const FONT_DPI: f32 = 96.0;
 
+/// The default border's opacity under high contrast: 1, the border being
+/// `CardStrokeColorDefaultBrush` = `SystemColorWindowTextColor`, the text
+/// colour itself (`Common_themeresources_any.xaml:464`; platform-facts.md
+/// (§2.1.3), `border.color`; 0.7.2's `windows::apply_sys_colors`).
+const HIGH_CONTRAST_BORDER_OPACITY: f32 = 1.0;
+
+/// The progress bar's outline under high contrast:
+/// `ProgressBarBorderThemeThickness` is 1 in `HighContrast`
+/// (`ProgressBar_themeresources.xaml:13`; platform-facts.md (§2.10),
+/// `border.line_width`; 0.7.2's `windows::apply_sys_colors`).
+const HIGH_CONTRAST_PROGRESS_BAR_BORDER_WIDTH: f32 = 1.0;
+
 /// The colour of `rgba`, 8-bit sRGB `0xRRGGBBAA`, each channel over 255 as
 /// [`Color::from_srgb8`] takes it.
 const fn srgb8(rgba: u32) -> Color {
@@ -1319,17 +1336,38 @@ const fn srgb8(rgba: u32) -> Color {
 /// data"): `Normal` alone, as the module documentation says.
 pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal];
 
-/// The theme of `windows-11` for `ctx.scheme`, from the preset's constants.
-// `inputs` is not read yet: the system's settings, the palette's and the
-// accent's derivations (spec §6, resolution step 2; spec §8, "The Windows
-// part") are the next task of the plan's Windows unit.
-pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> ResolvedTheme {
-    let (c, border_opacity) = match ctx.scheme {
-        Scheme::Light => (&LIGHT, BORDER_OPACITY_LIGHT),
-        Scheme::Dark => (&DARK, BORDER_OPACITY_DARK),
+/// The theme of `windows-11` for `ctx.scheme`, from the preset's constants
+/// with the system's settings `inputs.system` laid over them, as the 0.7.2
+/// reader writes them over the preset (spec §8, "The Windows part"; 0.7.2's
+/// `windows::build_theme` and `apply_sys_colors`): each setting applies in
+/// whichever scheme is resolved (spec §8, "Every reader"); the accent's
+/// values of [`lay_accent_over`]; the fonts, the tooltip's `tooltip_font`,
+/// else `status_bar_font`; the scroll bar's sizes, the border's width, the
+/// icons' small and large sizes and the caret's times; and, where
+/// `Contrast::High` is resolved, the high-contrast mapping of
+/// [`HighContrast`] in place of the accent's values.
+pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
+    let system = inputs.system;
+    let (preset_colors, preset_border_opacity) = match ctx.scheme {
+        Scheme::Light => (LIGHT, BORDER_OPACITY_LIGHT),
+        Scheme::Dark => (DARK, BORDER_OPACITY_DARK),
     };
-    let colors = roles(c);
-    let typography = typography(c, ctx.text_scale);
+    let high_contrast = HighContrast::of(system, ctx);
+    let hc = high_contrast.unwrap_or_default();
+    let mut scheme_colors = preset_colors;
+    let mut link_pressed = preset_colors.accent_fill;
+    if let Some(system) = system {
+        link_pressed = lay_accent_over(
+            &mut scheme_colors,
+            system,
+            ctx.scheme,
+            high_contrast.is_some(),
+        );
+    }
+    hc.lay_over(&mut scheme_colors);
+    let c = &scheme_colors;
+    let colors = roles(c, &hc);
+    let typography = typography(c, &hc, system, ctx.text_scale);
     let units = FontUnits {
         dpi: typography.font_dpi,
         text_scale: ctx.text_scale,
@@ -1344,12 +1382,19 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         section_gap: Some(SECTION_GAP),
         corner_radius: CORNER_RADIUS,
         corner_radius_lg: CORNER_RADIUS_LG,
-        border_width: BORDER_WIDTH,
-        border_opacity,
+        border_width: system
+            .and_then(|s| s.border_width_px)
+            .unwrap_or(BORDER_WIDTH),
+        border_opacity: if hc.window_text.is_some() {
+            HIGH_CONTRAST_BORDER_OPACITY
+        } else {
+            preset_border_opacity
+        },
         shadow_enabled: SHADOW_ENABLED,
         cursor_size_px: None,
         cursor_theme: None,
     };
+    let fonts = SystemFonts::of(system);
     let direction = ctx.direction;
     ResolvedTheme {
         name: Arc::from(Preset::Windows11.display_name()),
@@ -1361,13 +1406,22 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
             // 0.7.2's `Resolved::icon_theme_explicit`: the TOML states the theme
             // (`src/model/resolved.rs`).
             theme_explicit: true,
-            sizes: IconSizes::new(
-                Some(ICON_TOOLBAR),
-                Some(ICON_SMALL),
-                Some(ICON_LARGE),
-                Some(ICON_DIALOG),
-                Some(ICON_PANEL),
-            ),
+            // The sizes the system states, each in place of the preset's (Windows:
+            // `SM_CXSMICON` and `SM_CXICON`, 0.7.2's `defaults.icon_sizes.small` and
+            // `large`), in every scheme.
+            sizes: {
+                let os = system.and_then(|s| s.icon_sizes);
+                let size = |pick: fn(&IconSizes) -> Option<f32>, preset| {
+                    Some(os.as_ref().and_then(pick).unwrap_or(preset))
+                };
+                IconSizes::new(
+                    size(|s| s.toolbar, ICON_TOOLBAR),
+                    size(|s| s.small, ICON_SMALL),
+                    size(|s| s.large, ICON_LARGE),
+                    size(|s| s.dialog, ICON_DIALOG),
+                    size(|s| s.panel, ICON_PANEL),
+                )
+            },
         },
         timings: UiTimings {
             tooltip_show_ms: Some(TOOLTIP_SHOW_MS),
@@ -1407,27 +1461,48 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         ),
         caret: CaretSpec {
             width: None,
-            blink_on_ms: Some(CARET_BLINK_ON_MS),
-            blink_off_ms: Some(CARET_BLINK_OFF_MS),
-            blink_timeout_ms: None,
+            blink_on_ms: system
+                .and_then(|s| s.caret_blink_on_ms)
+                .or(Some(CARET_BLINK_ON_MS)),
+            blink_off_ms: system
+                .and_then(|s| s.caret_blink_off_ms)
+                .or(Some(CARET_BLINK_OFF_MS)),
+            blink_timeout_ms: system.and_then(|s| s.caret_blink_timeout_ms),
             shape: None,
         },
         elevations: Arc::from([]),
-        button: button(c, &colors, &typography, &layout),
+        button: button(c, &hc, &colors, &typography, &layout),
         checkbox: checkbox(c, &colors, &typography, &layout),
         radio: radio(c, &colors, &typography, &layout),
-        scrollbar: scrollbar(c, &colors),
-        list: list(c, &colors, &typography, &layout, direction),
+        scrollbar: scrollbar(
+            c,
+            &colors,
+            system
+                .and_then(|s| s.scrollbar_width_px)
+                .unwrap_or(SCROLLBAR_GROOVE_WIDTH),
+            system
+                .and_then(|s| s.scrollbar_min_thumb_length_px)
+                .unwrap_or(SCROLLBAR_MIN_THUMB_LENGTH),
+        ),
+        list: list(c, &hc, &colors, &typography, &layout, direction),
         tab: tab(c, &colors, &typography),
-        menu: menu(c, &colors, &typography),
+        menu: menu(c, &hc, &colors, &typography, units, fonts.menu),
         menu_bar: menu_bar(&colors),
         sidebar: sidebar(c, &colors, &typography, &layout),
         toolbar: toolbar(c, &colors, &typography, direction),
-        status_bar: status_bar(&colors, &typography, &layout),
-        tooltip: tooltip(c, &colors, &typography, units, &layout),
-        window: window(c, &colors, &typography, &layout, ctx.window_active),
+        status_bar: status_bar(&colors, &typography, &layout, units, fonts.status_bar),
+        tooltip: tooltip(c, &hc, &colors, &typography, units, &layout, fonts.tooltip),
+        window: window(
+            c,
+            &hc,
+            &colors,
+            laid_over(label(&typography.body, None), fonts.title_bar, units),
+            &layout,
+            ctx.window_active,
+        ),
         input: input(
             c,
+            &hc,
             &colors,
             &typography,
             &layout,
@@ -1444,6 +1519,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         ),
         text_area: input(
             c,
+            &hc,
             &colors,
             &typography,
             &layout,
@@ -1458,25 +1534,232 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
             ),
             None,
         ),
-        link: link(c, &colors, &typography),
+        link: link(c, &colors, &typography, link_pressed),
         slider: slider(c, &colors),
-        progress_bar: progress_bar(c, &colors),
+        progress_bar: progress_bar(c, &hc, &colors),
         splitter: splitter(&colors),
-        separator: separator(c, &layout),
+        separator: separator(c, &hc, &layout),
         spinner: spinner(c),
         popover: popover(c, &typography, &layout),
-        switch: switch(c, &colors),
-        dialog: dialog(&colors, &typography, units, &layout, motion),
+        switch: switch(c),
+        dialog: dialog(c, &colors, &typography, units, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, direction),
-        segmented_control: segmented_control(c, &typography, &layout),
+        segmented_control: segmented_control(c, &hc, &typography, &layout),
         card: card(c, &colors),
-        expander: expander(&colors, &typography, &layout, direction),
+        expander: expander(c, &colors, &typography, &layout, direction),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
         typography,
         layout,
     }
+}
+
+/// The system colours WinUI 3's `HighContrast` theme dictionary draws with,
+/// as the system's settings state them for the resolved scheme at
+/// `Contrast::High` (spec §8, "The Windows part", *High contrast*): the
+/// window's (`COLOR_WINDOW`, `COLOR_WINDOWTEXT`), the button's
+/// (`COLOR_BTNFACE`, `COLOR_BTNTEXT`) and the selection's
+/// (`COLOR_HIGHLIGHT`, `COLOR_HIGHLIGHTTEXT`) colours, the link
+/// (`COLOR_HOTLIGHT`) and the disabled text (`COLOR_GRAYTEXT`), each `None`
+/// where not stated: that key keeps what it has without high contrast.
+///
+/// Each field a widget draws takes the system colour the dictionary gives its
+/// brush, as 0.7.2's `windows::apply_sys_colors` writes it (each key's
+/// brush cited there, microsoft-ui-xaml 8463f45): `COLOR_WINDOW` the
+/// window's, the view's, the menu's, the tooltip's and the title bar's
+/// backgrounds and the progress bar's groove; `COLOR_WINDOWTEXT` the text,
+/// the informational fill, the focus ring, the border (at an opacity of 1,
+/// [`HIGH_CONTRAST_BORDER_OPACITY`]), the placeholder, the tooltip's text and
+/// the progress bar's outline (1 px wide,
+/// [`HIGH_CONTRAST_PROGRESS_BAR_BORDER_WIDTH`]); `COLOR_BTNFACE` the push
+/// button's, the text field's and the segmented control's fills and the
+/// hovered on switch; `COLOR_BTNTEXT` the push button's, the text field's,
+/// the menu's, the title's and the segmented control's text;
+/// `COLOR_HIGHLIGHT` the selection, the accent and every accent fill, the
+/// list's selected row, the segmented control's outline and selected
+/// segment and the focused text field's outline; `COLOR_HIGHLIGHTTEXT` the
+/// text on them; `COLOR_HOTLIGHT` the link; `COLOR_GRAYTEXT` the disabled
+/// text and the inactive title.
+#[derive(Clone, Copy, Default)]
+struct HighContrast {
+    /// `COLOR_WINDOW`.
+    window: Option<Color>,
+    /// `COLOR_WINDOWTEXT`.
+    window_text: Option<Color>,
+    /// `COLOR_BTNFACE`.
+    button_face: Option<Color>,
+    /// `COLOR_BTNTEXT`.
+    button_text: Option<Color>,
+    /// `COLOR_HIGHLIGHT`.
+    highlight: Option<Color>,
+    /// `COLOR_HIGHLIGHTTEXT`.
+    highlight_text: Option<Color>,
+    /// `COLOR_HOTLIGHT`.
+    hotlight: Option<Color>,
+    /// `COLOR_GRAYTEXT`.
+    gray_text: Option<Color>,
+}
+
+impl HighContrast {
+    /// The high-contrast colours of `system` for `ctx`: `None` unless
+    /// `Contrast::High` is resolved, which the preset defines only through
+    /// the system's colours for it ([`CONTRAST_LEVELS`]; spec §6, resolution
+    /// step 1), and the system states colours for the scheme at that level.
+    fn of(system: Option<&SystemOverrides>, ctx: &ThemeContext) -> Option<Self> {
+        if ctx.contrast != Contrast::High {
+            return None;
+        }
+        let colors = system?.colors_for(ctx.scheme, Contrast::High)?;
+        let surfaces = colors.surfaces.as_ref();
+        let window = surfaces.and_then(|s| s.window);
+        let button = surfaces.and_then(|s| s.button);
+        Some(Self {
+            window: window.and_then(|s| s.background),
+            window_text: window.and_then(|s| s.foreground),
+            button_face: button.and_then(|s| s.background),
+            button_text: button.and_then(|s| s.foreground),
+            highlight: colors.selection.and_then(|s| s.background),
+            highlight_text: colors.selection.and_then(|s| s.foreground),
+            hotlight: colors.link,
+            gray_text: colors.disabled_text,
+        })
+    }
+
+    /// Lay the colours over each of `c`'s fields whose every key takes the
+    /// same system colour: the view's background and the menu's
+    /// (`COLOR_WINDOW`); the accent, the accent's fill and the segmented
+    /// control's outline (`COLOR_HIGHLIGHT`); the selection's text
+    /// (`COLOR_HIGHLIGHTTEXT`); the focus ring and the informational fill
+    /// (`COLOR_WINDOWTEXT`); the link (`COLOR_HOTLIGHT`); the hovered on
+    /// switch (`COLOR_BTNFACE`); the inactive title (`COLOR_GRAYTEXT`). A
+    /// field whose keys take different colours, or some none, the widgets
+    /// and [`roles`] pick key by key.
+    fn lay_over(&self, c: &mut SchemeColors) {
+        let lay = |field: &mut Color, color: Option<Color>| {
+            if let Some(color) = color {
+                *field = color;
+            }
+        };
+        lay(&mut c.view_background, self.window);
+        lay(&mut c.menu_background, self.window);
+        lay(&mut c.accent, self.highlight);
+        lay(&mut c.accent_fill, self.highlight);
+        lay(&mut c.control_stroke, self.highlight);
+        lay(&mut c.selection_foreground, self.highlight_text);
+        lay(&mut c.focus_ring, self.window_text);
+        lay(&mut c.info, self.window_text);
+        lay(&mut c.link, self.hotlight);
+        lay(&mut c.switch_hover_on, self.button_face);
+        lay(&mut c.inactive_title, self.gray_text);
+    }
+}
+
+/// Lay the system's accent settings over `c` for `scheme`, as 0.7.2's
+/// `windows::build_theme` writes them (spec §8, "The Windows part",
+/// *Derived by the `windows-11` builder*; the WinUI resources cited there):
+/// the accent (`UIColorType::Accent`); the accent's fill
+/// (`AccentFillColorDefault`), `AccentLight2` in dark and `AccentDark1` in
+/// light, the accent where that shade is not stated; the link
+/// (`AccentTextFillColorPrimary`), `AccentLight3` in dark and `AccentDark2`
+/// in light; the informational fill (`SystemFillColorAttention`),
+/// `AccentLight2` in dark and the accent in light; and, outside high
+/// contrast, the link's hovered colour, `AccentLight3` in dark and
+/// `AccentDark3` in light. A value whose setting is not stated keeps `c`'s.
+/// Returns the link's pressed colour: outside high contrast `AccentLight2` in
+/// dark and `AccentDark1` in light, where stated; else the preset's (`c`'s
+/// accent fill before the accent is laid over it, the key's value in
+/// `windows-11.toml`).
+fn lay_accent_over(
+    c: &mut SchemeColors,
+    system: &SystemOverrides,
+    scheme: Scheme,
+    high_contrast: bool,
+) -> Color {
+    let preset_pressed = c.accent_fill;
+    let accent = system.accent;
+    let ramp = system.windows_accent_ramp;
+    let [_, light2, light3] = ramp.map_or([None; 3], |r| r.light);
+    let [dark1, dark2, dark3] = ramp.map_or([None; 3], |r| r.dark);
+    let dark = scheme == Scheme::Dark;
+    let pick = |in_dark: Option<Color>, in_light: Option<Color>| {
+        if dark { in_dark } else { in_light }
+    };
+    if let Some(accent) = accent {
+        c.accent = accent;
+    }
+    if let Some(fill) = pick(light2, dark1).or(accent) {
+        c.accent_fill = fill;
+    }
+    if let Some(link) = pick(light3, dark2) {
+        c.link = link;
+    }
+    if let Some(info) = pick(light2, accent) {
+        c.info = info;
+    }
+    if high_contrast {
+        return preset_pressed;
+    }
+    if let Some(hover) = pick(light3, dark3) {
+        c.link_hover = hover;
+    }
+    pick(light2, dark1).unwrap_or(preset_pressed)
+}
+
+/// The system's fonts the widgets take: the menu's (`menu_font`), the
+/// title's (`title_bar_font`), the status bar's (`status_bar_font`) and the
+/// tooltip's (`tooltip_font`, else `status_bar_font`: `lfStatusFont` is "the
+/// font used in status bars and tooltips", `NONCLIENTMETRICSW`, as 0.7.2's
+/// reader copies it).
+#[derive(Clone, Copy, Default)]
+struct SystemFonts<'a> {
+    /// The menu's.
+    menu: Option<&'a OsFont>,
+    /// The window title's.
+    title_bar: Option<&'a OsFont>,
+    /// The status bar's.
+    status_bar: Option<&'a OsFont>,
+    /// The tooltip's.
+    tooltip: Option<&'a OsFont>,
+}
+
+impl<'a> SystemFonts<'a> {
+    /// The fonts `system` states.
+    fn of(system: Option<&'a SystemOverrides>) -> Self {
+        let Some(s) = system else {
+            return Self::default();
+        };
+        Self {
+            menu: s.menu_font.as_ref(),
+            title_bar: s.title_bar_font.as_ref(),
+            status_bar: s.status_bar_font.as_ref(),
+            tooltip: s.tooltip_font.as_ref().or(s.status_bar_font.as_ref()),
+        }
+    }
+}
+
+/// `base` with the system's font `os` laid over it, where given: each of
+/// its family, size, weight and style that `os` states replaces `base`'s,
+/// as 0.7.2 merges a reader's font over the preset's (`Theme::merge`).
+fn laid_over(base: TextStyle, os: Option<&OsFont>, units: FontUnits) -> TextStyle {
+    let mut font = base;
+    let Some(os) = os else {
+        return font;
+    };
+    if let Some(family) = &os.family {
+        font.family = family.clone();
+    }
+    if let Some(size) = os.size {
+        font.size_px = font_px(size, units);
+        font.defined_size = Some(size);
+    }
+    if let Some(weight) = os.weight {
+        font.weight = weight;
+    }
+    if let Some(style) = os.style {
+        font.style = style;
+    }
+    font
 }
 
 /// The colour roles of one scheme from its colours `c`. The window's surface
@@ -1487,8 +1770,13 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
 /// `selection_inactive_background` and `selection_inactive_text_color` the
 /// selection's, and the text selection's colours the selection's,
 /// `src/resolve/inheritance.rs`, `resolve_defaults_internal`); the caret is
-/// the window's text (`input.caret_color`, `resolve_safety_nets`).
-fn roles(c: &SchemeColors) -> ColorRoles {
+/// the window's text (`input.caret_color`, `resolve_safety_nets`). Under high
+/// contrast `hc` gives the roles 0.7.2's `defaults.*` keys whose colours its
+/// reader writes there ([`HighContrast`]): the window's background
+/// (`background_color`), text (`text_color`) and border (`border.color`),
+/// the view's background (`surface_color`), the tooltip's colours, the
+/// accent's text (`accent_text_color`), the disabled text and the caret.
+fn roles(c: &SchemeColors, hc: &HighContrast) -> ColorRoles {
     let status = |fill| StatusColors {
         fill,
         foreground: c.status_foreground,
@@ -1496,12 +1784,13 @@ fn roles(c: &SchemeColors) -> ColorRoles {
         origin: RoleOrigin::Native,
     };
     let unstated = SurfaceColors::default();
+    let text = hc.window_text.unwrap_or(c.window_foreground);
     ColorRoles {
         window: SurfaceColors::new(
-            Some(c.window_background),
-            Some(c.window_foreground),
+            Some(hc.window.unwrap_or(c.window_background)),
+            Some(text),
             Some(c.window_foreground_muted),
-            Some(c.window_border),
+            Some(hc.window_text.unwrap_or(c.window_border)),
             None,
         ),
         view: SurfaceColors::new(Some(c.view_background), None, None, None, None),
@@ -1511,8 +1800,8 @@ fn roles(c: &SchemeColors) -> ColorRoles {
         dialog: unstated,
         popover: unstated,
         tooltip: SurfaceColors::new(
-            Some(c.acrylic_fill),
-            Some(c.window_foreground),
+            Some(hc.window.unwrap_or(c.acrylic_fill)),
+            Some(text),
             None,
             None,
             None,
@@ -1529,15 +1818,15 @@ fn roles(c: &SchemeColors) -> ColorRoles {
         scrim: None,
         accent: AccentColors {
             fill: c.accent,
-            foreground: c.accent_foreground,
+            foreground: hc.highlight_text.unwrap_or(c.accent_foreground),
             standalone: None,
         },
         focus_ring: c.focus_ring,
-        caret: c.window_foreground,
+        caret: text,
         link: c.link,
         // 0.7.2: `link.visited_text_color` is `defaults.link_color` where unstated.
         link_visited: None,
-        disabled_text: c.disabled_text,
+        disabled_text: hc.gray_text.unwrap_or(c.disabled_text),
         shadow: c.shadow,
         disabled_opacity: DISABLED_OPACITY,
         error: status(c.error),
@@ -1611,18 +1900,37 @@ fn text_scale_entry(
 /// display style `display` (spec §4). The body's line height is the
 /// multiplier times its size, in its unit (spec §4; 0.7.2's
 /// `resolve_text_scale_entry`, then its conversion in `validate`). Sizes
-/// convert at [`FONT_DPI`] and scale by `text_scale` (spec §6, resolution
-/// step 2); each keeps its unscaled size as its `defined_size`.
-fn typography(c: &SchemeColors, text_scale: f32) -> Typography {
+/// convert at the system's font DPI, else [`FONT_DPI`], and scale by
+/// `text_scale` (spec §6, resolution step 2); each keeps its unscaled size as
+/// its `defined_size`. The system's UI font (`ui_font`, 0.7.2's
+/// `defaults.font` from `lfMessageFont`) is laid over the body, and so its
+/// weight is the caption's and its size gives the body's line height; under
+/// high contrast the text is `hc`'s window text (0.7.2's `defaults.text_color`).
+fn typography(
+    c: &SchemeColors,
+    hc: &HighContrast,
+    system: Option<&SystemOverrides>,
+    text_scale: f32,
+) -> Typography {
     let units = FontUnits {
-        dpi: FONT_DPI,
+        dpi: system.and_then(|s| s.font_dpi).unwrap_or(FONT_DPI),
         text_scale,
     };
-    let text = c.window_foreground;
+    let text = hc.window_text.unwrap_or(c.window_foreground);
+    let ui = system.and_then(|s| s.ui_font.as_ref());
     let body_size = FontSize::Pt(FONT_SIZE_PT);
-    let mut body = font(FONT_FAMILY, body_size, FONT_WEIGHT, text, units);
-    body.line_height = font_px(FontSize::Pt(LINE_HEIGHT * FONT_SIZE_PT), units);
+    let mut body = laid_over(
+        font(FONT_FAMILY, body_size, FONT_WEIGHT, text, units),
+        ui,
+        units,
+    );
+    let line_height = match ui.and_then(|f| f.size).unwrap_or(body_size) {
+        FontSize::Pt(size) => FontSize::Pt(LINE_HEIGHT * size),
+        FontSize::Px(size) => FontSize::Px(LINE_HEIGHT * size),
+    };
+    body.line_height = font_px(line_height, units);
     body.stated |= TextStated::LINE_HEIGHT;
+    let caption_weight = body.weight;
     Typography {
         display: Some(text_scale_entry(
             FontSize::Pt(DISPLAY_SIZE_PT),
@@ -1650,7 +1958,7 @@ fn typography(c: &SchemeColors, text_scale: f32) -> Typography {
         subheadline: None,
         caption: Some(text_scale_entry(
             FontSize::Pt(CAPTION_SIZE_PT),
-            FONT_WEIGHT,
+            caption_weight,
             CAPTION_LINE_HEIGHT_PX,
             units,
         )),
@@ -1665,7 +1973,7 @@ fn typography(c: &SchemeColors, text_scale: f32) -> Typography {
         fallbacks: Arc::from([]),
         emoji_family: None,
         rendering: TextRendering::default(),
-        font_dpi: FONT_DPI,
+        font_dpi: units.dpi,
         font_whole_pixels: None,
     }
 }
@@ -1732,9 +2040,11 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// outline inside its edge (`OuterBorderEdge`), lettered in the accent's text
 /// (0.7.2: `primary_text_color` is `defaults.accent_text_color` where
 /// unstated). Its label is the window's text, pressed the muted text, checked
-/// the accent's text, disabled the disabled text.
+/// the accent's text, disabled the disabled text. Under high contrast the
+/// fill is the button face and the label the button text ([`HighContrast`]).
 fn button(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
@@ -1746,7 +2056,7 @@ fn button(
         })
     };
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
-        .base([fill(c.control_fill)])
+        .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
             roles
                 .window
@@ -1786,7 +2096,18 @@ fn button(
             [fill(c.control_fill_disabled)],
         )
         .build();
-    let label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+    let mut label = RuleBuilder::new(label(
+        &typography.body,
+        Some(hc.button_text.unwrap_or(c.window_foreground)),
+    ));
+    // `button.hover_text_color`, the window's text, which high contrast does not change.
+    if hc.button_text.is_some() {
+        label = label.rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.window_foreground)],
+        );
+    }
+    let label = label
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [TextProp::Color(roles.accent.foreground)],
@@ -1798,7 +2119,7 @@ fn button(
         .rule(primary(), [TextProp::Color(roles.accent.foreground)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(roles.disabled_text)],
+            [TextProp::Color(c.disabled_text)],
         )
         .build();
     ButtonWidget::new(
@@ -1851,11 +2172,11 @@ fn indicator(
 
 /// The label of a check box or a radio button: the UI font in its colour;
 /// disabled, the disabled text's colour.
-fn check_label(roles: &ColorRoles, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+fn check_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
     RuleBuilder::new(label(&typography.body, None))
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(roles.disabled_text)],
+            [TextProp::Color(c.disabled_text)],
         )
         .build()
 }
@@ -1879,7 +2200,7 @@ fn checkbox(
             .base([corners(layout.corner_radius)])
             .build(),
         checkmark,
-        check_label(roles, typography),
+        check_label(c, typography),
         CHECKBOX_LABEL_GAP,
         // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
@@ -1905,7 +2226,7 @@ fn radio(
         WidgetOrigin::Native,
         indicator(c, roles, layout).build(),
         dot,
-        check_label(roles, typography),
+        check_label(c, typography),
         CHECKBOX_LABEL_GAP,
         // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
@@ -1926,6 +2247,7 @@ fn radio(
 /// states no header height and no header separator.
 fn list(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
@@ -1959,17 +2281,31 @@ fn list(
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
-            [fill(c.subtle_fill)],
+            [fill(hc.highlight.unwrap_or(c.subtle_fill))],
         )
         .build();
-    let item_label = RuleBuilder::new(label(&typography.body, None))
+    let mut item_label = RuleBuilder::new(label(&typography.body, None));
+    // `list.hover_text_color`, the window's text, which high contrast does not change.
+    if hc.window_text.is_some() {
+        item_label = item_label.rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.window_foreground)],
+        );
+    }
+    if let Some(text) = hc.highlight_text {
+        item_label = item_label.rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [TextProp::Color(text)],
+        );
+    }
+    let item_label = item_label
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(roles.disabled_text)],
+            [TextProp::Color(c.disabled_text)],
         )
         .build();
     let header = RuleBuilder::new(PartStyle::default())
-        .base(roles.window.background.map(fill))
+        .base([fill(c.window_background)])
         .build();
     ListWidget::new(
         WidgetOrigin::Native,
@@ -1980,7 +2316,7 @@ fn list(
         header,
         RuleBuilder::new(label(&typography.body, None)).build(),
         RuleBuilder::new(PartStyle::default()).build(),
-        c.window_border,
+        hc.window_text.unwrap_or(c.window_border),
     )
 }
 
@@ -2011,10 +2347,15 @@ fn across(
 /// else in the muted foreground (0.7.2: `scrollbar.thumb_color` is
 /// `defaults.muted_color` where unstated), each of an exact thickness across
 /// the bar; the hovered handle's own colour.
-fn scrollbar(c: &SchemeColors, roles: &ColorRoles) -> ScrollbarWidget {
+fn scrollbar(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    groove_width: f32,
+    min_thumb_length: f32,
+) -> ScrollbarWidget {
     let track = across(
         RuleBuilder::new(PartStyle::default()).base([fill(SCROLLBAR_TRACK)]),
-        SCROLLBAR_GROOVE_WIDTH,
+        groove_width,
     )
     .build();
     let thumb = across(
@@ -2034,20 +2375,24 @@ fn scrollbar(c: &SchemeColors, roles: &ColorRoles) -> ScrollbarWidget {
         WidgetOrigin::Native,
         track,
         thumb,
-        SCROLLBAR_MIN_THUMB_LENGTH,
+        min_thumb_length,
         SCROLLBAR_OVERLAY,
     )
 }
 
 /// The tooltip: the tooltip's colours, the default border, its colour, radius
 /// and width (`resolve_border_inheritance`; the default shadow, which is on),
-/// padded and of a greatest width; its text in the UI font at its own size.
+/// padded and of a greatest width; its text in the UI font at its own size,
+/// with the system's tooltip font `os` laid over it (0.7.2's `tooltip.font`),
+/// in the window's text, under high contrast the window text.
 fn tooltip(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     units: FontUnits,
     layout: &LayoutMetrics,
+    os: Option<&OsFont>,
 ) -> TooltipWidget {
     let mut panel = PartStyle::default();
     for prop in roles
@@ -2072,9 +2417,16 @@ fn tooltip(
     TooltipWidget::new(
         WidgetOrigin::Native,
         panel,
-        sized(
-            label(&typography.body, Some(c.window_foreground)),
-            FontSize::Pt(TOOLTIP_FONT_SIZE_PT),
+        laid_over(
+            sized(
+                label(
+                    &typography.body,
+                    Some(hc.window_text.unwrap_or(c.window_foreground)),
+                ),
+                FontSize::Pt(TOOLTIP_FONT_SIZE_PT),
+                units,
+            ),
+            os,
             units,
         ),
     )
@@ -2085,12 +2437,15 @@ fn tooltip(
 /// with the default border, its colour and width, the large corners
 /// (`resolve_border_inheritance`; the default shadow, which is on); the title
 /// bar, active or not, in the window's background, Mica's solid fallback; the
-/// title in the UI font, in the window's text, the inactive one in its own
-/// colour.
+/// title in `title_font` (the UI font with the system's title font laid
+/// over it, 0.7.2's `window.title_bar_font`), in the window's text, the
+/// inactive one in its own colour. Under high contrast the title bar is the
+/// window colour and the title the button text ([`HighContrast`]).
 fn window(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
-    typography: &Typography,
+    title_font: TextStyle,
     layout: &LayoutMetrics,
     active: bool,
 ) -> WindowChrome {
@@ -2106,9 +2461,9 @@ fn window(
         frame.apply(&prop);
     }
     let mut title_bar = PartStyle::default();
-    title_bar.apply(&fill(c.window_background));
+    title_bar.apply(&fill(hc.window.unwrap_or(c.window_background)));
     let title_color = if active {
-        c.window_foreground
+        hc.button_text.unwrap_or(c.window_foreground)
     } else {
         c.inactive_title
     };
@@ -2119,7 +2474,7 @@ fn window(
         frame,
         title_bar.clone(),
         title_bar,
-        label(&typography.body, Some(title_color)),
+        label(&title_font, Some(title_color)),
         RuleBuilder::new(PartStyle::default()).build(),
         RuleBuilder::new(IconStyle::default()).build(),
     )
@@ -2133,17 +2488,20 @@ fn window(
 /// (`InnerBorderEdge`), no shadow; hovered, the same outline
 /// (`input.hover_border_color`); focused, the outline in the accent's fill;
 /// disabled, the disabled fill; the window's text, its own disabled colour;
-/// the placeholder in the muted text.
+/// the placeholder in the muted text. Under high contrast the fill is the
+/// button face, the text the button text and the placeholder the window
+/// text ([`HighContrast`]).
 fn input(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
     padding: Edges,
     min_height: Option<f32>,
 ) -> InputWidget {
-    let field = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.control_fill)])
+    let mut field = RuleBuilder::new(PartStyle::default())
+        .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
             roles
                 .window
@@ -2156,7 +2514,16 @@ fn input(
             PartProp::Shadows(None),
             PartProp::Padding(padding),
         ])
-        .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])))
+        .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])));
+    // `input.hover_border_color`, the preset's border colour, which high contrast does not
+    // change.
+    if hc.window_text.is_some() {
+        field = field.rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [outside_stroke(layout.border_width, c.window_border)],
+        );
+    }
+    let field = field
         .rule(
             RuleSelector::on(WidgetState::FOCUSED),
             [outside_stroke(layout.border_width, c.accent_fill)],
@@ -2166,14 +2533,19 @@ fn input(
             [fill(c.control_fill_disabled)],
         )
         .build();
-    let text = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
-        .rule(
-            RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(c.input_disabled_text)],
-        )
-        .build();
+    let text = RuleBuilder::new(label(
+        &typography.body,
+        Some(hc.button_text.unwrap_or(c.window_foreground)),
+    ))
+    .rule(
+        RuleSelector::on(WidgetState::DISABLED),
+        [TextProp::Color(c.input_disabled_text)],
+    )
+    .build();
     let placeholder = RuleBuilder::new(TextStyle::default())
-        .base([TextProp::Color(c.window_foreground_muted)])
+        .base([TextProp::Color(
+            hc.window_text.unwrap_or(c.window_foreground_muted),
+        )])
         .build();
     InputWidget::new(
         WidgetOrigin::Native,
@@ -2189,8 +2561,13 @@ fn input(
 /// The link: a transparent background, at rest and under the pointer; the
 /// link colour (0.7.2: `link.font.color` and `visited_text_color` are
 /// `defaults.link_color` where unstated), underlined; its hovered, pressed
-/// and disabled colours.
-fn link(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> LinkWidget {
+/// and disabled colours, the pressed one `pressed` ([`lay_accent_over`]).
+fn link(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    pressed: Color,
+) -> LinkWidget {
     let container = RuleBuilder::new(PartStyle::default())
         .base([fill(LINK_BACKGROUND)])
         .rule(
@@ -2211,7 +2588,7 @@ fn link(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> LinkWi
             )
             .rule(
                 RuleSelector::on(WidgetState::PRESSED),
-                [TextProp::Color(c.accent_fill)],
+                [TextProp::Color(pressed)],
             )
             .rule(
                 RuleSelector::on(WidgetState::DISABLED),
@@ -2263,11 +2640,17 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
 /// The progress bar: a groove in `ControlStrongStrokeColorDefault` with no
 /// outline, in the default border colour, its own corners, no shadow,
 /// unpadded, of an exact height and a least length; the progress in the
-/// accent's fill.
-fn progress_bar(c: &SchemeColors, roles: &ColorRoles) -> ProgressBarWidget {
+/// accent's fill. Under high contrast the groove is the window colour in a
+/// 1 px outline ([`HighContrast`]).
+fn progress_bar(c: &SchemeColors, hc: &HighContrast, roles: &ColorRoles) -> ProgressBarWidget {
+    let border_width = if hc.window_text.is_some() {
+        HIGH_CONTRAST_PROGRESS_BAR_BORDER_WIDTH
+    } else {
+        PROGRESS_BAR_BORDER_WIDTH
+    };
     let track = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.strong_stroke)])
-        .base(border(roles, PROGRESS_BAR_BORDER_WIDTH))
+        .base([fill(hc.window.unwrap_or(c.strong_stroke))])
+        .base(border(roles, border_width))
         .base([
             corners(PROGRESS_BAR_CORNER_RADIUS),
             // `progress_bar.border.shadow_enabled`: platform-facts.md (§2.10): no shadow
@@ -2292,10 +2675,10 @@ fn progress_bar(c: &SchemeColors, roles: &ColorRoles) -> ProgressBarWidget {
 /// The separator: the default border colour at the default border width
 /// (0.7.2: `separator.line_color` and `line_width` are
 /// `defaults.border.color` and `line_width` where unstated).
-fn separator(c: &SchemeColors, layout: &LayoutMetrics) -> SeparatorWidget {
+fn separator(c: &SchemeColors, hc: &HighContrast, layout: &LayoutMetrics) -> SeparatorWidget {
     SeparatorWidget::new(
         WidgetOrigin::Native,
-        c.window_border,
+        hc.window_text.unwrap_or(c.window_border),
         layout.border_width,
         None,
         None,
@@ -2330,7 +2713,17 @@ fn spinner(c: &SchemeColors) -> SpinnerWidget {
 /// icons at their own size; separators in the default border colour (0.7.2:
 /// `menu.separator_color` is `defaults.border.color` where unstated). 0.7.2
 /// states no row height, no pressed item and no outline, corners or shadow.
-fn menu(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> MenuWidget {
+/// The system's menu font `os` is laid over the items' (0.7.2's
+/// `menu.font`); under high contrast their text is the button text
+/// ([`HighContrast`]).
+fn menu(
+    c: &SchemeColors,
+    hc: &HighContrast,
+    roles: &ColorRoles,
+    typography: &Typography,
+    units: FontUnits,
+    os: Option<&OsFont>,
+) -> MenuWidget {
     let panel = RuleBuilder::new(PartStyle::default())
         .base([fill(c.menu_background)])
         .build();
@@ -2343,10 +2736,25 @@ fn menu(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> MenuWi
         ))])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
         .build();
-    let item_label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+    let mut item_label = RuleBuilder::new(laid_over(
+        label(
+            &typography.body,
+            Some(hc.button_text.unwrap_or(c.window_foreground)),
+        ),
+        os,
+        units,
+    ));
+    // `menu.hover_text_color`, the window's text, which high contrast does not change.
+    if hc.button_text.is_some() {
+        item_label = item_label.rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.window_foreground)],
+        );
+    }
+    let item_label = item_label
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(roles.disabled_text)],
+            [TextProp::Color(c.disabled_text)],
         )
         .build();
     let icon = RuleBuilder::new(IconStyle::default())
@@ -2496,11 +2904,15 @@ fn toolbar(
 /// The status bar: the window's background (0.7.2:
 /// `status_bar.background_color` is `defaults.background_color` where
 /// unstated) in the default border colour and width (0.7.2's partial border
-/// inheritance: colour and width only). 0.7.2 states no padding.
+/// inheritance: colour and width only). 0.7.2 states no padding. Its text is
+/// the UI font with the system's status bar font `os` laid over it (0.7.2's
+/// `status_bar.font`).
 fn status_bar(
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
+    units: FontUnits,
+    os: Option<&OsFont>,
 ) -> StatusBarWidget {
     let mut bar = PartStyle::default();
     for prop in roles
@@ -2515,7 +2927,7 @@ fn status_bar(
     StatusBarWidget::new(
         WidgetOrigin::Native,
         bar,
-        label(&typography.body, None),
+        laid_over(label(&typography.body, None), os, units),
         PartStyle::default(),
     )
 }
@@ -2591,7 +3003,7 @@ fn popover(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) ->
 /// their hover fills, and disabled, off and on; a thumb of an exact diameter,
 /// off in the muted text, on in the accent's text, with no outline (0.7.2
 /// states none for it).
-fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
+fn switch(c: &SchemeColors) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -2634,7 +3046,7 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         ])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(roles.accent.foreground)],
+            [fill(c.accent_foreground)],
         )
         .build();
     SwitchWidget::new(
@@ -2645,7 +3057,7 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         None,
         None,
         // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
-        Some(roles.disabled_opacity),
+        Some(DISABLED_OPACITY),
     )
 }
 
@@ -2655,6 +3067,7 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
 /// in the UI font at its own size and weight, its body in the UI font (0.7.2:
 /// `dialog.title_font` and `body_font` are `defaults.font` where unstated).
 fn dialog(
+    c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
     units: FontUnits,
@@ -2662,10 +3075,7 @@ fn dialog(
     motion: Motion,
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
-    for prop in roles
-        .window
-        .background
-        .map(fill)
+    for prop in [fill(c.window_background)]
         .into_iter()
         .chain(border(roles, layout.border_width))
         .chain([
@@ -2743,7 +3153,7 @@ fn combo_box(
     let label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(roles.disabled_text)],
+            [TextProp::Color(c.disabled_text)],
         )
         .build();
     let chevron = RuleBuilder::new(IconStyle::default())
@@ -2765,15 +3175,19 @@ fn combo_box(
 /// (`resolve_border_inheritance`), no shadow; segments of a least height,
 /// padded, their hover layer and the selected one's own fill; the UI font's
 /// colour, which the selected segment keeps
-/// (`segmented_control.active_text_color`).
+/// (`segmented_control.active_text_color`). Under high contrast the track is
+/// the button face in the highlight, the selected segment the highlight, the
+/// text the button text and the selected one the highlight's text
+/// ([`HighContrast`]).
 fn segmented_control(
     c: &SchemeColors,
+    hc: &HighContrast,
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> SegmentedControlWidget {
     let track = RuleBuilder::new(PartStyle::default())
         .base([
-            fill(c.control_alt_fill),
+            fill(hc.button_face.unwrap_or(c.control_alt_fill)),
             stroke(layout.border_width, c.control_stroke),
             corners(layout.corner_radius),
             // `segmented_control.border.shadow_enabled`: platform-facts.md (§2.25): no shadow
@@ -2793,14 +3207,21 @@ fn segmented_control(
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
-            [fill(c.control_fill)],
+            [fill(hc.highlight.unwrap_or(c.control_fill))],
         )
         .build();
+    let mut segment_label = RuleBuilder::new(label(&typography.body, hc.button_text));
+    if let Some(text) = hc.highlight_text {
+        segment_label = segment_label.rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [TextProp::Color(text)],
+        );
+    }
     SegmentedControlWidget::new(
         WidgetOrigin::Native,
         track,
         segment,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        segment_label.build(),
         RuleBuilder::new(PartStyle::default()).build(),
         SEGMENT_SEPARATOR_WIDTH,
         Some(SEGMENT_DISABLED_OPACITY),
@@ -2832,6 +3253,7 @@ fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
 /// padded; the arrow's size and colour (the window's text), side and gap; the
 /// content indented; the frame drawn.
 fn expander(
+    c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
@@ -2861,7 +3283,7 @@ fn expander(
         .build();
     let arrow = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(EXPANDER_ARROW_SIZE)])
-        .base(roles.window.foreground.map(IconProp::Color))
+        .base([IconProp::Color(c.window_foreground)])
         .build();
     ExpanderWidget::new(
         WidgetOrigin::Native,
