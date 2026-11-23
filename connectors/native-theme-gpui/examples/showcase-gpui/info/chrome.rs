@@ -775,25 +775,46 @@ pub fn side_panel(
 }
 
 /// A label of the side panel's theme settings: plain text in `native`'s
-/// `sidebar.font` where a native theme is installed (`demo::sidebar_label`).
-pub fn sidebar_label(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// `sidebar.item_label(NONE)` where a 0.8.0 theme is installed and states a
+/// font gpui can letter it in (`demo::sidebar_label`).
+pub fn sidebar_label(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Side panel label").color(claim(
         "text, inherited",
         "sidebar_foreground",
         t.sidebar_foreground,
         "showcase",
     ));
-    match native {
-        Some(r) => info.config(
+    let Some(r) = native else {
+        return info.not_themeable(
             "font",
-            format!(
-                "sidebar.font: {}: plain text, not a Label, whose render paints foreground over the side panel's colour (gpui-component/label.rs, Label::render)",
-                super::drawn_font(&r.sidebar.font)
-            ),
+            "text_sm, a rem step: no native theme is installed, so there is no sidebar.item_label(NONE)",
+        );
+    };
+    info.config(
+        "font",
+        sidebar_label_font(
+            &r.typography,
+            &r.sidebar.item_label(native_theme::next::WidgetState::NONE),
         ),
-        None => info.not_themeable(
-            "font",
-            "text_sm, a rem step: no native theme is installed, so there is no sidebar.font",
+    )
+}
+
+/// The font line of a side panel label of the installed 0.8.0 theme, whose
+/// `typography` and `sidebar.item_label(NONE)`, `label`, it is lettered in
+/// (`demo::next_text_in`) where `label` gives a font gpui can letter it in;
+/// else gpui's own `text_sm`.
+pub fn sidebar_label_font(
+    typography: &native_theme::next::Typography,
+    label: &native_theme::next::TextStyle,
+) -> String {
+    match native_theme_gpui::next::label_font_unmapped(label, "sidebar.item_label(NONE)") {
+        None => format!(
+            "sidebar.item_label(NONE): {}: plain text, not a Label, whose render paints foreground over the side panel's colour (gpui-component/label.rs, Label::render)",
+            super::typography::text_style_font(typography, label)
+        ),
+        Some(unstated) => format!(
+            "text_sm, a rem step, gpui's own: the theme states no value gpui can take at {} (spec §10, rule 0)",
+            unstated.home()
         ),
     }
 }

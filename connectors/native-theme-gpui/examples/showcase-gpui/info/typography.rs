@@ -180,7 +180,7 @@ pub fn mono_text(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) 
 /// as `status::family_label` names what gpui is asked for, the size the
 /// theme's text scale has already scaled, the weight, the slant where it is
 /// not upright, and the line box (`demo::line_box`).
-fn text_style_font(
+pub fn text_style_font(
     typography: &native_theme::next::Typography,
     style: &native_theme::next::TextStyle,
 ) -> String {

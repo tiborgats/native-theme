@@ -314,14 +314,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (gpui-component/accordion.rs, AccordionItem::render)",
     ),
     (
-        "accordion",
-        "expander.border.color on the Accordion's card and on each item's line under it, over the border token upstream draws both in first (gpui-component/accordion.rs, RenderOnce for Accordion and AccordionItem::render); where neither is drawn, nothing",
-    ),
-    (
-        "accordion_hover",
-        "expander.hover_background as an item's title row fill under the pointer, through AccordionItem::hover, where the theme states one; nothing where it does not, so the row stays at rest (gpui-component/accordion.rs, AccordionItem::hover)",
-    ),
-    (
         "select",
         "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui/geometry.rs, select)",
     ),
@@ -428,6 +420,26 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "scrollbar_gutter",
         "the vertical track's width, scrollbar.track(NONE; orientation=Vertical).min_size[0], as right padding where scrollbar.overlay_mode is false, and nothing where it is true, because gpui-component overlays the bar on the scroll area instead of putting it beside the content",
+    ),
+    (
+        "group_box_content",
+        "the padding sides card.container(NONE) states, its corner radius and its stroke where it states them, and card.container(NONE).fill -- refined last, so the radius, the edge and the fill drawn are the card's, not upstream's radius or the Fill variant's group_box token (group_box.rs, GroupBox); where the theme states no corners or no stroke, the refinement sets none, and the GroupBox keeps upstream's",
+    ),
+    (
+        "accordion_title",
+        "expander.header(NONE).min_size[1] as the title row's height, and expander.header_label(NONE).color over the foreground upstream sets on an open item's title row first; a closed one's sets none (gpui-component/accordion.rs, AccordionItem::render)",
+    ),
+    (
+        "accordion",
+        "expander.container(NONE).stroke.color on the Accordion's card and on each item's line under it, over the border token upstream draws both in first (gpui-component/accordion.rs, RenderOnce for Accordion and AccordionItem::render), and a width of 0 where the stroke is stated as none. A stated visible width is not set: the one refinement lands on the Accordion, edged on every side, and on each AccordionItem, edged only at the bottom and not the last (gpui-component/accordion.rs:108-114, :380-384), so a width on every side would frame each item, and upstream's border_1 and border_b_1 stand (native-theme-gpui next/builders.rs, accordion; the crate README, Limits)",
+    ),
+    (
+        "accordion_hover",
+        "expander.header(HOVER).fill as an item's title row fill under the pointer, through AccordionItem::hover, where a rule states it for HOVER; nothing where none does, so the row stays at rest (gpui-component/accordion.rs, AccordionItem::hover)",
+    ),
+    (
+        "title_bar",
+        "window.title(normal)'s family, size, weight and style, and its colour, and typography.line_height_multiplier as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
     ),
     (
         "editor",

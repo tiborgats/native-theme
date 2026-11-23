@@ -995,17 +995,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.mode_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.icon_theme_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -2144,7 +2144,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.font",
-        "gpui: the label's family, size, weight and style (demo::sidebar_label)",
+        "gpui: the label's family, size, weight and style, at sidebar.item_label(NONE) of the installed 0.8.0 theme (demo::sidebar_label)",
     ),
     (
         "chrome.info",

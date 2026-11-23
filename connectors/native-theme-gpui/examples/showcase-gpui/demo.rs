@@ -260,10 +260,13 @@ impl SampleIcon {
         chrome_icon(&self.drawn, &self.icon)
     }
 
-    /// The `Icon` at the platform's size for the role the builder names, as
-    /// `native_sized` sizes it; `None` where the chosen icon theme has none.
-    fn sized(&self, cx: &App, role: fn(Native<'_>) -> Size) -> Option<Icon> {
-        self.icon().map(|icon| native_sized(cx, icon, role))
+    /// The `Icon` at `size`, a size of the installed 0.8.0 theme, or at its
+    /// own where that is `None`; `None` where the chosen icon theme has none.
+    fn next_sized(&self, size: Option<Size>) -> Option<Icon> {
+        self.icon().map(|icon| match size {
+            Some(size) => icon.with_size(size),
+            None => icon,
+        })
     }
 
     /// The glyph a page sample draws where its widget takes any element,
@@ -291,17 +294,8 @@ impl SampleIcon {
     }
 }
 
-/// `icon` at the platform's size for the role the builder names; its own
+/// `glyph` at the platform's size for the role the builder names; its own
 /// size before `apply` ran.
-fn native_sized(cx: &App, icon: Icon, role: fn(Native<'_>) -> Size) -> Icon {
-    match native_value(cx, role) {
-        Some(size) => icon.with_size(size),
-        None => icon,
-    }
-}
-
-/// `glyph` at the platform's size for the role the builder names, as
-/// [`native_sized`] sizes an `Icon`.
 fn native_sized_glyph(cx: &App, glyph: Glyph, role: fn(Native<'_>) -> Size) -> Glyph {
     match native_value(cx, role) {
         Some(size) => glyph.with_size(size),
@@ -686,6 +680,38 @@ fn leaves_a_side_unstated(padding: &ResolvedPadding) -> bool {
     [padding.top, padding.right, padding.bottom, padding.left]
         .iter()
         .any(Option::is_none)
+}
+
+/// [`padded`] on the 0.8.0 model: `el` padded by the sides of `sides`, a
+/// part's padding as `next::padding_of` reads it (top, right, bottom, left,
+/// each `None` where unstated), and on a side it leaves unstated by `x`
+/// (left and right) or `y` (top and bottom), where given.
+fn next_padded<E: Styled, L: Into<DefiniteLength> + Copy>(
+    el: E,
+    sides: [Option<f32>; 4],
+    x: Option<L>,
+    y: Option<L>,
+) -> E {
+    let [top, right, bottom, left] = sides;
+    let side = |stated: Option<f32>, unstated: Option<L>| -> Option<DefiniteLength> {
+        stated.map(|v| px(v).into()).or(unstated.map(Into::into))
+    };
+    let el = match side(top, y) {
+        Some(v) => el.pt(v),
+        None => el,
+    };
+    let el = match side(right, x) {
+        Some(v) => el.pr(v),
+        None => el,
+    };
+    let el = match side(bottom, y) {
+        Some(v) => el.pb(v),
+        None => el,
+    };
+    match side(left, x) {
+        Some(v) => el.pl(v),
+        None => el,
+    }
 }
 
 /// A menu's title in the showcase's menu bar: the Popover's trigger,
@@ -1216,7 +1242,8 @@ pub(crate) fn menu_bar(
         .info(ui, "chrome-menu-bar", row_info)
 }
 
-/// A `TitleBar` sample, refined by `geometry::title_bar` and reading `label`:
+/// A `TitleBar` sample, refined by `next::geometry::title_bar` and reading
+/// `label`:
 /// the window's own title bar as it is drawn where the window manager leaves
 /// the frame to the application (spec S8), shown while it does not.
 ///
@@ -1235,10 +1262,10 @@ pub(crate) fn title_bar_sample(
 ) -> Div {
     let label: SharedString = label.into();
     let mut bar_info = info::title_bar_sample(cx.theme(), &label);
-    let bar = native_info(
+    let bar = next_native_info(
         TitleBar::new(),
         cx,
-        geometry::title_bar,
+        next::geometry::title_bar,
         "title_bar",
         &mut bar_info,
     )
@@ -1897,27 +1924,30 @@ pub(crate) fn theme_settings<const N: usize>(
 }
 
 /// A label of the side panel reading `text`, `id` its info's id and debug
-/// selector: plain text in `sidebar.font` ([`text_in`]) where a native
-/// theme is installed, in the colour the side panel sets. Not a `Label`:
-/// `Label::render` paints `foreground` on its own element (label.rs:213),
-/// over the sidebar's text colour.
+/// selector: plain text in the installed 0.8.0 theme's
+/// `sidebar.item_label(NONE)` ([`next_text_in`]) where it gives a font gpui
+/// can letter it in, else `text_sm`, in the colour the side panel sets. Not
+/// a `Label`: `Label::render` paints `foreground` on its own element
+/// (label.rs:213), over the sidebar's text colour.
 fn sidebar_label(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let text_div = match &native {
-        Some(n) => text_in(n, &n.resolved.sidebar.font, text),
-        None => div().text_sm().child(text),
-    };
+    let native = next_resolved(cx);
+    let text_div = native
+        .and_then(|r| {
+            next_text_in(
+                &r.typography,
+                &r.sidebar.item_label(WidgetState::NONE),
+                "sidebar.item_label(NONE)",
+                text,
+            )
+        })
+        .unwrap_or_else(|| div().text_sm().child(text));
     text_div
-        .info(
-            ui,
-            id,
-            info::sidebar_label(cx.theme(), native.as_ref().map(|n| n.resolved)),
-        )
+        .info(ui, id, info::sidebar_label(cx.theme(), native))
         .self_start()
         .debug_selector(move || id.into())
 }
@@ -2569,11 +2599,11 @@ pub(crate) const FOLDER_TAB_HEIGHT: Pixels = px(32.);
 /// is meant to sit; a click hands `on_click` the index of the tab clicked.
 /// Each tab is tagged `{id}-tab-{ix}` for the tests.
 ///
-/// What the theme states reaches it per call as [`tab_row`]'s upstream
-/// path takes it: each label a child in `tab.font` ([`text_in`]), each tab
-/// at least `tab.min_width` wide and `tab.min_height` tall. Upstream's
-/// Folder has no seam for the theme's tab shape; `widgets::TabBar` draws
-/// that.
+/// What the installed 0.8.0 theme states reaches it per call: each label a
+/// child in `tab.label(NONE)` ([`next_text_in`]) where the theme gives a
+/// font gpui can letter it in, else upstream's own label; each tab at least
+/// `tab.tab(NONE)`'s stated least width and height. Upstream's Folder has no
+/// seam for the theme's tab shape; `widgets::TabBar` draws that.
 pub(crate) fn folder_tab_row(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2583,22 +2613,24 @@ pub(crate) fn folder_tab_row(
     disabled: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let row_info = info::layout::folder_tab_row(
-        cx.theme(),
-        labels,
-        selected,
-        disabled,
-        native.as_ref().map(|n| n.resolved),
-    );
+    let native = next_resolved(cx);
+    let row_info =
+        info::layout::next_folder_tab_row(cx.theme(), labels, selected, disabled, native);
     let tabs = labels.iter().enumerate().map(|(ix, &label)| {
-        let tab = match &native {
-            Some(n) => {
-                let t = &n.resolved.tab;
-                Tab::new()
-                    .child(text_in(n, &t.font, label))
-                    .min_w(px(t.min_width))
-                    .min_h(px(t.min_height))
+        let tab = match native {
+            Some(r) => {
+                let [min_w, min_h] = r.tab.tab(WidgetState::NONE).min_size;
+                let tab = match next_text_in(
+                    &r.typography,
+                    &r.tab.label(WidgetState::NONE),
+                    "tab.label(NONE)",
+                    label,
+                ) {
+                    Some(text) => Tab::new().child(text),
+                    None => Tab::new().label(label),
+                };
+                tab.when_some(min_w, |tab, w| tab.min_w(px(w)))
+                    .when_some(min_h, |tab, h| tab.min_h(px(h)))
             }
             None => Tab::new().label(label),
         };
@@ -8011,13 +8043,15 @@ impl GroupBoxKind {
 
 /// A `GroupBox` of `kind` titled `title` around `content`, which `about`
 /// describes in its info; its content refined by
-/// `geometry::group_box_content`, which sets the sides `card.border.padding`
-/// states, and padded with `container_margin`, the installed layout's
-/// `geometry::container_margin`, on a side it leaves unstated ([`padded`]).
-/// A group box is a container, and `layout.container_margin` is the padding
-/// inside containers (platform-facts §2.20): it stands in for a Fill or
-/// Outline GroupBox's own `p_4` and a Normal one's none (group_box.rs,
-/// `GroupBox`), as it does in a card.
+/// `next::geometry::group_box_content`, which sets the sides
+/// `card.container(NONE)` states, and padded with `container_margin`, the
+/// installed 0.8.0 theme's `layout.container_margin`, on a side it leaves
+/// unstated ([`next_padded`]). A group box is a container, and
+/// `layout.container_margin` is the padding inside containers
+/// (platform-facts §2.20): it stands in for a Fill or Outline GroupBox's own
+/// `p_4` and a Normal one's none (group_box.rs, `GroupBox`), as it does in a
+/// card. Where the theme states no value gpui can take at a home the builder
+/// reads, the content keeps upstream's look and padding (spec §10, rule 0).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn group_box(
     ui: &Entity<InfoRegistry>,
@@ -8029,31 +8063,26 @@ pub(crate) fn group_box(
     about: &'static str,
     container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
-    // What `native_info` applies the builder under.
-    let native = old_native(cx);
-    let mut box_info = info::layout::group_box(
-        cx.theme(),
-        kind,
-        native.as_ref().map(|n| n.resolved),
-        container_margin,
-        title,
-    )
-    .instance("content", about);
+    // The theme the builder refines the content from, where it does.
+    let native = next_resolved(cx).filter(|r| next::geometry::group_box_content(r).is_ok());
+    let mut box_info =
+        info::layout::next_group_box(cx.theme(), kind, native, container_margin, title)
+            .instance("content", about);
     // `GroupBox::content_style` takes a refinement rather than being one.
-    let content_style = native_info(
+    let content_style = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::group_box_content,
+        next::geometry::group_box_content,
         "group_box_content",
         &mut box_info,
     );
-    let content_style = match (&native, container_margin) {
-        (Some(n), Some(margin)) => {
-            let padding = &n.resolved.card.border.padding;
-            if leaves_a_side_unstated(padding) {
-                box_info = box_info.geometry("container_margin");
+    let content_style = match (native, container_margin) {
+        (Some(r), Some(margin)) => {
+            let sides = next::padding_of(&r.card.container(WidgetState::NONE));
+            if sides.iter().any(Option::is_none) {
+                box_info = box_info.next_geometry("container_margin");
             }
-            padded(content_style, padding, Some(margin), Some(margin))
+            next_padded(content_style, sides, Some(margin), Some(margin))
         }
         _ => content_style,
     };
@@ -8173,43 +8202,49 @@ pub(crate) fn scroll_area(
 
 /// The Accordion of the Layout page: an item per `(title, answer id,
 /// answer)`, the first open, their title rows refined by
-/// `geometry::accordion_title`. Each answer is a small Label that reports
-/// itself.
+/// `next::geometry::accordion_title`. Each answer is a small Label that
+/// reports itself.
 pub(crate) fn accordion(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     items: [(&'static str, &'static str, SharedString); 3],
 ) -> Stateful<Div> {
-    let mut accordion_info = info::layout::accordion(
-        cx.theme(),
-        cx.reduce_motion(),
-        items.len(),
-        old_native(cx).is_some(),
-    );
+    // Which of the title rows and the edges the builders refine, where a
+    // 0.8.0 theme is installed.
+    let parts = next_value(cx, |r| {
+        (
+            next::geometry::accordion_title(r).is_ok(),
+            next::geometry::accordion(r).is_ok(),
+        )
+    });
+    let mut accordion_info =
+        info::layout::next_accordion(cx.theme(), cx.reduce_motion(), items.len(), parts);
     // `AccordionItem::title_style` takes a refinement rather than being one.
-    let title_style = native_info(
+    let title_style = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::accordion_title,
+        next::geometry::accordion_title,
         "accordion_title",
         &mut accordion_info,
     );
-    let edge = native_geometry(cx, geometry::accordion);
-    let hover = native_geometry(cx, geometry::accordion_hover);
-    if hover.is_some() {
-        accordion_info = accordion_info.geometry("accordion_hover");
-    }
+    let edge = next_geometry(cx, next::geometry::accordion).and_then(Result::ok);
+    let hover = info::next_native_value(
+        cx,
+        next::geometry::accordion_hover,
+        "accordion_hover",
+        &mut accordion_info,
+    );
     items
         .into_iter()
         .enumerate()
         .fold(
             // The edge colour lands on the Accordion's card and on each
             // item's line (accordion.rs:108-114, :380-384).
-            native_info(
+            next_native_info(
                 Accordion::new(id),
                 cx,
-                geometry::accordion,
+                next::geometry::accordion,
                 "accordion",
                 &mut accordion_info,
             ),
@@ -8742,12 +8777,18 @@ pub(crate) fn stepper(
     let mut stepper_info =
         info::layout::stepper(cx.theme(), kind, step, STEPPER_STEPS.len(), &labelled);
     // The indicator is a circle (stepper/trigger.rs:118-123) around the
-    // icon it is given, which keeps its size (`:138-139`).
-    if labelled.iter().any(|(_, icon)| icon.shown())
-        && native_value(cx, geometry::icon_size_small).is_some()
-    {
-        stepper_info = stepper_info.geometry("icon_size_small");
-    }
+    // icon it is given, which keeps its size (`:138-139`): the installed
+    // 0.8.0 theme's `icons.sizes.small`, where it states one.
+    let size = if labelled.iter().any(|(_, icon)| icon.shown()) {
+        info::next_native_value(
+            cx,
+            next::geometry::icon_size_small,
+            "icon_size_small",
+            &mut stepper_info,
+        )
+    } else {
+        None
+    };
     let stepper = match kind {
         StepperKind::Icons => Stepper::new(id),
         StepperKind::Numbers => Stepper::new(id).vertical(),
@@ -8761,9 +8802,7 @@ pub(crate) fn stepper(
                 format!("{id}-step-{}", ix.saturating_add(1)),
                 *text,
             ));
-            let icon = labelled
-                .get(ix)
-                .and_then(|(_, icon)| icon.sized(cx, geometry::icon_size_small));
+            let icon = labelled.get(ix).and_then(|(_, icon)| icon.next_sized(size));
             match icon {
                 Some(icon) => item.icon(icon),
                 None => item,
