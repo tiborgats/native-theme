@@ -14,7 +14,7 @@ use super::{Mapped, Unmapped, padding_of, radius_of, reads, stroke_width_of};
 use crate::convert::Rgba;
 use crate::plugin::FocusRingSource;
 use crate::style::Sources;
-use crate::style::base::{BaseSource, ButtonStates, Read, Sides};
+use crate::style::base::{BaseSource, ButtonStates, DropShadow, Read, Sides};
 use crate::style::cells::{
     ButtonCell, CellSource, CheckboxCell, ComboBoxCell, DialogCell, ExpanderCell, InputCell,
     ListCell, MenuCell, Outline, PanelCell, PanelEdge, ProgressBarCell, ScrollbarCell,
@@ -64,16 +64,25 @@ pub(crate) fn line(part: &PartStyle) -> Option<Rgba> {
     }
 }
 
-/// The border a rule states for the queried state (its `from_state` bit): its colour as
-/// [`line()`] reads it and its width, with `home`, the width's; `None` where no rule states the
-/// stroke.
+/// The border a rule states for the queried state (its `from_state` bit), as [`line_of`] reads
+/// it; `None` where no rule states the stroke.
 pub(crate) fn state_line(part: &PartStyle, home: &'static str) -> Option<StateLine> {
     part.from_state
         .contains(PartStated::STROKE)
-        .then(|| StateLine {
-            color: line(part),
-            width: stroke_width_of(part).map(|w| (w, home)),
-        })
+        .then(|| line_of(part, home))
+}
+
+/// A part's border as a state's: its colour as [`line()`] reads it, transparent for a stroke
+/// stated as none (spec §10, rule 2), and its width, with `home`, the width's.
+fn line_of(part: &PartStyle, home: &'static str) -> StateLine {
+    let color = match part.stroke {
+        Stroke::None if part.stated.contains(PartStated::STROKE) => Some(rgba(Color::TRANSPARENT)),
+        _ => line(part),
+    };
+    StateLine {
+        color,
+        width: stroke_width_of(part).map(|w| (w, home)),
+    }
 }
 
 /// [`line()`] where a rule states it for the queried state (its `from_state` bit).
@@ -127,10 +136,26 @@ fn sides(part: &PartStyle, paths: [&'static str; 4]) -> Sides {
 }
 
 /// Whether a part is drawn with a shadow: unless the theme states it has none (spec §5,
-/// `0.7.2`'s `border.shadow_enabled`: `false` is `SHADOWS` stated with no layer).
+/// `0.7.2`'s `border.shadow_enabled`: `false` is `SHADOWS` stated with no layer), or none egui
+/// draws (only inset layers).
 fn shadowed(part: &PartStyle) -> bool {
-    !(part.stated.contains(PartStated::SHADOWS)
-        && part.shadows.as_ref().is_none_or(|layers| layers.is_empty()))
+    !part.stated.contains(PartStated::SHADOWS) || drop_shadow(part, "").is_some()
+}
+
+/// A part's primary drop shadow layer, its first outset one (spec §10, rule 2), where the theme
+/// states its shadows, with `home`, the shadows'.
+fn drop_shadow(part: &PartStyle, home: &'static str) -> Option<DropShadow> {
+    if !part.stated.contains(PartStated::SHADOWS) {
+        return None;
+    }
+    let layer = part.shadows.as_deref()?.iter().find(|layer| !layer.inset)?;
+    Some(DropShadow {
+        offset: [layer.offset_x, layer.offset_y],
+        blur: layer.blur,
+        spread: layer.spread,
+        color: rgba(layer.color),
+        home,
+    })
 }
 
 /// [`BaseSource`] of the 0.8.0 model. The scroll bar's thumb at rest is the handle of a view
@@ -146,6 +171,7 @@ pub(crate) fn base_source(r: &ResolvedTheme) -> BaseSource {
     let vertical = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Vertical);
     let horizontal = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Horizontal);
     let frame = r.window.frame(WindowState::default());
+    let menu_panel = r.menu.panel(WidgetState::NONE);
     BaseSource {
         sizes: [
             size(
@@ -239,6 +265,14 @@ pub(crate) fn base_source(r: &ResolvedTheme) -> BaseSource {
             .map(|v| (v, "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]")),
         window_shadow: shadowed(&frame),
         popup_shadow: r.layout.shadow_enabled,
+        window_drop: drop_shadow(&frame, "window.frame(normal).shadows"),
+        // egui's menus and popups: the menu's panel where it states its shadows (spec §5, notes
+        // to the table, the menu's popup frame), else the popover's
+        popup_drop: if menu_panel.stated.contains(PartStated::SHADOWS) {
+            drop_shadow(&menu_panel, "menu.panel(NONE).shadows")
+        } else {
+            drop_shadow(&r.popover.panel, "popover.panel.shadows")
+        },
     }
 }
 
@@ -426,7 +460,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 state_text_color(&m.item_label(S::HOVER)),
             ],
             outline: menu_outline(r),
-            hover_border: state_line_color(&m.item(S::HOVER)),
+            hover_border: state_line(&m.item(S::HOVER), "menu.item(HOVER).stroke.width"),
             bar_padding: [
                 bar_left.map(|v| (v, "menu_bar.item(NONE).padding.left")),
                 bar_top.map(|v| (v, "menu_bar.item(NONE).padding.top")),
@@ -645,8 +679,11 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 state_fill(&tool.button(S::PRESSED)),
             ],
             button_border: [
-                state_line_color(&tool.button(S::HOVER)),
-                state_line_color(&tool.button(S::PRESSED)),
+                state_line(&tool.button(S::HOVER), "toolbar.button(HOVER).stroke.width"),
+                state_line(
+                    &tool.button(S::PRESSED),
+                    "toolbar.button(PRESSED).stroke.width",
+                ),
             ],
             button_text: hover_press_text(|s| tool.button_label(s)),
             padding: sides(
@@ -853,13 +890,10 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
     let primary_disabled = ButtonQuery::primary().with_state(S::DISABLED);
     // the combined state's outline where a rule states one for `state` alone
     let checked_state_line = |state: WidgetState, home: &'static str| {
-        state_line_color(&k.indicator(state)).map(|_| {
-            let both = k.indicator(state | S::CHECKED);
-            StateLine {
-                color: line(&both),
-                width: stroke_width_of(&both).map(|w| (w, home)),
-            }
-        })
+        k.indicator(state)
+            .from_state
+            .contains(PartStated::STROKE)
+            .then(|| line_of(&k.indicator(state | S::CHECKED), home))
     };
     // the combined state's fill where a rule states one for `state` alone
     let checked_state_fill = |state: WidgetState, home: &'static str| {
@@ -931,8 +965,8 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
 
 /// A surface's frame reads from its part, each with its home: `<home>.stroke.width`,
 /// `<home>.corners` and `<home>.padding.<side>`.
-fn surface(part: &PartStyle, homes: [&'static str; 6]) -> SurfaceSource {
-    let [width, corners, top, right, bottom, left] = homes;
+fn surface(part: &PartStyle, homes: [&'static str; 7]) -> SurfaceSource {
+    let [width, corners, top, right, bottom, left, shadows] = homes;
     let (edge, align) = edge(part);
     SurfaceSource {
         fill: fill(part),
@@ -942,10 +976,11 @@ fn surface(part: &PartStyle, homes: [&'static str; 6]) -> SurfaceSource {
         radius: edge.radius.map(|v| (v, corners)),
         padding: sides(part, [top, right, bottom, left]),
         shadow: shadowed(part),
+        drop: drop_shadow(part, shadows),
     }
 }
 
-/// The six homes [`surface`] names, of the part whose path is `$p`.
+/// The seven homes [`surface`] names, of the part whose path is `$p`.
 macro_rules! homes {
     ($p:literal) => {
         [
@@ -955,6 +990,7 @@ macro_rules! homes {
             concat!($p, ".padding.right"),
             concat!($p, ".padding.bottom"),
             concat!($p, ".padding.left"),
+            concat!($p, ".shadows"),
         ]
     };
 }
@@ -1003,15 +1039,20 @@ pub(crate) fn sources(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped<Sou
 
 /// [`FocusRingSource`] of the 0.8.0 model: the ring's stroke where it is one stroke of one
 /// colour (a stroke stated as none is a zero width, no ring; a per-side one gives no ring, as
-/// [`super::focus_ring_width`] cannot map it), its offset, and its trigger. The plugin draws
-/// one stroke around the widget: the ring's inner stroke, its own corners, its alignment and
-/// the shadow geometry the model states are not drawn (README, what egui cannot draw).
+/// [`super::focus_ring_width`] cannot map it), its offset, its trigger, the second ring inside
+/// it (`inner_stroke`) and its outer corners (`corners`) where the theme states them. The
+/// plugin strokes the ring outside the widget's edge grown by the offset, whatever alignment
+/// the stroke states (README, what egui cannot draw).
 ///
 /// # Errors
 ///
 /// [`Unmapped`] `focus_ring.kind` where the indicator is not a ring (a fill, an underline),
-/// which the plugin's ring cannot draw.
+/// which the plugin's ring cannot draw, `focus_ring.inner_stroke` where the second ring is
+/// stated per side, and `focus_ring.corners` where the corners are continuous or concentric.
 pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
+    use crate::plugin::RingCorners;
+    use native_theme::next::{CornerCurve, CornerRadius};
+
     let ring = &r.focus_ring;
     if ring.kind != FocusKind::Ring {
         return Err(Unmapped("focus_ring.kind"));
@@ -1021,10 +1062,40 @@ pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
         Stroke::Uniform { color, width, .. } => (Some(rgba(*color)), Some(*width)),
         _ => (None, None),
     };
+    let inner = match &ring.inner_stroke {
+        Stroke::None => None,
+        Stroke::Uniform { color, width, .. } => {
+            Some((rgba(*color), (*width, "focus_ring.inner_stroke.width")))
+        }
+        _ => return Err(Unmapped("focus_ring.inner_stroke")),
+    };
+    let corners = match ring.corners.map(|c| (c.radius, c.curve)) {
+        None => None,
+        Some((CornerRadius::None, _)) => Some(RingCorners::Radii([0.0; 4])),
+        Some((CornerRadius::Uniform(v), CornerCurve::Circular)) => Some(RingCorners::Radii([v; 4])),
+        Some((
+            CornerRadius::PerCorner {
+                top_left,
+                top_right,
+                bottom_right,
+                bottom_left,
+            },
+            CornerCurve::Circular,
+        )) => Some(RingCorners::Radii([
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        ])),
+        Some((CornerRadius::Pill, CornerCurve::Circular)) => Some(RingCorners::Pill),
+        Some(_) => return Err(Unmapped("focus_ring.corners")),
+    };
     Ok(FocusRingSource {
         color,
         width: width.map(|v| (v, "focus_ring.stroke.width")),
         offset: Some((ring.offset, "focus_ring.offset")),
         keyboard_only: ring.trigger == Some(FocusTrigger::KeyboardOnly),
+        inner,
+        corners,
     })
 }

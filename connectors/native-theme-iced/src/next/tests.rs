@@ -398,6 +398,22 @@ fn a_radio_of_no_stated_width_takes_not_the_check_boxs() -> TestResult {
     Ok(())
 }
 
+/// `radio_look` reads the radio's own resting circle: the width a rule states for
+/// `radio.indicator`, not the check box's.
+#[cfg(feature = "widgets")]
+#[test]
+fn the_radio_look_reads_the_radios_own_circle() -> TestResult {
+    use native_theme::next::WidgetState;
+
+    let patch = ThemePatch::from_toml("[[widgets.radio.rules]]\nindicator.min_size = [23, 23]\n")?;
+    for (preset, r) in every_preset_with(&patch) {
+        let [checkbox, _] = r.checkbox.indicator(WidgetState::NONE).min_size;
+        assert_ne!(checkbox, Some(23.0), "{preset:?}");
+        assert_eq!(super::radio_look(&r)?.width, Some(23.0), "{preset:?}");
+    }
+    Ok(())
+}
+
 /// A chevron the theme states no size for widens no padding and sizes no
 /// handle: the drop-down's right side stays the theme's, and the handle is
 /// at the size iced gives its own (`Icon::size` `None`).

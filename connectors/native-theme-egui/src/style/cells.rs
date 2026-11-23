@@ -48,7 +48,8 @@ pub(crate) struct MenuCell {
     /// The item label at rest and hovered.
     pub text: [Option<Rgba>; 2],
     pub outline: Outline,
-    pub hover_border: Option<Rgba>,
+    /// The hovered item's outline.
+    pub hover_border: Option<StateLine>,
     /// The menu bar title's horizontal and vertical padding, reported here where not finite.
     pub bar_padding: [Read<f32>; 2],
     /// The menu bar title's fill under the pointer and open.
@@ -167,8 +168,8 @@ pub(crate) struct ToolbarCell {
     pub item_gap: Read<f32>,
     /// A tool button's hovered and pressed fill.
     pub button_fill: [Option<Rgba>; 2],
-    /// A tool button's hovered and pressed outline colour.
-    pub button_border: [Option<Rgba>; 2],
+    /// A tool button's hovered and pressed outline.
+    pub button_border: [Option<StateLine>; 2],
     /// A tool button's hovered and pressed label.
     pub button_text: [Option<Rgba>; 2],
     pub padding: Sides,
@@ -382,7 +383,7 @@ impl CellSource {
                     &m.border,
                     ["menu.border.corner_radius", "menu.border.line_width"],
                 ),
-                hover_border: m.hover_border_color,
+                hover_border: StateLine::colour(m.hover_border_color),
                 bar_padding: [
                     m.bar_padding_horizontal
                         .map(|v| (v, "menu.bar_padding_horizontal")),
@@ -586,7 +587,7 @@ impl CellSource {
                     t.toolbar.button_hover_background,
                     t.toolbar.button_active_background,
                 ],
-                button_border: [t.toolbar.button_hover_border_color, None],
+                button_border: [StateLine::colour(t.toolbar.button_hover_border_color), None],
                 button_text: [None; 2],
                 padding: old_sides(
                     &t.toolbar.border.padding,

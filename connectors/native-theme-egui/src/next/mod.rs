@@ -334,22 +334,23 @@ fn text_size(text: &TextStyle, home: &'static str) -> Mapped<f32> {
 /// ([`font_definitions`] of `font_plan_from_system`'s plan), as
 /// [`crate::from_preset`] does for the 0.7.2 model; without it, it leaves the
 /// `Context`'s fonts alone, egui's default faces until the application sets
-/// others.
+/// others. It is [`crate::ThemeAtlas::next_builder`] with that plan: the
+/// builder takes the application's own plan, an OS colour mode and a style
+/// patch.
 ///
 /// # Errors
 ///
-/// [`Unmapped`] `focus_ring.kind` where either theme's focus indicator is
-/// not a ring (a fill, an underline), which the install plugin's ring
-/// cannot draw, and [`font_definitions`]' error. Every other value the
-/// mapping reads is optional, egui's own standing in where the theme states
-/// none.
+/// As [`crate::NextBuilder::build`], and `font_plan_from_system`'s error.
 pub fn to_theme(
     light: &ResolvedTheme,
     light_inactive: &ResolvedTheme,
     dark: &ResolvedTheme,
     dark_inactive: &ResolvedTheme,
 ) -> Mapped<crate::ThemeAtlas> {
-    crate::atlas::from_next(light, light_inactive, dark, dark_inactive)
+    let builder = crate::ThemeAtlas::next_builder(light, light_inactive, dark, dark_inactive);
+    #[cfg(feature = "system-fonts")]
+    let builder = builder.fonts(font_plan_from_system(light)?);
+    builder.build()
 }
 
 /// The accessibility preferences a 0.8.0 theme was resolved for, as 0.7.2's
@@ -926,6 +927,16 @@ fn line_width(part: &PartStyle, home: &'static str) -> Mapped<Option<f32>> {
     }
 }
 
+/// A part's stroke width as [`line_width`] reads it, where a rule states the
+/// stroke for the queried state; `None` where none does.
+fn state_line_width(part: &PartStyle, home: &'static str) -> Mapped<Option<f32>> {
+    if part.from_state.contains(PartStated::STROKE) {
+        line_width(part, home)
+    } else {
+        Ok(None)
+    }
+}
+
 /// A part's padding and stroke width, as the field margins read them.
 fn padded(part: &PartStyle, width_home: &'static str) -> Mapped<crate::accessors::Padded> {
     Ok(crate::accessors::Padded {
@@ -937,14 +948,16 @@ fn padded(part: &PartStyle, width_home: &'static str) -> Mapped<crate::accessors
 /// [`crate::default_button`]: a dialog's default button, where a rule
 /// states its fill (`button.body(DEFAULT).fill`); its label colour
 /// `button.label(DEFAULT).color`, its frame `button.body(DEFAULT)`'s stroke
-/// colour at `button.body(NONE)`'s width, and under the pointer and focused
-/// the frame colours a rule states for `button.body(HOVER)` and
+/// colour and width, and under the pointer and focused the frame colours
+/// and widths a rule states for `button.body(HOVER)` and
 /// `button.body(FOCUS_VISIBLE)`. A stroke stated as none is transparent, at
 /// no width. A label colour, frame colour or frame width the theme states
 /// none of is egui's own resting button's in the theme's scheme (its
-/// `inactive` entry), a hovered or focused frame colour egui's own hovered
-/// or `active` entry's where it differs from the resting one, else the
-/// frame's (spec §10, rule 0). `None` where no rule states the fill.
+/// `inactive` entry), a hovered or focused frame colour or width egui's own
+/// hovered or `active` entry's where it differs from the resting one (the
+/// width does: egui's stock entries go from no frame at rest to 1.0
+/// hovered and active), else the frame's (spec §10, rule 0). `None` where
+/// no rule states the fill.
 ///
 /// # Errors
 ///
@@ -956,33 +969,64 @@ pub fn default_button(r: &ResolvedTheme) -> Mapped<Option<crate::DefaultButton>>
     let Some(fill) = state_fill(&body, "button.body(DEFAULT).fill")? else {
         return Ok(None);
     };
-    let own = egui_scheme(r).default_style();
-    let stock = &own.visuals.widgets;
-    let width = line_width(&b.body(WidgetState::NONE), "button.body(NONE).stroke.width")?
-        .unwrap_or(stock.inactive.bg_stroke.width);
     let frame = if body.stated.contains(PartStated::STROKE) {
-        line_color(&body, "button.body(DEFAULT).stroke.color")?
+        Some(line_color(&body, "button.body(DEFAULT).stroke.color")?)
     } else {
-        stock.inactive.bg_stroke.color
+        None
     };
-    Ok(Some(crate::accessors::default_button_from(
+    let (hover, focus) = (
+        b.body(WidgetState::HOVER),
+        b.body(WidgetState::FOCUS_VISIBLE),
+    );
+    let reads = DefaultButtonReads {
+        fill,
+        text: text_color_of(&b.label(WidgetState::DEFAULT)),
+        width: line_width(&body, "button.body(DEFAULT).stroke.width")?,
+        frame,
+        hover: state_line_color(&hover, "button.body(HOVER).stroke.color")?,
+        focus: state_line_color(&focus, "button.body(FOCUS_VISIBLE).stroke.color")?,
+        hover_width: state_line_width(&hover, "button.body(HOVER).stroke.width")?,
+        focus_width: state_line_width(&focus, "button.body(FOCUS_VISIBLE).stroke.width")?,
+    };
+    Ok(Some(default_button_of(
+        &reads,
+        &egui_scheme(r).default_style().visuals.widgets,
+    )))
+}
+
+/// What [`default_button`] reads: the fill, and each other value `None` where the theme
+/// states none.
+pub(crate) struct DefaultButtonReads {
+    pub fill: Color32,
+    pub text: Option<Color32>,
+    pub width: Option<f32>,
+    pub frame: Option<Color32>,
+    pub hover: Option<Color32>,
+    pub focus: Option<Color32>,
+    pub hover_width: Option<f32>,
+    pub focus_width: Option<f32>,
+}
+
+/// [`default_button`] from its reads over egui's own entries `stock`: an unstated label colour,
+/// frame colour or frame width the resting (`inactive`) entry's, and the hovered and focused
+/// frame by rule 0 ([`crate::accessors::default_button_from`]).
+pub(crate) fn default_button_of(
+    reads: &DefaultButtonReads,
+    stock: &egui::style::Widgets,
+) -> crate::DefaultButton {
+    crate::accessors::default_button_from(
         &crate::accessors::DefaultButtonSource {
-            fill,
-            text: text_color_of(&b.label(WidgetState::DEFAULT))
-                .unwrap_or(stock.inactive.fg_stroke.color),
-            width,
-            frame,
-            hover: state_line_color(
-                &b.body(WidgetState::HOVER),
-                "button.body(HOVER).stroke.color",
-            )?,
-            focus: state_line_color(
-                &b.body(WidgetState::FOCUS_VISIBLE),
-                "button.body(FOCUS_VISIBLE).stroke.color",
-            )?,
+            fill: reads.fill,
+            text: reads.text.unwrap_or(stock.inactive.fg_stroke.color),
+            width: reads.width.unwrap_or(stock.inactive.bg_stroke.width),
+            frame: reads.frame.unwrap_or(stock.inactive.bg_stroke.color),
+            hover: reads.hover,
+            focus: reads.focus,
+            hover_width: reads.hover_width,
+            focus_width: reads.focus_width,
         },
         crate::style::states::Unstated::Egui(stock),
-    )))
+    )
 }
 
 /// egui's scheme of the one a theme was resolved for.

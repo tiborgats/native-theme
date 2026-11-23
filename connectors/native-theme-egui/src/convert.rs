@@ -46,8 +46,9 @@ pub(crate) const fn denan(v: f32) -> f32 {
 
 /// Saturating, rounding `f32` -> `u8`, for `epaint::CornerRadius` (four `u8`,
 /// `epaint/src/corner_radius.rs:13-25`).
-/// `epaint::Shadow::{blur, spread}` (`epaint/src/shadow.rs:20`, `:23`) are cited for their
-/// representable range only — this crate never writes shadow geometry (spec §6.14).
+/// `epaint::Shadow::{blur, spread}` (`epaint/src/shadow.rs:20`, `:23`) are `u8` too: the 0.8.0
+/// model's stated shadow geometry is written through this (`style::base::DropShadow`); the 0.7.2
+/// model has none (spec §6.14).
 ///
 /// `NaN` -> 0; `v <= 0.0` -> 0; `v >= 255.0` -> 255; otherwise round-half-away-from-zero.
 /// `f32::round`, not `round_ties_even`, so a value this crate converts and a value epaint
@@ -65,9 +66,8 @@ pub fn u8_from_f32_saturating(v: f32) -> u8 {
 }
 
 /// Saturating, rounding `f32` -> `i8`, for `epaint::Margin` (four `i8`,
-/// `epaint/src/margin.rs:15-20`) — the only `i8` sink this crate writes from theme data.
-/// `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`) is cited for its representable
-/// range only; this crate never writes shadow geometry (spec §6.14).
+/// `epaint/src/margin.rs:15-20`), and for `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`),
+/// written from the 0.8.0 model's stated shadow geometry alone (`style::base::DropShadow`).
 ///
 /// `NaN` -> 0, **not** −128, because [`denan`] runs first: `f32::NAN.max(-128.0)` is
 /// `-128.0`, so a `NaN` margin would otherwise become the most-negative margin.
@@ -384,7 +384,7 @@ pub fn to_stroke(base: egui::Stroke, color: Rgba, line_width_px: f32) -> egui::S
 
 /// `epaint::Shadow` from a native shadow colour, keeping `base`'s geometry. See spec §6.14.
 ///
-/// native-theme carries **no** shadow geometry — only `shadow_enabled: bool`
+/// The 0.7.2 model carries **no** shadow geometry — only `shadow_enabled: bool`
 /// (`native-theme/src/model/border.rs:235`, `:251`) — while `epaint::Shadow` needs
 /// `offset: [i8; 2]` (`epaint/src/shadow.rs:15`), `blur: u8` (`:20`) and `spread: u8` (`:23`).
 /// Only the colour is replaced; `enabled == false` yields `Shadow::NONE`

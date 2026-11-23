@@ -22,10 +22,23 @@ pub(crate) struct FocusRingSource {
     pub width: Read<f32>,
     pub offset: Read<f32>,
     pub keyboard_only: bool,
+    /// The second ring inside the first, its colour and width, where the theme states one.
+    pub inner: Option<(Rgba, (f32, &'static str))>,
+    /// The ring's outer corners, where the theme states the ring's own.
+    pub corners: Option<RingCorners>,
+}
+
+/// A focus ring's outer corners as the theme states them.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum RingCorners {
+    /// Top-left, top-right, bottom-right, bottom-left.
+    Radii([f32; 4]),
+    /// Half the ring's shorter side.
+    Pill,
 }
 
 impl FocusRingSource {
-    /// The 0.7.2 model's `defaults.focus_ring_*`.
+    /// The 0.7.2 model's `defaults.focus_ring_*`, which state no second ring and no corners.
     pub(crate) fn old(theme: &ResolvedTheme) -> Self {
         let d = &theme.defaults;
         Self {
@@ -33,6 +46,8 @@ impl FocusRingSource {
             width: Some((d.focus_ring_width, "defaults.focus_ring_width")),
             offset: Some((d.focus_ring_offset, "defaults.focus_ring_offset")),
             keyboard_only: d.focus_ring_keyboard_only == Some(true),
+            inner: None,
+            corners: None,
         }
     }
 }
@@ -66,10 +81,41 @@ pub(crate) fn build_focus_ring_from(
     if !finite || width <= 0.0 {
         return None;
     }
+    let width = clamp_length(width);
+    // the second ring where its width is positive; a non-finite one draws none, reported
+    let inner = src.inner.and_then(|(color, (w, path))| {
+        if !w.is_finite() {
+            push_note(notes, Note::ValueSanitised { path });
+        }
+        (w.is_finite() && w > 0.0).then(|| egui::Stroke::new(clamp_length(w), to_color32(color)))
+    });
+    // epaint grows an `Outside` stroke's outer corners by its width (`epaint-0.37.0`
+    // `src/tessellator.rs`, `tessellate_rect`), so the ring's rect takes the stated outer
+    // corners less the width; a pill's radius epaint clamps to half the rect's shorter side
+    // (the same function: "already clamped to half the rect size by `RoundedRect`")
+    let corners = match src.corners {
+        Some(RingCorners::Pill) => Some(CornerRadius::same(u8::MAX)),
+        Some(RingCorners::Radii(radii)) if radii.iter().all(|r| r.is_finite()) => {
+            let [nw, ne, se, sw] = radii.map(|r| u8_from_f32_saturating(r - width));
+            Some(CornerRadius { nw, ne, sw, se })
+        }
+        Some(RingCorners::Radii(_)) => {
+            push_note(
+                notes,
+                Note::ValueSanitised {
+                    path: "focus_ring.corners",
+                },
+            );
+            None
+        }
+        None => None,
+    };
     Some(FocusRing {
-        stroke: egui::Stroke::new(clamp_length(width), to_color32(color)),
+        stroke: egui::Stroke::new(width, to_color32(color)),
         offset,
         keyboard_only: src.keyboard_only,
+        inner,
+        corners,
     })
 }
 
@@ -803,13 +849,16 @@ fn paint_focus_ring(ui: &egui::Ui, by_key: bool) {
     if !rect.is_positive() {
         return; // an inset larger than the widget
     }
-    let corners = grow(radius, ring.offset);
+    let corners = ring.corners.unwrap_or_else(|| grow(radius, ring.offset));
     let clip = widget
         .interact_rect
         .expand((ring.offset + ring.stroke.width).max(0.0));
-    ctx.layer_painter(widget.layer_id)
-        .with_clip_rect(clip)
-        .rect_stroke(rect, corners, ring.stroke, StrokeKind::Outside);
+    let painter = ctx.layer_painter(widget.layer_id).with_clip_rect(clip);
+    painter.rect_stroke(rect, corners, ring.stroke, StrokeKind::Outside);
+    // the second ring inside the first, its outer edge the first's inner edge
+    if let Some(inner) = ring.inner {
+        painter.rect_stroke(rect, corners, inner, StrokeKind::Inside);
+    }
 }
 
 #[cfg(test)]

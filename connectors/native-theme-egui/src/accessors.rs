@@ -369,14 +369,16 @@ pub fn default_button(t: &ResolvedTheme) -> Option<DefaultButton> {
             frame: to_color32(b.default_button_border_color.unwrap_or(b.border.color)),
             hover: b.hover_border_color.map(to_color32),
             focus: b.focus_border_color.map(to_color32),
+            hover_width: None,
+            focus_width: None,
         },
         crate::style::states::Unstated::Copy,
     ))
 }
 
 /// What [`default_button`] reads, from either model: the default button's fill, label colour,
-/// frame width and colour, and the hovered and focused frame colours where the theme states
-/// them.
+/// frame width and colour, and the hovered and focused frame colours and widths where the
+/// theme states them.
 pub(crate) struct DefaultButtonSource {
     pub fill: egui::Color32,
     pub text: egui::Color32,
@@ -384,17 +386,18 @@ pub(crate) struct DefaultButtonSource {
     pub frame: egui::Color32,
     pub hover: Option<egui::Color32>,
     pub focus: Option<egui::Color32>,
+    pub hover_width: Option<f32>,
+    pub focus_width: Option<f32>,
 }
 
-/// [`DefaultButton`] from its source: a hovered or focused frame colour the theme states none
-/// of what `unstated` gives for egui's hovered and `active` (focused) entries, the 0.7.2
-/// model's copy of `frame`'s and of the hovered one's; each at the frame's width, 0 where it
-/// is not finite.
+/// [`DefaultButton`] from its source: a hovered or focused frame colour or width the theme
+/// states none of what `unstated` gives for egui's hovered and `active` (focused) entries, the
+/// 0.7.2 model's copy of `frame`'s and of the hovered one's; each width 0 where it is not
+/// finite.
 pub(crate) fn default_button_from(
     src: &DefaultButtonSource,
     unstated: crate::style::states::Unstated<'_>,
 ) -> DefaultButton {
-    let width = clamp_length(finite_or(src.width, 0.0));
     let own = |e: &egui::style::WidgetVisuals| e.bg_stroke.color;
     let hover = src
         .hover
@@ -402,12 +405,20 @@ pub(crate) fn default_button_from(
     let focus = src
         .focus
         .unwrap_or_else(|| unstated.active(src.frame, hover, own));
+    let own_width = |e: &egui::style::WidgetVisuals| e.bg_stroke.width;
+    let hover_width = src
+        .hover_width
+        .unwrap_or_else(|| unstated.hovered(src.width, own_width));
+    let focus_width = src
+        .focus_width
+        .unwrap_or_else(|| unstated.active(src.width, hover_width, own_width));
+    let line = |width: f32, color| egui::Stroke::new(clamp_length(finite_or(width, 0.0)), color);
     DefaultButton {
         fill: src.fill,
         text: src.text,
-        stroke: egui::Stroke::new(width, src.frame),
-        hover_stroke: egui::Stroke::new(width, hover),
-        focus_stroke: egui::Stroke::new(width, focus),
+        stroke: line(src.width, src.frame),
+        hover_stroke: line(hover_width, hover),
+        focus_stroke: line(focus_width, focus),
     }
 }
 

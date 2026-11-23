@@ -284,45 +284,69 @@ fn a_focus_indicator_that_is_not_a_ring_is_unmapped() -> Result<(), super::Unmap
 fn a_default_buttons_unstated_properties_are_eguis_own() -> Result<(), Box<dyn std::error::Error>> {
     use native_theme::next::PartStated;
 
-    let patch = ThemePatch::from_toml(
-        "[[widgets.button.rules]]\nstates = [\"default\"]\nbody.fill = \"#ff00ff\"\n",
-    )?;
-    let mut own_hover = 0;
-    for &(key, preset) in PRESETS {
-        for (ctx, scheme) in [
-            (ThemeContext::light(), egui::Theme::Light),
-            (ThemeContext::dark(), egui::Theme::Dark),
-        ] {
-            let r = Theme::preset(preset)
-                .with_patch(patch.clone())
-                .resolve(&ctx);
-            let at = format!("{key} {scheme:?}");
-            let button = super::default_button(&r)?.ok_or(at.clone())?;
-            let stock = scheme.default_style().visuals.widgets;
-            let b = &r.button;
-            assert_eq!(button.fill, egui::Color32::from_rgb(0xff, 0, 0xff), "{at}");
-            assert_eq!(
-                button.text,
-                super::text_color_of(&b.label(WidgetState::DEFAULT))
-                    .unwrap_or(stock.inactive.fg_stroke.color),
-                "{at}"
-            );
-            let body = b.body(WidgetState::DEFAULT);
-            let frame = if body.stated.contains(PartStated::STROKE) {
-                super::stroke_color_of(&body).unwrap_or(egui::Color32::TRANSPARENT)
-            } else {
-                stock.inactive.bg_stroke.color
-            };
-            assert_eq!(button.stroke.color, frame, "{at}");
-            let width = super::stroke_width_of(&b.body(WidgetState::NONE))
-                .unwrap_or(stock.inactive.bg_stroke.width);
-            assert_eq!(button.stroke.width, width, "{at}");
-            match super::state_stroke_color_of(&b.body(WidgetState::HOVER)) {
-                Some(hover) => assert_eq!(button.hover_stroke.color, hover, "{at}"),
-                None => {
-                    own_hover += 1;
+    let fill = "[[widgets.button.rules]]\nstates = [\"default\"]\nbody.fill = \"#ff00ff\"\n";
+    // a DEFAULT rule stating no frame: no frame at rest (spec §10, rule 2)
+    let none = format!("{fill}body.stroke = \"none\"\n");
+    let [
+        mut own_text,
+        mut own_frame,
+        mut own_width,
+        mut own_hover,
+        mut own_hover_width,
+    ] = [0; 5];
+    for patch in [fill, none.as_str()] {
+        let patch = ThemePatch::from_toml(patch)?;
+        for &(key, preset) in PRESETS {
+            for (ctx, scheme) in [
+                (ThemeContext::light(), egui::Theme::Light),
+                (ThemeContext::dark(), egui::Theme::Dark),
+            ] {
+                let r = Theme::preset(preset)
+                    .with_patch(patch.clone())
+                    .resolve(&ctx);
+                let at = format!("{key} {scheme:?}");
+                let button = super::default_button(&r)?.ok_or(at.clone())?;
+                let stock = scheme.default_style().visuals.widgets;
+                let b = &r.button;
+                assert_eq!(button.fill, egui::Color32::from_rgb(0xff, 0, 0xff), "{at}");
+                let text = super::text_color_of(&b.label(WidgetState::DEFAULT));
+                own_text += usize::from(text.is_none());
+                assert_eq!(
+                    button.text,
+                    text.unwrap_or(stock.inactive.fg_stroke.color),
+                    "{at}"
+                );
+                let body = b.body(WidgetState::DEFAULT);
+                let frame = if body.stated.contains(PartStated::STROKE) {
+                    super::stroke_color_of(&body).unwrap_or(egui::Color32::TRANSPARENT)
+                } else {
+                    own_frame += 1;
+                    stock.inactive.bg_stroke.color
+                };
+                assert_eq!(button.stroke.color, frame, "{at}");
+                let width = super::stroke_width_of(&body);
+                own_width += usize::from(width.is_none());
+                let width = width.unwrap_or(stock.inactive.bg_stroke.width);
+                assert_eq!(button.stroke.width, width, "{at}");
+                let hover = b.body(WidgetState::HOVER);
+                match super::state_stroke_color_of(&hover) {
+                    Some(c) => assert_eq!(button.hover_stroke.color, c, "{at}"),
+                    None => {
+                        own_hover += 1;
+                        assert_eq!(
+                            button.hover_stroke.color, stock.hovered.bg_stroke.color,
+                            "{at}"
+                        );
+                    }
+                }
+                // the hovered width is its own state's, egui's own where the theme states none
+                if hover.from_state.contains(PartStated::STROKE) {
+                    let stated = super::stroke_width_of(&hover).ok_or(at.clone())?;
+                    assert_eq!(button.hover_stroke.width, stated, "{at}");
+                } else {
+                    own_hover_width += 1;
                     assert_eq!(
-                        button.hover_stroke.color, stock.hovered.bg_stroke.color,
+                        button.hover_stroke.width, stock.hovered.bg_stroke.width,
                         "{at}"
                     );
                 }
@@ -330,6 +354,262 @@ fn a_default_buttons_unstated_properties_are_eguis_own() -> Result<(), Box<dyn s
         }
     }
     assert!(own_hover > 0, "no preset leaves the hovered frame unstated");
+    assert!(
+        own_hover_width > 0,
+        "no preset leaves the hovered width unstated"
+    );
+    let fallbacks = [own_text, own_frame, own_width];
+    println!("label, frame, width fallbacks: {fallbacks:?}");
+    Ok(())
+}
+
+/// No bundled preset leaves the default button's label colour, frame colour or frame width
+/// unstated, and a patch cannot unstate one: with each of them unstated, the default button
+/// takes egui's own resting button's, and its hovered and focused frames egui's own hovered and
+/// `active` ones (spec §10, rule 0).
+#[test]
+fn each_unstated_default_button_value_is_eguis_own() {
+    for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+        let stock = scheme.default_style().visuals.widgets;
+        let reads = super::DefaultButtonReads {
+            fill: egui::Color32::BLUE,
+            text: None,
+            width: None,
+            frame: None,
+            hover: None,
+            focus: None,
+            hover_width: None,
+            focus_width: None,
+        };
+        let button = super::default_button_of(&reads, &stock);
+        assert_eq!(button.fill, egui::Color32::BLUE);
+        assert_eq!(button.text, stock.inactive.fg_stroke.color, "{scheme:?}");
+        assert_eq!(button.stroke, stock.inactive.bg_stroke, "{scheme:?}");
+        assert_eq!(button.hover_stroke, stock.hovered.bg_stroke, "{scheme:?}");
+        assert_eq!(button.focus_stroke, stock.active.bg_stroke, "{scheme:?}");
+    }
+}
+
+/// A DEFAULT rule stating the frame as none draws no frame at rest, whatever the resting
+/// button's width (spec §10, rule 2), and leaves the hovered and focused frames to their own
+/// states.
+#[test]
+fn a_default_button_stated_without_a_frame_has_none_at_rest()
+-> Result<(), Box<dyn std::error::Error>> {
+    let patch = "[[widgets.button.rules]]\nstates = [\"default\"]\n\
+                 body.fill = \"#ff00ff\"\nbody.stroke = \"none\"\n";
+    for &(key, preset) in PRESETS {
+        let r = Theme::preset(preset)
+            .with_patch(ThemePatch::from_toml(patch)?)
+            .resolve(&ThemeContext::light());
+        let button = super::default_button(&r)?.ok_or(key)?;
+        assert_eq!(
+            button.stroke,
+            egui::Stroke::new(0.0, egui::Color32::TRANSPARENT),
+            "{key}"
+        );
+    }
+    Ok(())
+}
+
+/// A rule stating the checked box's hovered outline as none (`indicator(HOVER).stroke`) draws
+/// the hovered checked box with no outline: width 0, not egui's own 1.0 (spec §10, rules 0, 2).
+#[test]
+fn a_checked_boxs_hovered_outline_stated_as_none_is_no_line()
+-> Result<(), Box<dyn std::error::Error>> {
+    let hover = "[[widgets.checkbox.rules]]\nstates = [\"hover\"]\nindicator.stroke = \"none\"\n";
+    for &(key, preset) in PRESETS {
+        let atlas = patched_light(preset, hover)?;
+        let w = &atlas
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, crate::RoleVariant::Selected)
+            .visuals
+            .widgets;
+        assert_eq!(w.hovered.bg_stroke.width, 0.0, "{key}");
+    }
+    Ok(())
+}
+
+/// A tool button's and a menu item's hovered and pressed outline widths are the ones a rule
+/// states for the state.
+#[test]
+fn a_tool_button_and_a_menu_item_draw_their_stated_widths() -> Result<(), Box<dyn std::error::Error>>
+{
+    let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
+    let rules = "[[widgets.toolbar.rules]]\nstates = [\"hover\"]\n\
+                 button.stroke = { width = 2.0, color = \"#ff00ff\" }\n\
+                 [[widgets.toolbar.rules]]\nstates = [\"pressed\"]\n\
+                 button.stroke = { width = 3.0, color = \"#ff00ff\" }\n\
+                 [[widgets.menu.rules]]\nstates = [\"hover\"]\n\
+                 item.stroke = { width = 2.0, color = \"#ff00ff\" }\n";
+    let atlas = patched_light(Preset::KdeBreeze, rules)?;
+    let styles = atlas.scheme(egui::Theme::Light);
+    let tool = &styles
+        .cell(crate::Role::Toolbar, crate::RoleVariant::Normal)
+        .visuals
+        .widgets;
+    assert_eq!(tool.hovered.bg_stroke, egui::Stroke::new(2.0, magenta));
+    assert_eq!(tool.active.bg_stroke, egui::Stroke::new(3.0, magenta));
+    let menu = &styles
+        .cell(crate::Role::Menu, crate::RoleVariant::Normal)
+        .visuals
+        .widgets;
+    assert_eq!(menu.hovered.bg_stroke, egui::Stroke::new(2.0, magenta));
+    assert_eq!(menu.open.bg_stroke, egui::Stroke::new(2.0, magenta));
+    Ok(())
+}
+
+/// A popup's stated shadow is drawn as stated, its first outset layer's offset, blur, spread
+/// and colour (spec §10, rule 2), on the popover's frame and, the menu's panel stating none,
+/// on egui's popups; an inset layer alone casts no shadow.
+#[test]
+fn a_stated_drop_shadow_is_drawn_as_stated() -> Result<(), Box<dyn std::error::Error>> {
+    let r = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    assert!(
+        !r.menu
+            .panel(WidgetState::NONE)
+            .stated
+            .contains(native_theme::next::PartStated::SHADOWS)
+    );
+    let layers = "[{ offset_x = 1.0, offset_y = 3.0, blur = 2.0, spread = 1.0, color = \"#ff00ff\", inset = true }, \
+                  { offset_x = 2.0, offset_y = 4.0, blur = 18.0, spread = 3.0, color = \"#00ff00\" }]";
+    let want = egui::Shadow {
+        offset: [2, 4],
+        blur: 18,
+        spread: 3,
+        color: egui::Color32::GREEN,
+    };
+    let atlas = patched_light(
+        Preset::KdeBreeze,
+        &format!(
+            "[widgets.popover]\npanel.shadows = {layers}\n\
+             [[widgets.card.rules]]\ncontainer.shadows = {layers}\n"
+        ),
+    )?;
+    let styles = atlas.scheme(egui::Theme::Light);
+    assert_eq!(styles.frame(crate::Surface::Popover).shadow, want);
+    assert_eq!(styles.base.visuals.popup_shadow, want);
+    assert_eq!(styles.frame(crate::Surface::Card).shadow, want);
+    let inset = "[{ blur = 2.0, color = \"#ff00ff\", inset = true }]";
+    let atlas = patched_light(
+        Preset::KdeBreeze,
+        &format!("[widgets.popover]\npanel.shadows = {inset}\n"),
+    )?;
+    assert_eq!(
+        atlas
+            .scheme(egui::Theme::Light)
+            .frame(crate::Surface::Popover)
+            .shadow,
+        egui::Shadow::NONE
+    );
+    Ok(())
+}
+
+/// The ring's second stroke and its own corners are drawn where the theme states them: the
+/// plugin's ring holds the inner stroke and the corners at the ring's inner edge (the stated
+/// outer corners less the width); unstated, neither.
+#[test]
+fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::Corners;
+
+    let theme = Theme::preset(Preset::Windows11);
+    let [mut light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx));
+    let ring = |light: &native_theme::next::ResolvedTheme| {
+        super::to_theme(light, &light_inactive, &dark, &dark_inactive)
+            .map(|atlas| atlas.focus_ring(egui::Theme::Light).copied())
+    };
+    let plain = ring(&light)?.ok_or("windows-11 states a ring")?;
+    assert_eq!((plain.inner, plain.corners), (None, None));
+    let width = plain.stroke.width;
+    light.focus_ring.inner_stroke = Stroke::uniform(1.0, Color::new(1.0, 1.0, 1.0, 1.0));
+    light.focus_ring.corners = Some(Corners::uniform(width + 4.0));
+    let drawn = ring(&light)?.ok_or("the ring")?;
+    assert_eq!(
+        drawn.inner,
+        Some(egui::Stroke::new(1.0, egui::Color32::WHITE))
+    );
+    assert_eq!(drawn.corners, Some(egui::CornerRadius::same(4)));
+    light.focus_ring.inner_stroke = Stroke::sides(
+        StrokeSide::default(),
+        StrokeSide::default(),
+        StrokeSide::default(),
+        StrokeSide::default(),
+        StrokeAlign::Inside,
+    );
+    assert_eq!(
+        ring(&light).err(),
+        Some(super::Unmapped("focus_ring.inner_stroke"))
+    );
+    Ok(())
+}
+
+/// The 0.8.0 atlas's builder takes what the 0.8.0 theme does not carry: the application's own
+/// font plan (installed; none leaves the `Context`'s fonts alone across installs), the OS
+/// colour mode and the style patch, applied to every style.
+#[test]
+fn the_next_builder_takes_fonts_os_mode_and_a_style_patch() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::fonts::FontPlan;
+    use crate::install_tests::pass;
+
+    let theme = Theme::preset(Preset::KdeBreeze);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx));
+    let builder =
+        || crate::ThemeAtlas::next_builder(&light, &light_inactive, &dark, &dark_inactive);
+
+    // a given plan: its definitions are the atlas's and `install` sets them
+    let plan = FontPlan::default();
+    let (want, _) = super::font_definitions(&light, &plan)?;
+    let atlas = builder().fonts(plan).build()?;
+    assert_eq!(atlas.fonts(), Some(&want));
+    let mut own = egui::FontDefinitions::default();
+    own.families
+        .insert(egui::FontFamily::Name("mine".into()), Vec::new());
+    assert_ne!(own, want);
+    let ctx = egui::Context::default();
+    ctx.set_fonts(own.clone());
+    let _ = pass(&ctx, egui::RawInput::default(), |_| {});
+    atlas.install(&ctx);
+    let _ = pass(&ctx, egui::RawInput::default(), |_| {});
+    assert!(ctx.fonts(|f| f.definitions() == &want));
+
+    // no plan: the `Context`'s own fonts stay, across two installs
+    let ctx = egui::Context::default();
+    ctx.set_fonts(own.clone());
+    let _ = pass(&ctx, egui::RawInput::default(), |_| {});
+    for _ in 0..2 {
+        builder().build()?.install(&ctx);
+        let _ = pass(&ctx, egui::RawInput::default(), |_| {});
+        assert!(ctx.fonts(|f| f.definitions() == &own));
+    }
+
+    // the OS colour mode is reported; the style patch reaches every style
+    let atlas = builder()
+        .os_mode(crate::ColorMode::Dark)
+        .style_patch(|s| s.spacing.indent = 77.0)
+        .build()?;
+    assert_eq!(atlas.os_mode(), Some(crate::ColorMode::Dark));
+    for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+        let styles = atlas.scheme(scheme);
+        assert_eq!(styles.base.spacing.indent, 77.0);
+        for role in crate::roles::ROLES {
+            for variant in crate::roles::VARIANTS {
+                assert_eq!(styles.cell(role, variant).spacing.indent, 77.0, "{role:?}");
+            }
+        }
+    }
     Ok(())
 }
 
@@ -363,10 +643,8 @@ fn a_tab_and_a_segment_outline_each_state_by_rule_0() -> Result<(), Box<dyn std:
             "{role:?}"
         );
         // kde-breeze states the outline at rest and no pressed one: egui's own pressed colour
-        assert_eq!(
-            w.active.bg_stroke.color, own.active.bg_stroke.color,
-            "{role:?}"
-        );
+        // and width, both of which egui's stock entries change from rest
+        assert_eq!(w.active.bg_stroke, own.active.bg_stroke, "{role:?}");
     }
     // adwaita states no tab outline: the tab keeps the base's in every state
     let atlas = patched_light(Preset::Adwaita, "")?;
@@ -376,8 +654,45 @@ fn a_tab_and_a_segment_outline_each_state_by_rule_0() -> Result<(), Box<dyn std:
         .visuals
         .widgets;
     let base = &styles.base.visuals.widgets;
-    assert_eq!(tab.hovered.bg_stroke.color, base.hovered.bg_stroke.color);
-    assert_eq!(tab.active.bg_stroke.color, base.active.bg_stroke.color);
+    assert_eq!(tab.hovered.bg_stroke, base.hovered.bg_stroke);
+    assert_eq!(tab.active.bg_stroke, base.active.bg_stroke);
+    Ok(())
+}
+
+/// A tab whose outline a rule states only under the pointer: the hovered outline is the
+/// stated one, and the pressed one egui's own by rule 0, not the base style's (spec §10).
+#[test]
+fn a_tab_outline_stated_only_hovered_leaves_the_press_to_rule_0()
+-> Result<(), Box<dyn std::error::Error>> {
+    let own = egui::Theme::Light.default_style().visuals.widgets;
+    // a preset stating no tab outline at rest or pressed
+    let (_, preset) = PRESETS
+        .iter()
+        .find(|(_, p)| {
+            let r = Theme::preset(*p).resolve(&ThemeContext::light());
+            [WidgetState::NONE, WidgetState::PRESSED]
+                .into_iter()
+                .all(|s| {
+                    !r.tab
+                        .tab(s)
+                        .stated
+                        .contains(native_theme::next::PartStated::STROKE)
+                })
+        })
+        .ok_or("every preset states a tab outline at rest or pressed")?;
+    let rules = "[[widgets.tab.rules]]\nstates = [\"hover\"]\n\
+                 tab.stroke = { width = 3.0, color = \"#ff00ff\" }\n";
+    let atlas = patched_light(*preset, rules)?;
+    let w = &atlas
+        .scheme(egui::Theme::Light)
+        .cell(crate::Role::Tab, crate::RoleVariant::Normal)
+        .visuals
+        .widgets;
+    assert_eq!(
+        w.hovered.bg_stroke,
+        egui::Stroke::new(3.0, egui::Color32::from_rgb(0xff, 0, 0xff))
+    );
+    assert_eq!(w.active.bg_stroke, own.active.bg_stroke);
     Ok(())
 }
 

@@ -1099,30 +1099,61 @@ fn names_one(path: &str) -> bool {
 type Leaves = [(String, String)];
 
 /// Each line of a `{:#?}` form as the path of the field it holds
-/// (`.visuals.widgets.hovered.bg_fill`) and the line's value, without its trailing comma.
+/// (`.visuals.widgets.hovered.bg_fill`) and the line's value, without its trailing comma; an
+/// element of an array or a tuple is named by its index (`.offset.0`, `.offset.1`).
 fn leaves(debug: &str) -> Vec<(String, String)> {
-    let mut stack: Vec<(usize, String)> = Vec::new();
+    // each open container's indent, key, and the index of its next element where it is an
+    // array or a tuple
+    let mut stack: Vec<(usize, String, Option<usize>)> = Vec::new();
     let mut out = Vec::new();
     for line in debug.lines() {
         let indent = line.len().saturating_sub(line.trim_start().len());
         let text = line.trim();
-        while stack.last().is_some_and(|(i, _)| *i >= indent) {
+        while stack.last().is_some_and(|(i, _, _)| *i >= indent) {
             stack.pop();
         }
         let (key, value) = match text.split_once(": ") {
             Some((k, v)) if !k.contains(' ') => (k.to_owned(), v.to_owned()),
-            _ => (String::new(), text.to_owned()),
+            // a closing line is no element
+            _ if text.starts_with(['}', ']', ')']) => (String::new(), text.to_owned()),
+            _ => match stack.last_mut().and_then(|(_, _, next)| next.as_mut()) {
+                Some(next) => {
+                    let index = next.to_string();
+                    *next = next.saturating_add(1);
+                    (index, text.to_owned())
+                }
+                None => (String::new(), text.to_owned()),
+            },
         };
-        let mut path: Vec<&str> = stack.iter().map(|(_, k)| k.as_str()).collect();
+        let mut path: Vec<&str> = stack.iter().map(|(_, k, _)| k.as_str()).collect();
         path.push(&key);
         let path = path.join(".");
         let value = value.trim_end_matches(',').to_owned();
-        if value.ends_with('{') || value.ends_with('[') || value.ends_with('(') {
-            stack.push((indent, key.clone()));
+        if value.ends_with('{') {
+            stack.push((indent, key.clone(), None));
+        } else if value.ends_with('[') || value.ends_with('(') {
+            stack.push((indent, key.clone(), Some(0)));
         }
         out.push((path, value));
     }
     out
+}
+
+/// An array's elements are leaves of their own, each named by its index, and a struct inside
+/// an array is named by its index too.
+#[test]
+fn an_array_element_is_named_by_its_index() {
+    let shadow = egui::Shadow {
+        offset: [2, 4],
+        blur: 18,
+        spread: 3,
+        color: egui::Color32::GREEN,
+    };
+    let form = leaves(&format!("{:#?}", [shadow, egui::Shadow::NONE]));
+    assert_eq!(leaf_at(&form, ".0.offset.0").as_deref(), Some("2"));
+    assert_eq!(leaf_at(&form, ".0.offset.1").as_deref(), Some("4"));
+    assert_eq!(leaf_at(&form, ".1.offset.0").as_deref(), Some("0"));
+    assert_eq!(leaf_at(&form, ".1.blur").as_deref(), Some("0"));
 }
 
 /// The value at `path` among `leaves`.

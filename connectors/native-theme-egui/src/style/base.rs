@@ -17,8 +17,9 @@ use super::states::{
 use super::{push_note, saturates_i8};
 use crate::accessors::scaled_text_size;
 use crate::convert::{
-    Rgba, button_padding_outside, clamp_length, finite_or, padding_with_line, to_color32,
-    to_corner_radius, to_margin, unit_interval,
+    Rgba, button_padding_outside, clamp_length, finite_or, i8_from_f32_saturating,
+    padding_with_line, to_color32, to_corner_radius, to_margin, u8_from_f32_saturating,
+    unit_interval,
 };
 use crate::{AccessibilityPreferences, LayoutTheme, Note, ResolvedTheme};
 
@@ -244,6 +245,63 @@ pub(crate) struct BaseSource {
     pub thumb_width: Read<f32>,
     pub window_shadow: bool,
     pub popup_shadow: bool,
+    /// The window's and the popups' drop shadow where the theme states one; the 0.7.2 model
+    /// states none, and egui's geometry stays.
+    pub window_drop: Option<DropShadow>,
+    pub popup_drop: Option<DropShadow>,
+}
+
+/// The one outset shadow egui draws (`epaint-0.37.0/src/shadow.rs`, `Shadow`: an offset, a blur
+/// and a spread in whole points, and a colour) where the theme states a shadow: the primary
+/// drop shadow layer, its first outset one (spec §10, rule 2), with the home a note names it by.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct DropShadow {
+    pub offset: [f32; 2],
+    pub blur: f32,
+    pub spread: f32,
+    pub color: Rgba,
+    pub home: &'static str,
+}
+
+impl DropShadow {
+    /// egui's `Shadow` of it: each length rounded into its field, a non-finite one `own`'s and
+    /// one the field cannot hold saturated, each reported at the home (§7.2).
+    pub(crate) fn shadow(&self, own: egui::Shadow, notes: &mut Vec<Note>) -> egui::Shadow {
+        let path = self.home;
+        let mut finite = |v: f32| {
+            if !v.is_finite() {
+                push_note(notes, Note::ValueSanitised { path });
+            }
+            v.is_finite().then_some(v)
+        };
+        let [x, y] = self.offset;
+        let (x, y, blur, spread) = (finite(x), finite(y), finite(self.blur), finite(self.spread));
+        let mut saturated = false;
+        let mut offset = |v: Option<f32>, own: i8| {
+            v.map_or(own, |v| {
+                saturated |= saturates_i8(v);
+                i8_from_f32_saturating(v)
+            })
+        };
+        let offset = [offset(x, own.offset[0]), offset(y, own.offset[1])];
+        let mut length = |v: Option<f32>, own: u8| {
+            v.map_or(own, |v| {
+                let got = u8_from_f32_saturating(v);
+                saturated |= (f32::from(got) - v).abs() > 0.5;
+                got
+            })
+        };
+        let (blur, spread) = (length(blur, own.blur), length(spread, own.spread));
+        if saturated {
+            push_note(notes, Note::ValueSaturated { path });
+        }
+        egui::Shadow {
+            offset,
+            blur,
+            spread,
+            color: to_color32(self.color),
+        }
+    }
 }
 
 impl BaseSource {
@@ -347,6 +405,8 @@ impl BaseSource {
             thumb_width: Some((sb.thumb_width, "scrollbar.thumb_width")),
             window_shadow: t.window.border.shadow_enabled,
             popup_shadow: d.border.shadow_enabled,
+            window_drop: None,
+            popup_drop: None,
         }
     }
 }
@@ -413,8 +473,15 @@ pub(crate) fn base_style_from(
     if let Some(c) = src.muted {
         v.weak_text_color = Some(to_color32(c));
     }
-    color(&mut v.window_shadow.color, src.shadow); // geometry stays egui's; `apply_base` gates it (§6.14)
+    color(&mut v.window_shadow.color, src.shadow); // geometry egui's unless stated; `apply_base` gates it (§6.14)
     color(&mut v.popup_shadow.color, src.shadow);
+    // a stated drop shadow is drawn as stated, geometry and colour
+    if let Some(d) = &src.window_drop {
+        v.window_shadow = d.shadow(v.window_shadow, notes);
+    }
+    if let Some(d) = &src.popup_drop {
+        v.popup_shadow = d.shadow(v.popup_shadow, notes);
+    }
     color(&mut v.hyperlink_color, src.link);
     color(&mut v.selection.bg_fill, src.selection);
     color(&mut v.selection.stroke.color, src.selection_text); // width stays egui's (§5.1)

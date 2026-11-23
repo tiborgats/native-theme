@@ -702,34 +702,42 @@ and each crate-root accessor has a twin there. Where egui has a receiver,
 listed here, and a value the theme leaves unstated is egui's own
 (docs/v0.8.0-spec.md §10, rule 0).
 
-- **The focus ring's second stroke, kind, corners and alignment.** The
-  install plugin paints one ring: one `Stroke` round the focused widget's
-  rect, outside it at the ring's offset, its corners the widget's
-  `widgets.active` corner radius grown by the offset (src/plugin.rs,
-  `paint_focus_ring`; `Painter::rect_stroke` with `StrokeKind::Outside`,
-  `egui-0.37.0/src/painter.rs`). It takes `focus_ring.stroke`'s colour and
-  width, `focus_ring.offset` and `focus_ring.trigger`. `inner_stroke`, a
-  second line inside the first (WinUI's white and black ring), is not
-  drawn; the `corners` the theme states are not drawn, the ring keeping the
-  widget's; and the stroke's alignment is not drawn, the ring lying outside
-  at the offset whatever the theme states. A `kind` of `Fill` or
-  `Underline` cannot be drawn as a ring: `next::to_theme` returns
-  `Unmapped("focus_ring.kind")` for it. A ring whose stroke the theme
-  states per side is no ring.
+- **The focus ring's kind and alignment.** The install plugin strokes one
+  ring round the focused widget's rect, outside it at the ring's offset
+  (src/plugin.rs, `paint_focus_ring`; `Painter::rect_stroke` with
+  `StrokeKind::Outside`, `egui-0.37.0/src/painter.rs`), in
+  `focus_ring.stroke`'s colour and width, shown as `focus_ring.trigger`
+  says. Its corners are the widget's grown by the offset, or the ring's own
+  outer corners where the theme states `focus_ring.corners`; a second ring
+  inside the first is drawn where it states `inner_stroke` (a second
+  `rect_stroke`, `StrokeKind::Inside`). The stroke's alignment is not
+  drawn: every bundled preset states its ring with `Stroke::uniform`, whose
+  alignment is `Inside` by construction, while the presets describe a ring
+  outside the part at the offset, so the ring lies outside at the offset
+  whatever the alignment says. A `kind` of `Fill` or `Underline` is no
+  ring: `next::to_theme` returns `Unmapped("focus_ring.kind")` for it; a
+  ring or second ring stated per side is `Unmapped`, and so are continuous
+  or concentric corners, which `CornerRadius` (four circular radii,
+  `epaint-0.37.0/src/corner_radius.rs`) cannot hold.
 - **A stroke per side.** egui strokes a rect with one `Stroke`, one width
   and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
   `RectShape::stroke`). Where the theme states a part's stroke per side
   (`Stroke::Complex`), the part keeps egui's own stroke, as if the theme
   stated none, and the part reads (`next::stroke_color_of`,
   `next::stroke_width_of`) return `None`.
-- **Shadow geometry.** egui's `Shadow` is one outset shadow: an offset, a
-  blur and a spread in whole points, and a colour
-  (`epaint-0.37.0/src/shadow.rs`). The atlas writes the theme's shadow
-  colour (`colors.shadow`) into `Visuals::window_shadow` and
-  `popup_shadow`, and a surface casts egui's shadow unless the theme states
-  that it has none; the geometry stays egui's. The offsets, blurs, spreads
-  and colours of the shadow layers the theme states, an inset layer and
-  every layer after the first are not drawn.
+- **Shadows beyond one outset layer.** egui's `Shadow` is one outset
+  shadow: an offset in whole points (`[i8; 2]`), a blur and a spread in
+  whole points (`u8`), and a colour (`epaint-0.37.0/src/shadow.rs`), one
+  per frame (`Frame::shadow`, `egui-0.37.0/src/containers/frame.rs`) and
+  one each for windows and popups (`Visuals::window_shadow`,
+  `popup_shadow`). The atlas draws the first outset layer a surface states
+  (docs/v0.8.0-spec.md §10, rule 2): the window frame's into
+  `window_shadow`, the menu panel's (else the popover panel's) into
+  `popup_shadow`, and each dialog's, popover's, tooltip's, card's and
+  panel's into its frame, its lengths rounded to whole points. An inset layer and every layer after the
+  first are not drawn: `Shadow` has no inset form and a frame takes one
+  shadow. A widget's own shadow (a button's, a field's) is not drawn:
+  egui's `WidgetVisuals` has no shadow (`egui-0.37.0/src/style.rs`).
 - **Gradients and layered fills.** egui fills a shape with one `Color32`
   (`epaint-0.37.0/src/shapes/rect_shape.rs`, `RectShape::fill`). A fill the
   theme states as layers (`Paint::Complex`, a gradient among them) is drawn

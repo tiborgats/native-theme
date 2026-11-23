@@ -5,7 +5,8 @@
 //! preset's value, and through it whatever the base style holds (§3.4). A stroke keeps its
 //! widget's own colour, the final line colour (the model folds `defaults.border.opacity`
 //! into every border colour, and nothing applies it again);
-//! the shadow gate keeps egui's geometry (§6.14); a padding side the theme leaves unstated
+//! the shadow gate keeps egui's geometry (§6.14) unless the theme states the surface's shadow,
+//! which is drawn as stated (`base::DropShadow`); a padding side the theme leaves unstated
 //! keeps the preset's, and a stated one is rounded to a whole point, saturating
 //! (`convert::to_margin`, §7.2).
 //!
@@ -16,14 +17,14 @@
 
 use native_theme::theme::ResolvedWidgetBorder;
 
-use super::base::{Read, Sides, length, margin_of, radius};
+use super::base::{DropShadow, Read, Sides, length, margin_of, radius};
 use super::line::{Line, LineAlign};
 use crate::convert::{Rgba, i8_from_f32_saturating, to_color32, to_shadow};
 use crate::style::{push_note, saturates_i8};
 use crate::{LayoutTheme, Note, PanelSide, ResolvedTheme, Surface};
 
 /// One surface's reads: its fill, its outline's colour, width and where it lies, its corner
-/// radius, its padding, and whether it casts a shadow.
+/// radius, its padding, whether it casts a shadow, and the shadow where the theme states one.
 pub(crate) struct SurfaceSource {
     pub fill: Option<Rgba>,
     pub stroke: Option<Rgba>,
@@ -32,6 +33,7 @@ pub(crate) struct SurfaceSource {
     pub radius: Read<f32>,
     pub padding: Sides,
     pub shadow: bool,
+    pub drop: Option<DropShadow>,
 }
 
 /// Every surface frame's reads.
@@ -90,6 +92,7 @@ fn old_surface(fill: Rgba, border: &ResolvedWidgetBorder, paths: &BorderPaths) -
             paths: paths.padding,
         },
         shadow: border.shadow_enabled,
+        drop: None,
     }
 }
 
@@ -171,9 +174,12 @@ fn popup_like(
     fill(&mut f, s);
     outline(&mut f, s, notes);
     // the surface's own gate over egui's own geometry (§6.14), not over the base style's
-    // `popup_shadow`, which `defaults.border.shadow_enabled` gates
+    // `popup_shadow`, which `defaults.border.shadow_enabled` gates; a stated shadow as stated
     let own = scheme.default_style().visuals.popup_shadow;
-    f.shadow = to_shadow(own, shadow_color, s.shadow);
+    f.shadow = match &s.drop {
+        Some(d) if s.shadow => d.shadow(own, notes),
+        _ => to_shadow(own, shadow_color, s.shadow),
+    };
     corners_and_padding(&mut f, s, notes);
     f
 }
@@ -185,7 +191,16 @@ fn panel_like(base: &egui::Style, s: &SurfaceSource, notes: &mut Vec<Note>) -> e
     let mut f = egui::Frame::side_top_panel(base);
     fill(&mut f, s);
     corners_and_padding(&mut f, s, notes);
+    drop_shadow(&mut f, s, notes);
     f
+}
+
+/// A shadow the theme states for a surface egui's preset frame casts none for (`Frame::group`,
+/// `Frame::side_top_panel`), drawn as stated.
+fn drop_shadow(f: &mut egui::Frame, s: &SurfaceSource, notes: &mut Vec<Note>) {
+    if let Some(d) = s.drop.filter(|_| s.shadow) {
+        f.shadow = d.shadow(f.shadow, notes);
+    }
 }
 
 /// The frame of `surface` for one colour scheme from the 0.7.2 model, over that scheme's base
@@ -235,12 +250,14 @@ pub(crate) fn surface_frame_from(
         Surface::Popover => popup_like(base, &src.popover, src.shadow_color, scheme, notes),
         Surface::Tooltip => popup_like(base, &src.tooltip, src.shadow_color, scheme, notes),
         // `Frame::show` (`frame.rs:404`) over `Frame::group` (`:178-183`), which has no fill and
-        // no shadow; `card.border.shadow_enabled` is UNMAPPABLE (§5.2), so the shadow stays `NONE`.
+        // no shadow; `card.border.shadow_enabled` is UNMAPPABLE (§5.2), so the shadow stays `NONE`
+        // unless the theme states the card's shadow itself, which is drawn as stated.
         Surface::Card => {
             let mut f = egui::Frame::group(base);
             fill(&mut f, &src.card);
             outline(&mut f, &src.card, notes);
             corners_and_padding(&mut f, &src.card, notes);
+            drop_shadow(&mut f, &src.card, notes);
             f
         }
         Surface::Panel(PanelSide::Left | PanelSide::Right) => panel_like(base, &src.sidebar, notes),

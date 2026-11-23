@@ -101,6 +101,11 @@ pub(crate) struct FocusRing {
     pub(crate) stroke: egui::Stroke,
     pub(crate) offset: f32,
     pub(crate) keyboard_only: bool,
+    /// The second ring inside the first, where the theme states one.
+    pub(crate) inner: Option<egui::Stroke>,
+    /// The corners of the ring's inner edge where the theme states the ring's own; `None`
+    /// keeps the widget's grown by the offset.
+    pub(crate) corners: Option<egui::CornerRadius>,
 }
 
 /// One colour scheme's compiled styles (spec §3.4).
@@ -996,71 +1001,128 @@ pub(crate) fn row_height(
         })
 }
 
-/// The atlas of 0.8.0 themes ([`crate::next::to_theme`]): `light` into the light scheme and
-/// `dark` into the dark one, each beside the same theme resolved for a window that is not
-/// active, which its `WindowTitleBar` frame fills from, each scheme compiled with the
-/// preferences of its own theme's context (`next::accessibility_of`), on the faces it installs:
-/// with feature `system-fonts` those `next::font_definitions` makes of
-/// `next::font_plan_from_system`'s plan for `light`, as `from_preset` gives the 0.7.2 builder
-/// `FontPlan::from_system`'s, else egui's default faces, which it leaves the `Context`.
-/// What the atlas holds once (its name, preferences, layout gaps, icon set and fonts) is
-/// `light`'s; its icon theme is each scheme's own; it holds no OS colour mode.
-///
-/// # Errors
-///
-/// `next::build::sources`'s, and `next::font_definitions`'.
-pub(crate) fn from_next(
-    light: &native_theme::next::ResolvedTheme,
-    light_inactive: &native_theme::next::ResolvedTheme,
-    dark: &native_theme::next::ResolvedTheme,
-    dark_inactive: &native_theme::next::ResolvedTheme,
-) -> crate::next::Mapped<ThemeAtlas> {
-    let mut notes = Vec::new();
-    // With `system-fonts`, the OS's faces for `light`'s body and monospace text, as
-    // `from_preset` hands the 0.7.2 builder its plan; without it, egui's default faces.
-    #[cfg(feature = "system-fonts")]
-    let fonts = {
-        let plan = crate::next::font_plan_from_system(light)?;
-        let (defs, plan_notes) = crate::next::font_definitions(light, &plan)?;
-        notes.extend(plan_notes);
-        Some(defs)
-    };
-    #[cfg(not(feature = "system-fonts"))]
-    let fonts: Option<egui::FontDefinitions> = None;
-    let defs = fonts.clone().unwrap_or_default();
-    let widest_glyph = crate::fonts::widest_glyph(&defs);
-    let mut compiled = |scheme, theme, inactive| {
-        let prefs = crate::next::accessibility_of(theme);
-        let sources = crate::next::build::sources(theme, inactive)?;
-        Ok(compile_scheme(
-            scheme, &sources, &prefs, &defs, &mut notes, None,
-        ))
-    };
-    let schemes = [
-        compiled(egui::Theme::Light, light, light_inactive)?,
-        compiled(egui::Theme::Dark, dark, dark_inactive)?,
-    ];
-    let gaps = &light.layout;
-    let icon_theme =
-        |t: &native_theme::next::ResolvedTheme| t.icons.theme.as_deref().map(str::to_owned);
-    Ok(ThemeAtlas(Arc::new(AtlasInner {
-        name: light.name.to_string(),
-        light: SchemeTheme::Next(Box::new(light.clone())),
-        dark: SchemeTheme::Next(Box::new(dark.clone())),
-        schemes,
-        accessibility: crate::next::accessibility_of(light),
-        layout: LayoutTheme {
-            widget_gap: gaps.widget_gap,
-            container_margin: gaps.container_margin,
-            window_margin: gaps.window_margin,
-            section_gap: gaps.section_gap,
-        },
-        os_mode: None,
-        icon_set: light.icons.set,
-        icon_theme: [icon_theme(light), icon_theme(dark)],
-        fonts,
-        widest_glyph,
-        text_size_cap: AtomicU32::new(f32::INFINITY.to_bits()),
-        notes,
-    })))
+/// Additive builder for a [`ThemeAtlas`] of 0.8.0 themes ([`ThemeAtlas::next_builder`]), the
+/// 0.8.0 model's [`Builder`]. A 0.8.0 theme carries what [`Builder`] takes beside the two themes
+/// as their own values: the name, the layout gaps, the accessibility preferences (the theme's
+/// context), the icon set and each scheme's icon theme. What it does not carry is a method
+/// here, as on [`Builder`]: the application's font plan, the OS colour mode and the style
+/// patch.
+#[must_use = "call `build()` to produce the atlas"]
+pub struct NextBuilder<'a> {
+    light: &'a native_theme::next::ResolvedTheme,
+    light_inactive: &'a native_theme::next::ResolvedTheme,
+    dark: &'a native_theme::next::ResolvedTheme,
+    dark_inactive: &'a native_theme::next::ResolvedTheme,
+    fonts: Option<FontPlan>,
+    os_mode: Option<ColorMode>,
+    style_patch: Option<StylePatch<'a>>,
+}
+
+impl ThemeAtlas {
+    /// Start building from 0.8.0 themes: `light` for the light scheme and `dark` for the dark
+    /// one, each beside the same theme resolved for a window that is not active
+    /// (`ThemeContext::window_active` false), which its `WindowTitleBar` frame fills from.
+    /// [`crate::next::to_theme`] is the shortcut with the OS's faces for the theme's text.
+    #[must_use = "this starts the builder; call `build()` to produce the atlas"]
+    pub fn next_builder<'a>(
+        light: &'a native_theme::next::ResolvedTheme,
+        light_inactive: &'a native_theme::next::ResolvedTheme,
+        dark: &'a native_theme::next::ResolvedTheme,
+        dark_inactive: &'a native_theme::next::ResolvedTheme,
+    ) -> NextBuilder<'a> {
+        NextBuilder {
+            light,
+            light_inactive,
+            dark,
+            dark_inactive,
+            fonts: None,
+            os_mode: None,
+            style_patch: None,
+        }
+    }
+}
+
+impl<'a> NextBuilder<'a> {
+    /// Font bytes, as [`Builder::fonts`]: the faces [`crate::next::font_definitions`] makes of
+    /// the plan for the light theme's text, installed by [`ThemeAtlas::install`]. Without a plan
+    /// the atlas leaves the `Context`'s fonts as they are and measures the Body row and the
+    /// widest glyph on `egui::FontDefinitions::default()`'s faces, as [`Builder::build`] does.
+    pub fn fonts(mut self, plan: FontPlan) -> Self {
+        self.fonts = Some(plan);
+        self
+    }
+
+    /// The OS colour mode, as [`Builder::os_mode`]; without this call the atlas has none.
+    pub fn os_mode(mut self, mode: ColorMode) -> Self {
+        self.os_mode = Some(mode);
+        self
+    }
+
+    /// An application-owned adjustment applied last to every style the atlas holds, as
+    /// [`Builder::style_patch`]. A second call replaces the first.
+    pub fn style_patch(mut self, f: impl Fn(&mut egui::Style) + 'a) -> Self {
+        self.style_patch = Some(Box::new(f));
+        self
+    }
+
+    /// Build: each scheme compiled with the preferences of its own theme's context
+    /// (`next::accessibility_of`), on the faces the atlas installs. What the atlas holds once
+    /// (its name, preferences, layout gaps, icon set and fonts) is the light theme's; its icon
+    /// theme is each scheme's own.
+    ///
+    /// # Errors
+    ///
+    /// [`crate::next::Unmapped`] `focus_ring.kind` where either theme's focus indicator is not a
+    /// ring, a value of the focus ring egui cannot draw, and [`crate::next::font_definitions`]'
+    /// error. Every other value the mapping reads is optional, egui's own standing in where the
+    /// theme states none.
+    pub fn build(self) -> crate::next::Mapped<ThemeAtlas> {
+        let (light, dark) = (self.light, self.dark);
+        let mut notes = Vec::new();
+        let fonts = match &self.fonts {
+            Some(plan) => {
+                let (defs, plan_notes) = crate::next::font_definitions(light, plan)?;
+                notes.extend(plan_notes);
+                Some(defs)
+            }
+            None => None,
+        };
+        let defs = fonts.clone().unwrap_or_default(); // egui's default faces for an atlas with no plan
+        let widest_glyph = crate::fonts::widest_glyph(&defs);
+        let patch = self.style_patch.as_deref();
+        let mut compiled = |scheme, theme, inactive| {
+            let prefs = crate::next::accessibility_of(theme);
+            let sources = crate::next::build::sources(theme, inactive)?;
+            Ok(compile_scheme(
+                scheme, &sources, &prefs, &defs, &mut notes, patch,
+            ))
+        };
+        let schemes = [
+            compiled(egui::Theme::Light, light, self.light_inactive)?,
+            compiled(egui::Theme::Dark, dark, self.dark_inactive)?,
+        ];
+        let gaps = &light.layout;
+        let icon_theme =
+            |t: &native_theme::next::ResolvedTheme| t.icons.theme.as_deref().map(str::to_owned);
+        Ok(ThemeAtlas(Arc::new(AtlasInner {
+            name: light.name.to_string(),
+            light: SchemeTheme::Next(Box::new(light.clone())),
+            dark: SchemeTheme::Next(Box::new(dark.clone())),
+            schemes,
+            accessibility: crate::next::accessibility_of(light),
+            layout: LayoutTheme {
+                widget_gap: gaps.widget_gap,
+                container_margin: gaps.container_margin,
+                window_margin: gaps.window_margin,
+                section_gap: gaps.section_gap,
+            },
+            os_mode: self.os_mode,
+            icon_set: light.icons.set,
+            icon_theme: [icon_theme(light), icon_theme(dark)],
+            fonts,
+            widest_glyph,
+            text_size_cap: AtomicU32::new(f32::INFINITY.to_bits()),
+            notes,
+        })))
+    }
 }

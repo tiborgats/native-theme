@@ -431,9 +431,18 @@ fn menu(
     // E1: the base's `window_stroke.width` is `defaults.border.line_width`, sanitised; egui lays
     // the stroke inside the padding (egui-0.37.0/src/theme/default_style.rs:68-71): nothing moves.
     // Unstated, the item keeps its resting outline in every state: egui's own menu entries
-    // (`menu_style`) stroke no item in any state, so rule 0 keeps the rest (spec §10)
-    if let Some(c) = m.hover_border {
-        let line = egui::Stroke::new(own.visuals.window_stroke.width, to_color32(c));
+    // (`menu_style`) stroke no item in any state, so rule 0 keeps the rest (spec §10); a
+    // stated width is laid over, an unstated one the window stroke's
+    if let Some(StateLine {
+        color: Some(c),
+        width,
+    }) = m.hover_border
+    {
+        let frame = own.visuals.window_stroke;
+        let line = match width {
+            Some((w, path)) => stroke(path, frame, to_color32(c), w, notes),
+            None => egui::Stroke::new(frame.width, to_color32(c)),
+        };
         let w = &mut s.visuals.widgets;
         (w.hovered.bg_stroke, w.open.bg_stroke) = (line, line); // open: a submenu shown, S4
         w.active.bg_stroke = line; // `active` stays the hover look (S6)
@@ -799,7 +808,8 @@ fn progress_bar(s: &mut egui::Style, own: &egui::Style, src: &CellSource, notes:
 
 /// A role's hovered and pressed outline over its fill (`weak_bg_fill`), each property apart, as
 /// [`state_borders`] writes it, except that a property the role states at none of rest, hover
-/// and press keeps the base's in both entries (M4.E2c).
+/// and press keeps the base's in both entries (M4.E2c); one it states at any of them is
+/// [`state_borders`]' in both, an unstated state's by rule 0.
 fn role_state_borders(
     widgets: &mut Widgets,
     lines: [Option<StateLine>; 2],
@@ -816,13 +826,15 @@ fn role_state_borders(
         unstated,
         notes,
     );
+    let lines = lines.map(Option::unwrap_or_default);
+    let no_color = outline.edge.color.is_none() && lines.iter().all(|l| l.color.is_none());
+    let no_width = outline.edge.width.is_none() && lines.iter().all(|l| l.width.is_none());
     let entries = [&mut widgets.hovered, &mut widgets.active];
-    for ((entry, base), line) in entries.into_iter().zip(base).zip(lines) {
-        let line = line.unwrap_or_default();
-        if outline.edge.color.is_none() && line.color.is_none() {
+    for (entry, base) in entries.into_iter().zip(base) {
+        if no_color {
             entry.bg_stroke.color = base.color;
         }
-        if outline.edge.width.is_none() && line.width.is_none() {
+        if no_width {
             entry.bg_stroke.width = base.width;
         }
     }
@@ -959,17 +971,33 @@ fn toolbar(
     let [hover, active] = tb.button_fill;
     set_color(&mut w.hovered.weak_bg_fill, hover);
     set_color(&mut w.active.weak_bg_fill, active);
-    // the colour only, the width stays the base's, an unstated one what `unstated` gives;
-    // `active` is also egui's keyboard-focused state, so a tool button reached by Tab shows
-    // the outline, which a Qt toolbar button, taking no focus, never shows
+    // the colour and the width each where stated and as stated, an unstated one what `unstated`
+    // gives; `active` is also egui's keyboard-focused state, so a tool button reached by Tab
+    // shows the outline, which a Qt toolbar button, taking no focus, never shows
     if tb.button_border.iter().any(Option::is_some) {
-        let [hover, active] = tb.button_border;
+        let [hover, active] = tb.button_border.map(Option::unwrap_or_default);
         let own = |e: &egui::style::WidgetVisuals| e.bg_stroke.color;
         let rest = w.inactive.bg_stroke.color;
-        let hovered = hover.map_or_else(|| cx.unstated.hovered(rest, own), to_color32);
-        w.active.bg_stroke.color =
-            active.map_or_else(|| cx.unstated.active(rest, hovered, own), to_color32);
-        w.hovered.bg_stroke.color = hovered;
+        let hovered = hover
+            .color
+            .map_or_else(|| cx.unstated.hovered(rest, own), to_color32);
+        let pressed = active
+            .color
+            .map_or_else(|| cx.unstated.active(rest, hovered, own), to_color32);
+        let own_width = |e: &egui::style::WidgetVisuals| e.bg_stroke.width;
+        let mut width = |state: Read<f32>, entry: &egui::style::WidgetVisuals| {
+            state.map(|(v, path)| {
+                stroke(path, entry.bg_stroke, entry.bg_stroke.color, v, notes).width
+            })
+        };
+        let hovered_width = width(hover.width, &w.hovered)
+            .unwrap_or_else(|| cx.unstated.hovered(w.hovered.bg_stroke.width, own_width));
+        // the 0.7.2 model states no width: its entries keep their own, as before
+        let resting = w.active.bg_stroke.width;
+        let pressed_width = width(active.width, &w.active)
+            .unwrap_or_else(|| cx.unstated.active(resting, resting, own_width));
+        w.hovered.bg_stroke = egui::Stroke::new(hovered_width, hovered);
+        w.active.bg_stroke = egui::Stroke::new(pressed_width, pressed);
     }
 }
 
