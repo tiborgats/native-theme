@@ -1028,7 +1028,9 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
 
         // A listed difference states its presets, its reason, its citation and, for each of its presets
         // and no other, the value 0.8.0 has at the homes: "unstated" or a single value, or a table of
-        // exactly `light` and `dark`, each a single value, where the two schemes differ.
+        // exactly `light` and `dark`, each a single value, where the two schemes differ; where the homes
+        // differ, a table of such values by home, naming every home of the row on the preset and no
+        // other. "none" (no outline) is a value at a part's stroke only.
         match (
             &row.difference_presets,
             &row.difference_reason,
@@ -1048,21 +1050,65 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
                 }
                 let single =
                     |v: &toml::Value| !matches!(v, toml::Value::Table(_) | toml::Value::Array(_));
+                let per_scheme_or_single = |v: &toml::Value| match v {
+                    toml::Value::Table(schemes) => {
+                        schemes.len() == 2
+                            && ["light", "dark"]
+                                .iter()
+                                .all(|s| schemes.get(*s).is_some_and(single))
+                    }
+                    other => single(other),
+                };
+                let no_outline = |v: &toml::Value| match v {
+                    toml::Value::Table(schemes) => {
+                        schemes.values().any(|v| v.as_str() == Some("none"))
+                    }
+                    other => other.as_str() == Some("none"),
+                };
+                let not_a_stroke = |preset: &str, home: &str| {
+                    format!(
+                        "`{key}`: difference_values for `{preset}` names \"none\" at `{home}`, \
+                         which is no part's stroke"
+                    )
+                };
                 for (preset, value) in values {
-                    let valid = match value {
-                        toml::Value::Table(schemes) => {
-                            schemes.len() == 2
-                                && ["light", "dark"]
-                                    .iter()
-                                    .all(|s| schemes.get(*s).is_some_and(single))
+                    let homes = row.homes_by_preset.get(preset).unwrap_or(&row.homes);
+                    match value {
+                        toml::Value::Table(table) if !compare::is_per_scheme(table) => {
+                            let named: BTreeSet<&str> = table.keys().map(String::as_str).collect();
+                            let expected: BTreeSet<&str> =
+                                homes.iter().map(String::as_str).collect();
+                            if named != expected {
+                                found.push(format!(
+                                    "`{key}`: difference_values for `{preset}` by home must name \
+                                     exactly the row's homes on it"
+                                ));
+                            }
+                            for (home, value) in table {
+                                if !per_scheme_or_single(value) {
+                                    found.push(format!(
+                                        "`{key}`: difference_values for `{preset}` at `{home}` is \
+                                         not a single value or a table of `light` and `dark`"
+                                    ));
+                                }
+                                if no_outline(value) && !compare::is_stroke_home(home) {
+                                    found.push(not_a_stroke(preset, home));
+                                }
+                            }
                         }
-                        other => single(other),
-                    };
-                    if !valid {
-                        found.push(format!(
-                            "`{key}`: difference_values for `{preset}` is not a single value \
-                             or a table of `light` and `dark`"
-                        ));
+                        other => {
+                            if !per_scheme_or_single(other) {
+                                found.push(format!(
+                                    "`{key}`: difference_values for `{preset}` is not a single \
+                                     value or a table of `light` and `dark`"
+                                ));
+                            }
+                            if no_outline(other) {
+                                for home in homes.iter().filter(|h| !compare::is_stroke_home(h)) {
+                                    found.push(not_a_stroke(preset, home));
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1143,7 +1189,7 @@ fn the_checks_catch_what_they_check() -> TestResult {
         .map(String::from)
         .collect();
     let table: Table = toml::from_str(
-        r#"
+        r##"
         [[row]]
         key = "button.min_width"
         homes = ["button.body(NONE).min_size[0]"]
@@ -1179,7 +1225,23 @@ fn the_checks_catch_what_they_check() -> TestResult {
         difference_reason = "a reason"
         difference_citation = "a citation"
         difference_values = { "kde-breeze" = { light = "unstated" } }
-        "#,
+
+        [[row]]
+        key = "button.gone"
+        homes = ["button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color"]
+        difference_presets = ["adwaita", "windows-11", "material-3"]
+        difference_reason = "a reason"
+        difference_citation = "a citation"
+        difference_values = { "adwaita" = { "button.body(HOVER).stroke.color" = "#ffffff" }, "windows-11" = { "button.body(HOVER).stroke.color" = "none", "button.body(PRESSED).stroke.color" = { light = "#000000" } }, "material-3" = { "button.body(HOVER).stroke.color" = "none", "button.body(PRESSED).stroke.color" = { light = "#000000", dark = "none" } } }
+
+        [[row]]
+        key = "button.gone"
+        homes = ["button.body(NONE).fill"]
+        difference_presets = ["kde-breeze", "ios-13"]
+        difference_reason = "a reason"
+        difference_citation = "a citation"
+        difference_values = { "kde-breeze" = "none", "ios-13" = { "button.body(NONE).fill" = { light = "#000000", dark = "none" } } }
+        "##,
     )?;
     for bad in [
         "null_means = \"unset\"",
@@ -1205,12 +1267,25 @@ fn the_checks_catch_what_they_check() -> TestResult {
          not `button.body(NONE).min_size[1]`",
         "`button.gone`: difference_values for `kde-breeze` is not a single value \
          or a table of `light` and `dark`",
+        "`button.gone`: difference_values for `adwaita` by home must name exactly the row's \
+         homes on it",
+        "`button.gone`: difference_values for `windows-11` at `button.body(PRESSED).stroke.color` \
+         is not a single value or a table of `light` and `dark`",
+        "`button.gone`: difference_values for `kde-breeze` names \"none\" at \
+         `button.body(NONE).fill`, which is no part's stroke",
+        "`button.gone`: difference_values for `ios-13` names \"none\" at \
+         `button.body(NONE).fill`, which is no part's stroke",
     ] {
         assert!(
             found.iter().any(|p| p.contains(expected)),
             "{expected}: {found:?}"
         );
     }
+    // A table by home naming exactly the row's homes, "none" at a stroke, is well formed.
+    assert!(
+        !found.iter().any(|p| p.contains("`material-3`")),
+        "{found:?}"
+    );
     Ok(())
 }
 
@@ -2867,7 +2942,11 @@ pub(crate) fn windows_cases() -> Vec<(
         AccessibilityData, AllFonts, CARET_BLINK_NONE, SysColors, WidgetSizing, WindowsSettings,
     };
     const WHITE: crate::Rgba = crate::Rgba::rgb(255, 255, 255);
-    const HIGH_CONTRAST: &[&str] = &["button.hover_border_color", "expander.hover_background"];
+    const HIGH_CONTRAST: &[&str] = &[
+        "button.hover_border_color",
+        "checkbox.hover_border_color",
+        "expander.hover_background",
+    ];
     let shades = || [1, 2, 3, 4, 5, 6].map(|b| Some(crate::Rgba::rgb(0, 0, b)));
     let named_fonts = || {
         let spec = |size, weight| crate::model::FontSpec {
@@ -2996,9 +3075,9 @@ pub(crate) fn windows_cases() -> Vec<(
             },
             &[],
         ),
-        // M2.FS4: the button's hover outline and the expander header's fill are listed differences
-        // of the table (`next_homes.toml`), whose values are the preset's colours, which high
-        // contrast replaces.
+        // M2.FS4: the button's hover and pressed outline, the check box's hover outline and the
+        // expander header's fill are listed differences of the table (`next_homes.toml`), whose
+        // values are the preset's colours, which high contrast replaces.
         (
             "high contrast, light",
             high_contrast(crate::Rgba::rgb(0, 0, 0)),

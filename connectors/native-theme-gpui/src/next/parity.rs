@@ -355,12 +355,11 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "geometry::group_box_content",
-        presets: &["adwaita", "material-3"],
-        reason: "0.7.2's adwaita.toml and material-3.toml state no card.border.color or \
-                 line_width, and 0.7.2's validation fills a card border's unstated fields with \
-                 transparent and 0 (`BorderKind::None`, \
-                 native-theme/src/resolve/validate_helpers.rs), a value no source gives; the \
-                 0.8.0 adwaita and material-3 leave card.container(NONE).stroke \
+        presets: &["material-3"],
+        reason: "0.7.2's material-3.toml states no card.border.color or line_width, and 0.7.2's \
+                 validation fills a card border's unstated fields with transparent and 0 \
+                 (`BorderKind::None`, native-theme/src/resolve/validate_helpers.rs), a value no \
+                 source gives; the 0.8.0 material-3 leaves card.container(NONE).stroke \
                  unstated (native-theme/tests/next_homes.toml, rows card.border.color and \
                  card.border.line_width, unstated_if_unset), so the 0.8.0 refinement sets no \
                  border width and no border colour and the group box keeps gpui-component's \

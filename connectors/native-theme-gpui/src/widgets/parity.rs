@@ -77,6 +77,29 @@ const DIFFERENCES: &[Difference] = &[
                  libadwaita 1.10.0; native-theme/tests/next_homes.toml, row \
                  tab.hover_background, a listed difference)",
     },
+    Difference {
+        leaf: "CheckboxLook::of hover_border",
+        presets: &["adwaita", "windows-11"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0 states the unchecked box's outline for HOVER \
+                 (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a \
+                 listed difference): adwaita's $trough_hover_color (_checks.scss:20-35 at \
+                 libadwaita 1.10.0), windows-11's rest ControlStrongStrokeColorDefault, which \
+                 WinUI keeps (CheckBox_themeresources.xaml:218, :42 at microsoft-ui-xaml \
+                 8463f45); so an enabled box hovers in the outline stated there, a checked one \
+                 in its checked outline",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_border",
+        presets: &["adwaita"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0's adwaita states an unchecked radio's outline for HOVER, \
+                 $trough_hover_color, which libadwaita draws on a hovered unchecked check and \
+                 radio alike (_checks.scss:20-35 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a listed \
+                 difference); so an enabled radio hovers in the outline stated there, a checked \
+                 one in its checked outline",
+    },
 ];
 
 /// The leaves compared and the differences found, for one preset and scheme.
@@ -256,17 +279,43 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_switch.map(|look| look.label),
                 new_switch.map(|look| look.label),
             );
-            r.leaf(
-                "CheckboxLook::of",
-                &state,
+            // The hover outline apart, so a listed difference of it leaves the rest of the look
+            // compared.
+            let unframed = |look: CheckboxLook| CheckboxLook {
+                hover_border: None,
+                ..look
+            };
+            let (old_box, new_box) = (
                 CheckboxLook::of(&old, checked, disabled),
                 CheckboxLook::next_of(&new, checked, disabled),
             );
             r.leaf(
-                "CheckboxLook::radio",
+                "CheckboxLook::of",
                 &state,
+                old_box.map(unframed),
+                new_box.map(unframed),
+            );
+            r.leaf(
+                "CheckboxLook::of hover_border",
+                &state,
+                old_box.map(|look| look.hover_border),
+                new_box.map(|look| look.hover_border),
+            );
+            let (old_radio, new_radio) = (
                 CheckboxLook::radio(&old, checked, disabled),
                 CheckboxLook::next_radio(&new, checked, disabled),
+            );
+            r.leaf(
+                "CheckboxLook::radio",
+                &state,
+                old_radio.map(unframed),
+                new_radio.map(unframed),
+            );
+            r.leaf(
+                "CheckboxLook::radio hover_border",
+                &state,
+                old_radio.map(|look| look.hover_border),
+                new_radio.map(|look| look.hover_border),
             );
         }
     }

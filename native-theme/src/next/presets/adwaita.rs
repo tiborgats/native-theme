@@ -205,6 +205,7 @@ struct SchemeColors {
     checkbox_background: Color,
     button_active_layer: Color,
     trough_active: Color,
+    trough_hover: Color,
     view_active: Color,
     active_layer: Color,
     hover_layer: Color,
@@ -356,6 +357,10 @@ const LIGHT: SchemeColors = SchemeColors {
     // a pressed unchecked check box's and off switch's fill: $trough_active_color, the text at
     // 25 % (_checks.scss:42-44, _switch.scss:9, _colors.scss:282)
     trough_active: srgb8(0x0000_0633),
+    // a hovered unchecked check's or radio's outline, an inset 2px box-shadow: $trough_hover_color,
+    // the text rgb(0 0 6 / 80%) at 20 %, rgb(0 0 6 / 16%) (_checks.scss:20-35, _colors.scss:281,
+    // :33 at libadwaita 1.10.0)
+    trough_hover: srgb8(0x0000_0629),
     // a pressed activatable row's fill, a list's and a boxed list's (the expander's header):
     // $view_active_color and %boxed_list_row's :active, the text at 8 % (_lists.scss:75-78,
     // :352-360, :524-526, _colors.scss:275)
@@ -520,6 +525,9 @@ const DARK: SchemeColors = SchemeColors {
     // a pressed unchecked check box's and off switch's fill: $trough_active_color, the text at
     // 25 % (_checks.scss:42-44, _switch.scss:9, _colors.scss:282)
     trough_active: srgb8(0xffff_ff40),
+    // a hovered unchecked check's or radio's outline, an inset 2px box-shadow: $trough_hover_color,
+    // the text white at 20 % (_checks.scss:20-35, _colors.scss:281, :96 at libadwaita 1.10.0)
+    trough_hover: srgb8(0xffff_ff33),
     // a pressed activatable row's fill, a list's and a boxed list's (the expander's header):
     // $view_active_color and %boxed_list_row's :active, the text at 8 % (_lists.scss:75-78,
     // :352-360, :524-526, _colors.scss:275)
@@ -1950,7 +1958,7 @@ fn button(
 /// `checkbox.*` serves both: its unchecked fill in its outline at the default
 /// border width (0.7.2: `checkbox.border.line_width` is
 /// `defaults.border.line_width` where unstated), no shadow, padded; under the
-/// pointer the hover fill; checked, the accent (0.7.2:
+/// pointer the hover fill and, unchecked, the hover outline; checked, the accent (0.7.2:
 /// `checkbox.checked_background` is `defaults.accent_color` where unstated)
 /// in the default border colour (`checkbox.border.color`). No disabled fill:
 /// a disabled check is its enabled self at the disabled opacity
@@ -1975,6 +1983,12 @@ fn indicator(
             PartProp::MaxSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
+        // An unchecked check or radio under the pointer: its outline $trough_hover_color
+        // (_checks.scss:20-35 at libadwaita 1.10.0); a checked one keeps its checked look.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER).except(WidgetState::CHECKED),
+            [stroke(layout.border_width, c.trough_hover)],
+        )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(roles.accent.fill)]
@@ -3069,12 +3083,14 @@ fn segmented_control(
 }
 
 /// The card: its fill where stated, else the view's background (0.7.2:
-/// `card.background_color` is `defaults.surface_color` where unstated), and
-/// its corners.
+/// `card.background_color` is `defaults.surface_color` where unstated), its
+/// corners, and no outline.
 fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
     let container = RuleBuilder::new(PartStyle::default())
         .base(c.card_background.or(roles.view.background).map(fill))
-        .base([corners(CARD_CORNER_RADIUS)])
+        // platform-facts.md (§2.26) border.color, border.line_width: none; `.card` sets no border,
+        // its outline is the first of its box shadows (_misc.scss:201-208 at libadwaita 1.10.0)
+        .base([corners(CARD_CORNER_RADIUS), PartProp::Stroke(Stroke::None)])
         .build();
     CardWidget::new(WidgetOrigin::Native, container)
 }

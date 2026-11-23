@@ -647,6 +647,20 @@
         },
         {
           "states": [
+            "hover"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff33"
+            }
+          }
+        },
+        {
+          "states": [
             "checked"
           ],
           "indicator": {
@@ -752,6 +766,20 @@
           ],
           "indicator": {
             "fill": "#464649"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff33"
+            }
           }
         },
         {
@@ -1912,6 +1940,7 @@
     "container": {
       "base": {
         "fill": "#ffffff14",
+        "stroke": "none",
         "corners": 12.0
       }
     }

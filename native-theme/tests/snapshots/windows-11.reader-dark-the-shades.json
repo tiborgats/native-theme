@@ -356,7 +356,12 @@
             "pressed"
           ],
           "body": {
-            "fill": "#272727"
+            "fill": "#272727",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff12",
+              "align": "outside"
+            }
           }
         },
         {
@@ -704,6 +709,20 @@
           ],
           "indicator": {
             "fill": "#33333300"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff8b"
+            }
           }
         },
         {

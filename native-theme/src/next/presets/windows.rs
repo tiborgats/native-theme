@@ -2274,9 +2274,15 @@ fn button(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.control_fill_hover)],
         )
+        // Pressed, the outline flat ControlStrokeColorDefault: ButtonBorderBrushPressed =
+        // ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state
+        // :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.control_fill_pressed)],
+            [
+                fill(c.control_fill_pressed),
+                outside_stroke(layout.border_width, c.control_stroke),
+            ],
         )
         // Hovered, the outline as at rest: ButtonBorderBrushPointerOver is the rest brush
         // (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45).
@@ -2412,9 +2418,16 @@ fn checkbox(
     // An unchecked box pressed: CheckBoxCheckBackgroundFillUncheckedPressed =
     // ControlAltFillColorQuarternary (CheckBox_themeresources.xaml:231 at microsoft-ui-xaml
     // 8463f45) in CheckBoxCheckBackgroundStrokeUncheckedPressed = ControlStrongStrokeColorDisabled
-    // (:219). A checked box keeps its checked look; a disabled one its own.
+    // (:219). A checked box keeps its checked look; a disabled one its own. An unchecked box
+    // hovered keeps its outline: CheckBoxCheckBackgroundStrokeUncheckedPointerOver =
+    // ControlStrongStrokeColorDefault, the rest brush (CheckBox_themeresources.xaml:218, :42; rest
+    // :217, :41).
     let indicator = indicator(c, roles, layout)
         .base([corners(layout.corner_radius)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER).except(WidgetState::CHECKED),
+            [stroke(layout.border_width, c.strong_stroke)],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED)
                 .except(WidgetState::CHECKED | WidgetState::DISABLED),

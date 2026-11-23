@@ -522,9 +522,9 @@ homes = [
 ]
 note = "a pressed button keeps the hover border (0.7.2's field doc)"
 difference_presets = ["adwaita", "windows-11"]
-difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for the state, where the platform keeps it (spec §2, from_state): adwaita for HOVER and PRESSED, windows-11 for HOVER (its PRESSED home keeps the rest outline unstated)"
-difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45)"
-difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { light = "#0000000f", dark = "#00000019" } }
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the outline for the state (spec §2, from_state): adwaita the rest outline for HOVER and PRESSED, where libadwaita keeps it; windows-11 the rest outline for HOVER, where WinUI keeps it, and for PRESSED WinUI's flat ControlStrokeColorDefault"
+difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136), ButtonBorderBrushPressed = ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { "button.body(HOVER).stroke.color" = { light = "#0000000f", dark = "#00000019" }, "button.body(PRESSED).stroke.color" = { light = "#0000000f", dark = "#ffffff12" } } }
 
 [[row]]
 key = "button.focus_border_color"
@@ -697,6 +697,21 @@ homes = [
     "radio.indicator(HOVER|CHECKED).stroke.color",
 ]
 null_reference = "CHECKED"
+difference_presets = ["adwaita", "windows-11"]
+difference_reason = "0.7.2 leaves it unset (no rule: the rest outline unchecked, the checked one checked); 0.8.0 states an unchecked indicator's outline for HOVER: on adwaita $trough_hover_color, which libadwaita draws on a hovered unchecked check and radio, on windows-11 the check box's rest outline, which WinUI keeps (spec §2, from_state); a checked indicator keeps its checked outline, and windows-11's radio button its rest one, no rule"
+difference_citation = "adwaita: _checks.scss:20-35 (check, radio: `&:not(:checked):not(:indeterminate) { &:hover { box-shadow: inset 0 0 0 2px $trough_hover_color } }`), _colors.scss:281, :33, :96 at libadwaita 1.10.0; windows-11: CheckBoxCheckBackgroundStrokeUncheckedPointerOver = ControlStrongStrokeColorDefault, the rest brush (CheckBox_themeresources.xaml:218, :42; rest :217, :41 at microsoft-ui-xaml 8463f45)"
+
+[row.difference_values.adwaita]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#00000629", dark = "#ffffff33" }
+"radio.indicator(HOVER).stroke.color" = { light = "#00000629", dark = "#ffffff33" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#dcdcde", dark = "#434347" }
+"radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#dcdcde", dark = "#434347" }
+
+[row.difference_values.windows-11]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#00000072", dark = "#ffffff8b" }
+"radio.indicator(HOVER).stroke.color" = { light = "#00000072", dark = "#ffffff8b" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#0000000f", dark = "#00000019" }
+"radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#0000000f", dark = "#00000019" }
 
 [[row]]
 key = "checkbox.disabled_background"
@@ -2738,6 +2753,10 @@ homes = ["card.container(NONE).fill"]
 key = "card.border.color"
 homes = ["card.container(NONE).stroke.color"]
 unstated_if_unset = true
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2's adwaita.toml states no card border; 0.8.0 states the card's outline as none, as libadwaita draws it"
+difference_citation = "docs/platform-facts.md §2.26 (border.color, border.line_width): none, `.card` sets no border, its outline is the first of three box shadows (_misc.scss:201-208 at libadwaita 1.10.0)"
+difference_values = { "adwaita" = "none" }
 
 [[row]]
 key = "card.border.corner_radius"
@@ -2749,6 +2768,10 @@ note = "Corners::uniform(radius)"
 key = "card.border.line_width"
 homes = ["card.container(NONE).stroke.width"]
 unstated_if_unset = true
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2's adwaita.toml states no card border; 0.8.0 states the card's outline as none, as libadwaita draws it"
+difference_citation = "docs/platform-facts.md §2.26 (border.color, border.line_width): none, `.card` sets no border, its outline is the first of three box shadows (_misc.scss:201-208 at libadwaita 1.10.0)"
+difference_values = { "adwaita" = "none" }
 
 [[row]]
 key = "card.border.shadow_enabled"
