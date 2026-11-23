@@ -739,9 +739,10 @@ pub(crate) fn toolbar_button_from(
         None => b.active_label,
     };
     // A disabled label the theme leaves to iced is the label at rest, faded
-    // as iced's own classes fade it where the theme states no opacity.
+    // by the theme's disabled opacity as `button_from` fades it, or as
+    // iced's own classes fade it where the theme states no opacity.
     let disabled_label = b.disabled_label.unwrap_or(match b.disabled_opacity {
-        Some(_) => b.label,
+        Some(opacity) => faded(b.label, opacity),
         None => b.label.scale_alpha(ICED_DISABLED_BUTTON_ALPHA),
     });
 

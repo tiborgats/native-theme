@@ -41,7 +41,7 @@ use super::LineAlign;
 use crate::{ColorMode, ResolvedTheme};
 
 /// The presets the test covers: the 0.7.2 key and the 0.8.0 preset.
-const PRESETS: &[(&str, Preset)] = &[
+pub(crate) const PRESETS: &[(&str, Preset)] = &[
     ("kde-breeze", Preset::KdeBreeze),
     ("adwaita", Preset::Adwaita),
     ("windows-11", Preset::Windows11),

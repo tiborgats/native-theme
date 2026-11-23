@@ -16,17 +16,9 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 /// The presets, each scheme, as the parity test covers them.
 fn every_preset() -> Vec<(Preset, ResolvedTheme)> {
-    let presets = [
-        Preset::KdeBreeze,
-        Preset::Adwaita,
-        Preset::Windows11,
-        Preset::MacosMonterey,
-        Preset::MacosTahoe,
-        Preset::Material3,
-        Preset::Ios13,
-    ];
-    presets
-        .into_iter()
+    crate::next::parity::PRESETS
+        .iter()
+        .map(|&(_, p)| p)
         .flat_map(|p| {
             [ThemeContext::light(), ThemeContext::dark()]
                 .map(|ctx| (p, Theme::preset(p).resolve(&ctx)))
@@ -86,6 +78,30 @@ fn a_button_with_no_disabled_opacity_halves_only_what_the_theme_leaves_to_iced()
         stated > 0 && left > 0,
         "both cases covered: {stated} stated, {left} left to iced"
     );
+    Ok(())
+}
+
+/// A disabled toolbar button whose theme states an opacity and no disabled
+/// label fades the label at rest by that opacity, as the plain button does.
+#[test]
+fn a_toolbar_button_fades_its_label_by_a_stated_opacity() -> TestResult {
+    const OPACITY: f32 = 0.5;
+    for (preset, r) in every_preset() {
+        let mut b = super::button_source(&r)?;
+        b.disabled_label = None;
+        b.disabled_opacity = Some(OPACITY);
+        let t = super::toolbar_button_source(&r)?;
+        let theme = to_theme(&r)?;
+        let style = crate::styles::toolbar_button_from(&b, &t, false)(
+            &theme,
+            iced_widget::button::Status::Disabled,
+        );
+        assert_eq!(
+            style.text_color,
+            crate::styles::faded(b.label, OPACITY),
+            "{preset:?}"
+        );
+    }
     Ok(())
 }
 
