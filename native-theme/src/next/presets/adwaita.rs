@@ -636,7 +636,9 @@ const FOCUS_RING_ALPHA: f32 = 0.5;
 /// `$focus_border_color_hc`, the standalone accent at 80 % where it draws
 /// the ring at 50 % otherwise (libadwaita 1.10.0 `_colors.scss:261`, `:308`;
 /// `_drawing.scss:24-26`), as 0.7.2's GNOME reader states it
-/// (`src/gnome/accent.rs`, `focus_ring`).
+/// (`src/gnome/accent.rs`, `focus_ring`). It applies to the default accent
+/// too: the ring is `var(--accent-color)`, the standalone colour of whatever
+/// `--accent-bg-color` is (libadwaita 1.10.0 `_colors.scss:166-170`).
 const FOCUS_RING_ALPHA_HIGH: f32 = 0.8;
 
 /// The icon set.

@@ -2042,7 +2042,10 @@ fn gnome_cases() -> Vec<(
         // focused text field's outline, at libadwaita's `$focus_border_color_hc` alpha of 0.8 (its
         // module documentation; spec §8, "The GNOME part": `adwaita` defines `High` for that value);
         // 0.7.2's reader changes that alpha only through a portal accent, and without one keeps the
-        // preset's ring at 0.5.
+        // preset's ring at 0.5. libadwaita 1.10.0 draws the ring under `prefers-contrast: more` in
+        // `$focus_border_color_hc` (`_drawing.scss:24-26`), `var(--accent-color)` at 80 %
+        // (`_colors.scss:261`, `:308`), and `--accent-color` is the standalone colour of
+        // `--accent-bg-color` whatever gives that accent, the default one too (`_colors.scss:166-170`).
         (
             "high contrast without an accent",
             with(|d| d.high_contrast = true),
