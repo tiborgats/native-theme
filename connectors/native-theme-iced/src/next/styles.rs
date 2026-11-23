@@ -17,8 +17,9 @@ use super::borders::{
 };
 use super::{Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, to_color};
 use crate::styles::{
-    self as old, ButtonSource, CheckFills, CheckboxSource, InputSource, Layer, Line, LinkSource,
-    MenuSource, Outline, PickListSource, SliderSource, SwitchSource, ToolbarButtonSource,
+    self as old, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource, Layer,
+    Line, LinkSource, MenuSource, Outline, PickListSource, ScrollbarSource, SegmentPosition,
+    SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
 };
 
 /// A part's fill, where stated, as a layer the style lays over the fill
@@ -858,6 +859,177 @@ pub fn slider(
     }))
 }
 
+/// [`crate::styles::scrollable`]: the rail's fill, the scroller at rest (the
+/// handle of a view without the focus, which is the plain handle on every
+/// preset: spec §5, S3; iced knows no view focus), under the pointer and
+/// dragged (`thumb(PRESSED)`, spec §5, `scrollbar.thumb_active_color`), each
+/// state the theme states nothing for iced's own, and whether the bar
+/// floats.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no rail or thumb fill.
+pub fn scrollable(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>,
+> {
+    let s = &r.scrollbar;
+    Ok(old::scrollable_from(&ScrollbarSource {
+        track: fill(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
+        thumb: fill(
+            &s.thumb(WidgetState::UNFOCUSED_VIEW),
+            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+        )?,
+        hovered_thumb: state_fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
+        dragged_thumb: state_fill(
+            &s.thumb(WidgetState::PRESSED),
+            "scrollbar.thumb(PRESSED).fill",
+        )?,
+        overlay_mode: s.overlay_mode,
+    }))
+}
+
+/// [`crate::styles::scrollbar`]: the groove's and the thumb's thickness
+/// across a vertical bar (`min_size[0]`, which the model states equal to
+/// `max_size[0]` and to a horizontal bar's `min_size[1]`, spec §5), iced's
+/// own where unstated, and whether the bar floats.
+#[must_use = "this returns the configured scrollbar; it does not apply it"]
+pub fn scrollbar(r: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar {
+    let s = &r.scrollbar;
+    let vertical = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Vertical);
+    let [groove_width, _] = s.track(vertical).min_size;
+    let [thumb_width, _] = s.thumb(vertical).min_size;
+    old::scrollbar_from(groove_width, thumb_width, s.overlay_mode)
+}
+
+/// [`SegmentedSource`] of the 0.8.0 model. The line between two segments
+/// is the separator part's fill (spec §5, notes to the table: a separator
+/// part is the line itself), and where the theme states none, the
+/// outline's colour, the one line colour 0.7.2 states for the control (the
+/// table of homes, `segmented_control.border.color`).
+fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
+    let s = &r.segmented_control;
+    let track = s.track(WidgetState::NONE);
+    let separator = s.separator(WidgetState::NONE);
+    Ok(SegmentedSource {
+        window_background: to_color(stated(
+            r.colors.window.background,
+            "colors.window.background",
+        )?),
+        background: fill(&track, "segmented_control.track(NONE).fill")?,
+        label: text_color(
+            &s.label(WidgetState::NONE),
+            "segmented_control.label(NONE).color",
+        )?,
+        border: outline!(track, "segmented_control.track(NONE)")?,
+        separator: if separator.stated.contains(PartStated::FILL) {
+            fill(&separator, "segmented_control.separator(NONE).fill")?
+        } else {
+            line(&track, "segmented_control.track(NONE).stroke.color")?.color
+        },
+        active_background: fill(
+            &s.segment(WidgetState::SELECTED),
+            "segmented_control.segment(SELECTED).fill",
+        )?,
+        active_text_color: text_color(
+            &s.label(WidgetState::SELECTED),
+            "segmented_control.label(SELECTED).color",
+        )?,
+        hover_background: state_layer(
+            &s.segment(WidgetState::HOVER),
+            "segmented_control.segment(HOVER).fill",
+        )?
+        .map(Layer::as_given),
+        disabled_opacity: s.disabled_opacity,
+    })
+}
+
+/// [`crate::styles::segmented_control`]: the group fill and the outline,
+/// its stroke laid over the group by its alignment.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the control needs.
+pub fn segmented_control(
+    r: &ResolvedTheme,
+    disabled: bool,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
+    Ok(old::segmented_control_from(&segmented_source(r)?, disabled))
+}
+
+/// [`crate::styles::segment_separator`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the control needs.
+pub fn segment_separator(
+    r: &ResolvedTheme,
+    disabled: bool,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
+    Ok(old::segment_separator_from(&segmented_source(r)?, disabled))
+}
+
+/// [`crate::styles::segment`]: a hovered segment's fill where the theme
+/// states one, no fill where it states none.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the control needs.
+pub fn segment(
+    r: &ResolvedTheme,
+    selected: bool,
+    position: SegmentPosition,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<>,
+> {
+    Ok(old::segment_from(&segmented_source(r)?, selected, position))
+}
+
+/// [`ExpanderSource`] of the 0.8.0 model.
+fn expander_source(r: &ResolvedTheme) -> Mapped<ExpanderSource> {
+    let x = &r.expander;
+    let frame = x.container(WidgetState::NONE);
+    Ok(ExpanderSource {
+        hover_background: state_layer(
+            &x.header(WidgetState::HOVER),
+            "expander.header(HOVER).fill",
+        )?
+        .map(Layer::as_given),
+        label: text_color(
+            &x.header_label(WidgetState::NONE),
+            "expander.header_label(NONE).color",
+        )?,
+        disabled_opacity: r.colors.disabled_opacity,
+        border: outline!(frame, "expander.container(NONE)")?,
+        frame_enabled: x.frame_enabled,
+    })
+}
+
+/// [`crate::styles::expander`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the header needs.
+pub fn expander(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<>,
+> {
+    Ok(old::expander_from(&expander_source(r)?))
+}
+
+/// [`crate::styles::expander_frame`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the frame needs.
+pub fn expander_frame(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
+    Ok(old::expander_frame_from(&expander_source(r)?))
+}
+
 /// [`crate::styles::progress_bar`].
 ///
 /// # Errors
@@ -999,6 +1171,9 @@ pub fn application(
         "window.frame(normal).fill",
     )?))
 }
+
+#[cfg(feature = "iced_aw")]
+pub mod aw;
 
 #[cfg(test)]
 mod tests;

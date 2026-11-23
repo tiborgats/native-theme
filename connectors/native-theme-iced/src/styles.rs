@@ -171,16 +171,6 @@ fn faded_border(border: Border, opacity: f32) -> Border {
     }
 }
 
-/// `border` as iced outlines a widget: the colour, the line width and the
-/// corner radius the theme states.
-pub(crate) fn border_of(border: &ResolvedWidgetBorder) -> Border {
-    Border {
-        color: to_color(border.color),
-        width: border.line_width,
-        radius: Radius::new(border.corner_radius),
-    }
-}
-
 pub(crate) use crate::next::LineAlign;
 
 /// A border's stroke colour as the theme states it, and where it lies.
@@ -2711,9 +2701,9 @@ pub(crate) fn slider_from(
 ///
 /// Each rail is `scrollbar.track_color`, and each scroller is
 /// `scrollbar.thumb_color`, `.thumb_hover_color` under the pointer and
-/// `.thumb_active_color` while it is dragged. All three are thumbs, so they are
-/// emitted as given rather than composited: iced paints them
-/// over a rail it also paints.
+/// `.thumb_active_color` while it is dragged, `.thumb_hover_color` where that
+/// is unset. All three are thumbs, so they are emitted as given rather than
+/// composited: iced paints them over a rail it also paints.
 ///
 /// Where the theme's scrollbar floats over the content
 /// (`scrollbar.overlay_mode`), both rails and their scrollers are transparent
@@ -2747,31 +2737,66 @@ pub fn scrollable(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>
 {
-    let s = &resolved.scrollbar;
-    scrollable_from(
-        to_color(s.track_color),
-        to_color(s.thumb_color),
-        to_color(s.thumb_hover_color),
-        s.thumb_active_color.map(to_color),
-        s.overlay_mode,
-    )
+    scrollable_from(&ScrollbarSource::of(resolved))
 }
 
-/// [`scrollable`] of what it reads: the rail's fill, the scroller's at
-/// rest, hovered and dragged (a soft option), and whether the bar floats.
+/// What the scrollable's style reads from the theme, of either model: the
+/// rail's fill, the scroller's at rest, under the pointer and dragged, and
+/// whether the bar floats.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ScrollbarSource {
+    pub track: Color,
+    pub thumb: Color,
+    /// The scroller under the pointer; `None` where the theme states nothing
+    /// for the hovered thumb, iced's own then (spec §2, `from_state`).
+    pub hovered_thumb: Option<Color>,
+    /// The dragged scroller; `None`, iced's own, where the theme states
+    /// nothing for the pressed thumb.
+    pub dragged_thumb: Option<Color>,
+    pub overlay_mode: bool,
+}
+
+impl ScrollbarSource {
+    /// The 0.7.2 model's reads. Its unset `thumb_active_color` was drawn by
+    /// its connector as the hovered thumb, and its reads state that.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let s = &resolved.scrollbar;
+        let hovered = to_color(s.thumb_hover_color);
+        Self {
+            track: to_color(s.track_color),
+            thumb: to_color(s.thumb_color),
+            hovered_thumb: Some(hovered),
+            dragged_thumb: Some(s.thumb_active_color.map_or(hovered, to_color)),
+            overlay_mode: s.overlay_mode,
+        }
+    }
+
+    /// The state options `listed` names unset, for the parity test's
+    /// expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let s = listed.states;
+        Self {
+            hovered_thumb: self.hovered_thumb.filter(|_| !s.hover_fill),
+            dragged_thumb: self.dragged_thumb.filter(|_| !s.pressed_fill),
+            ..self
+        }
+    }
+}
+
+/// [`scrollable`] of what it reads. A hovered or dragged scroller the theme
+/// states nothing for is iced's own for the status.
 pub(crate) fn scrollable_from(
-    track: Color,
-    thumb: Color,
-    hovered_thumb: Color,
-    active_thumb: Option<Color>,
-    overlay_mode: bool,
+    s: &ScrollbarSource,
 ) -> impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>
 {
     use iced_widget::scrollable::{AutoScroll, Rail, Scroller, Status, Style};
 
-    // A soft option: `None` is the platform saying a dragged scroller looks no
-    // different from a hovered one, so it copies that color.
-    let dragged_thumb = active_thumb.unwrap_or(hovered_thumb);
+    let track = s.track;
+    let thumb = Background::Color(s.thumb);
+    let hovered_thumb = s.hovered_thumb.map(Background::Color);
+    let dragged_thumb = s.dragged_thumb.map(Background::Color);
+    let overlay_mode = s.overlay_mode;
     // A floating bar is hidden at rest: iced 0.14 has no auto-hide and draws
     // a floating bar in every status (iced_widget 0.14.2
     // `src/scrollable.rs:1097-1121`, `:1176-1182`), and reveals
@@ -2787,11 +2812,19 @@ pub(crate) fn scrollable_from(
         // Which scroller the pointer is on decides that axis alone. The
         // disabled flags are named and ignored: an upstream addition to the
         // status then fails to compile here rather than falling into a `..`.
+        // A scroller under the pointer or dragged is the theme's where it
+        // states one, else iced's own for the status, which `iced` holds on
+        // that axis.
+        let vertical_own = iced.vertical_rail.scroller.background;
+        let horizontal_own = iced.horizontal_rail.scroller.background;
         let (vertical, horizontal) = match status {
             Status::Active {
                 is_horizontal_scrollbar_disabled: _,
                 is_vertical_scrollbar_disabled: _,
-            } if floats => (Color::TRANSPARENT, Color::TRANSPARENT),
+            } if floats => (
+                Background::Color(Color::TRANSPARENT),
+                Background::Color(Color::TRANSPARENT),
+            ),
             Status::Active {
                 is_horizontal_scrollbar_disabled: _,
                 is_vertical_scrollbar_disabled: _,
@@ -2803,12 +2836,12 @@ pub(crate) fn scrollable_from(
                 is_vertical_scrollbar_disabled: _,
             } => (
                 if is_vertical_scrollbar_hovered {
-                    hovered_thumb
+                    hovered_thumb.unwrap_or(vertical_own)
                 } else {
                     thumb
                 },
                 if is_horizontal_scrollbar_hovered {
-                    hovered_thumb
+                    hovered_thumb.unwrap_or(horizontal_own)
                 } else {
                     thumb
                 },
@@ -2820,12 +2853,12 @@ pub(crate) fn scrollable_from(
                 is_vertical_scrollbar_disabled: _,
             } => (
                 if is_vertical_scrollbar_dragged {
-                    dragged_thumb
+                    dragged_thumb.unwrap_or(vertical_own)
                 } else {
                     thumb
                 },
                 if is_horizontal_scrollbar_dragged {
-                    dragged_thumb
+                    dragged_thumb.unwrap_or(horizontal_own)
                 } else {
                     thumb
                 },
@@ -2843,7 +2876,7 @@ pub(crate) fn scrollable_from(
                 background: Some(Background::Color(rail)),
                 border: iced.vertical_rail.border,
                 scroller: Scroller {
-                    background: Background::Color(vertical),
+                    background: vertical,
                     border: iced.vertical_rail.scroller.border,
                 },
             },
@@ -2851,7 +2884,7 @@ pub(crate) fn scrollable_from(
                 background: Some(Background::Color(rail)),
                 border: iced.horizontal_rail.border,
                 scroller: Scroller {
-                    background: Background::Color(horizontal),
+                    background: horizontal,
                     border: iced.horizontal_rail.scroller.border,
                 },
             },
@@ -3228,29 +3261,44 @@ pub(crate) struct SegmentedSource {
     pub window_background: Color,
     pub background: Color,
     pub label: Color,
-    pub border: Border,
+    /// The control's outline, its stroke laid over the group fill.
+    pub border: Outline,
     /// The line between two segments, as stated.
     pub separator: Color,
     pub active_background: Color,
     pub active_text_color: Color,
+    /// An unselected segment's fill under the pointer, painted as given over
+    /// the group; `None` where the theme states none, no fill then.
     pub hover_background: Option<Color>,
-    pub disabled_opacity: f32,
+    /// The opacity a disabled control is faded by as one widget; `None`
+    /// where the theme states none, its colours then drawn as stated.
+    pub disabled_opacity: Option<f32>,
 }
 
 impl SegmentedSource {
     /// The 0.7.2 model's reads.
-    fn of(resolved: &ResolvedTheme) -> Self {
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let s = &resolved.segmented_control;
         Self {
             window_background: to_color(resolved.defaults.background_color),
             background: to_color(s.background_color),
             label: to_color(s.font.color),
-            border: border_of(&s.border),
+            border: Outline::of(&s.border),
             separator: to_color(s.border.color),
             active_background: to_color(s.active_background),
             active_text_color: to_color(s.active_text_color),
             hover_background: s.hover_background.map(to_color),
-            disabled_opacity: s.disabled_opacity,
+            disabled_opacity: Some(s.disabled_opacity),
+        }
+    }
+
+    /// The outline's stroke where it lies as `listed` says, for the parity
+    /// test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        Self {
+            border: self.border.aligned(listed.align),
+            ..self
         }
     }
 }
@@ -3267,7 +3315,9 @@ pub(crate) fn segmented_control_from(
     let group = fade.over_ground(s.background);
     let label = fade.over_group(s.label);
 
-    let mut border = s.border;
+    // The stroke over the group fill where the theme lays it there
+    // ([`Line::over`]), the pair on the window, faded with the control.
+    let mut border = s.border.over(s.background);
     border.color = fade.over_ground(border.color);
 
     move |_theme| {
@@ -3284,8 +3334,9 @@ pub(crate) fn segmented_control_from(
 
 /// How a segmented control fades as one widget, disabled: by
 /// `segmented_control.disabled_opacity` over the window, each colour
-/// composited over what it lies on first ([`segmented_control`]). Enabled, an
-/// opacity of 1, which leaves every colour as stated.
+/// composited over what it lies on first ([`segmented_control`]). Enabled, or
+/// where the theme states no opacity, an opacity of 1, which leaves every
+/// colour as stated.
 #[derive(Clone, Copy)]
 struct SegmentedFade {
     /// The window under the control.
@@ -3302,7 +3353,10 @@ impl SegmentedFade {
         Self {
             ground,
             group: composite_over(s.background, ground),
-            opacity: if disabled { s.disabled_opacity } else { 1.0 },
+            opacity: match s.disabled_opacity {
+                Some(opacity) if disabled => opacity,
+                _ => 1.0,
+            },
         }
     }
 
@@ -3489,31 +3543,39 @@ pub fn expander(
 /// What the expander's styles read from the theme, of either model.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ExpanderSource {
+    /// The header's fill under the pointer, painted as given; `None` where
+    /// the theme states none, no fill then.
     pub hover_background: Option<Color>,
     pub label: Color,
     /// The opacity a disabled header is faded by: the expander states none
     /// of its own, so the theme's.
     pub disabled_opacity: f32,
-    /// The frame's colour, width and corners.
-    pub border: Border,
+    /// The frame's stroke, width and corners.
+    pub border: Outline,
     pub frame_enabled: Option<bool>,
 }
 
 impl ExpanderSource {
     /// The 0.7.2 model's reads.
-    fn of(resolved: &ResolvedTheme) -> Self {
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let x = &resolved.expander;
         Self {
             hover_background: x.hover_background.map(to_color),
             label: to_color(x.font.color),
             // `ExpanderTheme` states no `disabled_opacity`: the defaults' fades it.
             disabled_opacity: resolved.defaults.disabled_opacity,
-            border: Border {
-                color: to_color(x.border.color),
-                width: x.border.line_width,
-                radius: Radius::new(x.border.corner_radius),
-            },
+            border: Outline::of(&x.border),
             frame_enabled: x.frame_enabled,
+        }
+    }
+
+    /// The frame's stroke where it lies as `listed` says, for the parity
+    /// test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        Self {
+            border: self.border.aligned(listed.align),
+            ..self
         }
     }
 }
@@ -3530,10 +3592,11 @@ pub(crate) fn expander_from(
 
     // The header draws no outline: a stated frame is `expander_frame`'s, a
     // stated absence of one is none, and where the theme states nothing no
-    // platform outlines a header alone.
+    // platform outlines a header alone. Its colour, which no width shows, is
+    // the frame's.
     let border = Border {
         width: 0.0,
-        ..x.border
+        ..x.border.over(Color::TRANSPARENT)
     };
 
     move |_theme, status| {
@@ -3600,12 +3663,13 @@ pub(crate) fn expander_frame_from(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
+    // The frame paints no fill: its stroke lies over nothing.
     let border = Border {
         width: match x.frame_enabled {
             Some(true) => x.border.width,
             Some(false) | None => 0.0,
         },
-        ..x.border
+        ..x.border.over(Color::TRANSPARENT)
     };
 
     move |_theme| {

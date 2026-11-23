@@ -7,9 +7,9 @@ use iced_core::Background;
 use iced_core::Color as IcedColor;
 use native_theme::next::{
     ButtonRule, ButtonVariant, CheckboxRule, Color, InputRule, LinkRule, MenuRule, Paint,
-    PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme, ShadowLayer, SliderRule,
-    Stroke, StrokeAlign, TextPatch, TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule,
-    WidgetState,
+    PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme, ScrollbarRule,
+    SegmentedControlRule, ShadowLayer, SliderRule, Stroke, StrokeAlign, TextPatch, TextStated,
+    Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
 };
 
 use super::super::borders::line;
@@ -573,6 +573,112 @@ fn the_primary_button_reads_its_own_hovered_and_pressed_outline() -> TestResult 
                 to_color(opaque),
                 "{preset:?} {status:?}"
             );
+        }
+    }
+    Ok(())
+}
+
+/// A scroller under the pointer or dragged is iced's own where no rule
+/// states the thumb's fill for the state, and the theme's where one does.
+#[test]
+fn a_scroller_no_state_rule_states_is_iceds_own() -> TestResult {
+    use iced_widget::scrollable::Status;
+    let hovered = Status::Hovered {
+        is_horizontal_scrollbar_hovered: false,
+        is_vertical_scrollbar_hovered: true,
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    let dragged = Status::Dragged {
+        is_horizontal_scrollbar_dragged: false,
+        is_vertical_scrollbar_dragged: true,
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    let base = ThemePatch::new()
+        .scrollbar(ScrollbarRule::new().thumb(PartPatch::new().fill(Paint::Solid(DISTINCT))));
+    for (preset, r) in every_preset_with(&base) {
+        let theme = to_theme(&r)?;
+        let style = super::scrollable(&r)?;
+        for status in [hovered, dragged] {
+            let own = iced_widget::scrollable::default(&theme, status);
+            assert_eq!(
+                style(&theme, status).vertical_rail.scroller.background,
+                own.vertical_rail.scroller.background,
+                "{preset:?} {status:?}"
+            );
+        }
+    }
+    let stated = base.scrollbar(
+        ScrollbarRule::new()
+            .states(WidgetState::HOVER)
+            .thumb(PartPatch::new().fill(Paint::Solid(LABEL))),
+    );
+    for (preset, r) in every_preset_with(&stated) {
+        let theme = to_theme(&r)?;
+        assert_eq!(
+            super::scrollable(&r)?(&theme, hovered)
+                .vertical_rail
+                .scroller
+                .background,
+            Background::Color(to_color(LABEL)),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// The line between two segments is the separator part's fill where the
+/// theme states one, and the outline's colour where it does not.
+#[test]
+fn a_segment_separator_is_the_separator_parts_fill_where_stated() -> TestResult {
+    for (preset, r) in every_preset() {
+        let style = super::segment_separator(&r, false)?(&to_theme(&r)?);
+        let outline = line(&r.segmented_control.track(WidgetState::NONE), "stroke")?;
+        assert_eq!(
+            background_color(style.background),
+            Some(outline.color),
+            "{preset:?}"
+        );
+    }
+    let patch = ThemePatch::new().segmented_control(
+        SegmentedControlRule::new().separator(PartPatch::new().fill(Paint::Solid(DISTINCT))),
+    );
+    for (preset, r) in every_preset_with(&patch) {
+        let style = super::segment_separator(&r, false)?(&to_theme(&r)?);
+        assert_eq!(
+            background_color(style.background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// A segmented control whose theme states no disabled opacity is drawn
+/// disabled in the colours it states.
+#[test]
+fn a_segmented_control_with_no_disabled_opacity_is_drawn_as_stated() -> TestResult {
+    use iced_widget::button::Status;
+    for (preset, mut r) in every_preset() {
+        r.segmented_control.disabled_opacity = None;
+        let theme = to_theme(&r)?;
+        assert_eq!(
+            super::segmented_control(&r, true)?(&theme),
+            super::segmented_control(&r, false)?(&theme),
+            "{preset:?}"
+        );
+        assert_eq!(
+            super::segment_separator(&r, true)?(&theme),
+            super::segment_separator(&r, false)?(&theme),
+            "{preset:?}"
+        );
+        for selected in [false, true] {
+            let segment = super::segment(&r, selected, crate::styles::SegmentPosition::Only)?;
+            let disabled = segment(&theme, Status::Disabled);
+            let active = segment(&theme, Status::Active);
+            assert_eq!(disabled.background, active.background, "{preset:?}");
+            assert_eq!(disabled.text_color, active.text_color, "{preset:?}");
         }
     }
     Ok(())

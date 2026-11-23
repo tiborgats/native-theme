@@ -18,18 +18,29 @@
 //! - Each widget's `Style` that a ported style function returns derives
 //!   `PartialEq` and is compared by it, the function called with its side's
 //!   own iced theme in every `Status` of the widget (the style functions
-//!   read iced's own fields from the theme in effect).
+//!   read iced's own fields from the theme in effect); a widget built of
+//!   iced's own (the segmented control, the expander) in every status of
+//!   the widget it is built of, and in each of its arguments.
+//! - `iced_widget::scrollable::Scrollbar` derives `PartialEq` and is
+//!   compared by it.
+//! - Each `iced_aw` 0.14.1 `Style` (`card`, `menu_bar`, `tab_bar`,
+//!   `sidebar`, `selection_list`) derives no `PartialEq`: it is compared as
+//!   the tuple of its fields, destructured whole (`aw_leaves`), in every
+//!   value of `iced_aw`'s shared `Status`; the spinner's wrapper is an
+//!   `iced_widget` container style, compared by its `PartialEq`.
 //!
 //! A difference is allowed only as an entry of [`DIFFERENCES`], with its
 //! reason: a style function whose 0.8.0 stroke lies inside or across the
 //! widget's edge, where 0.7.2 stated no alignment; one whose hovered or
 //! pressed fill, stroke or label the 0.8.0 theme states nothing for, which
-//! is iced's own (spec §2, `from_state`). The entry asserts the value the
+//! is iced's own (spec §2, `from_state`); one whose outline or corners the
+//! 0.8.0 theme leaves unstated where 0.7.2's resolver made them up, which
+//! are iced's own (spec §5, §10 rule 0). The entry asserts the value the
 //! 0.8.0 side must give: the 0.7.2 side's own output with each of its
 //! strokes laid where the entry says ([`crate::styles::Line::aligned`]), so
 //! the stroke is composited over the fill each status paints, or over it at
-//! half its alpha, and with the state options the entry names unset
-//! ([`Listed`]); any other value fails. Each (style function, preset)
+//! half its alpha, and with the state options, the stroke or the corners
+//! the entry names unset ([`Listed`]); any other value fails. Each (style function, preset)
 //! pair an entry lists must differ in some status, or the entry is stale and
 //! fails.
 
@@ -63,14 +74,21 @@ struct Difference {
 
 /// How a listed style function's 0.8.0 side differs from the 0.7.2 side:
 /// where its strokes lie, which of its state options the 0.8.0 theme
-/// leaves to iced, and whether it leaves the corners to iced. The expected
-/// value is the 0.7.2 side's output with its strokes laid there and those
-/// options unset.
+/// leaves to iced, whether it leaves the corners or the stroke and its
+/// width to iced, and whether it rounds a menu's popup by the menu's own
+/// corners. The expected value is the 0.7.2 side's output with its strokes
+/// laid there, those options unset and the menu's popup rounded by 0.7.2's
+/// `menu.border.corner_radius`.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Listed {
     pub align: LineAlign,
     pub states: States,
     pub iced_corners: bool,
+    // The two read by the `iced_aw` sources alone.
+    #[cfg_attr(not(feature = "iced_aw"), allow(dead_code))]
+    pub iced_stroke: bool,
+    #[cfg_attr(not(feature = "iced_aw"), allow(dead_code))]
+    pub menu_corners: bool,
 }
 
 /// The state options of a style function's source that the 0.8.0 theme
@@ -96,6 +114,20 @@ impl States {
         pressed_stroke: false,
         pressed_label: false,
     };
+}
+
+impl Listed {
+    /// Strokes laid at `align`, every state option stated, the corners the
+    /// theme's.
+    pub(crate) const fn aligned(align: LineAlign) -> Self {
+        Self {
+            align,
+            states: States::STATED,
+            iced_corners: false,
+            iced_stroke: false,
+            menu_corners: false,
+        }
+    }
 }
 
 /// The reason of a translucent stroke the theme lays inside the box.
@@ -139,6 +171,8 @@ const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Differe
             align: LineAlign::Inside,
             states: States::STATED,
             iced_corners: false,
+            iced_stroke: false,
+            menu_corners: false,
         },
         reason: &[INSIDE],
     }
@@ -171,6 +205,112 @@ const PRESSED_LINK_LABEL: &str = "nor a label for the pressed link: 0.7.2's pres
      (docs/v0.8.0-spec.md §5); no rule for PRESSED states link.label's colour, and the \
      label is iced's own text button's for the status";
 
+/// The reason of a dragged scroll bar thumb the 0.8.0 theme states nothing
+/// for.
+const PRESSED_THUMB: &str = "the theme states no pressed thumb: 0.7.2's preset leaves \
+     scrollbar.thumb_active_color unset (docs/inheritance-rules.toml, [no_inheritance]: no \
+     rule fills it), which its connector drew as the hovered thumb; the 0.8.0 theme has no \
+     rule for PRESSED that states scrollbar.thumb's fill (the from_state bit clear when \
+     queried with PRESSED alone; docs/v0.8.0-spec.md §5, scrollbar.thumb_active_color is \
+     thumb(PRESSED).fill), and the dragged scroller is iced's own for the status \
+     (iced_widget 0.14.2 src/scrollable.rs, fn default; docs/v0.8.0-spec.md §2, from_state; \
+     §10, rule 0)";
+
+/// The reason of a hovered scroll bar thumb 0.7.2's resolver fills in.
+const INHERITED_THUMB_HOVER: &str = "nor a hovered thumb: 0.7.2's preset leaves \
+     scrollbar.thumb_hover_color unset and its resolver fills it from defaults.muted_color \
+     (docs/inheritance-rules.toml, scrollbar.thumb_hover_color), a value the 0.8.0 model does \
+     not carry (docs/v0.8.0-spec.md §5, a value 0.7.2's resolver makes up is not carried); no \
+     rule for HOVER states scrollbar.thumb's fill, and the scroller under the pointer is \
+     iced's own for the status";
+
+/// An `iced_aw` style function's difference on `presets`: its strokes laid
+/// at `align`, the state options `states` names left to `iced_aw`, and, per
+/// `own` (stroke, corners), the outline's stroke and width or its corners
+/// `iced_aw`'s own.
+const fn aw(
+    leaf: &'static str,
+    presets: &'static [&'static str],
+    align: LineAlign,
+    states: States,
+    own: (bool, bool),
+    reason: &'static [&'static str],
+) -> Difference {
+    Difference {
+        leaf,
+        presets,
+        listed: Listed {
+            align,
+            states,
+            iced_corners: own.1,
+            iced_stroke: own.0,
+            menu_corners: false,
+        },
+        reason,
+    }
+}
+
+/// The reason of a card whose outline the 0.8.0 theme leaves unstated.
+const CARD_STROKE: &str = "the theme states no stroke for the card: 0.7.2's preset leaves \
+     card.border's colour and width unset and its resolver makes up a transparent line 0 wide \
+     (validate_border), a value the 0.8.0 model does not carry (docs/v0.8.0-spec.md §5, notes \
+     to the table: a value 0.7.2's resolver makes up is not carried; the table of homes, \
+     card.border.*: unstated_if_unset), and the card's outline is iced_aw's own card's \
+     (iced_aw 0.14.1 src/style/card.rs, fn primary; docs/v0.8.0-spec.md §10, rule 0)";
+
+/// The reason of a card whose corners the 0.8.0 theme leaves unstated.
+const CARD_CORNERS: &str = "nor corners: 0.7.2's resolver makes up a square card \
+     (validate_border), and the radius is iced_aw's own card's";
+
+/// The reason of ios-13's menu corners.
+const MENU_PANEL_CORNERS: &str = "ios-13's 0.8.0 preset states corners for the menu's panel, \
+     its default radius (menu.panel(NONE).corners: layout.corner_radius, 0.7.2's \
+     defaults.border.corner_radius, 10), which the connector reads as the menu's own \
+     (docs/v0.8.0-spec.md §5, notes to the table: menu.panel holds the menu's own values); \
+     0.7.2's ios-13 states no menu radius, and its connector rounded the popup by \
+     popover.border's radius (13, the large radius), which stays at popover.panel for a menu \
+     that states no corners of its own";
+
+/// The reason of a selected tab whose outline the 0.8.0 theme leaves
+/// unstated.
+const TAB_STROKE: &str = "the theme states no outline for the selected tab: 0.7.2's preset \
+     leaves tab.border unset and its resolver makes up a transparent line 0 wide \
+     (validate_border), a value the 0.8.0 model does not carry (docs/v0.8.0-spec.md §5, notes \
+     to the table: a value 0.7.2's resolver makes up is not carried; tab.border is \
+     tab.tab(SELECTED)'s stroke and corners), and the selected tab's outline is iced_aw's own \
+     tab bar's (iced_aw 0.14.1 src/style/tab_bar.rs, fn primary; §10, rule 0)";
+
+/// The reason of a hovered tab's label 0.7.2's resolver fills in.
+const TAB_HOVER_LABEL: &str = "the theme states no label for the hovered tab: 0.7.2's preset \
+     leaves tab.hover_text_color unset and its resolver fills it from tab.font.color \
+     (docs/inheritance-rules.toml, tab.hover_text_color), a value the 0.8.0 model does not \
+     carry (docs/v0.8.0-spec.md §5); no rule for HOVER states tab.label's colour, and the \
+     label is iced_aw's own for the status";
+
+/// The reason of a hovered tab's fill the 0.8.0 theme states nothing for.
+const TAB_HOVER_FILL: &str = "the theme states no fill for the hovered tab: 0.7.2 leaves \
+     tab.hover_background unset (docs/inheritance-rules.toml, [no_inheritance]: no rule \
+     fills it), which its connector drew as the idle tab; the 0.8.0 theme has no rule for \
+     HOVER that states tab.tab's fill, and the fill is iced_aw's own for the status \
+     (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+
+/// The reason of a hovered sidebar item 0.7.2's resolver fills in.
+const SIDEBAR_HOVER: &str = "the theme states no fill for the hovered sidebar item: 0.7.2's \
+     preset leaves sidebar.hover_background unset and its resolver fills it from the \
+     sidebar's background (docs/inheritance-rules.toml, sidebar.hover_background), a value the \
+     0.8.0 model does not carry (docs/v0.8.0-spec.md §5, notes to the table: a hovered \
+     sidebar item's fill); no rule for HOVER states sidebar.item's fill, and the fill is \
+     iced_aw's own for the status";
+
+/// The reason of a hovered list row 0.7.2's resolver fills in.
+const LIST_HOVER: &str = "the theme states no fill and no label for the hovered row: 0.7.2's \
+     preset leaves list.hover_background and list.hover_text_color unset and its resolver \
+     fills them from list.background_color and list.item_font.color \
+     (docs/inheritance-rules.toml), values the 0.8.0 model does not carry \
+     (docs/v0.8.0-spec.md §5, notes to the table: a hovered list row's fill); no rule for \
+     HOVER states list.highlight's fill or list.item_label's colour, and both are iced_aw's \
+     own for the status";
+
 /// A style function whose hovered state options `states` names the theme
 /// states nothing for on `presets`, its strokes laid at `align`.
 const fn hover(
@@ -186,6 +326,8 @@ const fn hover(
             align,
             states,
             iced_corners: false,
+            iced_stroke: false,
+            menu_corners: false,
         },
         reason: match align {
             LineAlign::Outside => &[HOVER],
@@ -252,6 +394,8 @@ const DIFFERENCES: &[Difference] = &[
             align: LineAlign::Center,
             states: States::STATED,
             iced_corners: false,
+            iced_stroke: false,
+            menu_corners: false,
         },
         reason: &[CENTER],
     },
@@ -355,6 +499,8 @@ const DIFFERENCES: &[Difference] = &[
             align: LineAlign::Outside,
             states: States::STATED,
             iced_corners: true,
+            iced_stroke: false,
+            menu_corners: false,
         },
         reason: &[MENU_CORNERS],
     },
@@ -365,6 +511,120 @@ const DIFFERENCES: &[Difference] = &[
         &["kde-breeze", "windows-11", "macos-monterey", "macos-tahoe"],
         LineAlign::Outside,
         hovered(true, false, false),
+    ),
+    // scrollbar.thumb(PRESSED) and scrollbar.thumb(HOVER).
+    Difference {
+        leaf: "scrollable",
+        presets: &["windows-11"],
+        listed: Listed {
+            align: LineAlign::Outside,
+            states: States {
+                pressed_fill: true,
+                ..States::STATED
+            },
+            iced_corners: false,
+            iced_stroke: false,
+            menu_corners: false,
+        },
+        reason: &[PRESSED_THUMB],
+    },
+    Difference {
+        leaf: "scrollable",
+        presets: &["macos-tahoe"],
+        listed: Listed {
+            align: LineAlign::Outside,
+            states: States {
+                hover_fill: true,
+                pressed_fill: true,
+                ..States::STATED
+            },
+            iced_corners: false,
+            iced_stroke: false,
+            menu_corners: false,
+        },
+        reason: &[PRESSED_THUMB, INHERITED_THUMB_HOVER],
+    },
+    // segmented_control.track(NONE).stroke over the group fill.
+    inside("segmented_control", MACOS_WINDOWS),
+    // iced_aw: card.container(NONE).
+    inside("aw::card", &["windows-11"]),
+    aw(
+        "aw::card",
+        &["adwaita", "material-3"],
+        LineAlign::Outside,
+        States::STATED,
+        (true, false),
+        &[CARD_STROKE],
+    ),
+    aw(
+        "aw::card",
+        &["macos-monterey", "macos-tahoe", "ios-13"],
+        LineAlign::Outside,
+        States::STATED,
+        (true, true),
+        &[CARD_STROKE, CARD_CORNERS],
+    ),
+    // iced_aw: the menu's frame, popover.panel's stroke over menu.panel's
+    // fill; ios-13's menu.panel(NONE).corners.
+    inside(
+        "aw::menu",
+        &["adwaita", "windows-11", "macos-monterey", "macos-tahoe"],
+    ),
+    Difference {
+        leaf: "aw::menu",
+        presets: &["ios-13"],
+        listed: Listed {
+            menu_corners: true,
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        reason: &[MENU_PANEL_CORNERS],
+    },
+    // iced_aw: tab.tab(SELECTED)'s stroke, tab.tab(HOVER)'s fill and
+    // tab.label(HOVER)'s colour.
+    inside("aw::tab_bar", &["windows-11"]),
+    aw(
+        "aw::tab_bar",
+        &["adwaita", "material-3", "ios-13"],
+        LineAlign::Outside,
+        States::STATED,
+        (true, false),
+        &[TAB_STROKE],
+    ),
+    aw(
+        "aw::tab_bar",
+        &["macos-monterey"],
+        LineAlign::Outside,
+        hovered(false, true, false),
+        (true, false),
+        &[TAB_STROKE, TAB_HOVER_LABEL],
+    ),
+    aw(
+        "aw::tab_bar",
+        &["macos-tahoe"],
+        LineAlign::Outside,
+        hovered(true, true, false),
+        (true, false),
+        &[TAB_STROKE, TAB_HOVER_FILL, TAB_HOVER_LABEL],
+    ),
+    // iced_aw: sidebar.container(NONE)'s stroke and sidebar.item(HOVER).
+    aw(
+        "aw::sidebar",
+        MACOS,
+        LineAlign::Inside,
+        hovered(true, false, false),
+        (false, false),
+        &[INSIDE, SIDEBAR_HOVER],
+    ),
+    // iced_aw: list.container(NONE)'s stroke, list.highlight(HOVER) and
+    // list.item_label(HOVER).
+    inside("aw::selection_list", &["windows-11"]),
+    aw(
+        "aw::selection_list",
+        MACOS,
+        LineAlign::Inside,
+        hovered(true, true, false),
+        (false, false),
+        &[INSIDE, LIST_HOVER],
     ),
     // link.container(PRESSED): no preset states a pressed link's fill, and
     // the macOS presets no pressed label (`link.label(PRESSED)`).
@@ -384,6 +644,8 @@ const DIFFERENCES: &[Difference] = &[
                 ..States::STATED
             },
             iced_corners: false,
+            iced_stroke: false,
+            menu_corners: false,
         },
         reason: &[PRESSED_LINK],
     },
@@ -398,6 +660,8 @@ const DIFFERENCES: &[Difference] = &[
                 ..States::STATED
             },
             iced_corners: false,
+            iced_stroke: false,
+            menu_corners: false,
         },
         reason: &[PRESSED_LINK, PRESSED_LINK_LABEL],
     },
@@ -643,8 +907,9 @@ fn compare_styles(
 ) {
     use crate::palette::to_color;
     use crate::styles::{
-        self as o, ButtonSource, CheckFills, CheckboxSource, InputSource, LinkSource, MenuSource,
-        Outline, PickListSource, SliderSource, SwitchSource, ToolbarButtonSource,
+        self as o, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource,
+        LinkSource, MenuSource, Outline, PickListSource, ScrollbarSource, SegmentPosition,
+        SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
     };
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
 
@@ -904,6 +1169,114 @@ fn compare_styles(
             [Status::Active, Status::Hovered, Status::Dragged]
         );
     }
+    {
+        use iced_widget::scrollable::Status;
+        let active = Status::Active {
+            is_horizontal_scrollbar_disabled: false,
+            is_vertical_scrollbar_disabled: false,
+        };
+        let hovered = |vertical, horizontal| Status::Hovered {
+            is_horizontal_scrollbar_hovered: horizontal,
+            is_vertical_scrollbar_hovered: vertical,
+            is_horizontal_scrollbar_disabled: false,
+            is_vertical_scrollbar_disabled: false,
+        };
+        let dragged = |vertical, horizontal| Status::Dragged {
+            is_horizontal_scrollbar_dragged: horizontal,
+            is_vertical_scrollbar_dragged: vertical,
+            is_horizontal_scrollbar_disabled: false,
+            is_vertical_scrollbar_disabled: false,
+        };
+        let s = ScrollbarSource::of(old);
+        listed_style!(
+            report,
+            themes,
+            "scrollable",
+            o::scrollable(old),
+            n::scrollable(new),
+            |l: Listed| o::scrollable_from(&s.listed(l)),
+            [
+                active,
+                hovered(false, false),
+                hovered(true, false),
+                hovered(false, true),
+                dragged(true, false),
+                dragged(false, true),
+            ]
+        );
+        plain!(
+            report,
+            themes,
+            "scrollbar",
+            surface(move |_| o::scrollbar(old)),
+            Ok(surface(move |_| n::scrollbar(new))),
+            [()]
+        );
+    }
+    {
+        let sc = SegmentedSource::of(old);
+        for disabled in [false, true] {
+            style!(
+                report,
+                themes,
+                "segmented_control",
+                surface(o::segmented_control(old, disabled)),
+                n::segmented_control(new, disabled).map(surface),
+                |a| surface(o::segmented_control_from(
+                    &sc.listed(Listed::aligned(a)),
+                    disabled
+                )),
+                [()]
+            );
+            plain!(
+                report,
+                themes,
+                "segment_separator",
+                surface(o::segment_separator(old, disabled)),
+                n::segment_separator(new, disabled).map(surface),
+                [()]
+            );
+        }
+        for selected in [false, true] {
+            for position in [
+                SegmentPosition::First,
+                SegmentPosition::Middle,
+                SegmentPosition::Last,
+                SegmentPosition::Only,
+            ] {
+                style!(
+                    report,
+                    themes,
+                    "segment",
+                    o::segment(old, selected, position),
+                    n::segment(new, selected, position),
+                    |a| o::segment_from(&sc.listed(Listed::aligned(a)), selected, position),
+                    button
+                );
+            }
+        }
+    }
+    {
+        let x = ExpanderSource::of(old);
+        listed_style!(
+            report,
+            themes,
+            "expander",
+            o::expander(old),
+            n::expander(new),
+            |l: Listed| o::expander_from(&x.listed(l)),
+            button
+        );
+        style!(
+            report,
+            themes,
+            "expander_frame",
+            surface(o::expander_frame(old)),
+            n::expander_frame(new).map(surface),
+            |a| surface(o::expander_frame_from(&x.listed(Listed::aligned(a)))),
+            [()]
+        );
+    }
 
     let p = &old.progress_bar;
     style!(
@@ -1000,6 +1373,284 @@ fn compare_styles(
     );
 }
 
+/// `iced_aw`'s styles in the form the parity test compares them: each
+/// `Style` of `iced_aw` 0.14.1 derives `Debug` but no `PartialEq`, so it is
+/// compared as the tuple of its fields, destructured whole, so that a field
+/// `iced_aw` adds fails to compile here rather than go uncompared.
+#[cfg(feature = "iced_aw")]
+mod aw_leaves {
+    use iced_aw::style::{card, menu_bar, selection_list, sidebar, tab_bar};
+    use iced_core::border::Radius;
+    use iced_core::{Background, Border, Color, Shadow};
+
+    type Card = (
+        Background,
+        f32,
+        f32,
+        Color,
+        Background,
+        Color,
+        Background,
+        Color,
+        Background,
+        Color,
+        Color,
+    );
+
+    pub(super) fn card(s: card::Style) -> Card {
+        let card::Style {
+            background,
+            border_radius,
+            border_width,
+            border_color,
+            head_background,
+            head_text_color,
+            body_background,
+            body_text_color,
+            foot_background,
+            foot_text_color,
+            close_color,
+        } = s;
+        (
+            background,
+            border_radius,
+            border_width,
+            border_color,
+            head_background,
+            head_text_color,
+            body_background,
+            body_text_color,
+            foot_background,
+            foot_text_color,
+            close_color,
+        )
+    }
+
+    type MenuBar = (
+        Background,
+        Border,
+        Shadow,
+        Background,
+        Border,
+        Shadow,
+        Background,
+        Border,
+    );
+
+    pub(super) fn menu(s: menu_bar::Style) -> MenuBar {
+        let menu_bar::Style {
+            bar_background,
+            bar_border,
+            bar_shadow,
+            menu_background,
+            menu_border,
+            menu_shadow,
+            path,
+            path_border,
+        } = s;
+        (
+            bar_background,
+            bar_border,
+            bar_shadow,
+            menu_background,
+            menu_border,
+            menu_shadow,
+            path,
+            path_border,
+        )
+    }
+
+    type TabBar = (
+        Option<Background>,
+        Option<Color>,
+        f32,
+        Radius,
+        Background,
+        Color,
+        f32,
+        Color,
+        Option<Background>,
+        Radius,
+        Color,
+    );
+
+    pub(super) fn tab_bar(s: tab_bar::Style) -> TabBar {
+        let tab_bar::Style {
+            background,
+            border_color,
+            border_width,
+            tab_border_radius,
+            tab_label_background,
+            tab_label_border_color,
+            tab_label_border_width,
+            icon_color,
+            icon_background,
+            icon_border_radius,
+            text_color,
+        } = s;
+        (
+            background,
+            border_color,
+            border_width,
+            tab_border_radius,
+            tab_label_background,
+            tab_label_border_color,
+            tab_label_border_width,
+            icon_color,
+            icon_background,
+            icon_border_radius,
+            text_color,
+        )
+    }
+
+    type Sidebar = (
+        Option<Background>,
+        Option<Color>,
+        f32,
+        Background,
+        Color,
+        f32,
+        Color,
+        Option<Background>,
+        Radius,
+        Color,
+    );
+
+    pub(super) fn sidebar(s: sidebar::Style) -> Sidebar {
+        let sidebar::Style {
+            background,
+            border_color,
+            border_width,
+            tab_label_background,
+            tab_label_border_color,
+            tab_label_border_width,
+            icon_color,
+            icon_background,
+            icon_border_radius,
+            text_color,
+        } = s;
+        (
+            background,
+            border_color,
+            border_width,
+            tab_label_background,
+            tab_label_border_color,
+            tab_label_border_width,
+            icon_color,
+            icon_background,
+            icon_border_radius,
+            text_color,
+        )
+    }
+
+    pub(super) fn selection_list(s: selection_list::Style) -> (Color, Background, f32, Color) {
+        let selection_list::Style {
+            text_color,
+            background,
+            border_width,
+            border_color,
+        } = s;
+        (text_color, background, border_width, border_color)
+    }
+}
+
+/// The `iced_aw` style functions, each in every `Status` of `iced_aw`'s
+/// shared enum.
+#[cfg(feature = "iced_aw")]
+fn compare_aw(
+    report: &mut Report,
+    themes: (&Theme, &Theme),
+    old: &ResolvedTheme,
+    new: &native_theme::next::ResolvedTheme,
+) {
+    use iced_aw::style::Status;
+
+    use crate::styles::aw::{self as o, CardSource, ListSource, MenuSource, TabBarSource};
+
+    use super::styles::aw as n;
+
+    let statuses = [
+        Status::Active,
+        Status::Hovered,
+        Status::Pressed,
+        Status::Disabled,
+        Status::Focused,
+        Status::Selected,
+    ];
+    /// A style function's output in the compared form.
+    fn leaves<S, T>(
+        f: impl Fn(&Theme, Status) -> S + Clone,
+        form: fn(S) -> T,
+    ) -> impl Fn(&Theme, Status) -> T + Clone {
+        move |theme, status| form(f(theme, status))
+    }
+
+    let card = CardSource::of(old);
+    listed_style!(
+        report,
+        themes,
+        "aw::card",
+        leaves(o::card(old), aw_leaves::card),
+        n::card(new).map(|f| leaves(f, aw_leaves::card)),
+        |l: Listed| leaves(o::card_from(&card.listed(l)), aw_leaves::card),
+        statuses
+    );
+    let menu = MenuSource::of(old);
+    listed_style!(
+        report,
+        themes,
+        "aw::menu",
+        leaves(o::menu(old), aw_leaves::menu),
+        n::menu(new).map(|f| leaves(f, aw_leaves::menu)),
+        |l: Listed| leaves(
+            o::menu_from(&menu.listed(l, old.defaults.border.corner_radius)),
+            aw_leaves::menu
+        ),
+        statuses
+    );
+    let tab = TabBarSource::of(old);
+    listed_style!(
+        report,
+        themes,
+        "aw::tab_bar",
+        leaves(o::tab_bar(old), aw_leaves::tab_bar),
+        n::tab_bar(new).map(|f| leaves(f, aw_leaves::tab_bar)),
+        |l: Listed| leaves(o::tab_bar_from(&tab.listed(l)), aw_leaves::tab_bar),
+        statuses
+    );
+    let sidebar = ListSource::of_sidebar(old);
+    listed_style!(
+        report,
+        themes,
+        "aw::sidebar",
+        leaves(o::sidebar(old), aw_leaves::sidebar),
+        n::sidebar(new).map(|f| leaves(f, aw_leaves::sidebar)),
+        |l: Listed| leaves(o::sidebar_from(&sidebar.listed(l)), aw_leaves::sidebar),
+        statuses
+    );
+    let list = ListSource::of_list(old);
+    listed_style!(
+        report,
+        themes,
+        "aw::selection_list",
+        leaves(o::selection_list(old), aw_leaves::selection_list),
+        n::selection_list(new).map(|f| leaves(f, aw_leaves::selection_list)),
+        |l: Listed| leaves(
+            o::selection_list_from(&list.listed(l)),
+            aw_leaves::selection_list
+        ),
+        statuses
+    );
+    plain!(
+        report,
+        themes,
+        "aw::spinner",
+        surface(o::spinner(old)),
+        Ok(surface(n::spinner(new))),
+        [()]
+    );
+}
+
 /// Every leaf of `preset` for `is_dark`, compared.
 fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Result<Report> {
     let (old, name, mode, new) = resolve(key, preset, is_dark)?;
@@ -1010,6 +1661,8 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
     #[cfg(feature = "widgets")]
     if let Ok(new_theme) = &new_theme {
         compare_styles(&mut report, (&old_theme, new_theme), &old, &new);
+        #[cfg(feature = "iced_aw")]
+        compare_aw(&mut report, (&old_theme, new_theme), &old, &new);
     }
     Ok(report)
 }
@@ -1027,6 +1680,10 @@ fn the_connector_hands_iced_the_same_from_both_models() -> crate::Result<()> {
         }
     }
     for (i, d) in DIFFERENCES.iter().enumerate() {
+        // The `iced_aw` style functions are compared with that feature only.
+        if d.leaf.starts_with("aw::") && !cfg!(feature = "iced_aw") {
+            continue;
+        }
         for &p in d.presets {
             if !listed_seen
                 .iter()

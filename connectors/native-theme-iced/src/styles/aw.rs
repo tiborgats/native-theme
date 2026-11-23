@@ -31,7 +31,7 @@
 //! Upstream citations in this module are read at iced_aw 0.14.1, with
 //! iced_widget 0.14.2 and iced_core 0.14.0 beneath it.
 
-use super::{border_of, composite_over};
+use super::{Line, LineAlign};
 use crate::palette::to_color;
 use iced_aw::style::Status;
 use iced_core::border::Radius;
@@ -83,42 +83,82 @@ use native_theme::theme::ResolvedTheme;
 pub fn card(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::card::Style + Clone + use<> {
-    let c = &resolved.card;
-    card_from(
-        to_color(c.background_color),
-        to_color(resolved.defaults.text_color),
-        border_of(&c.border),
-    )
+    card_from(&CardSource::of(resolved))
 }
 
-/// [`card`] of what it reads: the card's fill, the text on it and its
-/// border.
+/// What the card's style reads from the theme, of either model: the card's
+/// fill, the text on it and its outline. Each outline value `None` is one
+/// the theme leaves unstated, `iced_aw`'s own then (`card::primary`; spec
+/// §10, rule 0); the 0.7.2 model states all three.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct CardSource {
+    pub background: Color,
+    pub label: Color,
+    /// The outline's stroke, laid over the card's fill; `None` with a
+    /// stated `width` is no line.
+    pub line: Option<Line>,
+    pub width: Option<f32>,
+    pub radius: Option<f32>,
+}
+
+impl CardSource {
+    /// The 0.7.2 model's reads.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let c = &resolved.card;
+        Self {
+            background: to_color(c.background_color),
+            label: to_color(resolved.defaults.text_color),
+            line: Some(Line::outside(to_color(c.border.color))),
+            width: Some(c.border.line_width),
+            radius: Some(c.border.corner_radius),
+        }
+    }
+
+    /// The stroke where it lies as `listed` says, and the stroke or the
+    /// corners `iced_aw`'s own where it says so, for the parity test's
+    /// expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let own = listed.iced_stroke;
+        Self {
+            line: self.line.map(|l| l.aligned(listed.align)).filter(|_| !own),
+            width: self.width.filter(|_| !own),
+            radius: self.radius.filter(|_| !listed.iced_corners),
+            ..self
+        }
+    }
+}
+
+/// [`card`] of what it reads.
 pub(crate) fn card_from(
-    panel: Color,
-    label: Color,
-    border: Border,
+    c: &CardSource,
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::card::Style + Clone + use<> {
     use iced_aw::style::card::Style;
 
-    let border_color = border.color;
-    let border_width = border.width;
-    let border_radius = border.radius.top_left;
+    let panel = c.background;
+    let label = c.label;
+    let line = c.line;
+    let width = c.width;
+    let radius = c.radius;
 
     // The sections show the card's own fill through them, under its border.
     let section = Background::Color(Color::TRANSPARENT);
 
-    move |_theme, _status| Style {
-        background: Background::Color(panel),
-        border_radius,
-        border_width,
-        border_color,
-        head_background: section,
-        head_text_color: label,
-        body_background: section,
-        body_text_color: label,
-        foot_background: section,
-        foot_text_color: label,
-        close_color: label,
+    move |theme, status| {
+        let iced = iced_aw::style::card::primary(theme, status);
+        Style {
+            background: Background::Color(panel),
+            border_radius: radius.unwrap_or(iced.border_radius),
+            border_width: width.unwrap_or(iced.border_width),
+            border_color: line.map_or(iced.border_color, |line| line.over(panel)),
+            head_background: section,
+            head_text_color: label,
+            body_background: section,
+            body_text_color: label,
+            foot_background: section,
+            foot_text_color: label,
+            close_color: label,
+        }
     }
 }
 
@@ -177,34 +217,74 @@ pub(crate) fn card_from(
 pub fn menu(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::menu_bar::Style + Clone + use<> {
-    let m = &resolved.menu;
-    menu_from(&MenuSource {
-        bar: to_color(resolved.toolbar.background_color),
-        panel: to_color(m.background_color),
-        highlight: to_color(m.hover_background),
-        frame: border_of(&resolved.popover.border),
-        shadow: resolved.popover.border.shadow_enabled,
-        hover_border_color: m.hover_border_color.map(to_color),
-        hover_border_width: resolved.defaults.border.line_width,
-        item_radius: m.border.corner_radius,
-    })
+    menu_from(&MenuSource::of(resolved))
 }
 
-/// What the menu bar's style reads from the theme, of either model.
+/// What the menu bar's style reads from the theme, of either model. Each
+/// value `None` is one the theme leaves unstated, `iced_aw`'s own then
+/// (`menu_bar::primary`; spec §10, rule 0, and §2, `from_state`, for the
+/// hovered item).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct MenuSource {
     pub bar: Color,
     pub panel: Color,
-    /// The item under the pointer.
-    pub highlight: Color,
-    /// The open menu's outline.
-    pub frame: Border,
-    /// Whether the open menu casts a shadow.
-    pub shadow: bool,
-    /// The outline of the item under the pointer, as stated, a soft option.
-    pub hover_border_color: Option<Color>,
-    pub hover_border_width: f32,
-    pub item_radius: f32,
+    /// The highlight under the item the pointer is on.
+    pub highlight: Option<Color>,
+    /// The open menu's frame: its stroke, laid over the panel (`None` with
+    /// a stated `frame_width` is no line), its width and its radius.
+    pub frame_line: Option<Line>,
+    pub frame_width: Option<f32>,
+    pub frame_radius: Option<f32>,
+    /// The open menu's shadow.
+    pub shadow: Option<Shadow>,
+    /// The outline of the item under the pointer, laid over the highlight,
+    /// and its width; with no line, `iced_aw`'s own outline.
+    pub hover_line: Option<Line>,
+    pub hover_width: Option<f32>,
+    /// The radius of that outline.
+    pub item_radius: Option<f32>,
+}
+
+impl MenuSource {
+    /// The 0.7.2 model's reads. Its connector lays the item's outline over
+    /// the highlight, as Breeze does, and casts `iced_aw`'s own shadow where
+    /// the popover states one.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let m = &resolved.menu;
+        let p = &resolved.popover.border;
+        Self {
+            bar: to_color(resolved.toolbar.background_color),
+            panel: to_color(m.background_color),
+            highlight: Some(to_color(m.hover_background)),
+            frame_line: Some(Line::outside(to_color(p.color))),
+            frame_width: Some(p.line_width),
+            frame_radius: Some(p.corner_radius),
+            shadow: (!p.shadow_enabled).then(Shadow::default),
+            hover_line: m.hover_border_color.map(|c| Line {
+                color: to_color(c),
+                align: LineAlign::Inside,
+            }),
+            hover_width: Some(resolved.defaults.border.line_width),
+            item_radius: Some(m.border.corner_radius),
+        }
+    }
+
+    /// The frame's stroke where it lies as `listed` says, and the frame
+    /// rounded by `default_radius` (0.7.2's `defaults.border.corner_radius`)
+    /// where it says the menu's panel states that radius as its own, for the
+    /// parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed, default_radius: f32) -> Self {
+        Self {
+            frame_line: self.frame_line.map(|l| l.aligned(listed.align)),
+            frame_radius: if listed.menu_corners {
+                Some(default_radius)
+            } else {
+                self.frame_radius
+            },
+            ..self
+        }
+    }
 }
 
 /// [`menu`] of what it reads.
@@ -213,32 +293,37 @@ pub(crate) fn menu_from(
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::menu_bar::Style + Clone + use<> {
     use iced_aw::style::menu_bar::Style;
 
-    let bar = m.bar;
-    let panel = m.panel;
-    let highlight = m.highlight;
-    let frame = m.frame;
-    let shadow = m.shadow;
-    let outline = m.hover_border_color.map(|c| Border {
-        color: composite_over(c, highlight),
-        width: m.hover_border_width,
-        radius: Radius::new(m.item_radius),
-    });
+    let m = *m;
 
     move |theme, status| {
         let iced = iced_aw::style::menu_bar::primary(theme, status);
+        let path = m.highlight.map_or(iced.path, Background::Color);
+        let path_fill = match path {
+            Background::Color(color) => color,
+            Background::Gradient(_) => Color::TRANSPARENT,
+        };
         Style {
-            bar_background: Background::Color(bar),
+            bar_background: Background::Color(m.bar),
             bar_border: Border::default(),
             bar_shadow: iced.bar_shadow,
-            menu_background: Background::Color(panel),
-            menu_border: frame,
-            menu_shadow: if shadow {
-                iced.menu_shadow
-            } else {
-                Shadow::default()
+            menu_background: Background::Color(m.panel),
+            menu_border: Border {
+                color: m
+                    .frame_line
+                    .map_or(iced.menu_border.color, |line| line.over(m.panel)),
+                width: m.frame_width.unwrap_or(iced.menu_border.width),
+                radius: m.frame_radius.map_or(iced.menu_border.radius, Radius::new),
             },
-            path: Background::Color(highlight),
-            path_border: outline.unwrap_or(iced.path_border),
+            menu_shadow: m.shadow.unwrap_or(iced.menu_shadow),
+            path,
+            path_border: match m.hover_line {
+                Some(line) => Border {
+                    color: line.over(path_fill),
+                    width: m.hover_width.unwrap_or(iced.path_border.width),
+                    radius: m.item_radius.map_or(iced.path_border.radius, Radius::new),
+                },
+                None => iced.path_border,
+            },
         }
     }
 }
@@ -304,21 +389,14 @@ pub(crate) fn menu_from(
 pub fn tab_bar(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::tab_bar::Style + Clone + use<> {
-    let t = &resolved.tab;
-    tab_bar_from(&TabBarSource {
-        bar_background: to_color(t.bar_background),
-        background: to_color(t.background_color),
-        active_background: to_color(t.active_background),
-        hover_background: t.hover_background.map(to_color),
-        label: to_color(t.font.color),
-        active_label: to_color(t.active_text_color),
-        hover_label: to_color(t.hover_text_color),
-        border: border_of(&t.border),
-    })
+    tab_bar_from(&TabBarSource::of(resolved))
 }
 
 /// What the tab bar's style reads from the theme, of either model: each
-/// field's 0.7.2 name, soft options as `None` where unset.
+/// field's 0.7.2 name. A hovered fill or label `None` is one the theme
+/// states nothing for, `iced_aw`'s own then (spec §2, `from_state`); an
+/// outline value `None` one it leaves unstated, `iced_aw`'s own then (spec
+/// §10, rule 0).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct TabBarSource {
     pub bar_background: Color,
@@ -327,9 +405,50 @@ pub(crate) struct TabBarSource {
     pub hover_background: Option<Color>,
     pub label: Color,
     pub active_label: Color,
-    pub hover_label: Color,
-    /// The selected tab's outline.
-    pub border: Border,
+    pub hover_label: Option<Color>,
+    /// The selected tab's outline: its stroke, laid over the selected
+    /// tab's fill (`None` with a stated `width` is no line), its width and
+    /// its radius.
+    pub line: Option<Line>,
+    pub width: Option<f32>,
+    pub radius: Option<f32>,
+}
+
+impl TabBarSource {
+    /// The 0.7.2 model's reads. Its unset `hover_background` was drawn by
+    /// its connector as the idle tab, and its reads state that.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let t = &resolved.tab;
+        let idle = to_color(t.background_color);
+        Self {
+            bar_background: to_color(t.bar_background),
+            background: idle,
+            active_background: to_color(t.active_background),
+            hover_background: Some(t.hover_background.map_or(idle, to_color)),
+            label: to_color(t.font.color),
+            active_label: to_color(t.active_text_color),
+            hover_label: Some(to_color(t.hover_text_color)),
+            line: Some(Line::outside(to_color(t.border.color))),
+            width: Some(t.border.line_width),
+            radius: Some(t.border.corner_radius),
+        }
+    }
+
+    /// The stroke where it lies as `listed` says, the hovered options it
+    /// names unset and the stroke or the corners `iced_aw`'s own where it
+    /// says so, for the parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let (own, s) = (listed.iced_stroke, listed.states);
+        Self {
+            hover_background: self.hover_background.filter(|_| !s.hover_fill),
+            hover_label: self.hover_label.filter(|_| !s.hover_label),
+            line: self.line.map(|l| l.aligned(listed.align)).filter(|_| !own),
+            width: self.width.filter(|_| !own),
+            radius: self.radius.filter(|_| !listed.iced_corners),
+            ..self
+        }
+    }
 }
 
 /// [`tab_bar`] of what it reads.
@@ -341,28 +460,35 @@ pub(crate) fn tab_bar_from(
     let strip = t.bar_background;
     let idle = t.background;
     let selected = t.active_background;
-    let hovered = t.hover_background.unwrap_or(t.background);
+    let hovered = t.hover_background;
 
     let label = t.label;
     let selected_label = t.active_label;
     let hovered_label = t.hover_label;
 
-    let border_color = t.border.color;
-    let border_width = t.border.width;
-    let selected_radius = Radius::new(0.0).top(t.border.radius.top_left);
+    let line = t.line;
+    let border_width = t.width;
+    let selected_radius = t.radius.map(|r| Radius::new(0.0).top(r));
 
     move |theme, status| {
         let iced = iced_aw::style::tab_bar::primary(theme, status);
         let (fill, text, icon) = match status {
             Status::Active => (Background::Color(selected), selected_label, selected_label),
-            Status::Hovered => (Background::Color(hovered), hovered_label, hovered_label),
+            Status::Hovered => (
+                hovered.map_or(iced.tab_label_background, Background::Color),
+                hovered_label.unwrap_or(iced.text_color),
+                hovered_label.unwrap_or(iced.icon_color),
+            ),
             Status::Disabled => (Background::Color(idle), label, label),
             Status::Pressed | Status::Focused | Status::Selected => {
                 (iced.tab_label_background, iced.text_color, iced.icon_color)
             }
         };
         let (width, radius) = match status {
-            Status::Active => (border_width, selected_radius),
+            Status::Active => (
+                border_width.unwrap_or(iced.tab_label_border_width),
+                selected_radius.unwrap_or(iced.tab_border_radius),
+            ),
             _ => (0.0, Radius::new(0.0)),
         };
         Style {
@@ -371,7 +497,8 @@ pub(crate) fn tab_bar_from(
             border_width: iced.border_width,
             tab_border_radius: radius,
             tab_label_background: fill,
-            tab_label_border_color: border_color,
+            tab_label_border_color: line
+                .map_or(iced.tab_label_border_color, |line| line.over(selected)),
             tab_label_border_width: width,
             icon_color: icon,
             icon_background: iced.icon_background,
@@ -421,35 +548,83 @@ pub(crate) fn tab_bar_from(
 pub fn sidebar(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::sidebar::Style + Clone + use<> {
-    let s = &resolved.sidebar;
-    sidebar_from(&ListSource {
-        background: to_color(s.background_color),
-        selection_background: to_color(s.selection_background),
-        hover_background: to_color(s.hover_background),
-        label: to_color(s.font.color),
-        selection_label: to_color(s.selection_text_color),
-        hover_label: to_color(s.font.color),
-        disabled_label: to_color(s.font.color),
-        border_color: to_color(s.border.color),
-        border_width: s.border.line_width,
-    })
+    sidebar_from(&ListSource::of_sidebar(resolved))
 }
 
 /// What the sidebar's and the selection list's styles read from the theme,
 /// of either model: the panel, its rows at rest, selected, hovered and
-/// disabled, and its outline.
+/// disabled, and its outline. A hovered fill or label `None` is one the
+/// theme states nothing for, `iced_aw`'s own then (spec §2, `from_state`);
+/// an outline value `None` one it leaves unstated, `iced_aw`'s own then
+/// (spec §10, rule 0).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ListSource {
     pub background: Color,
     pub selection_background: Color,
-    pub hover_background: Color,
+    pub hover_background: Option<Color>,
     pub label: Color,
     pub selection_label: Color,
-    pub hover_label: Color,
+    pub hover_label: Option<Color>,
     /// A disabled row's label, faded already.
     pub disabled_label: Color,
-    pub border_color: Color,
-    pub border_width: f32,
+    /// The outline's stroke, laid over the panel (`None` with a stated
+    /// `width` is no line), and its width.
+    pub line: Option<Line>,
+    pub width: Option<f32>,
+}
+
+impl ListSource {
+    /// The 0.7.2 model's reads of the sidebar.
+    pub(crate) fn of_sidebar(resolved: &ResolvedTheme) -> Self {
+        let s = &resolved.sidebar;
+        Self {
+            background: to_color(s.background_color),
+            selection_background: to_color(s.selection_background),
+            hover_background: Some(to_color(s.hover_background)),
+            label: to_color(s.font.color),
+            selection_label: to_color(s.selection_text_color),
+            hover_label: Some(to_color(s.font.color)),
+            disabled_label: to_color(s.font.color),
+            line: Some(Line::outside(to_color(s.border.color))),
+            width: Some(s.border.line_width),
+        }
+    }
+
+    /// The 0.7.2 model's reads of the list.
+    pub(crate) fn of_list(resolved: &ResolvedTheme) -> Self {
+        let l = &resolved.list;
+        Self {
+            background: to_color(l.background_color),
+            selection_background: to_color(l.selection_background),
+            hover_background: Some(to_color(l.hover_background)),
+            label: to_color(l.item_font.color),
+            selection_label: to_color(l.selection_text_color),
+            hover_label: Some(to_color(l.hover_text_color)),
+            // `ListTheme` states no `disabled_opacity`: the defaults' fades a
+            // disabled row (see `styles::faded`).
+            disabled_label: super::faded(
+                to_color(l.disabled_text_color),
+                resolved.defaults.disabled_opacity,
+            ),
+            line: Some(Line::outside(to_color(l.border.color))),
+            width: Some(l.border.line_width),
+        }
+    }
+
+    /// The stroke where it lies as `listed` says, the hovered options it
+    /// names unset and the stroke `iced_aw`'s own where it says so, for the
+    /// parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let (own, s) = (listed.iced_stroke, listed.states);
+        Self {
+            hover_background: self.hover_background.filter(|_| !s.hover_fill),
+            hover_label: self.hover_label.filter(|_| !s.hover_label),
+            line: self.line.map(|l| l.aligned(listed.align)).filter(|_| !own),
+            width: self.width.filter(|_| !own),
+            ..self
+        }
+    }
 }
 
 /// [`sidebar`] of what it reads (the hovered and the disabled label unread).
@@ -465,14 +640,17 @@ pub(crate) fn sidebar_from(
     let label = s.label;
     let selected_label = s.selection_label;
 
-    let border_color = s.border_color;
-    let border_width = s.border_width;
+    let line = s.line;
+    let border_width = s.width;
 
     move |theme, status| {
         let iced = iced_aw::style::sidebar::primary(theme, status);
         let (fill, text) = match status {
             Status::Active => (Background::Color(selected), selected_label),
-            Status::Hovered => (Background::Color(hovered), label),
+            Status::Hovered => (
+                hovered.map_or(iced.tab_label_background, Background::Color),
+                label,
+            ),
             Status::Disabled => (Background::Color(panel), label),
             Status::Pressed | Status::Focused | Status::Selected => {
                 (iced.tab_label_background, iced.text_color)
@@ -484,8 +662,8 @@ pub(crate) fn sidebar_from(
         };
         Style {
             background: Some(Background::Color(panel)),
-            border_color: Some(border_color),
-            border_width,
+            border_color: line.map_or(iced.border_color, |line| Some(line.over(panel))),
+            border_width: border_width.unwrap_or(iced.border_width),
             tab_label_background: fill,
             tab_label_border_color: iced.tab_label_border_color,
             tab_label_border_width: iced.tab_label_border_width,
@@ -558,23 +736,7 @@ pub(crate) fn sidebar_from(
 pub fn selection_list(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::selection_list::Style + Clone + use<> {
-    let l = &resolved.list;
-    selection_list_from(&ListSource {
-        background: to_color(l.background_color),
-        selection_background: to_color(l.selection_background),
-        hover_background: to_color(l.hover_background),
-        label: to_color(l.item_font.color),
-        selection_label: to_color(l.selection_text_color),
-        hover_label: to_color(l.hover_text_color),
-        // `ListTheme` states no `disabled_opacity`: the defaults' fades a
-        // disabled row (see `styles::faded`).
-        disabled_label: super::faded(
-            to_color(l.disabled_text_color),
-            resolved.defaults.disabled_opacity,
-        ),
-        border_color: to_color(l.border.color),
-        border_width: l.border.line_width,
-    })
+    selection_list_from(&ListSource::of_list(resolved))
 }
 
 /// [`selection_list`] of what it reads.
@@ -592,14 +754,17 @@ pub(crate) fn selection_list_from(
     let hovered_label = l.hover_label;
     let disabled_label = l.disabled_label;
 
-    let border_color = l.border_color;
-    let border_width = l.border_width;
+    let line = l.line;
+    let border_width = l.width;
 
     move |theme, status| {
         let iced = iced_aw::style::selection_list::primary(theme, status);
         let (fill, text) = match status {
             Status::Active => (Background::Color(panel), label),
-            Status::Hovered => (Background::Color(hovered), hovered_label),
+            Status::Hovered => (
+                hovered.map_or(iced.background, Background::Color),
+                hovered_label.unwrap_or(iced.text_color),
+            ),
             Status::Selected => (Background::Color(selected), selected_label),
             Status::Disabled => (Background::Color(panel), disabled_label),
             Status::Pressed | Status::Focused => (iced.background, iced.text_color),
@@ -607,8 +772,8 @@ pub(crate) fn selection_list_from(
         Style {
             text_color: text,
             background: fill,
-            border_width,
-            border_color,
+            border_width: border_width.unwrap_or(iced.border_width),
+            border_color: line.map_or(iced.border_color, |line| line.over(panel)),
         }
     }
 }
