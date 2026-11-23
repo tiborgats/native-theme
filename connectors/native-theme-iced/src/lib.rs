@@ -450,6 +450,7 @@ use native_theme_test_fixtures as icon_fixture;
 #[cfg(feature = "widgets")]
 mod focus_ring;
 pub mod icons;
+pub mod next;
 pub mod palette;
 #[cfg(feature = "spinner")]
 pub mod spinner;
@@ -572,18 +573,31 @@ fn build_theme(
 ) -> iced_core::theme::Theme {
     let pal = palette::to_palette(resolved);
 
-    // Capture only the Rgba values (Copy, 4 bytes each) instead of
+    // Capture only the colours (Copy, 16 bytes each) instead of
     // cloning the entire ResolvedTheme (~2KB with heap data).
     let colors = extended::OverrideColors {
-        placeholder: resolved.input.placeholder_color,
-        surface: resolved.defaults.surface_color,
-        foreground: resolved.defaults.text_color,
-        accent_fg: resolved.defaults.accent_text_color,
-        success_fg: resolved.defaults.success_text_color,
-        danger_fg: resolved.defaults.danger_text_color,
-        warning_fg: resolved.defaults.warning_text_color,
+        placeholder: palette::to_color(resolved.input.placeholder_color),
+        surface: palette::to_color(resolved.defaults.surface_color),
+        foreground: palette::to_color(resolved.defaults.text_color),
+        accent_fg: palette::to_color(resolved.defaults.accent_text_color),
+        success_fg: palette::to_color(resolved.defaults.success_text_color),
+        danger_fg: palette::to_color(resolved.defaults.danger_text_color),
+        warning_fg: palette::to_color(resolved.defaults.warning_text_color),
     };
 
+    theme_from(name, pal, colors, mode)
+}
+
+/// The iced theme of a palette and the extended palette's overrides, read
+/// from either model: iced's extended palette generated from `pal`, with
+/// `colors` written over it and `Extended::is_dark` set from `mode` where one
+/// is given.
+pub(crate) fn theme_from(
+    name: &str,
+    pal: iced_core::theme::Palette,
+    colors: extended::OverrideColors,
+    mode: Option<ColorMode>,
+) -> iced_core::theme::Theme {
     iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {
         let mut ext = iced_core::theme::palette::Extended::generate(p);
         extended::apply_overrides(&mut ext, &colors);
