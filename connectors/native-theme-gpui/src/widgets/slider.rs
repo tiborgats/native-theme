@@ -15,7 +15,9 @@ use gpui_component::{ActiveTheme as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
 use super::{A11yDisabled, Part, PartBounds, ThemeSource, color, faded, length, over, part_bounds};
-use crate::next::{Mapped, Unmapped, fill, hsla, state_fill, state_stroke_color, stated};
+use crate::next::{
+    Mapped, Unmapped, fill, state_fill, state_stroke_color, stated, stroke_color, stroke_width,
+};
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
 /// gpui-component's own, its fill colour at half alpha round the thumb
@@ -194,7 +196,10 @@ impl ThumbOutline {
         }
         let (width, colour) = match &rest.stroke {
             Stroke::None => (0.0, None),
-            Stroke::Uniform { width, color, .. } => (*width, Some(hsla(*color))),
+            Stroke::Uniform { .. } => (
+                stroke_width(&rest, "slider.thumb(NONE).stroke.width")?,
+                Some(stroke_color(&rest, "slider.thumb(NONE).stroke.color")?),
+            ),
             _ => return Err(Unmapped("slider.thumb(NONE).stroke")),
         };
         super::finite(

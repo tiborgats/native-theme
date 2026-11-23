@@ -143,6 +143,18 @@ pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla>
     stated(stroke_color_of(part), home)
 }
 
+/// A part's stroke colour as a gpui-component colour token takes it: one
+/// stroke's colour, as [`stroke_color`] reads it, or, stated as none,
+/// transparent, no line (spec §10, rule 2), as [`fill_color_of`] reads a
+/// fill stated as none. A token is a colour alone, with no width to say
+/// "none" by.
+pub(crate) fn token_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
+    if part.stated.contains(PartStated::STROKE) && matches!(part.stroke, Stroke::None) {
+        return Ok(hsla(Color::TRANSPARENT));
+    }
+    stroke_color(part, home)
+}
+
 /// A part's stroke colour as `stroke_color` reads it, `None` where it is
 /// not stated, or stated in a form gpui cannot draw (not one stroke of one
 /// colour).
@@ -348,6 +360,16 @@ pub(crate) fn uncoloured_font<'a>(text: &'a TextStyle, home: &'static str) -> Ma
     font_of(text, home, TextStated::default())
 }
 
+/// Where `text`, read at its home `home`, gives no font gpui can letter a
+/// label in, that home: its family, size, weight or slant unstated, or a
+/// slant gpui has no form for; `None` where it gives one. The check a
+/// theme-drawn widget's label font passes (`widgets`, `LabelFont::next`), for
+/// a reader that shows gpui-component's own control in its place.
+#[must_use]
+pub fn label_font_unmapped(text: &TextStyle, home: &'static str) -> Option<Unmapped> {
+    uncoloured_font(text, home).err()
+}
+
 /// [`font`] and [`uncoloured_font`]: the four properties every builder reads
 /// and `also`.
 fn font_of<'a>(text: &'a TextStyle, home: &'static str, also: TextStated) -> Mapped<Font<'a>> {
@@ -511,7 +533,7 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
         )?,
         selection: hsla(r.colors.text_selection.background),
         link: text_color(&link.label(WidgetState::NONE), "link.label(NONE).color")?,
-        input: stroke_color(
+        input: token_stroke_color(
             &r.input.field(WidgetState::NONE),
             "input.field(NONE).stroke.color",
         )?,
@@ -520,7 +542,7 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
             &r.sidebar.item_label(WidgetState::NONE),
             "sidebar.item_label(NONE).color",
         )?,
-        sidebar_border: stroke_color(&sidebar, "sidebar.container(NONE).stroke.color")?,
+        sidebar_border: token_stroke_color(&sidebar, "sidebar.container(NONE).stroke.color")?,
         popover: fill(&r.popover.panel, "popover.panel.fill")?,
         popover_fg: text_color(&r.popover.text, "popover.text.color")?,
         tab_bg: fill(&tab.tab(WidgetState::NONE), "tab.tab(NONE).fill")?,
@@ -539,7 +561,7 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
             &r.window.title_bar(normal_window()),
             "window.title_bar(normal).fill",
         )?,
-        window_border: stroke_color(&frame, "window.frame(normal).stroke.color")?,
+        window_border: token_stroke_color(&frame, "window.frame(normal).stroke.color")?,
         slider_fill: fill(
             &r.slider.active_track(WidgetState::NONE),
             "slider.active_track(NONE).fill",
@@ -568,7 +590,7 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
         )?,
         separator: hsla(r.separator.color),
         status_bar: fill(&r.status_bar.bar, "status_bar.bar.fill")?,
-        status_bar_border: stroke_color(&r.status_bar.bar, "status_bar.bar.stroke.color")?,
+        status_bar_border: token_stroke_color(&r.status_bar.bar, "status_bar.bar.stroke.color")?,
     })
 }
 
@@ -1289,6 +1311,50 @@ mod tests {
         none.stated = PartStated::STROKE;
         assert_eq!(stroke_width(&none, "home"), Ok(0.0));
         assert_eq!(stroke_color(&none, "home"), Err(Unmapped("home")));
+    }
+
+    /// Spec §10 rule 2, for every colour token read off a stroke: a stroke
+    /// stated as none is transparent, no line; one stroke its colour; an
+    /// unstated stroke, or one stated per side, the home lacked.
+    #[test]
+    fn a_none_stroke_is_a_transparent_token() -> Mapped<()> {
+        let mut none = PartStyle::default();
+        none.stated = PartStated::STROKE;
+        assert_eq!(token_stroke_color(&none, "home")?, hsla(Color::TRANSPARENT));
+        let part = stroked(1.0, RED, StrokeAlign::Inside);
+        assert_eq!(token_stroke_color(&part, "home")?, hsla(RED));
+        let mut unstated = part.clone();
+        unstated.stated = PartStated::default();
+        assert_eq!(token_stroke_color(&unstated, "home"), Err(Unmapped("home")));
+        Ok(())
+    }
+
+    /// A theme that states the field's and the sidebar's strokes as none
+    /// installs: gpui-component's `input` and `sidebar_border` tokens are
+    /// transparent, where they took kde-breeze's stated lines before the
+    /// patch.
+    #[test]
+    fn a_theme_stroking_its_field_as_none_maps_whole() -> Mapped<()> {
+        use native_theme::next::{
+            InputRule, PartPatch, Preset, Scheme, SidebarRule, Theme, ThemeContext, ThemePatch,
+        };
+        let mut r = Theme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        let before = widget_colors(&r)?;
+        let clear = hsla(Color::TRANSPARENT);
+        assert!(
+            before.input != clear && before.sidebar_border != clear,
+            "kde-breeze light's field or sidebar is edged in no colour, so the test could not tell the patch's effect"
+        );
+        r.apply_patch(
+            &ThemePatch::new()
+                .input(InputRule::new().field(PartPatch::new().stroke(Stroke::None)))
+                .sidebar(SidebarRule::new().container(PartPatch::new().stroke(Stroke::None))),
+        );
+        let after = widget_colors(&r)?;
+        assert_eq!(after.input, clear);
+        assert_eq!(after.sidebar_border, clear);
+        to_theme(&r).map(|_| ())
     }
 
     /// `button.hover_border_color`: without a rule for `HOVER` it is unset,

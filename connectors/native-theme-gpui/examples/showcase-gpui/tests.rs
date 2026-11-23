@@ -3267,17 +3267,100 @@ fn the_page_tabs_menu_icon_is_icon_size_small(cx: &mut TestAppContext) {
     );
 }
 
+/// A part of a 0.8.0 theme, as a query reads it.
+#[cfg(feature = "widgets")]
+type PartOf = fn(&native_theme::next::ResolvedTheme) -> native_theme::next::PartStyle;
+
+/// The Basic page's theme-drawn controls, the home that fills each one's
+/// widest painted box: the checkbox indicator's fill, the switch track, the
+/// slider rail.
+#[cfg(feature = "widgets")]
+const BASIC_FILLS: [(&str, &str, PartOf); 5] = [
+    (
+        "basic-checkbox-checked",
+        "checkbox.indicator(CHECKED).fill",
+        |r| {
+            r.checkbox
+                .indicator(native_theme::next::WidgetState::CHECKED)
+        },
+    ),
+    (
+        "basic-checkbox-unchecked",
+        "checkbox.indicator(NONE).fill",
+        |r| r.checkbox.indicator(native_theme::next::WidgetState::NONE),
+    ),
+    ("basic-switch-on", "switch.track(CHECKED).fill", |r| {
+        r.switch.track(native_theme::next::WidgetState::CHECKED)
+    }),
+    ("basic-switch-off", "switch.track(NONE).fill", |r| {
+        r.switch.track(native_theme::next::WidgetState::NONE)
+    }),
+    ("basic-slider", "slider.track(NONE).fill", |r| {
+        r.slider.track(native_theme::next::WidgetState::NONE)
+    }),
+];
+
 /// The Basic page's theme-drawn controls paint the theme's colours
-/// (ISSUES D1-D4): each widest painted box is the leaf that fills it -- the
-/// checkbox indicator's fill, the switch track, the slider rail, the
-/// progress track.
+/// (ISSUES D1-D4): each widest painted box is the home that fills it
+/// (`BASIC_FILLS`), and the progress track its 0.7.2 leaf, under two
+/// presets; then, with each of those homes patched in kde-breeze light's
+/// installed 0.8.0 theme to a sentinel (the checkbox's in a rule at rest
+/// and one for `CHECKED`), each box takes its sentinel, which a reader of
+/// the unchanged 0.7.2 theme would not paint.
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
     use native_theme::color::Rgba;
-    use native_theme::next::WidgetState;
+    use native_theme::next::{
+        CheckboxRule, Color, Paint, PartPatch, SliderRule, SwitchRule, ThemePatch, WidgetState,
+    };
     use native_theme_gpui::ResolvedTheme;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let sentinels = [0x12, 0x24, 0x36, 0x48, 0x5a].map(|g| Color::from_srgb8(0x81, g, 0x3c, 0xff));
+    let [box_on, box_off, track_on, track_off, rail] = sentinels;
+    let fill = |c| PartPatch::new().fill(Paint::Solid(c));
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(
+            ThemePatch::new()
+                .checkbox(CheckboxRule::new().indicator(fill(box_off)))
+                .checkbox(
+                    CheckboxRule::new()
+                        .states(WidgetState::CHECKED)
+                        .indicator(fill(box_on)),
+                )
+                .switch(SwitchRule::new().track(fill(track_off)))
+                .switch(
+                    SwitchRule::new()
+                        .states(WidgetState::CHECKED)
+                        .track(fill(track_on)),
+                )
+                .slider(SliderRule::new().track(fill(rail))),
+        )
+    });
+    assert!(r.is_some(), "the patched kde-breeze light does not install");
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    for ((control, home, _), sentinel) in BASIC_FILLS
+        .iter()
+        .zip([box_on, box_off, track_on, track_off, rail])
+    {
+        assert_eq!(
+            painted_fill(&mut cx, control),
+            Some(crate::info::next_stated(sentinel)),
+            "{control} is not painted in the patched {home}"
+        );
+    }
+    for (control, home, sentinel) in [
+        ("basic-switch-on", "switch.track(CHECKED).fill", track_on),
+        ("basic-slider", "slider.track(NONE).fill", rail),
+    ] {
+        let info = settle_on(&mut cx, &showcase, control);
+        assert_eq!(
+            info.as_ref().and_then(|info| claim_of(info, home)),
+            Some(crate::info::next_stated(sentinel)),
+            "{control}'s info does not claim the patched {home}: {info:?}"
+        );
+    }
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
@@ -3286,21 +3369,10 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
                 native_color(cx, |n| pick(n.resolved))
             })
         };
-        for (control, home, state) in [
-            (
-                "basic-checkbox-checked",
-                "checkbox.indicator(CHECKED).fill",
-                WidgetState::CHECKED,
-            ),
-            (
-                "basic-checkbox-unchecked",
-                "checkbox.indicator(NONE).fill",
-                WidgetState::NONE,
-            ),
-        ] {
+        for (control, home, part) in BASIC_FILLS {
             let want = read(&mut cx, &showcase, |_, cx| {
                 crate::support::next_resolved(cx)
-                    .and_then(|r| native_theme_gpui::next::fill_of(&r.checkbox.indicator(state)))
+                    .and_then(|r| native_theme_gpui::next::fill_of(&part(r)))
             })
             .filter(|c| !c.is_transparent());
             assert_eq!(
@@ -3309,31 +3381,14 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
                 "{preset}: {control} is not painted in {home}"
             );
         }
-        for (control, leaf, pick) in [
-            (
-                "basic-switch-on",
-                "switch.checked_background",
-                (|r| r.switch.checked_background) as fn(&ResolvedTheme) -> Rgba,
-            ),
-            ("basic-switch-off", "switch.unchecked_background", |r| {
-                r.switch.unchecked_background
-            }),
-            ("basic-slider", "slider.track_color", |r| {
-                r.slider.track_color
-            }),
-            ("basic-progress", "progress_bar.track_color", |r| {
-                r.progress_bar.track_color
-            }),
-        ] {
-            // A transparent leaf paints no box (material-3's unchecked box has
-            // no container, docs/platform-facts.md §2.5).
-            let want = expect(&mut cx, pick).filter(|c| !c.is_transparent());
-            assert_eq!(
-                painted_fill(&mut cx, control),
-                want,
-                "{preset}: {control} is not painted in {leaf}"
-            );
-        }
+        // The progress bar's Look still reads the 0.7.2 theme.
+        let want = expect(&mut cx, |r: &ResolvedTheme| r.progress_bar.track_color)
+            .filter(|c| !c.is_transparent());
+        assert_eq!(
+            painted_fill(&mut cx, "basic-progress"),
+            want,
+            "{preset}: basic-progress is not painted in progress_bar.track_color"
+        );
     }
 }
 
@@ -3347,10 +3402,10 @@ fn the_disabled_basic_checkbox_paints_the_fill_it_claims(cx: &mut TestAppContext
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "adwaita");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
     assert!(
-        r.checkbox.disabled_opacity < 1.0,
-        "adwaita no longer fades a disabled checkbox, so this proves nothing"
+        r.is_some_and(|r| r.checkbox.disabled_opacity.is_some_and(|o| o < 1.0)),
+        "adwaita no longer states a checkbox.disabled_opacity below 1, so this proves nothing"
     );
     let info = settle_on(&mut cx, &showcase, "basic-checkbox-disabled");
     let claimed = info
@@ -6189,44 +6244,53 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
         let r = read(&mut cx, &showcase, |_, cx| {
             crate::support::old_resolved(cx).cloned()
         });
-        assert!(r.is_some(), "{preset}: no native theme is installed");
-        let Some(r) = r else { return };
+        let next = next_theme(&mut cx, &showcase);
+        assert!(
+            r.is_some() && next.is_some(),
+            "{preset}: no native theme is installed"
+        );
+        let (Some(r), Some(next)) = (r, next) else {
+            return;
+        };
+        let rest = native_theme::next::WidgetState::NONE;
         let size =
             |cx: &mut VisualTestContext, selector: &'static str| bounds_of(cx, selector).size;
         // The last indicator the page lays out, a radio button's.
         let indicator = size(&mut cx, "native-checkbox-indicator");
-        let radio = px(r
-            .checkbox
-            .radio_indicator_width
-            .unwrap_or(r.checkbox.indicator_width));
+        let radio = next.radio.indicator(rest).min_size[0].map(px);
         assert_eq!(
-            (indicator.width, indicator.height),
+            (Some(indicator.width), Some(indicator.height)),
             (radio, radio),
-            "{preset}: checkbox.radio_indicator_width, or indicator_width"
+            "{preset}: radio.indicator(NONE).min_size[0]"
         );
         let track = size(&mut cx, "native-switch-track");
+        let [width, height] = next.switch.track(rest).min_size;
         assert_eq!(
-            (track.width, track.height),
-            (px(r.switch.track_width), px(r.switch.track_height)),
-            "{preset}: switch.track_width × track_height"
+            (Some(track.width), Some(track.height)),
+            (width.map(px), height.map(px)),
+            "{preset}: switch.track(NONE).min_size"
         );
+        // The last thumb the page lays out, a checked switch's.
         let thumb = size(&mut cx, "native-switch-thumb");
         assert_eq!(
-            thumb.width,
-            px(r.switch.thumb_diameter),
-            "{preset}: switch.thumb_diameter"
+            Some(thumb.width),
+            next.switch
+                .thumb(native_theme::next::WidgetState::CHECKED)
+                .min_size[0]
+                .map(px),
+            "{preset}: switch.thumb(CHECKED).min_size[0]"
         );
         let rail = size(&mut cx, "native-slider-rail");
         assert_eq!(
-            rail.height,
-            px(r.slider.track_height),
-            "{preset}: slider.track_height"
+            Some(rail.height),
+            next.slider.track(rest).min_size[1].map(px),
+            "{preset}: slider.track(NONE).min_size[1]"
         );
         let knob = size(&mut cx, "native-slider-thumb");
         assert_eq!(
-            knob.width,
-            px(r.slider.thumb_diameter),
-            "{preset}: slider.thumb_diameter"
+            Some(knob.width),
+            next.slider.thumb(rest).min_size[0].map(px),
+            "{preset}: slider.thumb(NONE).min_size[0]"
         );
         let bar = size(&mut cx, "native-progress");
         assert_eq!(
@@ -10471,33 +10535,53 @@ fn colour_leaves(value: &serde_json::Value, at: &str, out: &mut Vec<(String, ser
     }
 }
 
-/// A Basic drop-down under the pointer takes `combo_box.hover_border_color`
-/// as an edge the showcase lays over its trigger (`demo::combo_surface`),
-/// under kde-breeze and material-3 light: with the pointer away no box over
-/// the trigger is edged in it; hovered, the last box edged over the
+/// A Basic drop-down under the pointer takes
+/// `combo_box.field(HOVER).stroke.color` as an edge the showcase lays over
+/// its trigger (`demo::combo_surface`), under kde-breeze and material-3
+/// light, and under kde-breeze light with that home patched in the
+/// installed 0.8.0 theme to `colors.window.foreground`, which a reader of
+/// the unchanged 0.7.2 theme would not draw: with the pointer away no box
+/// over the trigger is edged in it; hovered, the last box edged over the
 /// trigger's bounds is, and no box in the side panel's theme settings is.
 #[gpui::test]
 fn a_hovered_drop_down_takes_the_hover_border(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::{state_stroke_color_of, stroke_color_of, stroke_width_of};
+    use native_theme::next::{ComboBoxRule, PartPatch, Stroke, ThemePatch, WidgetState};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in ["kde-breeze", "material-3"] {
-        use_light_preset(&mut cx, &showcase, preset);
-        show(&mut cx, &showcase, Page::Basic);
-        let r = resolved_theme(&mut cx, &showcase);
-        let c = &r.combo_box;
+    for preset in ["kde-breeze", "material-3", "kde-breeze, patched"] {
+        let r = if preset == "kde-breeze, patched" {
+            install_patched_breeze(&mut cx, &showcase, Page::Basic, |r| {
+                let width = stroke_width_of(&r.combo_box.field(WidgetState::NONE))?;
+                Some(
+                    ThemePatch::new().combo_box(
+                        ComboBoxRule::new().states(WidgetState::HOVER).field(
+                            PartPatch::new()
+                                .stroke(Stroke::uniform(width, r.colors.window.foreground?)),
+                        ),
+                    ),
+                )
+            })
+        } else {
+            use_light_preset(&mut cx, &showcase, preset);
+            show(&mut cx, &showcase, Page::Basic);
+            next_theme(&mut cx, &showcase)
+        };
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let rest = r.combo_box.field(WidgetState::NONE);
         assert!(
-            c.border.line_width > 0.0,
+            stroke_width_of(&rest).is_some_and(|width| width > 0.0),
             "{preset} no longer edges its drop-down, so no hover edge is drawn"
         );
-        let hovered = c.hover_border_color.map(stated);
+        let hovered = state_stroke_color_of(&r.combo_box.field(WidgetState::HOVER));
         assert!(
             hovered.is_some(),
-            "{preset} states combo_box.hover_border_color"
+            "{preset} states combo_box.field(HOVER).stroke.color"
         );
         let Some(hovered) = hovered else { return };
         assert_ne!(
-            stated(c.border.color),
-            hovered,
+            stroke_color_of(&rest),
+            Some(hovered),
             "{preset}'s drop-down is edged in its hover colour at rest, so the test could not tell the two apart"
         );
         let field = "basic-select";
@@ -10520,7 +10604,7 @@ fn a_hovered_drop_down_takes_the_hover_border(cx: &mut TestAppContext) {
         assert_eq!(
             over_the_trigger(&mut cx),
             0,
-            "{preset}: a drop-down at rest is edged in combo_box.hover_border_color"
+            "{preset}: a drop-down at rest is edged in combo_box.field(HOVER).stroke.color"
         );
         let at = bounds_of(&mut cx, field).center();
         hover(&mut cx, at);
@@ -10528,7 +10612,7 @@ fn a_hovered_drop_down_takes_the_hover_border(cx: &mut TestAppContext) {
         assert_eq!(
             painted_edges(&mut cx, field).last(),
             Some(&hovered),
-            "{preset}: a hovered drop-down is not edged in combo_box.hover_border_color"
+            "{preset}: a hovered drop-down is not edged in combo_box.field(HOVER).stroke.color"
         );
         assert_eq!(
             edges_inside(&mut cx, CHROME_THEME_SETTINGS, hovered),
@@ -11683,27 +11767,31 @@ fn a_drop_downs_surface_takes_the_patched_fill(cx: &mut TestAppContext) {
 /// its stated fill with no line, enabled or disabled; its info says the
 /// builder refines its text and that the stroke is none; a text area and a
 /// drop-down so stroked keep their surfaces too. No bundled preset states
-/// such a stroke, so it is laid over kde-breeze light's by a patch and the
-/// choices are read off the theme, not installed: the connector's `input`
-/// token reads the field's stroke colour.
+/// such a stroke, so it is laid over kde-breeze light's by a patch and
+/// installed: the connector's `input` token is then transparent, no line
+/// (spec §10, rule 2), and the field the showcase draws is filled with the
+/// stated fill.
 #[gpui::test]
 fn a_field_stroked_as_none_keeps_its_fill_and_builder(cx: &mut TestAppContext) {
     use crate::demo::{FieldGround, RefinedField, combo_look, text_area_surface_of};
     use crate::info::inputs::{FieldTaken, input, input_surface};
-    use native_theme::next::{
-        ComboBoxRule, InputRule, PartPatch, Preset, Scheme, Stroke, Theme as NextTheme,
-        ThemeContext, ThemePatch, WidgetState,
-    };
-    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let theme = cx.update(|_w, cx| Theme::global(cx).clone());
-    let mut r = NextTheme::preset(Preset::KdeBreeze)
-        .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+    use native_theme::next::{ComboBoxRule, InputRule, PartPatch, Stroke, ThemePatch, WidgetState};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let none = || PartPatch::new().stroke(Stroke::None);
-    r.apply_patch(
-        &ThemePatch::new()
-            .input(InputRule::new().field(none()))
-            .text_area(InputRule::new().field(none()))
-            .combo_box(ComboBoxRule::new().field(none())),
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(
+            ThemePatch::new()
+                .input(InputRule::new().field(none()))
+                .text_area(InputRule::new().field(none()))
+                .combo_box(ComboBoxRule::new().field(none())),
+        )
+    });
+    let Some(r) = r else { return };
+    let theme = cx.update(|_w, cx| Theme::global(cx).clone());
+    assert!(
+        theme.input.is_transparent(),
+        "the installed input token is not transparent where the field's stroke is none: {:?}",
+        theme.input
     );
     let rest = r.input.field(WidgetState::NONE);
     assert!(
@@ -11776,6 +11864,53 @@ fn a_field_stroked_as_none_keeps_its_fill_and_builder(cx: &mut TestAppContext) {
         combo_look(&r).is_ok(),
         "a drop-down stroked as none keeps upstream's fill and edge"
     );
+    let field = "basic-input-placeholder";
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, field),
+        fill,
+        "the installed field stroked as none is not filled with its stated input.field(NONE).fill"
+    );
+}
+
+/// A disabled Default Button's "surface" line says what is drawn round its
+/// surface: `button.body(NONE).stroke.color`'s line where kde-breeze light
+/// strokes the body, and no line where a patch states that stroke as none
+/// (spec §10, rule 2), which no bundled preset does.
+#[test]
+fn a_disabled_buttons_surface_line_says_whether_a_line_is_drawn() {
+    use crate::demo::SurfaceLine;
+    use native_theme::next::{
+        ButtonRule, PartPatch, Preset, Scheme, Stroke, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+    let stroked = SurfaceLine::of(&r.button.body(WidgetState::NONE));
+    assert!(
+        stroked
+            .as_ref()
+            .is_some_and(|line| line.colour.is_some() && line.width > 0.0),
+        "kde-breeze light no longer strokes its button, so the stroked arm goes unread: {stroked:?}"
+    );
+    assert!(stroked.is_some_and(|line| {
+        line.disabled_button_note()
+            .contains("inside button.body(NONE).stroke.color's line")
+    }));
+    r.apply_patch(
+        &ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().stroke(Stroke::None))),
+    );
+    let none = SurfaceLine::of(&r.button.body(WidgetState::NONE));
+    assert!(
+        none.as_ref()
+            .is_some_and(|line| line.colour.is_none() && line.width == 0.0),
+        "the patch does not state the button's stroke as none: {none:?}"
+    );
+    assert!(none.is_some_and(|line| {
+        let note = line.disabled_button_note();
+        note.contains("no line") && !note.contains("'s line")
+    }));
 }
 
 /// The number field's edge picks what the theme states: at rest the line's
@@ -19340,122 +19475,124 @@ fn checkbox_homes(
     [fill, hover, hover_edge, border, mark, label]
 }
 
-/// The leaf each colour of a switch's look is read from, `checked` or not,
-/// `disabled` or not, as `SwitchLook::of` reads them
-/// (widgets/switch.rs:93-144): the track `checked_background` (:94) or
-/// `unchecked_background` (:96), disabled `disabled_checked_background`
-/// (:99) or `disabled_unchecked_background` (:100) where stated; the hover
-/// `hover_checked_background` (:104) or `hover_unchecked_background` (:106)
-/// over the track, or the track at rest; the track's outline
-/// `checked_track_border_color` (:121) or `unchecked_track_border_color`
-/// (:123), disabled their `disabled_*` forms (:126, :128) where stated; the
-/// thumb's outline `thumb_border_color` (:140); the thumb `thumb_background`
-/// (:111), off `unchecked_thumb_background` where stated (:113), disabled
-/// `disabled_thumb_color` where stated (:116); the label
-/// `defaults.disabled_text_color` disabled (:142), else `text_color` (:144)
-/// -- as (track, hover, track outline, thumb outline, thumb, label).
+/// The home each colour of a switch's look is read at, `checked` or not,
+/// `disabled` or not, as `SwitchLook::next_of` reads them, with the line of
+/// widgets/switch.rs that spells it: the track `switch.track(<state>).fill`
+/// (:249-252) at the switch's state; the hover
+/// `switch.track(HOVER).fill` (:230), or `switch.track(HOVER|CHECKED).fill`
+/// (:226) where it differs from the checked track, over the track, else the
+/// track at rest (:221); the track's outline
+/// `switch.track(<state>).stroke.color` (:268-271); the thumb's outline
+/// `switch.thumb(NONE)` or `(CHECKED).stroke.color` (:278, :279); the thumb
+/// `switch.thumb(<state>).fill` (:259-262); the label
+/// `colors.disabled_text` disabled (:235), else `colors.window.foreground`
+/// (:239) -- as (track, hover, track outline, thumb outline, thumb, label).
 #[cfg(feature = "widgets")]
-fn switch_leaves(
-    s: &native_theme::theme::ResolvedSwitchTheme,
-    checked: bool,
-    disabled: bool,
-) -> [Leaf; 6] {
-    let base = if checked {
+fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: bool) -> [Leaf; 6] {
+    let pick = |[none, on, off, off_on]: [Leaf; 4]| match (checked, disabled) {
+        (false, false) => none,
+        (true, false) => on,
+        (false, true) => off,
+        (true, true) => off_on,
+    };
+    let track = pick([
         (
-            "checked_background",
-            "native-theme-gpui/widgets/switch.rs:94",
-        )
-    } else {
+            "switch.track(NONE).fill",
+            "native-theme-gpui/widgets/switch.rs:249",
+        ),
         (
-            "unchecked_background",
-            "native-theme-gpui/widgets/switch.rs:96",
-        )
-    };
-    let track = match (checked, disabled) {
-        (true, true) if s.disabled_checked_background.is_some() => (
-            "disabled_checked_background",
-            "native-theme-gpui/widgets/switch.rs:99",
+            "switch.track(CHECKED).fill",
+            "native-theme-gpui/widgets/switch.rs:250",
         ),
-        (false, true) if s.disabled_unchecked_background.is_some() => (
-            "disabled_unchecked_background",
-            "native-theme-gpui/widgets/switch.rs:100",
-        ),
-        _ => base,
-    };
-    let hover = match checked {
-        true if s.hover_checked_background.is_some() => (
-            "hover_checked_background",
-            "native-theme-gpui/widgets/switch.rs:104",
-        ),
-        false if s.hover_unchecked_background.is_some() => (
-            "hover_unchecked_background",
-            "native-theme-gpui/widgets/switch.rs:106",
-        ),
-        _ => base,
-    };
-    let rest_edge = if checked {
         (
-            "checked_track_border_color",
-            "native-theme-gpui/widgets/switch.rs:121",
-        )
-    } else {
+            "switch.track(DISABLED).fill",
+            "native-theme-gpui/widgets/switch.rs:251",
+        ),
         (
-            "unchecked_track_border_color",
-            "native-theme-gpui/widgets/switch.rs:123",
-        )
-    };
-    let track_outline = match (checked, disabled) {
-        (true, true) if s.disabled_checked_track_border_color.is_some() => (
-            "disabled_checked_track_border_color",
-            "native-theme-gpui/widgets/switch.rs:126",
+            "switch.track(DISABLED|CHECKED).fill",
+            "native-theme-gpui/widgets/switch.rs:252",
         ),
-        (false, true) if s.disabled_unchecked_track_border_color.is_some() => (
-            "disabled_unchecked_track_border_color",
-            "native-theme-gpui/widgets/switch.rs:128",
-        ),
-        _ => rest_edge,
-    };
-    let rest_thumb = match (checked, s.unchecked_thumb_background.is_some()) {
-        (true, _) => (
-            "thumb_background",
-            "native-theme-gpui/widgets/switch.rs:111",
-        ),
+    ]);
+    let hover = match (
+        checked,
+        crate::info::inputs::switch_hover_stated(r, checked),
+    ) {
         (false, true) => (
-            "unchecked_thumb_background",
-            "native-theme-gpui/widgets/switch.rs:113",
+            "switch.track(HOVER).fill",
+            "native-theme-gpui/widgets/switch.rs:230",
+        ),
+        (true, true) => (
+            "switch.track(HOVER|CHECKED).fill",
+            "native-theme-gpui/widgets/switch.rs:226",
         ),
         (false, false) => (
-            "thumb_background",
-            "native-theme-gpui/widgets/switch.rs:113",
+            "switch.track(NONE).fill",
+            "native-theme-gpui/widgets/switch.rs:221",
+        ),
+        (true, false) => (
+            "switch.track(CHECKED).fill",
+            "native-theme-gpui/widgets/switch.rs:221",
         ),
     };
-    let thumb = if disabled && s.disabled_thumb_color.is_some() {
+    let track_outline = pick([
         (
-            "disabled_thumb_color",
-            "native-theme-gpui/widgets/switch.rs:116",
+            "switch.track(NONE).stroke.color",
+            "native-theme-gpui/widgets/switch.rs:268",
+        ),
+        (
+            "switch.track(CHECKED).stroke.color",
+            "native-theme-gpui/widgets/switch.rs:269",
+        ),
+        (
+            "switch.track(DISABLED).stroke.color",
+            "native-theme-gpui/widgets/switch.rs:270",
+        ),
+        (
+            "switch.track(DISABLED|CHECKED).stroke.color",
+            "native-theme-gpui/widgets/switch.rs:271",
+        ),
+    ]);
+    let thumb_outline = if checked {
+        (
+            "switch.thumb(CHECKED).stroke.color",
+            "native-theme-gpui/widgets/switch.rs:279",
         )
     } else {
-        rest_thumb
+        (
+            "switch.thumb(NONE).stroke.color",
+            "native-theme-gpui/widgets/switch.rs:278",
+        )
     };
+    let thumb = pick([
+        (
+            "switch.thumb(NONE).fill",
+            "native-theme-gpui/widgets/switch.rs:259",
+        ),
+        (
+            "switch.thumb(CHECKED).fill",
+            "native-theme-gpui/widgets/switch.rs:260",
+        ),
+        (
+            "switch.thumb(DISABLED).fill",
+            "native-theme-gpui/widgets/switch.rs:261",
+        ),
+        (
+            "switch.thumb(DISABLED|CHECKED).fill",
+            "native-theme-gpui/widgets/switch.rs:262",
+        ),
+    ]);
     let label = if disabled {
         (
-            "disabled_text_color",
-            "native-theme-gpui/widgets/switch.rs:142",
+            "colors.disabled_text",
+            "native-theme-gpui/widgets/switch.rs:235",
         )
     } else {
-        ("text_color", "native-theme-gpui/widgets/switch.rs:144")
-    };
-    [
-        track,
-        hover,
-        track_outline,
         (
-            "thumb_border_color",
-            "native-theme-gpui/widgets/switch.rs:140",
-        ),
-        thumb,
-        label,
-    ]
+            "colors.window.foreground",
+            "native-theme-gpui/widgets/switch.rs:239",
+        )
+    };
+    [track, hover, track_outline, thumb_outline, thumb, label]
 }
 
 /// What is wrong with `info`'s colours against `want`, the (role, colour,
@@ -19505,43 +19642,9 @@ fn look_findings(
 }
 
 /// What is wrong with the focus ring `info` claims, if anything: a control
-/// that can take the focus (`focusable`) claims `defaults.focus_ring_color` as
-/// stated, read by `FocusRing::of` (native-theme-gpui/widgets/mod.rs:349), where
-/// the theme states a ring, and none otherwise.
-#[cfg(feature = "widgets")]
-fn ring_findings(
-    whose: &str,
-    info: &WidgetInfo,
-    r: &native_theme::theme::ResolvedTheme,
-    focusable: bool,
-) -> Vec<String> {
-    let d = &r.defaults;
-    let drawn = focusable
-        && d.focus_ring_width.is_finite()
-        && d.focus_ring_offset.is_finite()
-        && d.focus_ring_width > 0.0;
-    let found = claim_by_role(info, "focus ring").map(|c| (c.value, c.field, c.cited_at));
-    let expected = drawn.then(|| {
-        (
-            crate::info::stated(d.focus_ring_color),
-            "focus_ring_color",
-            "native-theme-gpui/widgets/mod.rs:349",
-        )
-    });
-    if found == expected {
-        Vec::new()
-    } else {
-        vec![format!(
-            "{whose}: the focus ring claims {:?}, the theme draws {:?}",
-            found.map(|(v, f, c)| (as_rgba(v), f, c)),
-            expected.map(|(v, f, c)| (as_rgba(v), f, c))
-        )]
-    }
-}
-
-/// [`ring_findings`] of a 0.8.0 theme: a control that can take the focus
-/// claims `colors.focus_ring`, read by `FocusRing::next_of`
-/// (native-theme-gpui/widgets/mod.rs:356), where the theme states a ring --
+/// that can take the focus claims `colors.focus_ring`, read by
+/// `FocusRing::next_of` (native-theme-gpui/widgets/mod.rs:363), where the
+/// theme states a ring --
 /// a `focus_ring.stroke.width` above 0 and a finite `focus_ring.offset` --
 /// and none otherwise.
 #[cfg(feature = "widgets")]
@@ -19560,7 +19663,7 @@ fn next_ring_findings(
         (
             crate::info::next_stated(r.colors.focus_ring),
             "colors.focus_ring",
-            "native-theme-gpui/widgets/mod.rs:356",
+            "native-theme-gpui/widgets/mod.rs:363",
         )
     });
     if found == expected {
@@ -19578,16 +19681,15 @@ fn next_ring_findings(
 /// widget draws (M9-050, M9-051, M9-052, M9-053): each size it prints and
 /// each colour it claims is the field of the connector's Look the widget
 /// draws from, each colour under the leaf or the home and the line the Look
-/// reads it from in that state (`checkbox_homes`, `switch_leaves`), the mark
-/// only where it is painted, checked -- `CheckboxLook::next_of` and
-/// `next_radio` of the 0.8.0 theme, faded over the window's
-/// `colors.window.background`, and `SwitchLook::of` of the 0.7.2 theme,
-/// faded over its `defaults.background_color`, as the widget fades a
-/// disabled control (`faded_over`), the switch's two outlines included --
-/// the radio's circle `radio.indicator(NONE).min_size[0]` (material-3: 20px,
+/// reads it from in that state (`checkbox_homes`, `switch_homes`), the mark
+/// only where it is painted, checked -- `CheckboxLook::next_of`,
+/// `next_radio` and `SwitchLook::next_of` of the 0.8.0 theme, faded over the
+/// window's `colors.window.background`, as the widget fades a disabled
+/// control (`faded_over`), the switch's two outlines included -- the
+/// radio's circle `radio.indicator(NONE).min_size[0]` (material-3: 20px,
 /// where its checkbox is 18), an off switch's thumb
-/// `switch.unchecked_thumb_diameter` (material-3: 16px, where an on one is
-/// 24), the check mark the connector's stroke at
+/// `switch.thumb(NONE).min_size[0]` (material-3: 16px, where an on one's
+/// `switch.thumb(CHECKED).min_size[0]` is 24), the check mark the connector's stroke at
 /// `checkbox.checkmark(NONE).stroke_width` where it is stated and
 /// gpui-component's own icon where not, and a disabled control's fade a line
 /// of its own -- over every bundled preset in both modes and every checked
@@ -19595,7 +19697,7 @@ fn next_ring_findings(
 #[cfg(feature = "widgets")]
 #[test]
 fn a_theme_drawn_controls_info_prints_its_look() {
-    use crate::info::{inputs, next_stated, px_text, stated};
+    use crate::info::{inputs, next_stated, px_text};
     use native_theme::next::WidgetState;
     use native_theme_gpui::widgets::{CheckboxLook, SwitchLook};
     let len = |length: Pixels| format!("{}px", px_text(f32::from(length)));
@@ -19774,19 +19876,21 @@ fn a_theme_drawn_controls_info_prints_its_look() {
             ));
         }
     }
-    for (name, r, _) in every_bundled_variant() {
-        let ground = stated(r.defaults.background_color);
+    for (name, r, _) in every_next_variant() {
+        let Some(ground) = r.colors.window.background.map(next_stated) else {
+            continue;
+        };
         for (checked, disabled) in [(false, false), (true, false), (false, true), (true, true)] {
             let whose = format!("{name}, checked {checked}, disabled {disabled}");
 
             let info = inputs::native_switch(&r, "label", checked, disabled);
-            let Some(rest) = SwitchLook::of(&r, checked, disabled) else {
+            let Ok(rest) = SwitchLook::next_of(&r, checked, disabled) else {
                 wrong.push(format!("{whose}: a bundled preset gives no SwitchLook"));
                 continue;
             };
             let look = rest.faded_over(ground);
             let [track, hover, track_outline, thumb_outline, thumb, label] =
-                switch_leaves(&r.switch, checked, disabled);
+                switch_homes(&r, checked, disabled);
             wrong.extend(look_findings(
                 &format!("{whose}: the Switch"),
                 &info,
@@ -19808,30 +19912,29 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                 ],
                 &["focus ring"],
             ));
-            wrong.extend(ring_findings(
+            wrong.extend(next_ring_findings(
                 &format!("{whose}: the Switch"),
                 &info,
                 &r,
                 !disabled,
             ));
             let thumb = note_of(&info.config, "thumb");
-            let off_thumb = !checked && r.switch.unchecked_thumb_diameter.is_some();
+            let thumb_home = if checked {
+                "switch.thumb(CHECKED).min_size[0]"
+            } else {
+                "switch.thumb(NONE).min_size[0]"
+            };
             if !says(thumb, &len(look.thumb))
-                || off_thumb
-                    != thumb.is_some_and(|text| text.starts_with("switch.unchecked_thumb_diameter"))
+                || !thumb.is_some_and(|text| text.starts_with(thumb_home))
             {
                 wrong.push(format!(
-                    "{whose}: the Switch's thumb is {} across{}, and its info says {thumb:?}",
+                    "{whose}: the Switch's thumb is {} across, {thumb_home}, and its info says {thumb:?}",
                     len(look.thumb),
-                    if off_thumb {
-                        ", switch.unchecked_thumb_diameter"
-                    } else {
-                        ""
-                    }
                 ));
             }
-            reached[1] |=
-                off_thumb && r.switch.unchecked_thumb_diameter != Some(r.switch.thumb_diameter);
+            reached[1] |= !checked
+                && r.switch.thumb(WidgetState::NONE).min_size[0]
+                    != r.switch.thumb(WidgetState::CHECKED).min_size[0];
             let track = note_of(&info.config, "track");
             if [look.track_width, look.track_height, look.track_radius]
                 .iter()
@@ -19872,6 +19975,139 @@ fn a_theme_drawn_controls_info_prints_its_look() {
         reached, [true; 4],
         "no bundled preset stated a radio width of its own, an off thumb of its own, a check \
          mark stroke, or a fade below 1 (in that order), so a branch went unread"
+    );
+}
+
+/// A theme-drawn Slider's info prints what the widget draws, over every
+/// bundled preset in both modes: each colour it claims is the field of
+/// `SliderLook::next_of` faded over the window's `colors.window.background`
+/// (and of `ThumbOutline::next_of` faded with it), under the home and the
+/// line the Look reads it at, the hover at `slider.thumb(HOVER).fill` where
+/// a rule states it and the thumb at rest where not; the rail and thumb
+/// lines print the Look's sizes at their homes.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_theme_drawn_sliders_info_prints_its_look() {
+    use crate::info::{inputs, next_stated, px_text};
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::widgets::{SliderLook, ThumbOutline};
+    let len = |length: Pixels| format!("{}px", px_text(f32::from(length)));
+    let says = |text: Option<&str>, part: &str| text.is_some_and(|text| text.contains(part));
+    let mut wrong = Vec::new();
+    for (name, r, _) in every_next_variant() {
+        let Some(ground) = r.colors.window.background.map(next_stated) else {
+            wrong.push(format!("{name} states no colors.window.background"));
+            continue;
+        };
+        let Ok(rest) = SliderLook::next_of(&r, false) else {
+            wrong.push(format!("{name}: a bundled preset gives no SliderLook"));
+            continue;
+        };
+        let info = inputs::native_slider(&r, false, false);
+        let look = rest.faded_over(ground);
+        let hover = if native_theme_gpui::next::state_fill_of(&r.slider.thumb(WidgetState::HOVER))
+            .is_some()
+        {
+            (
+                "slider.thumb(HOVER).fill",
+                "native-theme-gpui/widgets/slider.rs:307",
+            )
+        } else {
+            (
+                "slider.thumb(NONE).fill",
+                "native-theme-gpui/widgets/slider.rs:306",
+            )
+        };
+        let outline = ThumbOutline::next_of(&r, false)
+            .ok()
+            .flatten()
+            .map(|o| o.faded_over(ground, &rest))
+            .filter(|o| o.width > px(0.));
+        let ruled = |state| crate::info::state_stroke_color_of(&r.slider.thumb(state)).is_some();
+        wrong.extend(look_findings(
+            &format!("{name}: the Slider"),
+            &info,
+            &[
+                (
+                    "rail",
+                    Some(look.track),
+                    (
+                        "slider.track(NONE).fill",
+                        "native-theme-gpui/widgets/slider.rs:293",
+                    ),
+                ),
+                (
+                    "filled part",
+                    Some(look.fill),
+                    (
+                        "slider.active_track(NONE).fill",
+                        "native-theme-gpui/widgets/slider.rs:298",
+                    ),
+                ),
+                (
+                    "thumb",
+                    Some(look.thumb_color),
+                    (
+                        "slider.thumb(NONE).fill",
+                        "native-theme-gpui/widgets/slider.rs:306",
+                    ),
+                ),
+                ("hover", look.hover_thumb, hover),
+                (
+                    "thumb outline",
+                    outline.and_then(|o| o.rest),
+                    (
+                        "slider.thumb(NONE).stroke.color",
+                        "native-theme-gpui/widgets/slider.rs:201",
+                    ),
+                ),
+                (
+                    "thumb outline, hovered",
+                    outline
+                        .and_then(|o| o.hover)
+                        .filter(|_| ruled(WidgetState::HOVER)),
+                    (
+                        "slider.thumb(HOVER).stroke.color",
+                        "native-theme-gpui/widgets/slider.rs:211",
+                    ),
+                ),
+                (
+                    "thumb outline, focused",
+                    outline
+                        .and_then(|o| o.focus)
+                        .filter(|_| ruled(WidgetState::FOCUSED)),
+                    (
+                        "slider.thumb(FOCUSED).stroke.color",
+                        "native-theme-gpui/widgets/slider.rs:215",
+                    ),
+                ),
+            ],
+            &["focus ring"],
+        ));
+        wrong.extend(next_ring_findings(
+            &format!("{name}: the Slider"),
+            &info,
+            &r,
+            true,
+        ));
+        for (what, home, length) in [
+            ("rail", "slider.track(NONE).min_size[1]", look.track_height),
+            ("thumb", "slider.thumb(NONE).min_size[0]", look.thumb),
+        ] {
+            let line = note_of(&info.config, what);
+            if !says(line, home) || !says(line, &len(length)) {
+                wrong.push(format!(
+                    "{name}: the Slider's {what} line does not print {home}, {}: {line:?}",
+                    len(length)
+                ));
+            }
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "{} of the theme-drawn sliders' infos print another value than the Look the widget draws from:\n  {}",
+        wrong.len(),
+        wrong.join("\n  ")
     );
 }
 

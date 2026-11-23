@@ -2712,6 +2712,32 @@ fn mentions_home(haystack: &str, home: &str) -> bool {
     })
 }
 
+/// Whether the cited `span` names the home `home`: spelt whole
+/// ([`mentions_home`]), or, for a global's path (`colors.focus_ring`), read
+/// in code at that path off a theme binding, `r.colors.focus_ring`, the
+/// binding no field of a longer path and no longer name after it -- a
+/// global has no query for its reader to spell.
+fn names_home(span: &str, home: &str) -> bool {
+    if mentions_home(span, home) {
+        return true;
+    }
+    if home.contains('(') {
+        return false;
+    }
+    let code = without_comments_or_strings(span);
+    let path = format!(".{home}");
+    code.match_indices(path.as_str()).any(|(at, m)| {
+        let head = code.get(..at).unwrap_or("");
+        let binding = head
+            .trim_end_matches(|c: char| c.is_alphanumeric() || c == '_')
+            .len();
+        let after = code.get(at + m.len()..).and_then(|t| t.chars().next());
+        binding < head.len()
+            && !head.get(..binding).is_some_and(|t| t.ends_with('.'))
+            && after.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+    })
+}
+
 /// Whether `code` reads `field` through a path, `.<field>`.
 fn reads_path(code: &str, field: &str) -> bool {
     code.match_indices('.').any(|(at, _)| {
@@ -3254,7 +3280,7 @@ fn citation_finding(
         ));
     };
     let named = if is_home(claim.field) {
-        mentions_home(&span.join("\n"), claim.field)
+        names_home(&span.join("\n"), claim.field)
     } else {
         mentions(&span.join("\n"), claim.field)
     };
@@ -5216,6 +5242,23 @@ fn a_claim_in_the_0_8_0_form_names_a_home() {
         r#""button.body(DEFAULT).fill_x""#,
         "button.body(DEFAULT).fill"
     ));
+    // A global is named by a line that reads it at its path off a theme
+    // binding; a query home only by its spelling.
+    let ring = "            color: crate::next::hsla(r.colors.focus_ring),";
+    assert!(names_home(ring, "colors.focus_ring"));
+    assert!(names_home(cited, "button.body(DEFAULT).fill"));
+    for (line, home) in [
+        ("hsla(r.colors.focus_ring_width)", "colors.focus_ring"),
+        ("hsla(r.other.colors.focus_ring)", "colors.focus_ring"),
+        ("hsla(.colors.focus_ring)", "colors.focus_ring"),
+        ("// r.colors.focus_ring", "colors.focus_ring"),
+        (
+            "fill(&r.button.body(WidgetState::DEFAULT))",
+            "button.body(DEFAULT).fill",
+        ),
+    ] {
+        assert!(!names_home(line, home), "{line} names {home}");
+    }
 
     assert!(reads_stroke_colour(
         "state_stroke_color_of(&r.button.body(WidgetState::HOVER))"

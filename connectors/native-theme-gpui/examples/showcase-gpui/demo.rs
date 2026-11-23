@@ -3288,7 +3288,7 @@ fn preference_item(
         let selector = pref.selector();
         let clicked = ui.clone();
         #[cfg(feature = "widgets")]
-        if let Some(r) = old_resolved(cx) {
+        if let Some(r) = next_resolved(cx) {
             let switch_info = with_contrast_held(
                 info::inputs::native_switch(r, pref.field(), checked, options.is_disabled()),
                 pref,
@@ -3857,8 +3857,8 @@ fn button_turning(
         }
         None => disabled_pair,
     };
-    if surface.is_some() {
-        button_info = button_info.config("surface", "geometry::button_disabled's fill inside button.body(NONE).stroke.color's line, drawn by the showcase under the Button, which it leaves without a fill or an edge of its own, the whole faded by button.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line");
+    if let Some((_, line)) = &surface {
+        button_info = button_info.config("surface", line.disabled_button_note());
     }
     let button = labelled(ui, cx, refined(button, on_button.as_ref()), id, label)
         .when_some(drawn, |button, icon| match state {
@@ -4330,6 +4330,18 @@ pub(crate) struct SurfaceLine {
 }
 
 impl SurfaceLine {
+    /// The "surface" line of a disabled Default Button's info whose surface
+    /// is drawn round by this line, `button.body(NONE)`'s: its fill inside
+    /// the line where one is drawn, and with no line where the stroke is
+    /// none or 0 wide.
+    pub(crate) fn disabled_button_note(&self) -> &'static str {
+        if self.colour.is_some() && self.width > 0.0 {
+            "geometry::button_disabled's fill inside button.body(NONE).stroke.color's line, drawn by the showcase under the Button, which it leaves without a fill or an edge of its own, the whole faded by button.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line"
+        } else {
+            "geometry::button_disabled's fill with no line round it, button.body(NONE).stroke being none or 0 wide, drawn by the showcase under the Button, which it leaves without a fill or an edge of its own, the whole faded by button.disabled_opacity (gpui-pre window.rs, paint_quad)"
+        }
+    }
+
     /// The line of a part of the 0.8.0 model, where the theme states its
     /// stroke as one width and colour, or as none, which is no line, 0 wide
     /// and of no colour (spec §10, rule 2), and its corners as one radius.
@@ -4888,6 +4900,21 @@ pub(crate) fn theme_checkbox(_: &App) -> Option<&native_theme::next::ResolvedThe
     None
 }
 
+/// The Inputs page's label of its theme-drawn mixed checkbox: theme-drawn
+/// where [`theme_checkbox`] gives a theme whose look the widget draws, a
+/// mixed box being drawn as a checked one (`info::inputs::checkbox_drawn`:
+/// the look, the window's colour and the label font stated), else
+/// gpui-component's own, which the widget draws in its place.
+pub(crate) fn mixed_checkbox_label(cx: &App) -> &'static str {
+    #[cfg(feature = "widgets")]
+    if theme_checkbox(cx).is_some_and(|r| info::inputs::checkbox_drawn(r, true, false).is_ok()) {
+        return "Mixed, theme-drawn";
+    }
+    #[cfg(not(feature = "widgets"))]
+    let _ = theme_checkbox(cx);
+    "Mixed, gpui-component's"
+}
+
 /// A `Checkbox` reading `label` in the mixed state, `indeterminate(true)`,
 /// with no handler: gpui-component's own, refined by `geometry::checkbox`,
 /// or where `theme_drawn` and [`theme_checkbox`] gives a theme, the
@@ -5086,7 +5113,7 @@ pub(crate) fn switch(
 ) -> Stateful<Div> {
     let disabled = on_click.is_none();
     #[cfg(feature = "widgets")]
-    if let Some(r) = old_resolved(cx) {
+    if let Some(r) = next_resolved(cx) {
         let switch_info = info::inputs::native_switch(r, label, checked, disabled);
         return widgets::Switch::new(id)
             .label(label)
@@ -5130,7 +5157,7 @@ pub(crate) fn slider(
     let vertical = axis == Axis::Vertical;
     let range = state.read(cx).value().is_range();
     #[cfg(feature = "widgets")]
-    if let Some(r) = old_resolved(cx) {
+    if let Some(r) = next_resolved(cx) {
         return widgets::Slider::new(state)
             .accessibility_label(label)
             .axis(axis)
@@ -7476,7 +7503,14 @@ pub(crate) fn mono_text(
 /// mono family alone.
 pub(crate) fn mono_sample(cx: &App, text: &'static str) -> Div {
     next_resolved(cx)
-        .and_then(|r| next_text_in(&r.typography, &r.typography.monospace, text))
+        .and_then(|r| {
+            next_text_in(
+                &r.typography,
+                &r.typography.monospace,
+                "typography.monospace",
+                text,
+            )
+        })
         .or_else(|| native_value(cx, |n| text_in(&n, &n.resolved.defaults.mono_font, text)))
         .unwrap_or_else(|| {
             div()
@@ -7490,16 +7524,17 @@ pub(crate) fn mono_sample(cx: &App, text: &'static str) -> Div {
 /// scaled: its family, size, weight and slant, and its line box, the style's
 /// `line_height` where stated, else its size by
 /// `typography.line_height_multiplier` (spec §4, `Typography`; §5, "A text
-/// part's `line_height`"). `None` where `style` states no family, size,
-/// weight or slant.
+/// part's `line_height`"). `None` where `style`, read at its home `home`,
+/// gives no font gpui can letter it in (the connector's check,
+/// `next::label_font_unmapped`).
 fn next_text_in(
     typography: &native_theme::next::Typography,
     style: &native_theme::next::TextStyle,
+    home: &'static str,
     text: &'static str,
 ) -> Option<Div> {
     use native_theme::next::{FontStyle as NextFontStyle, TextStated};
-    let needed = TextStated::FAMILY | TextStated::SIZE_PX | TextStated::WEIGHT | TextStated::STYLE;
-    if !style.stated.contains(needed) {
+    if next::label_font_unmapped(style, home).is_some() {
         return None;
     }
     let slant = match style.style {

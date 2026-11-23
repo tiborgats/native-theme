@@ -684,7 +684,53 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "combo_box.font.color",
         "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:1035-1042, refine_style)",
     ),
-    // --- combo_box: a Select, and the Combobox's metrics ------------------------
+    // --- combo_box: the Basic page's Select, on the 0.8.0 builder --------------
+    (
+        "basic.drop_down",
+        "combo_box.border.corner_radius_px",
+        "gpui: next::geometry::select's radius, and the surface's (demo::combo_surface)",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.border.padding_top_px",
+        "gpui: next::geometry::select pads the stated side",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.border.padding_right_px",
+        "gpui: next::geometry::select pads it, unless an arrow column is stated",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.border.padding_bottom_px",
+        "gpui: next::geometry::select pads the stated side",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.border.padding_left_px",
+        "gpui: next::geometry::select pads the stated side",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.font",
+        "gpui: next::geometry::select's family, size, weight and style",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.font.color",
+        "gpui: next::geometry::select's text colour",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.min_height_px",
+        "gpui: next::geometry::select's height, by the control-height rule",
+    ),
+    (
+        "basic.drop_down",
+        "combo_box.min_width_px",
+        "gpui: next::geometry::select's min_w",
+    ),
+    // --- combo_box: the chrome's Selects, and the Combobox's metrics -----------
     (
         "",
         "combo_box.arrow_area_width_px",
@@ -698,7 +744,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.background_color",
-        "gpui: geometry::combo_box_fill's fill, under the trigger (demo::combo_surface)",
+        "gpui: next::geometry::combo_box_fill's fill, under the trigger (demo::combo_surface)",
     ),
     (
         "",
@@ -929,22 +975,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.text_inputs",
         "defaults.line_height",
-        "gpui: geometry::input's line height (control-height rule)",
+        "gpui: next::geometry::input's line height (control-height rule)",
     ),
     (
         "basic.number_input",
         "defaults.line_height",
-        "gpui: geometry::input's line height (control-height rule)",
+        "gpui: next::geometry::input's line height (control-height rule)",
     ),
     (
         "basic.text_area",
         "defaults.line_height",
-        "gpui: geometry::text_area's line height",
+        "gpui: next::geometry::text_area's line height",
     ),
     (
         "basic.drop_down",
         "defaults.line_height",
-        "gpui: geometry::select's line height (control-height rule)",
+        "gpui: next::geometry::select's line height (control-height rule)",
     ),
     (
         "chrome.side_panel.settings.theme_label",
@@ -1156,7 +1202,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.background_color",
-        "gpui: the field's fill (demo::input_surface, geometry::input_fill)",
+        "gpui: the field's fill (demo::input_surface, next::geometry::input_fill)",
     ),
     (
         "basic.number_input",
@@ -1171,12 +1217,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.border.corner_radius_px",
-        "gpui: geometry::input's corner radius",
+        "gpui: next::geometry::input's corner radius",
     ),
     (
         "",
         "input.border.line_width_px",
-        "gpui: geometry::input's border width",
+        "gpui: next::geometry::input's border width",
     ),
     (
         "basic.number_input",
@@ -1201,22 +1247,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.border.padding_top_px",
-        "gpui: geometry::input pads the stated side",
+        "gpui: next::geometry::input pads the stated side",
     ),
     (
         "",
         "input.border.padding_right_px",
-        "gpui: geometry::input pads the stated side",
+        "gpui: next::geometry::input pads the stated side",
     ),
     (
         "",
         "input.border.padding_bottom_px",
-        "gpui: geometry::input pads the stated side",
+        "gpui: next::geometry::input pads the stated side",
     ),
     (
         "",
         "input.border.padding_left_px",
-        "gpui: geometry::input pads the stated side",
+        "gpui: next::geometry::input pads the stated side",
     ),
     (
         "",
@@ -1246,17 +1292,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_background",
-        "gpui: geometry::input_fill's fill for a disabled field",
+        "gpui: next::geometry::input_fill's fill for a disabled field",
     ),
     (
         "",
         "input.disabled_opacity",
-        "gpui: geometry::input_fill fades a disabled field by it",
+        "gpui: next::geometry::input_fill fades a disabled field by it",
     ),
     (
         "",
         "input.disabled_text_color",
-        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:3222, opacity)",
+        "gpui: next::geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:3222, opacity)",
     ),
     (
         "",
@@ -1266,17 +1312,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.text_area",
         "input.font",
-        "gpui: geometry::text_area's family, size, weight and style",
+        "gpui: next::geometry::text_area's family, size, weight and style",
     ),
     (
         "",
         "input.font",
-        "gpui: geometry::input's family, size, weight and style",
+        "gpui: next::geometry::input's family, size, weight and style",
     ),
     (
         "",
         "input.font.color",
-        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:729, input_style)",
+        "gpui: next::geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:729, input_style)",
     ),
     (
         "basic.number_input",
@@ -1291,7 +1337,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.min_height_px",
-        "gpui: geometry::input's height, by the control-height rule",
+        "gpui: next::geometry::input's height, by the control-height rule",
     ),
     (
         "",

@@ -196,18 +196,15 @@ impl SwitchLook {
         disabled: bool,
     ) -> Mapped<Self> {
         use native_theme::next::WidgetState;
-        // The home `switch.<part>(<state>).<property>` at the switch's
-        // state, for `Unmapped`.
-        macro_rules! home {
-            ($checked:expr, $disabled:expr, $part:literal, $prop:literal) => {
-                match ($checked, $disabled) {
-                    (false, false) => concat!("switch.", $part, "(NONE).", $prop),
-                    (true, false) => concat!("switch.", $part, "(CHECKED).", $prop),
-                    (false, true) => concat!("switch.", $part, "(DISABLED).", $prop),
-                    (true, true) => concat!("switch.", $part, "(DISABLED|CHECKED).", $prop),
-                }
-            };
-        }
+        // The home of a property at the switch's state, for `Unmapped`:
+        // each spelt whole, so a claim can cite the line that names it.
+        let at = |[none, on, off, off_on]: [&'static str; 4]| match (checked, disabled) {
+            (false, false) => none,
+            (true, false) => on,
+            (false, true) => off,
+            (true, true) => off_on,
+        };
+        let at_rest = |none: &'static str, on: &'static str| if checked { on } else { none };
         let s = &r.switch;
         let rest = if checked {
             WidgetState::CHECKED
@@ -219,7 +216,10 @@ impl SwitchLook {
         } else {
             rest
         };
-        let base = fill(&s.track(rest), home!(checked, false, "track", "fill"))?;
+        let base = fill(
+            &s.track(rest),
+            at_rest("switch.track(NONE).fill", "switch.track(CHECKED).fill"),
+        )?;
         let hover = if checked {
             let hovered = fill(
                 &s.track(WidgetState::HOVER | WidgetState::CHECKED),
@@ -243,17 +243,41 @@ impl SwitchLook {
             Self::from_reads(
                 &SwitchReads {
                     base,
-                    track: fill(&s.track(state), home!(checked, disabled, "track", "fill"))?,
+                    track: fill(
+                        &s.track(state),
+                        at([
+                            "switch.track(NONE).fill",
+                            "switch.track(CHECKED).fill",
+                            "switch.track(DISABLED).fill",
+                            "switch.track(DISABLED|CHECKED).fill",
+                        ]),
+                    )?,
                     hover,
-                    thumb: fill(&s.thumb(state), home!(checked, disabled, "thumb", "fill"))?,
+                    thumb: fill(
+                        &s.thumb(state),
+                        at([
+                            "switch.thumb(NONE).fill",
+                            "switch.thumb(CHECKED).fill",
+                            "switch.thumb(DISABLED).fill",
+                            "switch.thumb(DISABLED|CHECKED).fill",
+                        ]),
+                    )?,
                     track_border: outline_color(
                         &s.track(state),
-                        home!(checked, disabled, "track", "stroke.color"),
+                        at([
+                            "switch.track(NONE).stroke.color",
+                            "switch.track(CHECKED).stroke.color",
+                            "switch.track(DISABLED).stroke.color",
+                            "switch.track(DISABLED|CHECKED).stroke.color",
+                        ]),
                     )?,
                     track_border_width: outline_width(&track, "switch.track(NONE).stroke.width")?,
                     thumb_border: outline_color(
                         &thumb,
-                        home!(checked, false, "thumb", "stroke.color"),
+                        at_rest(
+                            "switch.thumb(NONE).stroke.color",
+                            "switch.thumb(CHECKED).stroke.color",
+                        ),
                     )?,
                     thumb_border_width: outline_width(
                         &s.thumb(WidgetState::NONE),
@@ -265,7 +289,10 @@ impl SwitchLook {
                     track_radius: radius(&track, "switch.track(NONE).corners")?,
                     thumb_diameter: stated(
                         thumb.min_size[0],
-                        home!(checked, false, "thumb", "min_size[0]"),
+                        at_rest(
+                            "switch.thumb(NONE).min_size[0]",
+                            "switch.thumb(CHECKED).min_size[0]",
+                        ),
                     )?,
                     disabled_opacity: s.disabled_opacity,
                 },
