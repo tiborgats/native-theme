@@ -111,6 +111,28 @@ crate root, and a one-field one the naming rule does not fit (a widget
 builder that reads one leaf, a derived flag), needs an exception entry
 (`kind = "undecided"`, `kind = "name"`); nothing is silently skipped.
 
+The 0.8.0 model
+---------------
+A connector ported to the 0.8.0 model has a `next` module (`src/next/`)
+beside the 0.7.2 mapping, until the 0.8.0 cut removes the latter
+(docs/v0.8.0-plan.md, section 2, `M4`). Its reads are checked against the
+0.8.0 model, read from native-theme/src/next/: each `pub struct`'s `pub`
+fields, and the methods a connector can call on it (an inherent `impl`'s
+`pub fn`s, a trait impl's `fn`s), each with its type where that is one plain
+type. In every function under `src/next/` outside test code, of any
+visibility, each parameter whose type is a struct of that model
+(`r: &ResolvedTheme`, `part: &PartStyle`) is a root, and its chains -- and
+those of the locals bound to a struct they reach -- walk fields and getter
+calls (`r.scrollbar.track(q).min_size`) until the value is no longer a model
+struct; a segment the struct it stands on lacks (a 0.7.2 field, a renamed
+getter, a crate-private rule set) is an input error. The functions of
+`next/mod.rs` are classified as above, on the 0.8.0 paths, and compared as
+`next::name`; the naming rule is the 0.7.2 model's and does not hold them.
+The sibling rule compares new paths only with new paths: a `next` function
+is held in the connectors that have a `next` module, and a connector not yet
+ported is checked by its 0.7.2 functions alone. Everything else is read as
+before, against the 0.7.2 model.
+
 Exceptions
 ----------
 scripts/connector_parity_exceptions.toml, `[[exception]]` entries with
@@ -549,9 +571,255 @@ def classify_body(model, body, root, label):
     return leaves, groups, escapes
 
 
-def scan(model, source, label, module=None):
+# ---------------------------------------------------------------------------
+# The 0.8.0 model, which a connector's `src/next/` reads
+# ---------------------------------------------------------------------------
+
+NEXT_SOURCES = "native-theme/src/next"
+NEXT_MODULE = "next"
+NEXT_STRUCT_RE = re.compile(r"\bpub struct (\w+)\s*(?:<[^{;()]*>)?\s*\{")
+IMPL_RE = re.compile(r"^\s*impl\b", re.M)
+METHOD_RE = re.compile(r"\b(pub(?:\([^)]*\))?\s+)?(?:const\s+)?fn\s+(\w+)")
+# what every type of the model has through a derive or a std blanket impl
+UNIVERSAL_METHODS = frozenset("""
+    clone to_owned into eq ne fmt to_string as_ref borrow hash cmp partial_cmp
+""".split())
+
+
+def bare_type(text, self_type=None):
+    """The type name `text` names when it is a plain path behind references
+    (`&'a PartStyle`, `native_theme::next::Color`), else None: a wrapper
+    (`Option<...>`, `Arc<str>`, `[f32; 2]`) is not one model type."""
+    text = re.sub(r"&\s*(?:'\w+\s+)?(?:mut\s+)?", "", text.strip()).strip()
+    m = re.fullmatch(r"(?:\w+\s*::\s*)*(\w+)", text)
+    if m is None:
+        return None
+    return self_type if m.group(1) == "Self" and self_type else m.group(1)
+
+
+def parse_next_model(sources):
+    """{struct: {"fields": {field: type}, "methods": {method: type}}} from the
+    0.8.0 model's sources: each `pub struct`'s `pub` fields, and the methods a
+    connector can call on it, every `pub fn` of an inherent `impl` and every
+    `fn` of a trait's. A type is a name (`bare_type`) or None."""
+    model = {}
+    texts = [blank(s) for s in sources]
+    for text in texts:
+        for m in NEXT_STRUCT_RE.finditer(text):
+            end = balanced(text, m.end() - 1, "{", "}")
+            if end < 0:
+                raise Failure(f"struct {m.group(1)}: no closing brace")
+            body = text[m.end() : end - 1]
+            entry = model.setdefault(m.group(1), {"fields": {}, "methods": {}})
+            for f in FIELD_RE.finditer(body):
+                entry["fields"][f.group(1)] = bare_type(f.group(2))
+    for text in texts:
+        for m in IMPL_RE.finditer(text):
+            open_ = text.find("{", m.end())
+            if open_ < 0:
+                continue
+            head = text[m.end() : open_].strip()
+            if head.startswith("<"):
+                close = balanced(head, 0, "<", ">")
+                head = head[close:] if close > 0 else head
+            head = re.split(r"\bwhere\b", head)[0]
+            trait, _, target = head.rpartition(" for ")
+            target_name = re.match(r"\s*(?:\w+\s*::\s*)*(\w+)", target)
+            if target_name is None or target_name.group(1) not in model:
+                continue
+            name = target_name.group(1)
+            end = balanced(text, open_, "{", "}")
+            body = text[open_ + 1 : end - 1] if end > 0 else ""
+            for f in METHOD_RE.finditer(body):
+                vis = (f.group(1) or "").strip()
+                if not trait.strip() and vis != "pub":
+                    continue
+                paren = body.find("(", f.end())
+                close = balanced(body, paren, "(", ")") if paren >= 0 else -1
+                ret = None
+                if close > 0:
+                    r = re.match(r"\s*->\s*([^{;]+?)\s*(?:\bwhere\b|\{|;)", body[close:])
+                    ret = bare_type(r.group(1), name) if r else None
+                model[name]["methods"][f.group(2)] = ret
+    if ROOT_TYPE not in model:
+        raise Failure(f"the 0.8.0 model sources declare no {ROOT_TYPE}")
+    return model
+
+
+def walk_next(model, text, pos, type_, label, name):
+    """(path, type, end) of the chain of fields and getter calls starting at
+    `pos` on a value of the model's struct `type_`: each segment is a `pub`
+    field of the struct it stands on, or a method a connector can call on
+    it, and the chain ends where the value is no longer a model struct (a
+    leaf, a wrapper) or no segment follows. A segment the struct lacks is an
+    input error."""
+    seg_re = re.compile(r"\s*\.\s*([A-Za-z_]\w*)")
+    path = []
+    while type_ in model:
+        s = seg_re.match(text, pos)
+        if not s:
+            break
+        seg, after = s.group(1), s.end()
+        turbofish = re.match(r"\s*::\s*<", text[after:])
+        if turbofish:
+            after = balanced(text, after + turbofish.end() - 1, "<", ">")
+        call = re.match(r"\s*\(", text[after:]) if after > 0 else None
+        entry = model[type_]
+        if call:
+            if seg in entry["methods"]:
+                type_ = entry["methods"][seg]
+            elif seg in UNIVERSAL_METHODS:
+                type_ = None
+            else:
+                raise Failure(f"{label}: `{name}.{'.'.join(path + [seg + '()'])}`: "
+                              f"no field or method `{seg}` on `{type_}` in the 0.8.0 model")
+            close = balanced(text, after + call.end() - 1, "(", ")")
+            pos = close if close > 0 else after
+            path.append(seg + "()")
+        else:
+            if seg not in entry["fields"]:
+                raise Failure(f"{label}: `{name}.{'.'.join(path + [seg])}`: "
+                              f"no field `{seg}` on `{type_}` in the 0.8.0 model")
+            type_ = entry["fields"][seg]
+            pos = after
+            path.append(seg)
+    return path, type_, pos
+
+
+def classify_body_next(model, body, roots, label):
+    """(leaves, groups, escapes) a body reads through `roots` ({name: model
+    struct}), each path the fields and getters it walks (`scrollbar.track()
+    .fill`), on the 0.8.0 model. A local bound to a model struct the roots
+    reach (`let s = &r.scrollbar;`, `let b = r.button.body(q);`) reads through
+    its own type; its binding is not a read. Escapes: the first root passed
+    on whole."""
+    prefixes = {name: [] for name in roots}
+    roots = dict(roots)
+    first = next(iter(roots), None)
+    bindings = set()
+    for m in re.finditer(r"\blet\s+(\w+)\s*=\s*&?\s*(\w+)\b", body):
+        alias, src = m.group(1), m.group(2)
+        if src not in roots:
+            continue
+        path, type_, end = walk_next(model, body, m.end(), roots[src], label, src)
+        if path and type_ in model and re.match(r"\s*;", body[end:]):
+            roots[alias] = type_
+            prefixes[alias] = prefixes[src] + path
+            bindings.add(m.start(2))
+    leaves, groups, escapes = set(), set(), False
+    for name, type_ in roots.items():
+        for m in re.finditer(r"(?<![\w.])" + re.escape(name) + r"\b", body):
+            if m.start() in bindings or re.search(r"\blet\s+(?:mut\s+)?$", body[: m.start()]):
+                continue
+            if re.match(r"\s*(?::(?!:)|=(?!=))", body[m.end():]):
+                continue  # a binding of its own, or a field name in a literal
+            path, end_type, _ = walk_next(model, body, m.end(), type_, label, name)
+            if not path:
+                if name == first:
+                    escapes = True
+                else:
+                    groups.add(".".join(prefixes[name]) or name)
+                continue
+            path = prefixes[name] + path
+            (groups if end_type in model else leaves).add(".".join(path))
+    return leaves, groups, escapes
+
+
+CFG_TEST_MOD_RE = re.compile(r"#\[cfg\(test\)\]\s*(?:#\[[^\]]*\]\s*)*(?:pub(?:\([^)]*\))?\s+)?mod\s+(\w+)\s*([;{])")
+FN_ANY_RE = re.compile(r"\bfn\s+(\w+)")
+
+
+def strip_test_mods(text):
+    """(text, names): a blanked source with its inline `#[cfg(test)]`
+    modules blanked too, and the names of the `#[cfg(test)] mod x;` it
+    declares, whose files are test code."""
+    names, out = set(), text
+    for m in CFG_TEST_MOD_RE.finditer(text):
+        if m.group(2) == ";":
+            names.add(m.group(1))
+            continue
+        end = balanced(text, m.end() - 1, "{", "}")
+        if end > 0:
+            out = out[: m.start()] + "".join(
+                "\n" if c == "\n" else " " for c in out[m.start() : end]) + out[end:]
+    return out, names
+
+
+def next_reads(model, source, label):
+    """Check every read of the 0.8.0 model in one source file under a
+    connector's `src/next/`: in each function outside test code, of any
+    visibility, each parameter whose type is a struct of the model
+    (`r: &ResolvedTheme`, `part: &PartStyle`) is a root its chains walk.
+    Returns the number of functions it read through."""
+    text, _ = strip_test_mods(blank(source))
+    count = 0
+    for m in FN_ANY_RE.finditer(text):
+        pos = m.end()
+        if text[pos : pos + 1] == "<":
+            pos = balanced(text, pos, "<", ">")
+            if pos < 0:
+                continue
+        open_ = text.find("(", pos)
+        close = balanced(text, open_, "(", ")") if open_ >= 0 else -1
+        if close < 0:
+            continue
+        body_open = text.find("{", close)
+        semi = text.find(";", close)
+        if body_open < 0 or (0 <= semi < body_open):
+            continue  # a declaration without a body
+        body_close = balanced(text, body_open, "{", "}")
+        if body_close < 0:
+            continue
+        roots = {}
+        for p in split_top(text[open_ + 1 : close - 1]):
+            pname, _, ptype = p.partition(":")
+            type_ = bare_type(ptype) if ptype else None
+            if type_ in model:
+                roots[pname.strip().removeprefix("mut ").strip()] = type_
+        if not roots:
+            continue
+        line = text.count("\n", 0, m.start()) + 1
+        classify_body_next(model, text[body_open + 1 : body_close - 1], roots,
+                           f"{label}:{line} `{m.group(1)}`")
+        count += 1
+    return count
+
+
+def next_files(src, read_rel):
+    """[(path, source)] of the module tree under `src/next/` (its `mod.rs`
+    and every module it declares, recursively), test modules left out."""
+    out = []
+    pending = [(os.path.join(src, NEXT_MODULE), "mod.rs")]
+    while pending:
+        folder, file = pending.pop()
+        rel = os.path.join(folder, file)
+        source = read_rel(rel)
+        out.append((rel, source))
+        text, tests = strip_test_mods(blank(source))
+        child_dir = folder if file == "mod.rs" else os.path.join(folder, file[:-3])
+        for name in MOD_RE.findall(text):
+            if name in tests:
+                continue
+            for candidate in (name + ".rs", os.path.join(name, "mod.rs")):
+                try:
+                    read_rel(os.path.join(child_dir, candidate))
+                except Failure:
+                    continue
+                if candidate.endswith("mod.rs"):
+                    pending.append((os.path.join(child_dir, name), "mod.rs"))
+                else:
+                    pending.append((child_dir, candidate))
+                break
+            else:
+                raise Failure(f"{rel}: no source for module `{name}`")
+    return out
+
+
+def scan(model, source, label, module=None, next_model=None):
     """The column-0 `pub fn`s of one source file, classified; `module` names
-    the public module they are reached through, None at the crate root."""
+    the public module they are reached through, None at the crate root. With
+    `next_model`, the file is under `src/next/` and its reads are of the
+    0.8.0 model."""
     text = blank(source)
     imported, core = scope_names(text)
     fns = []
@@ -588,9 +856,12 @@ def scan(model, source, label, module=None):
             fns.append(Fn(name, line, "inputs", set(), set(), ", ".join(others),
                           ptypes=ptypes, module=module, foreign=imported | generics, core=core))
             continue
-        leaves, groups, escapes = classify_body(
-            model, text[body_open + 1 : body_close - 1], theme[0], where
-        )
+        body = text[body_open + 1 : body_close - 1]
+        if next_model is not None:
+            leaves, groups, escapes = classify_body_next(
+                next_model, body, {theme[0]: ROOT_TYPE}, where)
+        else:
+            leaves, groups, escapes = classify_body(model, body, theme[0], where)
         if groups:
             cls = "group"
         elif len(leaves) > 1:
@@ -666,9 +937,10 @@ def module_file(src, module, read_rel, where):
 PUB_MOD_RE = re.compile(r"^pub mod (\w+)\s*;", re.M)
 
 
-def public_modules(model, lib_rel, read_rel):
+def public_modules(model, lib_rel, read_rel, next_model=None):
     """{module: [Fn]}: the column-0 `pub fn`s of each module the crate whose
-    `lib.rs` is `lib_rel` declares `pub mod` (not `pub(crate)`)."""
+    `lib.rs` is `lib_rel` declares `pub mod` (not `pub(crate)`); `next`'s
+    read against `next_model`, the 0.8.0 model."""
     text = blank(read_rel(lib_rel))
     src = os.path.dirname(lib_rel)
     out = {}
@@ -676,7 +948,12 @@ def public_modules(model, lib_rel, read_rel):
         module = m.group(1)
         where = f"{lib_rel}:{text.count(chr(10), 0, m.start()) + 1}"
         rel, source = module_file(src, module, read_rel, where)
-        out[module] = scan(model, source, rel, module)
+        if module == NEXT_MODULE:
+            if next_model is None:
+                raise Failure(f"{where}: `pub mod {module}` and no 0.8.0 model to read it by")
+            out[module] = scan(model, source, rel, module, next_model)
+        else:
+            out[module] = scan(model, source, rel, module)
     return out
 
 
@@ -817,12 +1094,18 @@ def check(connectors, exceptions, shared=frozenset()):
                     "unlike", f"`{name}` (line {other.line}) is {other.cls}, not the "
                     f"accessor of `{leaf}` that {offered} offer(s)")
     keys = sorted({k for fns in connectors.values() for k in fns} - set(every))
+    # a connector not yet on the 0.8.0 model has no `next` functions to hold
+    ported = {c for c, fns in connectors.items()
+              if any(f.module == NEXT_MODULE for f in fns.values())}
     for key in keys:
         have = {c: fns[key] for c, fns in connectors.items() if key in fns}
         ref, sigs = reference_signature(have, shared)
         holders = ", ".join(c for c in have if sigs[c] == ref)
         cls = next(f.cls for c, f in have.items() if sigs[c] == ref)
+        new = next(iter(have.values())).module == NEXT_MODULE
         for connector in connectors:
+            if new and connector not in ported:
+                continue
             if connector not in have:
                 needs[(connector, key)] = (
                     "absent", f"no `{key}`, the {cls} function `{key}{ref}` {holders} offer(s)")
@@ -871,14 +1154,23 @@ def read(path):
         raise Failure(f"cannot read {path}: {error}")
 
 
-def gather(model, read_rel, libs=CONNECTORS):
-    """({connector: {key: Fn}}, {connector: {module: [Fn]}}): the functions
-    compared, the crate root's and those of each public module a sibling
-    publishes too, and the public modules no sibling publishes."""
-    roots, modules = {}, {}
+def gather(model, read_rel, libs=CONNECTORS, next_model=None):
+    """({connector: {key: Fn}}, {connector: {module: [Fn]}}, {connector:
+    (files, functions)}): the functions compared, the crate root's and those
+    of each public module a sibling publishes too; the public modules no
+    sibling publishes; and, for each connector with a `next` module, how
+    many files under `src/next/` and functions in them `next_reads` read
+    against the 0.8.0 model (`next_model`)."""
+    roots, modules, reads = {}, {}, {}
     for connector, lib in libs.items():
         roots[connector] = crate_root_fns(model, lib, read_rel)
-        modules[connector] = public_modules(model, lib, read_rel)
+        modules[connector] = public_modules(model, lib, read_rel, next_model)
+        if NEXT_MODULE in MOD_RE.findall(blank(read_rel(lib))):
+            if next_model is None:
+                raise Failure(f"{lib}: a `next` module and no 0.8.0 model to read it by")
+            files = next_files(os.path.dirname(lib), read_rel)
+            reads[connector] = (len(files), sum(
+                next_reads(next_model, source, rel) for rel, source in files))
     publishers = {}
     for connector, mods in modules.items():
         for module in mods:
@@ -892,7 +1184,7 @@ def gather(model, read_rel, libs=CONNECTORS):
             else:
                 unshared.setdefault(connector, {})[module] = module_fns
         connectors[connector] = merge(fns)
-    return connectors, unshared
+    return connectors, unshared, reads
 
 
 def class_lines(connectors):
@@ -906,8 +1198,8 @@ def class_lines(connectors):
     return lines
 
 
-def core_sources(root):
-    src = os.path.join(root, CORE_SOURCES)
+def core_sources(root, folder=CORE_SOURCES):
+    src = os.path.join(root, folder)
     for base, _, files in sorted(os.walk(src)):
         for name in sorted(files):
             if name.endswith(".rs"):
@@ -916,8 +1208,10 @@ def core_sources(root):
 
 def run(root, exceptions_path, verbose):
     model = parse_model(read(os.path.join(root, p)) for p in MODEL_FILES)
+    next_model = parse_next_model(list(core_sources(root, NEXT_SOURCES)))
     shared = core_types(core_sources(root))
-    connectors, unshared = gather(model, lambda rel: read(os.path.join(root, rel)))
+    connectors, unshared, reads = gather(
+        model, lambda rel: read(os.path.join(root, rel)), next_model=next_model)
     exceptions = load_exceptions(read(exceptions_path), os.path.relpath(exceptions_path, root))
     report, violations, stale = check(connectors, exceptions, shared)
     if verbose:
@@ -926,6 +1220,9 @@ def run(root, exceptions_path, verbose):
                 what = ", ".join(sorted(f.leaves | f.groups)) or f.detail
                 print(f"  {connector} {f.cls:9s} {f.key}{signature(f, shared)}  {what}")
     print("\n".join(report))
+    for connector, (files, fns) in reads.items():
+        print(f"{connector:5s} src/next/: {fns} functions in {files} files read the 0.8.0 model, "
+              "every read a field or method it has")
     print("\nWhat each class holds (a public module's functions as `module::name`):")
     print("\n".join(class_lines(connectors)))
     print("\nPublic modules no sibling publishes, not compared (each toolkit's own "
@@ -1023,6 +1320,60 @@ pub fn font(resolved: &ResolvedTheme) -> &ResolvedFontSpec {
 }
 pub fn to_weight(css: u16) -> Weight {
     Weight::from(css)
+}
+'''
+
+# The 0.8.0 model: fields, crate-private rule sets behind getters.
+SELF_NEXT_MODEL = '''
+pub struct PartStyle {
+    pub fill: Paint,
+    pub min_size: [Option<f32>; 2],
+}
+pub struct ScrollbarWidget {
+    pub min_thumb_length: f32,
+    pub(crate) track: PartRules,
+}
+impl ScrollbarWidget {
+    pub fn track(&self, query: impl Into<StyleQuery>) -> PartStyle { todo() }
+    pub(crate) fn rules(&self) -> &PartRules { &self.track }
+}
+pub struct LayoutMetrics {
+    pub corner_radius: f32,
+}
+pub struct ResolvedTheme {
+    pub name: Arc<str>,
+    pub layout: LayoutMetrics,
+    pub scrollbar: ScrollbarWidget,
+}
+impl ResolvedTheme {
+    pub fn is_dark(&self) -> bool { true }
+}
+'''
+
+# A connector's `src/next/` on it: every read a field or a getter.
+SELF_NEXT = '''
+pub fn name(r: &ResolvedTheme) -> String {
+    r.name.to_string()
+}
+pub fn groove(r: &ResolvedTheme) -> Option<f32> {
+    let s = &r.scrollbar;
+    s.track(StyleQuery::new(WidgetState::NONE)).min_size[0]
+}
+pub fn track(r: &ResolvedTheme) -> PartStyle {
+    r.scrollbar.track(WidgetState::NONE)
+}
+pub fn corners(r: &ResolvedTheme) -> (bool, f32) {
+    (r.is_dark(), r.layout.corner_radius)
+}
+pub fn to_theme(r: &ResolvedTheme) -> Theme {
+    build(r)
+}
+fn fill_of(part: &PartStyle) -> Paint {
+    part.fill
+}
+#[cfg(test)]
+mod tests {
+    fn old(r: &ResolvedTheme) -> f32 { r.defaults.line_height }
 }
 '''
 
@@ -1270,7 +1621,7 @@ pub fn by_import(a: Theme, b: IcedTheme, c: Color) -> u8 { 0 }
         return modules[rel]
 
     libs = {c: f"{c}/src/lib.rs" for c in ("iced", "gpui", "egui")}
-    gathered, unshared = gather(model, read_modules, libs)
+    gathered, unshared, _ = gather(model, read_modules, libs)
     expect("a shared module's function is compared by its path",
            [c for c in libs if "icons::to_handle" in gathered[c]], ["iced", "gpui"])
     expect("a module no sibling publishes is listed, not compared",
@@ -1346,6 +1697,79 @@ pub fn to_weight(css: u16) -> Weight { Weight::from(css) }
         empty["egui"] = {n: f for n, f in clean["egui"].items() if f.cls != "one-field"}
         check(empty, {})
         failures.append("a connector with no one-field accessor: no error")
+    except Failure:
+        pass
+
+    # the 0.8.0 model: a `next` file's reads are its fields and getters
+    next_model = parse_next_model([SELF_NEXT_MODEL])
+    expect("next model: a crate-private field is not read, its getter is",
+           (sorted(next_model["ScrollbarWidget"]["fields"]),
+            next_model["ScrollbarWidget"]["methods"]),
+           (["min_thumb_length"], {"track": "PartStyle"}))
+    next_fns = merge(scan(model, SELF_NEXT, "next", NEXT_MODULE, next_model))
+    expect("next: classes and paths",
+           {n: (f.cls, sorted(f.leaves | f.groups)) for n, f in next_fns.items()}, {
+               "next::name": ("one-field", ["name"]),
+               "next::groove": ("one-field", ["scrollbar.track().min_size"]),
+               "next::track": ("group", ["scrollbar.track()"]),
+               "next::corners": ("multi", ["is_dark()", "layout.corner_radius"]),
+               "next::to_theme": ("undecided", []),
+           })
+    expect("next: every function outside test code is read",
+           next_reads(next_model, SELF_NEXT, "next"), 6)
+    for planted, replacement, label in (
+        ("r.name.to_string()", "r.defaults.line_height", "a 0.7.2 field"),
+        ("s.track(", "s.groove(", "a getter the model lacks"),
+        ("r.scrollbar.track(WidgetState::NONE)", "r.scrollbar.track.base",
+         "a crate-private field"),
+        ("r.is_dark()", "r.scrollbar.rules()", "a crate-private method"),
+        ("part.fill", "part.stroke", "a field of a part a parameter names"),
+    ):
+        source = SELF_NEXT.replace(planted, replacement, 1)
+        if source == SELF_NEXT:
+            failures.append(f"next: {label}: the fixture has no `{planted}`")
+            continue
+        try:
+            next_reads(next_model, source, "next")
+            failures.append(f"next: {label}: no error")
+        except Failure:
+            pass
+    try:
+        scan(model, "pub fn x(r: &ResolvedTheme) -> String { r.name.to_string() }", "t")
+        failures.append("a 0.8.0 field read against the 0.7.2 model: no error")
+    except Failure:
+        pass
+
+    # new paths are compared only with new paths: a connector without a
+    # `next` module is not held to `next` functions, one with it is
+    next_tree = {
+        "iced/src/lib.rs": SELF_ICED,
+        "gpui/src/lib.rs": "pub mod next;\n" + SELF_ICED,
+        "gpui/src/next/mod.rs": "mod inner;\n#[cfg(test)]\nmod parity;\n" + SELF_NEXT,
+        "gpui/src/next/inner.rs": "fn f(r: &ResolvedTheme) -> f32 { r.layout.corner_radius }",
+        "gpui/src/next/parity.rs": "fn f(r: &ResolvedTheme) -> f32 { r.defaults.line_height }",
+        "egui/src/lib.rs": SELF_ICED,
+    }
+
+    def read_next_tree(rel):
+        if rel not in next_tree:
+            raise Failure(f"cannot read {rel}")
+        return next_tree[rel]
+
+    gathered, unshared, reads = gather(model, read_next_tree, libs, next_model)
+    expect("a `next` only one connector publishes is listed, its files read",
+           ({c: sorted(m) for c, m in unshared.items()}, reads), ({"gpui": ["next"]}, {"gpui": (2, 7)}))
+    next_tree["egui/src/lib.rs"] = "pub mod next;\n" + SELF_ICED
+    next_tree["egui/src/next/mod.rs"] = SELF_NEXT.replace("pub fn corners", "fn corners")
+    gathered, unshared, _ = gather(model, read_next_tree, libs, next_model)
+    _, violations, _ = check(gathered, {})
+    expect("a `next` function is held only in the connectors on the 0.8.0 model", violations, [
+        "egui: no `next::corners`, the multi function `next::corners(&_)` gpui offer(s); "
+        "add it or except it with its reason"])
+    next_tree["gpui/src/next/inner.rs"] = "fn f(r: &ResolvedTheme) -> f32 { r.layout.radius }"
+    try:
+        gather(model, read_next_tree, libs, next_model)
+        failures.append("a bad read in a private module under next/: no error")
     except Failure:
         pass
 
