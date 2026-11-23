@@ -684,6 +684,56 @@ radio button. Where the handle is pale, as Breeze's grey is (`kde-breeze`, #cbcd
 #46494b), an unscoped slider's rail all but disappears on the window (1.4:1 /
 1.7:1). A slider inside `Role::Slider` takes `slider.track_color`.
 
+### What the 0.8.0 model states that egui cannot draw
+
+The `next` module maps the 0.8.0 model (`native_theme::next`), which states
+more than 0.7.2 did: `next::to_theme` builds the same `ThemeAtlas` from it,
+and each crate-root accessor has a twin there. Where egui has a receiver,
+`next` wires the value through; where it has none, the value is dropped as
+listed here, and a value the theme leaves unstated is egui's own
+(docs/v0.8.0-spec.md §10, rule 0).
+
+- **The focus ring's second stroke, kind and corners.** The install plugin
+  paints one ring: one `Stroke` round the focused widget's rect, outside it
+  at the ring's offset, its corners the widget's `widgets.active`
+  corner radius grown by the offset (src/plugin.rs, `paint_focus_ring`;
+  `Painter::rect_stroke` with `StrokeKind::Outside`,
+  `egui-0.37.0/src/painter.rs`). It takes `focus_ring.stroke`'s colour and
+  width, `focus_ring.offset` and `focus_ring.trigger`. `inner_stroke`, a
+  second line inside the first (WinUI's white and black ring), is not
+  drawn; a `kind` of `Fill` or `Underline` is drawn as the ring; and the
+  `corners` the theme states are not drawn, the ring keeping the widget's.
+  A ring whose stroke the theme states per side is no ring.
+- **A stroke per side.** egui strokes a rect with one `Stroke`, one width
+  and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
+  `RectShape::stroke`). Where the theme states a part's stroke per side
+  (`Stroke::Complex`), the part keeps egui's own stroke, as if the theme
+  stated none, and the part reads (`next::stroke_color_of`,
+  `next::stroke_width_of`) return `None`.
+- **Shadow geometry.** egui's `Shadow` is one outset shadow: an offset, a
+  blur and a spread in whole points, and a colour
+  (`epaint-0.37.0/src/shadow.rs`). The atlas writes the theme's shadow
+  colour (`colors.shadow`) into `Visuals::window_shadow` and
+  `popup_shadow`, and a surface casts egui's shadow unless the theme states
+  that it has none; the geometry stays egui's. The offsets, blurs, spreads
+  and colours of the shadow layers the theme states, an inset layer and
+  every layer after the first are not drawn.
+- **Gradients and layered fills.** egui fills a shape with one `Color32`
+  (`epaint-0.37.0/src/shapes/rect_shape.rs`, `RectShape::fill`). A fill the
+  theme states as layers (`Paint::Complex`, a gradient among them) is drawn
+  in the one colour the model gives in its place, its fallback colour
+  (docs/v0.8.0-spec.md §10, rule 2), and as egui's own fill where it gives
+  none.
+- **Where a translucent stroke lies.** egui ends a rect's fill at the
+  stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
+  `stroke_and_fill_path`), so a stroke the theme lays `Outside` the part is
+  drawn as stated. One it lays `Inside`, over the fill, is handed to egui
+  composited over the fill the state paints, which looks the same; one
+  `Center`ed on the edge is composited over that fill at half its alpha, so
+  the whole band is drawn in the band's mean colour where the platform shows
+  the fill under its inner half only (src/style/line.rs). An opaque stroke
+  is drawn exactly in every alignment.
+
 ## Semver
 
 1. The crate version equals the workspace version.

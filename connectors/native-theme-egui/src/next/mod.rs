@@ -34,9 +34,9 @@ use std::time::Duration;
 
 use egui::{Color32, FontId};
 use native_theme::next::{
-    Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FontStyle, MotionPreference,
-    Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StyleQuery, TextStated,
-    TextStyle, WidgetState, WindowState,
+    Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FontStyle, IconStated,
+    MotionPreference, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StyleQuery,
+    TextStated, TextStyle, WidgetState, WindowState,
 };
 
 use crate::accessors::text_size_or_stock;
@@ -764,4 +764,222 @@ pub fn border_color(r: &ResolvedTheme) -> Mapped<Color32> {
 #[must_use]
 pub fn disabled_opacity(r: &ResolvedTheme) -> f32 {
     r.colors.disabled_opacity
+}
+
+// ---------------------------------------------------------------------------
+// The widgets' parts the application draws
+// ---------------------------------------------------------------------------
+
+/// A part's stroke colour as egui draws it: the stated colour, or
+/// transparent where the stroke is stated as none.
+fn line_color(part: &PartStyle, home: &'static str) -> Mapped<Color32> {
+    match part.stroke {
+        Stroke::None if part.stated.contains(PartStated::STROKE) => Ok(Color32::TRANSPARENT),
+        _ => stated(stroke_color_of(part), home),
+    }
+}
+
+/// A part's stroke colour as [`line_color`] reads it, where a rule states
+/// the stroke for the queried state; `None` where none does.
+fn state_line_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Color32>> {
+    if part.from_state.contains(PartStated::STROKE) {
+        line_color(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// A part's stroke width where the theme states a stroke, 0 for a stroke
+/// stated as none; `None` where it states no stroke.
+fn line_width(part: &PartStyle, home: &'static str) -> Mapped<Option<f32>> {
+    if part.stated.contains(PartStated::STROKE) {
+        stated(stroke_width_of(part), home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// A part's padding and stroke width, as the field margins read them.
+fn padded(part: &PartStyle, width_home: &'static str) -> Mapped<crate::accessors::Padded> {
+    Ok(crate::accessors::Padded {
+        sides: padding_of(part),
+        line_width: line_width(part, width_home)?,
+    })
+}
+
+/// [`crate::default_button`]: a dialog's default button, where a rule
+/// states its fill (`button.body(DEFAULT).fill`); its label colour
+/// `button.label(DEFAULT).color`, its frame `button.body(DEFAULT)`'s stroke
+/// colour at `button.body(NONE)`'s width, and under the pointer and focused
+/// the frame colours a rule states for `button.body(HOVER)` and
+/// `button.body(FOCUS_VISIBLE)`. A stroke stated as none is transparent, at
+/// no width. `None` where no rule states the fill.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states a default fill but no label colour,
+/// frame colour or frame width, or states one in a form egui cannot draw (a
+/// layered fill with no fallback colour, a per-side stroke).
+pub fn default_button(r: &ResolvedTheme) -> Mapped<Option<crate::DefaultButton>> {
+    let b = &r.button;
+    let body = b.body(WidgetState::DEFAULT);
+    let Some(fill) = state_fill(&body, "button.body(DEFAULT).fill")? else {
+        return Ok(None);
+    };
+    let width = stated(
+        stroke_width_of(&b.body(WidgetState::NONE)),
+        "button.body(NONE).stroke.width",
+    )?;
+    Ok(Some(crate::accessors::default_button_from(
+        &crate::accessors::DefaultButtonSource {
+            fill,
+            text: text_color(
+                &b.label(WidgetState::DEFAULT),
+                "button.label(DEFAULT).color",
+            )?,
+            width,
+            frame: line_color(&body, "button.body(DEFAULT).stroke.color")?,
+            hover: state_line_color(
+                &b.body(WidgetState::HOVER),
+                "button.body(HOVER).stroke.color",
+            )?,
+            focus: state_line_color(
+                &b.body(WidgetState::FOCUS_VISIBLE),
+                "button.body(FOCUS_VISIBLE).stroke.color",
+            )?,
+        },
+    )))
+}
+
+/// [`crate::input_margin`]: the margin of a single-line `TextEdit`, from
+/// `input.field(NONE)`'s padding and stroke width over the «input» cell's
+/// `button_padding`, which `button.body(NONE)`'s and the field's give; a
+/// side the theme states none for, egui's own there.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the button's or the field's stroke is per side.
+pub fn input_margin(r: &ResolvedTheme) -> Mapped<egui::Margin> {
+    Ok(crate::accessors::input_margin_from(
+        &padded(
+            &r.button.body(WidgetState::NONE),
+            "button.body(NONE).stroke.width",
+        )?,
+        &padded(
+            &r.input.field(WidgetState::NONE),
+            "input.field(NONE).stroke.width",
+        )?,
+    ))
+}
+
+/// [`crate::text_area_margin`]: the margin of a multi-line `TextEdit`,
+/// `text_area.field(NONE)`'s padding and stroke width over
+/// [`input_margin`].
+///
+/// # Errors
+///
+/// [`Unmapped`] where the button's or either field's stroke is per side.
+pub fn text_area_margin(r: &ResolvedTheme) -> Mapped<egui::Margin> {
+    Ok(crate::accessors::text_area_margin_from(
+        input_margin(r)?,
+        &padded(
+            &r.text_area.field(WidgetState::NONE),
+            "text_area.field(NONE).stroke.width",
+        )?,
+    ))
+}
+
+/// [`crate::input_frame`]: the frame of a single-line `TextEdit`, called
+/// as the crate root's is; a focused field outlined in the stroke colour a
+/// rule states for `input.field(FOCUSED)`, the resting stroke where none
+/// does.
+///
+/// # Errors
+///
+/// [`Unmapped`] where [`input_margin`] is, or the focused stroke is per side.
+pub fn input_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped<egui::Frame> {
+    Ok(crate::accessors::field_frame(
+        ui,
+        id,
+        &crate::accessors::FieldFrameSource {
+            margin: input_margin(r)?,
+            focus: state_line_color(
+                &r.input.field(WidgetState::FOCUSED),
+                "input.field(FOCUSED).stroke.color",
+            )?,
+            own: None,
+        },
+    ))
+}
+
+/// [`crate::text_area_frame`]: the frame of a multi-line `TextEdit`, called
+/// as the crate root's is: [`input_frame`]'s, but for `text_area.field`'s
+/// margin ([`text_area_margin`]), its stroke width in every state, its
+/// resting stroke colour, its corner radius and its focused stroke colour
+/// (`text_area.field(FOCUSED)`), each the scope's where the theme states
+/// none.
+///
+/// # Errors
+///
+/// [`Unmapped`] where [`text_area_margin`] is, or the field's stroke is per
+/// side.
+pub fn text_area_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped<egui::Frame> {
+    let field = r.text_area.field(WidgetState::NONE);
+    let color = if field.stated.contains(PartStated::STROKE) {
+        Some(line_color(&field, "text_area.field(NONE).stroke.color")?)
+    } else {
+        None
+    };
+    Ok(crate::accessors::field_frame(
+        ui,
+        id,
+        &crate::accessors::FieldFrameSource {
+            margin: text_area_margin(r)?,
+            focus: state_line_color(
+                &r.text_area.field(WidgetState::FOCUSED),
+                "text_area.field(FOCUSED).stroke.color",
+            )?,
+            own: Some(crate::accessors::OwnBorder {
+                width: line_width(&field, "text_area.field(NONE).stroke.width")?,
+                color,
+                radius: radius_of(&field),
+            }),
+        },
+    ))
+}
+
+/// The arrow's colour [`expander_icon`] paints in,
+/// `expander.arrow(NONE).color`; `None` where the theme states none.
+pub(crate) fn expander_arrow(r: &ResolvedTheme) -> Option<Color32> {
+    let arrow = r.expander.arrow(WidgetState::NONE);
+    arrow
+        .stated
+        .contains(IconStated::COLOR)
+        .then(|| to_color32(arrow.color))
+}
+
+/// [`crate::expander_icon`]: the expander's arrow for
+/// `CollapsingHeader::icon`, in `expander.arrow(NONE).color`, egui's own
+/// arrow where the theme states no colour.
+#[must_use = "hand the closure to CollapsingHeader::icon"]
+pub fn expander_icon(r: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Response) + 'static {
+    crate::accessors::expander_icon_from(expander_arrow(r))
+}
+
+/// [`crate::icons::icon_size`]: the icon size for a context, in logical
+/// pixels (`icons.sizes.small`, `.toolbar`, `.panel`, `.dialog`, `.large`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no size for the context.
+pub fn icon_size(r: &ResolvedTheme, context: crate::icons::IconContext) -> Mapped<f32> {
+    use crate::icons::IconContext as C;
+    let s = &r.icons.sizes;
+    match context {
+        C::Small => stated(s.small, "icons.sizes.small"),
+        C::Toolbar => stated(s.toolbar, "icons.sizes.toolbar"),
+        C::Panel => stated(s.panel, "icons.sizes.panel"),
+        C::Dialog => stated(s.dialog, "icons.sizes.dialog"),
+        C::Large => stated(s.large, "icons.sizes.large"),
+    }
 }

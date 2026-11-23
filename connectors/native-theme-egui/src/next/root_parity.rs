@@ -294,6 +294,71 @@ fn fonts(p: &mut Pairs, old: &ResolvedTheme, new: &native_theme::next::ResolvedT
     );
 }
 
+/// The widgets' parts the application draws: the default button, the field
+/// margins, the field frames at rest and focused (built in one pass of a
+/// `Ui` in egui's own style), the colour the expander's arrow closure paints
+/// in, and the icon sizes.
+fn parts(p: &mut Pairs, old: &ResolvedTheme, new: &native_theme::next::ResolvedTheme) {
+    use crate::icons::IconContext;
+
+    p.pair(
+        "default_button",
+        ok(crate::default_button(old)),
+        super::default_button(new),
+    );
+    p.pair(
+        "input_margin",
+        ok(crate::input_margin(old)),
+        super::input_margin(new),
+    );
+    p.pair(
+        "text_area_margin",
+        ok(crate::text_area_margin(old)),
+        super::text_area_margin(new),
+    );
+    p.pair(
+        "expander_icon",
+        crate::accessors::expander_arrow(old),
+        super::expander_arrow(new),
+    );
+    for context in [
+        IconContext::Small,
+        IconContext::Toolbar,
+        IconContext::Panel,
+        IconContext::Dialog,
+        IconContext::Large,
+    ] {
+        p.pair(
+            "icons::icon_size",
+            (context, ok(crate::icons::icon_size(old, context))),
+            (context, super::icon_size(new, context)),
+        );
+    }
+    let ctx = egui::Context::default();
+    for focused in [false, true] {
+        let id = egui::Id::unique(("root-parity-field", focused));
+        if focused {
+            ctx.memory_mut(|m| m.request_focus(id));
+        }
+        let mut frames = Vec::new();
+        let _ = crate::install_tests::pass(&ctx, egui::RawInput::default(), |ui| {
+            frames.push((
+                "input_frame",
+                ok(crate::input_frame(ui, id, old)),
+                super::input_frame(ui, id, new),
+            ));
+            frames.push((
+                "text_area_frame",
+                ok(crate::text_area_frame(ui, id, old)),
+                super::text_area_frame(ui, id, new),
+            ));
+        });
+        for (name, o, n) in frames {
+            p.pair(name, (focused, o), (focused, n));
+        }
+    }
+}
+
 /// The inactive window's title colour, from each model's inactive theme.
 fn inactive_title(p: &mut Pairs, old: &ResolvedTheme, preset: Preset, is_dark: bool) {
     let mut ctx = if is_dark {
@@ -325,6 +390,7 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
             };
             values(&mut p, &old, &new);
             fonts(&mut p, &old, &new);
+            parts(&mut p, &old, &new);
             inactive_title(&mut p, &old, preset, is_dark);
             failures.append(&mut p.failures);
             seen.append(&mut p.seen);

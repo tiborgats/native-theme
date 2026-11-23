@@ -10,8 +10,8 @@ use native_theme::theme::{
 };
 
 use crate::convert::{
-    clamp_length, finite_or, padding_with_border, to_button_padding, to_color32, to_corner_radius,
-    to_margin,
+    button_padding_outside, clamp_length, finite_or, padding_with_line, to_color32,
+    to_corner_radius, to_margin,
 };
 use crate::{AccessibilityPreferences, Role, TextRole};
 
@@ -361,17 +361,42 @@ pub struct DefaultButton {
 pub fn default_button(t: &ResolvedTheme) -> Option<DefaultButton> {
     let b = &t.button;
     let fill = b.default_button_background?;
-    let width = clamp_length(finite_or(b.border.line_width, 0.0));
-    let frame = b.default_button_border_color.unwrap_or(b.border.color);
-    let hover = b.hover_border_color.unwrap_or(frame);
-    let focus = b.focus_border_color.unwrap_or(hover);
-    Some(DefaultButton {
+    Some(default_button_from(&DefaultButtonSource {
         fill: to_color32(fill),
         text: to_color32(b.default_button_text_color.unwrap_or(b.font.color)),
-        stroke: egui::Stroke::new(width, to_color32(frame)),
-        hover_stroke: egui::Stroke::new(width, to_color32(hover)),
-        focus_stroke: egui::Stroke::new(width, to_color32(focus)),
-    })
+        width: b.border.line_width,
+        frame: to_color32(b.default_button_border_color.unwrap_or(b.border.color)),
+        hover: b.hover_border_color.map(to_color32),
+        focus: b.focus_border_color.map(to_color32),
+    }))
+}
+
+/// What [`default_button`] reads, from either model: the default button's fill, label colour,
+/// frame width and colour, and the hovered and focused frame colours where the theme states
+/// them.
+pub(crate) struct DefaultButtonSource {
+    pub fill: egui::Color32,
+    pub text: egui::Color32,
+    pub width: f32,
+    pub frame: egui::Color32,
+    pub hover: Option<egui::Color32>,
+    pub focus: Option<egui::Color32>,
+}
+
+/// [`DefaultButton`] from its source: the hovered frame `frame`'s colour where the theme
+/// states none, the focused one the hovered one's, each at the frame's width, 0 where it is
+/// not finite.
+pub(crate) fn default_button_from(src: &DefaultButtonSource) -> DefaultButton {
+    let width = clamp_length(finite_or(src.width, 0.0));
+    let hover = src.hover.unwrap_or(src.frame);
+    let focus = src.focus.unwrap_or(hover);
+    DefaultButton {
+        fill: src.fill,
+        text: src.text,
+        stroke: egui::Stroke::new(width, src.frame),
+        hover_stroke: egui::Stroke::new(width, hover),
+        focus_stroke: egui::Stroke::new(width, focus),
+    }
 }
 
 // --- geometry with no Style sink ----------------------------------------------
@@ -380,13 +405,58 @@ pub fn default_button(t: &ResolvedTheme) -> Option<DefaultButton> {
 /// `StyleProvider<TextEditStyle>`): `input.border` under spec §5's pair rule over the base style's
 /// `button_padding`, which is `button.border`'s under the same rule over egui's own
 /// `Spacing::default().button_padding` (`egui-0.37.0/src/style.rs:1568`), as the atlas writes
-/// the two cells ([`convert::to_button_padding`](crate::convert::to_button_padding)).
-fn input_cell_margin(t: &ResolvedTheme) -> egui::Margin {
-    let base = to_button_padding(
+/// the two cells ([`convert::button_padding_outside`](crate::convert::button_padding_outside)).
+fn input_cell_margin(button: &Padded, input: &Padded) -> egui::Margin {
+    let base = button_padding_outside(
         egui::style::Spacing::default().button_padding,
-        &t.button.border,
+        &button.outside(),
     );
-    egui::Margin::from(to_button_padding(base, &t.input.border))
+    egui::Margin::from(button_padding_outside(base, &input.outside()))
+}
+
+/// A widget's padding as the field margins read it, from either model: its four sides, top,
+/// right, bottom, left, each `None` where unstated, and its border's line width, `None` where
+/// the theme states no stroke.
+pub(crate) struct Padded {
+    pub sides: [Option<f32>; 4],
+    pub line_width: Option<f32>,
+}
+
+impl Padded {
+    /// A 0.7.2 border's padding and line width.
+    pub(crate) fn old(border: &native_theme::theme::ResolvedWidgetBorder) -> Self {
+        let p = &border.padding;
+        Self {
+            sides: [p.top, p.right, p.bottom, p.left],
+            line_width: Some(border.line_width),
+        }
+    }
+
+    /// The padding measured from the outside of the border
+    /// ([`padding_with_line`]); a stroke the theme states none of adds no width.
+    fn outside(&self) -> native_theme::theme::ResolvedPadding {
+        let [top, right, bottom, left] = self.sides;
+        let padding = native_theme::theme::ResolvedPadding {
+            top,
+            right,
+            bottom,
+            left,
+        };
+        match self.line_width {
+            Some(width) => padding_with_line(&padding, width),
+            None => padding_with_line(&padding, 0.0),
+        }
+    }
+}
+
+/// [`input_margin`] from the button's and the single-line field's paddings.
+pub(crate) fn input_margin_from(button: &Padded, input: &Padded) -> egui::Margin {
+    to_margin(input_cell_margin(button, input), &input.outside())
+}
+
+/// [`text_area_margin`] from [`input_margin`] and the multi-line field's padding.
+pub(crate) fn text_area_margin_from(input: egui::Margin, text_area: &Padded) -> egui::Margin {
+    to_margin(input, &text_area.outside())
 }
 
 /// `input.border.padding` as the margin of a single-line `TextEdit`, for `TextEdit::margin`
@@ -408,7 +478,10 @@ fn input_cell_margin(t: &ResolvedTheme) -> egui::Margin {
 /// `epaint::Margin`.
 #[must_use]
 pub fn input_margin(t: &ResolvedTheme) -> egui::Margin {
-    to_margin(input_cell_margin(t), &padding_with_border(&t.input.border))
+    input_margin_from(
+        &Padded::old(&t.button.border),
+        &Padded::old(&t.input.border),
+    )
 }
 
 /// The frame of a single-line `TextEdit`, for `TextEdit::frame`
@@ -464,7 +537,15 @@ pub fn input_margin(t: &ResolvedTheme) -> egui::Margin {
 /// frame and this one alike.
 #[must_use = "hand the frame to TextEdit::frame"]
 pub fn input_frame(ui: &egui::Ui, id: egui::Id, t: &ResolvedTheme) -> egui::Frame {
-    field_frame(ui, id, t, input_margin(t), None)
+    field_frame(
+        ui,
+        id,
+        &FieldFrameSource {
+            margin: input_margin(t),
+            focus: t.input.focus_border_color.map(to_color32),
+            own: None,
+        },
+    )
 }
 
 /// `text_area.border.padding` as the margin of a multi-line `TextEdit`, as [`input_margin`] is
@@ -475,7 +556,7 @@ pub fn input_frame(ui: &egui::Ui, id: egui::Id, t: &ResolvedTheme) -> egui::Fram
 /// 9 / 0).
 #[must_use]
 pub fn text_area_margin(t: &ResolvedTheme) -> egui::Margin {
-    to_margin(input_margin(t), &padding_with_border(&t.text_area.border))
+    text_area_margin_from(input_margin(t), &Padded::old(&t.text_area.border))
 }
 
 /// [`input_frame`] for a multi-line `TextEdit`, called in the same `Role::Input` scope with
@@ -491,19 +572,41 @@ pub fn text_area_margin(t: &ResolvedTheme) -> egui::Margin {
 /// area shares.
 #[must_use = "hand the frame to TextEdit::frame"]
 pub fn text_area_frame(ui: &egui::Ui, id: egui::Id, t: &ResolvedTheme) -> egui::Frame {
-    field_frame(ui, id, t, text_area_margin(t), Some(&t.text_area.border))
+    let b = &t.text_area.border;
+    field_frame(
+        ui,
+        id,
+        &FieldFrameSource {
+            margin: text_area_margin(t),
+            focus: t.input.focus_border_color.map(to_color32),
+            own: Some(OwnBorder {
+                width: Some(b.line_width),
+                color: Some(to_color32(b.color)),
+                radius: Some(b.corner_radius),
+            }),
+        },
+    )
 }
 
-/// The frame [`input_frame`] and [`text_area_frame`] build: `base` its margin before the
-/// state's `expansion − stroke.width`, and `own`, where given, the border whose width,
-/// radius and resting colour replace the scope's.
-fn field_frame(
-    ui: &egui::Ui,
-    id: egui::Id,
-    t: &ResolvedTheme,
-    base: egui::Margin,
-    own: Option<&native_theme::theme::ResolvedWidgetBorder>,
-) -> egui::Frame {
+/// What [`input_frame`] and [`text_area_frame`] read, from either model: the margin before
+/// the state's `expansion − stroke.width`, the focused stroke's colour where the theme states
+/// one, and the field's own border, where it has one.
+pub(crate) struct FieldFrameSource {
+    pub margin: egui::Margin,
+    pub focus: Option<egui::Color32>,
+    pub own: Option<OwnBorder>,
+}
+
+/// A field's own border: its width in every state, its resting colour and its corner radius,
+/// each `None` where the theme states none, the scope's then standing.
+pub(crate) struct OwnBorder {
+    pub width: Option<f32>,
+    pub color: Option<egui::Color32>,
+    pub radius: Option<f32>,
+}
+
+/// The frame [`input_frame`] and [`text_area_frame`] build from their source.
+pub(crate) fn field_frame(ui: &egui::Ui, id: egui::Id, src: &FieldFrameSource) -> egui::Frame {
     let ctx = ui.ctx();
     // This pass's interaction, before the field is added (`egui/src/context.rs:1350-1355`).
     let response = ctx.read_response(id);
@@ -519,9 +622,9 @@ fn field_frame(
         None => &style.visuals.widgets.inactive,
     };
     let stroke = if focused {
-        match t.input.focus_border_color {
+        match src.focus {
             // at the state's own width, so the frame's total margin never changes on focus
-            Some(color) => egui::Stroke::new(state.bg_stroke.width, to_color32(color)),
+            Some(color) => egui::Stroke::new(state.bg_stroke.width, color),
             // the resting stroke where the soft option is `None`: the border does not change
             None => style.visuals.widgets.inactive.bg_stroke,
         }
@@ -534,17 +637,19 @@ fn field_frame(
     let resting = !focused
         && (std::ptr::eq(state, &style.visuals.widgets.inactive)
             || std::ptr::eq(state, &style.visuals.widgets.noninteractive));
-    let (stroke, corner_radius) = match own {
+    let (stroke, corner_radius) = match &src.own {
         Some(b) => (
             egui::Stroke::new(
-                clamp_length(finite_or(b.line_width, 0.0)),
-                if resting {
-                    to_color32(b.color)
-                } else {
-                    stroke.color
+                b.width
+                    .map_or(stroke.width, |w| clamp_length(finite_or(w, 0.0))),
+                match b.color {
+                    Some(color) if resting => color,
+                    _ => stroke.color,
                 },
             ),
-            to_corner_radius(state.corner_radius, b.corner_radius),
+            b.radius.map_or(state.corner_radius, |r| {
+                to_corner_radius(state.corner_radius, r)
+            }),
         ),
         None => (stroke, state.corner_radius),
     };
@@ -553,7 +658,7 @@ fn field_frame(
     egui::Frame {
         fill: style.visuals.text_edit_bg_color(),
         corner_radius,
-        inner_margin: base,
+        inner_margin: src.margin,
         ..Default::default()
     }
     .apply_stroke_and_expansion_without_layout_shift(stroke, state.expansion)
@@ -570,8 +675,20 @@ fn field_frame(
 /// the change. Owns one `Color32`, so it is `'static` as `icon` requires.
 #[must_use = "hand the closure to CollapsingHeader::icon"]
 pub fn expander_icon(t: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Response) + 'static {
-    // §6.19: the soft option decides whether egui's own arrow colour stands
-    let arrow = t.expander.arrow_color.map(to_color32);
+    expander_icon_from(expander_arrow(t))
+}
+
+/// The arrow's colour [`expander_icon`] paints in, `expander.arrow_color`; `None` where the
+/// theme states none.
+pub(crate) fn expander_arrow(t: &ResolvedTheme) -> Option<egui::Color32> {
+    t.expander.arrow_color.map(to_color32)
+}
+
+/// [`expander_icon`]'s closure, painting in `arrow`, or egui's own arrow where it is `None`
+/// (spec §6.19: the soft option decides whether egui's own arrow colour stands).
+pub(crate) fn expander_icon_from(
+    arrow: Option<egui::Color32>,
+) -> impl Fn(&mut egui::Ui, f32, &egui::Response) + 'static {
     move |ui: &mut egui::Ui, openness: f32, response: &egui::Response| match arrow {
         None => egui::collapsing_header::paint_default_icon(ui, openness, response),
         Some(color) => {

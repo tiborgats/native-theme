@@ -50,8 +50,8 @@ reason = "an egui `FontId`, the font `list.header_font` is drawn in, of which eg
 [[exception]]
 connector = "egui"
 name = "expander_icon"
-kind = "name"
-reason = "a painter for `CollapsingHeader::icon`, not the leaf's value: a closure that paints egui's own arrow in `expander.arrow_color`, or in egui's colour where the theme states none"
+kind = "undecided"
+reason = "a painter for `CollapsingHeader::icon`, not the leaf's value: a closure that paints egui's own arrow in `expander.arrow_color`, or in egui's colour where the theme states none; it passes the theme to `expander_arrow`, which reads that one leaf, so that the 0.8.0 twin's closure is the same one fed from `expander.arrow(NONE).color`"
 
 # ── absent: gpui ────────────────────────────────────────────────────────────
 # `to_theme` writes these leaves into gpui-component's `Theme` (its
@@ -791,7 +791,7 @@ reason = "egui's `next` gives each function of egui's crate root a twin on the 0
 
 [[exception]]
 connector = ["iced", "gpui"]
-name = ["next::list_header_font", "next::role_font_is_italic", "next::role_font_weight", "next::text_role_font", "next::text_role_line_height", "next::text_role_weight", "next::toolbar_button_checked_background", "next::toolbar_button_checked_border_color", "next::window_title_bar_font", "next::window_title_bar_text_color"]
+name = ["next::default_button", "next::expander_icon", "next::icon_size", "next::input_frame", "next::input_margin", "next::list_header_font", "next::role_font_is_italic", "next::role_font_weight", "next::text_area_frame", "next::text_area_margin", "next::text_role_font", "next::text_role_line_height", "next::text_role_weight", "next::toolbar_button_checked_background", "next::toolbar_button_checked_border_color", "next::window_title_bar_font", "next::window_title_bar_text_color"]
 kind = "absent"
 reason = "egui's `next` gives each function of egui's crate root a twin on the 0.8.0 model, and iced's and gpui's crate roots have none of these, each for the reason its entry above gives for the root name"
 

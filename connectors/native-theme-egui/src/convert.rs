@@ -254,6 +254,7 @@ pub fn to_margin(
 /// sum at `f32::MAX`, so [`to_margin`] saturates it rather than mistaking it for a non-finite
 /// side. A `None` or non-finite side stays `None`, which every consumer resolves to egui's own
 /// value.
+#[cfg(test)]
 #[inline]
 #[must_use]
 pub(crate) fn padding_with_border(
@@ -262,7 +263,7 @@ pub(crate) fn padding_with_border(
     padding_with_line(&border.padding, border.line_width)
 }
 
-/// [`padding_with_border`] of a padding and a line width given apart: each stated, finite
+/// `padding_with_border` of a padding and a line width given apart: each stated, finite
 /// side plus `clamp_length(finite_or(line_width, 0.0))`, saturated at `f32::MAX` as core's
 /// `ResolvedWidgetBorder::padding_outside` saturates it.
 #[inline]
@@ -321,6 +322,7 @@ pub(crate) fn expander_padding_border(
 /// cap. The expander reads `.x` on its trailing side only
 /// (`egui/src/containers/collapsing_header.rs:526`), so its call site takes `.y` from this
 /// function and writes `.x` from `padding_with_border(border).right` alone (spec §7.4).
+#[cfg(test)]
 #[inline]
 #[must_use]
 pub(crate) fn to_button_padding(
@@ -330,7 +332,7 @@ pub(crate) fn to_button_padding(
     button_padding_outside(base, &padding_with_border(border))
 }
 
-/// [`to_button_padding`] of a padding already measured from the outside of its border.
+/// `to_button_padding` of a padding already measured from the outside of its border.
 #[inline]
 #[must_use]
 pub(crate) fn button_padding_outside(
