@@ -94,12 +94,7 @@ impl Preset {
         }
         #[cfg(all(target_os = "macos", feature = "macos"))]
         {
-            let generation = crate::pipeline::macos_generation(crate::macos::os_version()).0;
-            if generation.name == Self::MacosTahoe.as_str() {
-                Self::MacosTahoe
-            } else {
-                Self::MacosMonterey
-            }
+            super::reader::macos::preset_of(crate::macos::os_version())
         }
         // Without the reader feature the version is not read, as in 0.7.2;
         // plan M3 item 2 proves a `SystemVersion.plist` read on a macOS 26
@@ -279,9 +274,10 @@ impl Theme {
     /// [`diagnostics`](Self::diagnostics) returns.
     ///
     /// The KDE reader (the `kde` feature) and the GNOME reader (the `portal`
-    /// feature) are written, on Linux, and the Windows reader (the `windows`
-    /// feature); each other platform's comes with its preset's builder (plan,
-    /// M2). On Linux the reader is chosen as 0.7.2's
+    /// feature) are written, on Linux, the macOS reader (the `macos`
+    /// feature), for the generation's preset, and the Windows reader (the
+    /// `windows` feature); each other platform's comes with its preset's
+    /// builder (plan, M2). On Linux the reader is chosen as 0.7.2's
     /// pipeline chooses it, by the desktop it refines (`linux_reader_kind`):
     /// the GNOME reader on GNOME and Budgie, the KDE reader on KDE, and on any
     /// other desktop no reader: the theme is then the `adwaita` preset alone,
@@ -333,13 +329,15 @@ impl Theme {
 
     /// The system's settings, read by the reader of `detected`, the
     /// platform's preset: KDE's for `kde-breeze`; for `adwaita` the reader
-    /// of the desktop `read_linux_desktop` chooses; Windows' for
-    /// `windows-11`. The other platforms' readers are not written yet (plan,
-    /// M2): `PlatformUnsupported`.
+    /// of the desktop `read_linux_desktop` chooses; macOS' for
+    /// `macos-monterey` and `macos-tahoe`; Windows' for `windows-11`. The
+    /// other platforms' readers are not written yet (plan, M2):
+    /// `PlatformUnsupported`.
     fn read_system(detected: Preset) -> Result<SystemRead, Error> {
         match detected {
             Preset::KdeBreeze => Self::read_kde().map(SystemRead::from),
             Preset::Adwaita => Self::read_adwaita_desktop(),
+            Preset::MacosMonterey | Preset::MacosTahoe => Self::read_macos().map(SystemRead::from),
             Preset::Windows11 => Self::read_windows().map(SystemRead::from),
             _ => Err(Error::PlatformUnsupported {
                 platform: std::env::consts::OS,
@@ -429,6 +427,29 @@ impl Theme {
             })
         }
         #[cfg(not(target_os = "linux"))]
+        {
+            Err(Error::PlatformUnsupported {
+                platform: std::env::consts::OS,
+            })
+        }
+    }
+
+    /// The macOS reader's snapshot (`reader::macos::read`): on macOS with
+    /// the `macos` feature; `FeatureDisabled` on macOS without it,
+    /// `PlatformUnsupported` elsewhere.
+    fn read_macos() -> Result<SystemSnapshot, Error> {
+        #[cfg(all(target_os = "macos", feature = "macos"))]
+        {
+            super::reader::macos::read()
+        }
+        #[cfg(all(target_os = "macos", not(feature = "macos")))]
+        {
+            Err(Error::FeatureDisabled {
+                feature: "macos",
+                needed_for: "reading the macOS settings",
+            })
+        }
+        #[cfg(not(target_os = "macos"))]
         {
             Err(Error::PlatformUnsupported {
                 platform: std::env::consts::OS,
@@ -1087,13 +1108,15 @@ mod tests {
     }
 
     /// A platform without a written reader, every preset but `kde-breeze` and `adwaita`, and
-    /// `windows-11` on Windows, is unsupported, and both entry points' pure part passes the
-    /// reader's error on.
+    /// `windows-11` on Windows and the two macOS presets on macOS, is unsupported, and both entry
+    /// points' pure part passes the reader's error on.
     #[test]
     fn a_platform_without_a_reader_is_unsupported() {
         for preset in Preset::ALL.iter().filter(|p| {
             !matches!(p, Preset::KdeBreeze | Preset::Adwaita)
                 && !(cfg!(target_os = "windows") && **p == Preset::Windows11)
+                && !(cfg!(target_os = "macos")
+                    && matches!(p, Preset::MacosMonterey | Preset::MacosTahoe))
         }) {
             let read = Theme::read_system(*preset);
             assert!(
@@ -1128,6 +1151,26 @@ mod tests {
             ),
             "{read:?}"
         );
+    }
+
+    /// On macOS without the `macos` feature, the macOS reader is a disabled feature, for both
+    /// presets.
+    #[cfg(all(target_os = "macos", not(feature = "macos")))]
+    #[test]
+    fn macos_without_its_feature_is_a_disabled_feature() {
+        for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
+            let read = Theme::read_system(preset);
+            assert!(
+                matches!(
+                    read,
+                    Err(Error::FeatureDisabled {
+                        feature: "macos",
+                        ..
+                    })
+                ),
+                "{preset:?}: {read:?}"
+            );
+        }
     }
 
     /// On Linux without the `kde` feature, the KDE desktop's reader is a disabled feature.
@@ -1265,13 +1308,14 @@ mod tests {
     }
 
     /// Where no reader reads the desktop (on Linux neither the `kde` nor the `portal` feature, on
-    /// Windows not the `windows` feature, or another platform), `from_system_or_default` is the
-    /// platform's preset alone, which resolves; off Linux `from_system` fails without a read (on
-    /// Linux a desktop without a reader is the preset alone too:
-    /// `the_reader_is_chosen_by_the_desktop_as_0_7_2_chooses_it`).
+    /// Windows not the `windows` feature, on macOS not the `macos` feature, or another platform),
+    /// `from_system_or_default` is the platform's preset alone, which resolves; off Linux
+    /// `from_system` fails without a read (on Linux a desktop without a reader is the preset alone
+    /// too: `the_reader_is_chosen_by_the_desktop_as_0_7_2_chooses_it`).
     #[cfg(not(any(
         all(target_os = "linux", any(feature = "kde", feature = "portal")),
-        all(target_os = "windows", feature = "windows")
+        all(target_os = "windows", feature = "windows"),
+        all(target_os = "macos", feature = "macos")
     )))]
     #[test]
     fn from_system_or_default_falls_back_to_the_platform_preset() {

@@ -677,6 +677,16 @@ pub(super) mod kde;
     reason = "the clean room's helper, placed unchanged: Qt's qGray truncates by its definition, and the divisor is the constant 32"
 )]
 mod kde_color_scheme;
+/// Built on every target, as 0.7.2's `macos` module, so that reader parity
+/// runs its pure entry on every host; only `read` calls AppKit.
+#[cfg_attr(
+    not(any(test, all(target_os = "macos", feature = "macos"))),
+    allow(
+        dead_code,
+        reason = "called by the macOS reader's `read()` and the reader parity test"
+    )
+)]
+pub(super) mod macos;
 /// Pango's `pango_font_description_from_string`: the clean-room parser of
 /// `v0.8.0-rc1` (`src/cleanroom_readers/pango_font_description.rs`), carried
 /// with its vector test, `tests/vectors/reader.pango_font_description.tsv`;
