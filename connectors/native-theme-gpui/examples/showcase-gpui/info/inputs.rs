@@ -5,6 +5,7 @@ use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 use native_theme_gpui::ResolvedTheme;
+use native_theme_gpui::next::{fill_of, padding_of, text_color_of};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{CheckboxLook, SwitchLook};
 
@@ -333,27 +334,32 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
 }
 
 /// The size of the Number input's step glyphs under a native theme
-/// (M9-177): `defaults.icon_sizes.small`, or where a step is shorter, the
-/// step's height, so no glyph overflows its step. The steps share the
-/// field's stated height inside its edge (`geometry::input`:
-/// `input.min_height` and `input.border.line_width`). `demo::number_input`
-/// draws the glyphs at [`StepGlyph::side`] and [`native_number_input`]
-/// says so.
+/// (M9-177): `icons.sizes.small`, or where a step is shorter, the step's
+/// height, so no glyph overflows its step. The steps share the field's
+/// stated height inside its edge (`geometry::input`:
+/// `input.field(NONE).min_size[1]` and its stroke width).
+/// `demo::number_input` draws the glyphs at [`StepGlyph::side`] and
+/// [`native_number_input`] says so.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct StepGlyph {
-    /// `defaults.icon_sizes.small`.
+    /// `icons.sizes.small`.
     pub(crate) small: f32,
-    /// A step's height: half `input.min_height` inside the frame's two edges.
+    /// A step's height: half `input.field(NONE).min_size[1]` inside the
+    /// frame's two edges.
     pub(crate) step: f32,
 }
 
 impl StepGlyph {
-    pub(crate) fn of(r: &ResolvedTheme) -> Self {
-        let i = &r.input;
-        Self {
-            small: r.defaults.icon_sizes.small,
-            step: (i.min_height - i.border.line_width - i.border.line_width).max(0.0) / 2.0,
-        }
+    /// The glyphs' sizes under `r`, or the home `r` leaves without a value
+    /// they need.
+    pub(crate) fn of(r: &NextTheme) -> Result<Self, &'static str> {
+        let field = r.input.field(WidgetState::NONE);
+        let height = field.min_size[1].ok_or("input.field(NONE).min_size[1]")?;
+        let line = stroke_width_of(&field).ok_or("input.field(NONE).stroke.width")?;
+        Ok(Self {
+            small: r.icons.sizes.small.ok_or("icons.sizes.small")?,
+            step: (height - line - line).max(0.0) / 2.0,
+        })
     }
 
     /// The side each glyph is drawn at.
@@ -361,56 +367,59 @@ impl StepGlyph {
         self.small.min(self.step)
     }
 
-    /// Whether the glyphs are at `defaults.icon_sizes.small`
+    /// Whether the glyphs are at `icons.sizes.small`
     /// (`geometry::icon_size_small`), a step being at least that tall.
     pub(crate) fn at_icon_size_small(self) -> bool {
         self.small <= self.step
     }
 }
 
-/// The number field the showcase draws as `r`'s `input.*` states a text
-/// field (`demo::number_input` under a native theme): its own frame round
-/// gpui-base's NumberInput, `focused` or not, its step buttons showing `up`
-/// and `down`, of the chosen icon theme. Its geometry lines are recorded
+/// The number field the showcase draws as `r`'s `input` states a text
+/// field (`demo::number_input` under a 0.8.0 theme): its own frame round
+/// gpui-base's NumberInput, `focused` or not, its line `width` wide and
+/// rounded by `radius`, its step buttons showing `up` and `down`, of the
+/// chosen icon theme, at `glyph`'s side. Its geometry lines are recorded
 /// where `demo::number_input` applies the builders.
 pub fn native_number_input(
-    r: &ResolvedTheme,
+    r: &NextTheme,
     focused: bool,
     up: &SampleIcon,
     down: &SampleIcon,
+    glyph: StepGlyph,
+    width: f32,
+    radius: f32,
 ) -> WidgetInfo {
-    let i = &r.input;
     let info = WidgetInfo::new("NumberInput")
         .variant(if focused {
             "drawn by the showcase, focused"
         } else {
             "drawn by the showcase"
         })
-        .color(claim(
+        .colors(stated_claim(
             "bg",
-            "background_color",
-            stated(i.background_color),
+            "input.field(NONE).fill",
+            fill_of(&r.input.field(WidgetState::NONE)),
             "showcase",
         ));
-    // The frame takes geometry::input's line width; a 0 width draws no edge
-    // in any state.
-    let width = Some(i.border.line_width);
-    let info = if i.border.line_width <= 0.0 {
-        info.config("edge", "none: input.border.line_width is 0")
+    // The frame takes geometry::input's stroke width; a 0 width draws no
+    // edge in any state.
+    let drawn = Some(width);
+    let info = if width <= 0.0 {
+        info.config("edge", "none: input.field(NONE).stroke.width is 0")
     } else if focused {
         info.colors(
             edge_claim(
                 "edge, focused",
-                "focus_border_color",
-                i.focus_border_color,
-                width,
+                "input.field(FOCUSED).stroke.color",
+                state_stroke_color_of(&r.input.field(WidgetState::FOCUSED)),
+                drawn,
                 "showcase",
             )
             .or(edge_claim(
                 "edge, focused: no focused edge stated, so the edge at rest",
-                "border",
-                Some(i.border.color),
-                width,
+                "input.field(NONE).stroke.color",
+                stroke_color_of(&r.input.field(WidgetState::NONE)),
+                drawn,
                 "showcase",
             )),
         )
@@ -421,83 +430,82 @@ pub fn native_number_input(
     } else {
         info.colors(edge_claim(
             "edge",
-            "border",
-            Some(i.border.color),
-            width,
+            "input.field(NONE).stroke.color",
+            stroke_color_of(&r.input.field(WidgetState::NONE)),
+            drawn,
             "showcase",
         ))
         .colors(edge_claim(
             "hovered edge",
-            "hover_border_color",
-            i.hover_border_color,
-            width,
+            "input.field(HOVER).stroke.color",
+            state_stroke_color_of(&r.input.field(WidgetState::HOVER)),
+            drawn,
             "showcase",
         ))
         .colors(edge_claim(
             "focused edge",
-            "focus_border_color",
-            i.focus_border_color,
-            width,
+            "input.field(FOCUSED).stroke.color",
+            state_stroke_color_of(&r.input.field(WidgetState::FOCUSED)),
+            drawn,
             "showcase",
         ))
     };
-    // The step buttons take upstream's colours, through the fields its
-    // tokens carry under a native theme: secondary_foreground is
-    // button.font's colour, and input the field's edge colour
-    // (input/number_input.rs, NumberInput::render; native-theme-gpui
-    // colors.rs). A step whose chevron the icon theme lacks shows none, and
-    // a raster chevron keeps its own colours (`up.note`, `down.note`).
+    // The step buttons take upstream's colours, through the homes its
+    // tokens carry under a 0.8.0 theme: secondary_foreground is the button
+    // label's colour, and input the field's edge colour
+    // (input/number_input.rs, NumberInput::render). A step whose chevron the
+    // icon theme lacks shows none, and a raster chevron keeps its own
+    // colours (`up.note`, `down.note`).
     let svg = |icon: &SampleIcon| icon.shown() && !icon.is_raster();
     let info = if svg(up) || svg(down) {
-        info.color(claim(
+        info.colors(stated_claim(
             "step arrows",
-            "font",
-            stated(r.button.font.color),
+            "button.label(NONE).color",
+            text_color_of(&r.button.label(WidgetState::NONE)),
             "showcase",
         ))
     } else {
         info
     };
     let info = info
-        .color(claim(
+        .colors(stated_claim(
             "step button hovered, the edge colour at 40%",
-            "border",
-            stated(i.border.color).opacity(NUMBER_STEP_HOVER),
+            "input.field(NONE).stroke.color",
+            stroke_color_of(&r.input.field(WidgetState::NONE))
+                .map(|edge| edge.opacity(NUMBER_STEP_HOVER)),
             "showcase",
         ))
-        .color(claim(
+        .colors(stated_claim(
             "step button pressed, the edge colour at 60%",
-            "border",
-            stated(i.border.color).opacity(NUMBER_STEP_ACTIVE),
+            "input.field(NONE).stroke.color",
+            stroke_color_of(&r.input.field(WidgetState::NONE))
+                .map(|edge| edge.opacity(NUMBER_STEP_ACTIVE)),
             "showcase",
         ));
     let side = |name: &str, v: Option<f32>| match v {
         Some(v) => format!("{name} {}px", px_text(v)),
         None => format!("{name} upstream's"),
     };
-    let p = &i.border.padding;
+    let [top, right, bottom, left] = padding_of(&r.input.field(WidgetState::NONE));
     let sides = [
-        side("top", p.top),
-        side("right", p.right),
-        side("bottom", p.bottom),
-        side("left", p.left),
+        side("top", top),
+        side("right", right),
+        side("bottom", bottom),
+        side("left", left),
     ]
     .join(", ");
-    info.config("why drawn", "upstream's NumberInput fills its frame with input_background and edges it with the input token, ring while focused, and no hover edge (input/number_input.rs, NumberInput::render), so input.background_color, hover_border_color and focus_border_color would have no receiver there: the showcase draws the frame round gpui-base's NumberInput, the spin button upstream composes")
-        .config("padding", format!("geometry::input's input.border.padding on the value inside the step buttons, {sides}: an unstated side keeps upstream's Size::Medium padding, which the refinement lands after (input/input.rs, Input::render: input_px and input_py, then refine_style); the frame round the buttons takes none"))
-        .config("frame", format!("geometry::input's height, radius {}px and edge width {}px, on the frame round the value and the buttons", px_text(i.border.corner_radius), px_text(i.border.line_width)))
-        .instance("text", "input.font's colour, which geometry::input refines the value with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
+    info.config("why drawn", "upstream's NumberInput fills its frame with input_background and edges it with the input token, ring while focused, and no hover edge (input/number_input.rs, NumberInput::render), so input.field(NONE).fill and the hovered and focused field's stroke colours would have no receiver there: the showcase draws the frame round gpui-base's NumberInput, the spin button upstream composes")
+        .config("padding", format!("geometry::input's padding, the sides input.field(NONE) states, on the value inside the step buttons, {sides}: an unstated side keeps upstream's Size::Medium padding, which the refinement lands after (input/input.rs, Input::render: input_px and input_py, then refine_style); the frame round the buttons takes none"))
+        .config("frame", format!("geometry::input's height, radius {}px and edge width {}px, on the frame round the value and the buttons", px_text(radius), px_text(width)))
+        .instance("text", "input.text(NONE).color, which geometry::input refines the value with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
         .instance("focus ring", "none: the value is an Input without its appearance, which carries upstream's ring (input/input.rs, Input::render), and the frame marks focus by its edge alone")
         .not_themeable("step buttons", "upstream's: transparent at rest, as wide as upstream's at the field's Size (input/number_input.rs, NumberInput::render: min_w_8), each half the field's height, stacked at its right end (gpui-base/number_input.rs, controls_right): the theme states no spin-box layout")
-        .instance("step glyphs", {
-            let glyph = StepGlyph::of(r);
-            format!(
-                "{}px: the smaller of defaults.icon_sizes.small, {}px, and a step's height, half input.min_height inside the frame's edge, {}px, so no glyph overflows its step (demo::number_input)",
-                px_text(glyph.side()),
-                px_text(glyph.small),
-                px_text(glyph.step)
-            )
-        })
+        .instance("step glyphs", format!(
+            "{}px: the smaller of icons.sizes.small, {}px, and a step's height, half input.field(NONE).min_size[1] inside the frame's edge, {}px, so no glyph overflows its step (demo::number_input)",
+            px_text(glyph.side()),
+            px_text(glyph.small),
+            px_text(glyph.step)
+        ))
         .instance("increment step", format!("ChevronUp: {}", up.note("the button shows no glyph")))
         .instance("decrement step", format!("ChevronDown: {}", down.note("the button shows no glyph")))
 }

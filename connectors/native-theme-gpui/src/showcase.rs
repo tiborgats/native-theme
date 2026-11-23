@@ -3349,12 +3349,12 @@ const EDGE_COLOURS_NOT_EDGES: &[(&str, &str, &str)] = &[
     (
         "native_number_input",
         "step button hovered, the edge colour at 40%",
-        "a fill: upstream tints a hovered step button with its input token, which the connector fills from input.border.color (input/number_input.rs, NumberInput::render; native-theme-gpui colors.rs)",
+        "a fill: the showcase tints a hovered step button with the field's edge colour, input.field(NONE).stroke.color, where upstream tints it with its input token (input/number_input.rs, NumberInput::render)",
     ),
     (
         "native_number_input",
         "step button pressed, the edge colour at 60%",
-        "a fill: upstream tints a pressed step button with its input token, which the connector fills from input.border.color (input/number_input.rs, NumberInput::render; native-theme-gpui colors.rs)",
+        "a fill: the showcase tints a pressed step button with the field's edge colour, input.field(NONE).stroke.color, where upstream tints it with its input token (input/number_input.rs, NumberInput::render)",
     ),
 ];
 

@@ -4578,14 +4578,16 @@ pub(crate) struct StepIcons {
 /// A number field over `state`, `width` wide, which a screen reader names
 /// `label`: it draws no text of its own to be named by.
 ///
-/// Under a native theme, gpui-component's `NumberInput` rebuilt over the
-/// unstyled spin button it composes (`gpui_base::NumberInput`,
-/// input/number_input.rs:125-216), with what the theme states for a text
-/// field where upstream sets literals no caller reaches: the frame is
-/// `input.background_color` edged by `input.border` (colour, width, radius)
-/// at `geometry::input`'s height, in `input.hover_border_color` under the
-/// pointer and `input.focus_border_color` while focused; the value is an
-/// `Input` padded by `input.border.padding` in `input.font`. Upstream's
+/// Under a 0.8.0 theme that states what it reads ([`NumberFrame`]),
+/// gpui-component's `NumberInput` rebuilt over the unstyled spin button it
+/// composes (`gpui_base::NumberInput`, input/number_input.rs:125-216), with
+/// what the theme states for a text field where upstream sets literals no
+/// caller reaches: the frame is `input.field(NONE)`'s fill edged by its
+/// stroke and corners at `geometry::input`'s height, in
+/// `input.field(HOVER).stroke.color` under the pointer and
+/// `input.field(FOCUSED).stroke.color` while focused; the value is an
+/// `Input` padded by the sides `input.field(NONE)` states, in
+/// `input.text(NONE)`. Upstream's
 /// fills its frame with its `input_background` (:125-126) and pads its value
 /// by its Size (:173-180). The theme states no spin-box layout: the value
 /// starts at the field's padding and the step buttons stack at its right
@@ -4595,7 +4597,7 @@ pub(crate) struct StepIcons {
 /// (:128-171), each showing its chevron of `steps`, the chosen icon theme's
 /// at `geometry::icon_size_small` or, where a step is shorter, the step's
 /// height (`info::inputs::StepGlyph`), or none where that theme has none.
-/// Without a native theme, upstream's `NumberInput`, which draws its own
+/// Without such a theme, upstream's `NumberInput`, which draws its own
 /// Minus and Plus.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn number_input(
@@ -4608,31 +4610,51 @@ pub(crate) fn number_input(
     width: Pixels,
     steps: &StepIcons,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let Some(n) = native else {
-        return NumberInput::new(state)
-            .accessibility_label(label)
-            .placeholder("Enter a number")
-            .with_size(Size::Medium)
-            .w(width)
-            .info(ui, id, info::inputs::number_input(cx.theme()));
+    let theme = next_resolved(cx);
+    let frame = theme.map(NumberFrame::of);
+    let (r, number) = match (theme, frame) {
+        (Some(r), Some(Ok(number))) => (r, number),
+        (_, frame) => {
+            let mut number_info = info::inputs::number_input(cx.theme());
+            if let Some(Err(home)) = frame {
+                number_info = number_info.config("drawn", format!("by gpui-component: the theme states no value gpui can take at {home}, which the field the showcase draws needs"));
+            }
+            return NumberInput::new(state)
+                .accessibility_label(label)
+                .placeholder("Enter a number")
+                .with_size(Size::Medium)
+                .w(width)
+                .info(ui, id, number_info);
+        }
     };
-    let i = &n.resolved.input;
+    let NumberFrame {
+        field,
+        surface,
+        focus,
+        foreground,
+        glyph,
+    } = number;
+    let line = &surface.line;
     let focused = gpui::Focusable::focus_handle(state.read(cx), cx).is_focused(window);
-    let mut number_info =
-        info::inputs::native_number_input(n.resolved, focused, &steps.up, &steps.down)
-            .geometry("input");
-    let glyph = info::inputs::StepGlyph::of(n.resolved);
+    let mut number_info = info::inputs::native_number_input(
+        r,
+        focused,
+        &steps.up,
+        &steps.down,
+        glyph,
+        line.width,
+        line.radius,
+    )
+    .next_geometry("input");
     if (steps.up.shown() || steps.down.shown()) && glyph.at_icon_size_small() {
-        number_info = number_info.geometry("icon_size_small");
+        number_info = number_info.next_geometry("icon_size_small");
     }
     // A soft option the theme leaves unstated keeps the edge it would cover.
-    let edge = info::stated(match (focused, i.focus_border_color) {
+    let edge = match (focused, focus) {
         (true, Some(focus)) => focus,
-        _ => i.border.color,
-    });
-    let hover = info::stated(i.hover_border_color.unwrap_or(i.border.color));
-    let field = geometry::input(n);
+        _ => line.colour,
+    };
+    let hover = surface.hover;
     // The frame: the field's height, radius and edge width, no padding --
     // that is the value's, inside the buttons.
     let mut frame = field.clone();
@@ -4648,15 +4670,13 @@ pub(crate) fn number_input(
     // pointer and while pressed, a pixel tighter at the outer corners, as
     // wide as upstream's at the field's Size (:162-166, `min_w_8`); stacked,
     // each half the field's height, with its chevron of the chosen icon
-    // theme. Their colours are the fields
-    // upstream's tokens carry under a native theme: secondary_foreground is
-    // `button.font`'s colour, input the field's edge colour (native-theme-gpui
-    // colors.rs).
-    let foreground = info::stated(n.resolved.button.font.color);
-    let tint = info::stated(i.border.color);
-    let radius = px(i.border.corner_radius.max(0.0) - i.border.line_width).max(px(0.));
-    // Each step's glyph at `defaults.icon_sizes.small`, or where a step is
-    // shorter, the step's height (`info::inputs::StepGlyph`, M9-177).
+    // theme. Their colours are the homes upstream's tokens carry under a
+    // 0.8.0 theme: secondary_foreground is `button.label(NONE)`'s colour,
+    // input the field's edge colour.
+    let tint = line.colour;
+    let radius = px(line.radius.max(0.0) - line.width).max(px(0.));
+    // Each step's glyph at `icons.sizes.small`, or where a step is shorter,
+    // the step's height (`info::inputs::StepGlyph`, M9-177).
     let side = Size::Size(px(glyph.side()));
     let (up, down) = (
         steps.up.glyph().map(|glyph| glyph.with_size(side)),
@@ -4693,13 +4713,49 @@ pub(crate) fn number_input(
     div()
         .id("number-frame")
         .w(width)
-        .bg(info::stated(i.background_color))
+        .bg(surface.fill)
         .refine_style(&frame)
         .border_color(edge)
         .when(!focused, |el| el.hover(move |s| s.border_color(hover)))
         .child(spin)
         .info(ui, id, number_info)
         .debug_selector(move || id.into())
+}
+
+/// What the number field the showcase draws ([`number_input`]) reads of the
+/// installed 0.8.0 theme.
+struct NumberFrame {
+    /// `geometry::input`'s refinement.
+    field: StyleRefinement,
+    /// The field's surface, `input.field(NONE)` and `input.field(HOVER)`.
+    surface: FieldSurface,
+    /// `input.field(FOCUSED).stroke.color`, where a rule states it.
+    focus: Option<Hsla>,
+    /// The step glyphs' colour, `button.label(NONE).color`.
+    foreground: Hsla,
+    /// The step glyphs' size.
+    glyph: info::inputs::StepGlyph,
+}
+
+impl NumberFrame {
+    /// What `r` states of the field, or the home it leaves without a value
+    /// gpui can take.
+    fn of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
+        let field = next::geometry::input(r).map_err(|unstated| unstated.home())?;
+        let surface = FieldSurface::of(
+            &r.input.field(WidgetState::NONE),
+            &r.input.field(WidgetState::HOVER),
+        )
+        .ok_or("input.field(NONE)'s fill, stroke or corners")?;
+        Ok(Self {
+            field,
+            surface,
+            focus: next::state_stroke_color_of(&r.input.field(WidgetState::FOCUSED)),
+            foreground: next::text_color_of(&r.button.label(WidgetState::NONE))
+                .ok_or("button.label(NONE).color")?,
+            glyph: info::inputs::StepGlyph::of(r)?,
+        })
+    }
 }
 
 /// The opacity of the frame's edge colour a step button of the number field

@@ -12669,50 +12669,61 @@ fn a_menu_popup_rows_fallback_height_follows_the_control_height_rule() {
         );
     }
 }
-/// The number field a native theme draws -- the showcase's own frame round
+/// The number field a 0.8.0 theme draws -- the showcase's own frame round
 /// gpui-base's NumberInput -- reports what it paints (M9-001): under
-/// kde-breeze light its fill is `input.background_color`, the view colour
-/// and not the window's; its edge `input.border.color`, under the pointer
-/// `input.hover_border_color` and focused `input.focus_border_color`; its
-/// value padded by `geometry::input`; its steps ChevronUp and ChevronDown.
-/// The fill painted inside it is the fill claimed, and the edge painted
-/// round it once it is focused the focused edge claimed.
+/// kde-breeze light its fill is `input.field(NONE).fill`, the view colour
+/// and not the window's; its edge `input.field(NONE).stroke.color`, under
+/// the pointer `input.field(HOVER)`'s and focused `input.field(FOCUSED)`'s;
+/// its value padded by `geometry::input`; its steps ChevronUp and
+/// ChevronDown. The fill painted inside it is the fill claimed, and the edge
+/// painted round it once it is focused the focused edge claimed.
 #[gpui::test]
 fn the_native_number_field_reports_what_it_draws(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::{state_stroke_color_of, stroke_color_of, stroke_width_of};
+    use native_theme::next::WidgetState;
+    const FOCUSED: &str = "input.field(FOCUSED).stroke.color";
+    const HOVERED: &str = "input.field(HOVER).stroke.color";
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
     let i = &r.input;
-    let fill = stated(i.background_color);
-    assert_ne!(
-        fill,
-        stated(r.defaults.background_color),
-        "kde-breeze light's field fill is the window's colour, so the fill claim could not be told from upstream's"
-    );
+    let fill = native_theme_gpui::next::fill_of(&i.field(WidgetState::NONE));
+    let window = cx.update(|_w, cx| Theme::global(cx).background);
     assert!(
-        i.border.line_width > 0.0
-            && i.hover_border_color.is_some()
-            && i.focus_border_color.is_some(),
+        fill.is_some_and(|fill| fill != window),
+        "kde-breeze light's field fill is the window's colour, or unstated, so the fill claim could not be told from upstream's"
+    );
+    let rest = stroke_color_of(&i.field(WidgetState::NONE));
+    let hovered = state_stroke_color_of(&i.field(WidgetState::HOVER));
+    let focus = state_stroke_color_of(&i.field(WidgetState::FOCUSED));
+    assert!(
+        stroke_width_of(&i.field(WidgetState::NONE)).is_some_and(|width| width > 0.0)
+            && rest.is_some()
+            && hovered.is_some()
+            && focus.is_some(),
         "kde-breeze no longer frames its field and states its hover and focus edges, which this test reads"
     );
     let field = "basic-number";
-    let info = settle_on(&mut cx, &showcase, field).expect("the number field shows an info");
+    let info = settle_on(&mut cx, &showcase, field);
+    assert!(info.is_some(), "the number field shows no info");
+    let Some(info) = info else { return };
     assert_eq!(
-        claim_of(&info, "background_color"),
-        Some(fill),
-        "the number field's info does not claim the input.background_color it is filled with: {info:?}"
+        claim_of(&info, "input.field(NONE).fill"),
+        fill,
+        "the number field's info does not claim the input.field(NONE).fill it is filled with: {info:?}"
     );
-    for (leaf, want) in [
-        ("border", Some(stated(i.border.color))),
-        ("hover_border_color", i.hover_border_color.map(stated)),
-        ("focus_border_color", i.focus_border_color.map(stated)),
+    for (role, want) in [
+        ("edge", rest),
+        ("hovered edge", hovered),
+        ("focused edge", focus),
     ] {
         assert_eq!(
-            claim_of(&info, leaf),
+            info.colors.iter().find(|c| c.role == role).map(|c| c.value),
             want,
-            "the number field's info does not claim input.{leaf}, which its frame is edged with: {info:?}"
+            "the number field's info does not claim its {role}, which its frame is edged with: {info:?}"
         );
     }
     let padding = info
@@ -12739,16 +12750,18 @@ fn the_native_number_field_reports_what_it_draws(cx: &mut TestAppContext) {
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, field),
-        Some(fill),
+        fill,
         "the fill painted inside the number field is not the fill its info claims"
     );
     // Focused: the info built in that frame claims the focused edge, which
     // is the edge painted.
     click(&mut cx, field);
-    let focused = settle_on(&mut cx, &showcase, field).expect("the number field shows an info");
-    let edge = claim_of(&focused, "focus_border_color");
+    let focused = settle_on(&mut cx, &showcase, field);
+    assert!(focused.is_some(), "the focused number field shows no info");
+    let Some(focused) = focused else { return };
+    let edge = claim_of(&focused, FOCUSED);
     assert!(
-        edge.is_some() && claim_of(&focused, "hover_border_color").is_none(),
+        edge.is_some() && claim_of(&focused, HOVERED).is_none(),
         "the focused number field's info does not claim its focused edge alone: {focused:?}"
     );
     assert_eq!(
@@ -13054,9 +13067,9 @@ fn the_selection_pair_swaps_only_where_the_inactive_fill_differs() {
 
 /// Where the theme strokes no line, the native number field's and the
 /// Basic table's infos claim none (M9-001, M9-003). Under adwaita light the
-/// field's `input.border.line_width` is 0: its info claims no edge, says so,
-/// and no edge is painted round it. adwaita states the list's and the
-/// separator's widths (1px, inherited), so the table's infos run their
+/// field's `input.field(NONE)` stroke is 0 wide: its info claims no edge,
+/// says so, and no edge is painted round it. adwaita states the list's and
+/// the separator's widths (1px, inherited), so the table's infos run their
 /// 0-width branches on its resolved theme with those two widths set to 0:
 /// no frame edge, no grid line.
 #[gpui::test]
@@ -13066,11 +13079,19 @@ fn an_unstroked_edge_is_claimed_by_no_native_info(cx: &mut TestAppContext) {
     use_light_preset(&mut cx, &showcase, "adwaita");
     show(&mut cx, &showcase, Page::Basic);
     let mut r = resolved_theme(&mut cx, &showcase);
+    let next = next_theme(&mut cx, &showcase);
     assert!(
-        r.input.border.line_width <= 0.0,
+        next.is_some_and(|next| {
+            crate::info::stroke_width_of(&next.input.field(native_theme::next::WidgetState::NONE))
+                .is_some_and(|width| width <= 0.0)
+        }),
         "adwaita now strokes its field, so this test no longer runs the number field's no-edge branch"
     );
-    let edges = ["border", "hover_border_color", "focus_border_color"];
+    let edges = [
+        "input.field(NONE).stroke.color",
+        "input.field(HOVER).stroke.color",
+        "input.field(FOCUSED).stroke.color",
+    ];
     let config = |info: &WidgetInfo, what: &str| {
         info.config
             .iter()
@@ -13078,7 +13099,9 @@ fn an_unstroked_edge_is_claimed_by_no_native_info(cx: &mut TestAppContext) {
             .map(|n| n.text.clone())
     };
     let field = "basic-number";
-    let info = settle_on(&mut cx, &showcase, field).expect("the number field shows an info");
+    let info = settle_on(&mut cx, &showcase, field);
+    assert!(info.is_some(), "the number field shows no info");
+    let Some(info) = info else { return };
     assert!(
         info.colors
             .iter()
@@ -13087,7 +13110,7 @@ fn an_unstroked_edge_is_claimed_by_no_native_info(cx: &mut TestAppContext) {
     );
     assert_eq!(
         config(&info, "edge").as_deref(),
-        Some("none: input.border.line_width is 0"),
+        Some("none: input.field(NONE).stroke.width is 0"),
         "the number field's info does not say it strokes no edge: {info:?}"
     );
     hover(&mut cx, point(px(4.), px(4.)));
@@ -21361,7 +21384,7 @@ fn the_page_row_rule_lies_under_the_tab_strip_at_scale_one(cx: &mut TestAppConte
 
 /// M9x CI item 12, the controller's ruling (M9-177): no step glyph of the
 /// Number input overflows its step. Under macos-tahoe, whose 24 px field
-/// holds two steps narrower than `defaults.icon_sizes.small` 16, with the
+/// holds two steps narrower than `icons.sizes.small` 16, with the
 /// set's ChevronUp and ChevronDown given as pixels (the Expander closed, so
 /// its arrows show ChevronRight alone), each step's image lies inside its
 /// step and inside the field.
@@ -21400,7 +21423,7 @@ fn the_number_inputs_step_glyphs_fit_their_steps(cx: &mut TestAppContext) {
 /// The Number input's info names the size its step glyphs are drawn at and
 /// no other (round 2-3 review, item 15(5)): under macos-tahoe, whose 24 px
 /// field leaves each step 11.5 px, the glyphs are a step tall, and no
-/// `geometry::icon_size_small` line claims `defaults.icon_sizes.small`'s 16;
+/// `geometry::icon_size_small` line claims `icons.sizes.small`'s 16;
 /// under material-3, whose 56 px field leaves 27, they are at
 /// `geometry::icon_size_small`, which the info names (with `material-icons`,
 /// without which material-3's set draws no step glyph).
@@ -21564,7 +21587,7 @@ fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut Tes
     let number = bounds_of(&mut cx, "basic-number");
     let up = raster_bounds(&mut cx, "raster-ChevronUp");
     assert!(
-        // Its centre: a `defaults.icon_sizes.small` glyph is taller than a
+        // Its centre: an `icons.sizes.small` glyph is taller than a
         // step, half the field (`demo::number_input`), as an SVG one is.
         up.is_some_and(|up| number.contains(&up.center())),
         "the Number input at {number:?} holds no ChevronUp image: {up:?}"
