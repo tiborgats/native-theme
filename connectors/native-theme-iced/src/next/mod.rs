@@ -135,13 +135,22 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 /// instead (`styles::state_layer`), whose no fill paints nothing in that
 /// state rather than the fill at rest under a transparent layer.
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<IcedColor> {
+    stated(fill_of(part), home)
+}
+
+/// A part's fill as `fill` reads it, `None` where it is not stated, or
+/// stated as a layered paint with no fallback colour: for a reader that
+/// shows iced's own there (spec §10, rule 0). A fill stated as none is
+/// transparent, and a layered paint gives its fallback colour (spec §10,
+/// rule 2).
+pub fn fill_of(part: &PartStyle) -> Option<IcedColor> {
     if !part.stated.contains(PartStated::FILL) {
-        return Err(Unmapped(home));
+        return None;
     }
     match &part.fill {
-        Paint::None => Ok(IcedColor::TRANSPARENT),
-        Paint::Solid(c) => Ok(to_color(*c)),
-        paint @ Paint::Complex(_) => paint.fallback_color().map(to_color).ok_or(Unmapped(home)),
+        Paint::None => Some(IcedColor::TRANSPARENT),
+        Paint::Solid(c) => Some(to_color(*c)),
+        paint @ Paint::Complex(_) => paint.fallback_color().map(to_color),
     }
 }
 
@@ -156,13 +165,98 @@ pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<
     }
 }
 
+/// A part's fill as `state_fill` reads it, `None` where no rule states it
+/// for the queried state, or it is stated in a form iced cannot paint (a
+/// layered paint with no fallback colour). The rule is for some flag of the
+/// query, not a given one (spec §2, `from_state`).
+pub fn state_fill_of(part: &PartStyle) -> Option<IcedColor> {
+    part.from_state
+        .contains(PartStated::FILL)
+        .then(|| fill_of(part))
+        .flatten()
+}
+
+/// A part's stroke colour as stated, where stated as one stroke of one
+/// colour, in any alignment; `None` where it is not stated, or stated in a
+/// form iced cannot draw. The style functions take it with its alignment
+/// and composite it over the fill each state paints (the module's doc), so
+/// this is the theme's colour, not always the one iced draws.
+pub fn stroke_color_of(part: &PartStyle) -> Option<IcedColor> {
+    match &part.stroke {
+        Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
+            Some(to_color(*color))
+        }
+        _ => None,
+    }
+}
+
+/// A part's stroke colour as [`stroke_color_of`] reads it, `None` where no
+/// rule states it for the queried state. The rule is for some flag of the
+/// query, not a given one (spec §2, `from_state`).
+pub fn state_stroke_color_of(part: &PartStyle) -> Option<IcedColor> {
+    part.from_state
+        .contains(PartStated::STROKE)
+        .then(|| stroke_color_of(part))
+        .flatten()
+}
+
+/// A part's stroke width, where stated as one stroke, in any alignment, or
+/// as none, which is no width; `None` where it is not stated, or stated in
+/// a form iced cannot draw (a per-side stroke).
+pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
+    if !part.stated.contains(PartStated::STROKE) {
+        return None;
+    }
+    match &part.stroke {
+        Stroke::None => Some(0.0),
+        Stroke::Uniform { width, .. } => Some(*width),
+        _ => None,
+    }
+}
+
+/// A part's corner radius, where stated as one circular radius, as square
+/// corners, which are no radius, or as a pill, which iced rounds by a radius
+/// its renderers clamp to half the shorter side ([`crate::styles::pill`]);
+/// `None` where it is not stated, or stated in a form iced cannot draw
+/// (per-corner radii, a continuous curve).
+#[cfg(feature = "widgets")]
+pub fn radius_of(part: &PartStyle) -> Option<f32> {
+    use native_theme::next::{CornerCurve, CornerRadius};
+
+    if !part.stated.contains(PartStated::CORNERS) {
+        return None;
+    }
+    match (part.corners.radius, part.corners.curve) {
+        (CornerRadius::None, _) => Some(0.0),
+        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+        (CornerRadius::Pill, CornerCurve::Circular) => Some(crate::styles::pill().top_left),
+        _ => None,
+    }
+}
+
+/// A part's padding, top, right, bottom, left, each side where stated.
+pub fn padding_of(part: &PartStyle) -> [Option<f32>; 4] {
+    let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
+    let p = &part.padding;
+    [
+        side(PartStated::PADDING_TOP, p.top),
+        side(PartStated::PADDING_RIGHT, p.right),
+        side(PartStated::PADDING_BOTTOM, p.bottom),
+        side(PartStated::PADDING_LEFT, p.left),
+    ]
+}
+
 /// A text style's colour, where stated.
 pub(crate) fn text_color(text: &TextStyle, home: &'static str) -> Mapped<IcedColor> {
-    if text.stated.contains(TextStated::COLOR) {
-        Ok(to_color(text.color))
-    } else {
-        Err(Unmapped(home))
-    }
+    stated(text_color_of(text), home)
+}
+
+/// A text style's colour as `text_color` reads it, `None` where it is not
+/// stated.
+pub fn text_color_of(text: &TextStyle) -> Option<IcedColor> {
+    text.stated
+        .contains(TextStated::COLOR)
+        .then(|| to_color(text.color))
 }
 
 /// A text style's colour where a rule states it for the queried state, as
@@ -173,6 +267,16 @@ pub(crate) fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<O
     } else {
         Ok(None)
     }
+}
+
+/// A text style's colour as `state_text_color` reads it, `None` where no
+/// rule states it for the queried state or it is not stated. The rule is
+/// for some flag of the query, not a given one (spec §2, `from_state`).
+pub fn state_text_color_of(text: &TextStyle) -> Option<IcedColor> {
+    text.from_state
+        .contains(TextStated::COLOR)
+        .then(|| text_color_of(text))
+        .flatten()
 }
 
 /// [`crate::palette::to_palette`]: iced's six-colour palette.

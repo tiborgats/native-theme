@@ -9,7 +9,7 @@ use native_theme::next::{
     CornerCurve, CornerRadius, Corners, PartStated, PartStyle, Stroke, StrokeAlign,
 };
 
-use super::{Mapped, Unmapped, to_color};
+use super::{Mapped, Unmapped, radius_of, stated, stroke_width_of, to_color};
 use crate::styles::{Line, LineAlign, Outline};
 
 /// A stroke's alignment as the shared style functions take it.
@@ -77,29 +77,14 @@ pub(crate) fn flagged<T>(
 /// A part's stroke width, where stated as one stroke, in any alignment, or
 /// as none, which is no width.
 pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
-    if !part.stated.contains(PartStated::STROKE) {
-        return Err(Unmapped(home));
-    }
-    match &part.stroke {
-        Stroke::None => Ok(0.0),
-        Stroke::Uniform { width, .. } => Ok(*width),
-        _ => Err(Unmapped(home)),
-    }
+    stated(stroke_width_of(part), home)
 }
 
 /// A part's corner radius, where stated as one circular radius, as square
 /// corners, which are no radius, or as a pill, which iced rounds by a radius
 /// its renderers clamp to half the shorter side ([`crate::styles::pill`]).
 pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
-    if !part.stated.contains(PartStated::CORNERS) {
-        return Err(Unmapped(home));
-    }
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Ok(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Ok(r),
-        (CornerRadius::Pill, CornerCurve::Circular) => Ok(crate::styles::pill().top_left),
-        _ => Err(Unmapped(home)),
-    }
+    stated(radius_of(part), home)
 }
 
 /// Stated `corners` as iced rounds a quad, corner by corner: square corners

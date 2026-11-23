@@ -114,6 +114,13 @@ pub(crate) enum Added {
         hovered: iced_core::Color,
         dragged: iced_core::Color,
     },
+    /// A checked button's fill and label, which 0.7.2 leaves unset
+    /// (`button.checked_background`, `button.checked_text_color`): the ones
+    /// the 0.8.0 theme states (`button.body(CHECKED)`,
+    /// `button.label(CHECKED)`), laid where the 0.7.2 source has none, the
+    /// fill only where the entry leaves no checked fill to iced
+    /// ([`States::checked`] clear).
+    CheckedButton,
 }
 
 /// The state options of a style function's source that the 0.8.0 theme
@@ -558,6 +565,50 @@ const fn checked(
     }
 }
 
+/// The reason of a checked button whose fill and label the 0.8.0 theme
+/// states and 0.7.2 does not.
+const STATED_CHECKED: &str = "0.7.2 states no button.checked_background or \
+     checked_text_color on these presets, so its connector drew a checked button in the \
+     pressed pair that stands in for them; the 0.8.0 presets state the measured checked \
+     toggle (docs/v0.8.0-spec.md §10, rule 0a; docs/platform-facts.md §2.3; \
+     native-theme/tests/next_homes.toml, rows button.checked_background and \
+     button.checked_text_color, listed differences): on macos-tahoe the accent mixed with \
+     black (light) or white (dark) by 0.025 and a white label, on ios-13 the default tint at \
+     alpha 0x2e (light) or 0x40 (dark) with its label in the tint, which the 0.8.0 side draws \
+     in each status, the border composited over that fill; a toolbar button whose checked \
+     fill the theme leaves unstated takes the stated checked label alone";
+
+/// A button whose checked fill and label the 0.8.0 theme states and 0.7.2
+/// leaves unset on `presets`, its strokes laid at `align`, and with
+/// `pressed_fill` no pressed fill stated.
+const fn stated_checked(
+    leaf: &'static str,
+    presets: &'static [&'static str],
+    align: LineAlign,
+    pressed_fill: bool,
+) -> Difference {
+    Difference {
+        leaf,
+        presets,
+        listed: Listed {
+            states: States {
+                pressed_fill,
+                ..States::STATED
+            },
+            added: Added::CheckedButton,
+            ..Listed::aligned(align)
+        },
+        reason: match (align, pressed_fill) {
+            (LineAlign::Outside, false) => &[STATED_CHECKED],
+            (LineAlign::Outside, true) => &[PRESSED, STATED_CHECKED],
+            (LineAlign::Inside, false) => &[INSIDE, STATED_CHECKED],
+            (LineAlign::Inside, true) => &[INSIDE, PRESSED, STATED_CHECKED],
+            (LineAlign::Center, false) => &[CENTER, STATED_CHECKED],
+            (LineAlign::Center, true) => &[CENTER, PRESSED, STATED_CHECKED],
+        },
+    }
+}
+
 /// The reason of a scroll bar handle whose outline and corners the 0.8.0
 /// theme states.
 const SCROLLER_OUTLINE: &str = "the theme states the scroll bar handle's outline and \
@@ -607,9 +658,11 @@ const fn breeze_scroller(presets: &'static [&'static str], rest: iced_core::Colo
 const DIFFERENCES: &[Difference] = &[
     // button.body(NONE), its states and its variants; macos-tahoe states a
     // hovered fill and no pressed one (`body(PRESSED)`), nor does the
-    // toolbar (`toolbar.button(PRESSED)`). The macOS and iOS presets state
-    // no checked fill (`body(CHECKED)`, `toolbar.button(CHECKED)`), nor does
-    // material-3's toolbar.
+    // toolbar (`toolbar.button(PRESSED)`). macos-monterey states no checked
+    // fill (`body(CHECKED)`), and macos-tahoe and ios-13 state one 0.7.2
+    // has no field for; monterey, tahoe, material-3 and ios-13 state no
+    // checked toolbar fill (`toolbar.button(CHECKED)`), ios-13 a checked
+    // label.
     inside("button", &["macos-monterey"]),
     checked(
         "button_toggle",
@@ -618,12 +671,25 @@ const DIFFERENCES: &[Difference] = &[
         false,
     ),
     pressed("button", &["macos-tahoe"], LineAlign::Inside),
-    checked("button_toggle", &["macos-tahoe"], LineAlign::Inside, true),
+    stated_checked("button_toggle", &["macos-tahoe"], LineAlign::Inside, true),
+    stated_checked("button_toggle", &["ios-13"], LineAlign::Outside, false),
     checked("toolbar_button", &["macos-tahoe"], LineAlign::Outside, true),
-    checked("button_toggle", &["ios-13"], LineAlign::Outside, false),
+    Difference {
+        leaf: "toolbar_button",
+        presets: &["ios-13"],
+        listed: Listed {
+            states: States {
+                checked: true,
+                ..States::STATED
+            },
+            added: Added::CheckedButton,
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        reason: &[CHECKED, STATED_CHECKED],
+    },
     checked(
         "toolbar_button",
-        &["macos-monterey", "material-3", "ios-13"],
+        &["macos-monterey", "material-3"],
         LineAlign::Outside,
         false,
     ),
@@ -1192,12 +1258,28 @@ fn compare_styles(
         SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
     };
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
+    use native_theme::next::WidgetState;
 
     use super::styles as n;
 
     let button = [Active, Hovered, Pressed, Disabled];
     let b = ButtonSource::of(old);
-    let at = move |l: Listed| b.listed(l);
+    let checked_fill = super::state_fill_of(&new.button.body(WidgetState::CHECKED));
+    let checked_label = super::state_text_color_of(&new.button.label(WidgetState::CHECKED));
+    let at = move |l: Listed| {
+        let s = b.listed(l);
+        match l.added {
+            Added::CheckedButton => ButtonSource {
+                checked_background: s
+                    .checked_background
+                    .or(checked_fill.filter(|_| !l.states.checked)),
+                checked_label: s.checked_label.or(checked_label),
+                checked_primary: true,
+                ..s
+            },
+            Added::Nothing | Added::ScrollerOutline { .. } => s,
+        }
+    };
     listed_style!(
         report,
         themes,

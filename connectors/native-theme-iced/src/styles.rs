@@ -3105,7 +3105,7 @@ impl ScrollbarSource {
             ..self
         };
         match listed.added {
-            Added::Nothing => listed_self,
+            Added::Nothing | Added::CheckedButton => listed_self,
             Added::ScrollerOutline {
                 width,
                 align,

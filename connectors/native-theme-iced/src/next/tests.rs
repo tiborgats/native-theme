@@ -28,6 +28,75 @@ fn every_preset() -> Vec<(Preset, ResolvedTheme)> {
     every_preset_with(&ThemePatch::new())
 }
 
+/// Each public part read gives what the mapping's own read of the part
+/// gives, `None` where that read has no value, on every preset and a
+/// button's states.
+#[cfg(feature = "widgets")]
+#[test]
+fn the_public_part_reads_are_the_mappings_own() -> TestResult {
+    use native_theme::next::WidgetState;
+
+    use super::borders::{radius, state_line, stroke_width};
+
+    let states = [
+        WidgetState::NONE,
+        WidgetState::HOVER,
+        WidgetState::PRESSED,
+        WidgetState::DISABLED,
+        WidgetState::DEFAULT,
+    ];
+    for (preset, r) in every_preset() {
+        for state in states {
+            let part = r.button.body(state);
+            let text = r.button.label(state);
+            let at = format!("{preset:?} {state:?}");
+            assert_eq!(super::fill_of(&part), super::fill(&part, "h").ok(), "{at}");
+            assert_eq!(
+                super::state_fill_of(&part),
+                super::state_fill(&part, "h").ok().flatten(),
+                "{at}"
+            );
+            assert_eq!(
+                super::stroke_color_of(&part),
+                super::borders::line(&part, "h").ok().map(|l| l.color),
+                "{at}"
+            );
+            assert_eq!(
+                super::state_stroke_color_of(&part),
+                state_line(&part, "h")
+                    .ok()
+                    .flatten()
+                    .and_then(|_| super::stroke_color_of(&part)),
+                "{at}"
+            );
+            assert_eq!(
+                super::stroke_width_of(&part),
+                stroke_width(&part, "h").ok(),
+                "{at}"
+            );
+            assert_eq!(super::radius_of(&part), radius(&part, "h").ok(), "{at}");
+            assert_eq!(
+                super::text_color_of(&text),
+                super::text_color(&text, "h").ok(),
+                "{at}"
+            );
+            assert_eq!(
+                super::state_text_color_of(&text),
+                super::state_text_color(&text, "h").ok().flatten(),
+                "{at}"
+            );
+        }
+        let part = r.button.body(WidgetState::NONE);
+        let own = iced_core::Padding::new(-1.0);
+        let padding = super::padding_with(&part, 0.0, own);
+        let sides = [padding.top, padding.right, padding.bottom, padding.left];
+        for (side, read) in sides.into_iter().zip(super::padding_of(&part)) {
+            assert_eq!(read.unwrap_or(own.top), side, "{preset:?}");
+        }
+    }
+    Ok(())
+}
+
 const OUTER: Color = Color::new(0.1, 0.2, 0.9, 1.0);
 const INNER: Color = Color::new(0.9, 0.8, 0.1, 1.0);
 
