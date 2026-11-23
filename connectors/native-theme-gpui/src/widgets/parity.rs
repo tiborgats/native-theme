@@ -4,11 +4,12 @@
 //! its look ([`ThemeSource`]: the ground it is faded over, its focus ring, the
 //! focus ring's trigger, its label's font, the switch's body text and the
 //! spinner's colours), on the presets the connector parity covers, kde-breeze,
-//! adwaita and windows-11, light and dark, in every state each constructor
-//! takes.
+//! adwaita, windows-11, macos-monterey, macos-tahoe and material-3, light and
+//! dark, in every state each constructor takes.
 //!
 //! The 0.7.2 side is resolved as the connector's tests resolve it
-//! (`ResolutionContext::for_tests`) and read unscaled; the 0.8.0 side for the
+//! (`ResolutionContext::for_tests`, on the macOS presets at macOS's font DPI,
+//! `next::parity::old_context`) and read unscaled; the 0.8.0 side for the
 //! scheme's default context, whose text scale is 1. Every look is given on
 //! these presets, so a 0.7.2 constructor's `None` or a 0.8.0 one's `Unmapped`
 //! (the control drawn as gpui-component's own) is a difference too, and
@@ -34,6 +35,9 @@ const PRESETS: &[(&str, Preset)] = &[
     ("kde-breeze", Preset::KdeBreeze),
     ("adwaita", Preset::Adwaita),
     ("windows-11", Preset::Windows11),
+    ("macos-monterey", Preset::MacosMonterey),
+    ("macos-tahoe", Preset::MacosTahoe),
+    ("material-3", Preset::Material3),
 ];
 
 /// A listed difference (plan, section 1, rule 2): the leaf, the presets on
@@ -116,7 +120,7 @@ fn resolve(
     };
     let old = crate::Theme::preset(key)?
         .into_variant(mode)?
-        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+        .into_resolved(&crate::next::parity::old_context(preset))?;
     let new = native_theme::next::Theme::preset(preset).resolve(&ctx);
     Ok((old, new))
 }

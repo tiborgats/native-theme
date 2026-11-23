@@ -1096,26 +1096,26 @@ pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.card;
     group_box_content_from(&CardFrame {
         padding: sides_of(&c.border.padding),
-        radius: c.border.corner_radius,
+        radius: Some(c.border.corner_radius),
         border_width: Some(c.border.line_width),
         border_color: Some(rgba_to_hsla(c.border.color)),
         background: rgba_to_hsla(c.background_color),
     })
 }
 
-/// The theme's values [`group_box_content`] is made of, read from either
-/// model.
+/// The theme's values [`group_box_content`] is made of, read from either model.
 pub(crate) struct CardFrame {
     pub(crate) padding: [Option<f32>; 4],
-    pub(crate) radius: f32,
+    pub(crate) radius: Option<f32>,
     pub(crate) border_width: Option<f32>,
     pub(crate) border_color: Option<Hsla>,
     pub(crate) background: Hsla,
 }
 
-/// [`group_box_content`] of the card `c`; with no border, the group box keeps gpui-component's.
+/// [`group_box_content`] of the card `c`; unstated, its border and radius are gpui-component's.
 pub(crate) fn group_box_content_from(c: &CardFrame) -> StyleRefinement {
-    let r = padding(StyleRefinement::default(), c.padding).rounded(px(c.radius));
+    let r = padding(StyleRefinement::default(), c.padding);
+    let r = c.radius.into_iter().fold(r, |r, v| r.rounded(px(v)));
     match (c.border_width, c.border_color) {
         (Some(width), Some(color)) => r.border(px(width)).border_color(color).bg(c.background),
         _ => r.bg(c.background),
