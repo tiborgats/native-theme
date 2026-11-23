@@ -1677,8 +1677,9 @@ fn load_all_icons(
 
 /// The Icons page's animated indicator: the connector's `Spinner` of the
 /// icon set, which plays and colours it by the connector's rule, drawn at
-/// `defaults.icon_sizes.large` in `defaults.text_color`, the size and colour
-/// the page draws its icons in, and what its label says of it.
+/// the installed 0.8.0 theme's `icons.sizes.large` in
+/// `colors.window.foreground` ([`Indicator::load`]), and what its label
+/// says of it.
 #[derive(Debug, Clone)]
 struct Indicator {
     spinner: native_theme_iced::Spinner,
@@ -1719,26 +1720,32 @@ impl Playback {
 }
 
 impl Indicator {
-    /// The indicator of `icon_set` under `resolved`: for a freedesktop set,
-    /// the indicator of `freedesktop_theme` (the system's where `None`), so
-    /// the page never shows another theme's; `None` where the theme has
-    /// none or the `Spinner` draws its arc.
+    /// The indicator of `icon_set` under `r`, the installed 0.8.0 theme: for
+    /// a freedesktop set, the indicator of `freedesktop_theme` (the
+    /// system's where `None`), so the page never shows another theme's;
+    /// `None` where the theme has none or the `Spinner` draws its arc, and
+    /// where the theme states no `colors.window.foreground` or a
+    /// `spinner.period_ms` of 0, which the connector's spinner
+    /// (`native_theme_iced::next::spinner`) cannot draw.
     ///
     /// The `Spinner` draws at `spinner.diameter` and tints a Material or
-    /// Lucide indicator in `spinner.fill_color`. The page draws its
-    /// indicator as one of its icons, so it builds the `Spinner` from a copy
-    /// of `resolved` whose two fields hold the theme's own
-    /// `defaults.icon_sizes.large` and `defaults.text_color`.
+    /// Lucide indicator in `spinner.color`. The page draws its indicator as
+    /// one of its icons, so it builds the `Spinner` from a copy of `r`
+    /// whose two fields hold the theme's own `icons.sizes.large` and
+    /// `colors.window.foreground`; where `icons.sizes.large` is unstated,
+    /// at the spinner's own `spinner.diameter`.
     fn load(
         icon_set: IconSet,
         freedesktop_theme: Option<&str>,
-        resolved: &ResolvedTheme,
+        r: &native_theme::next::ResolvedTheme,
     ) -> Option<Self> {
         let playback = Playback::of(&load_icon_indicator(icon_set, freedesktop_theme)?)?;
-        let mut drawn = resolved.clone();
-        drawn.spinner.diameter = resolved.defaults.icon_sizes.large;
-        drawn.spinner.fill_color = resolved.defaults.text_color;
-        let spinner = native_theme_iced::Spinner::new(&drawn, icon_set, freedesktop_theme);
+        let mut drawn = r.clone();
+        if let Some(size) = r.icons.sizes.large {
+            drawn.spinner.diameter = size;
+        }
+        drawn.spinner.color = r.colors.window.foreground?;
+        let spinner = iced_next::spinner(&drawn, icon_set, freedesktop_theme).ok()?;
         spinner.is_indicator().then_some(Self { spinner, playback })
     }
 }
@@ -2197,10 +2204,8 @@ impl State {
         let icon_set_choices =
             rows::icon_rows(init_icon_set, init_icon_theme_opt, &installed_themes);
         let loaded_icons = load_all_icons(&icon_set_choice, &resolved, init_icon_set);
-        let chrome_icons = load_chrome_icons(&icon_set_choice, &resolved, init_icon_set);
 
         let anim_set = icon_set_choice.effective_icon_set(init_icon_set);
-        let indicator = Indicator::load(anim_set, icon_set_choice.freedesktop_theme(), &resolved);
         let basic_spinner = native_theme_iced::Spinner::new(
             &resolved,
             anim_set,
@@ -2251,6 +2256,12 @@ impl State {
         };
         let start_choice = fallback_choice
             .unwrap_or_else(|| ThemeChoice::OsTheme(rows::default_label(&system_preset)));
+        let chrome_icons = load_chrome_icons(&icon_set_choice, &start_next.resolved, init_icon_set);
+        let indicator = Indicator::load(
+            anim_set,
+            icon_set_choice.freedesktop_theme(),
+            &start_next.resolved,
+        );
 
         let mut state = Self {
             current_choice: start_choice.clone(),
@@ -2854,7 +2865,8 @@ impl State {
     }
 
     /// Load the icons and the spinner of the chosen icon set, recoloured for
-    /// the installed theme.
+    /// the installed theme: the chrome's icons and the Icons page's
+    /// indicator for the installed 0.8.0 theme of the active window.
     fn reload_icons(&mut self) {
         self.loaded_icons = load_all_icons(
             &self.icon_set_choice,
@@ -2863,7 +2875,7 @@ impl State {
         );
         self.chrome_icons = load_chrome_icons(
             &self.icon_set_choice,
-            &self.current_resolved,
+            &self.next_resolved,
             self.current_icon_set,
         );
         let anim_set = self
@@ -2872,7 +2884,7 @@ impl State {
         self.indicator = Indicator::load(
             anim_set,
             self.icon_set_choice.freedesktop_theme(),
-            &self.current_resolved,
+            &self.next_resolved,
         );
         self.animation_start = Instant::now();
         self.basic_spinner = native_theme_iced::Spinner::new(
@@ -5009,16 +5021,22 @@ struct ChromeIcons {
 }
 
 /// Load the chrome's icons from `choice`, as `load_all_icons` loads the Icons
-/// page's: a freedesktop theme's recoloured where they are symbolic.
+/// page's: a freedesktop theme's recoloured where they are symbolic, a
+/// freedesktop, SF Symbols or Segoe Fluent icon in the installed 0.8.0
+/// theme's `colors.window.foreground`; where it is unstated, each in the
+/// colour its loader gives it.
 fn load_chrome_icons(
     choice: &IconSetChoice,
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
     theme_icon_set: IconSet,
 ) -> ChromeIcons {
     let set = choice.effective_icon_set(theme_icon_set);
     let theme = choice.freedesktop_theme();
-    let tc = resolved.defaults.text_color;
-    let fg = Some(tc);
+    let fg = r
+        .colors
+        .window
+        .foreground
+        .map(|c| native_theme::color::Rgba::from_f32(c.r, c.g, c.b, c.a));
     let freedesktop = |loader: FreedesktopLoader<'_>| {
         let loader = loader.color_opt(fg);
         match theme {
@@ -23356,7 +23374,7 @@ mod tests {
         let indicator = Indicator::load(
             IconSet::Freedesktop,
             Some(theme),
-            &State::default().current_resolved,
+            &State::default().next_resolved,
         );
         assert!(indicator.is_none(), "{theme} has a spinner: {indicator:?}");
     }
@@ -23525,11 +23543,13 @@ mod tests {
     /// M9-078: the Icons page draws an indicator in the text colour the
     /// page draws its icons in, as the connector colours an indicator's
     /// frames (`animated_frames_to_svg_handles_for(set, &anim,
-    /// Some(text))`), and not in `spinner.fill_color`, which the `Spinner`
-    /// takes for Material and Lucide where it is given the theme as it is.
-    /// Checked on material-3, whose text colour and spinner fill differ.
+    /// Some(text))`), and not in `spinner.color`, which the `Spinner` takes
+    /// for Material and Lucide where it is given the theme as it is: the
+    /// installed 0.8.0 theme's `colors.window.foreground` at its
+    /// `icons.sizes.large`. Checked on material-3, whose text colour and
+    /// spinner colour differ.
     #[test]
-    fn the_icons_page_colours_an_indicator_as_the_connector_colours_one() {
+    fn the_icons_page_colours_an_indicator_as_the_connector_colours_one() -> Result<(), String> {
         let snapshots = Snapshots::new("indicator-colour");
         for (choice, set) in [
             (IconSetChoice::Material, IconSet::Material),
@@ -23538,16 +23558,22 @@ mod tests {
             let mut state = State {
                 active_tab: Tab::Icons,
                 icon_set_choice: choice,
-                ..State::default()
+                ..loaded("material-3", false)
             };
-            if let Err(error) = state.load_theme(&ThemeChoice::Preset("material-3".into()), false) {
-                panic!("material-3: {error}");
-            }
             state.reload_icons();
-            let resolved = &state.current_resolved;
-            let size = resolved.defaults.icon_sizes.large;
-            let text = to_color(resolved.defaults.text_color);
-            let fill = to_color(resolved.spinner.fill_color);
+            let r = &state.next_resolved;
+            let size = r
+                .icons
+                .sizes
+                .large
+                .ok_or("material-3 states no icons.sizes.large")?;
+            let text = next_colour(
+                r.colors
+                    .window
+                    .foreground
+                    .ok_or("material-3 states no colors.window.foreground")?,
+            );
+            let fill = next_colour(r.spinner.color);
             assert_ne!(
                 text, fill,
                 "material-3: the text colour is the spinner fill"
@@ -23569,9 +23595,10 @@ mod tests {
             );
             assert!(
                 !snapshots.alike(drawn(fill), page(), size),
-                "{set:?}: the page's indicator is in spinner.fill_color"
+                "{set:?}: the page's indicator is in spinner.color"
             );
         }
+        Ok(())
     }
 
     /// M9-068: the Icons page's indicator shows the frame its clock gives,
@@ -39136,8 +39163,13 @@ thing(0);
     fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<()> {
         const NAME: &str = "tests::the_panel_icon_loads_from_a_theme_of_either_convention";
         if native_theme_test_fixtures::in_child() {
-            let (_, resolved) =
-                native_theme_iced::from_preset("adwaita", false).expect("adwaita resolves");
+            let adwaita = Preset::from_name("adwaita")
+                .ok_or_else(|| std::io::Error::other("the 0.8.0 model has no adwaita"))?;
+            let resolved = native_theme::next::Theme::preset(adwaita).resolve(&next_context(
+                None,
+                false,
+                &AccessibilityPreferences::default(),
+            ));
             let loaded: Vec<(&str, bool)> = ["gtk-names", "breeze-names"]
                 .into_iter()
                 .map(|theme| {
