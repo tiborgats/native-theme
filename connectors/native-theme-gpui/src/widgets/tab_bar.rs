@@ -366,6 +366,7 @@ fn selected_outline(part: &native_theme::next::PartStyle) -> Mapped<(Hsla, f32)>
     }
     match &part.stroke {
         Stroke::None => Ok((transparent_black(), 0.)),
+        // tab.tab(SELECTED).stroke.color, at tab.tab(SELECTED).stroke.width.
         Stroke::Uniform { color, width, .. } => Ok((hsla(*color), *width)),
         _ => Err(Unmapped("tab.tab(SELECTED).stroke")),
     }

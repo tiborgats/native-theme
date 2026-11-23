@@ -1078,15 +1078,12 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
             text_color_of(&r.tab.label(WidgetState::SELECTED)),
             "native-theme-gpui/widgets/tab_bar.rs:290",
         ))
-        // No line of widgets/tab_bar.rs spells the stroke's colour whole
-        // (`selected_outline` reads `tab.tab(SELECTED).stroke`), so the value
-        // check alone holds it.
         .colors(edge_claim(
             "selected tab's outline",
             "tab.tab(SELECTED).stroke.color",
             stroke_color_of(&r.tab.tab(WidgetState::SELECTED)),
             Some(f32::from(look.border_width)),
-            "showcase",
+            "native-theme-gpui/widgets/tab_bar.rs:369-370",
         ))
         .color(claim(
             "rule under the bar",
