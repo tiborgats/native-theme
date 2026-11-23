@@ -101,9 +101,16 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 
 /// A part's fill, where stated as one colour.
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
+    stated(fill_of(part), home)
+}
+
+/// A part's fill as [`fill`] reads it, `None` where it is not stated as
+/// one colour: for a reader that shows the toolkit's own there (spec §10,
+/// rule 0), as the showcase's Widget Info does.
+pub fn fill_of(part: &PartStyle) -> Option<Hsla> {
     match &part.fill {
-        Paint::Solid(c) if part.stated.contains(PartStated::FILL) => Ok(hsla(*c)),
-        _ => Err(Unmapped(home)),
+        Paint::Solid(c) if part.stated.contains(PartStated::FILL) => Some(hsla(*c)),
+        _ => None,
     }
 }
 
@@ -122,11 +129,17 @@ pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
 /// extent stays and the connector's README records the limit (spec §10,
 /// rule 4).
 pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
+    stated(stroke_color_of(part), home)
+}
+
+/// A part's stroke colour as [`stroke_color`] reads it, `None` where it is
+/// not stated as one stroke of one colour.
+pub fn stroke_color_of(part: &PartStyle) -> Option<Hsla> {
     match &part.stroke {
         Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
-            Ok(hsla(*color))
+            Some(hsla(*color))
         }
-        _ => Err(Unmapped(home)),
+        _ => None,
     }
 }
 
@@ -134,32 +147,44 @@ pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla>
 /// band lies inside the part's box in each, spec §2), or as none, which is
 /// no width.
 pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
+    stated(stroke_width_of(part), home)
+}
+
+/// A part's stroke width as [`stroke_width`] reads it, `None` where it is
+/// not stated as one stroke or as none.
+pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::STROKE) {
-        return Err(Unmapped(home));
+        return None;
     }
     match &part.stroke {
-        Stroke::None => Ok(0.0),
-        Stroke::Uniform { width, .. } => Ok(*width),
-        _ => Err(Unmapped(home)),
+        Stroke::None => Some(0.0),
+        Stroke::Uniform { width, .. } => Some(*width),
+        _ => None,
     }
 }
 
 /// A part's corner radius, where stated as one circular radius, or as square
 /// corners, which are no radius.
 pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
+    stated(radius_of(part), home)
+}
+
+/// A part's corner radius as [`radius`] reads it, `None` where it is not
+/// stated as one circular radius or as square corners.
+pub fn radius_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
-        return Err(Unmapped(home));
+        return None;
     }
     match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Ok(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Ok(r),
-        _ => Err(Unmapped(home)),
+        (CornerRadius::None, _) => Some(0.0),
+        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+        _ => None,
     }
 }
 
 /// A part's padding, top, right, bottom, left, each side where stated, as
 /// 0.7.2's per-side padding.
-pub(crate) fn padding(part: &PartStyle) -> [Option<f32>; 4] {
+pub fn padding(part: &PartStyle) -> [Option<f32>; 4] {
     let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
     let p = &part.padding;
     [
@@ -172,11 +197,15 @@ pub(crate) fn padding(part: &PartStyle) -> [Option<f32>; 4] {
 
 /// A text style's colour, where stated.
 pub(crate) fn text_color(text: &TextStyle, home: &'static str) -> Mapped<Hsla> {
-    if text.stated.contains(TextStated::COLOR) {
-        Ok(hsla(text.color))
-    } else {
-        Err(Unmapped(home))
-    }
+    stated(text_color_of(text), home)
+}
+
+/// A text style's colour as [`text_color`] reads it, `None` where it is not
+/// stated.
+pub fn text_color_of(text: &TextStyle) -> Option<Hsla> {
+    text.stated
+        .contains(TextStated::COLOR)
+        .then(|| hsla(text.color))
 }
 
 /// A part's fill where a rule states it for the queried state (its
@@ -188,6 +217,34 @@ pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<
     } else {
         Ok(None)
     }
+}
+
+/// A part's fill as [`state_fill`] reads it, `None` where no rule states it
+/// for the queried state or it is not stated as one colour.
+pub fn state_fill_of(part: &PartStyle) -> Option<Hsla> {
+    part.from_state
+        .contains(PartStated::FILL)
+        .then(|| fill_of(part))
+        .flatten()
+}
+
+/// A part's stroke colour as [`state_stroke_color`] reads it, `None` where
+/// no rule states it for the queried state or it is not stated as one
+/// stroke of one colour.
+pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
+    part.from_state
+        .contains(PartStated::STROKE)
+        .then(|| stroke_color_of(part))
+        .flatten()
+}
+
+/// A text style's colour as [`state_text_color`] reads it, `None` where no
+/// rule states it for the queried state or it is not stated.
+pub fn state_text_color_of(text: &TextStyle) -> Option<Hsla> {
+    text.from_state
+        .contains(TextStated::COLOR)
+        .then(|| text_color_of(text))
+        .flatten()
 }
 
 /// A part's fill where the theme states it, as [`fill`] reads it; `None`

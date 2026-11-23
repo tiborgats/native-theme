@@ -3,8 +3,16 @@
 use gpui::{App, Hsla, Rems, StyleRefinement, Styled};
 use gpui_component::theme::Theme;
 use native_theme_gpui::Native;
+use native_theme_gpui::next::Mapped;
+/// The reads a claim in the 0.8.0 form makes of its home's property: the
+/// connector's own (`native_theme_gpui::next`), each `None` where the theme
+/// does not state the value, so the panel shows the toolkit's own there
+/// (spec §10, rule 0).
+pub use native_theme_gpui::next::{
+    radius_of, state_stroke_color_of, stroke_color_of, stroke_width_of,
+};
 
-use crate::support::{native_geometry, refined};
+use crate::support::{native_geometry, next_geometry, refined};
 
 pub mod buttons;
 pub mod charts;
@@ -440,6 +448,38 @@ pub fn native_info<W: Styled>(
         *info = std::mem::take(info).geometry(name);
     }
     refined(w, style.as_ref())
+}
+
+/// [`native_info`] on the 0.8.0 model: `w` with the refinement a builder of
+/// `native_theme_gpui::next::geometry` gives for the installed 0.8.0 theme,
+/// and `info` given `build`'s geometry line. Where the theme leaves a value
+/// the builder needs unstated, the widget keeps upstream's geometry and
+/// `info` says which home is unstated (spec §10, rule 0); before `apply` ran
+/// it names no builder.
+pub fn next_native_info<W: Styled>(
+    w: W,
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> Mapped<StyleRefinement>,
+    name: &'static str,
+    info: &mut WidgetInfo,
+) -> W {
+    match next_geometry(cx, build) {
+        Some(Ok(style)) => {
+            *info = std::mem::take(info).geometry(name);
+            refined(w, Some(&style))
+        }
+        Some(Err(unstated)) => {
+            *info = std::mem::take(info).config(
+                "geometry",
+                format!(
+                    "gpui-component's own: the theme states no {}, which geometry::{name} needs",
+                    unstated.home()
+                ),
+            );
+            w
+        }
+        None => w,
+    }
 }
 
 /// What a Widget Info says of the icons gpui-component builds and draws

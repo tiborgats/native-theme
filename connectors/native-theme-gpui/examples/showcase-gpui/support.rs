@@ -441,13 +441,6 @@ pub(crate) fn next_value<T, F: FnOnce(&native_theme::next::ResolvedTheme) -> T>(
 /// `native_theme_gpui::next::geometry` produces for the installed 0.8.0
 /// theme, or the source it lacks (`Unmapped`); `None` before
 /// `native_theme_gpui::next::apply` ran.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 pub(crate) fn next_geometry<
     F: FnOnce(&native_theme::next::ResolvedTheme) -> Mapped<StyleRefinement>,
 >(

@@ -819,14 +819,18 @@ fn the_tooltip_notes_name_the_edge_and_the_shadow() {
 }
 
 /// Spec §5.2: every `native_info(w, cx, geometry::X, "Y", info)` records the
-/// builder it applies, `X == Y`.
+/// builder it applies, `X == Y`, and so does its 0.8.0 form,
+/// `next_native_info(w, cx, next::geometry::X, "Y", info)`.
 #[test]
 fn native_info_names_the_builder_it_applies() {
     let mut findings = Vec::new();
     let mut calls = 0usize;
     for (file, raw) in SHOWCASE_FILES {
         let starts = line_offsets(raw);
-        for open in code_calls(raw, "native_info") {
+        let opens = ["native_info", "next_native_info"]
+            .into_iter()
+            .flat_map(|name| code_calls(raw, name));
+        for open in opens {
             calls += usize::from(*file != TEST_MODULE);
             let args = call_args(raw, open).unwrap_or_default();
             let applied = args.get(2).map(|a| a.trim());

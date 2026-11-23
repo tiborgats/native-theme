@@ -18056,6 +18056,27 @@ fn every_bundled_variant() -> Vec<(String, native_theme_gpui::ResolvedTheme, The
     out
 }
 
+/// Every preset of the 0.8.0 model (`native_theme::next::Preset::ALL`) in
+/// both schemes, resolved, with the gpui-component theme the connector maps
+/// it to (`native_theme_gpui::next::to_theme`); a preset the connector cannot
+/// map fails the test.
+fn every_next_variant() -> Vec<(String, native_theme::next::ResolvedTheme, Theme)> {
+    use native_theme::next::{Preset, Scheme, Theme as NextTheme, ThemeContext};
+    let mut out = Vec::new();
+    for preset in Preset::ALL {
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let r =
+                NextTheme::preset(*preset).resolve(&ThemeContext::default().with_scheme(scheme));
+            let name = format!("{} {scheme:?}", preset.as_str());
+            let mapped = native_theme_gpui::next::to_theme(&r);
+            assert!(mapped.is_ok(), "{name} does not map: {mapped:?}");
+            let Ok(t) = mapped else { continue };
+            out.push((name, r, t));
+        }
+    }
+    out
+}
+
 /// The colour `info` claims as `role`, with the field it names.
 fn claim_as<'a>(info: &'a WidgetInfo, role: &str) -> Option<(&'a str, gpui::Hsla)> {
     info.colors
@@ -18073,17 +18094,23 @@ fn note_of<'a>(notes: &'a [crate::info::Note], what: &str) -> Option<&'a str> {
 }
 
 /// A refined Button's info claims an edge only where `geometry::button`
-/// draws one (M9-059): `button.border.color` at rest, and upstream's colour
-/// under the pointer, where `button.border.line_width` is above 0, and no
-/// edge in any state where it is 0 (material-3, both modes), whose width
-/// replaces upstream's `border_1` -- over every bundled preset in both
-/// modes.
+/// draws one (M9-059): `button.body(NONE).stroke.color` at rest, and
+/// upstream's colour under the pointer, where the body's stroke width is
+/// above 0, and no edge in any state where it is 0, whose width replaces
+/// upstream's `border_1` -- over every 0.8.0 preset in both schemes that the
+/// builder applies to.
 #[test]
 fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
     use crate::demo::{ButtonKind, ButtonState};
-    use crate::info::stated;
+    use crate::info::{state_stroke_color_of, stroke_color_of, stroke_width_of};
+    use native_theme::next::WidgetState;
     let mut branches = (false, false);
-    for (name, r, t) in every_bundled_variant() {
+    for (name, r, t) in every_next_variant() {
+        if native_theme_gpui::next::geometry::button(&r).is_err() {
+            continue;
+        }
+        let body = r.button.body(WidgetState::NONE);
+        let hover = state_stroke_color_of(&r.button.body(WidgetState::HOVER));
         for kind in [
             ButtonKind::Default,
             ButtonKind::DefaultOutline,
@@ -18091,8 +18118,8 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
             ButtonKind::Primary,
             ButtonKind::Bordered,
         ] {
-            // a Bordered Button is built only where the theme states a hover border
-            if kind == ButtonKind::Bordered && r.button.hover_border_color.is_none() {
+            // a Bordered Button is built only where a rule states a hover border
+            if kind == ButtonKind::Bordered && hover.is_none() {
                 continue;
             }
             let info = crate::info::buttons::button(
@@ -18102,22 +18129,22 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
                 false,
                 false,
                 None,
-                Some(&r.button),
+                Some(&r),
             );
             let hovered = claim_as(&info, "border, hovered or pressed");
-            if r.button.border.line_width > 0.0 {
-                if let (ButtonKind::Bordered, Some(c)) = (kind, r.button.hover_border_color) {
+            if stroke_width_of(&body).is_some_and(|width| width > 0.0) {
+                if let (ButtonKind::Bordered, Some(c)) = (kind, hover) {
                     assert_eq!(
                         hovered,
-                        Some(("hover_border_color", stated(c))),
+                        Some(("button.body(HOVER).stroke.color", c)),
                         "{name}: a Bordered Button's info does not claim the hover border it is drawn with: {info:?}"
                     );
                 }
                 branches.0 = true;
                 assert_eq!(
                     claim_as(&info, "border at rest"),
-                    Some(("border", stated(r.button.border.color))),
-                    "{name}: a {} Button's info does not claim the button.border.color it is edged with: {info:?}",
+                    stroke_color_of(&body).map(|c| ("button.body(NONE).stroke.color", c)),
+                    "{name}: a {} Button's info does not claim the button.body(NONE).stroke.color it is edged with: {info:?}",
                     kind.name()
                 );
                 assert_eq!(
@@ -18130,7 +18157,7 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
                 branches.1 = true;
                 assert!(
                     info.colors.iter().all(|c| !c.role.starts_with("border")),
-                    "{name}: a {} Button's info claims an edge button.border.line_width 0 does not draw: {info:?}",
+                    "{name}: a {} Button's info claims an edge a button.body(NONE).stroke.width of 0 does not draw: {info:?}",
                     kind.name()
                 );
                 assert!(
@@ -18145,36 +18172,34 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
     assert_eq!(
         branches,
         (true, true),
-        "no bundled preset left a Button edged, or none left one unedged, so a branch went unread"
+        "no 0.8.0 preset left a Button edged, or none left one unedged, so a branch went unread"
     );
 }
 
-/// A Bordered Button is built as the stock `Default` one where the theme
-/// states no `button.hover_border_color` (adwaita, both modes), so its info
-/// is `Default`'s, and as itself where the theme states one (kde-breeze).
+/// A Bordered Button is built as the stock `Default` one where no rule of
+/// the installed 0.8.0 theme states a hovered button's stroke,
+/// `button.body(HOVER).stroke.color` (adwaita, both modes), so its info is
+/// `Default`'s, and as itself where one does (kde-breeze).
 #[gpui::test]
 fn a_bordered_button_is_the_default_one_where_no_hover_border_is_stated(cx: &mut TestAppContext) {
     use crate::demo::ButtonKind;
-    let prefs = native_theme_gpui::AccessibilityPreferences::default();
+    use native_theme::next::{Preset, Scheme, Theme as NextTheme, ThemeContext};
     cx.update(|cx| {
         gpui_kit::init(cx);
         for (preset, built) in [
-            ("adwaita", ButtonKind::Default),
-            ("kde-breeze", ButtonKind::Bordered),
+            (Preset::Adwaita, ButtonKind::Default),
+            (Preset::KdeBreeze, ButtonKind::Bordered),
         ] {
             for is_dark in [false, true] {
-                let loaded = native_theme_gpui::from_preset(preset, is_dark, &prefs);
-                assert!(
-                    loaded.is_ok(),
-                    "{preset}/{is_dark}: {:?}",
-                    loaded.as_ref().err()
-                );
-                let Ok((theme, r)) = loaded else { return };
-                native_theme_gpui::apply(theme, &r, &prefs, cx);
+                let scheme = if is_dark { Scheme::Dark } else { Scheme::Light };
+                let r =
+                    NextTheme::preset(preset).resolve(&ThemeContext::default().with_scheme(scheme));
+                let installed = native_theme_gpui::next::apply(&r, cx);
+                assert!(installed.is_ok(), "{preset:?}/{is_dark}: {installed:?}");
                 let got = ButtonKind::Bordered.built(cx);
                 assert!(
                     got == built,
-                    "{preset}/{is_dark}: a Bordered Button is built as {}, not {}",
+                    "{preset:?}/{is_dark}: a Bordered Button is built as {}, not {}",
                     got.name(),
                     built.name()
                 );
@@ -18190,7 +18215,12 @@ fn a_bordered_button_is_the_default_one_where_no_hover_border_is_stated(cx: &mut
 #[test]
 fn a_disabled_buttons_info_prints_its_fade() {
     use crate::demo::{ButtonKind, ButtonState};
-    for (name, r, t) in every_bundled_variant() {
+    let mut faded = false;
+    for (name, r, t) in every_next_variant() {
+        if native_theme_gpui::next::geometry::button(&r).is_err() {
+            continue;
+        }
+        let pair = native_theme_gpui::next::geometry::button_disabled(&r);
         for kind in [ButtonKind::Default, ButtonKind::Primary] {
             let info = crate::info::buttons::button(
                 &t,
@@ -18199,24 +18229,46 @@ fn a_disabled_buttons_info_prints_its_fade() {
                 false,
                 false,
                 None,
-                Some(&r.button),
+                Some(&r),
             );
             assert!(
                 !info.to_text().contains("no further fade"),
                 "{name}: a disabled {} Button's info says it is painted with no further fade: {info:?}",
                 kind.name()
             );
-            let fade = format!(
-                "button.disabled_opacity {}",
-                percent_text(r.button.disabled_opacity)
-            );
-            assert!(
-                note_of(&info.config, "opacity").is_some_and(|text| text.starts_with(&fade)),
-                "{name}: a disabled {} Button's opacity line does not print {fade:?}: {info:?}",
-                kind.name()
-            );
+            match &pair {
+                Ok(_) => {
+                    faded = true;
+                    assert!(
+                        r.button.disabled_opacity.is_some(),
+                        "{name}: geometry::button_disabled applied with no button.disabled_opacity"
+                    );
+                    let fade = r
+                        .button
+                        .disabled_opacity
+                        .map(|opacity| format!("button.disabled_opacity {}", percent_text(opacity)))
+                        .unwrap_or_default();
+                    assert!(
+                        note_of(&info.config, "opacity")
+                            .is_some_and(|text| text.starts_with(&fade)),
+                        "{name}: a disabled {} Button's opacity line does not print {fade:?}: {info:?}",
+                        kind.name()
+                    );
+                }
+                Err(unstated) => assert!(
+                    note_of(&info.config, "fill and text")
+                        .is_some_and(|text| text.contains(unstated.home())),
+                    "{name}: a disabled {} Button's info does not name the home {} it keeps upstream's disabled style for: {info:?}",
+                    kind.name(),
+                    unstated.home()
+                ),
+            }
         }
     }
+    assert!(
+        faded,
+        "no 0.8.0 preset gives a disabled Button its stated pair, so no fade was read"
+    );
 }
 
 /// The claim of `role` in `info`: that role, or a role that goes on from it
