@@ -4496,10 +4496,10 @@ pub(crate) fn input_groups(
     // is not the Input, which sits inside it and keeps its own padding
     // (input/group.rs, render_control), so the frame padded as well would
     // inset the field twice.
-    let mut frame = native_info(
+    let mut frame = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::input,
+        next::geometry::input,
         "input",
         &mut groups_info,
     );
@@ -4509,10 +4509,10 @@ pub(crate) fn input_groups(
     // a grey that under Breeze is barely distinguishable from the field,
     // while every button around it hovers blue. A custom variant makes
     // upstream skip that repaint.
-    let copy = native_info(
+    let copy = next_native_info(
         InputGroupButton::new("input-group-copy"),
         cx,
-        geometry::input_group_button,
+        next::geometry::input_group_button,
         "input_group_button",
         &mut groups_info,
     )

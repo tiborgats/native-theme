@@ -250,10 +250,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
     ),
     (
-        "input",
-        "input.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the border.padding sides the theme states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, border.corner_radius, line_width, input.font including its colour -- the root sets none of its own and the editor paints the field's text in the root's, the window's foreground without it (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)",
-    ),
-    (
         "editor",
         "defaults.line_height as the line height, over the relative(1.5) upstream's Editor sets on its Input first: the Editor refines the caller's style last (input/editor.rs, Editor::render). Its font is the mono font the theme sets, mono_font_family at mono_font_size",
     ),
@@ -288,10 +284,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "dialog_entrance",
         "dialog.entrance as the nearest entrance gpui-component draws, through Dialog::entrance and AlertDialog::entrance: DialogEntrance::Fade, a fade in place, for both styles the model has. scale_fade loses its scale, since gpui-component has no scaling entrance, and fade_rise its rise, since FadeSlide settles from just above the dialog's place instead (dialog/entrance.rs, DialogEntrance; dialog/dialog.rs, Dialog::entrance)",
-    ),
-    (
-        "input_group_button",
-        "button.border.corner_radius alone. gpui-component scales a control's radius with its size, so an in-group button would take radius/2 (input/group.rs, InputGroupButton::render_in_group), where the model records one radius per widget",
     ),
     (
         "dialog_footer",
@@ -454,6 +446,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "input_fill",
         "input.field(NONE).fill, or for a disabled field input.field(DISABLED).fill (the fill at rest where no rule states one for the state) and input.text(DISABLED).color, which the editor halves the alpha of as it does any disabled field's text (gpui-base/input/base/element.rs, prepaint), faded by input.disabled_opacity, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
+    ),
+    (
+        "input_group_button",
+        "button.body(NONE).corners alone. gpui-component scales a control's radius with its size, so an in-group button would take radius/2 (input/group.rs, InputGroupButton::render_in_group), where the model records one radius per widget",
     ),
     (
         "text_area",
