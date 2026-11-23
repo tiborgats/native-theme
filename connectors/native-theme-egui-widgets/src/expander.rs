@@ -48,8 +48,9 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// * `arrow_gap` lies between the arrow's box and the title (`Spacing::icon_spacing` where
 ///   unstated);
 /// * the body is `content_indent` in (`Spacing::indent` where unstated), with no guide line;
-/// * where `frame_enabled` is true, one frame in `expander.border`'s colour, width and radius
-///   (the scope's `noninteractive` stroke and radius) holds the header and the body; where it
+/// * where `frame_enabled` is true, one frame in `expander.border`'s colour as stated, width and
+///   radius (the scope's `noninteractive` stroke width and radius) holds the header and the
+///   body; where it
 ///   is false or unstated there is none.
 ///
 /// Where the theme states none of the four, or with no atlas installed, it is egui's own
@@ -97,19 +98,27 @@ pub struct ExpanderResponse<R> {
 pub(crate) struct Look {
     /// `expander.arrow_color`: the arrow, egui's `fg_stroke` where unstated.
     pub(crate) arrow_color: Option<Rgba>,
+    /// `expander.border.color`: the frame, as stated; the scope's `noninteractive` stroke
+    /// colour where unstated.
+    pub(crate) frame: Option<Rgba>,
 }
 
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
             arrow_color: t.expander.arrow_color,
+            frame: Some(t.expander.border.color),
         }
     }
 
-    /// The colour of an expander of a 0.8.0 theme: `expander.arrow(NONE)`'s, where stated.
+    /// The colours of an expander of a 0.8.0 theme: `expander.arrow(NONE)`'s and the frame's,
+    /// `expander.container(NONE)`'s stroke colour, where stated. The frame is that colour as
+    /// stated, not the scope's `noninteractive` stroke: the connector composites a translucent
+    /// stroke laid inside a part over the entry's fill, and the frame has no fill under it.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
         Self {
             arrow_color: next::icon(&r.expander.arrow(WidgetState::NONE)),
+            frame: next::stroke(&r.expander.container(WidgetState::NONE)),
         }
     }
 }
@@ -428,8 +437,9 @@ fn painted<R>(
     let edge = ui.visuals().widgets.noninteractive;
     let framed = layout.frame_enabled == Some(true);
     let frame = if framed {
+        let colour = look.frame.map_or(edge.bg_stroke.color, to_color32);
         egui::Frame::NONE
-            .stroke(edge.bg_stroke)
+            .stroke(egui::Stroke::new(edge.bg_stroke.width, colour))
             .corner_radius(edge.corner_radius)
     } else {
         egui::Frame::NONE

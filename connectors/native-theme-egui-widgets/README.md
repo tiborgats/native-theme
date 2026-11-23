@@ -51,20 +51,19 @@ Limits under the 0.8.0 model:
 * The switch's label lies after its track, at `switch.label_gap`, and does
   not stretch: the model this version builds on states no label side and no
   stretching gap.
-* Four outline colours are drawn otherwise than under the 0.7.2 model, each
-  the stroke of the widget's connector cell: the radio button's circle
-  (windows-11, macos-monterey, macos-tahoe), the drop-down's border and the
-  segmented control's frame and dividers (the same three presets), and the
-  expander's frame (adwaita, windows-11, the presets that frame it). The
-  0.8.0 theme lays these translucent borders inside the part, and egui ends a
-  rect's fill at its stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
+* Three outline colours are drawn otherwise than under the 0.7.2 model, each
+  the stroke of the widget's connector cell: the radio button's circle, the
+  drop-down's border and the segmented control's frame and dividers
+  (windows-11, macos-monterey, macos-tahoe). The 0.8.0 theme lays these
+  translucent borders inside the part, and egui ends a rect's fill at its stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
   `stroke_and_fill_path`), so the connector hands egui each one composited
   over the part's fill: an opaque colour where 0.7.2 gave the translucent one
   (the connector's
   [What the 0.8.0 model states that egui cannot draw](../native-theme-egui/README.md#what-the-080-model-states-that-egui-cannot-draw)).
   Over the radio's, the drop-down's and the segments' fill that colour looks
-  the same; the expander's frame has no fill of its own, so it is the
-  composite colour over whatever lies under it.
+  the same. The expander's frame has no fill under it, so it is drawn in
+  `expander.container(NONE)`'s stroke colour as stated, not in its cell's
+  composite.
 
 ## Compatibility
 

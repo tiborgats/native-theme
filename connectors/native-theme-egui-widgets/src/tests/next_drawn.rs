@@ -63,35 +63,7 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["windows-11", "macos-monterey", "macos-tahoe"],
         reason: SEGMENTED_CELL,
     },
-    Difference {
-        case: "expander closed",
-        presets: &["adwaita", "windows-11"],
-        reason: EXPANDER_CELL,
-    },
-    Difference {
-        case: "expander open",
-        presets: &["adwaita", "windows-11"],
-        reason: EXPANDER_CELL,
-    },
-    Difference {
-        case: "expander closed disabled",
-        presets: &["adwaita", "windows-11"],
-        reason: EXPANDER_CELL,
-    },
-    Difference {
-        case: "expander open disabled",
-        presets: &["adwaita", "windows-11"],
-        reason: EXPANDER_CELL,
-    },
 ];
-
-/// The expander's frame, drawn where `frame_enabled` is true (adwaita, windows-11), is
-/// outlined in its cell's stroke.
-const EXPANDER_CELL: &str = "the frame's colour alone differs: it is the connector's Expander \
-     cell's noninteractive bg_stroke, whose translucent border lies inside the part in the 0.8.0 \
-     theme and is composited over its fill (native-theme-egui, next::parity, the Expander entry \
-     of its differences); a disabled expander fades that colour; the macOS presets, which it \
-     lists too, draw no frame";
 
 /// The drop-down is egui's `ComboBox`, outlined in its cell's stroke.
 const COMBO_CELL: &str = "the button's outline colour alone differs: it is the connector's \

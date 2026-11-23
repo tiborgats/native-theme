@@ -3637,7 +3637,13 @@ const WIDGET_READS: &[(&str, &[Read])] = &[
     ),
     (
         "Expander",
-        &[("expander.arrow_color", &["expander.arrow(NONE).color"])],
+        &[
+            ("expander.arrow_color", &["expander.arrow(NONE).color"]),
+            (
+                "expander.border.color",
+                &["expander.container(NONE).stroke.color"],
+            ),
+        ],
     ),
 ];
 

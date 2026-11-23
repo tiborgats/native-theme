@@ -303,7 +303,7 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
         ExpanderLook,
         Some(ExpanderLook::of(old)),
         Some(ExpanderLook::next_of(new)),
-        [arrow_color]
+        [arrow_color, frame]
     );
     compare!(
         report,
