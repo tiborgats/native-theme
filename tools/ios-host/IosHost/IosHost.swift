@@ -789,12 +789,13 @@ func firstCell(_ list: UICollectionView) -> UICollectionViewCell? {
     list.cellForItem(at: IndexPath(item: 0, section: 0))
 }
 
-/// The first view of `type` in `root`'s subtree, depth first.
+/// The first view of `type` in `root`'s subtree, depth first, that `where`
+/// accepts.
 @MainActor
-func firstView<T: UIView>(_ type: T.Type, in root: UIView) -> T? {
-    if let found = root as? T { return found }
+func firstView<T: UIView>(_ type: T.Type, in root: UIView, where accepts: (T) -> Bool = { _ in true }) -> T? {
+    if let found = root as? T, accepts(found) { return found }
     for child in root.subviews {
-        if let found = firstView(type, in: child) { return found }
+        if let found = firstView(type, in: child, where: accepts) { return found }
     }
     return nil
 }
@@ -939,9 +940,28 @@ func listSpecimens() -> [Specimen] {
                 }
                 bar.items = items
                 bar.selectedItem = items.first
-                let middle = items.count > 1 ? items[1] : nil
+                // A bar item's own accessibilityIdentifier does not reach the
+                // accessibility tree of a UITabBar outside a tab bar
+                // controller (run 45210835145: press-6 never appeared on
+                // iOS 26): the identifier goes on the item's button, the
+                // view whose accessibility label is the item's title, else
+                // the middle of the bar's three controls from the left.
+                let middle: @MainActor () -> UIView? = {
+                    if let labelled = firstView(UIView.self, in: bar, where: { $0.accessibilityLabel == "Two" && $0 !== bar }) {
+                        return labelled
+                    }
+                    var controls: [UIControl] = []
+                    func collect(_ view: UIView) {
+                        if let control = view as? UIControl { controls.append(control) }
+                        view.subviews.forEach(collect)
+                    }
+                    bar.subviews.forEach(collect)
+                    let sorted = controls.sorted { $0.convert($0.bounds, to: bar).minX < $1.convert($1.bounds, to: bar).minX }
+                    return sorted.count == 3 ? sorted[1] : nil
+                }
                 return Sample(
-                    view: bar, spansWidth: true, pressView: { bar }, pressTarget: { middle },
+                    view: bar, spansWidth: true, pressView: { bar }, pressTarget: { middle() },
+                    highlighted: { (middle() as? UIControl)?.isHighlighted ?? false },
                     reset: { bar.selectedItem = items.first })
             }),
     ]
