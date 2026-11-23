@@ -8,8 +8,8 @@ use iced_core::Color as IcedColor;
 use native_theme::next::{
     ButtonRule, ButtonVariant, CheckboxRule, Color, InputRule, LinkRule, MenuRule, Paint,
     PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme, ScrollbarRule,
-    SegmentedControlRule, ShadowLayer, SliderRule, Stroke, StrokeAlign, TextPatch, TextStated,
-    Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
+    SegmentedControlRule, ShadowLayer, SliderRule, Stroke, StrokeAlign, SwitchRule, TextPatch,
+    TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
 };
 
 use super::super::borders::line;
@@ -231,11 +231,14 @@ fn a_stated_no_fill_for_a_state_paints_nothing() -> TestResult {
                 .states(WidgetState::HOVER)
                 .body(none.clone()),
         )
+        .link(LinkRule::new().container(PartPatch::new().fill(Paint::Solid(DISTINCT))))
         .link(LinkRule::new().states(WidgetState::HOVER).container(none));
     for (preset, r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
         let rest = fill(&r.button.body(WidgetState::NONE), "fill")?;
         assert_ne!(rest, IcedColor::TRANSPARENT, "{preset:?}");
+        let link_rest = fill(&r.link.container(WidgetState::NONE), "fill")?;
+        assert_eq!(link_rest, to_color(DISTINCT), "{preset:?}");
         for style in [
             super::button(&r)?(&theme, Status::Hovered),
             super::button_link(&r)?(&theme, Status::Hovered),
@@ -251,12 +254,14 @@ fn a_stated_no_fill_for_a_state_paints_nothing() -> TestResult {
 }
 
 /// A hovered or pressed button whose theme states no fill and no label for
-/// the state is iced's own neutral button for the status, fill and label;
-/// a checked toggle that states no checked look is that pressed button, and
-/// a toolbar button with no hovered or pressed look of its own or of the
-/// button's is too.
+/// the state takes, of iced's own neutral button, what iced changes for the
+/// status (iced_widget 0.14.2 `button::secondary`: the hovered fill, and
+/// nothing pressed), and keeps the theme's value at rest for the rest; a
+/// checked toggle that states no checked look is that pressed button, and a
+/// toolbar button with no hovered or pressed look of its own or of the
+/// button's is flat where iced makes no change.
 #[test]
-fn an_unstated_state_is_iceds_secondary_button() -> TestResult {
+fn an_unstated_state_is_iceds_change_to_the_secondary_button() -> TestResult {
     use iced_widget::button::Status;
     let patch = ThemePatch::new()
         .button(
@@ -265,71 +270,114 @@ fn an_unstated_state_is_iceds_secondary_button() -> TestResult {
                 .label(TextPatch::new().color(LABEL)),
         )
         .toolbar(ToolbarRule::new().button(every_state()));
-    for (preset, r) in every_preset_with(&patch) {
-        let theme = to_theme(&r)?;
+    let fill = Some(Background::Color(to_color(DISTINCT)));
+    let label = to_color(LABEL);
+    let mut changed = 0;
+    // The connector's iced theme gives the same strong and base secondary
+    // fill on every preset; iced's own light theme does not.
+    let themes = every_preset_with(&patch)
+        .into_iter()
+        .map(|(preset, r)| Ok((preset, to_theme(&r)?, r)))
+        .chain(
+            every_preset_with(&patch)
+                .into_iter()
+                .map(|(preset, r)| Ok((preset, iced_core::theme::Theme::Light, r))),
+        )
+        .collect::<Result<Vec<_>, super::super::Unmapped>>()?;
+    for (preset, theme, r) in themes {
         let plain = super::button(&r)?;
         let toggle = super::button_toggle(&r, true)?;
         let toolbar = super::toolbar_button(&r, false)?;
-        for status in [Status::Hovered, Status::Pressed] {
-            let own = iced_widget::button::secondary(&theme, status);
-            let style = plain(&theme, status);
-            assert_eq!(style.background, own.background, "{preset:?} {status:?}");
-            assert_eq!(style.text_color, own.text_color, "{preset:?} {status:?}");
-            let style = toolbar(&theme, status);
-            assert_eq!(
-                background_color(style.background),
-                background_color(own.background),
-                "{preset:?} toolbar {status:?}"
-            );
-            assert_eq!(
-                style.text_color, own.text_color,
-                "{preset:?} toolbar {status:?}"
-            );
-        }
+        let rest = iced_widget::button::secondary(&theme, Status::Active);
+        let hovered = iced_widget::button::secondary(&theme, Status::Hovered);
         let pressed = iced_widget::button::secondary(&theme, Status::Pressed);
+        assert_eq!(pressed.background, rest.background, "{preset:?}");
+        assert_eq!(hovered.text_color, rest.text_color, "{preset:?}");
+        // Where iced's palette gives the same strong and base secondary
+        // fill, iced makes no change under the pointer either.
+        let iced_changes = hovered.background != rest.background;
+        changed += usize::from(iced_changes);
+
+        let style = plain(&theme, Status::Hovered);
+        let expected = if iced_changes {
+            hovered.background
+        } else {
+            fill
+        };
+        assert_eq!(style.background, expected, "{preset:?}");
+        assert_eq!(style.text_color, label, "{preset:?}");
+        let style = plain(&theme, Status::Pressed);
+        assert_eq!(style.background, fill, "{preset:?}");
+        assert_eq!(style.text_color, label, "{preset:?}");
+
+        let style = toolbar(&theme, Status::Hovered);
+        let expected = if iced_changes {
+            background_color(hovered.background)
+        } else {
+            Some(IcedColor::TRANSPARENT)
+        };
+        assert_eq!(
+            background_color(style.background),
+            expected,
+            "{preset:?} toolbar"
+        );
+        assert_eq!(style.text_color, label, "{preset:?} toolbar");
+        let style = toolbar(&theme, Status::Pressed);
+        assert_eq!(
+            background_color(style.background),
+            Some(IcedColor::TRANSPARENT),
+            "{preset:?} toolbar"
+        );
+        assert_eq!(style.text_color, label, "{preset:?} toolbar");
+
         for status in [Status::Active, Status::Hovered, Status::Pressed] {
             let style = toggle(&theme, status);
-            assert_eq!(
-                background_color(style.background),
-                background_color(pressed.background),
-                "{preset:?} checked {status:?}"
-            );
-            assert_eq!(
-                style.text_color, pressed.text_color,
-                "{preset:?} checked {status:?}"
-            );
+            assert_eq!(style.background, fill, "{preset:?} checked {status:?}");
+            assert_eq!(style.text_color, label, "{preset:?} checked {status:?}");
         }
     }
+    assert!(changed > 0, "no preset shows iced's hovered change");
     Ok(())
 }
 
 /// A hovered or pressed link whose theme states no fill and no label for
-/// the state is iced's own text button for the status.
+/// the state takes, of iced's own text button, what iced changes for the
+/// status (iced_widget 0.14.2 `button::text`: the hovered label, and
+/// nothing pressed), and keeps its fill and label at rest for the rest.
 #[test]
-fn an_unstated_state_is_iceds_text_button() -> TestResult {
+fn an_unstated_state_is_iceds_change_to_the_text_button() -> TestResult {
     use iced_widget::button::Status;
     let patch = ThemePatch::new().link(
         LinkRule::new()
             .container(PartPatch::new().fill(Paint::Solid(DISTINCT)))
             .label(TextPatch::new().color(LABEL)),
     );
+    let fill = Some(Background::Color(to_color(DISTINCT)));
     for (preset, r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
         let link = super::button_link(&r)?;
-        for status in [Status::Hovered, Status::Pressed] {
-            let own = iced_widget::button::text(&theme, status);
-            let style = link(&theme, status);
-            assert_eq!(style.background, own.background, "{preset:?} {status:?}");
-            assert_eq!(style.text_color, own.text_color, "{preset:?} {status:?}");
-        }
+        let rest = iced_widget::button::text(&theme, Status::Active);
+        let hovered = iced_widget::button::text(&theme, Status::Hovered);
+        assert_ne!(hovered.text_color, rest.text_color, "{preset:?}");
+        assert_eq!(hovered.background, rest.background, "{preset:?}");
+
+        let style = link(&theme, Status::Hovered);
+        assert_eq!(style.background, fill, "{preset:?}");
+        assert_eq!(style.text_color, hovered.text_color, "{preset:?}");
+        let style = link(&theme, Status::Pressed);
+        assert_eq!(style.background, fill, "{preset:?}");
+        assert_eq!(style.text_color, to_color(LABEL), "{preset:?}");
     }
     Ok(())
 }
 
 /// A hovered check box or radio whose theme states no fill, stroke or label
-/// for the state is iced's own for the status: fill, border colour, label.
+/// for the state takes, of iced's own, what iced changes for the status
+/// (iced_widget 0.14.2 `checkbox::primary`, `radio::default`: the
+/// unchecked fill, and neither the unchecked border nor the label), and
+/// keeps the theme's value at rest for the rest.
 #[test]
-fn an_unstated_hover_is_iceds_check_box_and_radio() -> TestResult {
+fn an_unstated_hover_is_iceds_change_to_the_check_box_and_radio() -> TestResult {
     let label = TextPatch::new().color(LABEL);
     let patch = ThemePatch::new()
         .checkbox(
@@ -338,21 +386,91 @@ fn an_unstated_hover_is_iceds_check_box_and_radio() -> TestResult {
                 .label(label.clone()),
         )
         .radio(RadioRule::new().indicator(every_state()).label(label));
+    let mut changed = 0;
     for (preset, r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
+        let rest = iced_widget::checkbox::primary(
+            &theme,
+            iced_widget::checkbox::Status::Active { is_checked: false },
+        );
         let status = iced_widget::checkbox::Status::Hovered { is_checked: false };
         let own = iced_widget::checkbox::primary(&theme, status);
+        assert_eq!(own.border.color, rest.border.color, "{preset:?}");
+        // Where iced's palette gives the same weak and base background,
+        // iced makes no change to the fill either.
+        let iced_changes = own.background != rest.background;
+        changed += usize::from(iced_changes);
+        let style = super::checkbox(&r)?(&theme, status);
+        let expected = if iced_changes {
+            own.background
+        } else {
+            Background::Color(to_color(DISTINCT))
+        };
+        assert_eq!(style.background, expected, "{preset:?}");
+        assert_eq!(style.border.color, to_color(LABEL), "{preset:?}");
+        assert_eq!(style.text_color, Some(to_color(LABEL)), "{preset:?}");
+
+        let rest = iced_widget::radio::default(
+            &theme,
+            iced_widget::radio::Status::Active { is_selected: false },
+        );
+        let status = iced_widget::radio::Status::Hovered { is_selected: false };
+        let own = iced_widget::radio::default(&theme, status);
+        assert_ne!(own.background, rest.background, "{preset:?}");
+        assert_eq!(own.border_color, rest.border_color, "{preset:?}");
+        let style = super::radio(&r)?(&theme, status);
+        assert_eq!(style.background, own.background, "{preset:?}");
+        assert_eq!(style.border_color, to_color(LABEL), "{preset:?}");
+        assert_eq!(style.text_color, Some(to_color(LABEL)), "{preset:?}");
+    }
+    assert!(changed > 0, "no preset shows iced's hovered change");
+    Ok(())
+}
+
+/// A rule for `CHECKED` alone states nothing for the hovered state: a
+/// hovered checked box's fill and border are iced's own, which iced changes
+/// under the pointer (iced_widget 0.14.2 `checkbox::primary`: `primary.base`
+/// to `primary.strong`), and a hovered switch's on track is the checked
+/// track the rule states, which iced's own toggler does not change.
+#[test]
+fn a_checked_rule_alone_leaves_the_hovered_state_to_iceds_change() -> TestResult {
+    let checked = PartPatch::new()
+        .fill(Paint::Solid(LABEL))
+        .stroke(Stroke::uniform(1.0, LABEL));
+    let patch = ThemePatch::new()
+        .checkbox(CheckboxRule::new().indicator(every_state()))
+        .checkbox(
+            CheckboxRule::new()
+                .states(WidgetState::CHECKED)
+                .indicator(checked.clone()),
+        )
+        .switch(SwitchRule::new().track(every_state()))
+        .switch(
+            SwitchRule::new()
+                .states(WidgetState::CHECKED)
+                .track(checked),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let rest = iced_widget::checkbox::primary(
+            &theme,
+            iced_widget::checkbox::Status::Active { is_checked: true },
+        );
+        let status = iced_widget::checkbox::Status::Hovered { is_checked: true };
+        let own = iced_widget::checkbox::primary(&theme, status);
+        assert_ne!(own.background, rest.background, "{preset:?}");
+        assert_ne!(own.border.color, rest.border.color, "{preset:?}");
         let style = super::checkbox(&r)?(&theme, status);
         assert_eq!(style.background, own.background, "{preset:?}");
         assert_eq!(style.border.color, own.border.color, "{preset:?}");
-        assert_eq!(style.text_color, own.text_color, "{preset:?}");
 
-        let status = iced_widget::radio::Status::Hovered { is_selected: false };
-        let own = iced_widget::radio::default(&theme, status);
-        let style = super::radio(&r)?(&theme, status);
-        assert_eq!(style.background, own.background, "{preset:?}");
-        assert_eq!(style.border_color, own.border_color, "{preset:?}");
-        assert_eq!(style.text_color, own.text_color, "{preset:?}");
+        let status = iced_widget::toggler::Status::Hovered { is_toggled: true };
+        let style = super::toggler(&r)?(&theme, status);
+        assert_eq!(
+            style.background,
+            Background::Color(to_color(LABEL)),
+            "{preset:?}"
+        );
     }
     Ok(())
 }

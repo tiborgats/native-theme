@@ -8,17 +8,17 @@
 
 use iced_aw::style::Status;
 use iced_core::theme::Theme;
-use native_theme::next::{PartStated, PartStyle, ResolvedTheme, Stroke, WidgetState};
+use native_theme::next::{PartStated, PartStyle, ResolvedTheme, WidgetState};
 
-use super::super::borders::{line, state_line, stroke_width};
+use super::super::borders::{line_or_none, state_line, stroke_width};
 use super::super::{Mapped, fill, state_fill, state_text_color, stated, text_color, to_color};
 use super::{radius_or_iced, shadow};
 use crate::styles::Line;
 use crate::styles::aw::{self as old, CardSource, ListSource, MenuSource, TabBarSource};
 
 /// A part's stroke and its width where the theme states the stroke, a
-/// stated `Stroke::None` being no line and no width; `None` for each where
-/// it states none, `iced_aw`'s own then.
+/// stated `Stroke::None` being no stroke ([`Line::none`]) 0 wide; `None`
+/// for each where it states none, `iced_aw`'s own then.
 fn edge_or_own(
     part: &PartStyle,
     color_home: &'static str,
@@ -28,11 +28,7 @@ fn edge_or_own(
         return Ok((None, None));
     }
     let width = stroke_width(part, width_home)?;
-    let line = match part.stroke {
-        Stroke::None => None,
-        _ => Some(line(part, color_home)?),
-    };
-    Ok((line, Some(width)))
+    Ok((Some(line_or_none(part, color_home)?), Some(width)))
 }
 
 /// [`crate::styles::aw::card`]: the card's fill and outline, the text on it
@@ -125,9 +121,10 @@ pub fn menu(
 
 /// [`crate::styles::aw::tab_bar`]: the strip, the tabs at rest, selected
 /// and hovered, the selected tab's outline (spec §5, `tab.border`: the
-/// selected tab's stroke and corners). A hovered fill or label no `HOVER`
-/// rule states, and an outline the theme leaves unstated, is `iced_aw`'s
-/// own.
+/// selected tab's stroke and corners) and a tab's not selected
+/// (`tab.tab(NONE)`). A hovered fill or label no `HOVER` rule states is as
+/// [`crate::styles::in_state`] gives it, and an outline the theme leaves
+/// unstated is `iced_aw`'s own.
 ///
 /// # Errors
 ///
@@ -137,14 +134,22 @@ pub fn tab_bar(
 ) -> Mapped<impl Fn(&Theme, Status) -> iced_aw::style::tab_bar::Style + Clone + use<>> {
     let t = &r.tab;
     let selected = t.tab(WidgetState::SELECTED);
+    let idle = t.tab(WidgetState::NONE);
     let (line, width) = edge_or_own(
         &selected,
         "tab.tab(SELECTED).stroke.color",
         "tab.tab(SELECTED).stroke.width",
     )?;
+    let (idle_line, idle_width) = edge_or_own(
+        &idle,
+        "tab.tab(NONE).stroke.color",
+        "tab.tab(NONE).stroke.width",
+    )?;
     Ok(old::tab_bar_from(&TabBarSource {
         bar_background: fill(&t.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
-        background: fill(&t.tab(WidgetState::NONE), "tab.tab(NONE).fill")?,
+        background: fill(&idle, "tab.tab(NONE).fill")?,
+        idle_line,
+        idle_width,
         active_background: fill(&selected, "tab.tab(SELECTED).fill")?,
         hover_background: state_fill(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")?,
         label: text_color(&t.label(WidgetState::NONE), "tab.label(NONE).color")?,

@@ -13,7 +13,7 @@ use native_theme::next::{
 };
 
 use super::borders::{
-    line, line_or_none, outline, outline_or_iced, radius, state_line, stroke_width,
+    flagged, line, line_or_none, outline, outline_or_iced, radius, state_line, stroke_width,
 };
 use super::{Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, to_color};
 use crate::styles::{
@@ -384,42 +384,6 @@ pub fn text_editor(
     )?))
 }
 
-/// A part's fill where a rule states it for `$flag` (the query with that
-/// flag alone, spec §2, `from_state`), read at `$query`; `None` where none
-/// does. A value a rule for another flag of `$query` states (a checked box's
-/// fill under the pointer) is not this state's.
-macro_rules! flag_fill {
-    ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
-        if $w.$part($flag).from_state.contains(PartStated::FILL) {
-            fill(&$w.$part($query), $home).map(Some)
-        } else {
-            Ok(None)
-        }
-    };
-}
-
-/// [`flag_fill`] read as a [`layer`].
-macro_rules! flag_layer {
-    ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
-        if $w.$part($flag).from_state.contains(PartStated::FILL) {
-            layer(&$w.$part($query), $home).map(Some)
-        } else {
-            Ok(None)
-        }
-    };
-}
-
-/// [`flag_fill`] of the stroke.
-macro_rules! flag_line {
-    ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
-        if $w.$part($flag).from_state.contains(PartStated::STROKE) {
-            line(&$w.$part($query), $home).map(Some)
-        } else {
-            Ok(None)
-        }
-    };
-}
-
 /// [`CheckFills`] of the 0.8.0 model, of the indicator of `$w` (the check
 /// box's or the radio's), every home under `$home`.
 macro_rules! check_fills {
@@ -429,17 +393,21 @@ macro_rules! check_fills {
             &w.indicator(WidgetState::NONE),
             concat!($home, ".indicator(NONE).fill"),
         )?;
+        let checked = fill(
+            &w.indicator(WidgetState::CHECKED),
+            concat!($home, ".indicator(CHECKED).fill"),
+        )?;
+        let hover = w.indicator(WidgetState::HOVER);
+        let checked_hover = w.indicator(WidgetState::HOVER | WidgetState::CHECKED);
         Ok::<CheckFills, Unmapped>(CheckFills {
-            checked: fill(
-                &w.indicator(WidgetState::CHECKED),
-                concat!($home, ".indicator(CHECKED).fill"),
-            )?,
+            checked,
             unchecked,
-            hover_fill: state_layer(
-                &w.indicator(WidgetState::HOVER),
-                concat!($home, ".indicator(HOVER).fill"),
-            )?
-            .map(|layer| layer.over(unchecked)),
+            hover_fill: state_layer(&hover, concat!($home, ".indicator(HOVER).fill"))?
+                .map(|layer| layer.over(unchecked)),
+            checked_hover_fill: flagged(&hover, &checked_hover, PartStated::FILL, |p| {
+                layer(p, concat!($home, ".indicator(HOVER|CHECKED).fill"))
+            })?
+            .map(|layer| layer.over(checked)),
             checked_border: line_or_none(
                 &w.indicator(WidgetState::CHECKED),
                 concat!($home, ".indicator(CHECKED).stroke.color"),
@@ -448,17 +416,10 @@ macro_rules! check_fills {
                 &w.indicator(WidgetState::NONE),
                 concat!($home, ".indicator(NONE).stroke.color"),
             )?,
-            hover_border: state_line(
-                &w.indicator(WidgetState::HOVER),
-                concat!($home, ".indicator(HOVER).stroke.color"),
-            )?,
-            checked_hover_border: flag_line!(
-                w,
-                indicator,
-                WidgetState::HOVER,
-                WidgetState::HOVER | WidgetState::CHECKED,
-                concat!($home, ".indicator(HOVER|CHECKED).stroke.color")
-            )?,
+            hover_border: state_line(&hover, concat!($home, ".indicator(HOVER).stroke.color"))?,
+            checked_hover_border: flagged(&hover, &checked_hover, PartStated::STROKE, |p| {
+                line_or_none(p, concat!($home, ".indicator(HOVER|CHECKED).stroke.color"))
+            })?,
             hover_label: state_text_color(
                 &w.label(WidgetState::HOVER),
                 concat!($home, ".label(HOVER).color"),
@@ -481,12 +442,11 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
             &c.indicator(WidgetState::DISABLED),
             "checkbox.indicator(DISABLED).fill",
         )?,
-        checked_disabled_background: flag_fill!(
-            c,
-            indicator,
-            WidgetState::DISABLED,
-            WidgetState::DISABLED | WidgetState::CHECKED,
-            "checkbox.indicator(DISABLED|CHECKED).fill"
+        checked_disabled_background: flagged(
+            &c.indicator(WidgetState::DISABLED),
+            &c.indicator(WidgetState::DISABLED | WidgetState::CHECKED),
+            PartStated::FILL,
+            |p| fill(p, "checkbox.indicator(DISABLED|CHECKED).fill"),
         )?,
         disabled_opacity: c.disabled_opacity,
         mark: to_color(mark.color),
@@ -551,25 +511,14 @@ pub fn radio(
 }
 
 /// A part's outline as the switch takes it, its width and its stroke, where
-/// the theme states a stroke; `None` where it states none or no stroke,
-/// iced's own (none) then drawn.
+/// the theme states a stroke, no stroke ([`Line::none`], 0 wide) where it
+/// states none; `None` where it states nothing, iced's own (none) then
+/// drawn.
 fn edge(part: &PartStyle, home: &'static str) -> Mapped<Option<(f32, Line)>> {
-    if !part.stated.contains(PartStated::STROKE) || matches!(part.stroke, Stroke::None) {
+    if !part.stated.contains(PartStated::STROKE) {
         return Ok(None);
     }
-    Ok(Some((stroke_width(part, home)?, line(part, home)?)))
-}
-
-/// [`edge`] where a rule states the stroke for `$flag`, as [`flag_fill`]
-/// reads a fill.
-macro_rules! flag_edge {
-    ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
-        if $w.$part($flag).from_state.contains(PartStated::STROKE) {
-            edge(&$w.$part($query), $home)
-        } else {
-            Ok(None)
-        }
-    };
+    Ok(Some((stroke_width(part, home)?, line_or_none(part, home)?)))
 }
 
 /// A part's corner radius where stated; `None`, iced's own, where not.
@@ -590,66 +539,72 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
     let thumb_off = s.thumb(WidgetState::NONE);
     let checked = fill(&on, "switch.track(CHECKED).fill")?;
     let unchecked = fill(&off, "switch.track(NONE).fill")?;
+    let thumb = fill(&thumb_on, "switch.thumb(CHECKED).fill")?;
+    let unchecked_thumb = fill(&thumb_off, "switch.thumb(NONE).fill")?;
     let [_, track_height] = off.min_size;
     let [thumb_diameter, _] = thumb_on.min_size;
     let [unchecked_thumb_diameter, _] = thumb_off.min_size;
+    let hover = WidgetState::HOVER;
+    let hover_on = WidgetState::HOVER | WidgetState::CHECKED;
+    let disabled = WidgetState::DISABLED;
+    let disabled_on = WidgetState::DISABLED | WidgetState::CHECKED;
     Ok(SwitchSource {
         disabled_opacity: s.disabled_opacity,
         checked_background: checked,
         unchecked_background: unchecked,
-        hovered_checked_background: flag_layer!(
-            s,
-            track,
-            WidgetState::HOVER,
-            WidgetState::HOVER | WidgetState::CHECKED,
-            "switch.track(HOVER|CHECKED).fill"
+        hovered_checked_background: flagged(
+            &s.track(hover),
+            &s.track(hover_on),
+            PartStated::FILL,
+            |p| layer(p, "switch.track(HOVER|CHECKED).fill"),
         )?
         .map(|layer| layer.over(checked)),
-        hovered_unchecked_background: state_layer(
-            &s.track(WidgetState::HOVER),
-            "switch.track(HOVER).fill",
-        )?
-        .map(|layer| layer.over(unchecked)),
-        disabled_checked_background: flag_fill!(
-            s,
-            track,
-            WidgetState::DISABLED,
-            WidgetState::DISABLED | WidgetState::CHECKED,
-            "switch.track(DISABLED|CHECKED).fill"
+        hovered_unchecked_background: state_layer(&s.track(hover), "switch.track(HOVER).fill")?
+            .map(|layer| layer.over(unchecked)),
+        disabled_checked_background: flagged(
+            &s.track(disabled),
+            &s.track(disabled_on),
+            PartStated::FILL,
+            |p| fill(p, "switch.track(DISABLED|CHECKED).fill"),
         )?,
         disabled_unchecked_background: state_fill(
-            &s.track(WidgetState::DISABLED),
+            &s.track(disabled),
             "switch.track(DISABLED).fill",
         )?,
-        thumb_background: fill(&thumb_on, "switch.thumb(CHECKED).fill")?,
-        unchecked_thumb_background: fill(&thumb_off, "switch.thumb(NONE).fill")?,
-        disabled_thumb_color: flag_fill!(
-            s,
-            thumb,
-            WidgetState::DISABLED,
-            WidgetState::DISABLED | WidgetState::CHECKED,
-            "switch.thumb(DISABLED|CHECKED).fill"
+        thumb_background: thumb,
+        unchecked_thumb_background: unchecked_thumb,
+        hovered_thumb: flagged(&s.thumb(hover), &s.thumb(hover_on), PartStated::FILL, |p| {
+            layer(p, "switch.thumb(HOVER|CHECKED).fill")
+        })?
+        .map(|layer| layer.over(thumb)),
+        hovered_unchecked_thumb: state_layer(&s.thumb(hover), "switch.thumb(HOVER).fill")?
+            .map(|layer| layer.over(unchecked_thumb)),
+        disabled_thumb_color: flagged(
+            &s.thumb(disabled),
+            &s.thumb(disabled_on),
+            PartStated::FILL,
+            |p| fill(p, "switch.thumb(DISABLED|CHECKED).fill"),
         )?,
         disabled_unchecked_thumb_color: state_fill(
-            &s.thumb(WidgetState::DISABLED),
+            &s.thumb(disabled),
             "switch.thumb(DISABLED).fill",
         )?,
         checked_track_border: edge(&on, "switch.track(CHECKED).stroke")?,
         unchecked_track_border: edge(&off, "switch.track(NONE).stroke")?,
-        disabled_checked_track_border: flag_edge!(
-            s,
-            track,
-            WidgetState::DISABLED,
-            WidgetState::DISABLED | WidgetState::CHECKED,
-            "switch.track(DISABLED|CHECKED).stroke"
-        )?,
-        disabled_unchecked_track_border: flag_edge!(
-            s,
-            track,
-            WidgetState::DISABLED,
-            WidgetState::DISABLED,
-            "switch.track(DISABLED).stroke"
-        )?,
+        disabled_checked_track_border: flagged(
+            &s.track(disabled),
+            &s.track(disabled_on),
+            PartStated::STROKE,
+            |p| edge(p, "switch.track(DISABLED|CHECKED).stroke"),
+        )?
+        .flatten(),
+        disabled_unchecked_track_border: flagged(
+            &s.track(disabled),
+            &s.track(disabled),
+            PartStated::STROKE,
+            |p| edge(p, "switch.track(DISABLED).stroke"),
+        )?
+        .flatten(),
         thumb_border: edge(&thumb_off, "switch.thumb(NONE).stroke")?,
         track_radius: radius_or_iced(&off, "switch.track(NONE).corners")?,
         track_height,
@@ -728,7 +683,7 @@ pub fn pick_list(
 /// A part's shadow as iced draws one, where the theme states the part's
 /// shadows: iced's menu draws one outset shadow by its offset, blur and
 /// colour, so it is the first outset layer, its spread and every other
-/// layer dropped (the README lists what iced cannot draw), and no shadow
+/// layer dropped, and no shadow
 /// (`Shadow::default()`, transparent) where the theme states none outset.
 /// `None` where the theme states no shadow, iced's own then.
 fn shadow(part: &PartStyle) -> Option<Shadow> {
@@ -750,8 +705,10 @@ fn shadow(part: &PartStyle) -> Option<Shadow> {
 /// framed by the menu's own stroke where the theme states one, else by the
 /// popover's (spec §5, notes to the table, the menu's popup frame). iced
 /// rounds the popup and the item highlight with one radius, which is
-/// `menu.item`'s corners (spec §5, `menu.border`); the panel's shadow is
-/// [`shadow`]'s. Each value the theme leaves unstated is iced's own.
+/// `menu.item`'s corners where the theme states them (spec §5,
+/// `menu.border`), else `menu.panel`'s (material-3's container shape,
+/// platform-facts.md §2.6); the panel's shadow is [`shadow`]'s. Each value
+/// the theme leaves unstated is iced's own.
 ///
 /// # Errors
 ///
@@ -797,7 +754,10 @@ pub fn menu(
         selected_background: state_fill(&m.item(WidgetState::HOVER), "menu.item(HOVER).fill")?,
         line,
         width,
-        radius: radius_or_iced(&m.item(WidgetState::NONE), "menu.item(NONE).corners")?,
+        radius: match radius_or_iced(&m.item(WidgetState::NONE), "menu.item(NONE).corners")? {
+            Some(item) => Some(item),
+            None => radius_or_iced(&panel, "menu.panel(NONE).corners")?,
+        },
         shadow: shadow(&panel),
     }))
 }
@@ -843,6 +803,14 @@ pub fn slider(
         fill_color: fill(
             &s.active_track(WidgetState::NONE),
             "slider.active_track(NONE).fill",
+        )?,
+        hovered_fill_color: state_fill(
+            &s.active_track(WidgetState::HOVER),
+            "slider.active_track(HOVER).fill",
+        )?,
+        dragged_fill_color: state_fill(
+            &s.active_track(WidgetState::PRESSED),
+            "slider.active_track(PRESSED).fill",
         )?,
         track_color: fill(&s.track(WidgetState::NONE), "slider.track(NONE).fill")?,
         track_height,

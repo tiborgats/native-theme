@@ -33,10 +33,14 @@
 //! reason: a style function whose 0.8.0 stroke lies inside or across the
 //! widget's edge, where 0.7.2 stated no alignment; one whose hovered or
 //! pressed fill, stroke or label the 0.8.0 theme states nothing for, which
-//! is iced's own (spec §2, `from_state`); one whose outline or corners the
+//! is as [`crate::styles::in_state`] gives it, iced's own where iced's own
+//! style changes it for the status (spec §2, `from_state`); one whose
+//! outline or corners the
 //! 0.8.0 theme leaves unstated where 0.7.2's resolver made them up, which
-//! are iced's own (spec §5, §10 rule 0). The entry asserts the value the
-//! 0.8.0 side must give: the 0.7.2 side's own output with each of its
+//! are iced's own (spec §5, §10 rule 0). The entry asserts, in every status
+//! of the style function on the preset it names (a key with `/light` or
+//! `/dark` names one scheme), the value the 0.8.0 side must give, whether
+//! or not it differs there: the 0.7.2 side's own output with each of its
 //! strokes laid where the entry says ([`crate::styles::Line::aligned`]), so
 //! the stroke is composited over the fill each status paints, or over it at
 //! half its alpha, and with the state options, the stroke or the corners
@@ -64,7 +68,8 @@ pub(crate) const PRESETS: &[(&str, Preset)] = &[
 ];
 
 /// A listed difference (plan, section 1, rule 2): the style function, the
-/// presets on which it differs, how the 0.8.0 side differs, and why.
+/// presets on which it differs (a preset's key for both schemes, or
+/// `key/light` or `key/dark` for one), how the 0.8.0 side differs, and why.
 struct Difference {
     leaf: &'static str,
     presets: &'static [&'static str],
@@ -92,8 +97,10 @@ pub(crate) struct Listed {
 }
 
 /// The state options of a style function's source that the 0.8.0 theme
-/// states nothing for (spec §2, `from_state`), each then iced's own for the
-/// status: the hovered and the pressed fill, stroke and label.
+/// states nothing for (spec §2, `from_state`), each then as
+/// [`crate::styles::in_state`] gives it: the hovered and the pressed fill,
+/// stroke and label, an open drop-down's stroke, a switch's hovered thumb
+/// and a slider's filled rail under the pointer and dragged.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct States {
     pub hover_fill: bool,
@@ -102,6 +109,9 @@ pub(crate) struct States {
     pub pressed_fill: bool,
     pub pressed_stroke: bool,
     pub pressed_label: bool,
+    pub open_stroke: bool,
+    pub hover_thumb: bool,
+    pub rail: bool,
 }
 
 impl States {
@@ -113,6 +123,9 @@ impl States {
         pressed_fill: false,
         pressed_stroke: false,
         pressed_label: false,
+        open_stroke: false,
+        hover_thumb: false,
+        rail: false,
     };
 }
 
@@ -178,32 +191,33 @@ const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Differe
     }
 }
 
-/// The reason of a pressed link, whose fill the 0.8.0 theme states nothing
+/// The reason of a hovered link whose label the 0.8.0 theme states nothing
 /// for.
-const PRESSED_LINK: &str = "the theme states no fill for the pressed link: 0.7.2's LinkTheme \
-     has no pressed fill, which its connector drew as the idle one; the 0.8.0 theme has no \
-     rule for PRESSED that states link.container's fill (the from_state bit clear when \
-     queried with PRESSED alone), and the connector keeps iced's own text button for that \
-     status, its fill none (iced_widget 0.14.2 src/button.rs, fn text), with the pressed \
-     label the theme states (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+const HOVER_LINK_LABEL: &str = "the theme states no label for the hovered link: 0.7.2's \
+     preset leaves link.hover_text_color unset and its resolver fills it from \
+     link.font.color (docs/inheritance-rules.toml, link.hover_text_color), a value the 0.8.0 \
+     model does not carry (docs/v0.8.0-spec.md §5); no rule for HOVER states link.label's \
+     colour (the from_state bit clear when queried with HOVER alone), and iced's own text \
+     button changes the label under the pointer (iced_widget 0.14.2 src/button.rs, fn text: \
+     the label at 0.8 alpha), so the label is iced's own for the status (docs/v0.8.0-spec.md \
+     §2, from_state; §10, rule 0)";
 
-/// The reason of material-3's menu corners.
-const MENU_CORNERS: &str = "material-3 rounds the menu's container (menu.panel.corners, 4, \
-     the M3 token container-shape, docs/platform-facts.md §2.6) and states no corners for an \
-     item, whose highlight is rectangular; 0.7.2's menu.border.corner_radius is the \
-     container's on material-3 (docs/v0.8.0-spec.md §5, notes to the table, menu.border). \
-     iced rounds the popup and the item highlight with one radius (iced_widget 0.14.2 \
-     src/overlay/menu.rs, the selected row's border::rounded of the menu's radius); the \
-     connector takes menu.item's corners, which material-3 leaves unstated, so the radius is \
-     iced's own (0) and the container is drawn square";
+/// The reason of a switch's hovered thumb.
+const HOVER_THUMB: &str = "the theme states no hovered thumb: 0.7.2 has no field for it, and \
+     its connector drew the thumb at rest; the 0.8.0 theme has no rule for HOVER that states \
+     switch.thumb's fill (the from_state bit clear when queried with HOVER alone), and iced's \
+     own toggler changes the thumb under the pointer (iced_widget 0.14.2 src/toggler.rs, fn \
+     default: the toggled thumb at half alpha, the other background.weak), so the thumb is \
+     iced's own for the status (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
 
-/// The reason of a pressed link whose label the 0.8.0 theme states nothing
-/// for either.
-const PRESSED_LINK_LABEL: &str = "nor a label for the pressed link: 0.7.2's preset leaves \
-     link.active_text_color unset and its resolver fills it from link.font.color \
-     (docs/inheritance-rules.toml), a value the 0.8.0 model does not carry \
-     (docs/v0.8.0-spec.md §5); no rule for PRESSED states link.label's colour, and the \
-     label is iced's own text button's for the status";
+/// The reason of a slider's filled rail under the pointer and dragged.
+const SLIDER_RAIL: &str = "the theme states no filled rail under the pointer or dragged: 0.7.2 \
+     has no field for it, and its connector drew the rail at rest; the 0.8.0 theme has no \
+     rule for HOVER or PRESSED that states slider.active_track's fill (the from_state bit \
+     clear when queried with that flag alone), and iced's own slider changes the filled rail \
+     in both statuses (iced_widget 0.14.2 src/slider.rs, fn default: primary.strong under the \
+     pointer, primary.weak dragged), so it is iced's own for the status (docs/v0.8.0-spec.md \
+     §2, from_state; §10, rule 0)";
 
 /// The reason of a dragged scroll bar thumb the 0.8.0 theme states nothing
 /// for.
@@ -262,15 +276,6 @@ const CARD_STROKE: &str = "the theme states no stroke for the card: 0.7.2's pres
 const CARD_CORNERS: &str = "nor corners: 0.7.2's resolver makes up a square card \
      (validate_border), and the radius is iced_aw's own card's";
 
-/// The reason of ios-13's menu corners.
-const MENU_PANEL_CORNERS: &str = "ios-13's 0.8.0 preset states corners for the menu's panel, \
-     its default radius (menu.panel(NONE).corners: layout.corner_radius, 0.7.2's \
-     defaults.border.corner_radius, 10), which the connector reads as the menu's own \
-     (docs/v0.8.0-spec.md §5, notes to the table: menu.panel holds the menu's own values); \
-     0.7.2's ios-13 states no menu radius, and its connector rounded the popup by \
-     popover.border's radius (13, the large radius), which stays at popover.panel for a menu \
-     that states no corners of its own";
-
 /// The reason of a selected tab whose outline the 0.8.0 theme leaves
 /// unstated.
 const TAB_STROKE: &str = "the theme states no outline for the selected tab: 0.7.2's preset \
@@ -280,12 +285,15 @@ const TAB_STROKE: &str = "the theme states no outline for the selected tab: 0.7.
      tab.tab(SELECTED)'s stroke and corners), and the selected tab's outline is iced_aw's own \
      tab bar's (iced_aw 0.14.1 src/style/tab_bar.rs, fn primary; §10, rule 0)";
 
-/// The reason of a hovered tab's label 0.7.2's resolver fills in.
-const TAB_HOVER_LABEL: &str = "the theme states no label for the hovered tab: 0.7.2's preset \
-     leaves tab.hover_text_color unset and its resolver fills it from tab.font.color \
-     (docs/inheritance-rules.toml, tab.hover_text_color), a value the 0.8.0 model does not \
-     carry (docs/v0.8.0-spec.md §5); no rule for HOVER states tab.label's colour, and the \
-     label is iced_aw's own for the status";
+/// The reason of a tab not selected whose outline the 0.8.0 theme leaves
+/// unstated.
+const TAB_IDLE_STROKE: &str = "nor an outline for a tab not selected: windows-11, kde-breeze, \
+     adwaita and material-3 state it as none (docs/platform-facts.md §2.11), the macOS and \
+     iOS presets state nothing for it, and 0.7.2's connector drew such a tab with no \
+     outline, a width of 0 of its own; where tab.tab(NONE) states no stroke, the tab's \
+     outline is iced_aw's own tab bar's \
+     (iced_aw 0.14.1 src/style/tab_bar.rs, Style's default: 1 wide; docs/v0.8.0-spec.md \
+     §10, rule 0)";
 
 /// The reason of a hovered tab's fill the 0.8.0 theme states nothing for.
 const TAB_HOVER_FILL: &str = "the theme states no fill for the hovered tab: 0.7.2 leaves \
@@ -346,6 +354,39 @@ const fn hovered(fill: bool, label: bool, stroke: bool) -> States {
         hover_label: label,
         hover_stroke: stroke,
         ..States::STATED
+    }
+}
+
+/// The reason of an open drop-down whose stroke the 0.8.0 theme states
+/// nothing for.
+const OPEN: &str = "the theme states no stroke for the open drop-down: 0.7.2 leaves \
+     combo_box.open_border_color unset (docs/inheritance-rules.toml, [no_inheritance]), which \
+     its connector drew as the field's border at rest; the 0.8.0 theme has no rule for OPEN \
+     that states combo_box.field's stroke (the from_state bit clear when queried with OPEN \
+     alone), and iced's own pick list changes the open field's border colour \
+     (iced_widget 0.14.2 src/pick_list.rs, fn default: primary.strong), so it is iced's own \
+     for the status (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+
+/// A drop-down whose open stroke the theme states nothing for on
+/// `presets`, with the hovered state options `states` names, its strokes
+/// laid at `align`.
+const fn open(presets: &'static [&'static str], align: LineAlign, states: States) -> Difference {
+    let hovered = hover("pick_list", presets, align, states);
+    Difference {
+        listed: Listed {
+            states: States {
+                open_stroke: true,
+                ..states
+            },
+            ..hovered.listed
+        },
+        reason: match (align, states.hover_fill || states.hover_stroke) {
+            (LineAlign::Outside, true) => &[HOVER, OPEN],
+            (LineAlign::Outside, false) => &[OPEN],
+            (LineAlign::Inside, _) => &[INSIDE, HOVER, OPEN],
+            (LineAlign::Center, _) => &[CENTER, HOVER, OPEN],
+        },
+        ..hovered
     }
 }
 
@@ -439,12 +480,6 @@ const DIFFERENCES: &[Difference] = &[
     ),
     hover(
         "radio",
-        HOVER_FILL_ONLY,
-        LineAlign::Outside,
-        hovered(false, false, true),
-    ),
-    hover(
-        "radio",
         HOVER_FILL_ONLY_INSIDE,
         LineAlign::Inside,
         hovered(false, false, true),
@@ -455,63 +490,83 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Inside,
         hovered(true, true, true),
     ),
-    // combo_box.field: the hovered fill and stroke (`field(HOVER)`).
-    hover(
-        "pick_list",
-        &["kde-breeze"],
-        LineAlign::Outside,
-        hovered(true, false, false),
-    ),
-    hover(
-        "pick_list",
+    // combo_box.field: the hovered fill and stroke (`field(HOVER)`), and the
+    // open stroke (`field(OPEN)`), which kde-breeze alone states.
+    open(
         &["adwaita", "ios-13"],
         LineAlign::Outside,
         hovered(false, false, true),
     ),
-    hover(
-        "pick_list",
+    open(
         HOVER_FILL_ONLY_INSIDE,
         LineAlign::Inside,
         hovered(false, false, true),
     ),
-    hover(
-        "pick_list",
+    open(
         &["macos-tahoe"],
         LineAlign::Inside,
         hovered(true, false, true),
     ),
-    // switch.track(HOVER): macos-tahoe states no hovered track.
-    hover(
-        "toggler",
-        &["macos-tahoe"],
-        LineAlign::Outside,
-        hovered(true, false, false),
-    ),
+    open(&["material-3"], LineAlign::Outside, States::STATED),
+    // switch.thumb(HOVER): no preset states a hovered thumb.
+    Difference {
+        leaf: "toggler",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ],
+        listed: Listed {
+            states: States {
+                hover_thumb: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        reason: &[HOVER_THUMB],
+    },
     // The menu's frame, popover.panel's stroke over menu.panel's fill.
     inside(
         "menu",
         &["adwaita", "windows-11", "macos-monterey", "macos-tahoe"],
     ),
-    Difference {
-        leaf: "menu",
-        presets: &["material-3"],
-        listed: Listed {
-            align: LineAlign::Outside,
-            states: States::STATED,
-            iced_corners: true,
-            iced_stroke: false,
-            menu_corners: false,
-        },
-        reason: &[MENU_CORNERS],
-    },
+    // slider.active_track(HOVER) and (PRESSED): no preset states them;
     // slider.thumb(HOVER): no hovered thumb fill (macos-monterey: in its dark
     // scheme).
-    hover(
-        "slider",
-        &["kde-breeze", "windows-11", "macos-monterey", "macos-tahoe"],
-        LineAlign::Outside,
-        hovered(true, false, false),
-    ),
+    Difference {
+        leaf: "slider",
+        presets: &[
+            "kde-breeze",
+            "windows-11",
+            "macos-monterey/dark",
+            "macos-tahoe",
+        ],
+        listed: Listed {
+            states: States {
+                hover_fill: true,
+                rail: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        reason: &[HOVER, SLIDER_RAIL],
+    },
+    Difference {
+        leaf: "slider",
+        presets: &["adwaita", "macos-monterey/light", "material-3", "ios-13"],
+        listed: Listed {
+            states: States {
+                rail: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        reason: &[SLIDER_RAIL],
+    },
     // scrollbar.thumb(PRESSED) and scrollbar.thumb(HOVER).
     Difference {
         leaf: "scrollable",
@@ -570,41 +625,24 @@ const DIFFERENCES: &[Difference] = &[
         "aw::menu",
         &["adwaita", "windows-11", "macos-monterey", "macos-tahoe"],
     ),
-    Difference {
-        leaf: "aw::menu",
-        presets: &["ios-13"],
-        listed: Listed {
-            menu_corners: true,
-            ..Listed::aligned(LineAlign::Outside)
-        },
-        reason: &[MENU_PANEL_CORNERS],
-    },
-    // iced_aw: tab.tab(SELECTED)'s stroke, tab.tab(HOVER)'s fill and
-    // tab.label(HOVER)'s colour.
+    // iced_aw: tab.tab(SELECTED)'s and tab.tab(NONE)'s strokes and
+    // tab.tab(HOVER)'s fill.
     inside("aw::tab_bar", &["windows-11"]),
     aw(
         "aw::tab_bar",
-        &["adwaita", "material-3", "ios-13"],
+        &["macos-monterey", "ios-13"],
         LineAlign::Outside,
         States::STATED,
         (true, false),
-        &[TAB_STROKE],
-    ),
-    aw(
-        "aw::tab_bar",
-        &["macos-monterey"],
-        LineAlign::Outside,
-        hovered(false, true, false),
-        (true, false),
-        &[TAB_STROKE, TAB_HOVER_LABEL],
+        &[TAB_STROKE, TAB_IDLE_STROKE],
     ),
     aw(
         "aw::tab_bar",
         &["macos-tahoe"],
         LineAlign::Outside,
-        hovered(true, true, false),
+        hovered(true, false, false),
         (true, false),
-        &[TAB_STROKE, TAB_HOVER_FILL, TAB_HOVER_LABEL],
+        &[TAB_STROKE, TAB_IDLE_STROKE, TAB_HOVER_FILL],
     ),
     // iced_aw: sidebar.container(NONE)'s stroke and sidebar.item(HOVER).
     aw(
@@ -626,44 +664,18 @@ const DIFFERENCES: &[Difference] = &[
         (false, false),
         &[INSIDE, LIST_HOVER],
     ),
-    // link.container(PRESSED): no preset states a pressed link's fill, and
-    // the macOS presets no pressed label (`link.label(PRESSED)`).
-    Difference {
-        leaf: "button_link",
-        presets: &[
-            "kde-breeze",
-            "adwaita",
-            "windows-11",
-            "material-3",
-            "ios-13",
-        ],
-        listed: Listed {
-            align: LineAlign::Outside,
-            states: States {
-                pressed_fill: true,
-                ..States::STATED
-            },
-            iced_corners: false,
-            iced_stroke: false,
-            menu_corners: false,
-        },
-        reason: &[PRESSED_LINK],
-    },
+    // link.label(HOVER): the macOS presets state none.
     Difference {
         leaf: "button_link",
         presets: MACOS,
         listed: Listed {
-            align: LineAlign::Outside,
             states: States {
-                pressed_fill: true,
-                pressed_label: true,
+                hover_label: true,
                 ..States::STATED
             },
-            iced_corners: false,
-            iced_stroke: false,
-            menu_corners: false,
+            ..Listed::aligned(LineAlign::Outside)
         },
-        reason: &[PRESSED_LINK, PRESSED_LINK_LABEL],
+        reason: &[HOVER_LINK_LABEL],
     },
 ];
 
@@ -673,7 +685,7 @@ struct Report {
     preset: &'static str,
     compared: usize,
     /// The listed differences found differing: the entry's index, the style
-    /// function and the preset.
+    /// function and the entry's key of the preset.
     listed_seen: Vec<(usize, String, &'static str)>,
     failures: Vec<String>,
 }
@@ -690,9 +702,10 @@ impl Report {
         }
     }
 
-    /// Compare one leaf; one that differs fails unless an entry lists its
-    /// style function on this preset and the 0.8.0 value is the one
-    /// `expected` gives for the entry's alignment.
+    /// Compare one leaf. Where an entry lists its style function on this
+    /// preset, the 0.8.0 value must be the one `expected` gives for the
+    /// entry in every status, equal to the 0.7.2 side's or not; elsewhere a
+    /// leaf that differs fails.
     fn leaf<T: PartialEq + Debug>(
         &mut self,
         leaf: &str,
@@ -701,25 +714,28 @@ impl Report {
         expected: impl Fn(Listed) -> T,
     ) {
         self.compared += 1;
-        if old == new {
-            return;
-        }
         let function = leaf.split('(').next().unwrap_or(leaf);
-        let listed = DIFFERENCES
-            .iter()
-            .position(|d| d.leaf == function && d.presets.contains(&self.preset));
-        let Some(i) = listed else {
-            let diff = debug_diff(&format!("{old:?}"), &format!("{new:?}"));
-            self.failures
-                .push(format!("{}: {leaf}: {diff}", self.label));
+        let listed = DIFFERENCES.iter().enumerate().find_map(|(i, d)| {
+            let key = d
+                .presets
+                .iter()
+                .find(|key| **key == self.preset || **key == self.label)?;
+            (d.leaf == function).then_some((i, d, *key))
+        });
+        let Some((i, entry, key)) = listed else {
+            if old != new {
+                let diff = debug_diff(&format!("{old:?}"), &format!("{new:?}"));
+                self.failures
+                    .push(format!("{}: {leaf}: {diff}", self.label));
+            }
             return;
         };
-        let Some(listed) = DIFFERENCES.get(i).map(|d| d.listed) else {
-            return;
-        };
+        let listed = entry.listed;
         let expected = expected(listed);
         if expected == new {
-            self.listed_seen.push((i, function.to_owned(), self.preset));
+            if old != new {
+                self.listed_seen.push((i, function.to_owned(), key));
+            }
         } else {
             let diff = debug_diff(&format!("{expected:?}"), &format!("{new:?}"));
             self.failures.push(format!(
@@ -1705,21 +1721,37 @@ fn the_connector_hands_iced_the_same_from_both_models() -> crate::Result<()> {
     Ok(())
 }
 
+/// A key of [`Difference::presets`] as the preset's key and the scheme it
+/// names, `None` for both.
+fn split_key(key: &str) -> (&str, Option<&str>) {
+    match key.split_once('/') {
+        Some((preset, scheme)) => (preset, Some(scheme)),
+        None => (key, None),
+    }
+}
+
 #[test]
 fn every_listed_difference_names_a_covered_preset_once() {
     for (i, d) in DIFFERENCES.iter().enumerate() {
         assert!(!d.reason.is_empty(), "{}: no reason", d.leaf);
         for p in d.presets {
+            let (preset, scheme) = split_key(p);
             assert!(
-                PRESETS.iter().any(|(key, _)| key == p),
+                PRESETS.iter().any(|(key, _)| *key == preset)
+                    && scheme.is_none_or(|s| s == "light" || s == "dark"),
                 "{}: {p} is not covered",
                 d.leaf
             );
+            let overlaps = |q: &&str| {
+                let (other, other_scheme) = split_key(q);
+                other == preset
+                    && (scheme.is_none() || other_scheme.is_none() || scheme == other_scheme)
+            };
             assert!(
                 !DIFFERENCES
                     .iter()
-                    .skip(i + 1)
-                    .any(|e| e.leaf == d.leaf && e.presets.contains(p)),
+                    .enumerate()
+                    .any(|(j, e)| j != i && e.leaf == d.leaf && e.presets.iter().any(overlaps)),
                 "{} on {p}: listed twice",
                 d.leaf
             );

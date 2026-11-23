@@ -31,7 +31,7 @@
 //! Upstream citations in this module are read at iced_aw 0.14.1, with
 //! iced_widget 0.14.2 and iced_core 0.14.0 beneath it.
 
-use super::{Line, LineAlign};
+use super::{Line, LineAlign, in_state, painted};
 use crate::palette::to_color;
 use iced_aw::style::Status;
 use iced_core::border::Radius;
@@ -261,8 +261,8 @@ impl MenuSource {
             frame_radius: Some(p.corner_radius),
             shadow: (!p.shadow_enabled).then(Shadow::default),
             hover_line: m.hover_border_color.map(|c| Line {
-                color: to_color(c),
                 align: LineAlign::Inside,
+                ..Line::outside(to_color(c))
             }),
             hover_width: Some(resolved.defaults.border.line_width),
             item_radius: Some(m.border.corner_radius),
@@ -297,7 +297,13 @@ pub(crate) fn menu_from(
 
     move |theme, status| {
         let iced = iced_aw::style::menu_bar::primary(theme, status);
-        let path = m.highlight.map_or(iced.path, Background::Color);
+        // The item under the pointer against one at rest, which shows the
+        // panel ([`in_state`]).
+        let path = in_state(
+            m.highlight.map(Background::Color),
+            Background::Color(m.panel),
+            (iced.menu_background, iced.path),
+        );
         let path_fill = match path {
             Background::Color(color) => color,
             Background::Gradient(_) => Color::TRANSPARENT,
@@ -412,6 +418,11 @@ pub(crate) struct TabBarSource {
     pub line: Option<Line>,
     pub width: Option<f32>,
     pub radius: Option<f32>,
+    /// A tab not selected: its stroke, laid over the fill it paints, and
+    /// its width, as the selected tab's; with no stroke and a width, the
+    /// selected tab's colour, which no width shows.
+    pub idle_line: Option<Line>,
+    pub idle_width: Option<f32>,
 }
 
 impl TabBarSource {
@@ -431,6 +442,9 @@ impl TabBarSource {
             line: Some(Line::outside(to_color(t.border.color))),
             width: Some(t.border.line_width),
             radius: Some(t.border.corner_radius),
+            // 0.7.2's connector drew a tab not selected with no outline.
+            idle_line: None,
+            idle_width: Some(0.0),
         }
     }
 
@@ -445,6 +459,8 @@ impl TabBarSource {
             hover_label: self.hover_label.filter(|_| !s.hover_label),
             line: self.line.map(|l| l.aligned(listed.align)).filter(|_| !own),
             width: self.width.filter(|_| !own),
+            idle_line: self.idle_line.filter(|_| !own),
+            idle_width: self.idle_width.filter(|_| !own),
             radius: self.radius.filter(|_| !listed.iced_corners),
             ..self
         }
@@ -469,27 +485,53 @@ pub(crate) fn tab_bar_from(
     let line = t.line;
     let border_width = t.width;
     let selected_radius = t.radius.map(|r| Radius::new(0.0).top(r));
+    let idle_line = t.idle_line;
+    let idle_width = t.idle_width;
 
     move |theme, status| {
         let iced = iced_aw::style::tab_bar::primary(theme, status);
         let (fill, text, icon) = match status {
             Status::Active => (Background::Color(selected), selected_label, selected_label),
-            Status::Hovered => (
-                hovered.map_or(iced.tab_label_background, Background::Color),
-                hovered_label.unwrap_or(iced.text_color),
-                hovered_label.unwrap_or(iced.icon_color),
-            ),
+            // A hovered tab against one at rest, which `iced_aw` styles as
+            // `Disabled` (iced_aw 0.14.1 src/widget/tab_bar.rs, fn draw),
+            // each value the theme states nothing for as [`in_state`] gives
+            // it.
+            Status::Hovered => {
+                let rest = iced_aw::style::tab_bar::primary(theme, Status::Disabled);
+                (
+                    in_state(
+                        hovered.map(Background::Color),
+                        Background::Color(idle),
+                        (rest.tab_label_background, iced.tab_label_background),
+                    ),
+                    in_state(hovered_label, label, (rest.text_color, iced.text_color)),
+                    in_state(hovered_label, label, (rest.icon_color, iced.icon_color)),
+                )
+            }
             Status::Disabled => (Background::Color(idle), label, label),
             Status::Pressed | Status::Focused | Status::Selected => {
                 (iced.tab_label_background, iced.text_color, iced.icon_color)
             }
         };
-        let (width, radius) = match status {
+        let selected_color = line.map_or(iced.tab_label_border_color, |line| line.over(selected));
+        // A tab not selected: its own outline where the theme states one,
+        // none where it states none, `iced_aw`'s own where it states
+        // nothing (spec §10, rule 0).
+        let (width, radius, color) = match status {
             Status::Active => (
                 border_width.unwrap_or(iced.tab_label_border_width),
                 selected_radius.unwrap_or(iced.tab_border_radius),
+                selected_color,
             ),
-            _ => (0.0, Radius::new(0.0)),
+            _ => (
+                idle_width.unwrap_or(iced.tab_label_border_width),
+                Radius::new(0.0),
+                match (idle_line, idle_width) {
+                    (Some(line), _) if line.drawn => line.over(painted(Some(fill))),
+                    (_, Some(_)) => selected_color,
+                    (_, None) => iced.tab_label_border_color,
+                },
+            ),
         };
         Style {
             background: Some(Background::Color(strip)),
@@ -497,8 +539,7 @@ pub(crate) fn tab_bar_from(
             border_width: iced.border_width,
             tab_border_radius: radius,
             tab_label_background: fill,
-            tab_label_border_color: line
-                .map_or(iced.tab_label_border_color, |line| line.over(selected)),
+            tab_label_border_color: color,
             tab_label_border_width: width,
             icon_color: icon,
             icon_background: iced.icon_background,
@@ -647,8 +688,18 @@ pub(crate) fn sidebar_from(
         let iced = iced_aw::style::sidebar::primary(theme, status);
         let (fill, text) = match status {
             Status::Active => (Background::Color(selected), selected_label),
+            // A hovered item against one at rest, which `iced_aw` styles as
+            // `Disabled`, as a tab ([`in_state`]).
             Status::Hovered => (
-                hovered.map_or(iced.tab_label_background, Background::Color),
+                in_state(
+                    hovered.map(Background::Color),
+                    Background::Color(panel),
+                    (
+                        iced_aw::style::sidebar::primary(theme, Status::Disabled)
+                            .tab_label_background,
+                        iced.tab_label_background,
+                    ),
+                ),
                 label,
             ),
             Status::Disabled => (Background::Color(panel), label),
@@ -761,10 +812,18 @@ pub(crate) fn selection_list_from(
         let iced = iced_aw::style::selection_list::primary(theme, status);
         let (fill, text) = match status {
             Status::Active => (Background::Color(panel), label),
-            Status::Hovered => (
-                hovered.map_or(iced.background, Background::Color),
-                hovered_label.unwrap_or(iced.text_color),
-            ),
+            // A hovered row against one at rest ([`in_state`]).
+            Status::Hovered => {
+                let rest = iced_aw::style::selection_list::primary(theme, Status::Active);
+                (
+                    in_state(
+                        hovered.map(Background::Color),
+                        Background::Color(panel),
+                        (rest.background, iced.background),
+                    ),
+                    in_state(hovered_label, label, (rest.text_color, iced.text_color)),
+                )
+            }
             Status::Selected => (Background::Color(selected), selected_label),
             Status::Disabled => (Background::Color(panel), disabled_label),
             Status::Pressed | Status::Focused => (iced.background, iced.text_color),

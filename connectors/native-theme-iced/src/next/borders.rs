@@ -27,30 +27,46 @@ pub(crate) fn line(part: &PartStyle, home: &'static str) -> Mapped<Line> {
     match &part.stroke {
         Stroke::Uniform { color, align, .. } if part.stated.contains(PartStated::STROKE) => {
             Ok(Line {
-                color: to_color(*color),
                 align: line_align(*align, home)?,
+                ..Line::outside(to_color(*color))
             })
         }
         _ => Err(Unmapped(home)),
     }
 }
 
-/// [`line`], or, where the part states no stroke (`Stroke::None`), iced's
-/// own border colour, which no width shows.
+/// [`line`], or, where the part states no stroke (`Stroke::None`), no
+/// stroke ([`Line::none`]), which iced draws 0 wide.
 pub(crate) fn line_or_none(part: &PartStyle, home: &'static str) -> Mapped<Line> {
     match part.stroke {
-        Stroke::None if part.stated.contains(PartStated::STROKE) => {
-            Ok(Line::outside(Border::default().color))
-        }
+        Stroke::None if part.stated.contains(PartStated::STROKE) => Ok(Line::none()),
         _ => line(part, home),
     }
 }
 
 /// A part's stroke where a rule states it for the queried state, as
-/// [`line`] reads it; `None` where none does.
+/// [`line_or_none`] reads it; `None` where none does.
 pub(crate) fn state_line(part: &PartStyle, home: &'static str) -> Mapped<Option<Line>> {
     if part.from_state.contains(PartStated::STROKE) {
-        line(part, home).map(Some)
+        line_or_none(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// `read` of the part `at` gives, where a rule states its `property` for
+/// the state of the query `flag` gives, queried with that flag alone (spec
+/// §2, `from_state`); `None` where none does. A value a rule for another
+/// flag of `at`'s query states (a checked box's fill under the pointer) is
+/// not this state's.
+pub(crate) fn flagged<T>(
+    flag: &PartStyle,
+    at: &PartStyle,
+    property: PartStated,
+    read: impl FnOnce(&PartStyle) -> Mapped<T>,
+) -> Mapped<Option<T>> {
+    if flag.from_state.contains(property) {
+        read(at).map(Some)
     } else {
         Ok(None)
     }
@@ -93,12 +109,8 @@ pub(crate) fn outline_of(
     corners_home: &'static str,
 ) -> Mapped<Outline> {
     let width = stroke_width(part, width_home)?;
-    let line = match part.stroke {
-        Stroke::None => Line::outside(Border::default().color),
-        _ => line(part, color_home)?,
-    };
     Ok(Outline {
-        line,
+        line: line_or_none(part, color_home)?,
         width,
         radius: Radius::new(radius(part, corners_home)?),
     })
@@ -123,9 +135,7 @@ pub(crate) fn outline_or_iced_of(
     };
     if part.stated.contains(PartStated::STROKE) {
         outline.width = stroke_width(part, width_home)?;
-        if !matches!(part.stroke, Stroke::None) {
-            outline.line = line(part, color_home)?;
-        }
+        outline.line = line_or_none(part, color_home)?;
     }
     if part.stated.contains(PartStated::CORNERS) {
         outline.radius = Radius::new(radius(part, corners_home)?);
