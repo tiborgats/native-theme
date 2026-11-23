@@ -763,18 +763,23 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
 }
 
 /// `info` with the label's two config lines of a Button that
-/// `geometry::button` styles: the weight it carries and the size
-/// `geometry::button_label` gives the label.
+/// `geometry::button` styles: the weight it carries, and the size
+/// `next::geometry::button_label` gives the label (`demo::labelled`, which
+/// every labelled Button goes through).
 fn styled_label_notes(info: WidgetInfo) -> WidgetInfo {
-    info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
-        .config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
+    next_label_size_note(info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"))
 }
 
 /// [`styled_label_notes`] of a Button the installed 0.8.0 theme styles,
 /// naming the homes `next::geometry::button` and `button_label` read.
 fn next_styled_label_notes(info: WidgetInfo) -> WidgetInfo {
-    info.config("font-weight", "geometry::button carries button.label(NONE).weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
-        .config("label size", "button.label(NONE).size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
+    next_label_size_note(info.config("font-weight", "geometry::button carries button.label(NONE).weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"))
+}
+
+/// `info` with the label size line of a Button labelled through
+/// `demo::labelled`, which reads `next::geometry::button_label`.
+fn next_label_size_note(info: WidgetInfo) -> WidgetInfo {
+    info.config("label size", "button.label(NONE).size_px through next::geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
 }
 
 /// The variant line of a Ghost Button built with

@@ -4015,6 +4015,7 @@ pub(crate) fn toggle_group(
                 .map(|&label| refined(Toggle::new(label).label(label), style.as_ref())),
         )
         .info(ui, id, group_info)
+        .debug_selector(move || id.into())
 }
 
 /// A `Clipboard` copying `value`, reading `label` beside its icon where one

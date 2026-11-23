@@ -186,6 +186,27 @@ fn demo_files() -> impl Iterator<Item = (&'static str, &'static str)> {
 const GEOMETRY: &str = include_str!("geometry.rs");
 const VARIANTS: &str = include_str!("variants.rs");
 
+/// The 0.8.0 model's builders, `next::geometry`, whose notes
+/// `NEXT_GEOMETRY_NOTES` holds.
+const NEXT_GEOMETRY: &str = include_str!("next/geometry.rs");
+
+/// The builders `next/geometry.rs` declares: each `pub fn` and each entry
+/// `name -> Type;` of its `builders!` invocation, which declares one apiece.
+fn next_builder_fns(source: &str) -> Vec<&str> {
+    let mut names = public_fns(source);
+    let invoked = source
+        .split_once("\nbuilders! {\n")
+        .and_then(|(_, rest)| rest.split_once("\n}\n"))
+        .map_or("", |(entries, _)| entries);
+    names.extend(
+        invoked
+            .lines()
+            .filter_map(|line| line.trim().split_once(" -> "))
+            .map(|(name, _)| name),
+    );
+    names
+}
+
 /// Every `.rs` file of the example is one the gates read.
 #[test]
 fn the_gates_read_every_showcase_file() {
@@ -595,15 +616,20 @@ fn code_calls(raw: &str, name: &str) -> Vec<usize> {
 /// Spec §3.3: every `pub fn` of geometry.rs has an entry in `GEOMETRY_NOTES`
 /// or in `NEXT_GEOMETRY_NOTES`, the 0.8.0 model's table, whose builders
 /// (`next::geometry`) bear the same names; neither table has an entry for
-/// anything else, nor two for one builder -- the value builders as well as
-/// the refinements, because an icon size or a gap is recorded with
-/// `.geometry(name)` too.
+/// anything but a builder of its own model, nor two for one builder -- the
+/// value builders as well as the refinements, because an icon size or a gap
+/// is recorded with `.geometry(name)` too.
 #[test]
 fn every_geometry_builder_has_a_note() {
     let builders = public_fns(GEOMETRY);
     assert!(
         !builders.is_empty(),
         "no `pub fn` found in geometry.rs, so this test would pass vacuously"
+    );
+    let next_builders = next_builder_fns(NEXT_GEOMETRY);
+    assert!(
+        next_builders.contains(&"button") && next_builders.contains(&"input_fill"),
+        "next/geometry.rs's builders could not be read: {next_builders:?}"
     );
     let (noted, mut findings) = geometry_note_names(geometry_notes_source());
     let (next_entries, next_unreadable) = next_geometry_note_entries(geometry_notes_source());
@@ -639,15 +665,20 @@ fn every_geometry_builder_has_a_note() {
             ));
         }
     }
-    for (table, entries) in [
-        ("GEOMETRY_NOTES", &noted),
-        ("NEXT_GEOMETRY_NOTES", &next_noted),
+    for (table, entries, declared, source) in [
+        ("GEOMETRY_NOTES", &noted, &builders, "geometry.rs"),
+        (
+            "NEXT_GEOMETRY_NOTES",
+            &next_noted,
+            &next_builders,
+            "next/geometry.rs",
+        ),
     ] {
         for (ix, (line, name)) in entries.iter().enumerate() {
-            if !builders.contains(name) {
+            if !declared.contains(name) {
                 findings.push(format!(
                     "{GEOMETRY_NOTES_FILE}:{line}: a {table} entry for geometry::{name}, \
-                     which geometry.rs does not declare"
+                     which {source} does not declare"
                 ));
             } else if entries.iter().take(ix).any(|(_, earlier)| earlier == name) {
                 findings.push(format!(
@@ -1014,6 +1045,22 @@ fn every_recorded_builder_has_a_note() {
                 ));
             }
         }
+        let starts = line_offsets(raw);
+        for open in code_calls(raw, "native_info") {
+            let literal = call_args(raw, open)
+                .and_then(|args| args.get(3).copied())
+                .and_then(|arg| unquote(arg.trim()));
+            recorded += usize::from(literal.is_some());
+            if let Some(name) = literal
+                && !noted.iter().any(|(_, noted)| *noted == name)
+            {
+                findings.push(format!(
+                    "{file}:{}: native_info records \"{name}\", which names no \
+                     GEOMETRY_NOTES entry",
+                    line_at(&starts, open)
+                ));
+            }
+        }
         for (line, call, literal) in next_geometry_line_calls(raw) {
             next_recorded += usize::from(literal.is_some());
             if let Some(name) = literal
@@ -1037,6 +1084,83 @@ fn every_recorded_builder_has_a_note() {
          geometry line reads \"(no GEOMETRY_NOTES entry)\":\n  {}",
         findings.join("\n  ")
     );
+}
+
+/// Whether `code` -- with comments and strings removed -- names the builder
+/// `name` of the 0.8.0 model, `next::geometry::<name>`, or (`next` false) of
+/// 0.7.2's, `geometry::<name>` with no `next::` before it.
+fn names_builder(code: &str, name: &str, next: bool) -> bool {
+    let path = format!("geometry::{name}");
+    code.match_indices(path.as_str()).any(|(at, m)| {
+        let head = code.get(..at).unwrap_or("");
+        let whole = head
+            .chars()
+            .next_back()
+            .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+            && code
+                .get(at + m.len()..)
+                .and_then(|t| t.chars().next())
+                .is_none_or(|c| !(c.is_alphanumeric() || c == '_'));
+        whole && head.ends_with("next::") == next
+    })
+}
+
+/// Every note has a caller of its model in a demo: a `GEOMETRY_NOTES` entry
+/// a `geometry::<name>` not preceded by `next::`, a `NEXT_GEOMETRY_NOTES`
+/// entry a `next::geometry::<name>`. A note whose builder no demo calls any
+/// more -- its last 0.7.2 caller ported -- describes nothing the inspector
+/// can show, and goes.
+#[test]
+fn every_geometry_note_has_a_caller_of_its_model() {
+    let source = geometry_notes_source();
+    let (noted, mut findings) = geometry_note_names(source);
+    let (next_entries, next_unreadable) = next_geometry_note_entries(source);
+    findings.extend(next_unreadable);
+    assert!(
+        !noted.is_empty() && !next_entries.is_empty(),
+        "GEOMETRY_NOTES or NEXT_GEOMETRY_NOTES has no entry, so this test would pass vacuously"
+    );
+    let code: Vec<String> = demo_files()
+        .map(|(_, raw)| without_comments_or_strings(raw))
+        .collect();
+    let next_noted = next_entries.into_iter().map(|(line, name, _)| (line, name));
+    let tables = noted
+        .into_iter()
+        .map(|(line, name)| ("GEOMETRY_NOTES", "geometry", false, line, name))
+        .chain(
+            next_noted
+                .map(|(line, name)| ("NEXT_GEOMETRY_NOTES", "next::geometry", true, line, name)),
+        );
+    for (table, model, next, line, name) in tables {
+        if !code.iter().any(|text| names_builder(text, name, next)) {
+            findings.push(format!(
+                "{GEOMETRY_NOTES_FILE}:{line}: the {table} entry for {name}, which no demo \
+                 calls as {model}::{name}"
+            ));
+        }
+    }
+    assert!(
+        findings.is_empty(),
+        "a geometry note describes a builder no demo calls through its model:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// [`names_builder`] tells the two models' paths apart and takes no longer
+/// name for the one asked for.
+#[test]
+fn names_builder_tells_the_models_apart() {
+    let code = "let a = geometry::button(&n); let b = next::geometry::input_fill(&r, false);\n\
+                use native_theme_gpui::next::geometry::button_disabled;\n\
+                let c = geometry::button_label(&n);";
+    assert!(names_builder(code, "button", false));
+    assert!(!names_builder(code, "button", true));
+    assert!(names_builder(code, "input_fill", true));
+    assert!(!names_builder(code, "input_fill", false));
+    assert!(names_builder(code, "button_disabled", true));
+    assert!(!names_builder(code, "input", true));
+    assert!(names_builder(code, "button_label", false));
+    assert!(!names_builder(code, "button_label", true));
 }
 
 /// The parsers above have to see what they are meant to: a table entry in
@@ -3052,9 +3176,18 @@ fn citation_finding(
     // what happened when this was first tried. A home the showcase draws
     // (`input.field(HOVER).stroke.color`) is spelt by no line of `src/next`
     // either: its value check alone holds it, which reads the property's
-    // helper on exactly that part, state and property.
+    // helper on exactly that part, state and property -- held here too, as
+    // a value read off a Look passes `value_finding` without it.
     if claim.cited_at == "showcase" {
-        if is_home(claim.field) || code.iter().any(|text| mentions(text, claim.field)) {
+        if is_home(claim.field) {
+            return home_value_finding(claim.value, claim.field).map(|why| {
+                format!(
+                    "{} [{}] {}:{}: cited as the application's own home `{}`, but {why}",
+                    claim.widget, claim.role, claim.file, claim.line, claim.field
+                )
+            });
+        }
+        if code.iter().any(|text| mentions(text, claim.field)) {
             return None;
         }
         return Some(format!(
@@ -4933,6 +5066,18 @@ fn a_showcase_cited_home_claim_is_held_by_its_value() {
             "a showcase-cited home claim passed on a value that queries another state, part or property: {value}"
         );
     }
+    let off_a_look = Claim {
+        before: "pub fn check(look: &CheckboxLook) -> WidgetInfo {\n    WidgetInfo::new(\"Check\")\n",
+        ..claim("look.fill")
+    };
+    assert!(
+        !look_fields_read(off_a_look.before, off_a_look.value).is_empty(),
+        "the planted value is no longer read off a Look, so this case tests nothing"
+    );
+    assert!(
+        claim_finding(&off_a_look, &[], &[]).is_some(),
+        "a showcase-cited home claim passed on a value read off a Look"
+    );
 }
 
 /// The claim gate's 0.8.0 form (docs/v0.8.0-plan.md, section 2, `M4` step

@@ -17980,6 +17980,122 @@ fn the_speech_indicator_fills_a_stop_button_while_capturing(cx: &mut TestAppCont
     }
 }
 
+/// The Basic page's toggle button that is on says in its "state" line what
+/// it is painted with, under each platform preset's 0.8.0 theme: filled with
+/// `button.body(CHECKED).fill` where a rule states it, else with
+/// `button.body(PRESSED).fill` where one states that, else with
+/// gpui-component's own `button_active`; lettered in
+/// `button.label(CHECKED).color` where a rule states it, else in
+/// `button.label(PRESSED).color`. Each of the three fills is seen on some
+/// preset, so no branch goes untested.
+#[gpui::test]
+fn a_toggle_buttons_state_line_names_what_it_is_painted_with(cx: &mut TestAppContext) {
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{state_fill_of, state_text_color_of};
+
+    const ON: &str = "basic-toggle-on";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let mut fills_seen = Vec::new();
+    for preset in [
+        "adwaita",
+        "kde-breeze",
+        "macos-monterey",
+        "macos-tahoe",
+        "windows-11",
+        "material-3",
+        "ios-13",
+    ] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let expected = cx.update(|_window, cx| {
+            crate::support::next_resolved(cx).map(|r| {
+                let b = &r.button;
+                let checked = native_theme_gpui::next::geometry::button_checked(r).is_ok();
+                let fill = if state_fill_of(&b.body(WidgetState::CHECKED)).is_some() {
+                    "filled with button.body(CHECKED).fill and"
+                } else if state_fill_of(&b.body(WidgetState::PRESSED)).is_some() {
+                    "filled with button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill and"
+                } else {
+                    "filled with gpui-component's own button_active token:"
+                };
+                let text = if state_text_color_of(&b.label(WidgetState::CHECKED)).is_some() {
+                    "lettered in button.label(CHECKED).color"
+                } else {
+                    "lettered in button.label(PRESSED).color, where no rule states button.label(CHECKED).color"
+                };
+                (checked, fill, text)
+            })
+        });
+        assert!(
+            expected.is_some_and(|(checked, _, _)| checked),
+            "{preset}: no 0.8.0 theme is installed, or geometry::button_checked does not map on it, \
+             so the button shows no state line to test"
+        );
+        let Some((_, fill, text)) = expected else {
+            continue;
+        };
+        let info = settle_on(&mut cx, &showcase, ON);
+        let state = info
+            .as_ref()
+            .and_then(|info| info.instance.iter().find(|n| n.what == "state"))
+            .map(|n| n.text.clone());
+        assert!(
+            state
+                .as_deref()
+                .is_some_and(|line| line.starts_with("selected: on, ")
+                    && line.contains(fill)
+                    && line.ends_with(text)),
+            "{preset}: the toggle button's state line does not say it is {fill} {text}: {state:?}"
+        );
+        fills_seen.push(fill);
+    }
+    for branch in ["CHECKED", "PRESSED", "button_active"] {
+        assert!(
+            fills_seen.iter().any(|fill| fill.contains(branch)),
+            "no platform preset takes the {branch} fill, so that branch of the state line goes untested: {fills_seen:?}"
+        );
+    }
+}
+
+/// A Toggle and a ToggleGroup the installed 0.8.0 theme styles through
+/// `geometry::toggle` say so in their "text" line, which names
+/// `button.label(NONE)`'s size and weight and the builder; under kde-breeze,
+/// which states that font.
+#[gpui::test]
+fn a_styled_toggle_says_what_its_text_takes(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Buttons);
+    let styled = cx.update(|_window, cx| {
+        crate::support::next_resolved(cx)
+            .map(|r| native_theme_gpui::next::geometry::toggle(r).is_ok())
+    });
+    assert_eq!(
+        styled,
+        Some(true),
+        "kde-breeze's 0.8.0 theme no longer maps geometry::toggle, so this test reads no styled Toggle"
+    );
+    for id in ["buttons-toggle-star", "buttons-toggle-group"] {
+        let info = settle_on(&mut cx, &showcase, id);
+        let text = info
+            .as_ref()
+            .and_then(|info| info.config.iter().find(|n| n.what == "text"))
+            .map(|n| n.text.clone());
+        assert!(
+            text.as_deref().is_some_and(|line| line
+                .starts_with("button.label(NONE)'s size and weight through geometry::toggle")),
+            "{id}: the styled Toggle's text line does not name button.label(NONE) and geometry::toggle: {text:?}"
+        );
+        assert!(
+            info.as_ref().is_some_and(|info| info
+                .config
+                .iter()
+                .any(|n| n.what == "geometry" && n.text.starts_with("geometry::toggle: "))),
+            "{id}: the styled Toggle records no geometry::toggle line: {info:?}"
+        );
+    }
+}
+
 /// The Inputs page's bars waveform and its liquid one show different infos:
 /// each reports its own variant.
 #[gpui::test]

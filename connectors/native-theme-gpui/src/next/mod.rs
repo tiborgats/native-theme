@@ -105,13 +105,23 @@ pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
 }
 
 /// A part's fill as `fill` reads it, `None` where it is not stated, or
-/// stated in a form gpui cannot paint (not one colour): for a reader that
+/// stated as a layered paint with no fallback colour: for a reader that
 /// shows the toolkit's own there (spec §10, rule 0), as the showcase's
-/// Widget Info does.
+/// Widget Info does. A fill stated as none is transparent, and a layered
+/// paint gives its fallback colour (spec §10, rule 2).
 pub fn fill_of(part: &PartStyle) -> Option<Hsla> {
+    fill_color_of(part).map(hsla)
+}
+
+/// A part's stated fill as one colour of the model, as [`fill_of`] reads it.
+fn fill_color_of(part: &PartStyle) -> Option<Color> {
+    if !part.stated.contains(PartStated::FILL) {
+        return None;
+    }
     match &part.fill {
-        Paint::Solid(c) if part.stated.contains(PartStated::FILL) => Some(hsla(*c)),
-        _ => None,
+        Paint::None => Some(Color::TRANSPARENT),
+        Paint::Solid(c) => Some(*c),
+        paint @ Paint::Complex(_) => paint.fallback_color(),
     }
 }
 
@@ -961,11 +971,7 @@ fn state_fill_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Color
     if !part.from_state.contains(PartStated::FILL) {
         return Ok(None);
     }
-    match &part.fill {
-        Paint::None => Ok(Some(Color::TRANSPARENT)),
-        Paint::Solid(c) => Ok(Some(*c)),
-        paint @ Paint::Complex(_) => paint.fallback_color().map(Some).ok_or(Unmapped(home)),
-    }
+    fill_color_of(part).map(Some).ok_or(Unmapped(home))
 }
 
 /// [`crate::list_header_hover_background`]: the fill of a hovered
@@ -1094,6 +1100,72 @@ mod tests {
             part.from_state = PartStated::FILL;
         }
         part
+    }
+
+    /// Spec §10 rule 2, for every fill read: a fill stated as none is
+    /// transparent, a layered paint its fallback colour -- the top opaque
+    /// layer's -- and one with no colour to fall back on (gradients only) is
+    /// the home lacked; an unstated fill is none of these.
+    #[test]
+    fn a_none_fill_is_transparent_and_a_layered_one_its_fallback() -> Mapped<()> {
+        use native_theme::next::{BlendMode, PaintLayer};
+
+        let painted = |paint: Paint, for_state: bool| {
+            let mut part = filled(RED, for_state);
+            part.fill = paint;
+            part
+        };
+        let solid = |color| PaintLayer::Solid {
+            color,
+            blend: BlendMode::Normal,
+        };
+        let layered = Paint::layers(vec![solid(GREEN), solid(BLUE)]);
+        let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: Vec::new().into(),
+            blend: BlendMode::Normal,
+        }]);
+        let transparent = hsla(Color::TRANSPARENT);
+
+        assert_eq!(fill(&painted(Paint::None, false), "none")?, transparent);
+        assert_eq!(
+            fill(&painted(layered.clone(), false), "layered")?,
+            hsla(BLUE)
+        );
+        assert_eq!(
+            fill(&painted(gradient.clone(), false), "gradient"),
+            Err(Unmapped("gradient"))
+        );
+        assert_eq!(
+            state_fill(&painted(Paint::None, true), "none")?,
+            Some(transparent)
+        );
+        assert_eq!(
+            state_fill(&painted(layered.clone(), true), "layered")?,
+            Some(hsla(BLUE))
+        );
+        assert_eq!(
+            state_fill(&painted(gradient, true), "gradient"),
+            Err(Unmapped("gradient"))
+        );
+        assert_eq!(state_fill(&painted(Paint::None, false), "none")?, None);
+        assert_eq!(
+            stated_fill(&painted(layered.clone(), false), "layered")?,
+            Some(hsla(BLUE))
+        );
+        assert_eq!(
+            state_fill_color(&painted(Paint::None, true), "none")?,
+            Some(Color::TRANSPARENT)
+        );
+        assert_eq!(
+            state_fill_color(&painted(layered, true), "layered")?,
+            Some(BLUE)
+        );
+        let mut unstated = painted(Paint::None, false);
+        unstated.stated = PartStated::default();
+        assert_eq!(fill_of(&unstated), None);
+        assert_eq!(stated_fill(&unstated, "unstated")?, None);
+        Ok(())
     }
 
     /// `button.active_background`: the pressed body's fill without a rule

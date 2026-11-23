@@ -237,10 +237,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
     ),
     (
-        "button_label",
-        "button.font's family, size, weight and style, and defaults.line_height as the line height, on a label passed as the Button's child: upstream sizes a .label() from the Size enum on the content element -- text_sm at Size::Medium -- which a style on the Button does not reach and a child's own size overrules (sizing.rs, button_text_size; button/button.rs, Button::render); no colour, so the label takes the Button's state colours",
-    ),
-    (
         "input",
         "input.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the border.padding sides the theme states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, border.corner_radius, line_width, input.font including its colour -- the root sets none of its own and the editor paints the field's text in the root's, the window's foreground without it (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)",
     ),
