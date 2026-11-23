@@ -6045,58 +6045,51 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     );
 }
 
-/// The Basic page's column rule, the iced and egui showcases' too: under a
-/// preset whose widest fixed-width control fits a fifth of the page, five
-/// columns; under material-3, whose drop-down is 210 wide, four; on a
-/// narrower page two or one; and each arrangement, five columns to one,
-/// holds every group once, a column's groups in reading order.
+/// The Basic page's column rule, the iced and egui showcases' too, on the
+/// 0.8.0 model: under a preset whose widest fixed-width control fits a
+/// fifth of the page, five columns; under material-3, whose drop-down is 210
+/// wide (`combo_box.field(NONE).min_size[0]`), four; on a narrower page two
+/// or one; and each arrangement,
+/// five columns to one, holds every group once, a column's groups in
+/// reading order.
 #[test]
 fn the_basic_page_counts_its_columns_from_the_theme() {
     use crate::pages::basic::{
         BASIC_FIVE, BASIC_FOUR, BASIC_ONE, BASIC_THREE, BASIC_TWO, basic_arrangement,
         basic_column_count,
     };
-    let resolved = |preset: &str| {
-        native_theme::theme::Theme::preset(preset)
-            .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light))
-            .and_then(|v| v.into_resolved(&native_theme::ResolutionContext::for_tests()))
-            .map_err(|e| format!("{preset}: {e}"))
-    };
-    let layout = |preset: &str| {
-        native_theme::theme::Theme::preset(preset)
-            .map(|t| t.layout)
-            .unwrap_or_default()
-    };
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    let resolved = |preset: Preset| NextTheme::preset(preset).resolve(&ThemeContext::light());
     // The content panel beside the 300px side panel and a 1px splitter.
     for (preset, content, columns) in [
-        ("kde-breeze", 979.0, 5),
-        ("adwaita", 979.0, 5),
-        ("catppuccin-mocha", 976.0, 5),
-        ("material-3", 976.0, 4),
+        (Preset::KdeBreeze, 979.0, 5),
+        (Preset::Adwaita, 979.0, 5),
+        (Preset::Material3, 976.0, 4),
     ] {
         let r = resolved(preset);
-        assert!(r.is_ok(), "{r:?}");
-        if let Ok(r) = r {
-            assert_eq!(
-                basic_column_count(&r, &layout(preset), content, 0.0),
-                columns,
-                "{preset}"
-            );
-        }
-    }
-    let r = resolved("kde-breeze");
-    if let Ok(r) = r {
-        // Below three columns where three do not hold the widest control
-        // (item 15(1) of the round 2-3 review), down to one.
-        assert_eq!(basic_column_count(&r, &layout("kde-breeze"), 400.0, 0.0), 2);
-        assert_eq!(basic_column_count(&r, &layout("kde-breeze"), 250.0, 0.0), 1);
-        // A Segmented control wider than a fifth of the page drops a column
-        // (M9-166).
         assert_eq!(
-            basic_column_count(&r, &layout("kde-breeze"), 979.0, 200.0),
-            4
+            basic_column_count(&r, content, 0.0),
+            columns,
+            "{}",
+            preset.as_str()
         );
     }
+    assert_eq!(
+        resolved(Preset::Material3)
+            .combo_box
+            .field(WidgetState::NONE)
+            .min_size[0],
+        Some(210.0),
+        "material-3's drop-down is no longer 210 wide, the control its four columns hold"
+    );
+    let r = resolved(Preset::KdeBreeze);
+    // Below three columns where three do not hold the widest control
+    // (item 15(1) of the round 2-3 review), down to one.
+    assert_eq!(basic_column_count(&r, 400.0, 0.0), 2);
+    assert_eq!(basic_column_count(&r, 250.0, 0.0), 1);
+    // A Segmented control wider than a fifth of the page drops a column
+    // (M9-166).
+    assert_eq!(basic_column_count(&r, 979.0, 200.0), 4);
     for (count, arrangement) in [
         (5, &BASIC_FIVE[..]),
         (4, &BASIC_FOUR[..]),
@@ -6142,30 +6135,49 @@ fn windows_11_curving_out(is_dark: bool) -> (Theme, native_theme_gpui::ResolvedT
 #[test]
 fn the_basic_page_makes_room_for_both_flares() {
     use crate::pages::basic::basic_column_count;
-    let (_, stated) = windows_11_curving_out(false);
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    use native_theme_gpui::next::geometry;
+    let mut stated = NextTheme::preset(Preset::Windows11).resolve(&ThemeContext::light());
+    stated.tab.active_outward_corner_radius = Some(4.0);
+    assert!(
+        native_theme_gpui::widgets::TabLook::next_of(&stated)
+            .is_ok_and(|look| look.outward_radius == Some(px(4.))),
+        "widgets::TabBar draws no flares of 4 under windows-11: the test could not see their room"
+    );
     let mut unstated = stated.clone();
     unstated.tab.active_outward_corner_radius = None;
-    let layout = native_theme::theme::Theme::preset("windows-11")
-        .map(|t| t.layout)
-        .unwrap_or_default();
-    let margin = layout.window_margin.unwrap_or_default();
-    let gap = layout.section_gap.unwrap_or_default();
-    let bar = &stated.scrollbar;
-    let gutter = if bar.overlay_mode {
+    let metric = |build: fn(
+        &native_theme::next::ResolvedTheme,
+    ) -> native_theme_gpui::next::Mapped<Option<Pixels>>| {
+        build(&stated)
+            .ok()
+            .flatten()
+            .map(f32::from)
+            .unwrap_or_default()
+    };
+    let margin = metric(geometry::window_margin);
+    let gap = metric(geometry::section_gap);
+    let gutter = if stated.scrollbar.overlay_mode {
         0.0
     } else {
-        bar.groove_width
+        native_theme_gpui::next::scrollbar_groove_width(&stated).unwrap_or_default()
     };
     let t = &stated.tab;
-    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let tab_width = t.tab(WidgetState::NONE).min_size[0];
+    assert!(
+        tab_width.is_some(),
+        "windows-11 states no tab width: the two tabs are not its widest control"
+    );
+    let tab_width = tab_width.unwrap_or_default();
+    let tabs = tab_width + tab_width + t.item_gap.unwrap_or_default();
     let content = 5.0 * (tabs + 4.0) + 4.0 * gap + margin + margin + gutter;
     assert_eq!(
-        basic_column_count(&unstated, &layout, content, 0.0),
+        basic_column_count(&unstated, content, 0.0),
         5,
         "without outward corners the two tabs fit a fifth"
     );
     assert_eq!(
-        basic_column_count(&stated, &layout, content, 0.0),
+        basic_column_count(&stated, content, 0.0),
         4,
         "the two tabs and both flares do not fit a fifth"
     );
@@ -6174,7 +6186,7 @@ fn the_basic_page_makes_room_for_both_flares() {
         let mut undrawn = stated.clone();
         undrawn.tab.active_outward_corner_radius = Some(radius);
         assert_eq!(
-            basic_column_count(&undrawn, &layout, content, 0.0),
+            basic_column_count(&undrawn, content, 0.0),
             5,
             "a radius of {radius} keeps room for flares the bar does not draw"
         );
@@ -6555,14 +6567,11 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
                 "{preset} {mode}: the content width the page counts columns from is not the panel's"
             );
             let count = cx.update(|window, cx| {
-                let layout = showcase.read(cx).layout.clone();
-                native_value(cx, |n| {
-                    let segmented = crate::demo::segmented_width(
-                        window,
-                        &n,
-                        &crate::pages::basic::BASIC_SEGMENTS,
-                    );
-                    basic_column_count(n.resolved, &layout, f32::from(computed), segmented)
+                let segmented = native_value(cx, |n| {
+                    crate::demo::segmented_width(window, &n, &crate::pages::basic::BASIC_SEGMENTS)
+                })?;
+                crate::support::next_value(cx, |r| {
+                    basic_column_count(r, f32::from(computed), segmented)
                 })
             });
             let drawn = read(&mut cx, &showcase, |this, cx| {
@@ -6610,11 +6619,11 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
         let viewport = read(&mut cx, &showcase, |this, _| this.content_scroll.bounds());
         let content = bounds_of(&mut cx, CONTENT_PANEL);
         let count = cx.update(|window, cx| {
-            let layout = showcase.read(cx).layout.clone();
-            native_value(cx, |n| {
-                let segmented =
-                    crate::demo::segmented_width(window, &n, &crate::pages::basic::BASIC_SEGMENTS);
-                basic_column_count(n.resolved, &layout, content.size.width.as_f32(), segmented)
+            let segmented = native_value(cx, |n| {
+                crate::demo::segmented_width(window, &n, &crate::pages::basic::BASIC_SEGMENTS)
+            })?;
+            crate::support::next_value(cx, |r| {
+                basic_column_count(r, content.size.width.as_f32(), segmented)
             })
         });
         let drawn = read(&mut cx, &showcase, |this, cx| {
@@ -23936,18 +23945,17 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
         for scale in [1.0, 2.25] {
             use_preset_scaled(&mut cx, &showcase, preset, scale);
             show(&mut cx, &showcase, Page::Basic);
-            let (gap, margin) = read(&mut cx, &showcase, |this, _| {
-                (
-                    this.layout.widget_gap.unwrap_or_default(),
-                    this.layout.window_margin.unwrap_or_default(),
-                )
-            });
+            let gap = next_layout_metric(&mut cx, &showcase, next::geometry::widget_gap)
+                .map(f32::from)
+                .unwrap_or_default();
+            let margin = next_layout_metric(&mut cx, &showcase, next::geometry::window_margin)
+                .map(f32::from)
+                .unwrap_or_default();
             // A floating bar is drawn over the right margin, its stated groove wide.
             let floating = read(&mut cx, &showcase, |_, cx| {
-                native_value(cx, |n| {
-                    let bar = &n.resolved.scrollbar;
-                    if bar.overlay_mode {
-                        bar.groove_width
+                crate::support::next_value(cx, |r| {
+                    if r.scrollbar.overlay_mode {
+                        next::scrollbar_groove_width(r).unwrap_or_default()
                     } else {
                         0.0
                     }
