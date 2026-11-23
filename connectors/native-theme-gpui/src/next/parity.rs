@@ -449,6 +449,17 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "variants::bordered_button",
+        presets: &["ios-13"],
+        reason: "0.7.2 states no button.hover_border_color, so the bordered variant gets no \
+                 hover border (`None`) and the caller keeps gpui-component's Default variant; \
+                 the 0.8.0 ios-13 states WebKit's rest border for HOVER, which no :hover rule \
+                 changes (html.css:889 at WebKit 31adf9d; spec §2, from_state; \
+                 native-theme/tests/next_homes.toml, row button.hover_border_color, a listed \
+                 difference); so the hover outline is button.body(NONE)'s stroke colour, \
+                 systemBackground",
+    },
+    Difference {
+        leaf: "variants::bordered_button",
         presets: &["material-3"],
         reason: "0.7.2 states no button.hover_border_color, so the bordered variant gets no \
                  hover border (`None`) and the caller keeps gpui-component's Default variant; \
@@ -536,6 +547,18 @@ const DIFFERENCES: &[Difference] = &[
                  wide and transparent (crate::next::stroke_color of a stroke stated as none); \
                  every other field of the refinement is equal",
     },
+    Difference {
+        leaf: "geometry::button",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 outlines the push button in the default border (0.5 px, \
+                 #c6c6c8 / #38383a); the 0.8.0 preset states the border WebKit draws round an \
+                 iOS button, `border: 1px solid -webkit-control-background`, systemBackground \
+                 (html.css:889, RenderThemeIOS.mm:1027 at WebKit 31adf9d; \
+                 native-theme/tests/next_homes.toml, rows button.border.color and \
+                 button.border.line_width, listed differences), so the refinement's border is \
+                 button.body(NONE)'s stroke, 1 px of #ffffff / #000000; every other field of the \
+                 refinement is equal",
+    },
 ];
 
 /// The presets of [`DIFFERENCES`]' `geometry::button_checked` entries on
@@ -545,6 +568,10 @@ const PRESSED_STANDS_IN: &[&str] = &["macos-monterey"];
 /// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
 /// button the 0.8.0 preset strokes as none.
 const UNSTROKED_BUTTON: &[&str] = &["macos-tahoe"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
+/// button the 0.8.0 preset strokes in an outline of its own, not 0.7.2's.
+const RESTROKED_BUTTON: &[&str] = &["ios-13"];
 
 /// The presets of [`DIFFERENCES`]' `variants::bordered_button` entries
 /// whose hovered push button the 0.8.0 preset strokes as none.
@@ -1256,6 +1283,34 @@ fn compare_builders(
                         != gpui::StyleRefinement::default()
                             .border(px(0.0))
                             .border_widths
+                    || n.border_color != super::stroke_color(&body, "button.body(NONE)").ok()
+                    || corrected != n
+                {
+                    report.failures.push(format!(
+                        "{}: {button}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+            Some(listed) if RESTROKED_BUTTON.contains(&report.preset) => {
+                use gpui::Styled as _;
+                use native_theme::next::WidgetState;
+                report.count(button);
+                let body = new.button.body(WidgetState::NONE);
+                let stated = super::stroke_width(&body, "button.body(NONE)")
+                    .ok()
+                    .map(|width| {
+                        gpui::StyleRefinement::default()
+                            .border(px(width))
+                            .border_widths
+                    });
+                let mut corrected = o.clone();
+                corrected.border_widths = n.border_widths.clone();
+                corrected.border_color = n.border_color;
+                if o.border_widths == n.border_widths
+                    || o.border_color == n.border_color
+                    || stated.as_ref() != Some(&n.border_widths)
                     || n.border_color != super::stroke_color(&body, "button.body(NONE)").ok()
                     || corrected != n
                 {

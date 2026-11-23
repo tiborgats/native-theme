@@ -533,10 +533,10 @@ homes = [
     "button.body(PRESSED).stroke.color",
 ]
 note = "a pressed button keeps the hover border (0.7.2's field doc)"
-difference_presets = ["adwaita", "windows-11", "macos-monterey", "macos-tahoe", "material-3"]
-difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the outline for the state (spec §2, from_state): adwaita the rest outline for HOVER and PRESSED, where libadwaita keeps it; windows-11 the rest outline for HOVER, where WinUI keeps it, and for PRESSED WinUI's flat ControlStrokeColorDefault; macos-monterey the rest outline for HOVER, where hover draws nothing, and the rest outline pressed, which no rule changes; macos-tahoe no stroke for HOVER and PRESSED, as at rest; material-3 no stroke for HOVER and PRESSED, the filled tonal button having no outline (0.7.2: the default outline colour at width 0)"
-difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136), ButtonBorderBrushPressed = ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45); macOS: docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis; os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, `…hovered.regular-*.diff_from_normal` 0 pixels); docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd) `button.body.stroke` absent on macos-tahoe (layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.stroke` absent, run 41006842699, macOS 26); material-3: _md-comp-filled-tonal-button.scss (v0_192, material-web cbd34a8) has no outline token in any state, its tokens :37-99"
-difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { "button.body(HOVER).stroke.color" = { light = "#0000000f", dark = "#00000019" }, "button.body(PRESSED).stroke.color" = { light = "#0000000f", dark = "#ffffff12" } }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "material-3" = "none" }
+difference_presets = ["adwaita", "windows-11", "macos-monterey", "macos-tahoe", "material-3", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the outline for the state (spec §2, from_state): adwaita the rest outline for HOVER and PRESSED, where libadwaita keeps it; windows-11 the rest outline for HOVER, where WinUI keeps it, and for PRESSED WinUI's flat ControlStrokeColorDefault; macos-monterey the rest outline for HOVER, where hover draws nothing, and the rest outline pressed, which no rule changes; macos-tahoe no stroke for HOVER and PRESSED, as at rest; material-3 no stroke for HOVER and PRESSED, the filled tonal button having no outline (0.7.2: the default outline colour at width 0); ios-13 WebKit's rest border, 1px of systemBackground, for HOVER and PRESSED, which no :hover or :active rule and no adjustButtonLikeControlStyle change"
+difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136), ButtonBorderBrushPressed = ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45); macOS: docs/facts/macos/state-models.toml on v0.8.0-rc1 (hover not an axis; os-probe runs 41006842699, macOS 15, and 40969040283, macOS 26, `…hovered.regular-*.diff_from_normal` 0 pixels); docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd) `button.body.stroke` absent on macos-tahoe (layers-key-push.toml `key.push.<appearance>.pressed.regular-plain.stroke` absent, run 41006842699, macOS 26); material-3: _md-comp-filled-tonal-button.scss (v0_192, material-web cbd34a8) has no outline token in any state, its tokens :37-99; ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba), no :hover rule, `button:active` sets only `color` (html.css:901-906), adjustButtonLikeControlStyle changes an active button's text and background alone (RenderThemeIOS.mm:862-870)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { "button.body(HOVER).stroke.color" = { light = "#0000000f", dark = "#00000019" }, "button.body(PRESSED).stroke.color" = { light = "#0000000f", dark = "#ffffff12" } }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "material-3" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
 
 [[row]]
 key = "button.focus_border_color"
@@ -581,10 +581,10 @@ homes = ["button.label(NONE).color"]
 [[row]]
 key = "button.border.color"
 homes = ["button.body(NONE).stroke.color"]
-difference_presets = ["macos-tahoe"]
-difference_reason = "0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the push button's outline as none, as macOS 26 draws it"
-difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent)"
-difference_values = { "macos-tahoe" = "none" }
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the push button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border colour (#c6c6c8 / #38383a, the separator); 0.8.0 states the border WebKit draws round an iOS button, systemBackground"
+difference_citation = "macos-tahoe: docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent); ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
 
 [[row]]
 key = "button.border.corner_radius"
@@ -594,10 +594,10 @@ note = "Corners::uniform(radius)"
 [[row]]
 key = "button.border.line_width"
 homes = ["button.body(NONE).stroke.width"]
-difference_presets = ["macos-tahoe"]
-difference_reason = "0.7.2's macos-tahoe states the default line (0.5); 0.8.0 states the push button's outline as none, as macOS 26 draws it"
-difference_citation = "docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent)"
-difference_values = { "macos-tahoe" = "none" }
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (0.5); 0.8.0 states the push button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border width (0.5); 0.8.0 states the border WebKit draws round an iOS button, 1px"
+difference_citation = "macos-tahoe: docs/facts/macos/button.toml on v0.8.0-rc1 (78ee0efd): `button.body.stroke` absent on macos-tahoe (os-probe run 41006842699, macOS 26, layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent); ios-13: html.css:889 at WebKit 31adf9d, an iOS button's `border: 1px solid -webkit-control-background`, systemBackground (RenderThemeIOS.mm:1027; ios-18 expected.txt:7 at WebKit de320ba)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = 1.0 }
 
 [[row]]
 key = "button.border.shadow_enabled"
