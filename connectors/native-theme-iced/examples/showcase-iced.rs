@@ -78,8 +78,8 @@ use native_theme::next::{
     StrokeAlign, TextStated, TextStyle, ThemeContext, Typography, WidgetState,
 };
 use native_theme::theme::{
-    ArrowSide, FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedListTheme, ResolvedMenuTheme,
-    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
+    ArrowSide, FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedListTheme, ResolvedTextScale,
+    ResolvedTextScaleEntry, ResolvedTheme,
 };
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::next as iced_next;
@@ -5187,14 +5187,7 @@ fn ghost_button(
 /// (`styles::toolbar_button`) is drawn on its bounds, over the padding, so
 /// it moves nothing.
 fn ghost_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
-    let own = button::DEFAULT_PADDING;
-    let [top, right, bottom, left] = iced_next::padding_of(&r.button.body(WidgetState::NONE));
-    Padding {
-        top: top.unwrap_or(own.top),
-        right: right.unwrap_or(own.right),
-        bottom: bottom.unwrap_or(own.bottom),
-        left: left.unwrap_or(own.left),
-    }
+    stated_sides(&r.button.body(WidgetState::NONE), button::DEFAULT_PADDING)
 }
 
 /// A stroke of the 0.8.0 model as iced draws it on a widget it paints
@@ -5497,10 +5490,81 @@ fn aw_menu_title(
     }
 }
 
+/// The padding sides `part` states, `own`'s side on a side it leaves
+/// unstated.
+fn stated_sides(part: &PartStyle, own: Padding) -> Padding {
+    let [top, right, bottom, left] = iced_next::padding_of(part);
+    Padding {
+        top: top.unwrap_or(own.top),
+        right: right.unwrap_or(own.right),
+        bottom: bottom.unwrap_or(own.bottom),
+        left: left.unwrap_or(own.left),
+    }
+}
+
+/// A window menu row's padding on the installed 0.8.0 theme: the sides
+/// `menu.item(NONE).padding` states, iced's own button padding,
+/// `button::DEFAULT_PADDING`, on a side it leaves unstated.
+fn next_menu_row_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    stated_sides(&r.menu.item(WidgetState::NONE), button::DEFAULT_PADDING)
+}
+
+/// [`title_padding`] on the installed 0.8.0 theme: the sides
+/// `menu_bar.item(NONE).padding` states, `rows`' side (the menu rows'
+/// padding, [`next_menu_row_padding`]) on a side it leaves unstated.
+fn next_title_padding(r: &native_theme::next::ResolvedTheme, rows: Padding) -> Padding {
+    stated_sides(&r.menu_bar.item(WidgetState::NONE), rows)
+}
+
+/// [`menu_row_height`] on the installed 0.8.0 theme, whose text styles hold
+/// the text scale already: `menu.item(NONE).max_size[1]`, the row's height,
+/// exact at a text scale of 1 or less (`context.text_scale`), grown above
+/// it to hold the row's line, `menu.item_label(NONE)`'s line box
+/// ([`next_line_box`]) to the next whole pixel, and its padding `pad`, as
+/// [`rows::scaled_height`] grows a stated height; else at least
+/// `menu.item(NONE).min_size[1]`, grown to the row's line box and padding;
+/// else none, the row its content's height. The window's menus and the page
+/// tabs' menu take it, each row's label centred in a height it returns.
+fn next_menu_row_height(r: &native_theme::next::ResolvedTheme, pad: Padding) -> Option<f32> {
+    let item = r.menu.item(WidgetState::NONE);
+    let line = next_line_box(&r.typography, &r.menu.item_label(WidgetState::NONE));
+    let scale = r.context.text_scale;
+    match (item.max_size[1], item.min_size[1]) {
+        (Some(h), _) if scale.is_finite() && scale > 1.0 => Some(h.max(line.ceil() + pad.y())),
+        (Some(h), _) => Some(h),
+        (None, Some(min)) => Some(min.max(line + pad.y())),
+        (None, None) => None,
+    }
+}
+
+/// The font iced draws `style`, a 0.8.0 text style, in
+/// ([`next_font_from_database`]), for a text measured as it is drawn
+/// ([`menu_width`]); `None` where it gives none iced can draw: the text is
+/// then in iced's own font, and the menu its own width
+/// ([`sized_menu`]).
+fn next_drawn_font(style: &TextStyle) -> Option<iced::Font> {
+    next_font_from_database(style, false).map(|drawn| drawn.font)
+}
+
+/// `menu` `width` wide where the width is known, else `iced_aw`'s own
+/// width ([`next_drawn_font`]).
+fn sized_menu<'a>(
+    menu: Menu<'a, Message, Theme, iced::Renderer>,
+    width: Option<f32>,
+) -> Menu<'a, Message, Theme, iced::Renderer> {
+    match width {
+        Some(width) => menu.width(width),
+        None => menu,
+    }
+}
+
 /// A menu bar title's padding: left and right `menu.bar_padding_horizontal`,
 /// top and bottom `menu.bar_padding_vertical`, each pair `rows`' sides where
-/// the theme leaves it unstated (`rows`, the menu rows' padding).
-fn title_padding(m: &ResolvedMenuTheme, rows: Padding) -> Padding {
+/// the theme leaves it unstated (`rows`, the menu rows' padding). The Extra
+/// page's menu bar, on the 0.7.2 theme until that page moves; the window's
+/// menu bar takes [`next_title_padding`].
+#[cfg(feature = "iced_aw")]
+fn title_padding(m: &native_theme::theme::ResolvedMenuTheme, rows: Padding) -> Padding {
     let (left, right) = m
         .bar_padding_horizontal
         .map_or((rows.left, rows.right), |h| (h, h));
@@ -6420,14 +6484,14 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
 }
 
 /// The menu-bar row (spec S8), the gpui showcase's menus with the same items,
-/// separators and key bindings, in `iced_aw`'s `MenuBar`: each row a button
-/// in [`menu_row`], in `menu.font`, padded by `menu.border.padding` (iced's
-/// button padding on a side it leaves unstated), `menu.row_height` tall
-/// where the theme states one, grown above a text scale of 1 to hold the
-/// row's line and padding; each title a button in [`menu_title`], padded by
-/// [`title_padding`]; the rows' separators `separator.line_width` thick in
-/// `menu.separator_color`. The row, its margins too, has the tools area's
-/// `toolbar.background_color`, as the bar and the toolbar under it, and no
+/// separators and key bindings, in `iced_aw`'s `MenuBar`, on the installed
+/// 0.8.0 theme: each row a button in [`menu_row`], in
+/// `menu.item_label(NONE)`, padded by [`next_menu_row_padding`],
+/// [`next_menu_row_height`] tall; each title a button in [`menu_title`],
+/// padded by [`next_title_padding`]; the rows' separators
+/// `separator.thickness` thick in [`Line::MenuSeparator`]. The row, its
+/// margins too, has the tools area's `toolbar.bar(NONE).fill` (none, iced's
+/// own container, where unstated), as the bar and the toolbar under it, and no
 /// frame; a menu's panel is `menu.background_color`, framed by the popover's
 /// border (platform-facts §2.6: the popup border is §2.16's); its open title
 /// the bar's current item ([`menu_title`]). The row's sides are
@@ -6435,21 +6499,20 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
 /// the gpui showcase's, and [`MENU_BAR_PADDING`] where that is unstated: the
 /// model states no menu-bar inset.
 fn menu_bar(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
+    let r = state.next_shown();
     let gap = Gaps::from_layout(&state.layout);
-    let m = &resolved.menu;
-    let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+    let font = r.menu.item_label(WidgetState::NONE);
+    let pad = next_menu_row_padding(r);
     // A row's stated height, grown above a text scale of 1 to hold its line
     // and padding, as gpui's menu rows do, or its least height grown to its
-    // content ([`menu_row_height`]).
-    let row_height = menu_row_height(resolved, a11y, pad);
+    // content ([`next_menu_row_height`]).
+    let row_height = next_menu_row_height(r, pad);
     // The bar's `index`th title.
     let title = |index: usize, id: &'static str, label: &'static str| {
         tagged(
             id,
-            button(text(label).themed(&m.font, resolved, a11y))
-                .padding(title_padding(m, pad))
+            button(text(label).next_text(&font, &r.typography))
+                .padding(next_title_padding(r, pad))
                 .style(menu_title(
                     state.next_shown(),
                     state.menu_title_open == Some(index),
@@ -6468,7 +6531,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
                         action: Message| {
         let shortcut = key.map(|key| {
             let shortcut = text(binding(key))
-                .themed(&m.font, resolved, a11y)
+                .next_text(&font, &r.typography)
                 .wrapping(text::Wrapping::None);
             match id {
                 Some("chrome.menu.theme.preferences") => {
@@ -6477,12 +6540,12 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
                 _ => shortcut.into(),
             }
         });
-        // A row `menu.row_height` tall, or `menu.min_row_height` at least,
-        // holds its line centred in it, as the gpui and egui showcases' rows
-        // do, where iced's button would lay it out from the top: the model
-        // states the row's height ("height of a single item row",
-        // docs/platform-facts.md §2 dimension rules), and a menu item's label
-        // sits in the middle of it.
+        // A row `menu.item(NONE).max_size[1]` tall, or
+        // `menu.item(NONE).min_size[1]` at least, holds its line centred in
+        // it, as the gpui and egui showcases' rows do, where iced's button
+        // would lay it out from the top: the model states the row's height
+        // ("height of a single item row", docs/platform-facts.md §2
+        // dimension rules), and a menu item's label sits in the middle of it.
         let line_height = match row_height {
             Some(_) => Fill,
             None => Length::Shrink,
@@ -6493,7 +6556,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         let entry = button(
             row![
                 text(label)
-                    .themed(&m.font, resolved, a11y)
+                    .next_text(&font, &r.typography)
                     .wrapping(text::Wrapping::None),
                 space().width(Fill),
                 shortcut,
@@ -6515,7 +6578,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         })
     };
     let separator = |id: Option<&'static str>| {
-        let line = rule::horizontal(resolved.separator.line_width)
+        let line = rule::horizontal(r.separator.thickness)
             .style(line_style(state.next_shown(), Line::MenuSeparator));
         Item::new(match id {
             Some(id) => Element::from(tagged(id, line)),
@@ -6527,14 +6590,16 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     // `popup_pad.top` under the title, so the panel, which iced_aw pads out
     // from the rows, starts at the title's foot.
     let drop = |entries: Vec<MenuEntry>| {
-        let width = menu_width(
-            &state.label_widths,
-            entries.iter().filter_map(MenuEntry::texts),
-            theme_font(&m.font),
-            scaled_text_size(m.font.size, a11y),
-            pad,
-            gap.widget,
-        );
+        let width = next_drawn_font(&font).map(|drawn| {
+            menu_width(
+                &state.label_widths,
+                entries.iter().filter_map(MenuEntry::texts),
+                drawn,
+                font.size_px,
+                pad,
+                gap.widget,
+            )
+        });
         let items = entries
             .into_iter()
             .map(|entry| match entry {
@@ -6547,8 +6612,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
                 MenuEntry::Separator(id) => separator(id),
             })
             .collect();
-        Menu::new(items)
-            .width(width)
+        sized_menu(Menu::new(items), width)
             .offset(popup_pad.top)
             .padding(popup_pad)
     };
@@ -6645,19 +6709,27 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         }),
         None => bar,
     };
-    let side = state.layout.container_margin.unwrap_or(MENU_BAR_PADDING);
-    let fill = to_color(resolved.toolbar.background_color);
+    let side = r.layout.container_margin.unwrap_or(MENU_BAR_PADDING);
+    let fill = menu_bar_row(r);
     tagged(
         "chrome.menu_bar",
         container(bar)
             .padding(Padding::ZERO.left(side).right(side))
             .width(Fill)
             .style(move |_theme: &Theme| container::Style {
-                background: Some(iced::Background::Color(fill)),
+                background: fill.map(iced::Background::Color),
                 ..container::Style::default()
             }),
     )
     .into()
+}
+
+/// The fill of the menu bar's row round the bar, its margins too
+/// ([`menu_bar`]): the tools area's, `toolbar.bar(NONE).fill`, on the
+/// installed 0.8.0 theme; `None`, iced's own container, which fills
+/// nothing, where unstated.
+fn menu_bar_row(r: &native_theme::next::ResolvedTheme) -> Option<Color> {
+    iced_next::fill_of(&r.toolbar.bar(WidgetState::NONE))
 }
 
 /// The window's toolbar (spec §2.3, platform-facts §2.13): three flat
@@ -7606,18 +7678,20 @@ fn page_tabs(state: &State) -> Element<'_, Message> {
     )
 }
 
-/// The page tabs' menu: a flat button showing the chosen icon theme's
-/// `IconRole::NavDown` at `defaults.icon_sizes.small`, or "Pages" where the
-/// set has none, opening a menu of every page in [`menu_row`]s. Unlike the
-/// gpui showcase's, the shown page carries no check mark: the model's menu
-/// states no checked row. Its one-item bar lies in the page tab row, so it
-/// keeps the window's `window.background_color` where [`menu_bar_style`]
-/// gives the window's menu bar the toolbar's fill.
+/// The page tabs' menu, on the installed 0.8.0 theme: a flat button showing
+/// the chosen icon theme's `IconRole::NavDown` at `icons.sizes.small` (its
+/// own size where unstated), or "Pages" in `tab.label(NONE)` where the set
+/// has none, opening a menu of every page in [`menu_row`]s, laid out as the
+/// window's menus' rows ([`menu_bar`]). Unlike the gpui showcase's, the
+/// shown page carries no check mark: the model's menu states no checked
+/// row. Its one-item bar lies in the page tab row, so it keeps the window's
+/// `window.frame(normal).fill` (where unstated, the bar's own from
+/// [`menu_bar_style`]) where [`menu_bar_style`] gives the window's menu bar
+/// the menu bar's fill.
 fn page_menu(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
-    let m = &resolved.menu;
-    let size = resolved.defaults.icon_sizes.small;
+    let r = state.next_shown();
+    let font = r.menu.item_label(WidgetState::NONE);
+    let size = r.icons.sizes.small;
     let caret = state
         .loaded_icons
         .iter()
@@ -7626,19 +7700,19 @@ fn page_menu(state: &State) -> Element<'_, Message> {
         .and_then(|icon| {
             chrome_icon(
                 icon,
-                Some(size),
+                size,
                 state.chrome_icons.system,
-                icon_colour(state.next_shown(), &state.current_theme, false),
+                icon_colour(r, &state.current_theme, false),
             )
         })
         .map(|icon| Element::from(tagged("chrome.page_tabs.menu.icon", icon)))
         .unwrap_or_else(|| {
             text("Pages")
-                .themed(&resolved.tab.font, resolved, a11y)
+                .next_text(&r.tab.label(WidgetState::NONE), &r.typography)
                 .into()
         });
-    let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-    let row_height = menu_row_height(resolved, a11y, pad);
+    let pad = next_menu_row_padding(r);
+    let row_height = next_menu_row_height(r, pad);
     let rows = Tab::ALL
         .iter()
         .map(|&tab| {
@@ -7651,7 +7725,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
             let entry = button(
                 row![
                     text(tab.label())
-                        .themed(&m.font, resolved, a11y)
+                        .next_text(&font, &r.typography)
                         .wrapping(text::Wrapping::None)
                 ]
                 .align_y(iced::Center)
@@ -7667,14 +7741,16 @@ fn page_menu(state: &State) -> Element<'_, Message> {
             })
         })
         .collect();
-    let width = menu_width(
-        &state.label_widths,
-        Tab::ALL.iter().map(|tab| (tab.label(), None)),
-        theme_font(&m.font),
-        scaled_text_size(m.font.size, a11y),
-        pad,
-        Gaps::from_layout(&state.layout).widget,
-    );
+    let width = next_drawn_font(&font).map(|drawn| {
+        menu_width(
+            &state.label_widths,
+            Tab::ALL.iter().map(|tab| (tab.label(), None)),
+            drawn,
+            font.size_px,
+            pad,
+            Gaps::from_layout(&state.layout).widget,
+        )
+    });
     MenuBar::new(vec![Item::with_menu(
         tagged(
             "chrome.page_tabs.menu",
@@ -7683,17 +7759,20 @@ fn page_menu(state: &State) -> Element<'_, Message> {
                 .style(ghost_button(state.next_shown(), false))
                 .on_press(Message::MenuOpened),
         ),
-        Menu::new(rows)
-            .width(width)
+        sized_menu(Menu::new(rows), width)
             .offset(menu_popup_padding(state.next_shown()).top)
             .padding(menu_popup_padding(state.next_shown())),
     )])
     .style({
-        let style = menu_bar_style(state.next_shown());
-        let window = iced::Background::Color(to_color(resolved.window.background_color));
-        move |theme, status| iced_aw::style::menu_bar::Style {
-            bar_background: window,
-            ..style(theme, status)
+        let style = menu_bar_style(r);
+        let window =
+            iced_next::fill_of(&r.window.frame(native_theme::next::WindowState::default()));
+        move |theme, status| {
+            let style = style(theme, status);
+            iced_aw::style::menu_bar::Style {
+                bar_background: window.map_or(style.bar_background, iced::Background::Color),
+                ..style
+            }
         }
     })
     .into()
@@ -9342,6 +9421,96 @@ fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) ->
     Some(route.to_owned())
 }
 
+/// The route of a window menu's layout leaf `leaf` under `r`, the installed
+/// 0.8.0 theme, of a title of the menu bar where `title`
+/// ([`next_title_padding`]), else of a menu's row ([`next_menu_row_padding`],
+/// [`next_menu_row_height`]): what is drawn of the leaf's 0.8.0 home,
+/// naming it, or that the home is unstated and what is drawn in its place.
+/// `None` for a leaf neither lays out.
+fn menu_layout_route(
+    r: &native_theme::next::ResolvedTheme,
+    leaf: &str,
+    title: bool,
+) -> Option<String> {
+    let item = r.menu.item(WidgetState::NONE);
+    let [bar_top, bar_right, bar_bottom, bar_left] =
+        iced_next::padding_of(&r.menu_bar.item(WidgetState::NONE));
+    let side = ["top", "right", "bottom", "left"]
+        .into_iter()
+        .zip([bar_top, bar_right, bar_bottom, bar_left])
+        .find(|(s, _)| leaf == format!("menu.border.padding_{s}_px"));
+    let route = match leaf {
+        "menu.font" => "the row's Text in menu.item_label(NONE) (Typeset::next_text), measured \
+                        in it for the menu's width (next_drawn_font)"
+            .to_owned(),
+        "menu.bar_padding_horizontal_px" if bar_left.is_none() && bar_right.is_none() => {
+            "not drawn: menu_bar.item(NONE).padding.left and .right are unstated; \
+             next_title_padding takes the rows' left and right padding"
+                .to_owned()
+        }
+        "menu.bar_padding_horizontal_px" => {
+            "next_title_padding: the title button's left and right padding, the sides of \
+             menu_bar.item(NONE).padding stated, the rows' where unstated"
+                .to_owned()
+        }
+        "menu.bar_padding_vertical_px" if bar_top.is_none() && bar_bottom.is_none() => {
+            "not drawn: menu_bar.item(NONE).padding.top and .bottom are unstated; \
+             next_title_padding takes the rows' top and bottom padding"
+                .to_owned()
+        }
+        "menu.bar_padding_vertical_px" => {
+            "next_title_padding: the title button's top and bottom padding, the sides of \
+             menu_bar.item(NONE).padding stated, the rows' where unstated"
+                .to_owned()
+        }
+        "menu.row_height_px" if item.max_size[1].is_none() => {
+            "not drawn: menu.item(NONE).max_size[1] is unstated; next_menu_row_height takes \
+             menu.item(NONE).min_size[1], where stated, or the row's content"
+                .to_owned()
+        }
+        "menu.row_height_px" => {
+            "next_menu_row_height: the row button's height, menu.item(NONE).max_size[1], grown \
+             above a text scale of 1 to hold its line and padding"
+                .to_owned()
+        }
+        "menu.min_row_height_px" if item.max_size[1].is_some() => {
+            "not drawn: menu.item(NONE).max_size[1] is stated, and next_menu_row_height draws \
+             it in this one's place"
+                .to_owned()
+        }
+        "menu.min_row_height_px" if item.min_size[1].is_none() => {
+            "not drawn: menu.item(NONE).min_size[1] is unstated; next_menu_row_height leaves \
+             the row its content's height"
+                .to_owned()
+        }
+        "menu.min_row_height_px" => {
+            "next_menu_row_height: the row button's least height, menu.item(NONE).min_size[1], \
+             grown to its line box and padding"
+                .to_owned()
+        }
+        "separator.line_width_px" if !title => {
+            "rule::horizontal's thickness, separator.thickness".to_owned()
+        }
+        _ => match side {
+            Some((s, Some(_))) if title => format!(
+                "not drawn: menu_bar.item(NONE).padding.{s} is stated, and next_title_padding \
+                 pads the title's side by it"
+            ),
+            Some((s, None)) if title => format!(
+                "next_title_padding: Button::padding, menu.item(NONE).padding.{s} where \
+                 menu_bar.item(NONE) leaves the side unstated, iced's own where that is \
+                 unstated too"
+            ),
+            Some((s, _)) => format!(
+                "next_menu_row_padding: Button::padding, menu.item(NONE).padding.{s}, iced's \
+                 own where unstated"
+            ),
+            None => return None,
+        },
+    };
+    Some(route)
+}
+
 /// The route of a window menu's colour leaf `leaf` under `r`, of a title of
 /// the menu bar where `title` ([`menu_title`]), else of a menu's row or
 /// panel ([`menu_row`], [`menu_bar_style`]): what the function draws of
@@ -9655,6 +9824,15 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     }
     if under("basic.list.")
         && let Some(route) = list_route(state.next_shown(), leaf, under("basic.list.frame"))
+    {
+        return if route.starts_with("not drawn") {
+            route
+        } else {
+            format!("iced: {route}")
+        };
+    }
+    if (under("chrome.menu") || under("chrome.page_tabs.menu"))
+        && let Some(route) = menu_layout_route(state.next_shown(), leaf, under("chrome.menu_bar."))
     {
         return if route.starts_with("not drawn") {
             route
@@ -10530,8 +10708,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "surface: the window container's background, window.frame(normal).fill".into()
         }
         ("toolbar", "background_color") if id == "chrome.menu_bar" => {
-            "menu_bar_style: bar_background, menu_bar.bar(NONE).fill, under the row's container \
-             (menu_bar)"
+            "menu_bar_style: bar_background, menu_bar.bar(NONE).fill; menu_bar_row: the row \
+             container's background round the bar, its margins too, toolbar.bar(NONE).fill \
+             (none, iced's own container, where unstated)"
                 .into()
         }
         ("window", "background_color") => "surface: the window container's background, which \
@@ -17385,9 +17564,11 @@ fn aw_menu_row_gap(resolved: &ResolvedTheme) -> f32 {
 /// line box and padding, the line box iced's unrounded text size times
 /// `defaults.line_height`, as [`Typeset::themed`] lays it; else none, the
 /// row its content's height. `row_height` wins where a theme states both
-/// (the model's precedence, `MenuTheme::min_row_height`'s doc). The window's
-/// menus, the page tabs' menu and the Extra page's take it, each row's label
-/// centred in a height it returns.
+/// (the model's precedence, `MenuTheme::min_row_height`'s doc). The Extra
+/// page's menus take it, on the 0.7.2 theme until that page moves, each
+/// row's label centred in a height it returns; the window's menus and the
+/// page tabs' take [`next_menu_row_height`].
+#[cfg(feature = "iced_aw")]
 fn menu_row_height(
     resolved: &ResolvedTheme,
     a11y: &AccessibilityPreferences,
@@ -26366,11 +26547,13 @@ mod tests {
     /// `geometry::menu_item`: the stated height at a factor of 1 or less, a
     /// minimum around the drawn text and padding above it). At 1 the Basic
     /// list's rows are `list.row_height` (macos-tahoe) and the window's
-    /// menu rows `menu.row_height` (adwaita, macos-monterey, material-3);
-    /// at 1.5 each is at least the line box of its font at its scaled size
-    /// and `defaults.line_height`, rounded up, plus its padding
-    /// (`list.border.padding`, `menu.border.padding`), computed from the
-    /// theme at test time.
+    /// menu rows the installed 0.8.0 theme's `menu.item(NONE).max_size[1]`
+    /// (adwaita, macos-monterey, material-3); at 1.5 each is at least the
+    /// line box of its font at its scaled size, rounded up, plus its padding
+    /// (`list.border.padding` and `defaults.line_height`;
+    /// `menu.item(NONE).padding` and [`next_line_box`] of
+    /// `menu.item_label(NONE)`, resolved at 1.5), computed from the theme at
+    /// test time.
     #[test]
     fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
         recording(|| {
@@ -26395,7 +26578,7 @@ mod tests {
                         height
                     }
                 };
-                let state = State {
+                let mut state = State {
                     current_theme: theme,
                     current_resolved: resolved,
                     accessibility: accessibility.clone(),
@@ -26403,6 +26586,7 @@ mod tests {
                     held_menu: theme_menu,
                     ..State::default()
                 };
+                rescaled(&mut state, preset, false);
                 let iced_theme = super::theme(&state);
                 let mut ui: Simulator<'_, Message> =
                     Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
@@ -26437,11 +26621,16 @@ mod tests {
                         )),
                     }
                 }
-                let m = &r.menu;
-                if let Some(h) = m.row_height {
-                    let pad =
-                        native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-                    let want = grown(h, m.font.size, pad.y());
+                let next = state.next_shown();
+                if let Some(h) = next.menu.item(WidgetState::NONE).max_size[1] {
+                    let pad = next_menu_row_padding(next);
+                    let line =
+                        next_line_box(&next.typography, &next.menu.item_label(WidgetState::NONE));
+                    let want = if factor > 1.0 {
+                        h.max(line.ceil() + pad.y())
+                    } else {
+                        h
+                    };
                     match height_of("chrome.menu.theme.light") {
                         Some(height) if (height - want).abs() < 0.01 => {}
                         Some(height) => faults.push(format!(
@@ -28853,6 +29042,7 @@ mod tests {
                 .join("|"),
             "list_row" => list_drawn(r, false),
             "list_frame" => list_drawn(r, true),
+            "menu_bar_row" => format!("{:?}", menu_bar_row(r)),
             "menu_bar_style" => {
                 let style = menu_bar_style(r);
                 AW_STATUSES
@@ -29045,6 +29235,57 @@ mod tests {
                 failures.push(format!(
                     "{label}: with the four sides stated, {padded:?}, before {shown:?}"
                 ));
+            }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
+    }
+
+    /// [`next_menu_row_padding`] and [`next_title_padding`] pad the window's
+    /// menu rows and titles on the installed 0.8.0 theme: on every preset,
+    /// a side `menu.item(NONE).padding` leaves unstated is
+    /// `button::DEFAULT_PADDING`'s, and a title's side
+    /// `menu_bar.item(NONE).padding` leaves unstated the rows'; a patch
+    /// stating the rows' four sides (3, 5, 7, 9) and the titles' (2, 4, 6,
+    /// 8) gives those.
+    #[test]
+    fn the_window_menus_take_the_stated_sides_of_their_padding() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.menu.rules]]\nitem.padding = { top = 3.0, right = 5.0, bottom = 7.0, \
+             left = 9.0 }\n\n[[widgets.menu_bar.rules]]\nitem.padding = { top = 2.0, right = \
+             4.0, bottom = 6.0, left = 8.0 }\n",
+        )
+        .map_err(|error| format!("the menu padding patch: {error:?}"))?;
+        let sides = |p: Padding| (p.top, p.right, p.bottom, p.left);
+        let own = sides(button::DEFAULT_PADDING);
+        let mut failures = Vec::new();
+        for (label, r) in next_combinations() {
+            let rows = next_menu_row_padding(&r);
+            let titles = next_title_padding(&r, rows);
+            let row_sides = iced_next::padding_of(&r.menu.item(WidgetState::NONE));
+            let title_sides = iced_next::padding_of(&r.menu_bar.item(WidgetState::NONE));
+            for (i, (row, title)) in row_sides.into_iter().zip(title_sides).enumerate() {
+                let drawn = [rows.top, rows.right, rows.bottom, rows.left];
+                let lit = [titles.top, titles.right, titles.bottom, titles.left];
+                let iced = [own.0, own.1, own.2, own.3];
+                if row.is_none() && drawn.get(i) != iced.get(i) {
+                    failures.push(format!("{label}: the rows' unstated side {i} is {rows:?}"));
+                }
+                if title.is_none() && lit.get(i) != drawn.get(i) {
+                    failures.push(format!(
+                        "{label}: the titles' unstated side {i} is {titles:?}"
+                    ));
+                }
+            }
+            let mut patched = r.clone();
+            patched.apply_patch(&patch);
+            let rows = next_menu_row_padding(&patched);
+            let titles = next_title_padding(&patched, rows);
+            if sides(rows) != (3.0, 5.0, 7.0, 9.0) || sides(titles) != (2.0, 4.0, 6.0, 8.0) {
+                failures.push(format!("{label}: patched, {rows:?} and {titles:?}"));
             }
         }
         if failures.is_empty() {
@@ -33230,7 +33471,6 @@ mod tests {
             let theme = &state.current_theme;
             let next = with_home(state.next_shown(), "menu_bar.item(OPEN).fill", "#f0a014")
                 .ok_or("no patch reaches menu_bar.item(OPEN).fill")?;
-            let r = &state.current_resolved;
             for (open, status, want) in [
                 (true, button::Status::Active, "#f0a014"),
                 (true, button::Status::Hovered, "#f0a014"),
@@ -33257,7 +33497,7 @@ mod tests {
                     }
                 }
             }
-            let padded = title_padding(&r.menu, rows);
+            let padded = next_title_padding(&next, rows);
             if padded
                 != (Padding {
                     top: 6.0,
@@ -33273,13 +33513,13 @@ mod tests {
             let label = format!("adwaita dark {dark}");
             let state = loaded("adwaita", dark);
             let (theme, next) = (&state.current_theme, state.next_shown());
-            let m = &state.current_resolved.menu;
             let b = &next.menu_bar;
             if [WidgetState::HOVER, WidgetState::OPEN].iter().any(|&s| {
                 iced_next::state_fill_of(&b.item(s)).is_some()
                     || iced_next::state_text_color_of(&b.item_label(s)).is_some()
-            }) || m.bar_padding_horizontal.is_some()
-                || m.bar_padding_vertical.is_some()
+            }) || iced_next::padding_of(&b.item(WidgetState::NONE))
+                .iter()
+                .any(Option::is_some)
             {
                 return Err(format!("{label} states a menu-bar field"));
             }
@@ -33306,7 +33546,7 @@ mod tests {
             if rest.background.is_some() || Some(rest.text_color) != label_at_rest {
                 failures.push(format!("{label}: a title at rest is {rest:?}"));
             }
-            if title_padding(m, rows) != rows {
+            if next_title_padding(next, rows) != rows {
                 failures.push(format!("{label}: the titles are not padded as the rows"));
             }
         }
@@ -33328,6 +33568,7 @@ mod tests {
     ) -> (State, image::RgbaImage, ElementRects, f32) {
         let mut state = loaded(preset, false);
         state.accessibility.text_scaling_factor = factor;
+        rescaled(&mut state, preset, false);
         state.held_menu = MENU_TITLES.iter().position(|title| *title == "Theme");
         edit(&mut state);
         let (image, rects, scale) = frame_of(
@@ -33338,60 +33579,67 @@ mod tests {
         (state, image, rects, scale)
     }
 
-    /// Issue #4's leftovers, E4: a menu row is at least `menu.min_row_height`
-    /// where the theme states no `menu.row_height` ([`menu_row_height`]):
-    /// kde-breeze's rows are its 29 at a text scale of 1, where their line
-    /// box and padding are less, and their content, the line box of
-    /// `menu.font` at its scaled size times `defaults.line_height` plus the
-    /// padding, at a text scale of 2, where that is more; material-3's stated
-    /// 48 is drawn exactly, with a `menu.min_row_height` of 60 set on its
-    /// resolved theme too, as `menu.row_height` wins where both are stated
-    /// (S2). Read on the Theme menu's Light row, held open.
+    /// Issue #4's leftovers, E4: a menu row is at least
+    /// `menu.item(NONE).min_size[1]` where the installed 0.8.0 theme states
+    /// no `max_size[1]` ([`next_menu_row_height`]): kde-breeze's rows are
+    /// its 29 at a text scale of 1, where their line box and padding are
+    /// less, and their content, the line box of `menu.item_label(NONE)`
+    /// ([`next_line_box`], the text scale already applied) plus the padding,
+    /// at a text scale of 2, where that is more; material-3's stated 48 is
+    /// drawn exactly, with a `min_size[1]` of 60 patched onto its resolved
+    /// theme too, as the stated height wins where both are stated (S2). Read
+    /// on the Theme menu's Light row, held open.
     #[test]
-    fn menu_rows_are_at_least_the_min_row_height() {
+    fn menu_rows_are_at_least_the_min_row_height() -> Result<(), String> {
+        let least = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.menu.rules]]\nitem.min_size = [\"none\", 60.0]\n",
+        )
+        .map_err(|error| format!("the least-row patch: {error:?}"))?;
         let mut faults = Vec::new();
-        for (preset, factor, min) in [
-            ("kde-breeze", 1.0, None),
-            ("kde-breeze", 2.0, None),
-            ("material-3", 1.0, None),
-            ("material-3", 1.0, Some(60.0)),
+        for (preset, factor, patched) in [
+            ("kde-breeze", 1.0, false),
+            ("kde-breeze", 2.0, false),
+            ("material-3", 1.0, false),
+            ("material-3", 1.0, true),
         ] {
             let (state, _, rects, _) = theme_menu_frame(preset, factor, |state| {
-                if min.is_some() {
-                    state.current_resolved.menu.min_row_height = min;
+                if patched {
+                    state.next_resolved.apply_patch(&least);
                 }
             });
-            let r = &state.current_resolved;
-            let m = &r.menu;
-            let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-            let content = scaled_text_size(m.font.size, &state.accessibility)
-                * r.defaults.line_height
-                + pad.y();
+            let r = state.next_shown();
+            let item = r.menu.item(WidgetState::NONE);
+            let pad = next_menu_row_padding(r);
+            let content =
+                next_line_box(&r.typography, &r.menu.item_label(WidgetState::NONE)) + pad.y();
+            let label = format!("{preset} at {factor}, the least row patched {patched}");
             let want = match (preset, factor) {
                 ("kde-breeze", 1.0) => {
-                    assert_eq!(m.min_row_height, Some(29.0), "kde-breeze's least row");
-                    assert!(m.row_height.is_none(), "kde-breeze states a row height");
-                    assert!(content < 29.0, "kde-breeze's row content is {content} tall");
+                    if item.min_size[1] != Some(29.0) || item.max_size[1].is_some() {
+                        return Err(format!("{label}: kde-breeze's row is {item:?}"));
+                    }
+                    if content >= 29.0 {
+                        return Err(format!("{label}: the row content is {content} tall"));
+                    }
                     29.0
                 }
                 ("kde-breeze", _) => {
-                    assert!(content > 29.0, "at {factor} the content is {content} tall");
+                    if content <= 29.0 {
+                        return Err(format!("{label}: the row content is {content} tall"));
+                    }
                     content
                 }
                 _ => {
-                    assert_eq!(m.row_height, Some(48.0), "material-3's stated row");
-                    assert!(
-                        min.is_some() || m.min_row_height.is_none(),
-                        "material-3 states a least row"
-                    );
+                    if item.max_size[1] != Some(48.0) {
+                        return Err(format!("{label}: material-3's row is {item:?}"));
+                    }
                     48.0
                 }
             };
-            let label = format!("{preset} at {factor}, menu.min_row_height {min:?}");
-            if menu_row_height(r, &state.accessibility, pad) != Some(want) {
+            let shown = next_menu_row_height(r, pad);
+            if shown != Some(want) {
                 faults.push(format!(
-                    "{label}: menu_row_height gives {:?}, want {want}",
-                    menu_row_height(r, &state.accessibility, pad)
+                    "{label}: next_menu_row_height gives {shown:?}, want {want}"
                 ));
             }
             match rects.get("chrome.menu.theme.light") {
@@ -33403,39 +33651,44 @@ mod tests {
                 None => faults.push(format!("{label}: the Light row is not drawn")),
             }
         }
-        assert!(faults.is_empty(), "{faults:#?}");
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// Issue #4's leftovers, E4 (S10): the page tabs' menu takes the shared
-    /// row height, [`menu_row_height`]. Under adwaita light, which states
-    /// `menu.row_height`, the menu opened from its caret lays its rows out
-    /// touching (`Menu::new`, iced_aw 0.14.1
+    /// row height, [`next_menu_row_height`]. Under adwaita light, whose
+    /// 0.8.0 theme states `menu.item(NONE).max_size[1]`, the menu opened
+    /// from its caret lays its rows out touching (`Menu::new`, iced_aw 0.14.1
     /// `src/widget/menu/menu_tree.rs:155`), each label centred in its row,
     /// so the Buttons and Inputs rows' labels, the last of each the
     /// interface lays out, lie that height apart; the rows' content alone,
     /// the line box and the padding, is another height, so a menu that
     /// applied none would fail.
     #[test]
-    fn the_page_tab_menu_rows_take_the_menu_row_height() {
+    fn the_page_tab_menu_rows_take_the_menu_row_height() -> Result<(), String> {
         let state = loaded("adwaita", false);
-        let r = &state.current_resolved;
-        let m = &r.menu;
-        assert!(m.row_height.is_some(), "adwaita states a menu row height");
-        let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-        let Some(want) = menu_row_height(r, &state.accessibility, pad) else {
-            panic!("adwaita: menu_row_height gives none");
-        };
-        let content =
-            scaled_text_size(m.font.size, &state.accessibility) * r.defaults.line_height + pad.y();
-        assert!(
-            (content - want).abs() > 0.5,
-            "adwaita's row content is {content} tall, its row {want}"
-        );
+        let r = state.next_shown();
+        if r.menu.item(WidgetState::NONE).max_size[1].is_none() {
+            return Err("adwaita states no menu row height".into());
+        }
+        let pad = next_menu_row_padding(r);
+        let label = r.menu.item_label(WidgetState::NONE);
+        let content = next_line_box(&r.typography, &label) + pad.y();
+        let want = next_menu_row_height(r, pad).ok_or("adwaita: no menu row height")?;
+        if (content - want).abs() <= 0.5 {
+            return Err(format!(
+                "adwaita's row content is {content} tall, its row {want}"
+            ));
+        }
         let size = Size::new(WINDOW_SIZE.0, WINDOW_SIZE.1);
         let (_, rects, _) = frame_of(&state, view(&state), size);
-        let Some(caret) = rects.get("chrome.page_tabs.menu").copied() else {
-            panic!("chrome.page_tabs.menu is not drawn");
-        };
+        let caret = rects
+            .get("chrome.page_tabs.menu")
+            .copied()
+            .ok_or("chrome.page_tabs.menu is not drawn")?;
         let mut apart = None;
         let _ = frame_after(&state, view(&state), size, |ui| {
             let at = caret.center();
@@ -33453,8 +33706,10 @@ mod tests {
             apart = last("Inputs").zip(last("Buttons")).map(|(b, a)| b - a);
         });
         match apart {
-            Some(apart) if (apart - want).abs() < 0.01 => {}
-            other => panic!("the page tabs' menu rows lie {other:?} apart, want {want}"),
+            Some(apart) if (apart - want).abs() < 0.01 => Ok(()),
+            other => Err(format!(
+                "the page tabs' menu rows lie {other:?} apart, want {want}"
+            )),
         }
     }
 
@@ -33798,9 +34053,10 @@ mod tests {
     }
 
     /// Issue #4's leftovers, E3: the window's menu bar, its margins too, is
-    /// the tools area's fill, `toolbar.background_color` (#dee0e2 in
-    /// kde-breeze light, where the window's differs), and the page tabs'
-    /// caret menu keeps the window's: drawn under kde-breeze light, the menu
+    /// the tools area's fill, the installed 0.8.0 theme's
+    /// `toolbar.bar(NONE).fill` (#dee0e2 in kde-breeze light, where the
+    /// window's differs), and the page tabs' caret menu keeps the window's,
+    /// `window.frame(normal).fill`: drawn under kde-breeze light, the menu
     /// bar's row at its left margin and past its last title, and the caret
     /// button's corner, at rest, which shows its bar through it.
     #[test]
@@ -33813,9 +34069,19 @@ mod tests {
             ThemeChoice::Preset("kde-breeze".to_owned()),
             AppColorMode::Light
         ));
-        let r = state.current_resolved.clone();
-        let tools = to_color(r.toolbar.background_color);
-        let window = to_color(r.window.background_color);
+        let r = state.next_shown().clone();
+        let stated = (
+            iced_next::fill_of(&r.toolbar.bar(WidgetState::NONE)),
+            iced_next::fill_of(&r.window.frame(native_theme::next::WindowState::default())),
+        );
+        let both = stated.0.zip(stated.1);
+        assert!(
+            both.is_some(),
+            "kde-breeze light states both fills: {stated:?}"
+        );
+        let Some((tools, window)) = both else {
+            return;
+        };
         assert_eq!(color_to_hex(tools), "#dee0e2", "kde-breeze light's toolbar");
         assert_ne!(
             tools, window,
@@ -35151,6 +35417,25 @@ mod tests {
             }
         }
         state
+    }
+
+    /// `state`'s 0.8.0 theme of `preset` in the mode `dark` names resolved
+    /// again under its accessibility preferences, as a change of them in the
+    /// Preferences dialog resolves it ([`State::apply_preferences`]): for a
+    /// test that sets the text scale on a state built for `preset`.
+    fn rescaled(state: &mut State, preset: &str, dark: bool) {
+        let prefs = state.accessibility.clone();
+        let choice = ThemeChoice::Preset(preset.to_string());
+        let next = state.next_install(&choice, dark, &prefs);
+        assert!(
+            next.is_ok(),
+            "{preset} on the 0.8.0 model at {}: {:?}",
+            prefs.text_scaling_factor,
+            next.err()
+        );
+        if let Ok(next) = next {
+            state.keep_next(next);
+        }
     }
 
     /// Every bundled preset, in light and in dark.
