@@ -10288,6 +10288,37 @@ fn install_breeze_light(cx: &mut VisualTestContext, r: &native_theme_gpui::Resol
     draw(cx);
 }
 
+/// Keep `r` as the 0.7.2 theme beside the installed 0.8.0 one
+/// (`support::OldModel`), as the theme settings' choice keeps it for the
+/// readers not yet on the 0.8.0 model, and draw the frame it produced. The
+/// installed 0.8.0 theme and gpui-component's theme stay, so what reads them
+/// (the ported label font among them) is drawn as before.
+fn keep_old_beside_next(cx: &mut VisualTestContext, r: &native_theme_gpui::ResolvedTheme) {
+    cx.update(|window, cx| {
+        assert!(
+            crate::support::next_resolved(cx).is_some(),
+            "no 0.8.0 theme is installed to keep the 0.7.2 one beside"
+        );
+        let accessibility = cx
+            .try_global::<crate::support::OldModel>()
+            .map(|old| old.accessibility.clone());
+        assert!(
+            accessibility.is_some(),
+            "the installed 0.8.0 theme has no 0.7.2 theme kept beside it"
+        );
+        let Some(accessibility) = accessibility else {
+            return;
+        };
+        cx.set_global(crate::support::OldModel {
+            resolved: r.clone(),
+            accessibility,
+        });
+        window.refresh();
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
 /// A Basic check box under the pointer is framed by
 /// `checkbox.hover_border_color`, at rest by its border, under kde-breeze,
 /// which states the hover edge: the unchecked box at rest by
@@ -19221,7 +19252,10 @@ fn the_basic_pages_icon_buttons_claim_no_edge_at_rest(cx: &mut TestAppContext) {
 /// kde-breeze light, which states `toolbar.button_hover_border_color`, the
 /// Basic page's Copy button lies where it lies under kde-breeze light with
 /// that leaf cleared, where `geometry::toolbar_button_rest` gives it no
-/// border, since the border's width comes out of its padding.
+/// border, since the border's width comes out of its padding. The cleared
+/// theme is kept beside the installed 0.8.0 one, which
+/// `geometry::toolbar_button_rest` does not read yet, so both boxes are laid
+/// out under one label font.
 #[gpui::test]
 fn a_tool_buttons_box_keeps_its_size_with_the_outline(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -19245,7 +19279,7 @@ fn a_tool_buttons_box_keeps_its_size_with_the_outline(cx: &mut TestAppContext) {
     let button = "basic-icon-copy";
     let outlined = bounds_of(&mut cx, button);
     r.toolbar.button_hover_border_color = None;
-    install_breeze_light(&mut cx, &r);
+    keep_old_beside_next(&mut cx, &r);
     show(&mut cx, &showcase, Page::Basic);
     assert_eq!(
         rest(&mut cx),
