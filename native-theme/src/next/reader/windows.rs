@@ -1,11 +1,11 @@
-//! The Windows reader (spec §8, "The Windows part"): [`read`] reads what the
+//! The Windows reader (spec §8, "The Windows part"): `read` reads what the
 //! 0.7.2 reader reads, through its own reading function
 //! (`windows::read_windows_settings`: `UISettings`, `NONCLIENTMETRICSW`, the
 //! system metrics, the accessibility settings, under high contrast the
 //! system colours, and the caret's blink time); the rest of this module
-//! takes the settings of such a read ([`WindowsSettings`], as 0.7.2's
+//! takes the settings of such a read (`WindowsSettings`, as 0.7.2's
 //! `build_theme` takes them), each as read and parsed by the 0.7.2 reader's
-//! functions. Nothing but [`read`] calls Windows, and nothing is derived for
+//! functions. Nothing but `read` calls Windows, and nothing is derived for
 //! a widget: what the 0.7.2 reader derives from these settings (the accent's
 //! fills, the link's shades, the high-contrast mapping) the `windows-11`
 //! builder derives.

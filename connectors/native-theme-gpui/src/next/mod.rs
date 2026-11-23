@@ -1,16 +1,26 @@
-//! The 0.8.0 mapping, under construction: what the connector hands to gpui,
-//! computed from the 0.8.0 model (`native_theme::next`) for the first slice
-//! of the 0.8.0 work, the globals and `button`, `checkbox`, `list`,
-//! `scrollbar` and `tooltip` (docs/v0.8.0-plan.md, M0, step 4).
+//! The connector on the 0.8.0 model ([`native_theme::next`]), beside the
+//! 0.7.2 one until the 0.8.0 cut removes the latter: what the connector
+//! hands to gpui, computed from a [`native_theme::next::ResolvedTheme`].
+//!
+//! [`to_theme`] builds the whole gpui-component theme, as [`crate::to_theme`]
+//! does; [`geometry`], [`variants`] and [`base_layer`] hold one function for
+//! each public function of [`crate::geometry`], [`crate::variants`] and
+//! [`crate::base_layer`] that reads the native theme, of the same name. Each
+//! takes the 0.8.0 resolved theme, which carries its name, its scheme and
+//! the context it was resolved for (text scale, reduced transparency), so no
+//! name, mode or accessibility preferences are passed; and each returns
+//! [`Mapped`]: the value, or the [`Unmapped`] source it needs that the theme
+//! leaves unstated, where the 0.7.2 function, whose fields are always set,
+//! returns the value alone. Where the theme states nothing for a value the
+//! toolkit has one of its own for, the toolkit's stays (spec §10, rule 0).
 //!
 //! Each function reads the model where the table of homes
 //! (`native-theme/tests/next_homes.toml`) places the 0.7.2 field the old
 //! mapping reads, by the query its row names, and hands the values to the
 //! function the old mapping hands its own reads to, so the two share
-//! everything after the read. A leaf of the connector whose source lies
-//! outside the slice is not mapped here. `parity` proves the leaves equal to
-//! the old mapping's (plan, section 1, rule 2). Not exported; the connector
-//! is ported onto it in M4, and the 0.7.2 path is removed at the 0.8.0 cut.
+//! everything after the read. `parity` proves the leaves equal to the old
+//! mapping's (docs/v0.8.0-plan.md, section 1, rule 2), and lists where they
+//! differ with the reason.
 //!
 //! A 0.7.2 field that is a soft option of a state (`button.active_background`,
 //! `scrollbar.thumb_active_color`, `button.checked_background`, ...) is unset
@@ -20,36 +30,63 @@
 //! (spec §2), and is `None` otherwise, so the old path's own fallback for the
 //! unset option is taken from both models.
 
+pub mod base_layer;
 pub(crate) mod builders;
+pub mod geometry;
 #[cfg(test)]
 mod parity;
+pub mod variants;
 
+use std::fmt;
 use std::rc::Rc;
+use std::time::Duration;
 
-use gpui::Hsla;
-use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig};
+use gpui::{App, Hsla, SharedString};
+use gpui_base::ResizableTheme;
+use gpui_base::input::CursorBlink;
+use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig, ThemeMode};
 use native_theme::next::{
-    ButtonQuery, Color, CornerCurve, CornerRadius, FocusTrigger, FontStyle, ListQuery, Orientation,
-    Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StrokeAlign, StyleQuery, TextStated,
-    TextStyle, WidgetState,
+    ButtonQuery, Color, Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FocusTrigger,
+    FontStyle, IconSizes, ListQuery, MotionPreference, Orientation, Paint, PartStated, PartStyle,
+    ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
 
-use crate::base_layer::{ScrollbarGeometry, ScrollbarSource, geometry_of};
-use crate::colors::{SliceColors, assign_slice, channels_to_hsla, focus_band};
-use crate::config::{apply_config_scalars, theme_color_to_config_colors};
+use crate::base_layer::{ScrollbarGeometry, ScrollbarSource, geometry_of, resizable_theme_of};
+use crate::colors::{
+    CappedNatives, SliceColors, WidgetColors, capped_natives_of, channels_to_hsla, focus_band,
+    theme_color_of,
+};
+use crate::config::{apply_config_scalars, highlight_style_of, theme_color_to_config_colors};
 use crate::geometry::Font;
-use crate::{ThemeScalars, apply_scalars, font_family};
+use crate::{AccessibilityPreferences, ThemeScalars, apply_scalars, caret_blink_of, font_family};
 
-/// A source a leaf needs that the theme leaves unstated, or states in a form
-/// no 0.7.2 field holds (a gradient fill, a centred stroke, a pill): its home
-/// in the table of homes. The 0.7.2 path has no such case, its resolved
-/// fields being always set; the 0.8.0 path reports it rather than inventing
-/// the value.
+/// A source a value needs that the theme leaves unstated, or states in a
+/// form the connector cannot hand to gpui (a gradient fill, a per-side
+/// stroke, a pill): its place in the 0.8.0 model, as a query and a property
+/// (`button.body(NONE).stroke.width`). The 0.7.2 path has no such case, its
+/// resolved fields being always set; the 0.8.0 path reports it rather than
+/// inventing the value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Unmapped(pub(crate) &'static str);
+pub struct Unmapped(pub(crate) &'static str);
 
-/// A leaf of the 0.8.0 mapping, or the source it lacks.
-pub(crate) type Mapped<T> = Result<T, Unmapped>;
+impl Unmapped {
+    /// The source's place in the 0.8.0 model.
+    #[must_use]
+    pub fn home(&self) -> &'static str {
+        self.0
+    }
+}
+
+impl fmt::Display for Unmapped {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "the theme states no value gpui can take at {}", self.0)
+    }
+}
+
+impl std::error::Error for Unmapped {}
+
+/// A value of the 0.8.0 mapping, or the source it lacks.
+pub type Mapped<T> = Result<T, Unmapped>;
 
 /// A colour of the model as gpui's: the connector's conversion
 /// ([`channels_to_hsla`]).
@@ -70,31 +107,39 @@ fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     }
 }
 
-/// A part's stroke colour, where stated as one stroke inside the edge.
+/// A part's stroke colour, where stated as one stroke of one colour, in any
+/// alignment.
+///
+/// gpui paints a quad's border over its background, inside its bounds, so
+/// the fill runs under the whole border: `StrokeAlign::Inside` (spec §2,
+/// below `PartStyle`), which it draws from the stated colours. Under an
+/// opaque stroke the three alignments paint the same picture, so `Center`
+/// and `Outside` are drawn exactly from the stated colours too. A
+/// translucent `Center` or `Outside` stroke shows the fill under the whole
+/// band where the theme has it end at the band's centre line or inner edge;
+/// no border colour can take the fill away there, and each builder gives a
+/// part as one style refinement, which gpui paints as one quad, so gpui's
+/// extent stays and the connector's README records the limit (spec §10,
+/// rule 4).
 fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     match &part.stroke {
-        Stroke::Uniform {
-            color,
-            align: StrokeAlign::Inside,
-            ..
-        } if part.stated.contains(PartStated::STROKE) => Ok(hsla(*color)),
+        Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
+            Ok(hsla(*color))
+        }
         _ => Err(Unmapped(home)),
     }
 }
 
-/// A part's stroke width, where stated as one stroke inside the edge, or as
-/// none, which is no width.
+/// A part's stroke width, where stated as one stroke, in any alignment (the
+/// band lies inside the part's box in each, spec §2), or as none, which is
+/// no width.
 fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     if !part.stated.contains(PartStated::STROKE) {
         return Err(Unmapped(home));
     }
     match &part.stroke {
         Stroke::None => Ok(0.0),
-        Stroke::Uniform {
-            width,
-            align: StrokeAlign::Inside,
-            ..
-        } => Ok(*width),
+        Stroke::Uniform { width, .. } => Ok(*width),
         _ => Err(Unmapped(home)),
     }
 }
@@ -313,22 +358,112 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
     })
 }
 
-/// The `ThemeColor` fields the slice feeds, written by the old mapping's
-/// [`assign_slice`]; every other field is `ThemeColor::default()`'s.
-pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
-    let mut tc = ThemeColor::default();
-    assign_slice(
-        &mut tc,
-        &slice_colors(r)?,
-        r.is_dark(),
-        r.context.reduced_transparency,
-    );
-    Ok(tc)
+/// A window's frame, normal: not maximized, full screen or tiled.
+fn normal_window() -> WindowState {
+    WindowState::default()
 }
 
-/// The global theme's values the slice feeds. The sizes are the model's,
-/// which its text scale has already scaled.
+/// The colours outside the slice of a 0.8.0 resolved theme.
+pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
+    let frame = r.window.frame(normal_window());
+    let sidebar = r.sidebar.container(WidgetState::NONE);
+    let tab = &r.tab;
+    let link = &r.link;
+    Ok(WidgetColors {
+        bg: fill(&frame, "window.frame(normal).fill")?,
+        menu_hover_bg: fill(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill")?,
+        menu_hover_fg: text_color(
+            &r.menu.item_label(WidgetState::HOVER),
+            "menu.item_label(HOVER).color",
+        )?,
+        sidebar_selection_bg: fill(
+            &r.sidebar.item(WidgetState::SELECTED),
+            "sidebar.item(SELECTED).fill",
+        )?,
+        sidebar_selection_fg: text_color(
+            &r.sidebar.item_label(WidgetState::SELECTED),
+            "sidebar.item_label(SELECTED).color",
+        )?,
+        selection: hsla(r.colors.text_selection.background),
+        link: text_color(&link.label(WidgetState::NONE), "link.label(NONE).color")?,
+        input: stroke_color(
+            &r.input.field(WidgetState::NONE),
+            "input.field(NONE).stroke.color",
+        )?,
+        sidebar: fill(&sidebar, "sidebar.container(NONE).fill")?,
+        sidebar_fg: text_color(
+            &r.sidebar.item_label(WidgetState::NONE),
+            "sidebar.item_label(NONE).color",
+        )?,
+        sidebar_border: stroke_color(&sidebar, "sidebar.container(NONE).stroke.color")?,
+        popover: fill(&r.popover.panel, "popover.panel.fill")?,
+        popover_fg: text_color(&r.popover.text, "popover.text.color")?,
+        tab_bg: fill(&tab.tab(WidgetState::NONE), "tab.tab(NONE).fill")?,
+        tab_active_bg: fill(&tab.tab(WidgetState::SELECTED), "tab.tab(SELECTED).fill")?,
+        tab_active_fg: text_color(
+            &tab.label(WidgetState::SELECTED),
+            "tab.label(SELECTED).color",
+        )?,
+        tab_bar_bg: fill(&tab.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
+        segmented_bg: fill(
+            &r.segmented_control.track(WidgetState::NONE),
+            "segmented_control.track(NONE).fill",
+        )?,
+        tab_fg: text_color(&tab.label(WidgetState::NONE), "tab.label(NONE).color")?,
+        title_bar_bg: fill(
+            &r.window.title_bar(normal_window()),
+            "window.title_bar(normal).fill",
+        )?,
+        window_border: stroke_color(&frame, "window.frame(normal).stroke.color")?,
+        slider_fill: fill(
+            &r.slider.active_track(WidgetState::NONE),
+            "slider.active_track(NONE).fill",
+        )?,
+        slider_thumb: fill(
+            &r.slider.thumb(WidgetState::NONE),
+            "slider.thumb(NONE).fill",
+        )?,
+        switch_unchecked: fill(
+            &r.switch.track(WidgetState::NONE),
+            "switch.track(NONE).fill",
+        )?,
+        switch_thumb: fill(
+            &r.switch.thumb(WidgetState::CHECKED),
+            "switch.thumb(CHECKED).fill",
+        )?,
+        progress_fill: fill(
+            &r.progress_bar.fill(WidgetState::NONE),
+            "progress_bar.fill(NONE).fill",
+        )?,
+        input_caret: hsla(r.colors.caret),
+        link_hover_fg: text_color(&link.label(WidgetState::HOVER), "link.label(HOVER).color")?,
+        link_active_fg: text_color(
+            &link.label(WidgetState::PRESSED),
+            "link.label(PRESSED).color",
+        )?,
+        separator: hsla(r.separator.color),
+        status_bar: fill(&r.status_bar.bar, "status_bar.bar.fill")?,
+        status_bar_border: stroke_color(&r.status_bar.bar, "status_bar.bar.stroke.color")?,
+    })
+}
+
+/// The `ThemeColor` fields, written by the old mapping's [`theme_color_of`].
+pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
+    Ok(theme_color_of(
+        &slice_colors(r)?,
+        &widget_colors(r)?,
+        r.is_dark(),
+        r.context.reduced_transparency,
+    ))
+}
+
+/// The global theme's values beside its colours. The sizes are the model's,
+/// which its text scale has already scaled. The window's corner radius is
+/// its frame's; the caret's blink, `None` where the theme states none, the
+/// caret's; the highlighter style fills the code editor from the text
+/// field's fill, over the window's.
 pub(crate) fn theme_scalars(r: &ResolvedTheme) -> Mapped<ThemeScalars> {
+    let frame = r.window.frame(normal_window());
     let t = &r.typography;
     let body = &t.body;
     let mono = &t.monospace;
@@ -349,19 +484,57 @@ pub(crate) fn theme_scalars(r: &ResolvedTheme) -> Mapped<ThemeScalars> {
         shadow: r.layout.shadow_enabled,
         focus_band: focus_band_of(r)?,
         overlay_scrollbars: r.scrollbar.overlay_mode,
+        window_radius: radius(&frame, "window.frame(normal).corners")?,
+        cursor_blink: caret_blink_of(
+            r.caret.blink_on_ms,
+            r.caret.blink_off_ms,
+            r.caret.blink_timeout_ms,
+        ),
+        highlight: highlight_style_of(
+            fill(&r.input.field(WidgetState::NONE), "input.field(NONE).fill")?,
+            fill(&frame, "window.frame(normal).fill")?,
+            theme_mode(r),
+        ),
     })
 }
 
-/// The gpui-component theme of the slice: [`theme_color`]'s colours and the
-/// tokens gpui-component derives from them, [`theme_scalars`]' values, and,
-/// in the slot of its mode, a `ThemeConfig` of the same values and colours.
-/// Every leaf the slice does not feed is gpui-component's default.
-pub(crate) fn to_theme(r: &ResolvedTheme) -> Mapped<GpuiTheme> {
+/// gpui-component's mode of the theme's scheme.
+fn theme_mode(r: &ResolvedTheme) -> ThemeMode {
+    if r.is_dark() {
+        ThemeMode::Dark
+    } else {
+        ThemeMode::Light
+    }
+}
+
+/// The gpui-component theme of `r`, as [`crate::to_theme`] builds it from a
+/// 0.7.2 resolved theme.
+///
+/// It sets all 140 `ThemeColor` fields (and the `tokens` gpui-component
+/// derives from them), `mode` (the theme's scheme), `font_family`,
+/// `font_size`, `mono_font_family`, `mono_font_size`, `radius`, `radius_lg`,
+/// `window_radius` (the window frame's corners), `shadow`, `focus_ring`,
+/// `scrollbar_mode`, `highlight_theme` and, where the theme states a caret
+/// blink, `cursor_blink`, and stores a `ThemeConfig` of the theme's name and
+/// the same values in the slot of its mode, for gpui-component's own mode
+/// switches; the other mode's slot stays `ThemeConfig::default()`. The sizes
+/// are the model's, which the theme's text scale has already scaled, and the
+/// colours follow the context's reduced transparency. `transparent`,
+/// `notification`, `list`, `sheet` and `motion` stay gpui-component's
+/// defaults, as [`crate::to_theme`] leaves them, and so does `cursor_blink`
+/// where the theme states no blink.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme leaves a value the theme needs unstated, or
+/// states it in a form gpui cannot take.
+pub fn to_theme(r: &ResolvedTheme) -> Mapped<GpuiTheme> {
     let tc = theme_color(r)?;
     let scalars = theme_scalars(r)?;
     let mut theme = GpuiTheme::from(&tc);
     apply_scalars(&mut theme, &scalars);
     let mut config = ThemeConfig::default();
+    config.name = SharedString::from(r.name.to_string());
     config.mode = theme.mode;
     apply_config_scalars(&mut config, &scalars);
     config.colors = theme_color_to_config_colors(&tc);
@@ -371,6 +544,376 @@ pub(crate) fn to_theme(r: &ResolvedTheme) -> Mapped<GpuiTheme> {
         theme.light_theme = Rc::new(config);
     }
     Ok(theme)
+}
+
+// ---------------------------------------------------------------------------
+// Installation
+// ---------------------------------------------------------------------------
+
+/// What [`apply`] installs from a 0.8.0 resolved theme beside the styled
+/// theme, computed when it stores the theme in [`crate::NativeTheme`], for
+/// the connector's observer to restore after an upstream rebuild: what
+/// [`crate::apply`] computes from a stored 0.7.2 theme at each restore.
+pub(crate) struct Installed {
+    pub(crate) resolved: ResolvedTheme,
+    /// The `ThemeConfig` [`to_theme`] stores in the slot of the theme's mode.
+    pub(crate) config: Rc<ThemeConfig>,
+    pub(crate) scrollbar: ScrollbarGeometry,
+    pub(crate) resizable: ResizableTheme,
+    /// The styled theme's colours, whose 12 base-palette fields the observer
+    /// restores.
+    pub(crate) palette: ThemeColor,
+    pub(crate) capped: CappedNatives,
+    pub(crate) caret_blink: Option<CursorBlink>,
+    pub(crate) tooltip_delay: Option<Duration>,
+    /// Whether the platform shows its focus ring for keyboard focus only,
+    /// and the ring has a width.
+    pub(crate) keyboard_focus_band: bool,
+}
+
+impl fmt::Debug for Installed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Installed")
+            .field("resolved", &self.resolved)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Installed {
+    /// What [`apply`] installs from `r`, whose styled theme is `theme`
+    /// ([`to_theme`] of `r`).
+    fn of(r: &ResolvedTheme, theme: &GpuiTheme) -> Mapped<Self> {
+        let config = if r.is_dark() {
+            theme.dark_theme.clone()
+        } else {
+            theme.light_theme.clone()
+        };
+        Ok(Self {
+            resolved: r.clone(),
+            config,
+            scrollbar: scrollbar_geometry(r)?,
+            resizable: resizable_theme(r)?,
+            palette: theme.colors,
+            capped: capped_natives_of(
+                widget_colors(r)?.selection,
+                slice_colors(r)?.list_selection_bg,
+            ),
+            caret_blink: caret_blink_of(
+                r.caret.blink_on_ms,
+                r.caret.blink_off_ms,
+                r.caret.blink_timeout_ms,
+            ),
+            tooltip_delay: tooltip_show_delay(r),
+            keyboard_focus_band: r.focus_ring.trigger == Some(FocusTrigger::KeyboardOnly)
+                && focus_ring_width(r)? > 0.0,
+        })
+    }
+}
+
+/// The accessibility preferences a 0.8.0 theme was resolved for, as 0.7.2's
+/// (docs/v0.8.0-spec.md §5, the table of homes: `reduce_motion` is a motion
+/// other than `Full`, `high_contrast` a contrast other than `Normal`).
+fn accessibility_of(r: &ResolvedTheme) -> AccessibilityPreferences {
+    let ctx = &r.context;
+    let mut prefs = AccessibilityPreferences::DEFAULT.clone();
+    prefs.text_scaling_factor = ctx.text_scale;
+    prefs.reduce_motion = ctx.motion != MotionPreference::Full;
+    prefs.high_contrast = ctx.contrast != Contrast::Normal;
+    prefs.reduce_transparency = ctx.reduced_transparency;
+    prefs
+}
+
+/// [`crate::apply`] for a 0.8.0 resolved theme: installs [`to_theme`] of `r`
+/// as gpui-component's global theme with the native base-layer overrides,
+/// and keeps them installed across upstream rebuilds, in the ten steps
+/// [`crate::apply`] lists, each from `r` where [`crate::apply`] reads its
+/// 0.7.2 theme.
+///
+/// The theme carries the context it was resolved for, so no accessibility
+/// preferences are passed: reduced motion is requested where its motion is
+/// other than `Full`, and [`crate::NativeTheme::accessibility`] holds the
+/// context as 0.7.2's preferences. Text scaling and reduced transparency are
+/// in the resolved values already; to follow a change of the context,
+/// resolve the theme again and call `apply` with it.
+/// [`crate::apply_accessibility`] stores the preferences it is given and
+/// forwards their reduced motion, but rebuilds no 0.8.0 theme.
+/// [`crate::NativeTheme::next_resolved`] returns the stored theme, and
+/// [`crate::NativeTheme::resolved`] and [`crate::ActiveNativeTheme::native`],
+/// which give a 0.7.2 theme, return `None` for it.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme leaves a value the connector installs
+/// unstated, or states it in a form gpui cannot take; nothing is installed
+/// then.
+pub fn apply(r: &ResolvedTheme, cx: &mut App) -> Mapped<()> {
+    let theme = to_theme(r)?;
+    let installed = crate::Variant::Next(Box::new(Installed::of(r, &theme)?));
+    let (light, dark) = if r.is_dark() {
+        (None, Some(installed))
+    } else {
+        (Some(installed), None)
+    };
+    crate::apply_inner(theme, light, dark, &accessibility_of(r), cx);
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// The crate root's accessors, each read at its home in the table of homes
+// ---------------------------------------------------------------------------
+
+/// [`crate::is_dark_resolved`]: whether the window's background lightness is
+/// below 0.5 (`colors.window.background`). [`ResolvedTheme::is_dark`] gives
+/// the scheme the theme was resolved for.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no window background.
+pub fn is_dark_resolved(r: &ResolvedTheme) -> Mapped<bool> {
+    let background = stated(r.colors.window.background, "colors.window.background")?;
+    Ok(hsla(background).l < 0.5)
+}
+
+/// [`crate::border_line_width`]: the border width (`layout.border_width`).
+#[must_use]
+pub fn border_line_width(r: &ResolvedTheme) -> f32 {
+    r.layout.border_width
+}
+
+/// [`crate::disabled_opacity`]: the whole widget's fade on top of its
+/// disabled colours (`colors.disabled_opacity`); 1.0 where the platform dims
+/// by colour alone.
+#[must_use]
+pub fn disabled_opacity(r: &ResolvedTheme) -> f32 {
+    r.colors.disabled_opacity
+}
+
+/// [`crate::border_opacity`]: the share of the text colour already folded
+/// into every stated border colour (`layout.border_opacity`).
+#[must_use]
+pub fn border_opacity(r: &ResolvedTheme) -> f32 {
+    r.layout.border_opacity
+}
+
+/// [`crate::border_shadow_enabled`]: whether drop shadows are enabled
+/// (`layout.shadow_enabled`).
+#[must_use]
+pub fn border_shadow_enabled(r: &ResolvedTheme) -> bool {
+    r.layout.shadow_enabled
+}
+
+/// [`crate::icon_sizes`]: the per-context icon sizes (`icons.sizes`), each
+/// `None` where the theme states none.
+#[must_use]
+pub fn icon_sizes(r: &ResolvedTheme) -> &IconSizes {
+    &r.icons.sizes
+}
+
+/// The four text roles of 0.7.2's `text_scale`, each the typography's style
+/// at its home, or the body's where the theme defines no such role (the
+/// table of homes, rows `text_scale.*`, `home_fallback`).
+#[derive(Clone, Copy, Debug)]
+pub struct TextScale<'a> {
+    /// `typography.caption`.
+    pub caption: &'a TextStyle,
+    /// `typography.headline`.
+    pub section_heading: &'a TextStyle,
+    /// `typography.title1`.
+    pub dialog_title: &'a TextStyle,
+    /// `typography.display`.
+    pub display: &'a TextStyle,
+}
+
+/// [`crate::text_scale`]: the four text roles 0.7.2 names.
+#[must_use]
+pub fn text_scale(r: &ResolvedTheme) -> TextScale<'_> {
+    let t = &r.typography;
+    TextScale {
+        caption: t.caption.as_ref().unwrap_or(&t.body),
+        section_heading: t.headline.as_ref().unwrap_or(&t.body),
+        dialog_title: t.title1.as_ref().unwrap_or(&t.body),
+        display: t.display.as_ref().unwrap_or(&t.body),
+    }
+}
+
+/// [`crate::line_height`]: the line height multiplier
+/// (`typography.line_height_multiplier`).
+#[must_use]
+pub fn line_height(r: &ResolvedTheme) -> f32 {
+    r.typography.line_height_multiplier
+}
+
+/// A text style's weight, where stated.
+fn text_weight(text: &TextStyle, home: &'static str) -> Mapped<u16> {
+    if text.stated.contains(TextStated::WEIGHT) {
+        Ok(text.weight)
+    } else {
+        Err(Unmapped(home))
+    }
+}
+
+/// [`crate::font_weight`]: the body text's CSS weight
+/// (`typography.body.weight`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no body weight.
+pub fn font_weight(r: &ResolvedTheme) -> Mapped<u16> {
+    text_weight(&r.typography.body, "typography.body.weight")
+}
+
+/// [`crate::mono_font_weight`]: the monospace text's CSS weight
+/// (`typography.monospace.weight`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no monospace weight.
+pub fn mono_font_weight(r: &ResolvedTheme) -> Mapped<u16> {
+    text_weight(&r.typography.monospace, "typography.monospace.weight")
+}
+
+/// [`crate::dialog_button_order`]: which end of a dialog's button row its
+/// primary button sits at (`dialog.button_order`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no order.
+pub fn dialog_button_order(r: &ResolvedTheme) -> Mapped<DialogButtonOrder> {
+    stated(r.dialog.button_order, "dialog.button_order")
+}
+
+/// [`crate::dialog_button_gap`]: the gap between a dialog's buttons, in
+/// logical pixels (`dialog.button_gap`).
+#[must_use]
+pub fn dialog_button_gap(r: &ResolvedTheme) -> f32 {
+    r.dialog.button_gap
+}
+
+/// [`crate::scrollbar_groove_width`]: the vertical scroll bar's groove width,
+/// in logical pixels (`scrollbar.track(NONE; orientation=Vertical)
+/// .min_size[0]`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no groove width.
+pub fn scrollbar_groove_width(r: &ResolvedTheme) -> Mapped<f32> {
+    let vertical = StyleQuery::<()>::new(WidgetState::NONE).orientation(Orientation::Vertical);
+    stated(
+        r.scrollbar.track(vertical).min_size[0],
+        "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
+    )
+}
+
+/// [`crate::selection_text_color`]: the text colour of selected content
+/// (`colors.selection.foreground`).
+#[must_use]
+pub fn selection_text_color(r: &ResolvedTheme) -> Color {
+    r.colors.selection.foreground
+}
+
+/// [`crate::selection_inactive_background`]: the selection's fill in a view
+/// without the focus (`colors.selection.unfocused_background`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states none.
+pub fn selection_inactive_background(r: &ResolvedTheme) -> Mapped<Color> {
+    stated(
+        r.colors.selection.unfocused_background,
+        "colors.selection.unfocused_background",
+    )
+}
+
+/// [`crate::selection_inactive_text_color`]: the text colour over the
+/// selection of a view without the focus
+/// (`colors.selection.unfocused_foreground`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states none.
+pub fn selection_inactive_text_color(r: &ResolvedTheme) -> Mapped<Color> {
+    stated(
+        r.colors.selection.unfocused_foreground,
+        "colors.selection.unfocused_foreground",
+    )
+}
+
+/// A part's fill where a rule states it for the queried state, as a colour
+/// of the model; `None` where none does.
+fn state_fill_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Color>> {
+    if !part.from_state.contains(PartStated::FILL) {
+        return Ok(None);
+    }
+    match &part.fill {
+        Paint::Solid(c) => Ok(Some(*c)),
+        _ => Err(Unmapped(home)),
+    }
+}
+
+/// [`crate::list_header_hover_background`]: the fill of a hovered
+/// column-header section, where a rule states one (`list.header(HOVER)
+/// .fill`); `None` where none does.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the fill is stated in a form other than one colour.
+pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<Color>> {
+    state_fill_color(
+        &r.list.header(WidgetState::HOVER),
+        "list.header(HOVER).fill",
+    )
+}
+
+/// [`crate::list_header_active_background`]: the fill of a pressed
+/// column-header section, where a rule states one (`list.header(PRESSED)
+/// .fill`); `None` where none does.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the fill is stated in a form other than one colour.
+pub fn list_header_active_background(r: &ResolvedTheme) -> Mapped<Option<Color>> {
+    state_fill_color(
+        &r.list.header(WidgetState::PRESSED),
+        "list.header(PRESSED).fill",
+    )
+}
+
+/// [`crate::disabled_text_color`]: the text colour of disabled elements
+/// (`colors.disabled_text`).
+#[must_use]
+pub fn disabled_text_color(r: &ResolvedTheme) -> Color {
+    r.colors.disabled_text
+}
+
+/// [`crate::focus_ring_width`]: the focus ring's stroke width, in logical
+/// pixels (`focus_ring.stroke.width`); 0 where the ring has no stroke.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the ring's stroke is per side.
+pub fn focus_ring_width(r: &ResolvedTheme) -> Mapped<f32> {
+    match &r.focus_ring.stroke {
+        Stroke::None => Ok(0.0),
+        Stroke::Uniform { width, .. } => Ok(*width),
+        _ => Err(Unmapped("focus_ring.stroke.width")),
+    }
+}
+
+/// [`crate::focus_ring_offset`]: the gap between an element's edge and its
+/// focus ring (`focus_ring.offset`).
+#[must_use]
+pub fn focus_ring_offset(r: &ResolvedTheme) -> f32 {
+    r.focus_ring.offset
+}
+
+/// [`crate::tooltip_show_delay`]: the delay between the pointer coming to
+/// rest on an element and its tooltip showing (`timings.tooltip_show_ms`);
+/// `None` where the theme states none.
+#[must_use]
+pub fn tooltip_show_delay(r: &ResolvedTheme) -> Option<Duration> {
+    r.timings
+        .tooltip_show_ms
+        .map(|ms| Duration::from_millis(u64::from(ms)))
 }
 
 /// The scroll bar's values for gpui-base.
@@ -399,9 +942,21 @@ pub(crate) fn scrollbar_geometry(r: &ResolvedTheme) -> Mapped<ScrollbarGeometry>
     }))
 }
 
+/// The resize handles' colours for gpui-base: the splitter's handle at rest
+/// and under the pointer, whose fill a theme without a rule for `HOVER`
+/// keeps from rest.
+pub(crate) fn resizable_theme(r: &ResolvedTheme) -> Mapped<ResizableTheme> {
+    let s = &r.splitter;
+    Ok(resizable_theme_of(
+        fill(&s.handle(WidgetState::NONE), "splitter.handle(NONE).fill")?,
+        fill(&s.handle(WidgetState::HOVER), "splitter.handle(HOVER).fill")?,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use gpui::{StyleRefinement, Styled as _};
+    use native_theme::next::StrokeAlign;
 
     use super::*;
 
@@ -478,6 +1033,70 @@ mod tests {
         label.from_state = TextStated::COLOR;
         assert_eq!(state_text_color(&label, "checked label")?, Some(hsla(RED)));
         Ok(())
+    }
+
+    /// A part stroked in `color`, `width` wide, aligned `align`, stated.
+    fn stroked(width: f32, color: Color, align: StrokeAlign) -> PartStyle {
+        let mut part = PartStyle::default();
+        part.stroke = Stroke::uniform_aligned(width, color, align);
+        part.stated = PartStated::STROKE;
+        part
+    }
+
+    /// A stroke inside the fill's edge: gpui's own extent, the stated
+    /// colour and width, opaque or translucent.
+    #[test]
+    fn an_inside_stroke_is_drawn_as_stated() -> Mapped<()> {
+        for color in [RED, RED.with_alpha(0.25)] {
+            let part = stroked(1.0, color, StrokeAlign::Inside);
+            assert_eq!(stroke_color(&part, "inside")?, hsla(color));
+            assert_eq!(stroke_width(&part, "inside")?, 1.0);
+        }
+        Ok(())
+    }
+
+    /// A stroke centred on the fill's edge: exact from the stated colour
+    /// where opaque; translucent, the stated colour over gpui's whole fill,
+    /// the limit the README records.
+    #[test]
+    fn a_centred_stroke_is_drawn_in_its_stated_colour() -> Mapped<()> {
+        for color in [GREEN, GREEN.with_alpha(0.2)] {
+            let part = stroked(1.001, color, StrokeAlign::Center);
+            assert_eq!(stroke_color(&part, "center")?, hsla(color));
+            assert_eq!(stroke_width(&part, "center")?, 1.001);
+        }
+        Ok(())
+    }
+
+    /// A stroke around the fill: as the centred one.
+    #[test]
+    fn an_outside_stroke_is_drawn_in_its_stated_colour() -> Mapped<()> {
+        for color in [BLUE, BLUE.with_alpha(0.5)] {
+            let part = stroked(2.0, color, StrokeAlign::Outside);
+            assert_eq!(stroke_color(&part, "outside")?, hsla(color));
+            assert_eq!(stroke_width(&part, "outside")?, 2.0);
+        }
+        Ok(())
+    }
+
+    /// An unstated stroke stays unmapped in every alignment, and a stated
+    /// absent one is no width.
+    #[test]
+    fn an_unstated_stroke_is_unmapped_in_every_alignment() {
+        for align in [
+            StrokeAlign::Inside,
+            StrokeAlign::Center,
+            StrokeAlign::Outside,
+        ] {
+            let mut part = stroked(1.0, RED, align);
+            part.stated = PartStated::default();
+            assert_eq!(stroke_color(&part, "home"), Err(Unmapped("home")));
+            assert_eq!(stroke_width(&part, "home"), Err(Unmapped("home")));
+        }
+        let mut none = PartStyle::default();
+        none.stated = PartStated::STROKE;
+        assert_eq!(stroke_width(&none, "home"), Ok(0.0));
+        assert_eq!(stroke_color(&none, "home"), Err(Unmapped("home")));
     }
 
     /// `button.hover_border_color`: without a rule for `HOVER` it is unset,

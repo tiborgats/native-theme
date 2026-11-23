@@ -182,9 +182,17 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// (`src/setting/settings.rs:465`, `src/dock/dock.rs:142`).
 #[must_use]
 pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
+    resizable_theme_of(
+        rgba_to_hsla(resolved.splitter.divider_color),
+        rgba_to_hsla(resolved.splitter.hover_color),
+    )
+}
+
+/// [`resizable_theme`] of the splitter's `divider` and `hover` colours.
+pub(crate) fn resizable_theme_of(divider: Hsla, hover: Hsla) -> ResizableTheme {
     let mut theme = ResizableTheme::default();
-    theme.handle = Some(rgba_to_hsla(resolved.splitter.divider_color));
-    theme.active_handle = Some(rgba_to_hsla(resolved.splitter.hover_color));
+    theme.handle = Some(divider);
+    theme.active_handle = Some(hover);
     theme
 }
 

@@ -215,13 +215,9 @@ pub(crate) fn coloured_text(
     text(r, font, line_height).text_color(font.color)
 }
 
-/// Each side the theme states, and no other: an unstated side leaves the
-/// receiving widget's own padding in place.
-fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
-    padding(r, sides_of(p))
-}
-
-/// [`with_padding`] of the four sides top, right, bottom, left.
+/// Each side the theme states of the four sides top, right, bottom, left,
+/// and no other: an unstated side leaves the receiving widget's own padding
+/// in place.
 pub(crate) fn padding(
     r: StyleRefinement,
     [top, right, bottom, left]: [Option<f32>; 4],
@@ -255,12 +251,7 @@ pub(crate) fn padding(
 /// height at a text-scaling factor of 1 or less; above 1 it is its minimum
 /// and the height is automatic, so layout grows the control around its drawn
 /// text and padding. Without a stated height the control keeps the toolkit's
-/// own height.
-fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> StyleRefinement {
-    height_rule(r, stated, n.accessibility.text_scale_factor())
-}
-
-/// [`with_height_rule`] at the text-scaling factor `text_scale`.
+/// own height. `text_scale` is the text-scaling factor.
 pub(crate) fn height_rule(
     r: StyleRefinement,
     stated: Option<f32>,
@@ -427,13 +418,49 @@ pub fn toggle(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
-    let r = with_height_rule(StyleRefinement::default(), Some(i.min_height), n);
-    with_coloured_text(
-        with_padding(r, &i.border.padding)
-            .rounded(px(i.border.corner_radius))
-            .border(px(i.border.line_width)),
-        &i.font,
-        n,
+    input_from(
+        &FieldFrame {
+            min_height: Some(i.min_height),
+            padding: sides_of(&i.border.padding),
+            radius: i.border.corner_radius,
+            border_width: i.border.line_width,
+        },
+        &font_of(&i.font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// The theme's values a field's frame is made of, read from either model:
+/// its stated height ([`input`], [`select`], [`combobox`]; none for
+/// [`text_area`]), the padding sides it states, its corner radius and its
+/// border width.
+pub(crate) struct FieldFrame {
+    pub(crate) min_height: Option<f32>,
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) radius: f32,
+    pub(crate) border_width: f32,
+}
+
+/// `r` with the frame `f`, its height by the control-height rule at the
+/// text-scaling factor `text_scale`.
+fn field_frame(r: StyleRefinement, f: &FieldFrame, text_scale: f32) -> StyleRefinement {
+    padding(height_rule(r, f.min_height, text_scale), f.padding)
+        .rounded(px(f.radius))
+        .border(px(f.border_width))
+}
+
+/// [`input`] of the frame `f` and the font `font`.
+pub(crate) fn input_from(
+    f: &FieldFrame,
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    coloured_text(
+        field_frame(StyleRefinement::default(), f, text_scale),
+        font,
+        line_height,
     )
 }
 
@@ -464,24 +491,39 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn text_area(n: Native<'_>) -> StyleRefinement {
     let a = &n.resolved.text_area;
-    let p = &a.border.padding;
+    text_area_from(
+        &FieldFrame {
+            min_height: None,
+            padding: sides_of(&a.border.padding),
+            radius: a.border.corner_radius,
+            border_width: a.border.line_width,
+        },
+        &font_of(&n.resolved.input.font, n),
+        n.resolved.defaults.line_height,
+    )
+}
+
+/// [`text_area`] of the frame `f`, whose padding is the stated one, and the
+/// font `font`; `f`'s height is not read.
+pub(crate) fn text_area_from(f: &FieldFrame, font: &Font<'_>, line_height: f32) -> StyleRefinement {
+    let [top, right, bottom, left] = f.padding;
     let (across, down) = (
         f32::from(Size::Medium.input_px()),
         f32::from(Size::Medium.input_py()),
     );
     let rest = |stated: Option<f32>, editor: f32| stated.map(|v| (v - editor).max(0.0));
-    let root = ResolvedPadding {
-        top: rest(p.top, down),
-        right: rest(p.right, across),
-        bottom: rest(p.bottom, down),
-        left: rest(p.left, across),
-    };
-    with_coloured_text(
-        with_padding(StyleRefinement::default(), &root)
-            .rounded(px(a.border.corner_radius))
-            .border(px(a.border.line_width)),
-        &n.resolved.input.font,
-        n,
+    let root = [
+        rest(top, down),
+        rest(right, across),
+        rest(bottom, down),
+        rest(left, across),
+    ];
+    coloured_text(
+        padding(StyleRefinement::default(), root)
+            .rounded(px(f.radius))
+            .border(px(f.border_width)),
+        font,
+        line_height,
     )
 }
 
@@ -514,11 +556,39 @@ pub fn editor(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn menu_item(n: Native<'_>) -> StyleRefinement {
     let m = &n.resolved.menu;
-    let r = row_height_rule(m.row_height, m.min_row_height, n);
-    with_text(
-        with_padding(r, &m.border.padding).gap_x(px(m.icon_text_gap)),
-        &m.font,
-        n,
+    menu_item_from(
+        &MenuRow {
+            row_height: m.row_height,
+            min_row_height: m.min_row_height,
+            padding: sides_of(&m.border.padding),
+            icon_text_gap: m.icon_text_gap,
+        },
+        &font_of(&m.font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// The theme's values [`menu_item`] is made of, read from either model.
+pub(crate) struct MenuRow {
+    pub(crate) row_height: Option<f32>,
+    pub(crate) min_row_height: Option<f32>,
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) icon_text_gap: f32,
+}
+
+/// [`menu_item`] of the row `m` and the font `font`.
+pub(crate) fn menu_item_from(
+    m: &MenuRow,
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    let r = row_height_rule(m.row_height, m.min_row_height, text_scale);
+    text(
+        padding(r, m.padding).gap_x(px(m.icon_text_gap)),
+        font,
+        line_height,
     )
 }
 
@@ -729,10 +799,25 @@ const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
-    with_padding(StyleRefinement::default(), &p.border.padding)
-        .rounded(px(p.border.corner_radius))
-        .border(px(p.border.line_width))
-        .border_color(rgba_to_hsla(p.border.color))
+    popover_from(
+        sides_of(&p.border.padding),
+        p.border.corner_radius,
+        p.border.line_width,
+        rgba_to_hsla(p.border.color),
+    )
+}
+
+/// [`popover`] of the padding sides, radius and border it is made of.
+pub(crate) fn popover_from(
+    sides: [Option<f32>; 4],
+    radius: f32,
+    border_width: f32,
+    border_color: Hsla,
+) -> StyleRefinement {
+    padding(StyleRefinement::default(), sides)
+        .rounded(px(radius))
+        .border(px(border_width))
+        .border_color(border_color)
 }
 
 /// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
@@ -744,10 +829,23 @@ pub fn popover(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     let s = &n.resolved.status_bar;
-    with_coloured_text(
-        with_padding(StyleRefinement::default(), &s.border.padding),
-        &s.font,
-        n,
+    status_bar_from(
+        sides_of(&s.border.padding),
+        &font_of(&s.font, n),
+        n.resolved.defaults.line_height,
+    )
+}
+
+/// [`status_bar`] of the padding sides and the font it is made of.
+pub(crate) fn status_bar_from(
+    sides: [Option<f32>; 4],
+    font: &Font<'_>,
+    line_height: f32,
+) -> StyleRefinement {
+    coloured_text(
+        padding(StyleRefinement::default(), sides),
+        font,
+        line_height,
     )
 }
 
@@ -787,13 +885,45 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn dialog(n: Native<'_>) -> StyleRefinement {
     let d = &n.resolved.dialog;
-    with_padding(StyleRefinement::default(), &d.border.padding)
-        .min_w(px(d.min_width))
-        .min_h(px(d.min_height))
-        .max_h(px(d.max_height))
-        .rounded(px(d.border.corner_radius))
-        .bg(rgba_to_hsla(d.background_color))
-        .border_color(rgba_to_hsla(d.border.color))
+    dialog_from(&DialogFrame {
+        padding: sides_of(&d.border.padding),
+        min_width: Some(d.min_width),
+        min_height: Some(d.min_height),
+        max_height: Some(d.max_height),
+        radius: d.border.corner_radius,
+        background: rgba_to_hsla(d.background_color),
+        border_color: rgba_to_hsla(d.border.color),
+    })
+}
+
+/// The theme's values [`dialog`] is made of, read from either model; a size
+/// the theme leaves unstated is `None`, and the dialog keeps upstream's.
+pub(crate) struct DialogFrame {
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) min_width: Option<f32>,
+    pub(crate) min_height: Option<f32>,
+    pub(crate) max_height: Option<f32>,
+    pub(crate) radius: f32,
+    pub(crate) background: Hsla,
+    pub(crate) border_color: Hsla,
+}
+
+/// [`dialog`] of the frame `d`.
+pub(crate) fn dialog_from(d: &DialogFrame) -> StyleRefinement {
+    let mut r = padding(StyleRefinement::default(), d.padding)
+        .rounded(px(d.radius))
+        .bg(d.background)
+        .border_color(d.border_color);
+    if let Some(w) = d.min_width {
+        r = r.min_w(px(w));
+    }
+    if let Some(h) = d.min_height {
+        r = r.min_h(px(h));
+    }
+    if let Some(h) = d.max_height {
+        r = r.max_h(px(h));
+    }
+    r
 }
 
 /// For `Dialog::entrance` and `AlertDialog::entrance`
@@ -843,7 +973,12 @@ pub(crate) fn input_group_button_from(radius: f32) -> StyleRefinement {
 /// `DialogFooter` (`src/dialog/footer.rs:52` → `:56`).
 #[must_use]
 pub fn dialog_footer(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().gap(px(n.resolved.dialog.button_gap))
+    dialog_footer_from(n.resolved.dialog.button_gap)
+}
+
+/// [`dialog_footer`] of the gap between the buttons `gap`.
+pub(crate) fn dialog_footer_from(gap: f32) -> StyleRefinement {
+    StyleRefinement::default().gap(px(gap))
 }
 
 /// `DialogTitle` (`src/dialog/title.rs:42-43` → `:45`): the platform's line
@@ -937,10 +1072,15 @@ pub fn table(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn progress(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.progress_bar;
+    progress_from(p.track_height, p.border.corner_radius, p.min_width)
+}
+
+/// [`progress`] of the track's height, corner radius and minimum width.
+pub(crate) fn progress_from(height: f32, radius: f32, min_width: f32) -> StyleRefinement {
     StyleRefinement::default()
-        .h(px(p.track_height))
-        .rounded(px(p.border.corner_radius))
-        .min_w(px(p.min_width))
+        .h(px(height))
+        .rounded(px(radius))
+        .min_w(px(min_width))
 }
 
 /// For `GroupBox::content_style` (`src/group_box.rs:107`), applied to the
@@ -954,11 +1094,32 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.card;
-    with_padding(StyleRefinement::default(), &c.border.padding)
-        .rounded(px(c.border.corner_radius))
-        .border(px(c.border.line_width))
-        .border_color(rgba_to_hsla(c.border.color))
-        .bg(rgba_to_hsla(c.background_color))
+    group_box_content_from(&CardFrame {
+        padding: sides_of(&c.border.padding),
+        radius: c.border.corner_radius,
+        border_width: Some(c.border.line_width),
+        border_color: Some(rgba_to_hsla(c.border.color)),
+        background: rgba_to_hsla(c.background_color),
+    })
+}
+
+/// The theme's values [`group_box_content`] is made of, read from either
+/// model.
+pub(crate) struct CardFrame {
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) radius: f32,
+    pub(crate) border_width: Option<f32>,
+    pub(crate) border_color: Option<Hsla>,
+    pub(crate) background: Hsla,
+}
+
+/// [`group_box_content`] of the card `c`; with no border, the group box keeps gpui-component's.
+pub(crate) fn group_box_content_from(c: &CardFrame) -> StyleRefinement {
+    let r = padding(StyleRefinement::default(), c.padding).rounded(px(c.radius));
+    match (c.border_width, c.border_color) {
+        (Some(width), Some(color)) => r.border(px(width)).border_color(color).bg(c.background),
+        _ => r.bg(c.background),
+    }
 }
 
 /// For `AccordionItem::title_style` (`src/accordion.rs:220`, applied `:301-307`).
@@ -972,9 +1133,12 @@ pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
     let e = &n.resolved.expander;
-    StyleRefinement::default()
-        .h(px(e.header_height))
-        .text_color(rgba_to_hsla(e.font.color))
+    accordion_title_from(e.header_height, rgba_to_hsla(e.font.color))
+}
+
+/// [`accordion_title`] of the header's height and text colour.
+pub(crate) fn accordion_title_from(height: f32, text: Hsla) -> StyleRefinement {
+    StyleRefinement::default().h(px(height)).text_color(text)
 }
 
 /// The edge of an `Accordion` and of each of its `AccordionItem`s:
@@ -990,7 +1154,12 @@ pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
 /// changes no pixel; it is what honours a source that states one of its own.
 #[must_use]
 pub fn accordion(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().border_color(rgba_to_hsla(n.resolved.expander.border.color))
+    accordion_from(rgba_to_hsla(n.resolved.expander.border.color))
+}
+
+/// [`accordion`] of the expander's border colour.
+pub(crate) fn accordion_from(border: Hsla) -> StyleRefinement {
+    StyleRefinement::default().border_color(border)
 }
 
 /// For `AccordionItem::hover` (`src/accordion.rs:230-233`): the title row's
@@ -1001,8 +1170,14 @@ pub fn accordion(n: Native<'_>) -> StyleRefinement {
 /// `item.hover(|_| geometry::accordion_hover(n))`.
 #[must_use]
 pub fn accordion_hover(n: Native<'_>) -> StyleRefinement {
-    match n.resolved.expander.hover_background {
-        Some(fill) => StyleRefinement::default().bg(rgba_to_hsla(fill)),
+    accordion_hover_from(n.resolved.expander.hover_background.map(rgba_to_hsla))
+}
+
+/// [`accordion_hover`] of the hovered header's fill, `None` where the theme
+/// states none.
+pub(crate) fn accordion_hover_from(fill: Option<Hsla>) -> StyleRefinement {
+    match fill {
+        Some(fill) => StyleRefinement::default().bg(fill),
         None => StyleRefinement::default(),
     }
 }
@@ -1085,20 +1260,58 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// The edge is `combo_box.border.line_width` wide, over upstream's `border_1`
 /// (`select.rs:569`, `combobox.rs:1005`): a platform whose trigger has no line
 /// at rest (adwaita's 0, `docs/platform-facts.md` §2.24) draws none.
-fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
+fn combo_box_metrics(n: Native<'_>) -> ComboFrame {
     let c = &n.resolved.combo_box;
-    let r = with_height_rule(StyleRefinement::default(), Some(c.min_height), n);
-    let padding = match c.arrow_area_width {
-        Some(_) => ResolvedPadding {
-            right: None,
-            ..c.border.padding
+    ComboFrame {
+        field: FieldFrame {
+            min_height: Some(c.min_height),
+            padding: sides_of(&c.border.padding),
+            radius: c.border.corner_radius,
+            border_width: c.border.line_width,
         },
-        None => c.border.padding,
+        arrow_area: c.arrow_area_width.is_some(),
+        min_width: c.min_width,
+    }
+}
+
+/// The theme's values a combo box trigger's frame is made of, read from
+/// either model: the field's frame, whether the theme states an arrow
+/// column, and the minimum width.
+pub(crate) struct ComboFrame {
+    pub(crate) field: FieldFrame,
+    pub(crate) arrow_area: bool,
+    pub(crate) min_width: f32,
+}
+
+/// [`combo_box_metrics`]' refinement of the frame `c`.
+fn combo_frame(c: &ComboFrame, text_scale: f32) -> StyleRefinement {
+    let [top, right, bottom, left] = c.field.padding;
+    let right = if c.arrow_area { None } else { right };
+    let f = FieldFrame {
+        padding: [top, right, bottom, left],
+        ..c.field
     };
-    with_padding(r, &padding)
-        .min_w(px(c.min_width))
-        .rounded(px(c.border.corner_radius))
-        .border(px(c.border.line_width))
+    field_frame(StyleRefinement::default(), &f, text_scale).min_w(px(c.min_width))
+}
+
+/// [`select`] of the frame `c` and the font `font`.
+pub(crate) fn select_from(
+    c: &ComboFrame,
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    coloured_text(combo_frame(c, text_scale), font, line_height)
+}
+
+/// [`combobox`] of the frame `c` and the font `font`.
+pub(crate) fn combobox_from(
+    c: &ComboFrame,
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    text(combo_frame(c, text_scale), font, line_height)
 }
 
 /// `Select` (`src/select.rs:569-579` → `:580`); the arrow is an inner element,
@@ -1125,7 +1338,12 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
 /// when disabled (`select.rs:511-513`) and a child wins over the trigger.
 #[must_use]
 pub fn select(n: Native<'_>) -> StyleRefinement {
-    with_coloured_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
+    select_from(
+        &combo_box_metrics(n),
+        &font_of(&n.resolved.combo_box.font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
 }
 
 /// `Combobox` (`src/combobox.rs:999-1015` → `:1016`): [`select`]'s metrics, and
@@ -1145,7 +1363,12 @@ pub fn select(n: Native<'_>) -> StyleRefinement {
 /// [`combo_box_fill`] instead.
 #[must_use]
 pub fn combobox(n: Native<'_>) -> StyleRefinement {
-    with_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
+    combobox_from(
+        &combo_box_metrics(n),
+        &font_of(&n.resolved.combo_box.font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
 }
 
 /// `TitleBar` (`src/title_bar.rs:339` → `:349`); the height has no theme field.
@@ -1185,12 +1408,19 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn title_bar_inactive(n: Native<'_>) -> StyleRefinement {
     let w = &n.resolved.window;
+    title_bar_inactive_from(
+        rgba_to_hsla(w.inactive_title_bar_background),
+        rgba_to_hsla(w.background_color),
+        rgba_to_hsla(w.inactive_title_bar_text_color),
+    )
+}
+
+/// [`title_bar_inactive`] of the inactive bar's fill `bar` and text colour
+/// `text`, over the window's fill `background`.
+pub(crate) fn title_bar_inactive_from(bar: Hsla, background: Hsla, text: Hsla) -> StyleRefinement {
     StyleRefinement::default()
-        .bg(title_bar_gradient(
-            rgba_to_hsla(w.inactive_title_bar_background),
-            rgba_to_hsla(w.background_color),
-        ))
-        .text_color(rgba_to_hsla(w.inactive_title_bar_text_color))
+        .bg(title_bar_gradient(bar, background))
+        .text_color(text)
 }
 
 /// The weight of the bar's own colour in the colour its gradient starts
@@ -1254,7 +1484,33 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 #[must_use]
 pub fn toolbar(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
-    let r = with_coloured_text(StyleRefinement::default(), &t.font, n).h_auto();
+    toolbar_from(
+        &ToolbarFrame {
+            bar_height: t.bar_height,
+            item_gap: t.item_gap,
+            padding: sides_of(&t.border.padding),
+            background: rgba_to_hsla(t.background_color),
+            border_width: t.border.line_width,
+            border_color: rgba_to_hsla(t.border.color),
+        },
+        &font_of(&t.font, n),
+        n.resolved.defaults.line_height,
+    )
+}
+
+/// The theme's values [`toolbar`] is made of, read from either model.
+pub(crate) struct ToolbarFrame {
+    pub(crate) bar_height: Option<f32>,
+    pub(crate) item_gap: Option<f32>,
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) background: Hsla,
+    pub(crate) border_width: f32,
+    pub(crate) border_color: Hsla,
+}
+
+/// [`toolbar`] of the bar `t` and the font `font`.
+pub(crate) fn toolbar_from(t: &ToolbarFrame, font: &Font<'_>, line_height: f32) -> StyleRefinement {
+    let r = coloured_text(StyleRefinement::default(), font, line_height).h_auto();
     let r = match t.bar_height {
         Some(h) => r.min_h(px(h)),
         None => r.min_h_auto(),
@@ -1263,10 +1519,10 @@ pub fn toolbar(n: Native<'_>) -> StyleRefinement {
         Some(g) => r.gap(px(g)),
         None => r,
     };
-    with_padding(r, &t.border.padding)
-        .bg(rgba_to_hsla(t.background_color))
-        .border_b(px(t.border.line_width))
-        .border_color(rgba_to_hsla(t.border.color))
+    padding(r, t.padding)
+        .bg(t.background)
+        .border_b(px(t.border_width))
+        .border_color(t.border_color)
 }
 
 // --- Size helpers (spec §9.3) -------------------------------------------------
@@ -1275,7 +1531,12 @@ pub fn toolbar(n: Native<'_>) -> StyleRefinement {
 /// 0.6.4 merged the two sizing arms 0.6.0 had at `:166` and `:195`).
 #[must_use]
 pub fn spinner_size(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.spinner.diameter))
+    spinner_size_from(n.resolved.spinner.diameter)
+}
+
+/// [`spinner_size`] of the spinner's diameter.
+pub(crate) fn spinner_size_from(diameter: f32) -> Size {
+    Size::Size(px(diameter))
 }
 
 /// `DataTable::with_size`: `list.row_height` as `Size::Size`, or upstream's own
@@ -1388,7 +1649,7 @@ fn table_row_height(stated: Pixels, font: &ResolvedFontSpec, n: Native<'_>) -> P
 /// `defaults.icon_sizes.toolbar` where a platform states no toolbar-specific size.
 #[must_use]
 pub fn icon_size_toolbar(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.toolbar.icon_size))
+    icon_size(n.resolved.toolbar.icon_size)
 }
 
 /// `Icon::with_size` for small icons (`defaults.icon_sizes.small`).
@@ -1482,10 +1743,23 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
 /// platform's.
 #[must_use]
 pub fn input_height(n: Native<'_>) -> StyleRefinement {
-    with_height_rule(
-        with_line_height(StyleRefinement::default(), n),
+    input_height_from(
         Some(n.resolved.input.min_height),
-        n,
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// [`input_height`] of the stated height `min_height`.
+pub(crate) fn input_height_from(
+    min_height: Option<f32>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    height_rule(
+        line_height_of(StyleRefinement::default(), line_height),
+        min_height,
+        text_scale,
     )
 }
 
@@ -1520,15 +1794,37 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
     let i = &n.resolved.input;
+    field_fill(
+        &FieldFill {
+            rest: rgba_to_hsla(i.background_color),
+            disabled_fill: i.disabled_background.map(rgba_to_hsla),
+            disabled_text: rgba_to_hsla(i.disabled_text_color),
+            disabled_opacity: i.disabled_opacity,
+        },
+        disabled,
+    )
+}
+
+/// The theme's values a field's fill is made of ([`input_fill`],
+/// [`combo_box_fill`]), read from either model: the fill at rest, the
+/// disabled fill where the theme states one, the disabled text colour and
+/// opacity.
+pub(crate) struct FieldFill {
+    pub(crate) rest: Hsla,
+    pub(crate) disabled_fill: Option<Hsla>,
+    pub(crate) disabled_text: Hsla,
+    pub(crate) disabled_opacity: f32,
+}
+
+/// [`input_fill`] and [`combo_box_fill`] of the fill `f`.
+pub(crate) fn field_fill(f: &FieldFill, disabled: bool) -> StyleRefinement {
     if disabled {
         StyleRefinement::default()
-            .bg(rgba_to_hsla(
-                i.disabled_background.unwrap_or(i.background_color),
-            ))
-            .text_color(rgba_to_hsla(i.disabled_text_color))
-            .opacity(unit(i.disabled_opacity))
+            .bg(f.disabled_fill.unwrap_or(f.rest))
+            .text_color(f.disabled_text)
+            .opacity(unit(f.disabled_opacity))
     } else {
-        StyleRefinement::default().bg(rgba_to_hsla(i.background_color))
+        StyleRefinement::default().bg(f.rest)
     }
 }
 
@@ -1560,16 +1856,15 @@ pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
 #[must_use]
 pub fn combo_box_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
     let c = &n.resolved.combo_box;
-    if disabled {
-        StyleRefinement::default()
-            .bg(rgba_to_hsla(
-                c.disabled_background.unwrap_or(c.background_color),
-            ))
-            .text_color(rgba_to_hsla(c.disabled_text_color))
-            .opacity(unit(c.disabled_opacity))
-    } else {
-        StyleRefinement::default().bg(rgba_to_hsla(c.background_color))
-    }
+    field_fill(
+        &FieldFill {
+            rest: rgba_to_hsla(c.background_color),
+            disabled_fill: c.disabled_background.map(rgba_to_hsla),
+            disabled_text: rgba_to_hsla(c.disabled_text_color),
+            disabled_opacity: c.disabled_opacity,
+        },
+        disabled,
+    )
 }
 
 /// An opacity for gpui: clamped to 0–1, and 1 (no fade) where it is not a
@@ -1687,20 +1982,27 @@ pub(crate) fn button_checked_from(
 /// (`:836-850`). Apply it before [`toolbar_button_checked`].
 #[must_use]
 pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement {
-    if n.resolved.toolbar.button_hover_border_color.is_none() {
+    let b = &n.resolved.button;
+    toolbar_button_rest_from(
+        n.resolved.toolbar.button_hover_border_color.is_some(),
+        b.border.line_width,
+        sides_of(&b.border.padding),
+    )
+}
+
+/// [`toolbar_button_rest`] where the theme states the hover outline
+/// (`outlined`), of the button's border width `w` and padding sides.
+pub(crate) fn toolbar_button_rest_from(
+    outlined: bool,
+    w: f32,
+    [top, right, bottom, left]: [Option<f32>; 4],
+) -> StyleRefinement {
+    if !outlined {
         return StyleRefinement::default();
     }
-    let b = &n.resolved.button;
-    let w = b.border.line_width;
-    let p = &b.border.padding;
     let less = |side: Option<f32>| side.map(|v| (v - w).max(0.0));
-    let inside = ResolvedPadding {
-        top: less(p.top),
-        right: less(p.right),
-        bottom: less(p.bottom),
-        left: less(p.left),
-    };
-    with_padding(StyleRefinement::default(), &inside)
+    let inside = [less(top), less(right), less(bottom), less(left)];
+    padding(StyleRefinement::default(), inside)
         .bg(Hsla::transparent_black())
         .border(px(w))
         .border_color(Hsla::transparent_black())
@@ -1723,18 +2025,43 @@ pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement {
 pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
     let b = &n.resolved.button;
+    toolbar_button_checked_from(&ToolbarChecked {
+        button_checked_background: t.button_checked_background.map(rgba_to_hsla),
+        button_active_background: t.button_active_background.map(rgba_to_hsla),
+        button_checked_border_color: t.button_checked_border_color.map(rgba_to_hsla),
+        checked_text_color: b.checked_text_color.map(rgba_to_hsla),
+        active_text_color: rgba_to_hsla(b.active_text_color),
+        active_background: b.active_background.map(rgba_to_hsla),
+    })
+}
+
+/// The theme's values [`toolbar_button_checked`] is made of, read from either
+/// model, each named after its 0.7.2 field and `None` where the theme states
+/// none: the toolbar's (`toolbar.button_*`) and the push button's
+/// (`button.checked_text_color`, `button.active_text_color`,
+/// `button.active_background`).
+pub(crate) struct ToolbarChecked {
+    pub(crate) button_checked_background: Option<Hsla>,
+    pub(crate) button_active_background: Option<Hsla>,
+    pub(crate) button_checked_border_color: Option<Hsla>,
+    pub(crate) checked_text_color: Option<Hsla>,
+    pub(crate) active_text_color: Hsla,
+    pub(crate) active_background: Option<Hsla>,
+}
+
+/// [`toolbar_button_checked`] of the values `t`.
+pub(crate) fn toolbar_button_checked_from(t: &ToolbarChecked) -> StyleRefinement {
     let r = match t.button_checked_background {
-        Some(_) => StyleRefinement::default().text_color(rgba_to_hsla(
-            b.checked_text_color.unwrap_or(b.active_text_color),
-        )),
+        Some(_) => StyleRefinement::default()
+            .text_color(t.checked_text_color.unwrap_or(t.active_text_color)),
         None => StyleRefinement::default(),
     };
     match t
         .button_checked_background
         .or(t.button_active_background)
-        .or(b.active_background)
+        .or(t.active_background)
     {
-        Some(fill) => checked_pen(r.bg(rgba_to_hsla(fill)), t),
+        Some(fill) => checked_pen(r.bg(fill), t),
         None => checked_pen(r, t),
     }
 }
@@ -1777,14 +2104,14 @@ pub(crate) fn default_button_rest_from(
 }
 
 /// A row's height for [`menu_item`]: `stated`, a fixed height, by the
-/// control-height rule ([`with_height_rule`]); where it is `None`, at least
+/// control-height rule ([`height_rule`]); where it is `None`, at least
 /// `least`, a least height the content grows past (`min_h` is the border
 /// box); nothing where both are `None`. A stated `menu.row_height` wins over
 /// `menu.min_row_height` (docs/platform-facts.md §2.6).
-fn row_height_rule(stated: Option<f32>, least: Option<f32>, n: Native<'_>) -> StyleRefinement {
+fn row_height_rule(stated: Option<f32>, least: Option<f32>, text_scale: f32) -> StyleRefinement {
     match (stated, least) {
         (None, Some(least)) => StyleRefinement::default().min_h(px(least)),
-        _ => with_height_rule(StyleRefinement::default(), stated, n),
+        _ => height_rule(StyleRefinement::default(), stated, text_scale),
     }
 }
 
@@ -1792,12 +2119,9 @@ fn row_height_rule(stated: Option<f32>, least: Option<f32>, n: Native<'_>) -> St
 /// border colour `toolbar.button_checked_border_color` where the theme states
 /// it, drawn at the width [`toolbar_button_rest`] gives the border; `r` as it
 /// is where the theme states none.
-fn checked_pen(
-    r: StyleRefinement,
-    t: &native_theme::theme::ResolvedToolbarTheme,
-) -> StyleRefinement {
+fn checked_pen(r: StyleRefinement, t: &ToolbarChecked) -> StyleRefinement {
     match t.button_checked_border_color {
-        Some(pen) => r.border_color(rgba_to_hsla(pen)),
+        Some(pen) => r.border_color(pen),
         None => r,
     }
 }
@@ -1850,12 +2174,24 @@ pub(crate) fn list_item_selected_from(text: Hsla) -> StyleRefinement {
 #[must_use]
 pub fn link(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.link;
-    let r = with_text(StyleRefinement::default(), &l.font, n).bg(rgba_to_hsla(l.background_color));
-    if l.underline_enabled {
-        r
-    } else {
-        r.text_decoration_0()
-    }
+    link_from(
+        &font_of(&l.font, n),
+        n.resolved.defaults.line_height,
+        rgba_to_hsla(l.background_color),
+        l.underline_enabled,
+    )
+}
+
+/// [`link`] of the font `font`, the fill `background`, and whether the link
+/// is underlined at rest.
+pub(crate) fn link_from(
+    font: &Font<'_>,
+    line_height: f32,
+    background: Hsla,
+    underlined: bool,
+) -> StyleRefinement {
+    let r = text(StyleRefinement::default(), font, line_height).bg(background);
+    if underlined { r } else { r.text_decoration_0() }
 }
 
 // --- Layout accessors (spec §9.5) ---------------------------------------------

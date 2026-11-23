@@ -126,7 +126,7 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "native-theme-gpui/variants.rs:134",
+                "native-theme-gpui/variants.rs:142",
             ),
         ],
         ButtonKind::Link => vec![claim(
@@ -287,13 +287,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_hover",
                 t.button_hover,
-                "native-theme-gpui/variants.rs:135",
+                "native-theme-gpui/variants.rs:143",
             ),
             claim(
                 "active",
                 "button_active",
                 t.button_active,
-                "native-theme-gpui/variants.rs:136",
+                "native-theme-gpui/variants.rs:144",
             ),
         ],
         ButtonKind::Link => vec![
@@ -369,7 +369,7 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&ResolvedButtonTheme>) -> Ve
             "border",
             Some(b.border.color),
             Some(b.border.line_width),
-            "native-theme-gpui/geometry.rs:294",
+            "native-theme-gpui/geometry.rs:285",
         )
     });
     let hovered = match (kind, native.is_some()) {
@@ -379,7 +379,7 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&ResolvedButtonTheme>) -> Ve
                 "hover_border_color",
                 b.hover_border_color,
                 Some(b.border.line_width),
-                "native-theme-gpui/variants.rs:144",
+                "native-theme-gpui/variants.rs:152",
             )
         }),
         (ButtonKind::Default | ButtonKind::DefaultOutline, true) => Some(claim(
@@ -668,20 +668,20 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
         "bg",
         "default_button_background",
         b.default_button_background,
-        "native-theme-gpui/geometry.rs:1757",
+        "native-theme-gpui/geometry.rs:2084",
     ));
     let info = match stated_claim(
         "text",
         "default_button_text_color",
         b.default_button_text_color,
-        "native-theme-gpui/variants.rs:258",
+        "native-theme-gpui/variants.rs:274",
     ) {
         Some(text) => info.color(text),
         None => info.color(claim(
             "text",
             "color",
             stated(b.font.color),
-            "native-theme-gpui/variants.rs:258",
+            "native-theme-gpui/variants.rs:274",
         )),
     };
     let rest = edge_claim(
@@ -689,7 +689,7 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
         "default_button_border_color",
         b.default_button_border_color,
         width,
-        "native-theme-gpui/geometry.rs:1758",
+        "native-theme-gpui/geometry.rs:2085",
     )
     .or_else(|| {
         edge_claim(
@@ -697,7 +697,7 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
             "border",
             Some(b.border.color),
             width,
-            "native-theme-gpui/geometry.rs:1759",
+            "native-theme-gpui/geometry.rs:2086",
         )
     });
     let hovered = edge_claim(
@@ -705,7 +705,7 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
         "hover_border_color",
         b.hover_border_color,
         width,
-        "native-theme-gpui/variants.rs:259",
+        "native-theme-gpui/variants.rs:275",
     )
     .or_else(|| {
         edge_claim(
@@ -713,7 +713,7 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
             "default_button_border_color",
             b.default_button_border_color,
             width,
-            "native-theme-gpui/variants.rs:255",
+            "native-theme-gpui/variants.rs:271",
         )
     })
     .or_else(|| {
@@ -722,7 +722,7 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
             "border",
             Some(b.border.color),
             width,
-            "native-theme-gpui/variants.rs:255",
+            "native-theme-gpui/variants.rs:271",
         )
     });
     let info = info.colors(rest).colors(hovered);
@@ -731,13 +731,13 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
             "hover",
             "default_button_background",
             b.default_button_background,
-            "native-theme-gpui/variants.rs:254",
+            "native-theme-gpui/variants.rs:270",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "native-theme-gpui/variants.rs:329",
+            "native-theme-gpui/variants.rs:353",
         ));
     let edge_note = if b.border.line_width <= 0.0 {
         "none in any state: button.border.line_width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)"
@@ -801,7 +801,7 @@ pub(super) fn native_toolbar(
         "hover bg",
         "button_hover_background",
         native.and_then(|r| r.toolbar.button_hover_background),
-        "native-theme-gpui/variants.rs:163",
+        "native-theme-gpui/variants.rs:171",
     ) {
         Some(hover) => info.color(hover),
         None => info.color(claim(
@@ -815,7 +815,7 @@ pub(super) fn native_toolbar(
         "active bg",
         "button_active_background",
         native.and_then(|r| r.toolbar.button_active_background),
-        "native-theme-gpui/variants.rs:165",
+        "native-theme-gpui/variants.rs:173",
     ) {
         Some(active) => info.color(active),
         None => info.color(claim(
@@ -831,7 +831,7 @@ pub(super) fn native_toolbar(
             "button_hover_border_color",
             r.toolbar.button_hover_border_color,
             Some(r.button.border.line_width),
-            "native-theme-gpui/variants.rs:164",
+            "native-theme-gpui/variants.rs:172",
         )
     });
     toolbar_variant(info.colors(edge))
@@ -913,7 +913,7 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
         "checked fill",
         "button_checked_background",
         native.and_then(|r| r.toolbar.button_checked_background),
-        "native-theme-gpui/geometry.rs:1733",
+        "native-theme-gpui/geometry.rs:2060",
     );
     let info = match (checked_fill, native) {
         (Some(fill), Some(r)) => {
@@ -921,14 +921,14 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
                 "checked text",
                 "checked_text_color",
                 r.button.checked_text_color,
-                "native-theme-gpui/geometry.rs:1728",
+                "native-theme-gpui/geometry.rs:2056",
             ) {
                 Some(text) => text,
                 None => claim(
                     "checked text",
                     "active_text_color",
                     stated(r.button.active_text_color),
-                    "native-theme-gpui/geometry.rs:1728",
+                    "native-theme-gpui/geometry.rs:2056",
                 ),
             };
             info.color(fill).color(text)
@@ -938,7 +938,7 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
                 "selected bg",
                 "button_active_background",
                 native.and_then(|r| r.toolbar.button_active_background),
-                "native-theme-gpui/variants.rs:165",
+                "native-theme-gpui/variants.rs:173",
             ) {
                 Some(active) => info.color(active),
                 None => info.color(claim(
@@ -967,7 +967,7 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
                 .button_hover_border_color
                 .map(|_| r.button.border.line_width)
         }),
-        "native-theme-gpui/geometry.rs:1799",
+        "native-theme-gpui/geometry.rs:2123",
     ));
     info.not_themeable(
         "hover outline while checked",

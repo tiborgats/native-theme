@@ -617,8 +617,9 @@ fn every_geometry_builder_has_a_note() {
 }
 
 /// The `pub fn`s of geometry.rs whose refinement sets a font's text: each
-/// that calls `with_text` or `with_coloured_text`, and each that calls
-/// another such builder (`toggle` is `button_label`'s), in source order.
+/// that calls `text`, the function `with_text` and `with_coloured_text` hand
+/// a font to, and each that calls another function that does, public or not
+/// (`toggle` is `button_label`'s, `input` is `input_from`'s), in source order.
 fn text_builders() -> Vec<&'static str> {
     let code = blanked(GEOMETRY);
     let items = fn_items(GEOMETRY, &code);
@@ -638,12 +639,12 @@ fn text_builders() -> Vec<&'static str> {
     let public = public_fns(GEOMETRY);
     let mut found: Vec<&str> = Vec::new();
     loop {
-        let more: Vec<&str> = public
+        let more: Vec<&str> = items
             .iter()
-            .copied()
+            .map(|f| f.name)
             .filter(|name| !found.contains(name))
             .filter(|name| {
-                ["with_text", "with_coloured_text"]
+                ["text"]
                     .iter()
                     .chain(&found)
                     .any(|callee| calls(name, callee))

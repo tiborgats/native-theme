@@ -1,5 +1,5 @@
-//! The `geometry` builders of the slice's widgets, and the values the
-//! connector feeds the slice's `variants` with, from the 0.8.0 model: each
+//! The `geometry` builders, and the values the connector feeds its
+//! `variants` with, from the 0.8.0 model: each
 //! reads what its 0.7.2 builder reads, at its home in the table of homes, and
 //! hands it to the function that builder hands its own reads to.
 //!
@@ -8,17 +8,21 @@
 //! context, where the 0.7.2 builders take it from the accessibility
 //! preferences.
 
-use gpui::{Hsla, Pixels, StyleRefinement};
+use gpui::{Hsla, Pixels, StyleRefinement, px};
 use gpui_component::Size;
-use native_theme::next::{PartStated, PartStyle, ResolvedTheme, TextStated, WidgetState};
+use gpui_component::dialog::DialogEntrance;
+use native_theme::next::{
+    DecorationKind, DialogEntranceStyle, IconStated, PartStated, PartStyle, ResolvedTheme,
+    TextStated, WidgetState,
+};
 
 use super::{
-    Mapped, Unmapped, fill, font, hsla, padding, radius, scrollbar_geometry, state_fill,
-    state_stroke_color, state_text_color, stated, stroke_color, stroke_width, text_color,
-    text_size, uncoloured_font,
+    Mapped, Unmapped, fill, font, hsla, normal_window, padding, radius, scrollbar_geometry,
+    state_fill, state_stroke_color, state_text_color, stated, stroke_color, stroke_width,
+    text_color, text_size, uncoloured_font,
 };
 use crate::geometry;
-use crate::variants::DefaultButtonStates;
+use crate::variants::{DefaultButtonStates, ToolbarButtonStates};
 
 /// `defaults.line_height`'s home.
 fn line_height(r: &ResolvedTheme) -> f32 {
@@ -340,6 +344,466 @@ pub(crate) fn window_margin(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
 /// [`crate::geometry::section_gap`].
 pub(crate) fn section_gap(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
     Ok(geometry::layout_metric(r.layout.section_gap))
+}
+
+/// [`crate::geometry::input`].
+pub(crate) fn input(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let field = r.input.field(WidgetState::NONE);
+    Ok(geometry::input_from(
+        &geometry::FieldFrame {
+            min_height: field.min_size[1],
+            padding: padding(&field),
+            radius: radius(&field, "input.field(NONE).corners")?,
+            border_width: stroke_width(&field, "input.field(NONE).stroke.width")?,
+        },
+        &font(&r.input.text(WidgetState::NONE), "input.text(NONE)")?,
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::text_area`]: the multi-line field's frame, the
+/// single-line field's font, as the 0.7.2 builder reads them.
+pub(crate) fn text_area(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let field = r.text_area.field(WidgetState::NONE);
+    Ok(geometry::text_area_from(
+        &geometry::FieldFrame {
+            min_height: None,
+            padding: padding(&field),
+            radius: radius(&field, "text_area.field(NONE).corners")?,
+            border_width: stroke_width(&field, "text_area.field(NONE).stroke.width")?,
+        },
+        &font(&r.input.text(WidgetState::NONE), "input.text(NONE)")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::input_height`].
+pub(crate) fn input_height(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::input_height_from(
+        r.input.field(WidgetState::NONE).min_size[1],
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::input_fill`]: `input.disabled_background`, a soft
+/// option, where a rule states it for `DISABLED` (module doc of `next`), else
+/// unset, so the fill at rest stands in as on the 0.7.2 path.
+pub(crate) fn input_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleRefinement> {
+    let i = &r.input;
+    Ok(geometry::field_fill(
+        &geometry::FieldFill {
+            rest: fill(&i.field(WidgetState::NONE), "input.field(NONE).fill")?,
+            disabled_fill: state_fill(
+                &i.field(WidgetState::DISABLED),
+                "input.field(DISABLED).fill",
+            )?,
+            disabled_text: text_color(
+                &i.text(WidgetState::DISABLED),
+                "input.text(DISABLED).color",
+            )?,
+            disabled_opacity: stated(i.disabled_opacity, "input.disabled_opacity")?,
+        },
+        disabled,
+    ))
+}
+
+/// The combo box trigger's frame, as [`crate::geometry::select`] and
+/// [`crate::geometry::combobox`] read it.
+fn combo_frame(r: &ResolvedTheme) -> Mapped<geometry::ComboFrame> {
+    let c = &r.combo_box;
+    let field = c.field(WidgetState::NONE);
+    Ok(geometry::ComboFrame {
+        field: geometry::FieldFrame {
+            min_height: field.min_size[1],
+            padding: padding(&field),
+            radius: radius(&field, "combo_box.field(NONE).corners")?,
+            border_width: stroke_width(&field, "combo_box.field(NONE).stroke.width")?,
+        },
+        arrow_area: c.arrow_area_width.is_some(),
+        min_width: stated(field.min_size[0], "combo_box.field(NONE).min_size[0]")?,
+    })
+}
+
+/// [`crate::geometry::select`].
+pub(crate) fn select(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::select_from(
+        &combo_frame(r)?,
+        &font(
+            &r.combo_box.label(WidgetState::NONE),
+            "combo_box.label(NONE)",
+        )?,
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::combobox`].
+pub(crate) fn combobox(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::combobox_from(
+        &combo_frame(r)?,
+        &uncoloured_font(
+            &r.combo_box.label(WidgetState::NONE),
+            "combo_box.label(NONE)",
+        )?,
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::combo_box_fill`]: `combo_box.disabled_background` as
+/// [`input_fill`] reads the input's.
+pub(crate) fn combo_box_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleRefinement> {
+    let c = &r.combo_box;
+    Ok(geometry::field_fill(
+        &geometry::FieldFill {
+            rest: fill(&c.field(WidgetState::NONE), "combo_box.field(NONE).fill")?,
+            disabled_fill: state_fill(
+                &c.field(WidgetState::DISABLED),
+                "combo_box.field(DISABLED).fill",
+            )?,
+            disabled_text: text_color(
+                &c.label(WidgetState::DISABLED),
+                "combo_box.label(DISABLED).color",
+            )?,
+            disabled_opacity: stated(c.disabled_opacity, "combo_box.disabled_opacity")?,
+        },
+        disabled,
+    ))
+}
+
+/// [`crate::geometry::menu_item`]: `menu.row_height` at the item's maximum
+/// height, an exact height being stated as both, and `menu.min_row_height`
+/// at its minimum, which the height rule takes only where no exact height is
+/// stated, as 0.7.2's builder does.
+pub(crate) fn menu_item(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let m = &r.menu;
+    let item = m.item(WidgetState::NONE);
+    Ok(geometry::menu_item_from(
+        &geometry::MenuRow {
+            row_height: item.max_size[1],
+            min_row_height: item.min_size[1],
+            padding: padding(&item),
+            icon_text_gap: m.icon_text_gap,
+        },
+        &uncoloured_font(&m.item_label(WidgetState::NONE), "menu.item_label(NONE)")?,
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::popover`].
+pub(crate) fn popover(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let panel = &r.popover.panel;
+    Ok(geometry::popover_from(
+        padding(panel),
+        radius(panel, "popover.panel.corners")?,
+        stroke_width(panel, "popover.panel.stroke.width")?,
+        stroke_color(panel, "popover.panel.stroke.color")?,
+    ))
+}
+
+/// [`crate::geometry::dialog`]: the panel's sizes where stated.
+pub(crate) fn dialog(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let panel = &r.dialog.panel;
+    Ok(geometry::dialog_from(&geometry::DialogFrame {
+        padding: padding(panel),
+        min_width: panel.min_size[0],
+        min_height: panel.min_size[1],
+        max_height: panel.max_size[1],
+        radius: radius(panel, "dialog.panel.corners")?,
+        background: fill(panel, "dialog.panel.fill")?,
+        border_color: stroke_color(panel, "dialog.panel.stroke.color")?,
+    }))
+}
+
+/// [`crate::geometry::dialog_entrance`]: the two styles 0.7.2 has as its
+/// builder maps them, and the two it lacks as the gpui-component entrances
+/// that draw them (gpui-component 0.10.0 `src/dialog/entrance.rs:14-27`):
+/// `Fade`, a fade in place, as `DialogEntrance::Fade`, and `None`, no
+/// motion, as `DialogEntrance::None`.
+pub(crate) fn dialog_entrance(r: &ResolvedTheme) -> Mapped<Option<DialogEntrance>> {
+    let Some(style) = r.dialog.entrance else {
+        return Ok(None);
+    };
+    match style {
+        DialogEntranceStyle::ScaleFade
+        | DialogEntranceStyle::FadeRise
+        | DialogEntranceStyle::Fade => Ok(Some(DialogEntrance::Fade)),
+        DialogEntranceStyle::None => Ok(Some(DialogEntrance::None)),
+        _ => Err(Unmapped("dialog.entrance")),
+    }
+}
+
+/// [`crate::geometry::dialog_footer`].
+pub(crate) fn dialog_footer(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::dialog_footer_from(r.dialog.button_gap))
+}
+
+/// [`crate::geometry::dialog_title`].
+pub(crate) fn dialog_title(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::coloured_text(
+        StyleRefinement::default(),
+        &font(&r.dialog.title, "dialog.title")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::dialog_description`].
+pub(crate) fn dialog_description(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::coloured_text(
+        StyleRefinement::default(),
+        &font(&r.dialog.body, "dialog.body")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::dialog_max_width`].
+pub(crate) fn dialog_max_width(r: &ResolvedTheme) -> Mapped<Pixels> {
+    Ok(px(stated(
+        r.dialog.panel.max_size[0],
+        "dialog.panel.max_size[0]",
+    )?))
+}
+
+/// [`crate::geometry::status_bar`].
+pub(crate) fn status_bar(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let s = &r.status_bar;
+    Ok(geometry::status_bar_from(
+        padding(&s.bar),
+        &font(&s.label, "status_bar.label")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::title_bar`].
+pub(crate) fn title_bar(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::coloured_text(
+        StyleRefinement::default(),
+        &font(&r.window.title(normal_window()), "window.title(normal)")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::title_bar_inactive`]: the title bar's fill and the
+/// title's colour of `inactive`, the theme resolved for an inactive window
+/// (`ThemeContext::window_active` false, spec §3), over the window's fill of
+/// `r`, the theme resolved for the context the connector shows.
+pub(crate) fn title_bar_inactive(
+    r: &ResolvedTheme,
+    inactive: &ResolvedTheme,
+) -> Mapped<StyleRefinement> {
+    let w = &inactive.window;
+    Ok(geometry::title_bar_inactive_from(
+        fill(
+            &w.title_bar(normal_window()),
+            "window.title_bar(normal).fill, inactive",
+        )?,
+        fill(
+            &r.window.frame(normal_window()),
+            "window.frame(normal).fill",
+        )?,
+        text_color(
+            &w.title(normal_window()),
+            "window.title(normal).color, inactive",
+        )?,
+    ))
+}
+
+/// [`crate::geometry::toolbar`]: the bar's frame, the toolbar button's label.
+pub(crate) fn toolbar(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let t = &r.toolbar;
+    let bar = t.bar(WidgetState::NONE);
+    Ok(geometry::toolbar_from(
+        &geometry::ToolbarFrame {
+            bar_height: bar.min_size[1],
+            item_gap: t.item_gap,
+            padding: padding(&bar),
+            background: fill(&bar, "toolbar.bar(NONE).fill")?,
+            border_width: stroke_width(&bar, "toolbar.bar(NONE).stroke.width")?,
+            border_color: stroke_color(&bar, "toolbar.bar(NONE).stroke.color")?,
+        },
+        &font(
+            &t.button_label(WidgetState::NONE),
+            "toolbar.button_label(NONE)",
+        )?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::icon_size_toolbar`].
+pub(crate) fn icon_size_toolbar(r: &ResolvedTheme) -> Mapped<Size> {
+    let icon = r.toolbar.button_icon(WidgetState::NONE);
+    if !icon.stated.contains(IconStated::SIZE) {
+        return Err(Unmapped("toolbar.button_icon(NONE).size"));
+    }
+    Ok(geometry::icon_size(icon.size))
+}
+
+/// [`crate::geometry::toolbar_button_rest`]: `toolbar.button_hover_border_color`
+/// at the hovered toolbar button's stroke, a soft option, where a rule states
+/// it for the state (module doc of `next`); the push button's stroke width
+/// and padding.
+pub(crate) fn toolbar_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let body = r.button.body(WidgetState::NONE);
+    Ok(geometry::toolbar_button_rest_from(
+        state_stroke_color(
+            &r.toolbar.button(WidgetState::HOVER),
+            "toolbar.button(HOVER).stroke.color",
+        )?
+        .is_some(),
+        stroke_width(&body, "button.body(NONE).stroke.width")?,
+        padding(&body),
+    ))
+}
+
+/// [`crate::geometry::toolbar_button_checked`]: each soft option where a rule
+/// states it for its state (module doc of `next`), else unset, so the 0.7.2
+/// path's fallbacks are taken.
+pub(crate) fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let t = &r.toolbar;
+    let b = &r.button;
+    let checked = t.button(WidgetState::CHECKED);
+    Ok(geometry::toolbar_button_checked_from(
+        &geometry::ToolbarChecked {
+            button_checked_background: state_fill(&checked, "toolbar.button(CHECKED).fill")?,
+            button_active_background: state_fill(
+                &t.button(WidgetState::PRESSED),
+                "toolbar.button(PRESSED).fill",
+            )?,
+            button_checked_border_color: state_stroke_color(
+                &checked,
+                "toolbar.button(CHECKED).stroke.color",
+            )?,
+            checked_text_color: state_text_color(
+                &b.label(WidgetState::CHECKED),
+                "button.label(CHECKED).color",
+            )?,
+            active_text_color: text_color(
+                &b.label(WidgetState::PRESSED),
+                "button.label(PRESSED).color",
+            )?,
+            active_background: state_fill(
+                &b.body(WidgetState::PRESSED),
+                "button.body(PRESSED).fill",
+            )?,
+        },
+    ))
+}
+
+/// [`crate::variants::toolbar_button_states`], what
+/// [`crate::variants::toolbar_button`] gives its variant: the toolbar
+/// button's hovered fill and stroke and pressed fill, soft options, each
+/// where a rule states it for its state (module doc of `next`), else `None`.
+pub(crate) fn toolbar_button_states(r: &ResolvedTheme) -> Mapped<ToolbarButtonStates> {
+    let t = &r.toolbar;
+    let hovered = t.button(WidgetState::HOVER);
+    Ok(ToolbarButtonStates {
+        hover: state_fill(&hovered, "toolbar.button(HOVER).fill")?,
+        hover_border: state_stroke_color(&hovered, "toolbar.button(HOVER).stroke.color")?,
+        active: state_fill(
+            &t.button(WidgetState::PRESSED),
+            "toolbar.button(PRESSED).fill",
+        )?,
+    })
+}
+
+/// [`crate::geometry::progress`]: `progress_bar.track_height` at the track's
+/// minimum height, an exact height being stated as its minimum and maximum.
+pub(crate) fn progress(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let track = r.progress_bar.track(WidgetState::NONE);
+    Ok(geometry::progress_from(
+        stated(track.min_size[1], "progress_bar.track(NONE).min_size[1]")?,
+        radius(&track, "progress_bar.track(NONE).corners")?,
+        stated(track.min_size[0], "progress_bar.track(NONE).min_size[0]")?,
+    ))
+}
+
+/// [`crate::geometry::group_box_content`]. A card whose stroke the theme
+/// leaves unstated gets no border from the refinement, and the group box
+/// keeps gpui-component's own.
+pub(crate) fn group_box_content(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let container = r.card.container(WidgetState::NONE);
+    let stroked = container.stated.contains(PartStated::STROKE);
+    Ok(geometry::group_box_content_from(&geometry::CardFrame {
+        padding: padding(&container),
+        radius: radius(&container, "card.container(NONE).corners")?,
+        border_width: stroked
+            .then(|| stroke_width(&container, "card.container(NONE).stroke.width"))
+            .transpose()?,
+        border_color: stroked
+            .then(|| stroke_color(&container, "card.container(NONE).stroke.color"))
+            .transpose()?,
+        background: fill(&container, "card.container(NONE).fill")?,
+    }))
+}
+
+/// [`crate::geometry::accordion_title`].
+pub(crate) fn accordion_title(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let e = &r.expander;
+    Ok(geometry::accordion_title_from(
+        stated(
+            e.header(WidgetState::NONE).min_size[1],
+            "expander.header(NONE).min_size[1]",
+        )?,
+        text_color(
+            &e.header_label(WidgetState::NONE),
+            "expander.header_label(NONE).color",
+        )?,
+    ))
+}
+
+/// [`crate::geometry::accordion`].
+pub(crate) fn accordion(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::accordion_from(stroke_color(
+        &r.expander.container(WidgetState::NONE),
+        "expander.container(NONE).stroke.color",
+    )?))
+}
+
+/// [`crate::geometry::accordion_hover`]: `expander.hover_background`, a soft
+/// option, where a rule states it for `HOVER` (module doc of `next`), else
+/// unset.
+pub(crate) fn accordion_hover(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::accordion_hover_from(state_fill(
+        &r.expander.header(WidgetState::HOVER),
+        "expander.header(HOVER).fill",
+    )?))
+}
+
+/// [`crate::geometry::spinner_size`].
+pub(crate) fn spinner_size(r: &ResolvedTheme) -> Mapped<Size> {
+    Ok(geometry::spinner_size_from(r.spinner.diameter))
+}
+
+/// [`crate::geometry::link`]: `link.underline_enabled` at the label's
+/// decoration, an underline or none, stated.
+pub(crate) fn link(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let l = &r.link;
+    let label = l.label(WidgetState::NONE);
+    if !label.stated.contains(TextStated::DECORATION) {
+        return Err(Unmapped("link.label(NONE).decoration"));
+    }
+    let underlined = match label.decoration.kind {
+        DecorationKind::Underline => true,
+        DecorationKind::None => false,
+        _ => return Err(Unmapped("link.label(NONE).decoration")),
+    };
+    Ok(geometry::link_from(
+        &uncoloured_font(&label, "link.label(NONE)")?,
+        line_height(r),
+        fill(&l.container(WidgetState::NONE), "link.container(NONE).fill")?,
+        underlined,
+    ))
+}
+
+/// [`crate::variants::switch_color`].
+pub(crate) fn switch_color(r: &ResolvedTheme) -> Mapped<Hsla> {
+    fill(
+        &r.switch.track(WidgetState::CHECKED),
+        "switch.track(CHECKED).fill",
+    )
 }
 
 /// [`crate::variants::hover_border`], the colour of

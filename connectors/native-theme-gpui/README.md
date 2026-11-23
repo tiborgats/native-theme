@@ -921,6 +921,21 @@ Theme::update(cx, |theme| theme.table_active = theme.table_active.alpha(0.25));
 # }
 ```
 
+One more limit is gpui's own and concerns the builders from the 0.8.0
+model (`native_theme_gpui::next`). **A translucent stroke shows the whole fill under
+it.** The 0.8.0 model says how far a part's fill runs under its stroke: under
+the whole band (`StrokeAlign::Inside`), to the band's centre line (`Center`,
+as Breeze draws a scroll bar's handle), or to its inner edge (`Outside`). gpui
+paints a quad's border over its background inside its bounds (gpui-pre-wgpu
+0.3.12 `src/shaders.wgsl`, `fs_quad`: "Blend the border on top of the
+background"), so it draws `Inside`, and the builders give each part as one
+quad. Under an opaque stroke the three look the same, and gpui draws all three
+exactly. A translucent `Center` or `Outside` stroke is drawn in its stated
+colour over the whole fill, so the band shows more of the fill than the
+platform does; no border colour can take the fill away. A per-side stroke
+(different widths or colours per side) is not drawn: the builder reports the
+part's stroke as unmapped.
+
 ## Overriding theme values
 
 An application that wants a value of its own writes it over the installed

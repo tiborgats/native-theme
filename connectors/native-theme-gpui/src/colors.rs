@@ -77,12 +77,13 @@ pub(crate) fn hsla_to_hex(c: Hsla) -> String {
     }
 }
 
-/// Pre-converted HSLA colors extracted from a [`ResolvedTheme`]: the ones
-/// outside the first slice of the 0.8.0 work, whose colours are
-/// [`SliceColors`].
+/// Pre-converted HSLA colors outside the first slice of the 0.8.0 work, whose
+/// colours are [`SliceColors`], beside the slice's colours the derivations
+/// blend over the window's fill.
 ///
-/// Built once in [`to_theme_color()`] and passed by reference to all
-/// assign helper functions, replacing 10-15 parameter signatures.
+/// Built once in [`theme_color_of()`] from [`WidgetColors`] and passed by
+/// reference to all assign helper functions, replacing 10-15 parameter
+/// signatures.
 ///
 /// Most fields are direct reads from the resolved theme's per-widget structs.
 /// Some (e.g. `muted`) are derived from defaults via blending.
@@ -135,6 +136,100 @@ struct ResolvedColors {
     // pressed link text, not its hover fill.
     link_hover_fg: Hsla,
     link_active_fg: Hsla,
+    // The separator's line colour, which the grid of a chart takes.
+    separator: Hsla,
+    status_bar: Hsla,
+    status_bar_border: Hsla,
+}
+
+/// The colours outside the first slice of the 0.8.0 work that the
+/// `ThemeColor` fields [`assign_slice`] leaves are made of, each as
+/// [`ResolvedColors`] holds it: read from a 0.7.2 [`ResolvedTheme`] by
+/// [`WidgetColors::from_resolved`], and from the 0.8.0 model by the
+/// connector's `next` module, so both models share everything after the
+/// read.
+pub(crate) struct WidgetColors {
+    pub(crate) bg: Hsla,
+    pub(crate) menu_hover_bg: Hsla,
+    pub(crate) menu_hover_fg: Hsla,
+    pub(crate) sidebar_selection_bg: Hsla,
+    pub(crate) sidebar_selection_fg: Hsla,
+    pub(crate) selection: Hsla,
+    pub(crate) link: Hsla,
+    pub(crate) input: Hsla,
+    pub(crate) sidebar: Hsla,
+    pub(crate) sidebar_fg: Hsla,
+    pub(crate) sidebar_border: Hsla,
+    pub(crate) popover: Hsla,
+    pub(crate) popover_fg: Hsla,
+    pub(crate) tab_bg: Hsla,
+    pub(crate) tab_active_bg: Hsla,
+    pub(crate) tab_active_fg: Hsla,
+    pub(crate) tab_bar_bg: Hsla,
+    pub(crate) segmented_bg: Hsla,
+    pub(crate) tab_fg: Hsla,
+    pub(crate) title_bar_bg: Hsla,
+    pub(crate) window_border: Hsla,
+    pub(crate) slider_fill: Hsla,
+    pub(crate) slider_thumb: Hsla,
+    pub(crate) switch_unchecked: Hsla,
+    pub(crate) switch_thumb: Hsla,
+    pub(crate) progress_fill: Hsla,
+    pub(crate) input_caret: Hsla,
+    pub(crate) link_hover_fg: Hsla,
+    pub(crate) link_active_fg: Hsla,
+    pub(crate) separator: Hsla,
+    pub(crate) status_bar: Hsla,
+    pub(crate) status_bar_border: Hsla,
+}
+
+impl WidgetColors {
+    /// The colours outside the slice of a 0.7.2 resolved theme.
+    pub(crate) fn from_resolved(resolved: &ResolvedTheme) -> Self {
+        Self {
+            // The window's own fill, which the model states and which inherits
+            // `defaults.background_color`; upstream's `background` token is the window
+            // surface (`title_bar.rs:347`, `tab/tab.rs:301`).
+            bg: rgba_to_hsla(resolved.window.background_color),
+            menu_hover_bg: rgba_to_hsla(resolved.menu.hover_background),
+            menu_hover_fg: rgba_to_hsla(resolved.menu.hover_text_color),
+            sidebar_selection_bg: rgba_to_hsla(resolved.sidebar.selection_background),
+            sidebar_selection_fg: rgba_to_hsla(resolved.sidebar.selection_text_color),
+            // Upstream's `selection` is the *input* selection background
+            // (`theme_color.rs:230`, `input/input.rs:568`), which the model states
+            // as `input.selection_background`; `defaults.selection_background` is
+            // the row-selection colour `list_active` and `sidebar_accent` take.
+            selection: rgba_to_hsla(resolved.input.selection_background),
+            // The link's own text colour (`link.rs:76`), which inherits
+            // `defaults.link_color` rather than `defaults.font.color`.
+            link: rgba_to_hsla(resolved.link.font.color),
+            input: rgba_to_hsla(resolved.input.border.color),
+            sidebar: rgba_to_hsla(resolved.sidebar.background_color),
+            sidebar_fg: rgba_to_hsla(resolved.sidebar.font.color),
+            sidebar_border: rgba_to_hsla(resolved.sidebar.border.color),
+            popover: rgba_to_hsla(resolved.popover.background_color),
+            popover_fg: rgba_to_hsla(resolved.popover.font.color),
+            tab_bg: rgba_to_hsla(resolved.tab.background_color),
+            tab_active_bg: rgba_to_hsla(resolved.tab.active_background),
+            tab_active_fg: rgba_to_hsla(resolved.tab.active_text_color),
+            tab_bar_bg: rgba_to_hsla(resolved.tab.bar_background),
+            segmented_bg: rgba_to_hsla(resolved.segmented_control.background_color),
+            tab_fg: rgba_to_hsla(resolved.tab.font.color),
+            title_bar_bg: rgba_to_hsla(resolved.window.title_bar_background),
+            window_border: rgba_to_hsla(resolved.window.border.color),
+            slider_fill: rgba_to_hsla(resolved.slider.fill_color),
+            slider_thumb: rgba_to_hsla(resolved.slider.thumb_color),
+            switch_unchecked: rgba_to_hsla(resolved.switch.unchecked_background),
+            switch_thumb: rgba_to_hsla(resolved.switch.thumb_background),
+            progress_fill: rgba_to_hsla(resolved.progress_bar.fill_color),
+            input_caret: rgba_to_hsla(resolved.input.caret_color),
+            link_hover_fg: rgba_to_hsla(resolved.link.hover_text_color),
+            link_active_fg: rgba_to_hsla(resolved.link.active_text_color),
+            separator: rgba_to_hsla(resolved.separator.line_color),
+            status_bar: rgba_to_hsla(resolved.status_bar.background_color),
+            status_bar_border: rgba_to_hsla(resolved.status_bar.border.color),
+        }
+    }
 }
 
 /// The colours of the first slice of the 0.8.0 work (the globals and
@@ -257,11 +352,23 @@ pub fn to_theme_color(
     is_dark: bool,
     reduce_transparency: bool,
 ) -> ThemeColor {
-    let slice = SliceColors::from_resolved(resolved);
-    // The window's own fill, which the model states and which inherits
-    // `defaults.background_color`; upstream's `background` token is the window
-    // surface (`title_bar.rs:347`, `tab/tab.rs:301`).
-    let bg = rgba_to_hsla(resolved.window.background_color);
+    theme_color_of(
+        &SliceColors::from_resolved(resolved),
+        &WidgetColors::from_resolved(resolved),
+        is_dark,
+        reduce_transparency,
+    )
+}
+
+/// [`to_theme_color`] of the slice's colours `slice` and the colours outside
+/// it `w`, the same for both models.
+pub(crate) fn theme_color_of(
+    slice: &SliceColors,
+    w: &WidgetColors,
+    is_dark: bool,
+    reduce_transparency: bool,
+) -> ThemeColor {
+    let bg = w.bg;
     let fg = slice.fg;
 
     // The muted *background* slot (Skeleton, Switch bg) uses a derived bg.
@@ -270,55 +377,52 @@ pub fn to_theme_color(
 
     let c = ResolvedColors {
         bg,
-        menu_hover_bg: rgba_to_hsla(resolved.menu.hover_background),
-        menu_hover_fg: rgba_to_hsla(resolved.menu.hover_text_color),
-        sidebar_selection_bg: rgba_to_hsla(resolved.sidebar.selection_background),
-        sidebar_selection_fg: rgba_to_hsla(resolved.sidebar.selection_text_color),
+        menu_hover_bg: w.menu_hover_bg,
+        menu_hover_fg: w.menu_hover_fg,
+        sidebar_selection_bg: w.sidebar_selection_bg,
+        sidebar_selection_fg: w.sidebar_selection_fg,
         muted: muted_bg,
         border: slice.border,
         primary: slice.primary,
         secondary: slice.secondary,
-        // Upstream's `selection` is the *input* selection background
-        // (`theme_color.rs:230`, `input/input.rs:568`), which the model states
-        // as `input.selection_background`; `defaults.selection_background` is
-        // the row-selection colour `list_active` and `sidebar_accent` take.
-        selection: rgba_to_hsla(resolved.input.selection_background),
-        // The link's own text colour (`link.rs:76`), which inherits
-        // `defaults.link_color` rather than `defaults.font.color`.
-        link: rgba_to_hsla(resolved.link.font.color),
-        input: rgba_to_hsla(resolved.input.border.color),
-        sidebar: rgba_to_hsla(resolved.sidebar.background_color),
-        sidebar_fg: rgba_to_hsla(resolved.sidebar.font.color),
-        sidebar_border: rgba_to_hsla(resolved.sidebar.border.color),
-        popover: rgba_to_hsla(resolved.popover.background_color),
-        popover_fg: rgba_to_hsla(resolved.popover.font.color),
+        selection: w.selection,
+        link: w.link,
+        input: w.input,
+        sidebar: w.sidebar,
+        sidebar_fg: w.sidebar_fg,
+        sidebar_border: w.sidebar_border,
+        popover: w.popover,
+        popover_fg: w.popover_fg,
         // Issue 20: per-widget colors
-        tab_bg: rgba_to_hsla(resolved.tab.background_color),
-        tab_active_bg: rgba_to_hsla(resolved.tab.active_background),
-        tab_active_fg: rgba_to_hsla(resolved.tab.active_text_color),
-        tab_bar_bg: rgba_to_hsla(resolved.tab.bar_background),
-        segmented_bg: rgba_to_hsla(resolved.segmented_control.background_color),
-        tab_fg: rgba_to_hsla(resolved.tab.font.color),
-        title_bar_bg: rgba_to_hsla(resolved.window.title_bar_background),
-        window_border: rgba_to_hsla(resolved.window.border.color),
-        slider_fill: rgba_to_hsla(resolved.slider.fill_color),
-        slider_thumb: rgba_to_hsla(resolved.slider.thumb_color),
-        switch_unchecked: rgba_to_hsla(resolved.switch.unchecked_background),
-        switch_thumb: rgba_to_hsla(resolved.switch.thumb_background),
-        progress_fill: rgba_to_hsla(resolved.progress_bar.fill_color),
-        input_caret: rgba_to_hsla(resolved.input.caret_color),
-        link_hover_fg: rgba_to_hsla(resolved.link.hover_text_color),
-        link_active_fg: rgba_to_hsla(resolved.link.active_text_color),
+        tab_bg: w.tab_bg,
+        tab_active_bg: w.tab_active_bg,
+        tab_active_fg: w.tab_active_fg,
+        tab_bar_bg: w.tab_bar_bg,
+        segmented_bg: w.segmented_bg,
+        tab_fg: w.tab_fg,
+        title_bar_bg: w.title_bar_bg,
+        window_border: w.window_border,
+        slider_fill: w.slider_fill,
+        slider_thumb: w.slider_thumb,
+        switch_unchecked: w.switch_unchecked,
+        switch_thumb: w.switch_thumb,
+        progress_fill: w.progress_fill,
+        input_caret: w.input_caret,
+        link_hover_fg: w.link_hover_fg,
+        link_active_fg: w.link_active_fg,
+        separator: w.separator,
+        status_bar: w.status_bar,
+        status_bar_border: w.status_bar_border,
     };
 
     let mut tc = ThemeColor::default();
 
-    assign_slice(&mut tc, &slice, is_dark, reduce_transparency);
+    assign_slice(&mut tc, slice, is_dark, reduce_transparency);
     assign_core(&mut tc, &c);
     assign_hovers(&mut tc, c.bg);
-    assign_list_table(&mut tc, &c, resolved);
+    assign_list_table(&mut tc, &c);
     assign_tab_sidebar(&mut tc, &c);
-    assign_misc(&mut tc, &c, resolved, is_dark);
+    assign_misc(&mut tc, &c, is_dark);
     assign_base_lights(&mut tc, c.bg, is_dark);
 
     tc
@@ -327,12 +431,7 @@ pub fn to_theme_color(
 /// Every `ThemeColor` field the slice's colours alone feed, the same for
 /// both models; [`to_theme_color`] assigns the other fields after it, some
 /// of them from fields this one wrote.
-pub(crate) fn assign_slice(
-    tc: &mut ThemeColor,
-    c: &SliceColors,
-    is_dark: bool,
-    reduce_transparency: bool,
-) {
+fn assign_slice(tc: &mut ThemeColor, c: &SliceColors, is_dark: bool, reduce_transparency: bool) {
     assign_slice_core(tc, c);
     assign_primary(tc, c, is_dark);
     assign_secondary(tc, c, is_dark);
@@ -525,7 +624,7 @@ fn assign_list_table_slice(tc: &mut ThemeColor, c: &SliceColors) {
     tc.table_foot_foreground = c.muted_fg;
 }
 
-fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme) {
+fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors) {
     // List active border: 60% primary over background.
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.table_active_border = tc.list_active_border;
@@ -534,7 +633,7 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &Resolve
     // separator colour (issue #4's D2); `list.grid_color` is a table's grid,
     // Qt's `Mid` on KDE, which would all but vanish under a chart in dark
     // mode, and stays `table_row_border`'s (above).
-    tc.chart_grid = rgba_to_hsla(resolved.separator.line_color);
+    tc.chart_grid = c.separator;
     // Derivation (spec §6.2): upstream paints a table footer
     // (`table/table.rs:340-341`) and the model states no footer colour of any
     // kind, so these stay the window's own background and muted text rather
@@ -642,7 +741,7 @@ fn assign_misc_slice(
     tc.drop_target = c.primary.opacity(0.2);
 }
 
-fn assign_misc(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme, is_dark: bool) {
+fn assign_misc(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.popover = c.popover;
     tc.popover_foreground = c.popover_fg;
 
@@ -676,8 +775,8 @@ fn assign_misc(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme
     tc.caret = c.input_caret;
 
     // Status bar: direct sources (spec §6.2).
-    tc.status_bar = rgba_to_hsla(resolved.status_bar.background_color);
-    tc.status_bar_border = rgba_to_hsla(resolved.status_bar.border.color);
+    tc.status_bar = c.status_bar;
+    tc.status_bar_border = c.status_bar_border;
 }
 
 /// The five native colours the six base hues (`red` … `cyan`) take.
@@ -840,9 +939,17 @@ pub(crate) struct CappedNatives {
 
 /// [`CappedNatives`] of `resolved`.
 pub(crate) fn capped_natives(resolved: &ResolvedTheme) -> CappedNatives {
-    let row = rgba_to_hsla(resolved.list.selection_background);
+    capped_natives_of(
+        rgba_to_hsla(resolved.input.selection_background),
+        rgba_to_hsla(resolved.list.selection_background),
+    )
+}
+
+/// [`CappedNatives`] of the text selection's fill and the selected row's,
+/// read from either model.
+pub(crate) fn capped_natives_of(selection: Hsla, row: Hsla) -> CappedNatives {
     CappedNatives {
-        selection: rgba_to_hsla(resolved.input.selection_background),
+        selection,
         list_active: row,
         table_active: row,
     }

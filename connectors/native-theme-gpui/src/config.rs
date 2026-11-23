@@ -37,18 +37,9 @@ pub fn to_theme_config(
 ) -> ThemeConfig {
     let is_dark = mode.is_dark();
 
-    let window_radius = resolved.window.border.corner_radius.round() as usize;
-
     // Issue 5: populate ThemeConfigColors from computed ThemeColor
     let tc = to_theme_color(resolved, is_dark, prefs.reduce_transparency);
     let colors = theme_color_to_config_colors(&tc);
-
-    // D41: the highlighter style for this mode. Theme::change installs a
-    // config's highlight as highlight_theme only when it is Some
-    // (gpui-component src/theme/schema.rs:1084-1091) and otherwise keeps
-    // the previous mode's; to_theme installs this same style directly, so
-    // both paths agree.
-    let highlight = highlight_style(resolved, mode);
 
     // is_default: false (via ThemeConfig::default()) — this is intentional.
     // Connector-created themes are never the "default" theme; the application
@@ -61,19 +52,13 @@ pub fn to_theme_config(
         &mut config,
         &crate::ThemeScalars::from_resolved(resolved, is_dark, prefs),
     );
-    // Stated, not left None: Theme::change keeps the previous theme's window
-    // radius for a config without one (gpui-component
-    // src/theme/schema.rs:1117-1119).
-    config.window_radius = Some(window_radius);
 
     config.colors = colors;
-
-    config.highlight = Some(highlight);
     config
 }
 
-/// Write the slice's values `s` onto `config`: its fonts, its radii rounded
-/// to whole pixels, and `shadow`.
+/// Write the values `s` onto `config`: its fonts, its radii rounded to whole
+/// pixels, `shadow`, and the highlighter style.
 pub(crate) fn apply_config_scalars(config: &mut ThemeConfig, s: &crate::ThemeScalars) {
     // Font sizes are in logical pixels (pt-to-px conversion handled during
     // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
@@ -86,6 +71,17 @@ pub(crate) fn apply_config_scalars(config: &mut ThemeConfig, s: &crate::ThemeSca
     config.radius = Some(s.radius.round() as usize);
     config.radius_lg = Some(s.radius_lg.round() as usize);
     config.shadow = Some(s.shadow);
+    // Stated, not left None: Theme::change keeps the previous theme's window
+    // radius for a config without one (gpui-component
+    // src/theme/schema.rs:1117-1119).
+    config.window_radius = Some(s.window_radius.round() as usize);
+
+    // D41: the highlighter style for this mode. Theme::change installs a
+    // config's highlight as highlight_theme only when it is Some
+    // (gpui-component src/theme/schema.rs:1084-1091) and otherwise keeps
+    // the previous mode's; to_theme installs this same style directly, so
+    // both paths agree.
+    config.highlight = Some(s.highlight.clone());
 }
 
 /// The highlighter style for `mode` that [`crate::to_theme`] installs and
@@ -123,16 +119,28 @@ pub(crate) fn highlight_style(
     resolved: &ResolvedTheme,
     mode: GpuiThemeMode,
 ) -> HighlightThemeStyle {
+    highlight_style_of(
+        rgba_to_hsla(resolved.input.background_color),
+        rgba_to_hsla(resolved.window.background_color),
+        mode,
+    )
+}
+
+/// [`highlight_style`] of the field fill `fill` over the window's
+/// `background`.
+pub(crate) fn highlight_style_of(
+    fill: gpui::Hsla,
+    background: gpui::Hsla,
+    mode: GpuiThemeMode,
+) -> HighlightThemeStyle {
     let default = if mode.is_dark() {
         HighlightTheme::default_dark()
     } else {
         HighlightTheme::default_light()
     };
-    let fill = rgba_to_hsla(resolved.input.background_color);
     let mut style = default.style.clone();
     style.editor_background = Some(fill);
-    style.editor_gutter_background =
-        (fill.a < 1.0).then(|| over(rgba_to_hsla(resolved.window.background_color), fill));
+    style.editor_gutter_background = (fill.a < 1.0).then(|| over(background, fill));
     style
 }
 

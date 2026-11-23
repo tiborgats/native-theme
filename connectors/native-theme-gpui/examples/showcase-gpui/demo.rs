@@ -360,7 +360,7 @@ const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
 /// since gpui-component 0.9.0 (gpui-component 0.9.1
 /// menu/popup_menu.rs:1328, `INNER_PADDING`; :1334, the item height), so
 /// both follow the window's rem, the theme's font size. The height takes
-/// the connector's control-height rule (geometry.rs, `with_height_rule`): it
+/// the connector's control-height rule (geometry.rs, `height_rule`): it
 /// is the row's height at a text scale of 1 or less and its minimum above.
 pub(crate) const MENU_ROW_PADDING_X: Rems = rems(0.5);
 pub(crate) const MENU_ROW_HEIGHT: Rems = rems(1.625);
@@ -432,7 +432,7 @@ pub(crate) struct MenuLook {
     /// least height where `row_height` is unstated.
     min_row_height: Option<Pixels>,
     /// Whether the text scale is above 1, where a fixed height becomes a
-    /// minimum (geometry.rs, `with_height_rule`).
+    /// minimum (geometry.rs, `height_rule`).
     text_scaled_up: bool,
     background: Hsla,
     separator: Hsla,
