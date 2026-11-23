@@ -24,7 +24,9 @@
 //! on the accent keep the preset's: WebKit draws the focus ring, a button's
 //! and a select's text in `systemBlue`, a system colour, not the tint
 //! (`button.font.color`, `combo_box.font.color`, `defaults.focus_ring_color`
-//! below), and the disabled slider's fill keeps the preset's constant.
+//! below), and the disabled slider's fill keeps the preset's constant, as
+//! the checked button's colours keep theirs, measured under the default tint
+//! alone ([`button`]).
 //!
 //! A palette states the roles its slots name (spec §7, "The roles a palette
 //! states"), and each slot whose colour is the colour of the slot's role
@@ -78,8 +80,15 @@
 //!   disabled fill over every other, the primary one included, as 0.7.2's
 //!   egui connector fills a disabled button with `button.disabled_background`
 //!   where it is stated (`connectors/native-theme-egui/src/mapping.md`, its
-//!   rows `button.disabled_background` and `button.primary_background`). Its
-//!   label: the primary text, the disabled text over it (`mapping.md`,
+//!   rows `button.disabled_background` and `button.primary_background`); the
+//!   checked fill over the hovered and the pressed ones, and the checked and
+//!   pressed fill over it, as UIKit draws a selected toggle, highlighted or
+//!   not, in fills of its own (`docs/facts/ios/button.toml` on `v0.8.0-rc1`
+//!   at `78ee0efd`), under the primary and the disabled fills. Its label: the
+//!   checked colour over the pressed one, and the checked and pressed colour
+//!   over it, as UIKit draws a highlighted selected toggle's title in a
+//!   colour of its own (the same facts), the primary text over them, the
+//!   disabled text over every other (`mapping.md`,
 //!   `button.disabled_text_color`);
 //! - the check box's and the radio button's indicator: the checked fill and
 //!   outline over the hovered fill, as 0.7.2's egui connector draws a checked
@@ -247,6 +256,14 @@ struct SchemeColors {
     secondary_fill: Color,
     control_hover: Color,
     button_pressed: Color,
+    /// A checked toggle's fill under the default tint.
+    button_checked: Color,
+    /// A checked toggle's fill while pressed, under the default tint.
+    button_checked_pressed: Color,
+    /// A checked toggle's label under the default tint.
+    button_checked_foreground: Color,
+    /// A checked toggle's label while pressed, under the default tint.
+    button_checked_pressed_foreground: Color,
     disabled_fill: Color,
     disabled_label: Color,
     row_hover: Color,
@@ -351,6 +368,20 @@ const LIGHT: SchemeColors = SchemeColors {
     control_hover: srgb8(0xd1d1_d6ff),
     // `button.active_background`: 0.7.2 ios-13.toml (uncited)
     button_pressed: srgb8(0xc7c7_ccff),
+    // `button.checked_background`: a toggle's selected fill, the default tint at 0x2e (measured,
+    // iOS 18.6 on the iPhone 16 Pro simulator, ios-host run 41020880059,
+    // `ios-host-macos-15/analysis.toml`, `cells.light.gray.*.selected.fill`, the plain style the
+    // same; `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`)
+    button_checked: srgb8(0x007a_ff2e),
+    // the same, pressed: the default tint at 0x1e (the same run,
+    // `cells.light.gray.*.selected_highlighted.fill`, the plain style the same)
+    button_checked_pressed: srgb8(0x007a_ff1e),
+    // `button.checked_text_color`: the default tint (the same run,
+    // `cells.light.gray.*.selected.label_fill`, the plain style the same)
+    button_checked_foreground: srgb8(0x007a_ffff),
+    // the same, pressed: the default tint at 0xbf (the same run,
+    // `cells.light.gray.*.selected_highlighted.label_fill`, the plain style the same)
+    button_checked_pressed_foreground: srgb8(0x007a_ffbf),
     // `button.disabled_background`, `checkbox.disabled_background`,
     // `combo_box.disabled_background`: 0.7.2 ios-13.toml (uncited)
     disabled_fill: srgb8(0xe5e5_ea80),
@@ -490,6 +521,20 @@ const DARK: SchemeColors = SchemeColors {
     control_hover: srgb8(0x3a3a_3cff),
     // `button.active_background`: 0.7.2 ios-13.toml (uncited)
     button_pressed: srgb8(0x4848_4aff),
+    // `button.checked_background`: a toggle's selected fill, the default tint at 0x40 (measured,
+    // iOS 18.6 on the iPhone 16 Pro simulator, ios-host run 41020880059,
+    // `ios-host-macos-15/analysis.toml`, `cells.dark.gray.*.selected.fill`, the plain style the
+    // same; `docs/facts/ios/button.toml` on `v0.8.0-rc1` at `78ee0efd`)
+    button_checked: srgb8(0x0a84_ff40),
+    // the same, pressed: the default tint at 0x2d (the same run,
+    // `cells.dark.gray.*.selected_highlighted.fill`, the plain style the same)
+    button_checked_pressed: srgb8(0x0a84_ff2d),
+    // `button.checked_text_color`: the default tint (the same run,
+    // `cells.dark.gray.*.selected.label_fill`, the plain style the same)
+    button_checked_foreground: srgb8(0x0a84_ffff),
+    // the same, pressed: #2390ff (the same run,
+    // `cells.dark.gray.*.selected_highlighted.label_fill`, the plain style the same)
+    button_checked_pressed_foreground: srgb8(0x2390_ffff),
     // `button.disabled_background`, `checkbox.disabled_background`,
     // `combo_box.disabled_background`: 0.7.2 ios-13.toml (uncited)
     disabled_fill: srgb8(0x2c2c_2e80),
@@ -1306,13 +1351,17 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 
 /// The push button, WebKit's iOS button: `opaqueSecondaryFill` in the
 /// default border (0.7.2's `resolve_border_inheritance`), at the default
-/// radius, of least sizes; hovered and pressed its own fills; the primary
-/// variant in the accent (0.7.2: `primary_background` is
+/// radius, of least sizes; hovered and pressed its own fills; checked, and
+/// checked and pressed, UIKit's selected toggle's fills, with its labels; the
+/// primary variant in the accent (0.7.2: `primary_background` is
 /// `defaults.accent_color` where unstated); disabled, its disabled fill. Its
 /// label `systemBlue`, which a pressed button keeps, primary the accent's
 /// text (0.7.2: `primary_text_color` is `defaults.accent_text_color` where
 /// unstated), disabled the disabled text. 0.7.2 states no checked colours
-/// and no padding.
+/// and no padding. The checked colours are the measured ones under UIKit's
+/// default tint, the one tint the measurement drew (`docs/facts/ios/button.toml`
+/// on `v0.8.0-rc1` at `78ee0efd`): they do not follow the accent, and under
+/// another accent a checked button keeps the default tint's blue.
 fn button(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -1340,6 +1389,14 @@ fn button(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(c.button_pressed)],
         )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [fill(c.button_checked)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [fill(c.button_checked_pressed)],
+        )
         .rule(primary(), [fill(roles.accent.fill)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -1352,6 +1409,14 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(c.system_blue)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [TextProp::Color(c.button_checked_foreground)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [TextProp::Color(c.button_checked_pressed_foreground)],
         )
         .rule(primary(), [TextProp::Color(roles.accent.foreground)])
         .rule(

@@ -100,8 +100,10 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
+use native_theme::next::WidgetState;
 use native_theme::theme::{ArrowSide, FontStyle, IconSet, ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
+use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets;
 use native_theme_gpui::{
@@ -110,13 +112,15 @@ use native_theme_gpui::{
 
 use crate::app::{Quit, ShowPage};
 use crate::elements::{self, ListedExt as _};
-use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, native_info};
+use crate::info::{
+    self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, native_info, next_native_info,
+};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
     SampleListDelegate, SampleTableDelegate, contrast_held, native_color, native_geometry,
-    native_value, next_resolved, old_native, old_resolved, refined, requested_preferences,
-    toolbar_variant, with_gap, with_padding,
+    native_value, next_geometry, next_resolved, old_native, old_resolved, refined,
+    requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -1496,17 +1500,20 @@ fn settings_tooltip(cx: &App, control: Stateful<Div>, text: SharedString) -> Sta
 /// What the palette Select's tooltip says: what is drawn from which model
 /// under a palette, which has no 0.7.2 equivalent.
 pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): \
-     gpui-component's colours and the connector's own widgets are drawn from the 0.8.0 theme \
-     with the palette. The showcase's own refinements -- its colours, geometry, menus and the \
-     side panel's padding and label font -- still read the 0.7.2 preset, which has no \
-     palettes, until their pages move to the 0.8.0 model.";
+     gpui-component's theme colours and the connector's own widgets are drawn from the 0.8.0 \
+     theme with the palette. Still read from the 0.7.2 preset, which has no palettes, until \
+     their pages move to the 0.8.0 model: the button variant and rest fill the showcase gives \
+     the Basic page's default-button sample, the checked track of the Switches \
+     built without the widgets feature (Basic, Inputs and Preferences), and the showcase's own \
+     refinements -- its colours, geometry, menus and the side panel's padding and label font.";
 
 /// The palette Select over `state`, refined by `geometry::select`, as wide
 /// as the theme settings it is in: `none`, the theme's own colours, and the
 /// bundled palettes (`support::palette_rows`); the choice installs the theme
 /// again with the palette laid over it (`Showcase::choose_palette`). Its
 /// tooltip says what the pages still on the 0.7.2 model show under a
-/// palette ([`PALETTE_TOOLTIP`]).
+/// palette ([`PALETTE_TOOLTIP`]); its info says where High contrast set the
+/// palette chosen aside (`support::palette_set_aside`).
 pub(crate) fn palette_select(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1514,6 +1521,10 @@ pub(crate) fn palette_select(
 ) -> Stateful<Div> {
     let native = old_native(cx);
     let mut select_info = info::palette_select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    if let Some(palette) = crate::support::palette_set_aside(cx) {
+        select_info =
+            select_info.instance("set aside", crate::support::palette_set_aside_text(palette));
+    }
     let select = native_info(
         Select::new(state),
         cx,
@@ -1919,9 +1930,9 @@ fn sidebar_label(
 /// The three are one content, scrolled on `scroll` where it is taller than
 /// the panel ([`crate::support::gutter_scroll`], `relayout` its frame's
 /// relayout): the inspector then keeps its own height, its TabBar's and its
-/// info's first lines' (`inspector::PanelLook::body_min_height`), so
-/// every control stays reachable at every text scale in the fixed window,
-/// and the panel never runs past its bounds.
+/// info's down to the first row (`inspector::PanelLook::body_min_height`),
+/// so every control stays reachable at every text scale in the fixed
+/// window, and the panel never runs past its bounds.
 /// Where the theme states any side of `sidebar.border.padding`
 /// ([`sidebar_padding`]), the whole panel is padded by it, a side it leaves
 /// unstated by `container_margin`, and the content adds none; where it
@@ -3243,11 +3254,20 @@ pub(crate) const REDUCE_MOTION_DESCRIPTION: &str = "reduce_motion: forwarded to 
 
 /// `info` with the reason the installed theme's contrast is lower than the
 /// preferences ask, where `pref` is High contrast and it is
-/// (`support::contrast_held`): the switch shows what was asked for.
+/// (`support::contrast_held`): the switch shows what was asked for. Where
+/// High contrast set the palette chosen aside
+/// (`support::palette_set_aside`), the High contrast switch's info says so.
 fn with_contrast_held(info: WidgetInfo, pref: Preference, cx: &App) -> WidgetInfo {
-    match (pref, contrast_held(cx)) {
-        (Preference::HighContrast, Some(held)) => info.instance("resolved", held.text()),
-        _ => info,
+    if !matches!(pref, Preference::HighContrast) {
+        return info;
+    }
+    let info = match contrast_held(cx) {
+        Some(held) => info.instance("resolved", held.text()),
+        None => info,
+    };
+    match crate::support::palette_set_aside(cx) {
+        Some(palette) => info.instance("palette", crate::support::palette_set_aside_text(palette)),
+        None => info,
     }
 }
 
@@ -3616,10 +3636,11 @@ impl ButtonKind {
     }
 }
 
-/// `variants::bordered_button` under the installed native theme, where there
-/// is one and it states a hover border.
+/// `variants::bordered_button` under the theme a Button's info is given
+/// ([`button_theme`]), where there is one and a rule of it states a hovered
+/// button's stroke in a form gpui can take.
 fn bordered(cx: &App) -> Option<ButtonCustomVariant> {
-    old_native(cx).and_then(|n| variants::bordered_button(n, cx))
+    button_theme(cx).and_then(|r| next::variants::bordered_button(r, cx).ok().flatten())
 }
 
 /// What a Button of the Buttons page is doing.
@@ -3739,6 +3760,7 @@ fn button_turning(
         state,
         icon,
     } = spec;
+    let asked = kind;
     let kind = kind.built(cx);
     // `Button::icon` and `loading_icon` take an `Icon` (`ButtonIcon`) alone
     // (button/button.rs, button/button_icon.rs).
@@ -3756,9 +3778,6 @@ fn button_turning(
         .as_ref()
         .and_then(SampleIcon::icon)
         .filter(|_| !served);
-    // What `native_info` applies the builder under.
-    let native = old_native(cx);
-    let native_button = native.as_ref().map(|n| &n.resolved.button);
     let drawn = icon.as_ref().and_then(SampleIcon::icon);
     let mut button_info = info::buttons::button(
         cx.theme(),
@@ -3767,8 +3786,23 @@ fn button_turning(
         drawn.is_some(),
         served,
         None,
-        native_button,
+        button_theme(cx),
     );
+    if kind != asked {
+        let built_as = format!(
+            "{} asked for, built as {}: variants::bordered_button gives no variant, the installed theme having no rule that states a hovered button's stroke, button.body(HOVER).stroke.color, in a form gpui can take, or no value gpui can take at a home geometry::button reads (native-theme-gpui/next/variants.rs, bordered_button)",
+            asked.name(),
+            kind.name()
+        );
+        match button_info
+            .instance
+            .iter_mut()
+            .find(|n| n.what == "variant")
+        {
+            Some(note) => note.text = format!("{built_as}. {}", note.text),
+            None => button_info = button_info.instance("variant", built_as),
+        }
+    }
     if let Some(icon) = &icon {
         button_info = match state {
             ButtonState::Loading if served => button_info.instance(
@@ -3788,31 +3822,31 @@ fn button_turning(
     {
         button_info = button_info.instance("spinner icon", spinner_note(spinner, default));
     }
-    let button = native_info(
+    let button = next_native_info(
         kind.apply(Button::new(id), cx),
         cx,
-        geometry::button,
+        next::geometry::button,
         "button",
         &mut button_info,
     );
     // The platform's disabled pair, which upstream's disabled style replays
     // the caller's refinement over (button/button.rs:830-836); a Button that
     // is not disabled must not take it, since it lands at rest too (:764).
-    let disabled_pair = (state == ButtonState::Disabled)
-        .then(|| native_geometry(cx, geometry::button_disabled))
-        .flatten();
+    let theme = button_theme(cx);
+    let disabled_pair = theme
+        .filter(|_| state == ButtonState::Disabled)
+        .and_then(|r| next::geometry::button_disabled(r).ok());
     if disabled_pair.is_some() {
-        button_info = button_info.geometry("button_disabled");
+        button_info = button_info.next_geometry("button_disabled");
     }
     // A disabled Default Button, the variant upstream draws an edge round
     // (button/button.rs, `RenderOnce for Button`: `border_l_1` and its
     // siblings), under a native theme: its fill and its fade go on a surface
     // under it that draws its edge too (`faded_surface`), and the rest of the
     // pair on the Button, which is left without a fill or an edge colour.
-    let resolved = old_resolved(cx);
-    let surface = match (&disabled_pair, resolved) {
+    let surface = match (&disabled_pair, theme) {
         (Some(pair), Some(r)) if kind == ButtonKind::Default => {
-            Some((pair.clone(), &r.button.border))
+            SurfaceLine::of(&r.button.body(WidgetState::NONE)).map(|line| (pair.clone(), line))
         }
         _ => None,
     };
@@ -3826,7 +3860,7 @@ fn button_turning(
         None => disabled_pair,
     };
     if surface.is_some() {
-        button_info = button_info.config("surface", "geometry::button_disabled's fill inside button.border.color's line, drawn by the showcase under the Button, which it leaves without a fill or an edge of its own, the whole faded by button.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line");
+        button_info = button_info.config("surface", "geometry::button_disabled's fill inside button.body(NONE).stroke.color's line, drawn by the showcase under the Button, which it leaves without a fill or an edge of its own, the whole faded by button.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line");
     }
     let button = labelled(ui, cx, refined(button, on_button.as_ref()), id, label)
         .when_some(drawn, |button, icon| match state {
@@ -3845,7 +3879,7 @@ fn button_turning(
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     let button = InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into());
     match surface {
-        Some((fill, border)) => faded_surface(border, &fill, button)
+        Some((fill, border)) => faded_surface(&border, &fill, button)
             .flex_none()
             .id(SharedString::from(format!("{id}-surface"))),
         None => button,
@@ -3939,20 +3973,21 @@ pub(crate) fn toggle(
 ) -> Stateful<Div> {
     // `Toggle::icon` takes an `Icon` alone (button/toggle.rs).
     let icon = &icon.svg_only();
-    // What `native_info` applies the builder under.
-    let styled = old_native(cx).is_some();
     let mut toggle_info = info::buttons::toggle(
         cx.theme(),
         icon.shown(),
         icon.note("the Toggle shows the icon's name as its label instead"),
         checked,
-        styled,
     );
     let toggle = match icon.icon() {
         Some(drawn) => Toggle::new(id).icon(drawn),
         None => Toggle::new(id).label(icon_name),
     };
-    native_info(toggle, cx, geometry::toggle, "toggle", &mut toggle_info)
+    let style = info::next_native_value(cx, next::geometry::toggle, "toggle", &mut toggle_info);
+    if style.is_some() {
+        toggle_info = info::buttons::styled_toggle(toggle_info);
+    }
+    refined(toggle, style.as_ref())
         .checked(checked)
         .on_click(on_click)
         .info(ui, id, toggle_info)
@@ -3967,18 +4002,20 @@ pub(crate) fn toggle_group(
     id: &'static str,
     labels: &[&'static str],
 ) -> Stateful<Div> {
-    let styled = old_native(cx).is_some();
-    let mut group_info = info::buttons::toggle_group(cx.theme(), styled);
-    if styled {
-        group_info = group_info.geometry("toggle");
+    let mut group_info = info::buttons::toggle_group(cx.theme());
+    // The group's info takes the builder's line, each Toggle its refinement.
+    let style = info::next_native_value(cx, next::geometry::toggle, "toggle", &mut group_info);
+    if style.is_some() {
+        group_info = info::buttons::styled_toggle(group_info);
     }
     ToggleGroup::new(id)
         .children(
             labels
                 .iter()
-                .map(|&label| Toggle::new(label).label(label).native(cx, geometry::toggle)),
+                .map(|&label| refined(Toggle::new(label).label(label), style.as_ref())),
         )
         .info(ui, id, group_info)
+        .debug_selector(move || id.into())
 }
 
 /// A `Clipboard` copying `value`, reading `label` beside its icon where one
@@ -4094,10 +4131,14 @@ fn text_field(
                     Some(ink) => input.text_color(ink),
                     None => input,
                 };
-                return faded_surface(&r.input.border, fill, input.bg(none).border_color(none))
-                    .w(width)
-                    .info(ui, id, input_info)
-                    .debug_selector(move || id.into());
+                return faded_surface(
+                    &SurfaceLine::of_border(&r.input.border),
+                    fill,
+                    input.bg(none).border_color(none),
+                )
+                .w(width)
+                .info(ui, id, input_info)
+                .debug_selector(move || id.into());
             }
             let input = refined(input, fill.as_ref());
             if let (false, Some(r)) = (disabled, resolved) {
@@ -4163,10 +4204,47 @@ fn input_surface(
         .child(field)
 }
 
+/// The installed 0.8.0 theme where `next::geometry::button` applies to it:
+/// one that states every value the builder reads. What a Button's info is
+/// given as the theme that refines it; under any other theme the Button
+/// keeps upstream's geometry (spec §10, rule 0).
+fn button_theme(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
+    next_resolved(cx).filter(|r| next::geometry::button(r).is_ok())
+}
+
+/// The line [`faded_surface`] draws round a disabled control: the control's
+/// edge width, corner radius and edge colour.
+pub(crate) struct SurfaceLine {
+    width: f32,
+    radius: f32,
+    colour: Hsla,
+}
+
+impl SurfaceLine {
+    /// The line of a part of the 0.8.0 model, where the theme states its
+    /// stroke as one width and colour and its corners as one radius.
+    fn of(part: &native_theme::next::PartStyle) -> Option<Self> {
+        Some(Self {
+            width: info::stroke_width_of(part)?,
+            radius: info::radius_of(part)?,
+            colour: info::stroke_color_of(part)?,
+        })
+    }
+
+    /// The line of a 0.7.2 border.
+    fn of_border(border: &native_theme::theme::ResolvedWidgetBorder) -> Self {
+        Self {
+            width: border.line_width,
+            radius: border.corner_radius,
+            colour: info::stated(border.color),
+        }
+    }
+}
+
 /// A disabled control over its surface: the fill `fill` gives (a disabled
 /// field's `geometry::input_fill`, a disabled Button's
 /// `geometry::button_disabled`) inside `border`'s line, the line in
-/// `border.color`, and the whole faded by `fill`'s opacity. The caller
+/// `border.colour`, and the whole faded by `fill`'s opacity. The caller
 /// leaves the control without a fill or an edge colour of its own, and
 /// unfaded.
 ///
@@ -4177,12 +4255,12 @@ fn input_surface(
 /// fill lay under its line would show the fill through the faded line,
 /// where a platform fades the control as one.
 fn faded_surface(
-    border: &native_theme::theme::ResolvedWidgetBorder,
+    border: &SurfaceLine,
     fill: &gpui::StyleRefinement,
     field: impl IntoElement,
 ) -> Div {
-    let line = border.line_width.max(0.0);
-    let radius = border.corner_radius.max(0.0);
+    let line = border.width.max(0.0);
+    let radius = border.radius.max(0.0);
     let inner = div()
         .absolute()
         .top(px(line))
@@ -4204,7 +4282,7 @@ fn faded_surface(
                 .inset_0()
                 .rounded(px(radius))
                 .border(px(line))
-                .border_color(info::stated(border.color)),
+                .border_color(border.colour),
         )
         .child(field)
 }
@@ -4899,11 +4977,13 @@ pub(crate) fn rating(
         .value(value)
         .disabled(disabled)
         .when_some(on_click, |rating, on_click| rating.on_click(on_click));
-    let rating = match native_value(cx, geometry::icon_size_small) {
-        Some(size) => {
-            rating_info = rating_info.geometry("icon_size_small");
-            rating.with_size(size)
-        }
+    let rating = match info::next_native_value(
+        cx,
+        next::geometry::icon_size_small,
+        "icon_size_small",
+        &mut rating_info,
+    ) {
+        Some(size) => rating.with_size(size),
         None => rating,
     };
     rating.info(ui, id, rating_info)
@@ -5141,8 +5221,9 @@ pub(crate) fn speech_waveform(
 /// it letters in the platform's button text colour, which the indicator
 /// paints its bars in -- whose only child is the indicator, its padding
 /// removed so the indicator fills it. The Button is a square of
-/// `button.min_height`, rounded by `button.border.corner_radius`, where a
-/// native theme is installed, and upstream's icon-Button square otherwise;
+/// `button.body(NONE).min_size[1]`, rounded by `button.body(NONE).corners`,
+/// where the installed 0.8.0 theme states both, and upstream's icon-Button
+/// square otherwise;
 /// the indicator's stop glyph takes `geometry::icon_size_toolbar`, the size
 /// of the icon the Button stands for. `keyboard_focused` is whether `focus`,
 /// the Button's, has keyboard focus: no pointer reveals the stop glyph then,
@@ -5156,15 +5237,19 @@ pub(crate) fn speech_indicator(
     focus: &gpui::FocusHandle,
     keyboard_focused: bool,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let native_button = native.as_ref().map(|n| &n.resolved.button);
-    let mut indicator_info =
-        info::inputs::speech_indicator(cx.theme(), native_button, keyboard_focused);
-    let square = native_button.map(|b| (px(b.min_height), px(b.border.corner_radius.max(0.))));
-    let glyph = native_value(cx, geometry::icon_size_toolbar);
-    if glyph.is_some() && !keyboard_focused {
-        indicator_info = indicator_info.geometry("icon_size_toolbar");
-    }
+    let stated = next_resolved(cx).and_then(info::inputs::StopSquare::of);
+    let mut indicator_info = info::inputs::speech_indicator(cx.theme(), stated, keyboard_focused);
+    let square = stated.map(|s| (px(s.side), px(s.radius.max(0.))));
+    let glyph = if keyboard_focused {
+        None
+    } else {
+        info::next_native_value(
+            cx,
+            next::geometry::icon_size_toolbar,
+            "icon_size_toolbar",
+            &mut indicator_info,
+        )
+    };
     let button = ButtonKind::Ghost
         .apply(Button::new(id), cx)
         .selected(true)
@@ -6070,9 +6155,6 @@ pub(crate) fn action_button(
     about: &'static str,
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    // What `native_info` applies the builder under.
-    let native = old_native(cx);
-    let native_button = native.as_ref().map(|n| &n.resolved.button);
     let mut button_info = info::buttons::button(
         cx.theme(),
         ButtonKind::Default,
@@ -6080,16 +6162,16 @@ pub(crate) fn action_button(
         false,
         false,
         None,
-        native_button,
+        button_theme(cx),
     )
     .instance("click", about);
     let button = labelled(
         ui,
         cx,
-        native_info(
+        next_native_info(
             Button::new(id),
             cx,
-            geometry::button,
+            next::geometry::button,
             "button",
             &mut button_info,
         ),
@@ -8580,17 +8662,14 @@ pub(crate) fn overlay_button(
     overlay: Overlay,
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    // What `native_info` applies the builder under.
-    let native = old_native(cx);
-    let native_button = native.as_ref().map(|n| &n.resolved.button);
-    let mut button_info = info::overlays::trigger(cx.theme(), overlay, native_button);
+    let mut button_info = info::overlays::trigger(cx.theme(), overlay, button_theme(cx));
     let button = labelled(
         ui,
         cx,
-        native_info(
+        next_native_info(
             overlay.button_kind().apply(Button::new(id), cx),
             cx,
-            geometry::button,
+            next::geometry::button,
             "button",
             &mut button_info,
         ),
@@ -8649,16 +8728,14 @@ pub(crate) fn confirm_dialog(
         "dialog_footer",
         &mut dialog_info,
     );
-    let native = old_native(cx);
-    let native_button = native.as_ref().map(|n| &n.resolved.button);
-    let mut close_info = info::overlays::dialog_close(cx.theme(), native_button);
+    let mut close_info = info::overlays::dialog_close(cx.theme(), button_theme(cx));
     // DialogClose builds the Button and hands it over
     // (dialog/footer.rs:83-88), so the refinement is made here and applied
     // there.
-    let close_style = native_info(
+    let close_style = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::button,
+        next::geometry::button,
         "button",
         &mut close_info,
     );
@@ -9831,11 +9908,12 @@ pub(crate) fn swatch(
 // The Basic page's own samples (Basic v3)
 // ---------------------------------------------------------------------------
 
-/// `button` labelled `label`. Where a native theme is installed, or the label
-/// is an element of docs/showcase-elements.toml, the label is the Button's
-/// child, in the box upstream puts its own `label` in (button/button.rs,
-/// `RenderOnce for Button`: `min_w_0`, `whitespace_nowrap`, `text_ellipsis`):
-/// in `button.font` through `geometry::button_label`, because upstream sizes
+/// `button` labelled `label`. Where the installed 0.8.0 theme states the
+/// font `geometry::button_label` reads, or the label is an element of
+/// docs/showcase-elements.toml, the label is the Button's child, in the box
+/// upstream puts its own `label` in (button/button.rs, `RenderOnce for
+/// Button`: `min_w_0`, `whitespace_nowrap`, `text_ellipsis`): in
+/// `button.label(NONE)`'s font through `geometry::button_label`, because upstream sizes
 /// a `.label()` from the `Size` enum on an element no style reaches, and
 /// recording its bounds where it is listed. The Button is named by the label
 /// as `Button::label` would name it. Otherwise `Button::label`.
@@ -9849,7 +9927,7 @@ pub(crate) fn labelled(
     label: impl Into<SharedString>,
 ) -> Button {
     let label = label.into();
-    let text = native_geometry(cx, geometry::button_label);
+    let text = next_geometry(cx, next::geometry::button_label).and_then(Result::ok);
     let listed = elements::label_of(id);
     if text.is_none() && listed.is_none() {
         return button.label(label);
@@ -9916,9 +9994,9 @@ fn tool_box_of(n: Native<'_>) -> StyleRefinement {
 
 /// A toggle button that is on: a Default Button reading `label`, refined by
 /// `geometry::button`, shown selected, and refined by
-/// `geometry::button_checked` -- filled with `button.checked_background` and
-/// lettered in `button.checked_text_color`, the pressed pair where the theme
-/// states none. Upstream's selected style would fill it with its
+/// `geometry::button_checked` -- filled with `button.body(CHECKED).fill` and
+/// lettered in `button.label(CHECKED).color`, the pressed pair where no rule
+/// states them for the state. Upstream's selected style would fill it with its
 /// `button_active` token and letter it in `button_foreground`
 /// (button/button.rs, `ButtonVariant::selected`); the Button replays the
 /// caller's style over that state (button/button.rs, `RenderOnce for
@@ -9929,8 +10007,6 @@ pub(crate) fn toggle_button(
     id: &'static str,
     label: &'static str,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let native_button = native.as_ref().map(|n| &n.resolved.button);
     let mut button_info = info::buttons::button(
         cx.theme(),
         ButtonKind::Default,
@@ -9938,26 +10014,41 @@ pub(crate) fn toggle_button(
         false,
         false,
         None,
-        native_button,
-    )
-    .instance(
-        "state",
-        "selected: on, in button.checked_background and button.checked_text_color (the pressed pair where unstated)",
+        button_theme(cx),
     );
-    let button = native_info(
+    let button = next_native_info(
         Button::new(id),
         cx,
-        geometry::button,
+        next::geometry::button,
         "button",
         &mut button_info,
     );
-    let button = native_info(
-        button.selected(true).toggled(true),
+    let checked = info::next_native_value(
         cx,
-        geometry::button_checked,
+        next::geometry::button_checked,
         "button_checked",
         &mut button_info,
     );
+    if let (Some(_), Some(r)) = (&checked, next_resolved(cx)) {
+        let b = &r.button;
+        let fill = if next::state_fill_of(&b.body(WidgetState::CHECKED)).is_some() {
+            "button.body(CHECKED).fill"
+        } else if next::state_fill_of(&b.body(WidgetState::PRESSED)).is_some() {
+            "button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill"
+        } else {
+            "gpui-component's own button_active token: the theme states neither button.body(CHECKED).fill nor button.body(PRESSED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands (button/button.rs, ButtonVariant::selected)"
+        };
+        let text = if next::state_text_color_of(&b.label(WidgetState::CHECKED)).is_some() {
+            "button.label(CHECKED).color"
+        } else {
+            "button.label(PRESSED).color, where no rule states button.label(CHECKED).color"
+        };
+        button_info = button_info.instance(
+            "state",
+            format!("selected: on, filled with {fill} and lettered in {text}"),
+        );
+    }
+    let button = refined(button.selected(true).toggled(true), checked.as_ref());
     InfoExt::info(labelled(ui, cx, button, id, label), ui, id, button_info)
         .debug_selector(move || id.into())
 }
@@ -9998,7 +10089,6 @@ pub(crate) fn dialog_default_button(
             )
         }
         None => {
-            let native_button = native.as_ref().map(|n| &n.resolved.button);
             let mut button_info = info::buttons::button(
                 cx.theme(),
                 ButtonKind::Primary,
@@ -10006,12 +10096,12 @@ pub(crate) fn dialog_default_button(
                 false,
                 false,
                 None,
-                native_button,
+                button_theme(cx),
             );
-            let button = native_info(
+            let button = next_native_info(
                 Button::new(id).primary(),
                 cx,
-                geometry::button,
+                next::geometry::button,
                 "button",
                 &mut button_info,
             );

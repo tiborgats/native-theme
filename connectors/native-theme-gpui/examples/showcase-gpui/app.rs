@@ -346,8 +346,9 @@ pub(crate) struct Showcase {
     /// (`next::Theme::from_system`), kept as `system` is and read again
     /// where `system` is: what `default` installs, and the context every
     /// theme is resolved in starts from (`Showcase::next_context`). `None`
-    /// before a read and where the last one failed.
-    pub(crate) next_system: Option<native_theme::next::Theme>,
+    /// before a read; a failed read is kept as its error, as a read that
+    /// succeeded is, until a reload reads again (`reload_system_theme`).
+    pub(crate) next_system: Option<Result<native_theme::next::Theme, String>>,
     /// The palette chosen in the theme settings' palette Select, laid over
     /// whichever theme is installed: a name of `Palette::BUNDLED_NAMES`, or
     /// `None`, the theme's own colours.
@@ -426,6 +427,15 @@ pub(crate) struct Showcase {
     /// all, from its caller, so it needs none.
     #[cfg(test)]
     pub(crate) os_preferences_for_test: Option<AccessibilityPreferences>,
+    /// The context the self-tests say a preset's 0.7.2 theme is resolved
+    /// in, which a preset install then resolves it in in place of the
+    /// platform's (`Showcase::old_resolution_context`): its font DPI is the
+    /// host's, 72 on macOS and 96 elsewhere, which would make a measurement
+    /// differ from one machine to the next. It also pins the dialog button
+    /// order and the icon theme, as `ResolutionContext::for_tests()` gives
+    /// them, in place of the platform's order and the detected icon theme.
+    #[cfg(test)]
+    pub(crate) resolution_context_for_test: Option<native_theme::ResolutionContext>,
     /// The system icon theme's detection as the self-tests say it went,
     /// which the Icons page's label then shows in place of the host's
     /// (`Showcase::detected_icon_theme`): a test cannot change the desktop's.
@@ -1943,6 +1953,8 @@ impl Showcase {
             #[cfg(test)]
             os_preferences_for_test: None,
             #[cfg(test)]
+            resolution_context_for_test: None,
+            #[cfg(test)]
             icon_theme_detection_for_test: None,
             palette_state,
             focus_handle,
@@ -2115,6 +2127,18 @@ impl Showcase {
         native_theme::detect::accessibility_preferences()
     }
 
+    /// The context a preset's 0.7.2 theme is resolved in: the platform's
+    /// (`ResolutionContext::from_system`, as `Theme::resolve` takes it); in
+    /// the self-tests, the one `resolution_context_for_test` holds, where it
+    /// holds one.
+    fn old_resolution_context(&self) -> native_theme::ResolutionContext {
+        #[cfg(test)]
+        if let Some(ctx) = &self.resolution_context_for_test {
+            return ctx.clone();
+        }
+        native_theme::ResolutionContext::from_system()
+    }
+
     /// Install the desktop's own theme with `system` as its 0.7.2 theme, as
     /// `SystemTheme::from_system` read it, and keep it (`Showcase::system`):
     /// what `default` installs, at startup too (`Showcase::install`). Its
@@ -2136,17 +2160,20 @@ impl Showcase {
     }
 
     /// The desktop's settings as the 0.8.0 model reads them
-    /// (`next::Theme::from_system`), read where none are kept
+    /// (`next::Theme::from_system`), read where no read is kept
     /// (`Showcase::next_system`); the error to report, as the 0.7.2 read's
-    /// is reported, where the read fails, which keeps nothing, so the next
-    /// install reads again. No preset stands in for the desktop's settings.
+    /// is reported, where the read failed. The failure is kept as the
+    /// settings are, so a preset switch or a preference change does not read
+    /// the desktop again; a reload does (`reload_system_theme`). No preset
+    /// stands in for the desktop's settings.
     fn next_system(&mut self) -> Result<&native_theme::next::Theme, String> {
-        let system = match self.next_system.take() {
-            Some(system) => system,
-            None => native_theme::next::Theme::from_system()
-                .map_err(|e| format!("Failed to load OS theme: {e}"))?,
-        };
-        Ok(self.next_system.insert(system))
+        self.next_system
+            .get_or_insert_with(|| {
+                native_theme::next::Theme::from_system()
+                    .map_err(|e| format!("Failed to load OS theme: {e}"))
+            })
+            .as_ref()
+            .map_err(String::clone)
     }
 
     /// The context a theme is installed in (spec §6): the desktop's, as the
@@ -2259,7 +2286,8 @@ impl Showcase {
     /// the 0.8.0 model (`support::OldModel`), with the 0.8.0 theme resolved
     /// for an inactive window (`support::NextInactive`), and the preferences
     /// asked for, with why the theme's contrast is lower than they ask where
-    /// it is (`support::Requested`). Where either model cannot build it
+    /// it is and the palette High contrast set aside where it set one aside
+    /// (`support::Requested`). Where either model cannot build it
     /// nothing is installed or changed, the error is reported and false is
     /// returned.
     fn install(&mut self, name: &str, window: &mut Window, cx: &mut Context<Self>) -> bool {
@@ -2310,12 +2338,18 @@ impl Showcase {
         let inactive = theme.resolve(&inactive_ctx);
         let resolved = theme.with_context(ctx.clone()).resolve_current();
         let contrast_held = self.contrast_held(name, &ctx, &resolved)?;
+        // `High` meets a palette only where the theme preserves it, which
+        // the showcase never asks for: resolved at `High`, the theme was
+        // resolved without the palette chosen (spec §6, resolution step 1).
+        let palette_set_aside = self
+            .palette
+            .filter(|_| resolved.context.contrast == Contrast::High);
         let mode = color_mode_of(resolved.is_dark());
         let old = match old {
             OldChoice::System(system) => OldResolved::System(system),
             OldChoice::Preset(nt) => {
                 let shown = nt
-                    .resolve(mode)
+                    .resolve_with(mode, &self.old_resolution_context())
                     .map_err(|e| format!("Theme '{name}' resolution failed: {e}"))?;
                 OldResolved::Preset(nt, Box::new(shown))
             }
@@ -2330,6 +2364,7 @@ impl Showcase {
         cx.set_global(crate::support::Requested {
             preferences: prefs.clone(),
             contrast_held,
+            palette_set_aside,
         });
         cx.set_global(crate::support::OldModel {
             resolved: old,
@@ -2400,7 +2435,7 @@ impl Showcase {
         // where that fails, the shown mode's, so no earlier theme's decides
         // what the widget icons serve.
         #[cfg(feature = "svg-rasterize")]
-        match nt.resolve(color_mode_of(!self.is_dark)) {
+        match nt.resolve_with(color_mode_of(!self.is_dark), &self.old_resolution_context()) {
             Ok(other) => {
                 self.other_icon_theme_explicit = other.icon_theme_explicit;
                 self.other_icon_theme = other.icon_theme.map(Cow::into_owned);
@@ -2424,8 +2459,10 @@ impl Showcase {
     ///
     /// `default` installs the desktop's theme kept from its last install
     /// (`Showcase::system`, `Showcase::next_system`), in the mode now shown,
-    /// and reads the OS only where none is kept: at the first install, where
-    /// the last read failed, and after a reload (`reload_system_theme`).
+    /// and reads the OS only where none is kept: at the first install and
+    /// after a reload (`reload_system_theme`). The 0.7.2 read is made again
+    /// where the last one failed; the 0.8.0 read keeps a failed read, as it
+    /// keeps the settings, until the reload (`Showcase::next_system`).
     pub(crate) fn apply_theme_by_name(
         &mut self,
         name: &str,

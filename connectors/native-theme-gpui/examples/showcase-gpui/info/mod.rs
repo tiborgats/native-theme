@@ -3,8 +3,16 @@
 use gpui::{App, Hsla, Rems, StyleRefinement, Styled};
 use gpui_component::theme::Theme;
 use native_theme_gpui::Native;
+use native_theme_gpui::next::Mapped;
+/// The reads a claim in the 0.8.0 form makes of its home's property: the
+/// connector's own (`native_theme_gpui::next`), each `None` where the theme
+/// states no value gpui can take there, unstated or in a form gpui cannot
+/// draw, so the panel shows the toolkit's own there (spec §10, rule 0).
+pub use native_theme_gpui::next::{
+    radius_of, state_stroke_color_of, stroke_color_of, stroke_width_of,
+};
 
-use crate::support::{native_geometry, refined};
+use crate::support::{native_geometry, next_value, refined};
 
 pub mod buttons;
 pub mod charts;
@@ -170,6 +178,16 @@ impl WidgetInfo {
             .map_or("(no GEOMETRY_NOTES entry)", |(_, what)| *what);
         self.config("geometry", format!("geometry::{builder}: {what}"))
     }
+    /// The "geometry" line for the `next::geometry` builder named `builder`,
+    /// from [`NEXT_GEOMETRY_NOTES`]; the only way such a line is written on
+    /// the 0.8.0 model.
+    pub fn next_geometry(self, builder: &'static str) -> Self {
+        let what = NEXT_GEOMETRY_NOTES
+            .iter()
+            .find(|(name, _)| *name == builder)
+            .map_or("(no NEXT_GEOMETRY_NOTES entry)", |(_, what)| *what);
+        self.config("geometry", format!("geometry::{builder}: {what}"))
+    }
     pub fn title(&self) -> String {
         match &self.variant {
             Some(v) => format!("{} · {v}", self.kind),
@@ -209,20 +227,14 @@ impl WidgetInfo {
 
 /// What each `geometry::` builder carries, one entry per `pub fn` of
 /// `native-theme-gpui/src/geometry.rs` in its order, the value builders
-/// included: `WidgetInfo::geometry` prints `geometry::<name>: <what>`.
-/// `every_geometry_builder_has_a_note` holds it to geometry.rs.
+/// included, but for those whose every caller is on the 0.8.0 model, which
+/// [`NEXT_GEOMETRY_NOTES`] alone describes: `WidgetInfo::geometry` prints
+/// `geometry::<name>: <what>`. `every_geometry_builder_has_a_note` holds the
+/// two tables to geometry.rs.
 pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "button",
         "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
-    ),
-    (
-        "button_label",
-        "button.font's family, size, weight and style, and defaults.line_height as the line height, on a label passed as the Button's child: upstream sizes a .label() from the Size enum on the content element -- text_sm at Size::Medium -- which a style on the Button does not reach and a child's own size overrules (sizing.rs, button_text_size; button/button.rs, Button::render); no colour, so the label takes the Button's state colours",
-    ),
-    (
-        "toggle",
-        "button.font's family, size, weight and style, and defaults.line_height as the line height, on the Toggle: upstream sets text_sm on a Size::Medium Toggle before the caller's refinement, so this size wins (button/toggle.rs, Toggle::render); the text alone -- a Toggle is Ghost by default, a flat button, and the model states no flat-button frame, so upstream's own stands",
     ),
     (
         "input",
@@ -378,14 +390,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "combo_box.background_color, or for a disabled trigger combo_box.disabled_background (the enabled fill where the theme states none) and combo_box.disabled_text_color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
     ),
     (
-        "button_disabled",
-        "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color on a disabled Button, faded by button.disabled_opacity, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)",
-    ),
-    (
-        "button_checked",
-        "button.checked_background and button.checked_text_color on a selected Button, the pressed pair (button.active_background, button.active_text_color) where none is stated, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button)",
-    ),
-    (
         "toolbar_button_rest",
         "where the theme states toolbar.button_hover_border_color, a transparent fill and a transparent border button.border.line_width wide, and each stated side of button.border.padding less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where the theme states no outline",
     ),
@@ -423,6 +427,35 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
 ];
 
+/// [`GEOMETRY_NOTES`] for the builders of `native_theme_gpui::next::geometry`
+/// a widget on the 0.8.0 model records, each naming the homes its builder
+/// reads: `WidgetInfo::next_geometry` prints `geometry::<name>: <what>`. A
+/// builder whose every caller is on the 0.8.0 model has its entry here alone.
+pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
+    (
+        "button",
+        "button.body(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1; upstream's height where the theme states none), button.body(NONE).min_size[0], the padding sides button.body(NONE) states, its corner radius, stroke width and stroke colour, and button.label(NONE).weight but not its size (spec §9.2)",
+    ),
+    (
+        "button_label",
+        "button.label(NONE)'s family, size, weight and style, and typography.line_height_multiplier as the line height, on a label passed as the Button's child: upstream sizes a .label() from the Size enum on the content element -- text_sm at Size::Medium -- which a style on the Button does not reach and a child's own size overrules (sizing.rs, button_text_size; button/button.rs, Button::render); no colour, so the label takes the Button's state colours",
+    ),
+    (
+        "toggle",
+        "button.label(NONE)'s family, size, weight and style, and typography.line_height_multiplier as the line height, on the Toggle: upstream sets text_sm on a Size::Medium Toggle before the caller's refinement, so this size wins (button/toggle.rs, Toggle::render); the text alone -- a Toggle is Ghost by default, a flat button, and the model states no flat-button frame, so upstream's own stands",
+    ),
+    (
+        "button_disabled",
+        "button.body(DISABLED).fill and button.label(DISABLED).color on a disabled Button, faded by button.disabled_opacity, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)",
+    ),
+    (
+        "button_checked",
+        "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, the pressed pair (button.body(PRESSED).fill, button.label(PRESSED).color) where no rule states them for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where neither fill is stated the refinement sets none, and upstream's selected fill stands",
+    ),
+    ("icon_size_toolbar", "toolbar.button_icon(NONE).size"),
+    ("icon_size_small", "icons.sizes.small"),
+];
+
 /// `w` with the `build` refinement applied and `info` given `build`'s
 /// geometry line, both only when a native theme is installed; before `apply`
 /// ran the widget keeps upstream's geometry and `info` names no builder.
@@ -440,6 +473,53 @@ pub fn native_info<W: Styled>(
         *info = std::mem::take(info).geometry(name);
     }
     refined(w, style.as_ref())
+}
+
+/// [`native_info`] on the 0.8.0 model: `w` with the refinement a builder of
+/// `native_theme_gpui::next::geometry` gives for the installed 0.8.0 theme,
+/// and `info` given `build`'s geometry line. Where the theme states no value
+/// gpui can take at a home the builder reads (unstated, or in a form gpui
+/// cannot draw), the widget keeps upstream's geometry and `info` names that
+/// home (spec §10, rule 0); before `apply` ran it names no builder.
+pub fn next_native_info<W: Styled>(
+    w: W,
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> Mapped<StyleRefinement>,
+    name: &'static str,
+    info: &mut WidgetInfo,
+) -> W {
+    refined(w, next_native_value(cx, build, name, info).as_ref())
+}
+
+/// What [`next_native_info`] applies, for a builder of any value (a size, a
+/// refinement): the value `build` gives for the installed 0.8.0 theme, and
+/// `info` given `build`'s geometry line; where the theme leaves a value the
+/// builder needs without a value gpui can take, `None`, so the widget keeps
+/// upstream's, and `info` says at which home (spec §10, rule 0); `None` before
+/// `apply` ran, naming no builder.
+pub fn next_native_value<T>(
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> Mapped<T>,
+    name: &'static str,
+    info: &mut WidgetInfo,
+) -> Option<T> {
+    match next_value(cx, build) {
+        Some(Ok(value)) => {
+            *info = std::mem::take(info).next_geometry(name);
+            Some(value)
+        }
+        Some(Err(unstated)) => {
+            *info = std::mem::take(info).config(
+                "geometry",
+                format!(
+                    "gpui-component's own: the theme states no value gpui can take at {}, which geometry::{name} needs",
+                    unstated.home()
+                ),
+            );
+            None
+        }
+        None => None,
+    }
 }
 
 /// What a Widget Info says of the icons gpui-component builds and draws

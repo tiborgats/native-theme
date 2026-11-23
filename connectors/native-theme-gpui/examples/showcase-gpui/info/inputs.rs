@@ -3,7 +3,7 @@
 #[cfg(feature = "widgets")]
 use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
-use native_theme::theme::ResolvedButtonTheme;
+use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 use native_theme_gpui::ResolvedTheme;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{CheckboxLook, SwitchLook};
@@ -1979,16 +1979,35 @@ pub fn speech_waveform(t: &Theme, kind: WaveformKind) -> WidgetInfo {
     }
 }
 
+/// The square of the speech indicator's stop Button, where the installed
+/// 0.8.0 theme states it: the resting button body's minimum height, the
+/// side, and its corner radius.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct StopSquare {
+    /// `button.body(NONE).min_size[1]`.
+    pub(crate) side: f32,
+    /// `button.body(NONE).corners`, as one radius.
+    pub(crate) radius: f32,
+}
+
+impl StopSquare {
+    /// `r`'s square, `None` where it states no minimum height or no one
+    /// radius for the resting button body.
+    pub(crate) fn of(r: &NextTheme) -> Option<Self> {
+        let body = r.button.body(WidgetState::NONE);
+        Some(Self {
+            side: body.min_size[1]?,
+            radius: super::radius_of(&body)?,
+        })
+    }
+}
+
 /// The `SpeechIndicator` the Inputs page shows while its synthetic input
 /// captures: the only child of a selected Ghost Button that stops the
-/// session, a square of `native`'s `button.min_height` where a native theme
-/// is installed. `keyboard` is whether the Button has keyboard focus, under
+/// session, a square of `native`'s side where the installed 0.8.0 theme
+/// states one. `keyboard` is whether the Button has keyboard focus, under
 /// which it shows its name in place of the indicator.
-pub fn speech_indicator(
-    t: &Theme,
-    native: Option<&ResolvedButtonTheme>,
-    keyboard: bool,
-) -> WidgetInfo {
+pub fn speech_indicator(t: &Theme, native: Option<StopSquare>, keyboard: bool) -> WidgetInfo {
     let info = super::buttons::native_ghost_selected(
         WidgetInfo::new("SpeechIndicator").variant(if keyboard {
             "in a stop Button, keyboard focus"
@@ -2011,25 +2030,25 @@ pub fn speech_indicator(
         "with no padding, so the indicator fills the Button as its doc asks (speech/indicator.rs:52-54, SpeechButton)"
     };
     let square = match native {
-        Some(b) => info.config(
+        Some(s) => info.config(
             "square",
             format!(
-                "{}px, button.min_height, rounded by button.border.corner_radius, {}px, {padding}; the showcase sets them on the Button (demo::speech_indicator)",
-                px_text(b.min_height),
-                px_text(b.border.corner_radius.max(0.))
+                "{}px, button.body(NONE).min_size[1], rounded by button.body(NONE).corners, {}px, {padding}; the showcase sets them on the Button (demo::speech_indicator)",
+                px_text(s.side),
+                px_text(s.radius.max(0.))
             ),
         ),
         None => info.not_themeable(
             "square",
             format!(
-                "size_8, the square upstream gives an icon Button at the default Size, {padding}; a Button with a child is laid out as a labelled one (button/button.rs:693-699, size_8), so the showcase sets it"
+                "size_8, the square upstream gives an icon Button at the default Size, {padding}; a Button with a child is laid out as a labelled one (button/button.rs:693-699, size_8), so the showcase sets it, where the installed 0.8.0 theme states no value gpui can take at button.body(NONE).min_size[1] or button.body(NONE).corners"
             ),
         ),
     };
     square
         .not_themeable("bars", "four, each 0.085 of the indicator's shorter side wide and 0.075 apart, a full one 0.46 of it tall (speech/indicator.rs:16, BARS; :41-43, HEIGHT_RATIO), side by side round the centre and grown from the midline, never shorter than wide (speech/indicator.rs, bar_rects): literals")
         .not_themeable("motion", "each bar follows the level read at a playhead gliding between levels 80ms apart (speech/level.rs, LEVEL_INTERVAL; speech/indicator.rs:143-145, playhead), weighted 0.65 / 1 / 0.85 / 0.55 and lagging 1 / 0 / 0.5 / 1.5 levels (speech/indicator.rs:20, WEIGHTS; :24, LAGS); in silence they breathe up to 0.12 of the way from a dot to a full bar, at 2.4 radians per second and 0.9 radians apart (speech/indicator.rs:31, BREATH; :34, BREATH_RATE; :37, BREATH_SPREAD); before any audio they are dots (speech/indicator.rs:139-142, bar_heights); under reduced motion they hold still at 0.4 / 0.7 / 0.55 / 0.35 (speech/indicator.rs:27, STILL; :85-86, reduce_motion); the window redraws every frame while capturing, unless motion is reduced (speech/indicator.rs:92-94, request_animation_frame): literals")
-        .not_themeable("hover", "under the pointer the bars fade out and the stop glyph, gpui-component's Square, fades in at the Size the indicator is given (speech/indicator.rs:104, group_hover; :128-130, Square): geometry::icon_size_toolbar where a native theme is installed, the default Size otherwise")
+        .not_themeable("hover", "under the pointer the bars fade out and the stop glyph, gpui-component's Square, fades in at the Size the indicator is given (speech/indicator.rs:104, group_hover; :128-130, Square): geometry::icon_size_toolbar where the installed 0.8.0 theme states toolbar.button_icon(NONE).size, the default Size otherwise")
         .not_themeable("own icons", super::own_icons("the stop glyph's Square (speech/indicator.rs, SpeechIndicator::render)"))
 }
 

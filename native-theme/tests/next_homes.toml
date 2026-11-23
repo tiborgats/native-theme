@@ -44,7 +44,8 @@
 #                          home of the row on that preset, which the test compares in place of the old value. The
 #                          string "unstated" is a part property's `stated` bit clear or an `Option` slot's `None`
 #                          (a `min_size[1]` of `None`); any other value is the home's value in the old field's
-#                          serialised form (a number, a bool, a colour as its hex string).
+#                          serialised form (a number, a bool, a colour as its hex string). Where the two schemes
+#                          differ, the value is `{ light = <value>, dark = <value> }`, each scheme's.
 #   note                 optional. How a value converts where the home's type is not the old field's.
 #
 # A home is one of:
@@ -500,10 +501,18 @@ homes = ["button.body(DISABLED).fill"]
 [[row]]
 key = "button.checked_background"
 homes = ["button.body(CHECKED).fill"]
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (a checked button drawn at rest); 0.8.0 states the measured checked toggle (spec §10, rule 0a: which state looks like which is the theme's to state): on macos-tahoe the default accent mixed with #000000 (light) or #ffffff (dark) by 0.025 in sRGB, on ios-13 UIKit's selected toggle under the default tint"
+difference_citation = "docs/facts/macos/button.toml and docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, the button.body.fill facts for `checked` on `toggle` (os-probe run 41006842699, os-probe-macos-26/tiebreak-derivations.toml, derivation.checked_fill_*; ios-host run 41020880059, ios-host-macos-15/analysis.toml, cells.*.gray.*.selected.fill); docs/platform-facts.md §2.3 (checked_background)"
+difference_values = { "macos-tahoe" = { light = "#0077f9", dark = "#067dff" }, "ios-13" = { light = "#007aff2e", dark = "#0a84ff40" } }
 
 [[row]]
 key = "button.checked_text_color"
 homes = ["button.label(CHECKED).color"]
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (a checked button's label at rest); 0.8.0 states the measured checked toggle's label (spec §10, rule 0a): #ffffff on macos-tahoe, UIKit's default tint on ios-13"
+difference_citation = "docs/facts/macos/button.toml and docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, the button.label.text.fill facts for `checked` on `toggle` (os-probe run 41006842699, os-probe-macos-26/layers-key-push.toml, key.push.*.normal.*-toggle_on.label; ios-host run 41020880059, ios-host-macos-15/analysis.toml, cells.*.gray.*.selected.label_fill); docs/platform-facts.md §2.3 (checked_text_color)"
+difference_values = { "macos-tahoe" = "#ffffff", "ios-13" = { light = "#007aff", dark = "#0a84ff" } }
 
 [[row]]
 key = "button.hover_border_color"

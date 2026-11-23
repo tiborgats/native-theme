@@ -16,7 +16,7 @@
 //! prepaint (src/fast/layers/paint.rs:233-235, src/fast/layers/reuse.rs:39),
 //! so a record there keeps the bounds of the layer's last repaint, off by
 //! the scroll since. gpui moves the hitboxes, so hovers and the choice,
-//! which compares areas only, hold; the layout dump does not
+//! which compares id paths and areas only, hold; the layout dump does not
 //! (`layout_drawn`).
 //!
 //! So the registry does not ask whether a target recorded in the frame,
@@ -55,9 +55,9 @@ use std::{
 };
 
 use gpui::{
-    App, Bounds, Context, Div, ElementId, Entity, InteractiveElement as _, IntoElement,
-    ParentElement as _, Pixels, Stateful, StatefulInteractiveElement as _, Styled as _, Window,
-    canvas, div, prelude::FluentBuilder as _,
+    App, Bounds, Context, Div, ElementId, Entity, GlobalElementId, InteractiveElement as _,
+    IntoElement, ParentElement as _, Pixels, Stateful, StatefulInteractiveElement as _,
+    Styled as _, Window, canvas, div, prelude::FluentBuilder as _,
 };
 
 use super::WidgetInfo;
@@ -77,6 +77,9 @@ pub struct Presence;
 /// recorded that.
 struct Record {
     bounds: Bounds<Pixels>,
+    /// A target's recorder's id path ([`begin_record_at`]); `None` for an
+    /// element of the list.
+    path: Option<GlobalElementId>,
     presence: Weak<Presence>,
     #[cfg(test)]
     draw: u64,
@@ -213,6 +216,7 @@ impl InfoRegistry {
             id,
             Record {
                 bounds,
+                path: None,
                 presence,
                 #[cfg(test)]
                 draw: self.draw,
@@ -280,6 +284,7 @@ impl InfoRegistry {
         &mut self,
         id: ElementId,
         bounds: Bounds<Pixels>,
+        path: GlobalElementId,
         info: &Rc<WidgetInfo>,
         presence: Weak<Presence>,
     ) -> bool {
@@ -315,6 +320,7 @@ impl InfoRegistry {
             id,
             Record {
                 bounds,
+                path: Some(path),
                 presence,
                 #[cfg(test)]
                 draw: self.draw,
@@ -327,17 +333,31 @@ impl InfoRegistry {
         self.bounds.get(id).is_some_and(Record::drawn)
     }
     /// The hovered target drawn in the last frame with the smallest area;
-    /// the most recently entered wins a tie.
+    /// the most recently entered wins a tie. A target that holds a hovered
+    /// target drawn in it and larger than it is not a candidate: content
+    /// larger than the box it is in -- a scroll area's, taller than the
+    /// viewport -- is clipped to it, so the pointer is on the part inside,
+    /// whose own area its full bounds overstate.
     fn choose(&self) -> Option<(ElementId, Rc<WidgetInfo>)> {
-        self.hovered
+        let area = |b: Bounds<Pixels>| b.size.width.as_f32() * b.size.height.as_f32();
+        let drawn: Vec<_> = self
+            .hovered
             .iter()
             .enumerate()
             .filter_map(|(ix, (id, info))| {
-                let b = self.bounds.get(id).filter(|record| record.drawn())?.bounds;
-                Some((b.size.width.as_f32() * b.size.height.as_f32(), ix, id, info))
+                let record = self.bounds.get(id).filter(|record| record.drawn())?;
+                Some((record, area(record.bounds), ix, id, info))
             })
-            .min_by(|a, b| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1)))
-            .map(|(_, _, id, info)| (id.clone(), info.clone()))
+            .collect();
+        drawn
+            .iter()
+            .filter(|(record, own, ..)| {
+                !drawn.iter().any(|(other, other_area, ..)| {
+                    *other_area > *own && encloses(record.path.as_ref(), other.path.as_ref())
+                })
+            })
+            .min_by(|a, b| a.1.total_cmp(&b.1).then(b.2.cmp(&a.2)))
+            .map(|(_, _, _, id, info)| ((*id).clone(), (*info).clone()))
     }
     fn set_hovered(
         &mut self,
@@ -465,17 +485,44 @@ pub fn begin_record(
     window: &mut Window,
     cx: &mut App,
 ) -> Weak<Presence> {
-    let presence = window.with_global_id(key, |id, window| {
-        window.with_element_state(id, |held: Option<Rc<Presence>>, _| {
+    begin_record_at(ui, key, window, cx).0
+}
+
+/// [`begin_record`], with the recorder's id path, its element's ids from
+/// the window's root down, `key` last: what tells a target inside another
+/// (`InfoRegistry::choose`).
+fn begin_record_at(
+    ui: &Entity<InfoRegistry>,
+    key: ElementId,
+    window: &mut Window,
+    cx: &mut App,
+) -> (Weak<Presence>, GlobalElementId) {
+    let (presence, path) = window.with_global_id(key, |id, window| {
+        let presence = window.with_element_state(id, |held: Option<Rc<Presence>>, _| {
             let held = held.unwrap_or_default();
             (Rc::downgrade(&held), held)
-        })
+        });
+        (presence, id.clone())
     });
     if !ui.read(cx).open.replace(true) {
         let ui = ui.clone();
         window.defer(cx, move |_, cx| end_frame(&ui, cx));
     }
-    presence
+    (presence, path)
+}
+
+/// Whether the target whose recorder's id path is `outer` holds the one
+/// whose recorder's is `inner` ([`begin_record_at`]): `outer`'s element's
+/// path, the recorder's less its key, begins `inner`'s and is shorter.
+/// False where either is not a target's.
+fn encloses(outer: Option<&GlobalElementId>, inner: Option<&GlobalElementId>) -> bool {
+    let (Some((_, outer)), Some((_, inner))) = (
+        outer.and_then(|path| path.split_last()),
+        inner.and_then(|path| path.split_last()),
+    ) else {
+        return false;
+    };
+    outer.len() < inner.len() && inner.starts_with(outer)
 }
 
 /// A target or a `record` box painted: what records next is the next
@@ -584,9 +631,10 @@ pub trait InfoExt: IntoElement + Sized {
                 // position would sit below the widget, not over it.
                 canvas(
                     move |bounds, window: &mut Window, cx: &mut App| {
-                        let presence = begin_record(&on_bounds, bounds_id.clone(), window, cx);
+                        let (presence, path) =
+                            begin_record_at(&on_bounds, bounds_id.clone(), window, cx);
                         let changed = on_bounds.update(cx, |r, _| {
-                            r.record_target(bounds_id, bounds, &bounds_info, presence)
+                            r.record_target(bounds_id, bounds, path, &bounds_info, presence)
                         });
                         if changed {
                             notify_after_draw(&on_bounds, window, cx);

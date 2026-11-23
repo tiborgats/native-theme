@@ -423,7 +423,7 @@ fn compare_row(
         value
     };
     let value = follow_if_null(row, rows, value, old)?;
-    let (value, old_null) = match listed_difference(row, preset)? {
+    let (value, old_null) = match listed_difference(row, preset, new.context.scheme)? {
         Some(listed) => (listed, false),
         None => (value.clone(), value.is_null()),
     };
@@ -652,9 +652,10 @@ fn follow_if_null<'a>(
     Ok(value)
 }
 
-/// The value 0.8.0 has at every home of `row` on `preset` where the row is a listed difference there:
-/// "unstated" as `null`, any other value as JSON.
-fn listed_difference(row: &Row, preset: Preset) -> Result<Option<Value>, String> {
+/// The value 0.8.0 has at every home of `row` on `preset` in `scheme` where the row is a listed
+/// difference there (a table of `light` and `dark` gives the scheme's): "unstated" as `null`, any other
+/// value as JSON.
+fn listed_difference(row: &Row, preset: Preset, scheme: Scheme) -> Result<Option<Value>, String> {
     let listed = row
         .difference_presets
         .iter()
@@ -668,6 +669,21 @@ fn listed_difference(row: &Row, preset: Preset) -> Result<Option<Value>, String>
         .as_ref()
         .and_then(|values| values.get(preset.as_str()))
         .ok_or_else(|| format!("no difference_values for `{}`", preset.as_str()))?;
+    let value = match value {
+        toml::Value::Table(schemes) => {
+            let name = match scheme {
+                Scheme::Light => "light",
+                Scheme::Dark => "dark",
+            };
+            schemes.get(name).ok_or_else(|| {
+                format!(
+                    "no `{name}` in the difference_values for `{}`",
+                    preset.as_str()
+                )
+            })?
+        }
+        other => other,
+    };
     match value {
         toml::Value::String(s) if s == "unstated" => Ok(Some(Value::Null)),
         toml::Value::String(s) => Ok(Some(Value::String(s.clone()))),

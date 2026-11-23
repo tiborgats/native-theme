@@ -101,9 +101,27 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 
 /// A part's fill, where stated as one colour.
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
+    stated(fill_of(part), home)
+}
+
+/// A part's fill as `fill` reads it, `None` where it is not stated, or
+/// stated as a layered paint with no fallback colour: for a reader that
+/// shows the toolkit's own there (spec §10, rule 0), as the showcase's
+/// Widget Info does. A fill stated as none is transparent, and a layered
+/// paint gives its fallback colour (spec §10, rule 2).
+pub fn fill_of(part: &PartStyle) -> Option<Hsla> {
+    fill_color_of(part).map(hsla)
+}
+
+/// A part's stated fill as one colour of the model, as [`fill_of`] reads it.
+fn fill_color_of(part: &PartStyle) -> Option<Color> {
+    if !part.stated.contains(PartStated::FILL) {
+        return None;
+    }
     match &part.fill {
-        Paint::Solid(c) if part.stated.contains(PartStated::FILL) => Ok(hsla(*c)),
-        _ => Err(Unmapped(home)),
+        Paint::None => Some(Color::TRANSPARENT),
+        Paint::Solid(c) => Some(*c),
+        paint @ Paint::Complex(_) => paint.fallback_color(),
     }
 }
 
@@ -122,11 +140,18 @@ pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
 /// extent stays and the connector's README records the limit (spec §10,
 /// rule 4).
 pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
+    stated(stroke_color_of(part), home)
+}
+
+/// A part's stroke colour as `stroke_color` reads it, `None` where it is
+/// not stated, or stated in a form gpui cannot draw (not one stroke of one
+/// colour).
+pub fn stroke_color_of(part: &PartStyle) -> Option<Hsla> {
     match &part.stroke {
         Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
-            Ok(hsla(*color))
+            Some(hsla(*color))
         }
-        _ => Err(Unmapped(home)),
+        _ => None,
     }
 }
 
@@ -134,32 +159,47 @@ pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla>
 /// band lies inside the part's box in each, spec §2), or as none, which is
 /// no width.
 pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
+    stated(stroke_width_of(part), home)
+}
+
+/// A part's stroke width as `stroke_width` reads it, `None` where it is
+/// not stated, or stated in a form gpui cannot draw (not one stroke, nor
+/// none).
+pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::STROKE) {
-        return Err(Unmapped(home));
+        return None;
     }
     match &part.stroke {
-        Stroke::None => Ok(0.0),
-        Stroke::Uniform { width, .. } => Ok(*width),
-        _ => Err(Unmapped(home)),
+        Stroke::None => Some(0.0),
+        Stroke::Uniform { width, .. } => Some(*width),
+        _ => None,
     }
 }
 
 /// A part's corner radius, where stated as one circular radius, or as square
 /// corners, which are no radius.
 pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
+    stated(radius_of(part), home)
+}
+
+/// A part's corner radius as `radius` reads it, `None` where it is not
+/// stated, or stated in a form gpui cannot draw (not one circular radius,
+/// nor square corners: pill, per-corner or concentric corners, a continuous
+/// curve).
+pub fn radius_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
-        return Err(Unmapped(home));
+        return None;
     }
     match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Ok(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Ok(r),
-        _ => Err(Unmapped(home)),
+        (CornerRadius::None, _) => Some(0.0),
+        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+        _ => None,
     }
 }
 
 /// A part's padding, top, right, bottom, left, each side where stated, as
 /// 0.7.2's per-side padding.
-pub(crate) fn padding(part: &PartStyle) -> [Option<f32>; 4] {
+pub fn padding_of(part: &PartStyle) -> [Option<f32>; 4] {
     let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
     let p = &part.padding;
     [
@@ -172,22 +212,76 @@ pub(crate) fn padding(part: &PartStyle) -> [Option<f32>; 4] {
 
 /// A text style's colour, where stated.
 pub(crate) fn text_color(text: &TextStyle, home: &'static str) -> Mapped<Hsla> {
-    if text.stated.contains(TextStated::COLOR) {
-        Ok(hsla(text.color))
-    } else {
-        Err(Unmapped(home))
-    }
+    stated(text_color_of(text), home)
+}
+
+/// A text style's colour as `text_color` reads it, `None` where it is not
+/// stated.
+pub fn text_color_of(text: &TextStyle) -> Option<Hsla> {
+    text.stated
+        .contains(TextStated::COLOR)
+        .then(|| hsla(text.color))
 }
 
 /// A part's fill where a rule states it for the queried state (its
 /// `from_state` bit), as [`fill`] reads it; `None` where none does, a soft
 /// option's unset value.
 pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    if part.from_state.contains(PartStated::FILL) {
-        fill(part, home).map(Some)
-    } else {
-        Ok(None)
+    state_option(
+        state_fill_of(part),
+        part.from_state.contains(PartStated::FILL),
+        home,
+    )
+}
+
+/// A state's soft option as a `Mapped` form reads it through its `_of`
+/// read: the value where it gives one; where it gives none, unset if no
+/// rule states the property for the queried state (`ruled` false), and
+/// the home lacked if one does, in a form gpui cannot take.
+fn state_option(value: Option<Hsla>, ruled: bool, home: &'static str) -> Mapped<Option<Hsla>> {
+    match value {
+        Some(value) => Ok(Some(value)),
+        None if ruled => Err(Unmapped(home)),
+        None => Ok(None),
     }
+}
+
+/// A part's fill as `state_fill` reads it, `None` where no rule states it
+/// for the queried state, or it is stated in a form gpui cannot paint (not
+/// one colour). The rule is for some flag of the query, not a given one
+/// (spec §2, `from_state`): a reader that keeps the toolkit's own treatment
+/// of one flag over a value stated for another queries with that flag
+/// alone.
+pub fn state_fill_of(part: &PartStyle) -> Option<Hsla> {
+    part.from_state
+        .contains(PartStated::FILL)
+        .then(|| fill_of(part))
+        .flatten()
+}
+
+/// A part's stroke colour as `state_stroke_color` reads it, `None` where
+/// no rule states it for the queried state, or it is stated in a form gpui
+/// cannot draw (not one stroke of one colour). The rule is for some flag of
+/// the query, not a given one (spec §2, `from_state`): a reader that keeps
+/// the toolkit's own treatment of one flag over a value stated for another
+/// queries with that flag alone.
+pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
+    part.from_state
+        .contains(PartStated::STROKE)
+        .then(|| stroke_color_of(part))
+        .flatten()
+}
+
+/// A text style's colour as `state_text_color` reads it, `None` where no
+/// rule states it for the queried state or it is not stated. The rule is
+/// for some flag of the query, not a given one (spec §2, `from_state`): a
+/// reader that keeps the toolkit's own treatment of one flag over a value
+/// stated for another queries with that flag alone.
+pub fn state_text_color_of(text: &TextStyle) -> Option<Hsla> {
+    text.from_state
+        .contains(TextStated::COLOR)
+        .then(|| text_color_of(text))
+        .flatten()
 }
 
 /// A part's fill where the theme states it, as [`fill`] reads it; `None`
@@ -203,21 +297,21 @@ pub(crate) fn stated_fill(part: &PartStyle, home: &'static str) -> Mapped<Option
 /// A part's stroke colour where a rule states it for the queried state, as
 /// [`stroke_color`] reads it; `None` where none does.
 pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    if part.from_state.contains(PartStated::STROKE) {
-        stroke_color(part, home).map(Some)
-    } else {
-        Ok(None)
-    }
+    state_option(
+        state_stroke_color_of(part),
+        part.from_state.contains(PartStated::STROKE),
+        home,
+    )
 }
 
 /// A text style's colour where a rule states it for the queried state, as
 /// [`text_color`] reads it; `None` where none does.
 fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    if text.from_state.contains(TextStated::COLOR) {
-        text_color(text, home).map(Some)
-    } else {
-        Ok(None)
-    }
+    state_option(
+        state_text_color_of(text),
+        text.from_state.contains(TextStated::COLOR),
+        home,
+    )
 }
 
 /// A text style's size, where stated.
@@ -870,15 +964,14 @@ pub fn selection_inactive_text_color(r: &ResolvedTheme) -> Mapped<Color> {
 }
 
 /// A part's fill where a rule states it for the queried state, as a colour
-/// of the model; `None` where none does.
+/// of the model; `None` where none does. A fill stated as none is
+/// transparent, and a layered paint gives its fallback colour (spec §10,
+/// rule 2).
 fn state_fill_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Color>> {
     if !part.from_state.contains(PartStated::FILL) {
         return Ok(None);
     }
-    match &part.fill {
-        Paint::Solid(c) => Ok(Some(*c)),
-        _ => Err(Unmapped(home)),
-    }
+    fill_color_of(part).map(Some).ok_or(Unmapped(home))
 }
 
 /// [`crate::list_header_hover_background`]: the fill of a hovered
@@ -887,7 +980,8 @@ fn state_fill_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Color
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the fill is stated in a form other than one colour.
+/// [`Unmapped`] where the fill is stated as a layered paint with no
+/// fallback colour.
 pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<Color>> {
     state_fill_color(
         &r.list.header(WidgetState::HOVER),
@@ -901,7 +995,8 @@ pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<Color>> 
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the fill is stated in a form other than one colour.
+/// [`Unmapped`] where the fill is stated as a layered paint with no
+/// fallback colour.
 pub fn list_header_active_background(r: &ResolvedTheme) -> Mapped<Option<Color>> {
     state_fill_color(
         &r.list.header(WidgetState::PRESSED),
@@ -1005,6 +1100,72 @@ mod tests {
             part.from_state = PartStated::FILL;
         }
         part
+    }
+
+    /// Spec §10 rule 2, for every fill read: a fill stated as none is
+    /// transparent, a layered paint its fallback colour -- the top opaque
+    /// layer's -- and one with no colour to fall back on (gradients only) is
+    /// the home lacked; an unstated fill is none of these.
+    #[test]
+    fn a_none_fill_is_transparent_and_a_layered_one_its_fallback() -> Mapped<()> {
+        use native_theme::next::{BlendMode, PaintLayer};
+
+        let painted = |paint: Paint, for_state: bool| {
+            let mut part = filled(RED, for_state);
+            part.fill = paint;
+            part
+        };
+        let solid = |color| PaintLayer::Solid {
+            color,
+            blend: BlendMode::Normal,
+        };
+        let layered = Paint::layers(vec![solid(GREEN), solid(BLUE)]);
+        let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: Vec::new().into(),
+            blend: BlendMode::Normal,
+        }]);
+        let transparent = hsla(Color::TRANSPARENT);
+
+        assert_eq!(fill(&painted(Paint::None, false), "none")?, transparent);
+        assert_eq!(
+            fill(&painted(layered.clone(), false), "layered")?,
+            hsla(BLUE)
+        );
+        assert_eq!(
+            fill(&painted(gradient.clone(), false), "gradient"),
+            Err(Unmapped("gradient"))
+        );
+        assert_eq!(
+            state_fill(&painted(Paint::None, true), "none")?,
+            Some(transparent)
+        );
+        assert_eq!(
+            state_fill(&painted(layered.clone(), true), "layered")?,
+            Some(hsla(BLUE))
+        );
+        assert_eq!(
+            state_fill(&painted(gradient, true), "gradient"),
+            Err(Unmapped("gradient"))
+        );
+        assert_eq!(state_fill(&painted(Paint::None, false), "none")?, None);
+        assert_eq!(
+            stated_fill(&painted(layered.clone(), false), "layered")?,
+            Some(hsla(BLUE))
+        );
+        assert_eq!(
+            state_fill_color(&painted(Paint::None, true), "none")?,
+            Some(Color::TRANSPARENT)
+        );
+        assert_eq!(
+            state_fill_color(&painted(layered, true), "layered")?,
+            Some(BLUE)
+        );
+        let mut unstated = painted(Paint::None, false);
+        unstated.stated = PartStated::default();
+        assert_eq!(fill_of(&unstated), None);
+        assert_eq!(stated_fill(&unstated, "unstated")?, None);
+        Ok(())
     }
 
     /// `button.active_background`: the pressed body's fill without a rule

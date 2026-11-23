@@ -468,3 +468,63 @@ fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
         );
     }
 }
+
+/// The checked button: its fill over the hovered and the pressed fills, its
+/// pressed fill and label when pressed too, its label over the pressed one; the
+/// primary and the disabled looks over it. The colours are the default
+/// tint's and stay under another accent.
+#[test]
+fn a_checked_button_has_the_selected_toggle_s_colours() {
+    let checked = |state| ButtonQuery::new(WidgetState::CHECKED | state);
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(scheme);
+        for theme in [
+            Theme::preset(Preset::Ios13).resolve(&ctx),
+            Theme::preset(Preset::Ios13)
+                .with_accent(hex(RED))
+                .resolve(&ctx),
+        ] {
+            for state in [WidgetState::NONE, WidgetState::HOVER] {
+                let body = theme.button.body(checked(state));
+                assert_eq!(body.fill, Paint::Solid(c.button_checked), "{scheme:?}");
+                assert_eq!(
+                    theme.button.label(checked(state)).color,
+                    c.button_checked_foreground,
+                    "{scheme:?}"
+                );
+            }
+            assert_eq!(
+                theme.button.body(checked(WidgetState::PRESSED)).fill,
+                Paint::Solid(c.button_checked_pressed),
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme.button.label(checked(WidgetState::PRESSED)).color,
+                c.button_checked_pressed_foreground,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme
+                    .button
+                    .label(checked(WidgetState::PRESSED | WidgetState::HOVER))
+                    .color,
+                c.button_checked_pressed_foreground,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme
+                    .button
+                    .body(ButtonQuery::primary().state(WidgetState::CHECKED))
+                    .fill,
+                Paint::Solid(theme.colors.accent.fill),
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme.button.body(checked(WidgetState::DISABLED)).fill,
+                Paint::Solid(c.disabled_fill),
+                "{scheme:?}"
+            );
+        }
+    }
+}

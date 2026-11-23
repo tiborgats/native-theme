@@ -1,7 +1,7 @@
 //! What the Overlays page's widgets report about themselves (spec §3.4).
 
 use gpui_component::theme::Theme;
-use native_theme::theme::ResolvedButtonTheme;
+use native_theme::next::ResolvedTheme as NextTheme;
 use native_theme_gpui::ResolvedTheme;
 
 use super::{
@@ -15,7 +15,7 @@ use crate::support::SampleIcon;
 /// The page's Button that opens `overlay`, refined by `geometry::button`
 /// from `native` where given; its geometry line is recorded by
 /// `native_info` where `demo::overlay_button` applies the builder.
-pub fn trigger(t: &Theme, overlay: Overlay, native: Option<&ResolvedButtonTheme>) -> WidgetInfo {
+pub fn trigger(t: &Theme, overlay: Overlay, native: Option<&NextTheme>) -> WidgetInfo {
     buttons::button(
         t,
         overlay.button_kind(),
@@ -120,7 +120,7 @@ pub fn dialog(
 /// The Button in the footer of the page's Dialog, which closes it, refined by
 /// `geometry::button` from `native` where given; its geometry line is
 /// recorded where `demo::confirm_dialog` makes the refinement.
-pub fn dialog_close(t: &Theme, native: Option<&ResolvedButtonTheme>) -> WidgetInfo {
+pub fn dialog_close(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
     buttons::button(
         t,
         ButtonKind::Default,

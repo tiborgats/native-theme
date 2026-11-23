@@ -1497,12 +1497,18 @@ on KDE Plasma, `adwaita` on Linux, `windows-11` on Windows, `macos-monterey`,
 lays one of the bundled palettes (`Palette::BUNDLED_NAMES`: the Catppuccin
 four, Dracula, Alucard, Nord, Solarized, Tokyo Night, Gruvbox and One, each
 for one scheme) over it, or `none`, the preset's own colours, and locks the
-mode to the palette's scheme. Under a palette, gpui-component's colours and
-the connector's own widgets are drawn from the 0.8.0 theme with the palette;
-the showcase's own refinements -- its colours and geometry, its menus, and
-the side panel's padding and label font -- still read the 0.7.2 preset,
-which has no palettes, until their pages move to the 0.8.0 model, as the
-palette's tooltip says. The content panel shows the page, with a tab per
+mode to the palette's scheme. Under a palette, gpui-component's theme colours
+and the connector's own widgets are drawn from the 0.8.0 theme with the
+palette. Still read from the 0.7.2 preset, which has no palettes, until their
+pages move to the 0.8.0 model, as the palette's tooltip says: the button
+variant and rest fill the showcase gives the Basic page's default-button
+sample (`variants::default_button`, `geometry::default_button_rest`), the checked
+track of the Switches built without the `widgets` feature
+(`variants::switch_color`: Basic, Inputs and Preferences), and the
+showcase's own refinements -- its colours and geometry, its menus, and the
+side panel's padding and label font. While High contrast is on, a preset
+with a High level for the mode asked sets the palette aside, and the
+palette's and the High contrast switch's infos say so. The content panel shows the page, with a tab per
 page above it. A status bar has the side panel's toggle at its left end.
 Resting the pointer on any widget shows in the inspector what the theme sets
 on it, with the upstream line each colour is read at. Two parts report

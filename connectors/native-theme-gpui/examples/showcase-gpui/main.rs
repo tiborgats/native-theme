@@ -380,6 +380,10 @@ pub(crate) const INSPECTOR_PANEL: &str = "inspector-panel";
 /// The debug selector the label with the shown info's title carries.
 pub(crate) const INSPECTOR_TITLE: &str = "inspector-title";
 
+/// The debug selector a shown info not in the list's form carries, its
+/// title row and its sections.
+pub(crate) const INSPECTOR_INFO: &str = "inspector-info";
+
 /// The debug selector the inspector's TabBar carries.
 pub(crate) const INSPECTOR_TABS: &str = "inspector-tabs";
 

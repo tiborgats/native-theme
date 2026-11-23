@@ -29,8 +29,8 @@ use crate::elements;
 use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, stated};
 use crate::support::{NativeStyled, frame_drawer, with_gap, with_padding};
 use crate::{
-    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
-    probe,
+    INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
+    INSPECTOR_TOKENS_NOTE, demo, probe,
 };
 
 /// The inspector's two views, in the order its TabBar shows them.
@@ -76,7 +76,7 @@ pub(crate) struct Inspector {
     /// the hint shown before any hover.
     pub(crate) title_drawn: Option<SharedString>,
     /// Where its content is scrolled (`support::gutter_scroll`).
-    scroll: gpui::ScrollHandle,
+    pub(crate) scroll: gpui::ScrollHandle,
     _registry: Subscription,
 }
 
@@ -146,6 +146,7 @@ impl Inspector {
         let title = SharedString::from(title);
         self.title_drawn = Some(title.clone());
         with_gap(v_flex(), gap)
+            .debug_selector(|| INSPECTOR_INFO.into())
             .child(
                 h_flex()
                     .justify_between()
@@ -611,12 +612,6 @@ const NO_ROUTE: &str = "gpui: no route recorded";
 /// section names, in all three showcases.
 const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
 
-/// How many of its info's lines the inspector keeps in view when the side
-/// panel's content scrolls (`PanelLook::body_min_height`): the title, the
-/// first section's name and that section's first row. The showcase's own
-/// count; their heights are the theme's.
-const INFO_FIRST_LINES: f32 = 3.;
-
 /// What Widget Info is drawn in under a native theme, the same in the three
 /// showcases (docs/showcase-elements.toml, "The Widget Info format"): every
 /// text in `sidebar.font`'s family and size, one line of it tall
@@ -711,12 +706,27 @@ impl PanelLook {
     }
 
     /// The least height the inspector's content keeps below its TabBar,
-    /// where the side panel's content scrolls (`demo::side_panel`): its
-    /// info's first [`INFO_FIRST_LINES`] lines, each one line of the panel's
-    /// type tall (`sidebar.font`'s size by `defaults.line_height`), with
-    /// `layout.widget_gap` between them, as the rows are spaced.
-    pub(crate) fn body_min_height(&self) -> gpui::Pixels {
-        self.line * INFO_FIRST_LINES + self.row_gap * (INFO_FIRST_LINES - 1.)
+    /// where the side panel's content scrolls (`demo::side_panel`): down to
+    /// the end of its info's first row, as [`listed_info`] lays it out under
+    /// `margin`, the content's padding (`demo::side_panel_content_margin`):
+    /// the top margin; the title row, as tall as the Copy box, one line of
+    /// the panel's type (`sidebar.font`'s size by `defaults.line_height`)
+    /// padded by `button.border.padding`'s top and bottom, and never shorter
+    /// than the title's line; `layout.section_gap` and the "Theme" section's
+    /// name, one line; then `layout.widget_gap` and the first row's two
+    /// lines, its leaf and value, and how gpui applies it.
+    pub(crate) fn body_min_height(&self, margin: Option<gpui::Pixels>) -> gpui::Pixels {
+        let [top, _, bottom, _] = self.copy_padding;
+        let line = self.line.as_f32();
+        let title_row = (line + top.as_f32() + bottom.as_f32()).max(line);
+        gpui::px(
+            margin.unwrap_or_default().as_f32()
+                + title_row
+                + self.section_gap.as_f32()
+                + line
+                + self.row_gap.as_f32()
+                + line * 2.,
+        )
     }
 
     /// `text` in the panel's type: `sidebar.font` at its line height.
@@ -978,20 +988,24 @@ fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -
 
 impl Render for Inspector {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let (gap, container_margin, body_min) = self
+        let (gap, margin, body_min) = self
             .showcase
             .upgrade()
             .map(|showcase| {
                 let showcase = showcase.read(cx);
                 let layout = &showcase.layout;
+                let margin =
+                    demo::side_panel_content_margin(cx, geometry::container_margin(layout));
                 (
                     geometry::widget_gap(layout),
-                    geometry::container_margin(layout),
-                    showcase.panel_look.as_ref().map(PanelLook::body_min_height),
+                    margin,
+                    showcase
+                        .panel_look
+                        .as_ref()
+                        .map(|look| look.body_min_height(margin)),
                 )
             })
             .unwrap_or_default();
-        let margin = demo::side_panel_content_margin(cx, container_margin);
         let tabs = demo::tab_bar(
             &self.ui,
             cx,
@@ -1017,24 +1031,40 @@ impl Render for Inspector {
             .debug_selector(|| INSPECTOR_PANEL.into())
             .child(tabs)
             .child(
-                // The bar is drawn over the right edge of the scroll area, as
-                // on the content panel (`gutter_scroll`).
-                crate::support::gutter_scroll(
-                    "inspector-scroll",
-                    &self.scroll,
-                    div().child(with_padding(v_flex(), margin).child(body)),
-                    {
-                        let this = cx.entity().downgrade();
-                        move |cx: &mut gpui::App| {
-                            this.update(cx, |_, cx| cx.notify()).ok();
-                        }
-                    },
-                    cx,
-                )
-                .flex_1()
-                .min_h(body_min.unwrap_or_default())
-                // The room below the tabs, its scroll bar's included.
-                .child(elements::record(&self.ui, "chrome.side_panel.inspector")),
+                // The room below the tabs, grown from nothing over the rest
+                // of the inspector, and never shorter than its info down to
+                // the first row (`PanelLook::body_min_height`): that minimum
+                // is all of it that counts in the side panel's height, the
+                // scroll area being laid over the room, out of the flow, so
+                // the info it scrolls never makes the panel taller.
+                div()
+                    .relative()
+                    .w_full()
+                    .flex_grow_1()
+                    .flex_basis(gpui::px(0.))
+                    .min_h(body_min.unwrap_or_default())
+                    .child(
+                        // The bar is drawn over the right edge of the scroll
+                        // area, as on the content panel (`gutter_scroll`).
+                        crate::support::gutter_scroll(
+                            "inspector-scroll",
+                            &self.scroll,
+                            div().child(with_padding(v_flex(), margin).child(body)),
+                            {
+                                let this = cx.entity().downgrade();
+                                move |cx: &mut gpui::App| {
+                                    this.update(cx, |_, cx| cx.notify()).ok();
+                                }
+                            },
+                            cx,
+                        )
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        // The room below the tabs, its scroll bar's included.
+                        .child(elements::record(&self.ui, "chrome.side_panel.inspector")),
+                    ),
             )
     }
 }

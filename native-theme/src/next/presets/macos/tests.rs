@@ -990,3 +990,151 @@ fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
         );
     }
 }
+
+/// `macos-tahoe`'s checked toggle mixes the accent in force with black
+/// (light) or white (dark) by [`BUTTON_CHECKED_MIX`], which gives each
+/// reading of the parked facts, under the default and the red accent, to
+/// within one level per channel (os-probe run 41006842699,
+/// `os-probe-macos-26/tiebreak-derivations.toml`,
+/// `derivation.checked_fill_*`); its label is white. A hovered checked
+/// toggle keeps the checked look, the primary look wins over it, the
+/// checked and disabled look over the disabled one
+/// ([`tahoe_s_pressed_and_disabled_checked_button_mix_the_accent_in_force`]),
+/// and `macos-monterey` states no checked look.
+#[test]
+fn tahoe_s_checked_button_mixes_the_accent_in_force() {
+    let readings = [
+        (Scheme::Light, 0x007aff, 0x0077f9),
+        (Scheme::Light, RED, 0xdb373c),
+        (Scheme::Dark, 0x007aff, 0x077dff),
+        (Scheme::Dark, 0xff5257, 0xff575b),
+    ];
+    let checked = ButtonQuery::new(WidgetState::CHECKED);
+    for (scheme, accent, reading) in readings {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(Preset::MacosTahoe)
+            .with_accent(hex(accent))
+            .resolve(&ctx);
+        let body = theme.button.body(checked);
+        let got = solid(&body.fill).map(Color::to_srgb8);
+        let want = hex(reading).to_srgb8();
+        assert!(
+            got.is_some_and(|got| got.iter().zip(want).all(|(g, w)| g.abs_diff(w) <= 1)),
+            "{scheme:?} {accent:06x}: {got:?} against {want:?}"
+        );
+        assert!(body.from_state.contains(PartStated::FILL), "{scheme:?}");
+        assert_eq!(
+            theme.button.label(checked).color,
+            hex(0xffffff),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .button
+                .body(ButtonQuery::new(WidgetState::CHECKED | WidgetState::HOVER))
+                .fill,
+            body.fill,
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .button
+                .body(ButtonQuery::primary().state(WidgetState::CHECKED))
+                .fill,
+            Paint::Solid(theme.colors.accent.fill),
+            "{scheme:?}"
+        );
+    }
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let theme = Theme::preset(Preset::MacosMonterey).resolve(&ctx);
+        let rest = ButtonQuery::new(WidgetState::NONE);
+        assert_eq!(theme.button.body(checked), theme.button.body(rest));
+        assert_eq!(theme.button.label(checked), theme.button.label(rest));
+        for state in [WidgetState::PRESSED, WidgetState::DISABLED] {
+            assert_eq!(
+                theme
+                    .button
+                    .body(ButtonQuery::new(WidgetState::CHECKED | state)),
+                theme.button.body(ButtonQuery::new(state)),
+                "{state:?}"
+            );
+            assert_eq!(
+                theme
+                    .button
+                    .label(ButtonQuery::new(WidgetState::CHECKED | state)),
+                theme.button.label(ButtonQuery::new(state)),
+                "{state:?}"
+            );
+        }
+    }
+}
+
+/// `macos-tahoe`'s pressed checked toggle mixes the accent in force with
+/// black (light) or white (dark) by [`BUTTON_CHECKED_PRESSED_MIX`], its
+/// disabled checked toggle by [`BUTTON_CHECKED_DISABLED_MIX`] at
+/// [`BUTTON_CHECKED_DISABLED_ALPHA`], which give each reading of the parked
+/// facts, under the default and the red accent, within the facts' own
+/// tolerance (2 levels pressed, 3 disabled; os-probe run 41006842699,
+/// `os-probe-macos-26/tiebreak-derivations.toml`,
+/// `derivation.checked_pressed_fill_*` and `derivation.checked_disabled_fill_*`).
+/// The pressed toggle's label stays white, the disabled one's is #ffffff20
+/// (`layers-key-push.toml`, `key.push.*.disabled.*-toggle_on.label`). The
+/// disabled checked look wins over the pressed one and over the primary
+/// variant; the primary look wins over the pressed checked one.
+#[test]
+fn tahoe_s_pressed_and_disabled_checked_button_mix_the_accent_in_force() {
+    let readings = [
+        (Scheme::Light, 0x007aff, 0x006b_e1ff, 0x0076_f470),
+        (Scheme::Light, RED, 0xc532_36ff, 0xd636_3d71),
+        (Scheme::Dark, 0x007aff, 0x1f8a_ffff, 0x0982_ff70),
+        (Scheme::Dark, 0xff5257, 0xff67_6bff, 0xff5b_5d70),
+    ];
+    let near = |got: Option<Color>, want: u32, levels: u8| {
+        let want = want.to_be_bytes();
+        got.map(Color::to_srgb8)
+            .is_some_and(|got| got.iter().zip(want).all(|(g, w)| g.abs_diff(w) <= levels))
+    };
+    let pressed = ButtonQuery::new(WidgetState::CHECKED | WidgetState::PRESSED);
+    let disabled = ButtonQuery::new(WidgetState::CHECKED | WidgetState::DISABLED);
+    for (scheme, accent, pressed_reading, disabled_reading) in readings {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(Preset::MacosTahoe)
+            .with_accent(hex(accent))
+            .resolve(&ctx);
+        let body = theme.button.body(pressed);
+        assert!(
+            near(solid(&body.fill), pressed_reading, 2),
+            "{scheme:?} {accent:06x}: {:?} pressed",
+            solid(&body.fill).map(Color::to_srgb8)
+        );
+        assert!(body.from_state.contains(PartStated::FILL), "{scheme:?}");
+        assert_eq!(
+            theme.button.label(pressed).color,
+            hex(0xffffff),
+            "{scheme:?}"
+        );
+        let body = theme.button.body(disabled);
+        assert!(
+            near(solid(&body.fill), disabled_reading, 3),
+            "{scheme:?} {accent:06x}: {:?} disabled",
+            solid(&body.fill).map(Color::to_srgb8)
+        );
+        let label = Color::from_srgb8(0xff, 0xff, 0xff, 0x20);
+        assert_eq!(theme.button.label(disabled).color, label, "{scheme:?}");
+        for query in [
+            ButtonQuery::new(WidgetState::CHECKED | WidgetState::DISABLED | WidgetState::PRESSED),
+            ButtonQuery::primary().state(WidgetState::CHECKED | WidgetState::DISABLED),
+        ] {
+            assert_eq!(theme.button.body(query).fill, body.fill, "{scheme:?}");
+            assert_eq!(theme.button.label(query).color, label, "{scheme:?}");
+        }
+        assert_eq!(
+            theme
+                .button
+                .body(ButtonQuery::primary().state(WidgetState::CHECKED | WidgetState::PRESSED))
+                .fill,
+            Paint::Solid(theme.colors.accent.fill),
+            "{scheme:?}"
+        );
+    }
+}

@@ -377,7 +377,9 @@ pub fn theme_key(name: &str) -> Result<ThemeKey, String> {
 /// [`theme_key`] takes, less the community presets of the 0.7.2 model,
 /// whose colours are bundled palettes in the 0.8.0 one ([`palette_key`]).
 /// A preset of another platform, a community preset and an unknown name
-/// each get their own text, which lists what is offered.
+/// each get their own text, which lists what is offered; a community
+/// preset's names the bundled palettes whose names start with its key
+/// (`gruvbox`: `gruvbox-light` and `gruvbox-dark`).
 pub fn next_theme_key(name: &str) -> Result<ThemeKey, String> {
     if name == "default" {
         return Ok(ThemeKey::Default);
@@ -401,9 +403,15 @@ pub fn next_theme_key(name: &str) -> Result<ThemeKey, String> {
              here: {names}"
         ))
     } else if Theme::list_presets().iter().any(|info| info.key == name) {
-        let palette = match Palette::from_name(name) {
-            Some(_) => format!("--palette {name}"),
-            None => "--palette".to_string(),
+        let palettes: Vec<String> = Palette::BUNDLED_NAMES
+            .iter()
+            .filter(|palette| palette.starts_with(name))
+            .map(|palette| format!("--palette {palette}"))
+            .collect();
+        let palette = if palettes.is_empty() {
+            "--palette".to_string()
+        } else {
+            palettes.join(" or ")
         };
         Err(format!(
             "--theme {name}: a community preset of the 0.7.2 model, whose colours are a palette \
@@ -1003,8 +1011,8 @@ mod tests {
             next_theme_key("gruvbox"),
             Err(format!(
                 "--theme gruvbox: a community preset of the 0.7.2 model, whose colours are a \
-                 palette in the 0.8.0 model: lay it over a preset with --palette; the presets \
-                 are: {names}"
+                 palette in the 0.8.0 model: lay it over a preset with --palette gruvbox-light \
+                 or --palette gruvbox-dark; the presets are: {names}"
             ))
         );
         assert_eq!(
