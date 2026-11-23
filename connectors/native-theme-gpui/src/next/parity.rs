@@ -6,7 +6,7 @@
 //! resize handles, and every public builder of `src/geometry.rs` and
 //! `src/variants.rs`.
 //!
-//! Presets covered: kde-breeze, light and dark ([`PRESETS`]). The 0.7.2 side
+//! Presets covered: kde-breeze and adwaita, light and dark ([`PRESETS`]). The 0.7.2 side
 //! is resolved as the connector's tests resolve it
 //! (`ResolutionContext::for_tests`), with no accessibility scaling; the
 //! 0.8.0 side for the scheme's default context, whose text scale is 1, and,
@@ -71,7 +71,10 @@ use native_theme::theme::LayoutTheme;
 use crate::{AccessibilityPreferences, ColorMode, Native, ResolvedTheme};
 
 /// The presets the test covers: the 0.7.2 key and the 0.8.0 preset.
-const PRESETS: &[(&str, Preset)] = &[("kde-breeze", Preset::KdeBreeze)];
+const PRESETS: &[(&str, Preset)] = &[
+    ("kde-breeze", Preset::KdeBreeze),
+    ("adwaita", Preset::Adwaita),
+];
 
 /// One `ThemeColor` field: its colour, the token
 /// gpui-component derives from it, and its hex string in the stored config,
@@ -314,6 +317,19 @@ const DIFFERENCES: &[Difference] = &[
                  geometry::dialog's entry); the 0.8.0 kde-breeze leaves \
                  dialog.panel.max_size[0] unstated, so the 0.8.0 side has no width to give",
     },
+    Difference {
+        leaf: "geometry::group_box_content",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita.toml states no card.border.color or line_width, and 0.7.2's \
+                 validation fills a card border's unstated fields with transparent and 0 \
+                 (`BorderKind::None`, native-theme/src/resolve/validate_helpers.rs), a value \
+                 no source gives; the 0.8.0 adwaita leaves card.container(NONE).stroke \
+                 unstated (native-theme/tests/next_homes.toml, rows card.border.color and \
+                 card.border.line_width, unstated_if_unset), so the 0.8.0 refinement sets no \
+                 border width and no border colour and the group box keeps gpui-component's \
+                 own (docs/v0.8.0-spec.md §10, rule 0); every other field of the refinement \
+                 is equal",
+    },
 ];
 
 /// The home the 0.8.0 kde-breeze leaves unstated, which [`DIFFERENCES`]'
@@ -336,7 +352,7 @@ const FALLBACK_ONLY: &[FallbackOnly] = &[
     FallbackOnly {
         leaf: "geometry::data_table_size",
         field: "list.row_height",
-        presets: &["kde-breeze"],
+        presets: &["kde-breeze", "adwaita"],
         unset: |t| t.list.row_height.is_none(),
     },
     FallbackOnly {
@@ -791,7 +807,28 @@ fn compare_builders(
     builder!(report, old, new, dialog_title);
     builder!(report, old, new, dialog_description);
     builder!(report, old, new, progress);
-    builder!(report, old, new, group_box_content);
+    let group_box = "geometry::group_box_content";
+    match report.listed(group_box) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(group_box, super::builders::group_box_content(new)) {
+                report.count(group_box);
+                let o = crate::geometry::group_box_content(Native::unscaled(old));
+                let mut corrected = o.clone();
+                corrected.border_widths = Default::default();
+                corrected.border_color = None;
+                let invented = o.border_widths.top == Some(px(0.0).into())
+                    && o.border_color == Some(Hsla::transparent_black());
+                if !invented || corrected != n {
+                    report.failures.push(format!(
+                        "{}: {group_box}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, group_box_content),
+    }
     builder!(report, old, new, accordion_title);
     builder!(report, old, new, accordion);
     builder!(report, old, new, accordion_hover);

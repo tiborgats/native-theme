@@ -1097,8 +1097,7 @@ pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
     group_box_content_from(&CardFrame {
         padding: sides_of(&c.border.padding),
         radius: c.border.corner_radius,
-        border_width: c.border.line_width,
-        border_color: rgba_to_hsla(c.border.color),
+        border: Some((c.border.line_width, rgba_to_hsla(c.border.color))),
         background: rgba_to_hsla(c.background_color),
     })
 }
@@ -1108,18 +1107,20 @@ pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
 pub(crate) struct CardFrame {
     pub(crate) padding: [Option<f32>; 4],
     pub(crate) radius: f32,
-    pub(crate) border_width: f32,
-    pub(crate) border_color: Hsla,
+    /// The border's width and colour; `None` where the theme states no
+    /// border, and the group box keeps gpui-component's own.
+    pub(crate) border: Option<(f32, Hsla)>,
     pub(crate) background: Hsla,
 }
 
 /// [`group_box_content`] of the card `c`.
 pub(crate) fn group_box_content_from(c: &CardFrame) -> StyleRefinement {
-    padding(StyleRefinement::default(), c.padding)
-        .rounded(px(c.radius))
-        .border(px(c.border_width))
-        .border_color(c.border_color)
-        .bg(c.background)
+    let r = padding(StyleRefinement::default(), c.padding).rounded(px(c.radius));
+    let r = match c.border {
+        Some((width, color)) => r.border(px(width)).border_color(color),
+        None => r,
+    };
+    r.bg(c.background)
 }
 
 /// For `AccordionItem::title_style` (`src/accordion.rs:220`, applied `:301-307`).

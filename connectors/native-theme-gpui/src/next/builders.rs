@@ -720,14 +720,22 @@ pub(crate) fn progress(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ))
 }
 
-/// [`crate::geometry::group_box_content`].
+/// [`crate::geometry::group_box_content`]. A card whose stroke the theme
+/// leaves unstated gets no border from the refinement, and the group box
+/// keeps gpui-component's own.
 pub(crate) fn group_box_content(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let container = r.card.container(WidgetState::NONE);
     Ok(geometry::group_box_content_from(&geometry::CardFrame {
         padding: padding(&container),
         radius: radius(&container, "card.container(NONE).corners")?,
-        border_width: stroke_width(&container, "card.container(NONE).stroke.width")?,
-        border_color: stroke_color(&container, "card.container(NONE).stroke.color")?,
+        border: if container.stated.contains(PartStated::STROKE) {
+            Some((
+                stroke_width(&container, "card.container(NONE).stroke.width")?,
+                stroke_color(&container, "card.container(NONE).stroke.color")?,
+            ))
+        } else {
+            None
+        },
         background: fill(&container, "card.container(NONE).fill")?,
     }))
 }
