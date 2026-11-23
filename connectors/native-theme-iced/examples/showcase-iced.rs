@@ -3630,7 +3630,7 @@ fn view(state: &State) -> Element<'_, Message> {
         container(window)
             .width(Fill)
             .height(Fill)
-            .style(surface(resolved, Surface::Window)),
+            .style(surface(state.next_shown(), Surface::Window)),
     )
     .root();
     let page: Element<'_, Message> = match state.overlay {
@@ -5821,31 +5821,44 @@ fn separator_line<'a>(r: &native_theme::next::ResolvedTheme) -> Element<'a, Mess
         .into()
 }
 
-/// A line the separator's style draws (`styles::rule`) in a widget's own
-/// leaf colour.
+/// A line the separator's style draws (`iced_next::styles::rule`) in a
+/// widget's own colour.
 #[derive(Clone, Copy, Debug)]
 enum Line {
-    /// A menu's separator, `menu.separator_color`.
+    /// A menu's separator, `menu.separator(NONE).fill`.
     MenuSeparator,
-    /// The status bar's top edge, `status_bar.border.color`.
+    /// The status bar's top edge, `status_bar.bar.stroke.color`.
     StatusBar,
 }
 
 impl Line {
     #[cfg(test)]
     const ALL: [Self; 2] = [Self::MenuSeparator, Self::StatusBar];
+
+    /// The line's colour, where the theme states it.
+    fn colour(self, r: &native_theme::next::ResolvedTheme) -> Option<Color> {
+        match self {
+            Self::MenuSeparator => iced_next::fill_of(&r.menu.separator(WidgetState::NONE)),
+            Self::StatusBar => iced_next::stroke_color_of(&r.status_bar.bar),
+        }
+    }
 }
 
-/// The separator's style (`styles::rule`) in `line`'s colour.
-fn line_style(resolved: &ResolvedTheme, line: Line) -> impl Fn(&Theme) -> rule::Style + use<> {
-    let separator = styles::rule(resolved);
-    let color = to_color(match line {
-        Line::MenuSeparator => resolved.menu.separator_color,
-        Line::StatusBar => resolved.status_bar.border.color,
-    });
-    move |theme| rule::Style {
-        color,
-        ..separator(theme)
+/// The separator's style (`iced_next::styles::rule`) in `line`'s colour;
+/// iced's own rule (`rule::default`) where the theme leaves that colour
+/// unstated (spec §10, rule 0).
+fn line_style(
+    r: &native_theme::next::ResolvedTheme,
+    line: Line,
+) -> impl Fn(&Theme) -> rule::Style + use<> {
+    let separator = iced_next::styles::rule(r);
+    let color = line.colour(r);
+    move |theme| match color {
+        Some(color) => rule::Style {
+            color,
+            ..separator(theme)
+        },
+        None => rule::default(theme),
     }
 }
 
@@ -5853,15 +5866,15 @@ fn line_style(resolved: &ResolvedTheme, line: Line) -> impl Fn(&Theme) -> rule::
 /// colour.
 #[derive(Clone, Copy, Debug)]
 enum Surface {
-    /// The window, `window.background_color` under `defaults.text_color`.
+    /// The window, `window.frame(normal).fill` under
+    /// `colors.window.foreground`.
     Window,
-    /// The side panel, `sidebar.background_color` under
-    /// `sidebar.font.color`.
+    /// The side panel, `sidebar.container(NONE).fill` under
+    /// `sidebar.item_label(NONE).color`.
     SidePanel,
-    /// A tab row's strip, `tab.bar_background` under `tab.font.color`.
+    /// A tab row's strip, `tab.bar(NONE).fill` under `tab.label(NONE).color`.
     TabStrip,
-    /// The status bar, `status_bar.background_color` under
-    /// `status_bar.font.color`.
+    /// The status bar, `status_bar.bar.fill` under `status_bar.label.color`.
     StatusBar,
 }
 
@@ -5875,30 +5888,34 @@ impl Surface {
     ];
 }
 
-/// A container filled with `surface`'s fill, its text in its text colour.
+/// A container filled with `surface`'s fill, its text in its text colour;
+/// each that the theme leaves unstated is the container's own, no fill and
+/// the text colour around it (spec §10, rule 0).
 fn surface(
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
     surface: Surface,
 ) -> impl Fn(&Theme) -> container::Style + use<> {
     let (background, text_color) = match surface {
         Surface::Window => (
-            resolved.window.background_color,
-            resolved.defaults.text_color,
+            iced_next::fill_of(&r.window.frame(native_theme::next::WindowState::default())),
+            r.colors.window.foreground.map(next_colour),
         ),
         Surface::SidePanel => (
-            resolved.sidebar.background_color,
-            resolved.sidebar.font.color,
+            iced_next::fill_of(&r.sidebar.container(WidgetState::NONE)),
+            iced_next::text_color_of(&r.sidebar.item_label(WidgetState::NONE)),
         ),
-        Surface::TabStrip => (resolved.tab.bar_background, resolved.tab.font.color),
+        Surface::TabStrip => (
+            iced_next::fill_of(&r.tab.bar(WidgetState::NONE)),
+            iced_next::text_color_of(&r.tab.label(WidgetState::NONE)),
+        ),
         Surface::StatusBar => (
-            resolved.status_bar.background_color,
-            resolved.status_bar.font.color,
+            iced_next::fill_of(&r.status_bar.bar),
+            iced_next::text_color_of(&r.status_bar.label),
         ),
     };
-    let (background, text_color) = (to_color(background), to_color(text_color));
     move |_theme| container::Style {
-        text_color: Some(text_color),
-        background: Some(iced::Background::Color(background)),
+        text_color,
+        background: background.map(iced::Background::Color),
         ..container::Style::default()
     }
 }
@@ -6125,7 +6142,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     };
     let separator = |id: Option<&'static str>| {
         let line = rule::horizontal(resolved.separator.line_width)
-            .style(line_style(resolved, Line::MenuSeparator));
+            .style(line_style(state.next_shown(), Line::MenuSeparator));
         Item::new(match id {
             Some(id) => Element::from(tagged(id, line)),
             None => line.into(),
@@ -6747,7 +6764,6 @@ fn inspector_tabs(state: &State) -> Element<'_, Message> {
 /// scrollbar (`iced_next::styles::scrollbar`) is laid out
 /// inside that width and moves nothing beside it.
 fn side_panel(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
     let r = state.next_shown();
     let content = side_panel_content_margin(r).map_or(Padding::ZERO, Padding::from);
     let settings = column![
@@ -6820,7 +6836,7 @@ fn side_panel(state: &State) -> Element<'_, Message> {
         .height(Fill),
     )
     .padding(sidebar_padding(r).unwrap_or(Padding::ZERO))
-    .style(surface(resolved, Surface::SidePanel))
+    .style(surface(r, Surface::SidePanel))
     .width(Fill)
     .height(Fill)
     .into()
@@ -7133,7 +7149,7 @@ fn tab_row<'a>(
         container(bar)
             .padding(Padding::ZERO.left(margin).right(margin))
             .width(Fill)
-            .style(surface(resolved, Surface::TabStrip)),
+            .style(surface(state.next_shown(), Surface::TabStrip)),
     )
     .into()
 }
@@ -7319,20 +7335,19 @@ fn menu_bar_style(
 }
 
 /// The splitter between the side panel and the page (platform-facts §2.17):
-/// a line `splitter.divider_width` wide in `splitter.divider_color`, in
-/// `splitter.hover_color` under the pointer and while dragged. A press on it
+/// a line `splitter.divider_width` wide in the handle's fill,
+/// `splitter.handle(NONE).fill`, `splitter.handle(HOVER).fill` under the
+/// pointer and while dragged ([`splitter_colour`]); no fill where the theme
+/// leaves it unstated, as iced draws no splitter of its own. A press on it
 /// starts a drag, which the body follows ([`view`]).
 fn splitter(state: &State) -> Element<'_, Message> {
-    let sp = &state.current_resolved.splitter;
-    let color = splitter_colour(
-        &state.current_resolved,
-        state.splitter_hovered || state.splitter_dragging,
-    );
+    let r = state.next_shown();
+    let color = splitter_colour(r, state.splitter_hovered || state.splitter_dragging);
     let line = container(space())
-        .width(Length::Fixed(sp.divider_width))
+        .width(Length::Fixed(r.splitter.divider_width))
         .height(Fill)
         .style(move |_theme: &Theme| container::Style {
-            background: Some(iced::Background::Color(color)),
+            background: color.map(iced::Background::Color),
             ..container::Style::default()
         });
     tagged(
@@ -7346,15 +7361,16 @@ fn splitter(state: &State) -> Element<'_, Message> {
     .into()
 }
 
-/// The [`splitter`]'s line: `splitter.divider_color`, or
-/// `splitter.hover_color` while `hovered` (under the pointer or dragged).
-fn splitter_colour(resolved: &ResolvedTheme, hovered: bool) -> Color {
-    let sp = &resolved.splitter;
-    to_color(if hovered {
-        sp.hover_color
+/// The [`splitter`]'s line: `splitter.handle(NONE).fill`, or
+/// `splitter.handle(HOVER).fill` while `hovered` (under the pointer or
+/// dragged), which is the fill at rest where no rule states a hover fill;
+/// `None` where the theme states no fill.
+fn splitter_colour(r: &native_theme::next::ResolvedTheme, hovered: bool) -> Option<Color> {
+    iced_next::fill_of(&r.splitter.handle(if hovered {
+        WidgetState::HOVER
     } else {
-        sp.divider_color
-    })
+        WidgetState::NONE
+    }))
 }
 
 /// The status bar's environment (spec §2.7), the three showcases' items
@@ -7462,11 +7478,12 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             left: rounded(padding.left),
         })
         .width(Fill)
-        .style(surface(resolved, Surface::StatusBar));
+        .style(surface(state.next_shown(), Surface::StatusBar));
     tagged(
         "chrome.status_bar",
         column![
-            rule::horizontal(s.border.line_width).style(line_style(resolved, Line::StatusBar)),
+            rule::horizontal(s.border.line_width)
+                .style(line_style(state.next_shown(), Line::StatusBar)),
             bar,
         ],
     )
@@ -7529,37 +7546,54 @@ fn caption_text<'a>(
         .color(color)
 }
 
-/// An inspector heading: `text_scale.caption` at [`HEADING_WEIGHT`], in
-/// `sidebar.font.color`.
+/// [`caption_text`] on the 0.8.0 model: text in the caption,
+/// `typography.caption`, in `color`; in the colour around it where `color`
+/// is `None`.
+fn next_caption_text<'a>(
+    state: &State,
+    content: impl text::IntoFragment<'a>,
+    color: Option<Color>,
+) -> text::Text<'a> {
+    let r = state.next_shown();
+    text(content)
+        .next_text(
+            native_theme_iced::next::text_scale(r).caption,
+            &r.typography,
+        )
+        .color_maybe(color)
+}
+
+/// An inspector heading: the caption, `typography.caption`, at
+/// [`HEADING_WEIGHT`], in the side panel's label colour, Widget Info's ink
+/// ([`info_inks`]).
 fn inspector_heading<'a>(state: &State, content: impl text::IntoFragment<'a>) -> text::Text<'a> {
-    let resolved = &state.current_resolved;
-    let mut heading = resolved.text_scale.caption.clone();
+    let r = state.next_shown();
+    let mut heading = native_theme_iced::next::text_scale(r).caption.clone();
     heading.weight = HEADING_WEIGHT;
     text(content)
-        .role(&heading, resolved, &state.accessibility)
-        .color(to_color(resolved.sidebar.font.color))
+        .next_text(&heading, &r.typography)
+        .color_maybe(info_inks(r).0)
 }
 
 /// A name over its value, the gpui showcase's inspector row: the name in
-/// `defaults.muted_color`, the value in `sidebar.font.color`, both in
-/// `text_scale.caption`.
+/// Widget Info's muted colour, the value in its ink ([`info_inks`]), both in
+/// the caption ([`caption_text`]).
 fn inspector_row<'a>(state: &State, name: String, value: String) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
+    let (ink, muted) = info_inks(state.next_shown());
     column![
-        caption_text(state, name, to_color(resolved.defaults.muted_color)),
-        caption_text(state, value, to_color(resolved.sidebar.font.color)),
+        next_caption_text(state, name, muted),
+        next_caption_text(state, value, ink),
     ]
     .into()
 }
 
 /// A colour line of Widget Info, the gpui showcase's `swatch`: a
-/// [`SWATCH_SIZE`] square of `color`, framed in `defaults.border`'s colour,
-/// width and radius, beside `label`.
+/// [`SWATCH_SIZE`] square of `color`, framed by [`swatch_frame`], beside
+/// `label`, `layout.widget_gap` apart ([`info_gap`]).
 fn inspector_swatch<'a>(state: &State, label: String, color: Color) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
-    let gap = Gaps::from_layout(&state.layout);
-    let frame = swatch_frame(resolved);
-    row![
+    let r = state.next_shown();
+    let frame = swatch_frame(r);
+    let line = row![
         container(space())
             .width(Length::Fixed(SWATCH_SIZE))
             .height(Length::Fixed(SWATCH_SIZE))
@@ -7568,31 +7602,36 @@ fn inspector_swatch<'a>(state: &State, label: String, color: Color) -> Element<'
                 border: frame,
                 ..container::Style::default()
             }),
-        caption_text(state, label, to_color(resolved.sidebar.font.color)),
+        next_caption_text(state, label, info_inks(r).0),
     ]
-    .spacing(gap.widget)
-    .align_y(iced::Center)
-    .into()
+    .spacing(info_gap(r.layout.widget_gap))
+    .align_y(iced::Center);
+    line.into()
 }
 
-/// The frame of a Widget Info swatch: `defaults.border`'s colour, width and
-/// radius.
-fn swatch_frame(resolved: &ResolvedTheme) -> iced::Border {
-    let d = &resolved.defaults.border;
-    iced::Border {
-        color: to_color(d.color),
-        width: d.line_width,
-        radius: d.corner_radius.into(),
+/// The frame of a Widget Info swatch: the window's border colour,
+/// `colors.window.border`, `layout.border_width` wide, with the radius
+/// `layout.corner_radius`; no frame where the theme states no border colour
+/// (a container's own).
+fn swatch_frame(r: &native_theme::next::ResolvedTheme) -> iced::Border {
+    match r.colors.window.border {
+        Some(color) => iced::Border {
+            color: next_colour(color),
+            width: r.layout.border_width,
+            radius: r.layout.corner_radius.into(),
+        },
+        None => iced::Border::default(),
     }
 }
 
-/// Widget Info's two text colours: its text, the side panel's
-/// `sidebar.font.color`, and its muted lines (the hint, how a leaf is
-/// applied), `defaults.muted_color`.
-fn info_inks(resolved: &ResolvedTheme) -> (Color, Color) {
+/// Widget Info's two text colours: its text, the side panel's label,
+/// `sidebar.item_label(NONE).color`, and its muted lines (the hint, how a
+/// leaf is applied), `colors.window.foreground_muted`; each `None` where the
+/// theme leaves it unstated, which leaves the text the colour around it.
+fn info_inks(r: &native_theme::next::ResolvedTheme) -> (Option<Color>, Option<Color>) {
     (
-        to_color(resolved.sidebar.font.color),
-        to_color(resolved.defaults.muted_color),
+        iced_next::text_color_of(&r.sidebar.item_label(WidgetState::NONE)),
+        r.colors.window.foreground_muted.map(next_colour),
     )
 }
 
@@ -7677,23 +7716,22 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
     )
 }
 
-/// Text in the side panel's font, `sidebar.font` (size, family), at
-/// `weight`, on the theme's line height, on one line: Widget Info's text,
-/// the same in the three showcases (docs/showcase-elements.toml, section B).
+/// Text in the side panel's label, `sidebar.item_label(NONE)` (size,
+/// family, line box), at `weight`, in `color` (the colour around it where
+/// `None`), on one line: Widget Info's text, the same in the three
+/// showcases (docs/showcase-elements.toml, section B).
 fn info_text<'a>(
     state: &State,
     content: impl text::IntoFragment<'a>,
     weight: u16,
-    color: Color,
+    color: Option<Color>,
 ) -> text::Text<'a> {
-    let resolved = &state.current_resolved;
-    let font = ResolvedFontSpec {
-        weight,
-        ..resolved.sidebar.font.clone()
-    };
+    let r = state.next_shown();
+    let mut label = r.sidebar.item_label(WidgetState::NONE);
+    label.weight = weight;
     text(content)
-        .themed(&font, resolved, &state.accessibility)
-        .color(color)
+        .next_text(&label, &r.typography)
+        .color_maybe(color)
         .wrapping(text::Wrapping::None)
 }
 
@@ -7709,21 +7747,24 @@ fn info_gap(stated: Option<f32>) -> f32 {
 /// `layout.widget_gap` apart -- a swatch of a colour
 /// one line tall, then `<leaf> <value>` over the muted line that says how
 /// iced applies it -- and, where iced draws something the theme states
-/// nothing for, the "Not themeable" section. Every line in `sidebar.font`, the
-/// title and the section names at [`HEADING_WEIGHT`] ([`info_gap`] for the
-/// gaps). The layout the gpui and egui showcases' Widget Info has.
+/// nothing for, the "Not themeable" section. Every line in the side panel's
+/// label, `sidebar.item_label(NONE)` ([`info_text`]), the swatch its line box
+/// square, the title and the section names at [`HEADING_WEIGHT`]
+/// ([`info_gap`] for the gaps). The layout the gpui and egui showcases'
+/// Widget Info has.
 fn element_info_view<'a>(
     state: &'a State,
     info: &'a ListedInfo,
     copied: &str,
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
-    let widget_gap = info_gap(state.layout.widget_gap);
-    let section_gap = info_gap(state.layout.section_gap);
-    let (ink, muted) = info_inks(resolved);
-    let regular = resolved.sidebar.font.weight;
-    let line = scaled_text_size(resolved.sidebar.font.size, &state.accessibility)
-        * resolved.defaults.line_height;
+    let r = state.next_shown();
+    let widget_gap = info_gap(r.layout.widget_gap);
+    let section_gap = info_gap(r.layout.section_gap);
+    let (ink, muted) = info_inks(r);
+    let label = r.sidebar.item_label(WidgetState::NONE);
+    let regular = label.weight;
+    let line = next_line_box(&r.typography, &label);
     let b = &resolved.button;
     let copy = button(text("Copy").themed(&resolved.sidebar.font, resolved, &state.accessibility))
         .padding(native_theme_iced::padding_or(
@@ -7748,7 +7789,7 @@ fn element_info_view<'a>(
             info_text(state, "Theme", HEADING_WEIGHT, ink)
         ),
     ];
-    let frame = swatch_frame(resolved);
+    let frame = swatch_frame(r);
     for (index, row) in info.rows.iter().enumerate() {
         let first = index == 0;
         let leaf = info_text(state, format!("{} {}", row.leaf, row.value), regular, ink);
@@ -9162,7 +9203,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              popover.border.line_width"
                 .into()
         }
-        ("menu", "separator_color") => "line_style: the rule's colour".into(),
+        ("menu", "separator_color") => {
+            "line_style: the rule's colour, menu.separator(NONE).fill".into()
+        }
         ("menu", f) if side(f).is_some() && under("chrome.menu_bar.") => {
             let m = &resolved.menu;
             let (bar, stated) = match side(f) {
@@ -9231,7 +9274,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("toolbar", "font") => "the button's text, where the icon set has no icon".into(),
         ("toolbar", "icon_size_px") => "the svg or image's width and height".into(),
         // ---- side panel, status bar, splitter, separator ----
-        ("sidebar", "background_color") => "surface: the panel container's background".into(),
+        ("sidebar", "background_color") => {
+            "surface: the panel container's background, sidebar.container(NONE).fill".into()
+        }
         ("sidebar", f) if side(f).is_some() => {
             "pads the side panel where any side is stated, a side it leaves unstated by \
              layout.container_margin (none where that is unstated); where no side is stated, \
@@ -9244,13 +9289,17 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "copy_button: the label at rest".into()
         }
         ("sidebar", "font.color") if under("chrome.info.") => {
-            "info_inks: the text's colour".into()
+            "info_inks: the text's colour, sidebar.item_label(NONE).color".into()
         }
-        ("sidebar", "font.color") => {
-            "surface: the side panel's text_color, which the text takes".into()
+        ("sidebar", "font.color") => "surface: the side panel's text_color, which the text \
+                                      takes, sidebar.item_label(NONE).color"
+            .into(),
+        ("status_bar", "background_color") => {
+            "surface: the bar container's background, status_bar.bar.fill".into()
         }
-        ("status_bar", "background_color") => "surface: the bar container's background".into(),
-        ("status_bar", "border.color") => "line_style: the top edge's colour".into(),
+        ("status_bar", "border.color") => {
+            "line_style: the top edge's colour, status_bar.bar.stroke.color".into()
+        }
         ("status_bar", "border.line_width_px") => {
             "the top edge rule's height, above the bar's padding".into()
         }
@@ -9269,19 +9318,25 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             .into()
         }
         ("status_bar", "font") => "the text's size and theme_font".into(),
-        ("status_bar", "font.color") => "surface: the bar's text_color".into(),
-        ("splitter", "divider_width_px") => "the line container's width".into(),
-        ("splitter", "divider_color") => "splitter: the line container's background".into(),
-        ("splitter", "hover_color") => {
-            "splitter: the line's background under the pointer and while dragged".into()
+        ("status_bar", "font.color") => {
+            "surface: the bar's text_color, status_bar.label.color".into()
         }
+        ("splitter", "divider_width_px") => "the line container's width".into(),
+        ("splitter", "divider_color") => {
+            "splitter: the line container's background, splitter.handle(NONE).fill".into()
+        }
+        ("splitter", "hover_color") => "splitter: the line's background under the pointer and \
+                                        while dragged, splitter.handle(HOVER).fill"
+            .into(),
         ("separator", "line_width_px") if under("basic.table.") => {
             "the grid lines' thickness: the column line's width and the header line's height (basic_table)"
                 .into()
         }
         ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
         // ---- tabs ----
-        ("tab", "bar_background") => "surface: the strip container's background".into(),
+        ("tab", "bar_background") => {
+            "surface: the strip container's background, tab.bar(NONE).fill".into()
+        }
         ("tab", "item_gap_px") => "the tabs' spacing, where stated".into(),
         #[cfg(feature = "iced_aw")]
         ("tab", "active_indicator_width_px" | "active_indicator_side") if under("basic.tabs.") => {
@@ -9660,14 +9715,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("link", "underline_enabled") => "the span's underline".into(),
         // ---- window, layout ----
         ("window", "background_color") if id == "chrome.window" => {
-            "surface: the window container's background".into()
+            "surface: the window container's background, window.frame(normal).fill".into()
         }
         ("toolbar", "background_color") if id == "chrome.menu_bar" => {
             "menu_bar_style: bar_background, under the row's container (menu_bar)".into()
         }
-        ("window", "background_color") => {
-            "surface: the window container's background, which shows through".into()
-        }
+        ("window", "background_color") => "surface: the window container's background, which \
+                                           shows through, window.frame(normal).fill"
+            .into(),
         ("layout", "container_margin_px") if id == "chrome.menu_bar" => format!(
             "the row's left and right padding; MENU_BAR_PADDING, {MENU_BAR_PADDING}px, gpui's \
              showcase constant, where unstated"
@@ -9723,7 +9778,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("defaults", "font") => "the text's size and theme_font".into(),
         ("defaults", "font.family") => "theme_font: the role's family".into(),
         ("defaults", "mono_font") => "theme_mono_font: the text's size and family".into(),
-        ("defaults", "muted_color") => "info_inks: the muted text's colour".into(),
+        ("defaults", "muted_color") => {
+            "info_inks: the muted text's colour, colors.window.foreground_muted".into()
+        }
         ("defaults", "disabled_text_color") => {
             "disabled_switch_label: the label's colour, times switch.disabled_opacity".into()
         }
@@ -9773,9 +9830,15 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("defaults", "focus_ring_keyboard_only") => {
             "not drawn: the theme states no focus ring (focus_ring_width 0)".into()
         }
-        ("defaults", "border.color") => "swatch_frame: the swatch container's border.color".into(),
-        ("defaults", "border.corner_radius_px") => "the swatch container's border.radius".into(),
-        ("defaults", "border.line_width_px") => "the swatch container's border.width".into(),
+        ("defaults", "border.color") => {
+            "swatch_frame: the swatch container's border.color, colors.window.border".into()
+        }
+        ("defaults", "border.corner_radius_px") => {
+            "the swatch container's border.radius, layout.corner_radius".into()
+        }
+        ("defaults", "border.line_width_px") => {
+            "the swatch container's border.width, layout.border_width".into()
+        }
         ("defaults", "icon_sizes.small_px" | "icon_sizes.toolbar_px" | "icon_sizes.large_px") => {
             "the svg or image's width and height".into()
         }
@@ -9904,15 +9967,15 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
         None => "",
     };
     let resolved = &state.current_resolved;
-    let gap = Gaps::from_layout(&state.layout);
-    let (text_color, muted) = info_inks(resolved);
+    let r = state.next_shown();
+    let (text_color, muted) = info_inks(r);
     let Some(title) = info_title(info) else {
         return tagged(
             "chrome.info.hint",
             info_text(
                 state,
                 "Hover any widget to see what the theme sets on it.",
-                resolved.sidebar.font.weight,
+                r.sidebar.item_label(WidgetState::NONE).weight,
                 muted,
             ),
         )
@@ -9932,7 +9995,7 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
         ]
         .align_y(iced::Center)
     ]
-    .spacing(gap.widget);
+    .spacing(info_gap(r.layout.widget_gap));
     let mut colours = false;
     for line in info.lines().skip_while(|l| l.trim().is_empty()).skip(1) {
         if line.trim().is_empty() {
@@ -9950,7 +10013,7 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
             (true, Some(color)) => inspector_swatch(state, line.to_string(), color),
             _ => match line.split_once(": ") {
                 Some((name, value)) => inspector_row(state, name.to_string(), value.to_string()),
-                None => caption_text(state, line.to_string(), text_color).into(),
+                None => next_caption_text(state, line.to_string(), text_color).into(),
             },
         });
     }
@@ -11241,7 +11304,7 @@ fn basic_column_count(
 /// out.
 fn content_width(state: &State) -> f32 {
     if state.side_panel_visible {
-        state.window_width - state.side_panel_width - state.current_resolved.splitter.divider_width
+        state.window_width - state.side_panel_width - state.next_shown().splitter.divider_width
     } else {
         state.window_width
     }
@@ -11512,7 +11575,7 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
             &[0, state.basic_tab],
         ))
         .padding(Padding::ZERO.left(room).right(room))
-        .style(surface(resolved, Surface::TabStrip))
+        .style(surface(state.next_shown(), Surface::TabStrip))
         .into()
     };
     // Without iced_aw, the page tab strip's tabs ([`tab_button`]), the
@@ -11539,7 +11602,7 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
         let tabs = native_theme_iced::tab_flares(resolved, tabs.wrap(), &[state.basic_tab]);
         tagged(
             "basic.tabs.bar",
-            container(tabs).style(surface(resolved, Surface::TabStrip)),
+            container(tabs).style(surface(state.next_shown(), Surface::TabStrip)),
         )
         .loose()
         .node("basic.tabs.one", &[0, 0])
@@ -17372,7 +17435,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 aw_tab_bar_probe(tab_bar.style(styles::aw::tab_bar(resolved))),
                 &[state.aw_tab_bar_active],
             ))
-            .style(surface(resolved, Surface::TabStrip)),
+            .style(surface(state.next_shown(), Surface::TabStrip)),
             tab_bar_body,
             iced::widget::Stack::new()
                 .push(flared(native_theme_iced::tab_flares(
@@ -17384,7 +17447,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     container(iced::widget::Space::new())
                         .width(Fill)
                         .height(Length::Fixed(tab_height))
-                        .style(surface(resolved, Surface::TabStrip)),
+                        .style(surface(state.next_shown(), Surface::TabStrip)),
                 ),
         ]
         .spacing(gap.widget)
@@ -25996,7 +26059,7 @@ mod tests {
     /// palette fields their swatches are drawn from, read in the same call.
     #[test]
     fn the_graphics_colour_lines_are_what_their_widgets_draw() {
-        type Splice = fn(&mut ResolvedTheme, native_theme::color::Rgba);
+        type Splice = fn(&mut State, native_theme::color::Rgba);
         /// The widget's info title, its info, its probe, the colour line's
         /// source and the splice of the leaf it reads.
         type Row = (
@@ -26012,56 +26075,65 @@ mod tests {
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
                 "card.background_color",
-                |r, c| r.card.background_color = c,
+                |s, c| s.current_resolved.card.background_color = c,
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
                 "separator.line_color",
-                |r, c| r.separator.line_color = c,
+                |s, c| s.current_resolved.separator.line_color = c,
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
                 "defaults.text_color",
-                |r, c| r.defaults.text_color = c,
+                |s, c| s.current_resolved.defaults.text_color = c,
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
                 "defaults.accent_color",
-                |r, c| r.defaults.accent_color = c,
+                |s, c| s.current_resolved.defaults.accent_color = c,
             ),
             (
                 "QRCode",
                 qr_code_info,
                 probes::GRAPHICS_QR_CODE,
                 "defaults.text_color",
-                |r, c| r.defaults.text_color = c,
+                |s, c| s.current_resolved.defaults.text_color = c,
             ),
             (
                 "QRCode",
                 qr_code_info,
                 probes::GRAPHICS_QR_CODE,
                 "defaults.background_color",
-                |r, c| r.defaults.background_color = c,
+                |s, c| s.current_resolved.defaults.background_color = c,
             ),
             (
                 "Markdown",
                 markdown_info,
                 probes::GRAPHICS_MARKDOWN,
                 "link.font.color",
-                |r, c| r.link.font.color = c,
+                |s, c| s.current_resolved.link.font.color = c,
             ),
             (
                 "Markdown",
                 markdown_info,
                 probes::GRAPHICS_MARKDOWN,
                 "extended.background.base.text, from defaults.text_color",
-                |r, c| r.defaults.text_color = c,
+                |s, c| {
+                    s.current_resolved.defaults.text_color = c;
+                    // The window's surface hands its text colour, the 0.8.0
+                    // theme's, to the page.
+                    if let Some(next) =
+                        with_home(&s.next_resolved, "colors.window.foreground", &c.to_string())
+                    {
+                        s.next_resolved = next;
+                    }
+                },
             ),
         ];
         let state = page_state("kde-breeze", Tab::Graphics);
@@ -26099,7 +26171,7 @@ mod tests {
                 faults.push(format!("{widget}: its Widget Info names no {leaf}"));
             }
             let mut spliced = page_state("kde-breeze", Tab::Graphics);
-            splice(&mut spliced.current_resolved, spliced_colour("#13579b"));
+            splice(&mut spliced, spliced_colour("#13579b"));
             spliced.current_theme = native_theme_iced::to_theme_in(
                 &spliced.current_resolved,
                 "spliced",
@@ -27599,6 +27671,254 @@ mod tests {
         serde_json::from_value(json).ok()
     }
 
+    /// The widgets of the 0.8.0 model without rules, whose homes name a part
+    /// with no states: `status_bar.bar.fill`.
+    const STATIC_WIDGETS: &[&str] = &["status_bar", "popover", "dialog", "tooltip", "spinner"];
+
+    /// A home the 0.8.0 model has no patch for (the window's frame is no
+    /// widget of `ThemePatch`): [`next_hand_route_faults`] holds the drawing
+    /// to its value instead.
+    const UNPATCHED_HOME: &str = "window.frame(normal).fill";
+
+    /// Whether `word`, a word of a route, names a colour home of the 0.8.0
+    /// model: `<widget>.<part>(<STATES>).<property>`, a static widget's
+    /// `<widget>.<part>.<property>` ([`STATIC_WIDGETS`]), or a colour role,
+    /// `colors.<surface>.<slot>`.
+    fn is_home(word: &str) -> bool {
+        word.contains('(')
+            || word.starts_with("colors.")
+            || word
+                .split_once('.')
+                .is_some_and(|(widget, _)| STATIC_WIDGETS.contains(&widget))
+    }
+
+    /// The homes the part of `route` that names `function` names, in the
+    /// order it names them: the colours a ported function's route says it
+    /// draws.
+    fn route_homes<'r>(route: &'r str, function: &str) -> Vec<&'r str> {
+        route
+            .strip_prefix("iced: ")
+            .unwrap_or(route)
+            .split("; ")
+            .filter_map(|part| part.strip_prefix(function)?.strip_prefix(": "))
+            .flat_map(str::split_whitespace)
+            .map(|word| word.trim_end_matches([',', ';', '.', ')']))
+            .map(|word| word.strip_prefix('(').unwrap_or(word))
+            .filter(|word| is_home(word))
+            .collect()
+    }
+
+    /// The TOML of a patch that states `colour` at `home`, a colour home of
+    /// the 0.8.0 model ([`is_home`]), the property `fill`, `stroke.color`
+    /// or, of a text part, `color`: a rule of the home's states appended to
+    /// a ruled widget's (none for `NONE`, which every query matches), a
+    /// static widget's part patch, or the colour role. A stroke is stated
+    /// 1 px wide in the colour, so a home whose stroke the theme leaves
+    /// unstated draws it. `None` for any other home.
+    fn home_patch_toml(home: &str, colour: &str) -> Option<String> {
+        if let Some(role) = home.strip_prefix("colors.") {
+            let (surface, slot) = role.split_once('.')?;
+            return Some(format!("[colors.{surface}]\n{slot} = \"{colour}\"\n"));
+        }
+        let (widget, rest) = home.split_once('.')?;
+        let (part, states, property) = match rest.split_once('(') {
+            Some((part, rest)) => {
+                let (states, property) = rest.split_once(").")?;
+                (part, Some(states), property)
+            }
+            None => {
+                let (part, property) = rest.split_once('.')?;
+                (part, None, property)
+            }
+        };
+        let value = match property {
+            "fill" | "color" => format!("{part}.{property} = \"{colour}\""),
+            "stroke.color" => format!("{part}.stroke = {{ width = 1.0, color = \"{colour}\" }}"),
+            _ => return None,
+        };
+        Some(match states {
+            None => format!("[widgets.{widget}]\n{value}\n"),
+            Some(states) => {
+                let names: Vec<String> = states
+                    .split('|')
+                    .filter(|state| *state != "NONE")
+                    .map(|state| format!("\"{}\"", state.to_lowercase()))
+                    .collect();
+                let states = if names.is_empty() {
+                    String::new()
+                } else {
+                    format!("states = [{}]\n", names.join(", "))
+                };
+                format!("[[widgets.{widget}.rules]]\n{states}{value}\n")
+            }
+        })
+    }
+
+    /// `r` with `colour` stated at `home` ([`home_patch_toml`]), as
+    /// `with_colour` splices a 0.7.2 leaf; `None` where no patch reaches the
+    /// home.
+    fn with_home(
+        r: &native_theme::next::ResolvedTheme,
+        home: &str,
+        colour: &str,
+    ) -> Option<native_theme::next::ResolvedTheme> {
+        let patch =
+            native_theme::next::ThemePatch::from_toml(&home_patch_toml(home, colour)?).ok()?;
+        let mut patched = r.clone();
+        patched.apply_patch(&patch);
+        Some(patched)
+    }
+
+    /// Whether the colour at `home` moves what `drawn` draws under `r`: `r`
+    /// with two colours of the test's own stated there in turn draws two
+    /// things, so a home the theme leaves unstated is tested too; `None`
+    /// where no patch reaches the home.
+    fn home_moves(
+        r: &native_theme::next::ResolvedTheme,
+        home: &str,
+        drawn: impl Fn(&native_theme::next::ResolvedTheme) -> String,
+    ) -> Option<bool> {
+        let one = with_home(r, home, "#13579b")?;
+        let other = with_home(r, home, "#2468ac")?;
+        Some(drawn(&one) != drawn(&other))
+    }
+
+    /// Every preset of the 0.8.0 model in both schemes, resolved in the
+    /// showcase's context under the default preferences, with its
+    /// `<preset>/<scheme>` label.
+    fn next_combinations() -> Vec<(String, native_theme::next::ResolvedTheme)> {
+        let prefs = AccessibilityPreferences::default();
+        Preset::ALL
+            .iter()
+            .flat_map(|preset| {
+                [(false, "light"), (true, "dark")].map(|(dark, scheme)| {
+                    (
+                        format!("{}/{scheme}", preset.as_str()),
+                        native_theme::next::Theme::preset(*preset)
+                            .resolve(&next_context(None, dark, &prefs)),
+                    )
+                })
+            })
+            .collect()
+    }
+
+    /// What `function`, a showcase function on the 0.8.0 model a
+    /// hand-written colour route names, draws on `r`, in every state it
+    /// draws, as text: what a colour stated at a home it reads must move.
+    /// `None` for a name that is no such function.
+    fn next_drawn_by(function: &str, r: &native_theme::next::ResolvedTheme) -> Option<String> {
+        let theme = native_theme_iced::next::to_theme(r).ok()?;
+        Some(match function {
+            "surface" => Surface::ALL
+                .map(|s| format!("{:?}", surface(r, s)(&theme)))
+                .join(";"),
+            "line_style" => Line::ALL
+                .map(|l| format!("{:?}", line_style(r, l)(&theme)))
+                .join(";"),
+            "info_inks" => format!("{:?}", info_inks(r)),
+            "swatch_frame" => format!("{:?}", swatch_frame(r)),
+            "splitter" => format!("{:?}", [false, true].map(|h| splitter_colour(r, h))),
+            _ => return None,
+        })
+    }
+
+    /// What the route of a function on the 0.8.0 model, `function`, gets
+    /// wrong for `leaf`: it names no home, or a home whose colour does not
+    /// move what the function draws on any of `combinations` (each home
+    /// stated in two colours in turn, [`home_moves`]); [`UNPATCHED_HOME`]
+    /// is held to the colour the window's frame states, which the drawing
+    /// must show where the frame states one.
+    fn next_hand_route_faults(
+        combinations: &[(String, native_theme::next::ResolvedTheme)],
+        id: &str,
+        leaf: &str,
+        route: &str,
+        function: &str,
+    ) -> Vec<String> {
+        let homes = route_homes(route, function);
+        if homes.is_empty() {
+            return vec![format!(
+                "{id}: {leaf}: \"{route}\" names no home of {function}"
+            )];
+        }
+        let mut faults = Vec::new();
+        for home in homes {
+            if home == UNPATCHED_HOME {
+                let shown = combinations.iter().all(|(_, r)| {
+                    let frame = native_theme_iced::next::fill_of(
+                        &r.window.frame(native_theme::next::WindowState::default()),
+                    );
+                    frame.is_none_or(|colour| {
+                        next_drawn_by(function, r)
+                            .is_some_and(|drawn| drawn.contains(&format!("{colour:?}")))
+                    })
+                });
+                if !shown {
+                    faults.push(format!("{id}: {leaf}: {function} does not draw {home}"));
+                }
+                continue;
+            }
+            let moved: Vec<Option<bool>> = combinations
+                .iter()
+                .map(|(_, r)| {
+                    home_moves(r, home, |r| next_drawn_by(function, r).unwrap_or_default())
+                })
+                .collect();
+            if moved.iter().any(Option::is_none) {
+                faults.push(format!("{id}: {leaf}: no patch reaches {home}"));
+            } else if !moved.contains(&Some(true)) {
+                faults.push(format!(
+                    "{id}: {leaf}: {function} draws nothing {home} moves"
+                ));
+            }
+        }
+        faults
+    }
+
+    /// The patch tool itself: a home of each form states the colour where
+    /// the query reads it, and a home it cannot patch is refused.
+    #[test]
+    fn a_home_patch_states_the_colour_where_the_query_reads_it() -> Result<(), String> {
+        let (_, r) = next_combinations()
+            .into_iter()
+            .next()
+            .ok_or("the 0.8.0 model has no preset")?;
+        let colour = Some(Color::from_rgb8(0x13, 0x57, 0x9b));
+        let read =
+            |home: &str, query: &dyn Fn(&native_theme::next::ResolvedTheme) -> Option<Color>| {
+                with_home(&r, home, "#13579b").and_then(|patched| query(&patched))
+            };
+        assert_eq!(
+            read("splitter.handle(HOVER).fill", &|r| {
+                native_theme_iced::next::fill_of(&r.splitter.handle(WidgetState::HOVER))
+            }),
+            colour
+        );
+        assert_eq!(
+            read("sidebar.item_label(NONE).color", &|r| {
+                native_theme_iced::next::text_color_of(&r.sidebar.item_label(WidgetState::NONE))
+            }),
+            colour
+        );
+        assert_eq!(
+            read("status_bar.bar.stroke.color", &|r| {
+                native_theme_iced::next::stroke_color_of(&r.status_bar.bar)
+            }),
+            colour
+        );
+        assert_eq!(
+            read("colors.window.border", &|r| r
+                .colors
+                .window
+                .border
+                .map(next_colour)),
+            colour
+        );
+        assert!(with_home(&r, UNPATCHED_HOME, "#13579b").is_none());
+        assert!(with_home(&r, "layout.border_width", "#13579b").is_none());
+        Ok(())
+    }
+
     /// What a flat button shows in its label's place.
     #[derive(Clone, Copy, PartialEq)]
     enum Shows {
@@ -28594,7 +28914,7 @@ mod tests {
             container(rows)
                 .width(Fill)
                 .height(Fill)
-                .style(surface(&state.current_resolved, Surface::Window)),
+                .style(surface(state.next_shown(), Surface::Window)),
         )
         .root();
         frame_of(state, window.into(), Size::new(WINDOW_SIZE.0, 300.0))
@@ -31433,12 +31753,6 @@ mod tests {
             "header_section_style" => [true, false]
                 .map(|first| buttons(&header_section_style(r, first)))
                 .join("|"),
-            "surface" => Surface::ALL
-                .map(|s| format!("{:?}", surface(r, s)(&theme)))
-                .join(";"),
-            "line_style" => Line::ALL
-                .map(|l| format!("{:?}", line_style(r, l)(&theme)))
-                .join(";"),
             // The colour it gives a bundled set's icon; its label is
             // `ghost_button`'s or `styles::toolbar_button`'s, which the route
             // names as well.
@@ -31447,9 +31761,6 @@ mod tests {
                 [(false, false), (true, false), (false, true), (true, true)]
                     .map(|(s, t)| icon_colour(r, s, t))
             ),
-            "info_inks" => format!("{:?}", info_inks(r)),
-            "swatch_frame" => format!("{:?}", swatch_frame(r)),
-            "splitter" => format!("{:?}", [false, true].map(|h| splitter_colour(r, h))),
             "CheckMark" => format!(
                 "{:?}",
                 [(true, true), (true, false), (false, true), (false, false)]
@@ -32373,7 +32684,9 @@ mod tests {
     /// combination (a soft option's fallback moves it only where the option
     /// is unstated). `ghost_button(resolved, false)(&theme, Hovered)` moves
     /// on `button.hover_text_color`, `menu_row` on `menu.hover_background`.
-    /// The routes are those of each of [`route_states`].
+    /// A function on the 0.8.0 model ([`next_drawn_by`]) is held to the homes
+    /// its route names instead ([`next_hand_route_faults`]). The routes are
+    /// those of each of [`route_states`].
     #[test]
     fn every_hand_colour_route_names_a_function_that_reads_it() {
         let Some(export) = contract_leaves() else {
@@ -32387,6 +32700,7 @@ mod tests {
                 Err(error) => panic!("{label}: {error}"),
             })
             .collect();
+        let next_combinations = next_combinations();
         let mut checked: BTreeSet<(String, String)> = BTreeSet::new();
         let mut failures = Vec::new();
         let states = route_states();
@@ -32417,6 +32731,21 @@ mod tests {
             }
             for function in functions {
                 if !checked.insert((function.to_owned(), leaf.clone())) {
+                    continue;
+                }
+                // A function on the 0.8.0 model: its route names the homes
+                // it draws, each stated in turn on a 0.8.0 theme.
+                if next_combinations
+                    .iter()
+                    .any(|(_, r)| next_drawn_by(function, r).is_some())
+                {
+                    failures.extend(next_hand_route_faults(
+                        &next_combinations,
+                        &element.id,
+                        leaf,
+                        &route,
+                        function,
+                    ));
                     continue;
                 }
                 let pointer = format!("/{}", leaf.replace('.', "/"));
