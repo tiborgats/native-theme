@@ -857,7 +857,12 @@ pub(crate) fn default_button_states(r: &ResolvedTheme) -> Mapped<Option<DefaultB
 
 #[cfg(test)]
 mod tests {
-    use native_theme::next::{Color, Stroke};
+    use gpui::{AbsoluteLength, TestAppContext};
+    use native_theme::next::{
+        ButtonRule, CardRule, Color, DialogPatch, ExpanderRule, ListRule, PartPatch, PopoverPatch,
+        Preset, Scheme, Stroke, Theme, ThemeContext, ThemePatch, ToolbarRule, TooltipPatch,
+        WidgetPatchMap,
+    };
 
     use super::*;
 
@@ -885,5 +890,136 @@ mod tests {
             hsla(red)
         );
         Ok(())
+    }
+
+    /// A part patch that states the stroke as none.
+    fn none() -> PartPatch {
+        PartPatch::new().stroke(Stroke::None)
+    }
+
+    /// kde-breeze light with `patch` laid over it, installed through
+    /// `next::apply`: the theme the installed `NativeTheme` holds.
+    fn installed(cx: &mut TestAppContext, patch: &ThemePatch) -> Mapped<ResolvedTheme> {
+        let mut r = Theme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        r.apply_patch(patch);
+        cx.update(|cx| {
+            super::super::apply(&r, cx)?;
+            cx.try_global::<crate::NativeTheme>()
+                .and_then(|theme| theme.next_resolved(cx))
+                .cloned()
+                .ok_or(Unmapped("the installed 0.8.0 theme"))
+        })
+    }
+
+    /// Whether `style` draws no line (spec §10, rule 2): its border colour
+    /// transparent, and every border width it sets 0.
+    fn draws_no_line(style: &StyleRefinement) -> bool {
+        let w = &style.border_widths;
+        let zero = Some(AbsoluteLength::Pixels(px(0.0)));
+        style.border_color == Some(hsla(Color::TRANSPARENT))
+            && [&w.top, &w.right, &w.bottom, &w.left]
+                .into_iter()
+                .all(|side| side.is_none() || *side == zero)
+    }
+
+    /// `patch`, installed, builds each refinement `build` gives with no line.
+    fn built_with_no_line(
+        cx: &mut TestAppContext,
+        patch: &ThemePatch,
+        build: impl Fn(&ResolvedTheme) -> Mapped<Vec<StyleRefinement>>,
+    ) {
+        let built = installed(cx, patch).and_then(|r| build(&r));
+        assert!(
+            built
+                .as_ref()
+                .is_ok_and(|styles| !styles.is_empty() && styles.iter().all(draws_no_line)),
+            "{built:?}"
+        );
+    }
+
+    /// A button body stroked as none in every state: the push button and the
+    /// default button at rest are built with no line, the default button's
+    /// hover frame is transparent, and so is the bordered button's hover
+    /// edge where a rule states one (kde-breeze states none).
+    #[gpui::test]
+    fn a_button_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
+        let patch = ThemePatch::new().button(ButtonRule::new().body(none()));
+        built_with_no_line(cx, &patch, |r| {
+            let mut styles = vec![button(r)?];
+            styles.extend(default_button_rest(r)?);
+            Ok(styles)
+        });
+        let clear = hsla(Color::TRANSPARENT);
+        let frames = installed(cx, &patch).and_then(|r| {
+            Ok((
+                hover_border(&r)?,
+                default_button_states(&r)?.map(|states| states.hover_frame),
+            ))
+        });
+        assert!(
+            frames.as_ref().is_ok_and(
+                |&(hover, frame)| hover.is_none_or(|h| h == clear) && frame == Some(clear)
+            ),
+            "{frames:?}"
+        );
+        let hovered =
+            ThemePatch::new().button(ButtonRule::new().states(WidgetState::HOVER).body(none()));
+        let edge = installed(cx, &hovered).and_then(|r| hover_border(&r));
+        assert_eq!(edge, Ok(Some(clear)));
+    }
+
+    /// A list container stroked as none.
+    #[gpui::test]
+    fn a_list_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
+        let patch = ThemePatch::new().list(ListRule::new().container(none()));
+        built_with_no_line(cx, &patch, |r| Ok(vec![list(r)?]));
+    }
+
+    /// A tooltip panel stroked as none.
+    #[gpui::test]
+    fn a_tooltip_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
+        let patch = ThemePatch::new()
+            .widget_rules(WidgetPatchMap::new().tooltip(TooltipPatch::new().panel(none())));
+        built_with_no_line(cx, &patch, |r| Ok(vec![tooltip(r)?]));
+    }
+
+    /// A popover panel stroked as none.
+    #[gpui::test]
+    fn a_popover_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
+        let patch = ThemePatch::new()
+            .widget_rules(WidgetPatchMap::new().popover(PopoverPatch::new().panel(none())));
+        built_with_no_line(cx, &patch, |r| Ok(vec![popover(r)?]));
+    }
+
+    /// A dialog panel stroked as none: its edge transparent, the builder
+    /// stating no width.
+    #[gpui::test]
+    fn a_dialog_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
+        let patch = ThemePatch::new()
+            .widget_rules(WidgetPatchMap::new().dialog(DialogPatch::new().panel(none())));
+        built_with_no_line(cx, &patch, |r| Ok(vec![dialog(r)?]));
+    }
+
+    /// A toolbar bar stroked as none.
+    #[gpui::test]
+    fn a_toolbar_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
+        let patch = ThemePatch::new().toolbar(ToolbarRule::new().bar(none()));
+        built_with_no_line(cx, &patch, |r| Ok(vec![toolbar(r)?]));
+    }
+
+    /// A card container stroked as none.
+    #[gpui::test]
+    fn a_card_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
+        let patch = ThemePatch::new().card(CardRule::new().container(none()));
+        built_with_no_line(cx, &patch, |r| Ok(vec![group_box_content(r)?]));
+    }
+
+    /// An expander container stroked as none: the accordion's edge
+    /// transparent, the builder stating no width.
+    #[gpui::test]
+    fn an_accordion_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
+        let patch = ThemePatch::new().expander(ExpanderRule::new().container(none()));
+        built_with_no_line(cx, &patch, |r| Ok(vec![accordion(r)?]));
     }
 }

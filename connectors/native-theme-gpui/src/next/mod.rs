@@ -126,7 +126,10 @@ fn fill_color_of(part: &PartStyle) -> Option<Color> {
 }
 
 /// A part's stroke colour, where stated as one stroke of one colour, in any
-/// alignment.
+/// alignment; stated as none, transparent, no line (spec §10, rule 2), as
+/// [`fill_color_of`] reads a fill stated as none: a builder draws it at the
+/// width [`stroke_width`] gives none, 0, and a colour token, which has no
+/// width to say "none" by, is transparent.
 ///
 /// gpui paints a quad's border over its background, inside its bounds, so
 /// the fill runs under the whole border: `StrokeAlign::Inside` (spec §2,
@@ -140,24 +143,15 @@ fn fill_color_of(part: &PartStyle) -> Option<Color> {
 /// extent stays and the connector's README records the limit (spec §10,
 /// rule 4).
 pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
-    stated(stroke_color_of(part), home)
-}
-
-/// A part's stroke colour as a gpui-component colour token takes it: one
-/// stroke's colour, as [`stroke_color`] reads it, or, stated as none,
-/// transparent, no line (spec §10, rule 2), as [`fill_color_of`] reads a
-/// fill stated as none. A token is a colour alone, with no width to say
-/// "none" by.
-pub(crate) fn token_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     if part.stated.contains(PartStated::STROKE) && matches!(part.stroke, Stroke::None) {
         return Ok(hsla(Color::TRANSPARENT));
     }
-    stroke_color(part, home)
+    stated(stroke_color_of(part), home)
 }
 
-/// A part's stroke colour as `stroke_color` reads it, `None` where it is
-/// not stated, or stated in a form gpui cannot draw (not one stroke of one
-/// colour).
+/// A part's stroke colour as `stroke_color` reads one stroke, `None` where
+/// it is not stated, stated as none (no line: [`stroke_width_of`] gives 0),
+/// or stated in a form gpui cannot draw (not one stroke of one colour).
 pub fn stroke_color_of(part: &PartStyle) -> Option<Hsla> {
     match &part.stroke {
         Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
@@ -307,13 +301,14 @@ pub(crate) fn stated_fill(part: &PartStyle, home: &'static str) -> Mapped<Option
 }
 
 /// A part's stroke colour where a rule states it for the queried state, as
-/// [`stroke_color`] reads it; `None` where none does.
+/// [`stroke_color`] reads it, a stroke stated as none transparent; `None`
+/// where none does.
 pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    state_option(
-        state_stroke_color_of(part),
-        part.from_state.contains(PartStated::STROKE),
-        home,
-    )
+    if part.from_state.contains(PartStated::STROKE) {
+        stroke_color(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
 }
 
 /// A text style's colour where a rule states it for the queried state, as
@@ -533,7 +528,7 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
         )?,
         selection: hsla(r.colors.text_selection.background),
         link: text_color(&link.label(WidgetState::NONE), "link.label(NONE).color")?,
-        input: token_stroke_color(
+        input: stroke_color(
             &r.input.field(WidgetState::NONE),
             "input.field(NONE).stroke.color",
         )?,
@@ -542,7 +537,7 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
             &r.sidebar.item_label(WidgetState::NONE),
             "sidebar.item_label(NONE).color",
         )?,
-        sidebar_border: token_stroke_color(&sidebar, "sidebar.container(NONE).stroke.color")?,
+        sidebar_border: stroke_color(&sidebar, "sidebar.container(NONE).stroke.color")?,
         popover: fill(&r.popover.panel, "popover.panel.fill")?,
         popover_fg: text_color(&r.popover.text, "popover.text.color")?,
         tab_bg: fill(&tab.tab(WidgetState::NONE), "tab.tab(NONE).fill")?,
@@ -561,7 +556,7 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
             &r.window.title_bar(normal_window()),
             "window.title_bar(normal).fill",
         )?,
-        window_border: token_stroke_color(&frame, "window.frame(normal).stroke.color")?,
+        window_border: stroke_color(&frame, "window.frame(normal).stroke.color")?,
         slider_fill: fill(
             &r.slider.active_track(WidgetState::NONE),
             "slider.active_track(NONE).fill",
@@ -590,7 +585,7 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
         )?,
         separator: hsla(r.separator.color),
         status_bar: fill(&r.status_bar.bar, "status_bar.bar.fill")?,
-        status_bar_border: token_stroke_color(&r.status_bar.bar, "status_bar.bar.stroke.color")?,
+        status_bar_border: stroke_color(&r.status_bar.bar, "status_bar.bar.stroke.color")?,
     })
 }
 
@@ -1294,7 +1289,7 @@ mod tests {
     }
 
     /// An unstated stroke stays unmapped in every alignment, and a stated
-    /// absent one is no width.
+    /// absent one is no width, its colour transparent.
     #[test]
     fn an_unstated_stroke_is_unmapped_in_every_alignment() {
         for align in [
@@ -1310,22 +1305,29 @@ mod tests {
         let mut none = PartStyle::default();
         none.stated = PartStated::STROKE;
         assert_eq!(stroke_width(&none, "home"), Ok(0.0));
-        assert_eq!(stroke_color(&none, "home"), Err(Unmapped("home")));
+        assert_eq!(stroke_color(&none, "home"), Ok(hsla(Color::TRANSPARENT)));
     }
 
-    /// Spec §10 rule 2, for every colour token read off a stroke: a stroke
-    /// stated as none is transparent, no line; one stroke its colour; an
-    /// unstated stroke, or one stated per side, the home lacked.
+    /// Spec §10 rule 2, for every stroke colour a builder or a colour token
+    /// reads: a stroke stated as none is transparent, no line; one stroke its
+    /// colour; an unstated stroke, or one stated per side, the home lacked.
     #[test]
-    fn a_none_stroke_is_a_transparent_token() -> Mapped<()> {
+    fn a_none_stroke_is_transparent() -> Mapped<()> {
         let mut none = PartStyle::default();
         none.stated = PartStated::STROKE;
-        assert_eq!(token_stroke_color(&none, "home")?, hsla(Color::TRANSPARENT));
+        assert_eq!(stroke_color(&none, "home")?, hsla(Color::TRANSPARENT));
+        assert_eq!(stroke_color_of(&none), None);
+        assert_eq!(state_stroke_color(&none, "home")?, None);
+        none.from_state = PartStated::STROKE;
+        assert_eq!(
+            state_stroke_color(&none, "home")?,
+            Some(hsla(Color::TRANSPARENT))
+        );
         let part = stroked(1.0, RED, StrokeAlign::Inside);
-        assert_eq!(token_stroke_color(&part, "home")?, hsla(RED));
+        assert_eq!(stroke_color(&part, "home")?, hsla(RED));
         let mut unstated = part.clone();
         unstated.stated = PartStated::default();
-        assert_eq!(token_stroke_color(&unstated, "home"), Err(Unmapped("home")));
+        assert_eq!(stroke_color(&unstated, "home"), Err(Unmapped("home")));
         Ok(())
     }
 
