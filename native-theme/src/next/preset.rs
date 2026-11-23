@@ -754,7 +754,7 @@ fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> R
         Preset::MacosMonterey => super::presets::macos::resolve_monterey(&context, inputs),
         Preset::MacosTahoe => super::presets::macos::resolve_tahoe(&context, inputs),
         Preset::Windows11 => super::presets::windows::resolve(&context, inputs),
-        Preset::Material3 => nothing_stated(preset, context),
+        Preset::Material3 => super::presets::material::resolve(&context, inputs),
         Preset::Ios13 => nothing_stated(preset, context),
     }
 }
@@ -767,9 +767,10 @@ fn contrast_levels(preset: Preset) -> &'static [Contrast] {
         Preset::KdeBreeze => kde::CONTRAST_LEVELS,
         Preset::Windows11 => super::presets::windows::CONTRAST_LEVELS,
         Preset::MacosMonterey | Preset::MacosTahoe => super::presets::macos::CONTRAST_LEVELS,
+        Preset::Material3 => super::presets::material::CONTRAST_LEVELS,
         // The theme with nothing stated (`nothing_stated`) defines `Normal`
         // only.
-        Preset::Material3 | Preset::Ios13 => &[Contrast::Normal],
+        Preset::Ios13 => &[Contrast::Normal],
     }
 }
 
@@ -1873,8 +1874,8 @@ mod tests {
         let ctx = ThemeContext::dark();
         for preset in Preset::ALL {
             let resolved = Theme::preset(*preset).resolve(&ctx);
-            // kde-breeze's, adwaita's, windows-11's and the macOS builders are written; every
-            // other preset states nothing yet.
+            // kde-breeze's, adwaita's, windows-11's, the macOS and material-3's builders are
+            // written; every other preset states nothing yet.
             let built = matches!(
                 preset,
                 Preset::KdeBreeze
@@ -1882,6 +1883,7 @@ mod tests {
                     | Preset::Windows11
                     | Preset::MacosMonterey
                     | Preset::MacosTahoe
+                    | Preset::Material3
             );
             assert_eq!(
                 resolved != nothing_stated(*preset, ctx.clone()),
