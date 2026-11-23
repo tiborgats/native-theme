@@ -1,5 +1,5 @@
-//! The `geometry` builders of the slice's widgets, and the values the
-//! connector feeds the slice's `variants` with, from the 0.8.0 model: each
+//! The `geometry` builders, and the values the connector feeds its
+//! `variants` with, from the 0.8.0 model: each
 //! reads what its 0.7.2 builder reads, at its home in the table of homes, and
 //! hands it to the function that builder hands its own reads to.
 //!
@@ -12,7 +12,8 @@ use gpui::{Hsla, Pixels, StyleRefinement, px};
 use gpui_component::Size;
 use gpui_component::dialog::DialogEntrance;
 use native_theme::next::{
-    DialogEntranceStyle, IconStated, PartStated, PartStyle, ResolvedTheme, TextStated, WidgetState,
+    DecorationKind, DialogEntranceStyle, IconStated, PartStated, PartStyle, ResolvedTheme,
+    TextStated, WidgetState,
 };
 
 use super::{
@@ -706,6 +707,96 @@ pub(crate) fn toolbar_button_states(r: &ResolvedTheme) -> Mapped<ToolbarButtonSt
             "toolbar.button(PRESSED).fill",
         )?,
     })
+}
+
+/// [`crate::geometry::progress`]: `progress_bar.track_height` at the track's
+/// minimum height, an exact height being stated as its minimum and maximum.
+pub(crate) fn progress(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let track = r.progress_bar.track(WidgetState::NONE);
+    Ok(geometry::progress_from(
+        stated(track.min_size[1], "progress_bar.track(NONE).min_size[1]")?,
+        radius(&track, "progress_bar.track(NONE).corners")?,
+        stated(track.min_size[0], "progress_bar.track(NONE).min_size[0]")?,
+    ))
+}
+
+/// [`crate::geometry::group_box_content`].
+pub(crate) fn group_box_content(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let container = r.card.container(WidgetState::NONE);
+    Ok(geometry::group_box_content_from(&geometry::CardFrame {
+        padding: padding(&container),
+        radius: radius(&container, "card.container(NONE).corners")?,
+        border_width: stroke_width(&container, "card.container(NONE).stroke.width")?,
+        border_color: stroke_color(&container, "card.container(NONE).stroke.color")?,
+        background: fill(&container, "card.container(NONE).fill")?,
+    }))
+}
+
+/// [`crate::geometry::accordion_title`].
+pub(crate) fn accordion_title(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let e = &r.expander;
+    Ok(geometry::accordion_title_from(
+        stated(
+            e.header(WidgetState::NONE).min_size[1],
+            "expander.header(NONE).min_size[1]",
+        )?,
+        text_color(
+            &e.header_label(WidgetState::NONE),
+            "expander.header_label(NONE).color",
+        )?,
+    ))
+}
+
+/// [`crate::geometry::accordion`].
+pub(crate) fn accordion(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::accordion_from(stroke_color(
+        &r.expander.container(WidgetState::NONE),
+        "expander.container(NONE).stroke.color",
+    )?))
+}
+
+/// [`crate::geometry::accordion_hover`]: `expander.hover_background`, a soft
+/// option, where a rule states it for `HOVER` (module doc of `next`), else
+/// unset.
+pub(crate) fn accordion_hover(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::accordion_hover_from(state_fill(
+        &r.expander.header(WidgetState::HOVER),
+        "expander.header(HOVER).fill",
+    )?))
+}
+
+/// [`crate::geometry::spinner_size`].
+pub(crate) fn spinner_size(r: &ResolvedTheme) -> Mapped<Size> {
+    Ok(geometry::spinner_size_from(r.spinner.diameter))
+}
+
+/// [`crate::geometry::link`]: `link.underline_enabled` at the label's
+/// decoration, an underline or none, stated.
+pub(crate) fn link(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let l = &r.link;
+    let label = l.label(WidgetState::NONE);
+    if !label.stated.contains(TextStated::DECORATION) {
+        return Err(Unmapped("link.label(NONE).decoration"));
+    }
+    let underlined = match label.decoration.kind {
+        DecorationKind::Underline => true,
+        DecorationKind::None => false,
+        _ => return Err(Unmapped("link.label(NONE).decoration")),
+    };
+    Ok(geometry::link_from(
+        &uncoloured_font(&label, "link.label(NONE)")?,
+        line_height(r),
+        fill(&l.container(WidgetState::NONE), "link.container(NONE).fill")?,
+        underlined,
+    ))
+}
+
+/// [`crate::variants::switch_color`].
+pub(crate) fn switch_color(r: &ResolvedTheme) -> Mapped<Hsla> {
+    fill(
+        &r.switch.track(WidgetState::CHECKED),
+        "switch.track(CHECKED).fill",
+    )
 }
 
 /// [`crate::variants::hover_border`], the colour of

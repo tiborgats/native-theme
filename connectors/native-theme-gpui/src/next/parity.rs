@@ -1,14 +1,16 @@
-//! Connector parity for the first slice of the 0.8.0 work
-//! (docs/v0.8.0-plan.md, section 1, rule 2; M0, step 4): what the connector
-//! hands to gpui, computed from the 0.7.2 model by the connector's public
-//! mapping and from the 0.8.0 model by [`super`], is equal leaf by leaf, on
-//! every leaf the slice (the globals and `button`, `checkbox`, `list`,
-//! `scrollbar`, `tooltip`) feeds.
+//! Connector parity of the 0.8.0 work (docs/v0.8.0-plan.md, section 1, rule
+//! 2; M0, step 4, and M4, step 1): what the connector hands to gpui, computed
+//! from the 0.7.2 model by the connector's public mapping and from the 0.8.0
+//! model by [`super`], is equal leaf by leaf: every `ThemeColor` field, the
+//! global theme's values the slice of M0 feeds (its globals), the scroll bar,
+//! and every public builder of `src/geometry.rs` and `src/variants.rs`.
 //!
 //! Presets covered: kde-breeze, light and dark ([`PRESETS`]). The 0.7.2 side
 //! is resolved as the connector's tests resolve it
 //! (`ResolutionContext::for_tests`), with no accessibility scaling; the
-//! 0.8.0 side for the scheme's default context, whose text scale is 1.
+//! 0.8.0 side for the scheme's default context, whose text scale is 1, and,
+//! for `geometry::title_bar_inactive`, for that context with an inactive
+//! window as well.
 //!
 //! The form of comparison per toolkit type:
 //!
@@ -27,16 +29,20 @@
 //! - The scroll bar, which goes into gpui-base's global, a type with neither
 //!   `Debug` nor `PartialEq`: through the connector's `ScrollbarGeometry`,
 //!   field by field (`Pixels`, `Hsla`).
-//! - The `geometry` builders: `StyleRefinement`, `gpui_component::Size` and
-//!   `Option<Pixels>`, each by its `PartialEq`.
+//! - The `geometry` builders: `StyleRefinement`, `gpui_component::Size`,
+//!   `Option<Pixels>`, `Pixels` and `Option<DialogEntrance>`, each by its
+//!   `PartialEq`; `input_fill` and `combo_box_fill` at rest and disabled, as
+//!   one pair.
 //! - The `variants` builders, whose `ButtonCustomVariant` has neither
 //!   `Debug` nor `PartialEq` and needs an `App`: through the connector's own
 //!   values that feed them, each by its `PartialEq` — `bordered_button` by
 //!   `variants::hover_border` (`Option<Hsla>`), `default_button` by
-//!   `variants::default_button_states` (`Option<DefaultButtonStates>`) and
-//!   `ghost_button`, which reads only the theme, by the three `ThemeColor`
-//!   fields it takes; the `ThemeColor` fields the first two take beside those
-//!   are compared as colour leaves.
+//!   `variants::default_button_states` (`Option<DefaultButtonStates>`),
+//!   `toolbar_button` by `variants::toolbar_button_states`
+//!   (`ToolbarButtonStates`) and `ghost_button`, which reads only the theme,
+//!   by the three `ThemeColor` fields it takes; the `ThemeColor` fields the
+//!   others take beside those are compared as colour leaves.
+//!   `switch_color` returns an `Hsla`, compared as such.
 //!
 //! A difference is allowed only as an entry of [`DIFFERENCES`], with its
 //! reason, and is compared in the form its entry gives; an entry that no
@@ -45,10 +51,8 @@
 //! [`FALLBACK_ONLY`], which fails once the preset states the field. The list
 //! of colour leaves ([`SLOTS`]), all 140 `ThemeColor` fields, is held against
 //! the contract tables: every slot they name is in it, or in [`EXCLUDED`]
-//! with a reason. The
-//! builders compared are held against the public functions of
-//! `src/geometry.rs` and `src/variants.rs`: each is compared or in
-//! [`BUILDERS_OUTSIDE_SLICE`] with a field outside the slice it reads.
+//! with a reason. The builders compared are held against the public
+//! functions of `src/geometry.rs` and `src/variants.rs`: each is compared.
 
 use std::fmt::Debug;
 
@@ -336,20 +340,6 @@ const FALLBACK_ONLY: &[FallbackOnly] = &[
     },
 ];
 
-/// The public builders of `src/geometry.rs` and `src/variants.rs` that read a
-/// field outside the slice, each with one such field: not mapped by the
-/// 0.8.0 side yet.
-const BUILDERS_OUTSIDE_SLICE: &[(&str, &str)] = &[
-    ("geometry::progress", "progress_bar.track_height"),
-    ("geometry::group_box_content", "card.border.padding"),
-    ("geometry::accordion_title", "expander.header_height"),
-    ("geometry::accordion", "expander.border.color"),
-    ("geometry::accordion_hover", "expander.hover_background"),
-    ("geometry::spinner_size", "spinner.diameter"),
-    ("geometry::link", "link.font"),
-    ("variants::switch_color", "switch.checked_background"),
-];
-
 /// The leaves compared and the differences found, for one preset and scheme.
 struct Report {
     label: String,
@@ -448,7 +438,7 @@ fn resolve_inactive(preset: Preset, is_dark: bool) -> native_theme::next::Resolv
     native_theme::next::Theme::preset(preset).resolve(&ctx)
 }
 
-/// The theme's leaves the slice feeds: the colours, their tokens and
+/// The theme's leaves the 0.8.0 side feeds: the colours, their tokens and
 /// config strings, the theme's values and its config's.
 fn compare_theme(
     report: &mut Report,
@@ -628,8 +618,9 @@ macro_rules! layout_metric {
     };
 }
 
-/// The `geometry` builders of the slice's widgets, and the `variants`
-/// builders through the values the connector feeds them with.
+/// The `geometry` builders, and the `variants` builders through the values
+/// the connector feeds them with; `inactive` is the 0.8.0 theme resolved for
+/// an inactive window.
 fn compare_builders(
     report: &mut Report,
     old: &ResolvedTheme,
@@ -715,6 +706,19 @@ fn compare_builders(
     builder!(report, old, new, dialog_footer);
     builder!(report, old, new, dialog_title);
     builder!(report, old, new, dialog_description);
+    builder!(report, old, new, progress);
+    builder!(report, old, new, group_box_content);
+    builder!(report, old, new, accordion_title);
+    builder!(report, old, new, accordion);
+    builder!(report, old, new, accordion_hover);
+    builder!(report, old, new, spinner_size);
+    builder!(report, old, new, link);
+    compare_mapped(
+        report,
+        "variants::switch_color",
+        crate::variants::switch_color(Native::unscaled(old)),
+        super::builders::switch_color(new),
+    );
     builder!(report, old, new, status_bar);
     builder!(report, old, new, title_bar);
     compare_mapped(
@@ -854,7 +858,7 @@ fn public_fns(module: &str, src: &str) -> Vec<String> {
 }
 
 #[test]
-fn every_builder_is_compared_or_accounted_for() -> crate::Result<()> {
+fn every_builder_is_compared() -> crate::Result<()> {
     let public: Vec<String> = public_fns("geometry", include_str!("../geometry.rs"))
         .into_iter()
         .chain(public_fns("variants", include_str!("../variants.rs")))
@@ -865,25 +869,10 @@ fn every_builder_is_compared_or_accounted_for() -> crate::Result<()> {
             compared.extend(compare_all(key, preset, is_dark)?.seen);
         }
     }
-    let outside = |b: &str| BUILDERS_OUTSIDE_SLICE.iter().any(|(name, _)| *name == b);
-    let missing: Vec<&String> = public
-        .iter()
-        .filter(|b| !compared.contains(b) && !outside(b))
-        .collect();
-    let both: Vec<&String> = public
-        .iter()
-        .filter(|b| compared.contains(b) && outside(b))
-        .collect();
-    let unknown: Vec<&str> = BUILDERS_OUTSIDE_SLICE
-        .iter()
-        .map(|(name, _)| *name)
-        .filter(|name| !public.iter().any(|b| b == name))
-        .collect();
+    let missing: Vec<&String> = public.iter().filter(|b| !compared.contains(b)).collect();
     assert!(
-        !public.is_empty() && missing.is_empty() && both.is_empty() && unknown.is_empty(),
-        "public builders neither compared nor in BUILDERS_OUTSIDE_SLICE: {missing:?}; \
-         compared and in BUILDERS_OUTSIDE_SLICE: {both:?}; in BUILDERS_OUTSIDE_SLICE but \
-         no public builder: {unknown:?}"
+        !public.is_empty() && missing.is_empty(),
+        "public builders not compared: {missing:?}"
     );
     Ok(())
 }

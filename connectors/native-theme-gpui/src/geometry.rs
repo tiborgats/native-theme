@@ -215,13 +215,9 @@ pub(crate) fn coloured_text(
     text(r, font, line_height).text_color(font.color)
 }
 
-/// Each side the theme states, and no other: an unstated side leaves the
-/// receiving widget's own padding in place.
-fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
-    padding(r, sides_of(p))
-}
-
-/// [`with_padding`] of the four sides top, right, bottom, left.
+/// Each side the theme states of the four sides top, right, bottom, left,
+/// and no other: an unstated side leaves the receiving widget's own padding
+/// in place.
 pub(crate) fn padding(
     r: StyleRefinement,
     [top, right, bottom, left]: [Option<f32>; 4],
@@ -1076,10 +1072,15 @@ pub fn table(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn progress(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.progress_bar;
+    progress_from(p.track_height, p.border.corner_radius, p.min_width)
+}
+
+/// [`progress`] of the track's height, corner radius and minimum width.
+pub(crate) fn progress_from(height: f32, radius: f32, min_width: f32) -> StyleRefinement {
     StyleRefinement::default()
-        .h(px(p.track_height))
-        .rounded(px(p.border.corner_radius))
-        .min_w(px(p.min_width))
+        .h(px(height))
+        .rounded(px(radius))
+        .min_w(px(min_width))
 }
 
 /// For `GroupBox::content_style` (`src/group_box.rs:107`), applied to the
@@ -1093,11 +1094,32 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.card;
-    with_padding(StyleRefinement::default(), &c.border.padding)
-        .rounded(px(c.border.corner_radius))
-        .border(px(c.border.line_width))
-        .border_color(rgba_to_hsla(c.border.color))
-        .bg(rgba_to_hsla(c.background_color))
+    group_box_content_from(&CardFrame {
+        padding: sides_of(&c.border.padding),
+        radius: c.border.corner_radius,
+        border_width: c.border.line_width,
+        border_color: rgba_to_hsla(c.border.color),
+        background: rgba_to_hsla(c.background_color),
+    })
+}
+
+/// The theme's values [`group_box_content`] is made of, read from either
+/// model.
+pub(crate) struct CardFrame {
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) radius: f32,
+    pub(crate) border_width: f32,
+    pub(crate) border_color: Hsla,
+    pub(crate) background: Hsla,
+}
+
+/// [`group_box_content`] of the card `c`.
+pub(crate) fn group_box_content_from(c: &CardFrame) -> StyleRefinement {
+    padding(StyleRefinement::default(), c.padding)
+        .rounded(px(c.radius))
+        .border(px(c.border_width))
+        .border_color(c.border_color)
+        .bg(c.background)
 }
 
 /// For `AccordionItem::title_style` (`src/accordion.rs:220`, applied `:301-307`).
@@ -1111,9 +1133,12 @@ pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
     let e = &n.resolved.expander;
-    StyleRefinement::default()
-        .h(px(e.header_height))
-        .text_color(rgba_to_hsla(e.font.color))
+    accordion_title_from(e.header_height, rgba_to_hsla(e.font.color))
+}
+
+/// [`accordion_title`] of the header's height and text colour.
+pub(crate) fn accordion_title_from(height: f32, text: Hsla) -> StyleRefinement {
+    StyleRefinement::default().h(px(height)).text_color(text)
 }
 
 /// The edge of an `Accordion` and of each of its `AccordionItem`s:
@@ -1129,7 +1154,12 @@ pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
 /// changes no pixel; it is what honours a source that states one of its own.
 #[must_use]
 pub fn accordion(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().border_color(rgba_to_hsla(n.resolved.expander.border.color))
+    accordion_from(rgba_to_hsla(n.resolved.expander.border.color))
+}
+
+/// [`accordion`] of the expander's border colour.
+pub(crate) fn accordion_from(border: Hsla) -> StyleRefinement {
+    StyleRefinement::default().border_color(border)
 }
 
 /// For `AccordionItem::hover` (`src/accordion.rs:230-233`): the title row's
@@ -1140,8 +1170,14 @@ pub fn accordion(n: Native<'_>) -> StyleRefinement {
 /// `item.hover(|_| geometry::accordion_hover(n))`.
 #[must_use]
 pub fn accordion_hover(n: Native<'_>) -> StyleRefinement {
-    match n.resolved.expander.hover_background {
-        Some(fill) => StyleRefinement::default().bg(rgba_to_hsla(fill)),
+    accordion_hover_from(n.resolved.expander.hover_background.map(rgba_to_hsla))
+}
+
+/// [`accordion_hover`] of the hovered header's fill, `None` where the theme
+/// states none.
+pub(crate) fn accordion_hover_from(fill: Option<Hsla>) -> StyleRefinement {
+    match fill {
+        Some(fill) => StyleRefinement::default().bg(fill),
         None => StyleRefinement::default(),
     }
 }
@@ -1495,7 +1531,12 @@ pub(crate) fn toolbar_from(t: &ToolbarFrame, font: &Font<'_>, line_height: f32) 
 /// 0.6.4 merged the two sizing arms 0.6.0 had at `:166` and `:195`).
 #[must_use]
 pub fn spinner_size(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.spinner.diameter))
+    spinner_size_from(n.resolved.spinner.diameter)
+}
+
+/// [`spinner_size`] of the spinner's diameter.
+pub(crate) fn spinner_size_from(diameter: f32) -> Size {
+    Size::Size(px(diameter))
 }
 
 /// `DataTable::with_size`: `list.row_height` as `Size::Size`, or upstream's own
@@ -2133,12 +2174,24 @@ pub(crate) fn list_item_selected_from(text: Hsla) -> StyleRefinement {
 #[must_use]
 pub fn link(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.link;
-    let r = with_text(StyleRefinement::default(), &l.font, n).bg(rgba_to_hsla(l.background_color));
-    if l.underline_enabled {
-        r
-    } else {
-        r.text_decoration_0()
-    }
+    link_from(
+        &font_of(&l.font, n),
+        n.resolved.defaults.line_height,
+        rgba_to_hsla(l.background_color),
+        l.underline_enabled,
+    )
+}
+
+/// [`link`] of the font `font`, the fill `background`, and whether the link
+/// is underlined at rest.
+pub(crate) fn link_from(
+    font: &Font<'_>,
+    line_height: f32,
+    background: Hsla,
+    underlined: bool,
+) -> StyleRefinement {
+    let r = text(StyleRefinement::default(), font, line_height).bg(background);
+    if underlined { r } else { r.text_decoration_0() }
 }
 
 // --- Layout accessors (spec §9.5) ---------------------------------------------

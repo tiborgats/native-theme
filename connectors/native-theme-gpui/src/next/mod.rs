@@ -1,14 +1,16 @@
 //! The 0.8.0 mapping, under construction: what the connector hands to gpui,
-//! computed from the 0.8.0 model (`native_theme::next`) for the first slice
-//! of the 0.8.0 work, the globals and `button`, `checkbox`, `list`,
-//! `scrollbar` and `tooltip` (docs/v0.8.0-plan.md, M0, step 4).
+//! computed from the 0.8.0 model (`native_theme::next`): every `ThemeColor`
+//! field, the global theme's values of the first slice of the 0.8.0 work (its
+//! globals, docs/v0.8.0-plan.md, M0, step 4), the scroll bar, and every
+//! `geometry` and `variants` builder (M4, step 1).
 //!
 //! Each function reads the model where the table of homes
 //! (`native-theme/tests/next_homes.toml`) places the 0.7.2 field the old
 //! mapping reads, by the query its row names, and hands the values to the
 //! function the old mapping hands its own reads to, so the two share
-//! everything after the read. A leaf of the connector whose source lies
-//! outside the slice is not mapped here. `parity` proves the leaves equal to
+//! everything after the read. A leaf of the global theme outside these
+//! (`window_radius`, `cursor_blink`, the highlight theme and the stored
+//! config's other fields) is not mapped here yet. `parity` proves the leaves equal to
 //! the old mapping's (plan, section 1, rule 2). Not exported; the connector
 //! is ported onto it in M4, and the 0.7.2 path is removed at the 0.8.0 cut.
 //!
@@ -438,10 +440,10 @@ pub(crate) fn theme_scalars(r: &ResolvedTheme) -> Mapped<ThemeScalars> {
     })
 }
 
-/// The gpui-component theme of the slice: [`theme_color`]'s colours and the
-/// tokens gpui-component derives from them, [`theme_scalars`]' values, and,
-/// in the slot of its mode, a `ThemeConfig` of the same values and colours.
-/// Every leaf the slice does not feed is gpui-component's default.
+/// The gpui-component theme: [`theme_color`]'s colours and the tokens
+/// gpui-component derives from them, [`theme_scalars`]' values, and, in the
+/// slot of its mode, a `ThemeConfig` of the same values and colours. Every
+/// other leaf is gpui-component's default.
 pub(crate) fn to_theme(r: &ResolvedTheme) -> Mapped<GpuiTheme> {
     let tc = theme_color(r)?;
     let scalars = theme_scalars(r)?;
