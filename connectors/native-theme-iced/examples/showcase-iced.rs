@@ -3672,7 +3672,7 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
     let r = state.next_shown();
     let window = Padding::from(Gaps::from_layout(&state.layout).window);
     let tab_content: Element<'_, Message> = match state.active_tab {
-        Tab::Basic => view_basic(state, inp_pad),
+        Tab::Basic => view_basic(state),
         Tab::Buttons => view_buttons(state, btn_pad),
         Tab::Inputs => view_inputs(state, inp_pad),
         Tab::Selection => view_selection(state),
@@ -7627,6 +7627,68 @@ fn next_button_floor(r: &native_theme::next::ResolvedTheme) -> iced::Size {
     }
 }
 
+/// A Basic text field's padding on the installed 0.8.0 theme,
+/// `native_theme_iced::next::input_padding` (`input.field(NONE).padding`
+/// plus its stroke width); iced's own, `text_input::DEFAULT_PADDING`
+/// (iced_widget 0.14.2 `src/text_input.rs`), where the field's stroke is
+/// one iced cannot take.
+fn next_input_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    iced_next::input_padding(r).unwrap_or(text_input::DEFAULT_PADDING)
+}
+
+/// The Basic text area's padding on the installed 0.8.0 theme,
+/// `native_theme_iced::next::text_area_padding`
+/// (`text_area.field(NONE).padding` plus its stroke width); the text
+/// editor's own 5 on every side (iced_widget 0.14.2 `src/text_editor.rs`,
+/// `TextEditor::new`) where the field's stroke is one iced cannot take.
+fn next_text_area_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    iced_next::text_area_padding(r).unwrap_or(Padding::new(ICED_TEXT_EDITOR_PADDING))
+}
+
+/// iced's own text editor padding, 5 on every side (iced_widget 0.14.2
+/// `src/text_editor.rs`, `TextEditor::new`), private to the connector
+/// (`TEXT_EDITOR_PADDING`).
+const ICED_TEXT_EDITOR_PADDING: f32 = 5.0;
+
+/// The corner radius a field's focus ring follows on the installed 0.8.0
+/// theme: the field's own corners, `field`'s (`iced_next::radius_of`);
+/// iced's own field's, [`ICED_FIELD_RADIUS`], where the theme states none
+/// or a form iced cannot draw.
+fn next_field_radius(field: &native_theme::next::PartStyle) -> f32 {
+    iced_next::radius_of(field).unwrap_or(ICED_FIELD_RADIUS)
+}
+
+/// iced's own text field's and text editor's corner radius, 2 (iced_widget
+/// 0.14.2 `src/text_input.rs` and `src/text_editor.rs`, `default`).
+const ICED_FIELD_RADIUS: f32 = 2.0;
+
+/// The drop-down arrow's size as [`next_arrow_handle`] has it drawn:
+/// `combo_box.chevron(NONE).size` where the installed 0.8.0 theme states
+/// it; else iced's own, the renderer's default text size (iced_widget
+/// 0.14.2 `src/pick_list.rs`, `draw`), which the showcase leaves at
+/// `Settings::default().default_text_size`.
+fn next_arrow_size(r: &native_theme::next::ResolvedTheme) -> f32 {
+    let chevron = r.combo_box.chevron(WidgetState::NONE);
+    if chevron
+        .stated
+        .contains(native_theme::next::IconStated::SIZE)
+    {
+        chevron.size
+    } else {
+        iced::Settings::default().default_text_size.0
+    }
+}
+
+/// The Basic drop-down's width on the installed 0.8.0 theme:
+/// [`BASIC_WIDTH`], at least `combo_box.field(NONE).min_size[0]` where the
+/// theme states it.
+fn next_drop_down_width(r: &native_theme::next::ResolvedTheme) -> f32 {
+    match r.combo_box.field(WidgetState::NONE).min_size[0] {
+        Some(min) => BASIC_WIDTH.max(min),
+        None => BASIC_WIDTH,
+    }
+}
+
 /// [`flare_room`] on the installed 0.8.0 theme:
 /// `tab.active_outward_corner_radius` where it is a positive, finite
 /// length, the one `iced_next::tab_flares` draws; none otherwise.
@@ -10381,6 +10443,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         };
     }
     let under = |prefix: &str| id.starts_with(prefix);
+    // The Basic page's single-line fields, on the 0.8.0 model.
+    let basic_field = under("basic.text_inputs.") || under("basic.number_input.");
     // The flat buttons, drawn in `ghost_button`: the page tabs' menu, the
     // side-panel toggle and Widget Info's Copy.
     let ghost = under("chrome.page_tabs.menu")
@@ -10604,6 +10668,30 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "button_padding: Button::padding, the side plus button.border.line_width".into()
         }
         // ---- input, text area ----
+        ("input", "font") if under("basic.text_area.") => {
+            "TextEditor size, line height and font: text_area.text(NONE)'s size, line box \
+             (next_line_box) and font"
+                .into()
+        }
+        ("input", "font") if basic_field => {
+            "TextInput size and font: input.text(NONE)'s size and font".into()
+        }
+        ("input", "min_height_px") if basic_field => {
+            "next_control_line: TextInput::line_height, the line box that fills \
+             input.field(NONE).min_size[1] inside next_input_padding; input.text(NONE)'s line \
+             box (next_line_box) where unstated"
+                .into()
+        }
+        ("input", f) if side(f).is_some() && basic_field => {
+            "next_input_padding: TextInput::padding, the side of input.field(NONE).padding plus \
+             its stroke width, iced's own (text_input::DEFAULT_PADDING) where unstated"
+                .into()
+        }
+        ("text_area", f) if side(f).is_some() && under("basic.text_area.") => {
+            "next_text_area_padding: TextEditor::padding, the side of text_area.field(NONE).padding \
+             plus its stroke width, iced's own 5 (ICED_TEXT_EDITOR_PADDING) where unstated"
+                .into()
+        }
         ("input", "font") => "Text input size and theme_font (family, weight)".into(),
         ("input", "min_height_px") => {
             "control_line_height: the line box that fills it inside the padding".into()
@@ -10774,6 +10862,36 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("combo_box", f) if side(f).is_some() && theme_row => {
             "combo_box_padding: ComboBox::padding, the side plus the line width".into()
+        }
+        ("combo_box", "font") if under("basic.drop_down.") => {
+            "PickList text_size and font: combo_box.label(NONE)'s size and font".into()
+        }
+        ("combo_box", "min_height_px") if under("basic.drop_down.") => {
+            "next_control_line: PickList::text_line_height, the line box that fills \
+             combo_box.field(NONE).min_size[1] inside the padding; combo_box.label(NONE)'s line \
+             box (next_line_box) where unstated"
+                .into()
+        }
+        ("combo_box", "min_width_px") if under("basic.drop_down.") => {
+            "next_drop_down_width: PickList::width, the page's own width, at least \
+             combo_box.field(NONE).min_size[0] where stated"
+                .into()
+        }
+        ("combo_box", "arrow_icon_size_px") if under("basic.drop_down.") => {
+            "next_arrow_handle: the chevron glyph's size, combo_box.chevron(NONE).size, iced's \
+             own (the renderer's default text size) where unstated"
+                .into()
+        }
+        ("combo_box", "arrow_area_width_px") if under("basic.drop_down.") => {
+            "iced_next::combo_box_padding: the right padding holds half the column \
+             combo_box.arrow_area_width leaves the chevron"
+                .into()
+        }
+        ("combo_box", f) if side(f).is_some() && under("basic.drop_down.") => {
+            "iced_next::combo_box_padding: PickList::padding, the side of \
+             combo_box.field(NONE).padding plus its stroke width, iced's own \
+             (button::DEFAULT_PADDING) where unstated"
+                .into()
         }
         ("combo_box", "font") => "PickList text_size and font (theme_font)".into(),
         ("combo_box", "min_height_px") => {
@@ -11438,6 +11556,23 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              (next_line_box)"
                 .into()
         }
+        ("defaults", "line_height") if basic_field => {
+            "next_control_line: the field's line box, input.text(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box), \
+             grown to fill input.field(NONE).min_size[1] inside the padding"
+                .into()
+        }
+        ("defaults", "line_height") if under("basic.text_area.") => {
+            "TextEditor::line_height: text_area.text(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+                .into()
+        }
+        ("defaults", "line_height") if under("basic.drop_down.") => {
+            "next_control_line: the label's line box, combo_box.label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box), \
+             grown to fill combo_box.field(NONE).min_size[1] inside the padding"
+                .into()
+        }
         ("defaults", "line_height") if under("basic.list.") => {
             "next_text: the row label's line box, list.item_label(NONE)'s size by \
              typography.line_height_multiplier where it states no line height (next_line_box); \
@@ -11549,15 +11684,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
 const AW_NUMBER_STEPS_PADDING: f32 = 5.0;
 
 /// The Number input's "Not themeable" line on its step buttons: iced_aw's
-/// own, laid out by the field's padding, `input_padding` as the Basic page
-/// pads the field: "+" and "-" side by side where its top, bottom or right
+/// own, laid out by the field's padding, `pad`, as the Basic page pads the
+/// field ([`next_input_padding`]): "+" and "-" side by side where its top, bottom or right
 /// side is under [`AW_NUMBER_STEPS_PADDING`], "▲" over "▼" otherwise
 /// (iced_aw 0.14.1 `src/widget/number_input.rs:544-563`), each `size × 2.5 /
 /// 4` against the field's right edge (`:535`, `:577-581`). The model has no
 /// number-input leaf, so nothing in the theme chooses it.
 #[cfg(feature = "iced_aw")]
-fn number_steps_line(resolved: &ResolvedTheme) -> String {
-    let pad = native_theme_iced::input_padding(resolved);
+fn number_steps_line(pad: Padding) -> String {
     let side_by_side = [pad.top, pad.bottom, pad.right]
         .iter()
         .any(|side| *side < AW_NUMBER_STEPS_PADDING);
@@ -11631,7 +11765,7 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
             .into(),
         ],
         #[cfg(feature = "iced_aw")]
-        "Number input" => vec![number_steps_line(&state.current_resolved).into()],
+        "Number input" => vec![number_steps_line(next_input_padding(state.next_shown())).into()],
         #[cfg(not(feature = "iced_aw"))]
         "Number input" => vec!["step buttons: none, a plain text field without iced_aw".into()],
         _ => Vec::new(),
@@ -13424,7 +13558,7 @@ fn expander_header_padding(x: &native_theme::theme::ResolvedExpanderTheme) -> Pa
 /// spinner an arc on a canvas, each drawn from its `list.*` and `spinner.*`
 /// leaves. The tab bar is `iced_aw`'s; without the `iced_aw` feature it is
 /// the page tab strip's tabs ([`tab_button`]).
-fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
+fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
@@ -13787,28 +13921,35 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
         .into(),
     );
 
-    let input_size = scaled_text_size(resolved.input.font.size, a11y);
-    // `input.min_height`, as the line box that fills it inside the padding.
-    let input_line = control_line_height(resolved, input_size, resolved.input.min_height, inp_pad);
+    // The text fields on the installed 0.8.0 theme: their text
+    // `input.text(NONE)`, their padding [`next_input_padding`], at least
+    // `input.field(NONE).min_size[1]` tall ([`next_control_line`]).
+    let input_field = next.input.field(WidgetState::NONE);
+    let input_label = next.input.text(WidgetState::NONE);
+    let input_size = input_label.size_px;
+    let inp_pad = next_input_padding(next);
+    let input_line = next_control_line(next, &input_label, input_field.min_size[1], inp_pad);
     let field = |placeholder: &'a str, value: &'a str| {
         text_input(placeholder, value)
             .size(input_size)
             .line_height(input_line)
-            .font(theme_font(&resolved.input.font))
+            .next_font(&input_label, |field, font| field.font(font))
             .style(styles::text_input(resolved))
             .padding(inp_pad)
             .width(Length::Fixed(BASIC_WIDTH))
     };
     // The text a field shows, `shown` (its value, or its placeholder while
-    // empty), as the input's font sets it.
+    // empty), as the input's text style sets it.
     let input_text = |shown: &str| {
         MeasuredText::new(
             shown.to_string(),
             input_size,
-            input_size * resolved.defaults.line_height,
-            theme_font(&resolved.input.font),
+            next_line_box(&next.typography, &input_label),
+            next_measured_font(&input_label),
         )
     };
+    // The focus ring's curves: the field's own corners.
+    let input_radius = next_field_radius(&input_field);
     // A field and its text: the text sits in the field's first layout node,
     // the line inside its padding (iced_widget 0.14.2 `src/text_input.rs`,
     // `layout`).
@@ -13822,7 +13963,7 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
             }),
             None => field,
         };
-        native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, field)
+        native_theme_iced::focus_ring(resolved, input_radius, field)
     };
     // A field with no `on_input` is a disabled one (text_input.rs:170).
     let inputs = group(
@@ -13878,7 +14019,7 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
             .step(1)
             .set_size(input_size)
             .line_height(input_line)
-            .font(theme_font(&resolved.input.font))
+            .next_font(&input_label, |field, font| field.font(font))
             .padding(inp_pad)
             .input_style(styles::text_input(resolved))
             .style(number_steps(resolved))
@@ -13893,8 +14034,7 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     // NumberInput hands an operation to its field (iced_aw 0.14.1
     // `src/widget/number_input.rs:587-602`).
     #[cfg(feature = "iced_aw")]
-    let number =
-        native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, number);
+    let number = native_theme_iced::focus_ring(resolved, input_radius, number);
     // Without iced_aw, the value in a plain field.
     #[cfg(not(feature = "iced_aw"))]
     let number = fielded(
@@ -13904,9 +14044,18 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     );
     let number = group("basic.number_input.heading", "Number input", number);
 
-    let combo_size = scaled_text_size(resolved.combo_box.font.size, a11y);
-    let combo_pad = combo_box_padding(resolved);
-    let arrow_size = resolved.combo_box.arrow_icon_size;
+    // The drop-down on the installed 0.8.0 theme: its label
+    // `combo_box.label(NONE)`, its padding
+    // `native_theme_iced::next::combo_box_padding` (iced's own `PickList`
+    // padding, `button::DEFAULT_PADDING`, iced_widget 0.14.2
+    // `src/pick_list.rs`, `PickList::new`, where the theme gives none), at
+    // least `combo_box.field(NONE).min_size` ([`next_control_line`]), its
+    // arrow [`next_arrow_handle`].
+    let combo_field = next.combo_box.field(WidgetState::NONE);
+    let combo_label = next.combo_box.label(WidgetState::NONE);
+    let combo_size = combo_label.size_px;
+    let combo_pad = iced_next::combo_box_padding(next).unwrap_or(button::DEFAULT_PADDING);
+    let arrow_size = next_arrow_size(next);
     let drop_down = group(
         "basic.drop_down.heading",
         "Drop-down",
@@ -13920,23 +14069,25 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
                     Some(state.basic_fruit),
                     Message::BasicFruitSelected,
                 )
-                .handle(arrow_handle(resolved))
+                .handle(next_arrow_handle(next))
                 .padding(combo_pad)
-                // `combo_box.min_height`, as the line box that fills it inside the padding.
-                .text_line_height(control_line_height(
-                    resolved,
-                    combo_size,
-                    resolved.combo_box.min_height,
+                // `combo_box.field(NONE).min_size[1]`, as the line box that
+                // fills it inside the padding.
+                .text_line_height(next_control_line(
+                    next,
+                    &combo_label,
+                    combo_field.min_size[1],
                     combo_pad,
                 ))
                 .text_size(combo_size)
-                .font(theme_font(&resolved.combo_box.font))
+                .next_font(&combo_label, |list, font| list.font(font))
                 .style(styles::pick_list(resolved))
                 .menu_style(styles::menu(resolved))
-                // `BASIC_WIDTH`, and at least `combo_box.min_width`, which `PickList` has no
-                // setter for: the width is the application's, as the gpui page's select's
-                // refinement and the egui page's combo box take it.
-                .width(Length::Fixed(BASIC_WIDTH.max(resolved.combo_box.min_width))),
+                // `BASIC_WIDTH`, and at least `combo_box.field(NONE).min_size[0]`,
+                // which `PickList` has no setter for: the width is the
+                // application's, as the gpui page's select's refinement and
+                // the egui page's combo box take it.
+                .width(Length::Fixed(next_drop_down_width(next))),
             )
             // The text inside the padding, left of the arrow; the arrow
             // right-aligned at the right padding's inner edge, centred
@@ -13946,8 +14097,8 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
                 MeasuredText::new(
                     state.basic_fruit.to_string(),
                     combo_size,
-                    combo_size * resolved.defaults.line_height,
-                    theme_font(&resolved.combo_box.font),
+                    next_line_box(&next.typography, &combo_label),
+                    next_measured_font(&combo_label),
                 ),
                 move |layout| Some(layout.bounds().shrink(combo_pad)),
             )
@@ -14145,12 +14296,17 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
 
     // Three of the theme's text lines, inside the multi-line field's own
     // padding (docs/platform-facts.md §2.29).
-    let area_line = input_size * resolved.defaults.line_height;
-    let area_pad = native_theme_iced::text_area_padding(resolved);
-    // The field with the theme's focus ring round it while it is focused.
-    let ringed = |field: Tagged<'a>| {
-        native_theme_iced::focus_ring(resolved, resolved.text_area.border.corner_radius, field)
-    };
+    // On the installed 0.8.0 theme: the lines of `text_area.text(NONE)`
+    // ([`next_line_box`]), the padding [`next_text_area_padding`].
+    let area_field = next.text_area.field(WidgetState::NONE);
+    let area_label = next.text_area.text(WidgetState::NONE);
+    let area_size = area_label.size_px;
+    let area_line = next_line_box(&next.typography, &area_label);
+    let area_pad = next_text_area_padding(next);
+    // The field with the theme's focus ring round it while it is focused,
+    // its curves the field's own corners.
+    let area_radius = next_field_radius(&area_field);
+    let ringed = |field: Tagged<'a>| native_theme_iced::focus_ring(resolved, area_radius, field);
     let text_area = group(
         "basic.text_area.heading",
         "Text area",
@@ -14162,9 +14318,9 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
                     "basic.text_area.field",
                     text_editor(&state.basic_text_area)
                         .on_action(Message::BasicTextAreaAction)
-                        .size(input_size)
+                        .size(area_size)
                         .line_height(iced::Pixels(area_line))
-                        .font(theme_font(&resolved.input.font))
+                        .next_font(&area_label, |area, font| area.font(font))
                         .style(styles::text_editor(resolved))
                         .padding(area_pad)
                         .width(BASIC_WIDE)
@@ -14177,9 +14333,9 @@ fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
                     "basic.text_area.field.text",
                     MeasuredText::new(
                         state.basic_text_area.text(),
-                        input_size,
+                        area_size,
                         area_line,
-                        theme_font(&resolved.input.font),
+                        next_measured_font(&area_label),
                     ),
                     move |l| Some(l.bounds().shrink(area_pad)),
                 ),
@@ -28820,12 +28976,13 @@ mod tests {
     }
 
     /// The Basic tab's push button, text field and drop-down are laid out at
-    /// the minimum sizes the theme states (the installed 0.8.0 theme's
-    /// `button.body(NONE).min_size`; `input.min_height`,
-    /// `combo_box.min_height`), or at their own size where their content,
-    /// padded, is larger — as gpui-component's are through
+    /// the minimum sizes the installed 0.8.0 theme states
+    /// (`button.body(NONE).min_size`, `input.field(NONE).min_size[1]`,
+    /// `combo_box.field(NONE).min_size`), or at their own size where their
+    /// content, padded, is larger — as gpui-component's are through
     /// `native_theme_gpui::geometry` and the platform's own are. The button's
-    /// padding is `iced_next::button_padding`'s.
+    /// padding is `iced_next::button_padding`'s; the text area holds three
+    /// lines ([`basic_field_faults`]).
     #[test]
     fn basic_controls_take_the_stated_minimum_sizes() -> Result<(), String> {
         for preset in ["kde-breeze", "adwaita", "material-3", "macos-tahoe"] {
@@ -28837,8 +28994,6 @@ mod tests {
             if !state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light) {
                 return Err(format!("{preset} does not install"));
             }
-            let r = state.current_resolved.clone();
-            let own = |size: f32, pad: Padding| size * r.defaults.line_height + pad.y();
             let next = state.next_shown().clone();
             let [min_width, min_height] = next.button.body(WidgetState::NONE).min_size;
             let mut ui = interface(&state);
@@ -28860,29 +29015,148 @@ mod tests {
                 button.height
             );
 
-            let input = probe_bounds(&mut ui, probes::BASIC_TEXT_INPUT);
-            let expected = r
-                .input
-                .min_height
-                .max(own(r.input.font.size, native_theme_iced::input_padding(&r)));
-            assert!(
-                (input.height - expected).abs() < 0.01,
-                "{preset}: the text input is {}px tall, expected {expected}px",
-                input.height
-            );
-
-            let pick = probe_bounds(&mut ui, probes::BASIC_PICK_LIST);
-            let expected = r.combo_box.min_height.max(own(
-                r.combo_box.font.size,
-                native_theme_iced::combo_box_padding(&r),
-            ));
-            assert!(
-                (pick.height - expected).abs() < 0.01,
-                "{preset}: the drop-down is {}px tall, expected {expected}px",
-                pick.height
-            );
+            let faults = basic_field_faults(&mut ui, &next);
+            if !faults.is_empty() {
+                return Err(format!("{preset}: {faults:?}"));
+            }
         }
         Ok(())
+    }
+
+    /// The height a single-line Basic field is laid out at on the 0.8.0
+    /// theme `r`: its text `label`'s size by
+    /// `typography.line_height_multiplier`, padded by `pad`, and at least
+    /// `min` where stated; `label`'s line box ([`next_line_box`]) padded
+    /// where not ([`next_control_line`]).
+    fn next_field_height(
+        r: &native_theme::next::ResolvedTheme,
+        label: &TextStyle,
+        min: Option<f32>,
+        pad: Padding,
+    ) -> f32 {
+        match min {
+            Some(min) => min.max(label.size_px * r.typography.line_height_multiplier + pad.y()),
+            None => next_line_box(&r.typography, label) + pad.y(),
+        }
+    }
+
+    /// Where the Basic page's text input, drop-down and text area are not
+    /// laid out at the sizes the 0.8.0 theme `r` gives them: the input's
+    /// height ([`next_field_height`] of `input.text(NONE)`,
+    /// `input.field(NONE).min_size[1]` and [`next_input_padding`]), the
+    /// drop-down's height (of `combo_box.label(NONE)`,
+    /// `combo_box.field(NONE).min_size[1]` and
+    /// `iced_next::combo_box_padding`) and width
+    /// ([`next_drop_down_width`]), the text area's three lines of
+    /// `text_area.text(NONE)` inside [`next_text_area_padding`].
+    fn basic_field_faults(
+        ui: &mut Simulator<'_, Message>,
+        r: &native_theme::next::ResolvedTheme,
+    ) -> Vec<String> {
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let input = probe_bounds(ui, probes::BASIC_TEXT_INPUT);
+        let expected = next_field_height(
+            r,
+            &r.input.text(WidgetState::NONE),
+            r.input.field(WidgetState::NONE).min_size[1],
+            next_input_padding(r),
+        );
+        if !near(input.height, expected) {
+            faults.push(format!(
+                "the text input is {input:?}, {expected}px tall expected"
+            ));
+        }
+        let pick = probe_bounds(ui, probes::BASIC_PICK_LIST);
+        let pad = iced_next::combo_box_padding(r).unwrap_or(button::DEFAULT_PADDING);
+        let expected = next_field_height(
+            r,
+            &r.combo_box.label(WidgetState::NONE),
+            r.combo_box.field(WidgetState::NONE).min_size[1],
+            pad,
+        );
+        if !near(pick.height, expected) || !near(pick.width, next_drop_down_width(r)) {
+            faults.push(format!(
+                "the drop-down is {pick:?}, {} x {expected} expected",
+                next_drop_down_width(r)
+            ));
+        }
+        let area = probe_bounds(ui, probes::BASIC_TEXT_AREA);
+        let line = next_line_box(&r.typography, &r.text_area.text(WidgetState::NONE));
+        let expected = BASIC_TEXT_AREA_LINES * line + next_text_area_padding(r).y();
+        if !near(area.height, expected) {
+            faults.push(format!(
+                "the text area is {area:?}, {expected}px tall expected"
+            ));
+        }
+        faults
+    }
+
+    /// The Basic page's text input, drop-down and text area follow the
+    /// installed 0.8.0 theme alone: kde-breeze with a patch that states,
+    /// on the 0.8.0 theme only, a 9 px padding and a 60 px least height for
+    /// the input's field, a 200 × 50 px least size for the drop-down's
+    /// field, an 11 px padding for the text area's field and a 20 px text
+    /// for each, lays each out at the patched sizes ([`basic_field_faults`]),
+    /// which are not 0.7.2's.
+    #[test]
+    fn the_basic_fields_take_the_0_8_0_geometry() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.input.rules]]\n\
+             field.padding = { top = 9.0, right = 9.0, bottom = 9.0, left = 9.0 }\n\
+             field.min_size = [\"none\", 60.0]\ntext.size_px = 20.0\n\
+             [[widgets.combo_box.rules]]\nfield.min_size = [200.0, 50.0]\nlabel.size_px = 20.0\n\
+             [[widgets.text_area.rules]]\n\
+             field.padding = { top = 11.0, right = 11.0, bottom = 11.0, left = 11.0 }\n\
+             text.size_px = 20.0\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            active_tab: Tab::Basic,
+            ..State::default()
+        };
+        if !state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light,
+        ) {
+            return Err("kde-breeze does not install".into());
+        }
+        splice_next(&mut state, |r| r.apply_patch(&patch));
+        let r = state.next_shown().clone();
+        let old = &state.current_resolved;
+        if next_input_padding(&r) == native_theme_iced::input_padding(old)
+            || r.input.field(WidgetState::NONE).min_size[1] == Some(old.input.min_height)
+            || next_drop_down_width(&r) == BASIC_WIDTH.max(old.combo_box.min_width)
+            || next_text_area_padding(&r) == native_theme_iced::text_area_padding(old)
+            || r.text_area.text(WidgetState::NONE).size_px == old.input.font.size
+        {
+            return Err("the patch states 0.7.2's sizes".into());
+        }
+        let (mut faults, laid) = recording(|| {
+            let mut ui = interface(&state);
+            let faults = basic_field_faults(&mut ui, &r);
+            let _ = texts(&mut ui);
+            (faults, surveyed_layout())
+        });
+        // Each field's text inside its padding's left side.
+        for (field, pad) in [
+            ("basic.text_inputs.filled", next_input_padding(&r)),
+            ("basic.text_area.field", next_text_area_padding(&r)),
+        ] {
+            match (laid.get(field), laid.get(format!("{field}.text").as_str())) {
+                (Some(outer), Some(inner)) if (inner.x - outer.x - pad.left).abs() < 0.01 => {}
+                (outer, inner) => faults.push(format!(
+                    "{field}'s text at {inner:?} in {outer:?}, not {} in",
+                    pad.left
+                )),
+            }
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:?}"))
+        }
     }
 
     /// Every text the Basic page lays out, with its bounds.
@@ -29226,8 +29500,9 @@ mod tests {
             let mut ui = interface(&state);
 
             let area = probe_bounds(&mut ui, probes::BASIC_TEXT_AREA);
-            let pad = native_theme_iced::text_area_padding(&r);
-            let expected = 3.0 * r.input.font.size * r.defaults.line_height + pad.y();
+            let next = state.next_shown();
+            let line = next_line_box(&next.typography, &next.text_area.text(WidgetState::NONE));
+            let expected = 3.0 * line + next_text_area_padding(next).y();
             assert!(
                 (area.height - expected).abs() < 0.01 && (area.width - BASIC_WIDE).abs() < 0.01,
                 "{preset}: the text area is {area:?}, expected {BASIC_WIDE} x {expected}"
@@ -36856,7 +37131,6 @@ mod tests {
                         // clamps a fixed width to its column, so a column too
                         // narrow for the count's assumption squeezes it. This
                         // reads the widths the page states, not the count's.
-                        let r = &state.current_resolved;
                         for (id, width) in [
                             ("basic.text_area.field", BASIC_WIDE),
                             ("basic.list.frame", BASIC_WIDE),
@@ -36869,7 +37143,7 @@ mod tests {
                             ("basic.progress_bar.bar", BASIC_WIDTH),
                             (
                                 "basic.drop_down.trigger",
-                                BASIC_WIDTH.max(r.combo_box.min_width),
+                                next_drop_down_width(state.next_shown()),
                             ),
                         ] {
                             match laid.get(id) {
