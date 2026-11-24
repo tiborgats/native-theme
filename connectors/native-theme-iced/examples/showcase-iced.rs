@@ -17501,15 +17501,15 @@ fn card_info(state: &State) -> String {
             ("border-radius", &card_radius_s),
             (
                 "padding",
-                "card.border.padding's stated sides inside its line_width, \
+                "card.container(NONE).padding's stated sides inside its stroke width, \
                  layout.container_margin on a side it leaves unstated, none where \
-                 that is unstated too: one rule for every card (card_padding)",
+                 that is unstated too: one rule for every card (next_card_padding)",
             ),
         ],
         &[(
             "text",
-            "CardTheme carries no font, so the labels are set explicitly: the \
-             title in defaults.font, the notes in the caption role",
+            "the model states no font for a card, so the labels are set explicitly: \
+             the title in typography.body, the notes in typography.caption",
         )],
     )
 }
@@ -17540,7 +17540,7 @@ fn tooltip_info(state: &State) -> String {
         .map(|delay| format!("{}ms, tooltip.show_delay", delay.as_millis()));
     let gap_s = tooltip_gap_text(state);
     let label_s = font_row("tooltip.font", &resolved.tooltip.font);
-    let buttons_min = button_min_size_row(resolved);
+    let buttons_min = next_button_min_size_row(state.next_shown());
     let mut config = vec![
         ("positions", "Top / Bottom / Left / Right"),
         ("buttons' min size", buttons_min.as_str()),
@@ -17579,41 +17579,41 @@ fn tooltip_info(state: &State) -> String {
 
 fn view_display(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let card = &resolved.card;
-    let sep = &resolved.separator;
-    let card_radius = card.border.corner_radius;
+    let next = state.next_shown();
+    let typography = &next.typography;
+    let gap = Gaps::from_next(&next.layout);
+    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let caption = |content: String| next_caption_text(state, content, None);
+    let card_radius = resolved.card.border.corner_radius;
     // The cards, the Spacing & Layout boxes among them, are padded as every
-    // card is ([`card_padding`]).
-    let card_pad = card_padding(resolved, &state.layout);
-    let line_width_s = format!("{:.0}px", sep.line_width);
+    // card is, as the Basic card on the installed 0.8.0 theme
+    // ([`next_card_padding`]); their colours and corners still
+    // `styles::container_card`'s.
+    let card_pad = next_card_padding(next);
+    let thickness = next.separator.thickness;
+    let divider = || rule::horizontal(thickness).style(styles::rule(resolved));
 
-    let header = section_header(
+    let header = next_section_header(
         "Display Widgets",
         "Container, Rule, Tooltip, and layout helpers",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
     let containers = hoverable(
         UnlistedKey::Card,
         column![
-            text("Styled Containers").role(section_title(ts), resolved, a11y),
+            title("Styled Containers"),
             probe(
                 probes::DISPLAY_CARDS[0],
                 Fill,
                 container(
                     column![
-                        text("Container (card fill)").body(resolved, a11y),
-                        text(format!(
+                        text("Container (card fill)").next_body(next),
+                        caption(format!(
                             "This container uses styles::container_card. \
                              card.border.corner_radius: {card_radius:.0}px."
-                        ))
-                        .role(&ts.caption, resolved, a11y),
+                        )),
                     ]
                     .spacing(gap.widget),
                 )
@@ -17624,13 +17624,11 @@ fn view_display(state: &State) -> Element<'_, Message> {
             probe(
                 probes::DISPLAY_CARDS[1],
                 Fill,
-                container(
-                    text(
-                        "A second container dressed as a card. Containers take their \
-                          background, border and padding from the resolved card theme."
-                    )
-                    .role(&ts.caption, resolved, a11y),
-                )
+                container(caption(
+                    "A second container dressed as a card. Containers take their \
+                     background, border and padding from the resolved card theme."
+                        .to_owned()
+                ))
                 .padding(card_pad)
                 .style(styles::container_card(resolved))
                 .width(Fill),
@@ -17641,74 +17639,79 @@ fn view_display(state: &State) -> Element<'_, Message> {
     );
 
     let rules = column![
-        text("Divider Rules").role(section_title(ts), resolved, a11y),
+        title("Divider Rules"),
         text(format!(
             "iced takes a rule's thickness as the constructor's argument, and the \
-             platform states exactly one: separator.line_width ({line_width_s}). \
+             platform states exactly one: separator.thickness ({thickness:.0}px). \
              Three rules at that width would be three copies of the same line, so \
              here is the one:"
         ))
-        .body(resolved, a11y),
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
-        text(
+        .next_body(next),
+        divider(),
+        caption(
             "Its colour is separator.line_color; its radius and its fill mode have \
              no native source and are iced's own."
-        )
-        .role(&ts.caption, resolved, a11y),
+                .to_owned()
+        ),
     ]
     .spacing(gap.widget);
 
     // The four, one per side: the button, its side, the tip, and their probes.
-    // Each button at least `button.min_width` by `button.min_height`, as the
-    // Buttons page's are.
-    let btn_min = native_theme_iced::button_content_min_size(resolved);
+    // Each button laid out as the Buttons page's push buttons, on the
+    // installed 0.8.0 theme: its label `button.label(NONE)`, at least
+    // [`next_button_floor`], padded by [`next_button_padding`]; their colours
+    // still the 0.7.2 styles'. The tips' text in `tooltip.text`, as the
+    // Basic page's tooltip's.
+    let button_label = next.button.label(WidgetState::NONE);
+    let btn_min = next_button_floor(next);
+    let btn_pad = next_button_padding(next);
     let [top, bottom, left, right] = probes::DISPLAY_TOOLTIPS;
     let [top_tip, bottom_tip, left_tip, right_tip] = probes::DISPLAY_TIPS;
     let sides = [
         (
             button(at_least(
-                text("Hover: Top").typeset(&resolved.button.font, a11y),
+                text("Hover: Top").next_text(&button_label, typography),
                 btn_min,
             ))
             .on_press(Message::ButtonPressed)
             .style(styles::button_primary(resolved))
-            .padding(native_theme_iced::button_padding(resolved)),
+            .padding(btn_pad),
             tooltip::Position::Top,
             "Tooltip on top!",
             (top, top_tip),
         ),
         (
             button(at_least(
-                text("Hover: Bottom").typeset(&resolved.button.font, a11y),
+                text("Hover: Bottom").next_text(&button_label, typography),
                 btn_min,
             ))
             .on_press(Message::ButtonPressed)
             .style(styles::button(resolved))
-            .padding(native_theme_iced::button_padding(resolved)),
+            .padding(btn_pad),
             tooltip::Position::Bottom,
             "Tooltip on bottom!",
             (bottom, bottom_tip),
         ),
         (
             button(at_least(
-                text("Hover: Left").typeset(&resolved.button.font, a11y),
+                text("Hover: Left").next_text(&button_label, typography),
                 btn_min,
             ))
             .on_press(Message::ButtonPressed)
             .style(styles::button_success(resolved))
-            .padding(native_theme_iced::button_padding(resolved)),
+            .padding(btn_pad),
             tooltip::Position::Left,
             "Tooltip on left!",
             (left, left_tip),
         ),
         (
             button(at_least(
-                text("Hover: Right").typeset(&resolved.button.font, a11y),
+                text("Hover: Right").next_text(&button_label, typography),
                 btn_min,
             ))
             .on_press(Message::ButtonPressed)
             .style(styles::button_danger(resolved))
-            .padding(native_theme_iced::button_padding(resolved)),
+            .padding(btn_pad),
             tooltip::Position::Right,
             "Tooltip on right!",
             (right, right_tip),
@@ -17720,22 +17723,16 @@ fn view_display(state: &State) -> Element<'_, Message> {
             showcase_tooltip(
                 state,
                 probe(probe_id, Length::Shrink, control),
-                drawn_probe(
-                    tip_id,
-                    text(tip).themed(&resolved.tooltip.font, resolved, a11y),
-                ),
+                drawn_probe(tip_id, text(tip).next_text(&next.tooltip.text, typography)),
                 position,
                 true,
             )
         });
     let tooltips = hoverable(
         UnlistedKey::Tooltip,
-        column![
-            text("Tooltips").role(section_title(ts), resolved, a11y),
-            row(tips).spacing(gap.widget),
-        ]
-        .spacing(gap.widget)
-        .into(),
+        column![title("Tooltips"), row(tips).spacing(gap.widget),]
+            .spacing(gap.widget)
+            .into(),
     );
 
     let theme_info_text = format!(
@@ -17771,17 +17768,16 @@ fn view_display(state: &State) -> Element<'_, Message> {
 
     let info_box = container(
         column![
-            text("Theme Information").role(section_title(ts), resolved, a11y),
-            text(theme_info_text).role(&ts.caption, resolved, a11y),
-            text(font_info).role(&ts.caption, resolved, a11y),
+            title("Theme Information"),
+            caption(theme_info_text),
+            caption(font_info),
             // The presets the theme picker and `--theme` offer: this
             // platform's.
-            text(format!(
+            caption(format!(
                 "Available presets on this platform: {} | All presets have both light and \
                  dark variants.",
                 native_theme::theme::Theme::list_presets_for_platform().len(),
-            ))
-            .role(&ts.caption, resolved, a11y),
+            )),
         ]
         .spacing(gap.widget),
     )
@@ -17790,19 +17786,19 @@ fn view_display(state: &State) -> Element<'_, Message> {
     .width(Fill);
 
     let spacing_demo = column![
-        text("Spacing & Layout").role(section_title(ts), resolved, a11y),
+        title("Spacing & Layout"),
         row![
-            container(text("A").body(resolved, a11y))
+            container(text("A").next_body(next))
                 .padding(card_pad)
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
-            container(text("B").body(resolved, a11y))
+            container(text("B").next_body(next))
                 .padding(card_pad)
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
-            container(text("C").body(resolved, a11y))
+            container(text("C").next_body(next))
                 .padding(card_pad)
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
@@ -17811,7 +17807,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
             probe(
                 probes::DISPLAY_SPACING_BOX,
                 Length::Shrink,
-                container(text("Right-aligned").role(&ts.caption, resolved, a11y))
+                container(caption("Right-aligned".to_owned()))
                     .padding(card_pad)
                     .style(styles::container_card(resolved)),
             ),
@@ -17824,13 +17820,13 @@ fn view_display(state: &State) -> Element<'_, Message> {
     column![
         header,
         containers,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        divider(),
         rules,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        divider(),
         tooltips,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        divider(),
         spacing_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        divider(),
         probe(probes::DISPLAY_CARDS[2], Fill, info_box),
     ]
     .spacing(gap.section)
@@ -26835,19 +26831,14 @@ mod tests {
     /// kde-breeze's `tooltip.panel.padding` (3 on every side) spliced 10
     /// wider moves each tip 10 further from its button, its
     /// `tooltip.panel.max_size` width spliced to half the narrowest tip
-    /// wraps every tip inside it, and each tip, whose text is still the
-    /// 0.7.2 theme's, is one line `defaults.line_height` times its scaled
-    /// size tall, a spliced line height included.
+    /// wraps every tip inside it, and each tip, its text in `tooltip.text`,
+    /// is one line of its line box tall ([`next_line_box`]), a spliced line
+    /// height 7 px taller included.
     #[test]
     fn the_display_tooltips_take_the_tooltip_theme() -> Result<(), String> {
         const WIDER: f32 = 10.0;
         let base = display_tips("kde-breeze", |_| {}, |_| {})?;
         let kde_next = loaded("kde-breeze", false).next_shown().clone();
-        let (_, kde) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        let a11y = AccessibilityPreferences::default();
         let stated = next_tooltip_padding(&kde_next)
             .ok_or("kde-breeze states no uniform tooltip padding on the 0.8.0 model")?;
         let mut failures = Vec::new();
@@ -26902,20 +26893,23 @@ mod tests {
             }
         }
 
-        let line_height = kde.defaults.line_height + 0.5;
+        let line = next_line_box(&kde_next.typography, &kde_next.tooltip.text);
+        let taller_line = line + 7.0;
         let taller = display_tips(
             "kde-breeze",
-            |r| r.defaults.line_height = line_height,
             |_| {},
+            |r| {
+                let text = &mut r.tooltip.text;
+                text.line_height = taller_line;
+                text.stated = text.stated.union(TextStated::LINE_HEIGHT);
+            },
         )?;
-        let size = scaled_text_size(kde.tooltip.font.size, &a11y);
-        for (lh, tips) in [(kde.defaults.line_height, &base), (line_height, &taller)] {
+        for (want, tips) in [(line, &base), (taller_line, &taller)] {
             for (side, (_, tip)) in ["top", "bottom", "left", "right"].into_iter().zip(tips) {
-                if (tip.height - size * lh).abs() > 0.01 {
+                if (tip.height - want).abs() > 0.01 {
                     failures.push(format!(
-                        "{side}: at defaults.line_height {lh} the tip is {} tall, want {}",
-                        tip.height,
-                        size * lh
+                        "{side}: the tip is {} tall, want tooltip.text's line box {want}",
+                        tip.height
                     ));
                 }
             }
@@ -28568,14 +28562,13 @@ mod tests {
     /// are `layout.widget_gap` apart ([`Gaps`]), none where it is unstated,
     /// as on the Basic page, where the showcase's own 12 px stood: under
     /// every bundled preset in both modes, the Buttons page's Click me!
-    /// button and its counter and the Range page's slider and its value (the
-    /// installed 0.8.0 theme's gap), and the Display page's first two
-    /// tooltip buttons (the 0.7.2 theme's).
+    /// button and its counter, the Range page's slider and its value, and
+    /// the Display page's first two tooltip buttons (the installed 0.8.0
+    /// theme's gap).
     #[test]
     fn the_pages_rows_are_a_widget_gap_apart() {
         for (preset, dark) in every_preset_in_both_modes() {
             let mut state = loaded(preset, dark);
-            let gap = state.layout.widget_gap.unwrap_or_default();
             let next_gap = state.next_shown().layout.widget_gap.unwrap_or_default();
             let mut gaps = Vec::new();
 
@@ -28618,7 +28611,7 @@ mod tests {
             gaps.push((
                 "the first two tooltip buttons",
                 second.x - (first.x + first.width),
-                gap,
+                next_gap,
             ));
 
             for (what, drawn, want) in gaps {
@@ -29896,10 +29889,98 @@ mod tests {
         }
     }
 
+    /// The Display page lays itself out on the installed 0.8.0 theme alone
+    /// ([`view_display`]): kde-breeze with, on the 0.8.0 theme only, a card
+    /// padded 9 px inside a 2 px stroke, a body on a 23 px line, a 19 px
+    /// caption on a 29 px line, a 15 px widget gap, a 21 px section gap and
+    /// a 4 px separator lays the first card's title 11 px in from its top
+    /// left corner, 23 tall, its note 15 px under it, 29 tall, and the first
+    /// group's title 15 + 4 + 21 px under the header's description.
+    #[test]
+    fn the_display_page_lays_out_on_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.card.rules]]\n\
+             container.padding = { top = 9.0, right = 9.0, bottom = 9.0, left = 9.0 }\n\
+             container.stroke = { width = 2.0, color = \"#13579b\" }\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Display);
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.typography.body.line_height = 23.0;
+            r.typography.body.stated = r.typography.body.stated.union(TextStated::LINE_HEIGHT);
+            if let Some(caption) = r.typography.caption.as_mut() {
+                caption.size_px = 19.0;
+                caption.line_height = 29.0;
+                caption.stated = caption.stated.union(TextStated::LINE_HEIGHT);
+            }
+            r.layout.widget_gap = Some(15.0);
+            r.layout.section_gap = Some(21.0);
+            r.separator.thickness = 4.0;
+        });
+        let next = state.next_shown();
+        let old = &state.current_resolved;
+        if native_theme_iced::next::text_scale(next)
+            .caption
+            .line_height
+            != 29.0
+            || next_card_padding(next).top != 11.0
+            || old.card.border.padding.top == Some(9.0)
+            || old.defaults.font.size * old.defaults.line_height == 23.0
+            || state.layout.widget_gap == Some(15.0)
+            || state.layout.section_gap == Some(21.0)
+            || old.separator.line_width == 4.0
+        {
+            return Err("the splice states 0.7.2's sizes, or no caption".into());
+        }
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let mut ui = interface(&state);
+        let card = probe_bounds(&mut ui, probes::DISPLAY_CARDS[0]);
+        let found = texts(&mut ui);
+        drop(ui);
+        let at = |label: &str| {
+            found
+                .iter()
+                .find(|(content, _)| content.starts_with(label))
+                .map(|(_, bounds)| *bounds)
+        };
+        match (
+            at("Container (card fill)"),
+            at("This container uses styles::container_card."),
+        ) {
+            (Some(title), Some(note))
+                if near(title.x - card.x, 11.0)
+                    && near(title.y - card.y, 11.0)
+                    && near(title.height, 23.0)
+                    && near(note.y - (title.y + title.height), 15.0)
+                    && near(note.height, 29.0) => {}
+            pair => faults.push(format!("the first card {card:?} and its texts: {pair:?}")),
+        }
+        match (
+            at("Container, Rule, Tooltip, and layout helpers"),
+            at("Styled Containers"),
+        ) {
+            (Some(description), Some(title))
+                if near(
+                    title.y - (description.y + description.height),
+                    15.0 + 4.0 + 21.0,
+                ) => {}
+            pair => faults.push(format!("the description and the first title: {pair:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
     /// M9-155, round 2: the push buttons of the Display, Layout and Extra
-    /// pages are laid out at the minimum size the theme states
-    /// (`button.min_width` and `.min_height`), as the Buttons page's are: the
-    /// four tooltip buttons, the first pane's three controls and, in the
+    /// pages are laid out at the minimum size the theme states, as the
+    /// Buttons page's are: the four tooltip buttons at the installed 0.8.0
+    /// theme's (`button.body(NONE).min_size`, each axis it states, the
+    /// Tooltip info naming it), and, at the 0.7.2 theme's
+    /// (`button.min_width` and `.min_height`), the first pane's three controls and, in the
     /// `iced_aw` build, the card's Dismiss and the button that brings the
     /// card back; and each page's Widget Info names the minimum. kde-breeze
     /// states 82 by 32, which "close" and "Dismiss" fall short of; windows-11
@@ -29923,12 +30004,29 @@ mod tests {
                     })
             };
 
+            // The Display page's, on the installed 0.8.0 theme: at least
+            // `button.body(NONE).min_size` on each axis it states.
             state.active_tab = Tab::Display;
+            let next = state.next_shown().clone();
+            let [min_width, min_height] = next.button.body(WidgetState::NONE).min_size;
             let mut ui = interface(&state);
             for id in probes::DISPLAY_TOOLTIPS {
-                faults.extend(under(id, probe_bounds(&mut ui, id)));
+                let button = probe_bounds(&mut ui, id);
+                if min_width.is_some_and(|w| button.width < w - 0.01)
+                    || min_height.is_some_and(|h| button.height < h - 0.01)
+                {
+                    faults.push(format!(
+                        "{preset}: {id} is {} x {}px, under button.body(NONE).min_size \
+                         {min_width:?} x {min_height:?}",
+                        button.width, button.height
+                    ));
+                }
             }
             drop(ui);
+            let want = format!("buttons' min size: {}", next_button_min_size_row(&next));
+            if !tooltip_info(&state).lines().any(|line| line.trim() == want) {
+                faults.push(format!("{preset}: the Tooltip info does not say {want:?}"));
+            }
 
             state.active_tab = Tab::Layout;
             let mut ui = interface(&state);
@@ -29973,7 +30071,6 @@ mod tests {
                 r.button.min_width, r.button.min_height
             );
             let infos = [
-                ("Tooltip", tooltip_info(&state)),
                 ("PaneGrid", pane_grid_info(&state)),
                 #[cfg(feature = "iced_aw")]
                 ("Card", aw_card_info(&state)),
