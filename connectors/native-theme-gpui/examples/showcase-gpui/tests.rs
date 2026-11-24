@@ -21212,6 +21212,134 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
     );
 }
 
+/// A Ghost Button's info reports the flat button's keyboard focus stroke,
+/// `button.body(FOCUS_VISIBLE; variant=Flat).stroke.color`, not mapped only
+/// where gpui-component's own focus treatment, `ring` on any focus (or, with
+/// no border width and the band off, a line in the variant's text colour),
+/// draws another colour or on another trigger; on kde-breeze light patched
+/// with flat focus rules, its `ring` and band set by hand.
+#[test]
+fn a_ghost_buttons_info_reports_a_focus_stroke_ring_does_not_draw() {
+    use crate::demo::{ButtonKind, ButtonState};
+    use crate::info::next_stated;
+    use native_theme::next::{
+        ButtonRule, ButtonVariant, Color, PartPatch, Preset, Scheme, Stroke, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    const GREEN: Color = Color::rgb(0.0, 1.0, 0.0);
+    const RED: Color = Color::rgb(1.0, 0.0, 0.0);
+    let patched = |states: WidgetState, rest_stroke_none: bool| {
+        let mut r = NextTheme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        let mut patch = ThemePatch::new().button(
+            ButtonRule::new()
+                .variant(ButtonVariant::Flat)
+                .states(states)
+                .body(PartPatch::new().stroke(Stroke::uniform(1.0, GREEN))),
+        );
+        if rest_stroke_none {
+            patch = ThemePatch::new()
+                .button(ButtonRule::new().body(PartPatch::new().stroke(Stroke::None)))
+                .button(
+                    ButtonRule::new()
+                        .variant(ButtonVariant::Flat)
+                        .states(states)
+                        .body(PartPatch::new().stroke(Stroke::uniform(1.0, GREEN))),
+                );
+        }
+        r.apply_patch(&patch);
+        let t = native_theme_gpui::next::to_theme(&r);
+        assert!(
+            t.is_ok(),
+            "the patched kde-breeze light does not map: {t:?}"
+        );
+        t.ok().map(|t| (r, t))
+    };
+    let note = |r: &native_theme::next::ResolvedTheme, t: &Theme| {
+        let info = crate::info::buttons::button(
+            t,
+            ButtonKind::Ghost,
+            ButtonState::Idle,
+            false,
+            false,
+            None,
+            Some(r),
+        );
+        note_of(&info.config, "focus stroke").map(str::to_string)
+    };
+    let Some((r, mut t)) = patched(WidgetState::FOCUSED, false) else {
+        return;
+    };
+    assert!(
+        crate::info::stroke_width_of(&r.button.body(WidgetState::NONE)).is_some_and(|w| w > 0.0),
+        "kde-breeze light no longer edges its button, so the bordered branch goes unread"
+    );
+    for band in [false, true] {
+        t.focus_ring = band;
+        t.ring = next_stated(GREEN);
+        assert_eq!(
+            note(&r, &t),
+            None,
+            "band {band}: a stated focus stroke ring draws on any focus is reported"
+        );
+        t.ring = next_stated(RED);
+        let text = note(&r, &t);
+        assert!(
+            text.as_deref()
+                .is_some_and(|text| text.contains("is drawn nowhere")
+                    && !text.contains("did not follow a key")),
+            "band {band}: a focus stroke ring does not draw is not reported by its colour alone: {text:?}"
+        );
+    }
+    let Some((r, mut t)) = patched(WidgetState::FOCUS_VISIBLE, false) else {
+        return;
+    };
+    t.ring = next_stated(GREEN);
+    let text = note(&r, &t);
+    assert!(
+        text.as_deref().is_some_and(
+            |text| text.contains("did not follow a key") && !text.contains("is drawn nowhere")
+        ),
+        "a keyboard-only focus stroke, drawn on any focus, is not reported by its trigger alone: {text:?}"
+    );
+    let Some((r, mut t)) = patched(WidgetState::FOCUSED, true) else {
+        return;
+    };
+    assert_eq!(
+        crate::info::stroke_width_of(&r.button.body(WidgetState::NONE)),
+        Some(0.0),
+        "the patch does not take the button's border width away"
+    );
+    t.ring = next_stated(GREEN);
+    t.focus_ring = false;
+    let text = note(&r, &t);
+    assert!(
+        text.as_deref()
+            .is_some_and(|text| text.contains("1 px line") && text.contains("is drawn nowhere")),
+        "a focus stroke an unbordered Button with the band off draws as its inside line is not reported: {text:?}"
+    );
+    t.focus_ring = true;
+    assert_eq!(
+        note(&r, &t),
+        None,
+        "a stated focus stroke the band's ring draws is reported on an unbordered Button"
+    );
+    let unpatched = NextTheme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+    if !unpatched
+        .button
+        .body(native_theme::next::ButtonQuery::flat().state(WidgetState::FOCUS_VISIBLE))
+        .from_state
+        .contains(native_theme::next::PartStated::STROKE)
+    {
+        assert_eq!(
+            note(&unpatched, &t),
+            None,
+            "a focus stroke no rule states is reported"
+        );
+    }
+}
+
 /// A Bordered Button is built as itself under every bundled 0.8.0 theme a
 /// rule of which states a hovered button's stroke,
 /// `button.body(HOVER).stroke.color`, and as the stock `Default` one under

@@ -1,7 +1,9 @@
 //! What the Buttons page's widgets report about themselves (spec §3.4).
 
 use gpui_component::{Colorize as _, Size, theme::Theme};
-use native_theme::next::{PartStyle, ResolvedTheme as NextTheme, WidgetState};
+use native_theme::next::{
+    ButtonQuery, PartStated, PartStyle, ResolvedTheme as NextTheme, WidgetState,
+};
 use native_theme_gpui::next::geometry::button_disabled;
 use native_theme_gpui::next::{
     self, Unmapped, padding_of, state_fill_of, state_text_color_of, text_color_of,
@@ -661,6 +663,10 @@ pub fn button(
         ),
         None => info,
     };
+    let info = match (kind, state, size, native) {
+        (ButtonKind::Ghost, ButtonState::Idle, None, Some(r)) => flat_focus_stroke(info, t, r),
+        _ => info,
+    };
     let info = if icon && state == ButtonState::Idle {
         info.not_themeable("icon position", "leading, always: Button adds its icon before the label and has no setting for the other side (button/button.rs, Button::render)")
             .not_themeable("icon size", "size_3 / size_3p5 / size_4 / size_6 per the button's Size (icon.rs, Icon::into_svg) -- rems again, so it scales with the platform font, while defaults.icon_sizes is in absolute px and Button exposes no icon_size setter to take one")
@@ -767,6 +773,91 @@ fn next_styled_label_notes(info: WidgetInfo) -> WidgetInfo {
 /// `demo::labelled`, which reads `next::geometry::button_label`.
 fn next_label_size_note(info: WidgetInfo) -> WidgetInfo {
     info.config("label size", "button.label(NONE).size_px through next::geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
+}
+
+/// `info` with the flat button's keyboard focus stroke,
+/// `button.body(FOCUS_VISIBLE; variant=Flat).stroke.color`, where a rule of
+/// `r`, the installed 0.8.0 theme, states it for the state, on a Ghost
+/// Button `geometry::button` edges at `button.body(NONE).stroke.width`: not
+/// mapped where gpui-component's own focus treatment draws another colour or
+/// on another trigger. Upstream styles a focused Button after the caller's
+/// style and gives no hook for it (button/button.rs:936-938): on any focus,
+/// its border in `ring`, with the band round it where the band is on, and
+/// with no border width and the band off a 1 px line inside the edge in the
+/// variant's text colour at 60 % (styled.rs:250-298, focus_style;
+/// button/button.rs:23, FOCUS_LINE_OPACITY; :653-659). The trigger differs where a focus that did not
+/// follow a key, `button.body(FOCUSED; variant=Flat)`, gives another stroke
+/// colour or none (spec §2, `from_state`). `info` as it is where no rule
+/// states the stroke for the state, or where both agree with what upstream
+/// draws.
+pub(crate) fn flat_focus_stroke(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
+    let home = "button.body(FOCUS_VISIBLE; variant=Flat).stroke.color";
+    let keyed = r
+        .button
+        .body(ButtonQuery::flat().state(WidgetState::FOCUS_VISIBLE));
+    if !keyed.from_state.contains(PartStated::STROKE) {
+        return info;
+    }
+    let stated = state_stroke_color_of(&keyed);
+    let pointer = state_stroke_color_of(
+        &r.button
+            .body(ButtonQuery::flat().state(WidgetState::FOCUSED)),
+    );
+    let bordered = stroke_width_of(&r.button.body(WidgetState::NONE)).is_some_and(|w| w > 0.0);
+    let (drawn, line) = if bordered || t.focus_ring {
+        (
+            t.ring,
+            format!(
+                "its border in ThemeColor ring, {}{}",
+                super::as_rgba(t.ring),
+                if t.focus_ring {
+                    ", with the band round it"
+                } else {
+                    ""
+                }
+            ),
+        )
+    } else {
+        let inside = t.secondary_foreground.opacity(0.6);
+        (
+            inside,
+            format!(
+                "with no border width a 1 px line inside its edge in the variant's text colour, secondary_foreground, at 60 %, {} (button/button.rs:23, FOCUS_LINE_OPACITY; :653-659)",
+                super::as_rgba(inside)
+            ),
+        )
+    };
+    let mut why = Vec::new();
+    match stated {
+        Some(colour) if colour == drawn => {}
+        Some(colour) => why.push(format!(
+            "the stated colour, {}, is drawn nowhere",
+            super::as_rgba(colour)
+        )),
+        None => why.push(
+            "the rule states it in a form gpui cannot draw (not one stroke of one colour, nor none)"
+                .to_string(),
+        ),
+    }
+    if pointer != stated {
+        why.push(match pointer {
+            Some(colour) => format!(
+                "a focus that did not follow a key, whose stroke button.body(FOCUSED; variant=Flat).stroke.color is {}, is drawn as one that did",
+                super::as_rgba(colour)
+            ),
+            None => "a focus that did not follow a key, for which no rule states button.body(FOCUSED; variant=Flat).stroke.color, is drawn as one that did".to_string(),
+        });
+    }
+    if why.is_empty() {
+        return info;
+    }
+    info.config(
+        "focus stroke",
+        format!(
+            "not mapped: a rule states {home}, and gpui-component styles a focused Button after the caller's style, with no hook for it (button/button.rs:936-938), on any focus: {line} (styled.rs:250-298, focus_style). So {}",
+            why.join("; and ")
+        ),
+    )
 }
 
 /// `info` with the hovered label of a Button built on a custom variant over
