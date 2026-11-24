@@ -726,6 +726,24 @@
         },
         {
           "states": [
+            "hover",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0.6117647, 0.32941177, 0.70705885, 1)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0.454902, 0.20392159, 0.5443138, 1)"
+          }
+        },
+        {
+          "states": [
             "pressed"
           ],
           "not_states": [
@@ -743,6 +761,24 @@
           "indicator": {
             "fill": "#9141ac",
             "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "srgb(0.6117647, 0.32941177, 0.70705885, 1)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "srgb(0.454902, 0.20392159, 0.5443138, 1)"
           }
         }
       ]
@@ -860,6 +896,24 @@
             "fill": "#9141ac",
             "stroke": "none"
           }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0.6117647, 0.32941177, 0.70705885, 1)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0.454902, 0.20392159, 0.5443138, 1)"
+          }
         }
       ]
     },
@@ -964,7 +1018,7 @@
             "checked"
           ],
           "track": {
-            "fill": "#2e78cc"
+            "fill": "srgb(0.6117647, 0.32941177, 0.70705885, 1)"
           }
         },
         {
@@ -976,6 +1030,15 @@
           ],
           "track": {
             "fill": "#00000633"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "track": {
+            "fill": "srgb(0.454902, 0.20392159, 0.5443138, 1)"
           }
         }
       ]

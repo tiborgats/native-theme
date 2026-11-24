@@ -156,8 +156,12 @@ fn a_primary_button_keeps_the_accent_fill_when_hovered_pressed_or_checked() {
     }
 }
 
+/// A checked indicator under the pointer keeps its checked outline, none,
+/// not the unchecked one's hover outline; its fill is the checked fill under
+/// libadwaita's hover layer
+/// (`a_hovered_or_pressed_checked_control_lays_libadwaita_s_layer_over_the_accent`).
 #[test]
-fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
+fn a_checked_indicator_keeps_its_outline_under_the_pointer() {
     for theme in both_schemes() {
         let checked = WidgetState::CHECKED;
         let hovered = checked | WidgetState::HOVER;
@@ -166,27 +170,30 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
             theme.checkbox.indicator(checked)
         );
         assert_eq!(
-            theme.checkbox.indicator(hovered),
-            theme.checkbox.indicator(checked)
+            theme.checkbox.indicator(hovered).stroke,
+            theme.checkbox.indicator(checked).stroke
         );
         assert_eq!(
-            theme.radio.indicator(hovered),
-            theme.radio.indicator(checked)
+            theme.radio.indicator(hovered).stroke,
+            theme.radio.indicator(checked).stroke
+        );
+        assert_ne!(
+            theme.checkbox.indicator(hovered).fill,
+            theme.checkbox.indicator(checked).fill
         );
     }
 }
 
 /// A mixed box under the pointer or pressed is drawn as a checked one: the
-/// accent with no outline, not the unchecked box's hover outline or pressed
-/// trough. No exclusive group clears `HOVER` or `PRESSED` from a mixed box's
-/// state; the mixed rule, last, wins, as libadwaita 1.10.0 keeps
+/// accent under the checked box's layer with no outline, not the unchecked
+/// box's hover outline or pressed trough. No exclusive group clears `HOVER`
+/// or `PRESSED` from a mixed box's state; the mixed rules, last, win, as libadwaita 1.10.0 keeps
 /// `:indeterminate` out of the unchecked hover and active rules
 /// (`&:not(:checked):not(:indeterminate)`, _checks.scss:33-50) and draws it
 /// with `:checked` (`&:checked, &:indeterminate`, :52-60).
 #[test]
 fn a_mixed_box_under_the_pointer_or_pressed_is_drawn_as_a_checked_one() {
     for theme in both_schemes() {
-        let accent = Paint::Solid(theme.colors.accent.fill);
         for state in [
             WidgetState::HOVER,
             WidgetState::PRESSED,
@@ -194,7 +201,6 @@ fn a_mixed_box_under_the_pointer_or_pressed_is_drawn_as_a_checked_one() {
         ] {
             let mixed = theme.checkbox.indicator(WidgetState::INDETERMINATE | state);
             let checked = theme.checkbox.indicator(WidgetState::CHECKED | state);
-            assert_eq!(mixed.fill, accent, "{state:?}");
             assert_eq!(mixed.stroke, Stroke::None, "{state:?}");
             assert_eq!(mixed.fill, checked.fill, "{state:?}");
             assert_eq!(mixed.stroke, checked.stroke, "{state:?}");
@@ -202,15 +208,41 @@ fn a_mixed_box_under_the_pointer_or_pressed_is_drawn_as_a_checked_one() {
     }
 }
 
+/// An on switch, and a checked or mixed check or radio, hovered and pressed
+/// take libadwaita's layers over the accent (_checks.scss:52-59,
+/// _switch.scss:41-46 at libadwaita 1.10.0): currentColor, the accent's
+/// text, at 10 %, and RGB(0 0 6 / 20%), each laid over the accent's fill.
 #[test]
-fn a_hovered_switch_that_is_on_has_its_own_colour() {
+fn a_hovered_or_pressed_checked_control_lays_libadwaita_s_layer_over_the_accent() {
     for theme in both_schemes() {
-        let on_hover = theme
-            .switch
-            .track(WidgetState::HOVER | WidgetState::CHECKED);
-        assert_eq!(on_hover.fill, Paint::Solid(LIGHT.switch_hover_on));
-        assert_ne!(on_hover, theme.switch.track(WidgetState::HOVER));
-        assert_ne!(on_hover, theme.switch.track(WidgetState::CHECKED));
+        let accent = theme.colors.accent;
+        let hover = accent
+            .foreground
+            .mul_alpha(CHECKED_HOVER_LAYER_ALPHA)
+            .composite_over(accent.fill);
+        let pressed = CHECKED_PRESSED_LAYER.composite_over(accent.fill);
+        for (state, want) in [
+            (WidgetState::HOVER, hover),
+            (WidgetState::PRESSED, pressed),
+            (WidgetState::HOVER | WidgetState::PRESSED, pressed),
+        ] {
+            let on = WidgetState::CHECKED | state;
+            let mixed = WidgetState::INDETERMINATE | state;
+            for (name, fill) in [
+                ("switch", theme.switch.track(on).fill),
+                ("check", theme.checkbox.indicator(on).fill),
+                ("mixed check", theme.checkbox.indicator(mixed).fill),
+                ("radio", theme.radio.indicator(on).fill),
+            ] {
+                assert_eq!(fill, Paint::Solid(want), "{name} {state:?}");
+            }
+        }
+        assert_ne!(
+            theme
+                .switch
+                .track(WidgetState::HOVER | WidgetState::CHECKED),
+            theme.switch.track(WidgetState::HOVER)
+        );
     }
 }
 
@@ -587,7 +619,11 @@ fn a_palette_recolours_the_widgets_of_its_colours() {
                     .track(WidgetState::HOVER | WidgetState::CHECKED)
                     .fill
             ),
-            Some(c.switch_hover_on)
+            Some(
+                p.accent_fg
+                    .mul_alpha(CHECKED_HOVER_LAYER_ALPHA)
+                    .composite_over(p.accent)
+            )
         );
     }
 }

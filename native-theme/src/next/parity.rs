@@ -2689,6 +2689,21 @@ pub(crate) fn gnome_cases() -> Vec<(
         "combo_box.disabled_opacity",
         "segmented_control.disabled_opacity",
     ];
+    // M2.FS4: the hovered on switch's fill is a listed difference of the table (`next_homes.toml`),
+    // whose value is libadwaita's hover layer over the preset's accent, currentColor at 10 % over
+    // #3584e4 (`_switch.scss:41-45` at 1.10.0), which a case's other accent replaces.
+    const ACCENT: [&str; 1] = ["switch.hover_checked_background"];
+    const ACCENT_DISABLED_OPACITY: [&str; 9] = [
+        "defaults.disabled_opacity",
+        "button.disabled_opacity",
+        "checkbox.disabled_opacity",
+        "input.disabled_opacity",
+        "slider.disabled_opacity",
+        "switch.disabled_opacity",
+        "switch.hover_checked_background",
+        "combo_box.disabled_opacity",
+        "segmented_control.disabled_opacity",
+    ];
     const HIGH_CONTRAST_NO_ACCENT: [&str; 10] = [
         "defaults.disabled_opacity",
         "defaults.focus_ring_color",
@@ -2726,7 +2741,7 @@ pub(crate) fn gnome_cases() -> Vec<(
         (
             "purple accent, light",
             with(|d| d.accent_rgb = portal_accent(PURPLE)),
-            &[],
+            &ACCENT,
         ),
         (
             "purple accent, dark",
@@ -2734,7 +2749,7 @@ pub(crate) fn gnome_cases() -> Vec<(
                 d.is_dark = true;
                 d.accent_rgb = portal_accent(PURPLE);
             }),
-            &[],
+            &ACCENT,
         ),
         (
             "purple accent, high contrast from the portal",
@@ -2742,7 +2757,7 @@ pub(crate) fn gnome_cases() -> Vec<(
                 d.accent_rgb = portal_accent(PURPLE);
                 d.high_contrast = true;
             }),
-            &DISABLED_OPACITY,
+            &ACCENT_DISABLED_OPACITY,
         ),
         (
             "blue accent, dark, high contrast from gsettings",

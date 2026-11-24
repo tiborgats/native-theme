@@ -232,7 +232,6 @@ struct SchemeColors {
     /// The paned separator's line, in every state.
     splitter_line: Color,
     switch_hover_off: Color,
-    switch_hover_on: Color,
     switch_thumb: Color,
     /// The switch's thumb when off, where stated; unstated, 0.7.2's
     /// `switch.unchecked_thumb_background` is `thumb_background`.
@@ -425,8 +424,6 @@ const LIGHT: SchemeColors = SchemeColors {
     splitter_line: srgb8(0x0000_061f),
     // `switch.hover_unchecked_background`: 0.7.2 adwaita.toml (uncited)
     switch_hover_off: srgb8(0xc8c8_c8ff),
-    // `switch.hover_checked_background`: 0.7.2 adwaita.toml (uncited)
-    switch_hover_on: srgb8(0x2e78_ccff),
     // `switch.thumb_background`: 0.7.2 adwaita.toml (uncited)
     switch_thumb: srgb8(0xffff_ffff),
     switch_thumb_off: None,
@@ -602,8 +599,6 @@ const DARK: SchemeColors = SchemeColors {
     splitter_line: srgb8(0xffff_ff26),
     // `switch.hover_unchecked_background`: 0.7.2 adwaita.toml (uncited)
     switch_hover_off: srgb8(0x5656_5aff),
-    // `switch.hover_checked_background`: 0.7.2 adwaita.toml (uncited)
-    switch_hover_on: srgb8(0x2e78_ccff),
     // `switch.thumb_background`: 0.7.2 adwaita.toml (uncited)
     switch_thumb: srgb8(0xffff_ffff),
     // `switch.unchecked_thumb_background`: platform-facts.md (§2.21): $slider_color, white 80% over
@@ -748,6 +743,16 @@ const FOCUS_RING_OFFSET: f32 = -2.0;
 /// includes `focus-ring($outer: true, $offset: 1px)` (_buttons.scss:158 at
 /// libadwaita 1.10.0), which `.suggested-action` extends (:220-221).
 const PRIMARY_BUTTON_FOCUS_RING_OFFSET: f32 = 1.0;
+
+/// The alpha of `currentColor` in the layer over a hovered checked or mixed
+/// check, radio or switch: `color-mix(in srgb, currentColor 10%,
+/// transparent)` (_checks.scss:58, _switch.scss:45 at libadwaita 1.10.0).
+const CHECKED_HOVER_LAYER_ALPHA: f32 = 0.1;
+
+/// The layer over a pressed checked or mixed check, radio or switch:
+/// `RGB(0 0 6 / 20%)` (_checks.scss:59, _switch.scss:46 at libadwaita
+/// 1.10.0), 20 % of 255 being 51 exactly.
+const CHECKED_PRESSED_LAYER: Color = srgb8(0x0000_0633);
 
 /// The switch's ring offset: `switch` includes `focus-ring($offset: 1px,
 /// $outer: true)` (_switch.scss:18 at libadwaita 1.10.0), outside the track.
@@ -2063,7 +2068,8 @@ fn button(
 /// pointer the hover fill and, unchecked, the hover outline; checked, the accent (0.7.2:
 /// `checkbox.checked_background` is `defaults.accent_color` where unstated)
 /// with no outline (`box-shadow: none`, _checks.scss:52-56 at libadwaita
-/// 1.10.0; the outline is the inset box-shadow, :27). No disabled fill: a
+/// 1.10.0; the outline is the inset box-shadow, :27), hovered and pressed
+/// libadwaita's layers over it ([`checked_layers`]). No disabled fill: a
 /// disabled check is its enabled self at the disabled opacity
 /// (`checkbox.unchecked_background`'s citation; `check:disabled, radio:disabled`
 /// change no colour, _checks.scss:62-64).
@@ -2072,6 +2078,7 @@ fn indicator(
     roles: &ColorRoles,
     layout: &LayoutMetrics,
 ) -> RuleBuilder<PartStyle, PartProp> {
+    let [checked_hover, checked_pressed] = checked_layers(roles);
     RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.checkbox_background),
@@ -2097,6 +2104,32 @@ fn indicator(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],
         )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+            [fill(checked_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            [fill(checked_pressed)],
+        )
+}
+
+/// libadwaita's layers over a checked or mixed check, radio or switch,
+/// laid over the accent's fill as the state's whole fill (spec §9, step 2):
+/// hovered, `currentColor`, the accent's text (`color:
+/// var(--accent-fg-color)`), at [`CHECKED_HOVER_LAYER_ALPHA`]; pressed,
+/// [`CHECKED_PRESSED_LAYER`] (`&:checked, &:indeterminate { &:hover {
+/// background-image: … } &:active { … } }`, _checks.scss:52-59;
+/// `&:checked`, _switch.scss:41-46 at libadwaita 1.10.0).
+fn checked_layers(roles: &ColorRoles) -> [Color; 2] {
+    [
+        roles
+            .accent
+            .foreground
+            .mul_alpha(CHECKED_HOVER_LAYER_ALPHA)
+            .composite_over(roles.accent.fill),
+        CHECKED_PRESSED_LAYER.composite_over(roles.accent.fill),
+    ]
 }
 
 /// The label of a check box or a radio button: the UI font in its colour;
@@ -2140,7 +2173,9 @@ fn checkbox(
         .build();
     // An unchecked box pressed: $trough_active_color and no outline (_checks.scss:42-44). A
     // checked box keeps its checked look. A mixed box is drawn as a checked one, the accent with
-    // no outline, in every state (`&:checked, &:indeterminate`, _checks.scss:52-56).
+    // no outline, hovered and pressed under the checked one's layers, in every state
+    // (`&:checked, &:indeterminate`, _checks.scss:52-59).
+    let [checked_hover, checked_pressed] = checked_layers(roles);
     let indicator = indicator(c, roles, layout)
         .base([corners(CHECKBOX_CORNER_RADIUS)])
         .rule(
@@ -2150,6 +2185,14 @@ fn checkbox(
         .rule(
             RuleSelector::on(WidgetState::INDETERMINATE),
             [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::INDETERMINATE),
+            [fill(checked_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::INDETERMINATE),
+            [fill(checked_pressed)],
         )
         .build();
     CheckboxWidget::new(
@@ -2989,6 +3032,7 @@ fn popover(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) ->
 /// the row's free width.
 fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
+    let [checked_hover, checked_pressed] = checked_layers(roles);
     let track = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.frame),
@@ -3006,15 +3050,22 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.switch_hover_off)],
         )
+        // An on switch hovered and pressed: libadwaita's layers over the accent
+        // ([`checked_layers`]; `&:checked { &:hover …; &:active … }`, _switch.scss:41-46 at
+        // libadwaita 1.10.0), where 0.7.2 took its uncited `switch.hover_checked_background`.
         .rule(
             RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
-            [fill(c.switch_hover_on)],
+            [fill(checked_hover)],
         )
         // `switch:active`: $trough_active_color (_switch.scss:9 at libadwaita 1.10.0); a checked
-        // switch keeps its checked look.
+        // switch takes its pressed layer.
         .rule(
             RuleSelector::on(WidgetState::PRESSED).except(WidgetState::CHECKED),
             [fill(c.trough_active)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            [fill(checked_pressed)],
         )
         .build();
     let thumb = RuleBuilder::new(PartStyle::default())

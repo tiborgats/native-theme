@@ -1545,6 +1545,24 @@ const ADWAITA_CHECK: [Stated; 10] = {
 /// disabled radio status).
 const ADWAITA_RADIO: [Stated; 8] = indicator_outline!(radio);
 
+/// adwaita's checked box under the pointer: libadwaita's hover layer,
+/// currentColor at 10 %, over the accent, the whole hovered fill
+/// (`&:checked, &:indeterminate { &:hover { background-image: … } }`,
+/// _checks.scss:52-58 at libadwaita 1.10.0; spec §9, step 2).
+const ADWAITA_CHECKED_HOVER: [Stated; 1] = [set(
+    at!(HOVER | CHECKED),
+    Field::Background,
+    home!(fill, checkbox.indicator(HOVER | CHECKED) by HOVER),
+)];
+
+/// adwaita's checked radio button under the pointer, as its check box's
+/// ([`ADWAITA_CHECKED_HOVER`]; `check, radio`, _checks.scss:20-59).
+const ADWAITA_CHECKED_RADIO_HOVER: [Stated; 1] = [set(
+    at!(HOVER | CHECKED),
+    Field::Background,
+    home!(fill, radio.indicator(HOVER | CHECKED) by HOVER),
+)];
+
 /// material-3's radio button: the dot in primary in every status (iced
 /// paints the dot of a checked radio alone; the builder reads
 /// `radio.dot(CHECKED)`, which no rule sets apart from the dot at rest), and
@@ -2183,7 +2201,7 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["adwaita"],
         LineAlign::Outside,
-        &[&ADWAITA_CHECK],
+        &[&ADWAITA_CHECKED_HOVER, &ADWAITA_CHECK],
     ),
     stated_fields(
         "checkbox",
@@ -2237,7 +2255,12 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Inside,
         &[W11_RADIO_HOVER],
     ),
-    stated_fields("radio", &["adwaita"], LineAlign::Outside, &[&ADWAITA_RADIO]),
+    stated_fields(
+        "radio",
+        &["adwaita"],
+        LineAlign::Outside,
+        &[&ADWAITA_CHECKED_RADIO_HOVER, &ADWAITA_RADIO],
+    ),
     stated_fields("radio", &["material-3"], LineAlign::Outside, &[&M3_RADIO]),
     hover(
         "radio",
@@ -2275,17 +2298,12 @@ const DIFFERENCES: &[Difference] = &[
     open(&["windows-11"], LineAlign::Inside, States::STATED),
     open(&["macos-monterey"], LineAlign::Inside, States::STATED)
         .stating(&[&COMBO_HOVER], &[INSIDE, OPEN, STATED]),
-    // switch.thumb(HOVER): no preset states a hovered thumb; windows-11
-    // states the checked track's hovered fill (`track(HOVER|CHECKED)`).
+    // switch.thumb(HOVER): no preset states a hovered thumb; windows-11 and
+    // adwaita state the checked track's hovered fill (`track(HOVER|CHECKED)`:
+    // AccentFillColorSecondary, and libadwaita's hover layer over the accent).
     Difference {
         leaf: "toggler",
-        presets: &[
-            "kde-breeze",
-            "adwaita",
-            "macos-tahoe",
-            "material-3",
-            "ios-13",
-        ],
+        presets: &["kde-breeze", "macos-tahoe", "material-3", "ios-13"],
         listed: Listed {
             states: States {
                 hover_thumb: true,
@@ -2316,7 +2334,7 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "toggler",
-        presets: &["windows-11"],
+        presets: &["windows-11", "adwaita"],
         listed: Listed {
             states: States {
                 hover_thumb: true,

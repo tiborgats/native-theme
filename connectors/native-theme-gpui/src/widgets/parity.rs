@@ -485,6 +485,17 @@ const FROM_HOME: &[Difference] = &[
                  listed difference)",
     },
     Difference {
+        leaf: "SwitchLook hover_track",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita states switch.hover_checked_background #2e78cc, uncited; the \
+                 0.8.0 preset states switch.track(HOVER|CHECKED).fill, libadwaita's hover layer \
+                 over the on track, currentColor, the accent's text, at 10 % over the accent, \
+                 the whole hovered fill (`switch:checked { &:hover { background-image: \
+                 image(color-mix(in srgb, currentColor 10%, transparent)); } }`, \
+                 _switch.scss:41-45 at libadwaita 1.10.0; native-theme/tests/next_homes.toml, \
+                 row switch.hover_checked_background, a listed difference)",
+    },
+    Difference {
         leaf: "SliderLook::hover_thumb",
         presets: &["macos-monterey"],
         reason: "0.7.2's macos-monterey states slider.thumb_hover_color #e0e0e0 (light), \

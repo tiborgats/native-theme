@@ -726,6 +726,24 @@
         },
         {
           "states": [
+            "hover",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0.28705883, 0.5658824, 0.9047059, 1)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0.16627452, 0.41411766, 0.72, 1)"
+          }
+        },
+        {
+          "states": [
             "pressed"
           ],
           "not_states": [
@@ -743,6 +761,24 @@
           "indicator": {
             "fill": "#3584e4",
             "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "srgb(0.28705883, 0.5658824, 0.9047059, 1)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "srgb(0.16627452, 0.41411766, 0.72, 1)"
           }
         }
       ]
@@ -860,6 +896,24 @@
             "fill": "#3584e4",
             "stroke": "none"
           }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0.28705883, 0.5658824, 0.9047059, 1)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0.16627452, 0.41411766, 0.72, 1)"
+          }
         }
       ]
     },
@@ -964,7 +1018,7 @@
             "checked"
           ],
           "track": {
-            "fill": "#2e78cc"
+            "fill": "srgb(0.28705883, 0.5658824, 0.9047059, 1)"
           }
         },
         {
@@ -976,6 +1030,15 @@
           ],
           "track": {
             "fill": "#ffffff40"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "track": {
+            "fill": "srgb(0.16627452, 0.41411766, 0.72, 1)"
           }
         }
       ]

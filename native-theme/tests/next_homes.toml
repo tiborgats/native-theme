@@ -2481,10 +2481,10 @@ homes = ["switch.disabled_opacity"]
 key = "switch.hover_checked_background"
 homes = ["switch.track(HOVER|CHECKED).fill"]
 null_reference = "CHECKED"
-difference_presets = ["windows-11"]
-difference_reason = "0.7.2 states the window colour at alpha 0.1 (#f3f3f319 / #20202019), a layer over the on track; 0.8.0 states WinUI's whole hovered fill (spec §9, step 2), AccentFillColorSecondary: the accent's fill at 0.9 opacity, so it follows the accent the system or a palette gives (the values: the preset's own accent fills #0067c0 / #4cc2ff, which a reader case's accent replaces), and high contrast's ButtonFace"
-difference_citation = "ToggleSwitchFillOnPointerOver = AccentFillColorSecondaryBrush (ToggleSwitch_themeresources.xaml:144, :24; high contrast SystemColorButtonFaceColorBrush, :88), SystemAccentColorDark1 / SystemAccentColorLight2 at Opacity 0.9 (Common_themeresources_any.xaml:330, :126 at microsoft-ui-xaml 8463f45); docs/platform-facts.md §2.21"
-difference_values = { "windows-11" = { light = "#0067c0e6", dark = "#4cc2ffe6" } }
+difference_presets = ["windows-11", "adwaita"]
+difference_reason = "0.7.2 states the window colour at alpha 0.1 (#f3f3f319 / #20202019), a layer over the on track; 0.8.0 states WinUI's whole hovered fill (spec §9, step 2), AccentFillColorSecondary: the accent's fill at 0.9 opacity, so it follows the accent the system or a palette gives (the values: the preset's own accent fills #0067c0 / #4cc2ff, which a reader case's accent replaces), and high contrast's ButtonFace; adwaita: 0.7.2's uncited #2e78cc; 0.8.0 states libadwaita's checked switch hovered, the accent under currentColor, the accent's text, at 10 %, the layer laid over the fill as the whole hovered fill (the values: the preset's accent #3584e4 under white at 10 %, which a reader case's accent replaces)"
+difference_citation = "ToggleSwitchFillOnPointerOver = AccentFillColorSecondaryBrush (ToggleSwitch_themeresources.xaml:144, :24; high contrast SystemColorButtonFaceColorBrush, :88), SystemAccentColorDark1 / SystemAccentColorLight2 at Opacity 0.9 (Common_themeresources_any.xaml:330, :126 at microsoft-ui-xaml 8463f45); docs/platform-facts.md §2.21; adwaita: `switch:checked { color: var(--accent-fg-color); background-color: var(--accent-bg-color); &:hover { background-image: image(color-mix(in srgb, currentColor 10%, transparent)); } }` (_switch.scss:41-45 at libadwaita 1.10.0)"
+difference_values = { "windows-11" = { light = "#0067c0e6", dark = "#4cc2ffe6" }, "adwaita" = "#4990e7" }
 
 [[row]]
 key = "switch.hover_unchecked_background"

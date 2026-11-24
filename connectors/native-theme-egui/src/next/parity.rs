@@ -1114,16 +1114,17 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     // windows-11's checked box hovered and pressed: AccentFillColorSecondary and
     // AccentFillColorTertiary (CheckBox_themeresources.xaml:234, :235 at microsoft-ui-xaml
-    // 8463f45)
+    // 8463f45); adwaita's: libadwaita's layers over the accent, currentColor at 10 % and
+    // RGB(0 0 6 / 20%) (_checks.scss:52-59 at libadwaita 1.10.0)
     s(
         "Checkbox/Selected",
-        &[W],
+        &[A, W],
         ".visuals.widgets.hovered.bg_fill",
         home!(checkbox.indicator(HOVER | CHECKED).fill),
     ),
     s(
         "Checkbox/Selected",
-        &[W],
+        &[A, W],
         ".visuals.widgets.active.bg_fill",
         home!(checkbox.indicator(PRESSED | CHECKED).fill),
     ),
