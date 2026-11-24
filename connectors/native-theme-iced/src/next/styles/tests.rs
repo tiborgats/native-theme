@@ -2932,3 +2932,339 @@ fn a_toolbar_rule_keeps_iceds_own_per_property() -> TestResult {
     }
     Ok(())
 }
+
+/// The `iced_aw` card keeps `iced_aw`'s own card's look per property (spec
+/// §10, rule 0): with the fill unstated, its own fill and the theme's
+/// text; with the window's foreground unstated, its own text colours and
+/// close icon and the theme's fill.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_card_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{CardSource, card_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let c = super::aw::card_source(&r)?;
+        let at = |source: &CardSource| card_from(source)(&theme, Status::Active);
+        let stated = at(&c);
+        let own = iced_aw::style::card::primary(&theme, Status::Active);
+
+        let s = at(&CardSource {
+            background: None,
+            ..c
+        });
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.body_text_color, stated.body_text_color, "{preset:?} text");
+
+        let s = at(&CardSource { label: None, ..c });
+        assert_eq!(
+            (
+                s.head_text_color,
+                s.body_text_color,
+                s.foot_text_color,
+                s.close_color
+            ),
+            (
+                own.head_text_color,
+                own.body_text_color,
+                own.foot_text_color,
+                own.close_color
+            ),
+            "{preset:?} text"
+        );
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The `iced_aw` menu bar keeps `iced_aw`'s own look per property (spec
+/// §10, rule 0): with the bar's fill unstated, its own bar and the theme's
+/// menu panel; with the panel's fill unstated, its own panel and the
+/// theme's bar.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_menu_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{MenuSource, menu_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let m = super::aw::menu_source(&r)?;
+        let at = |source: &MenuSource| menu_from(source)(&theme, Status::Active);
+        let stated = at(&m);
+        let own = iced_aw::style::menu_bar::primary(&theme, Status::Active);
+
+        let s = at(&MenuSource { bar: None, ..m });
+        assert_eq!(s.bar_background, own.bar_background, "{preset:?} bar");
+        assert_eq!(
+            s.menu_background, stated.menu_background,
+            "{preset:?} panel"
+        );
+
+        let s = at(&MenuSource { panel: None, ..m });
+        assert_eq!(s.menu_background, own.menu_background, "{preset:?} panel");
+        assert_eq!(s.bar_background, stated.bar_background, "{preset:?} bar");
+    }
+    Ok(())
+}
+
+/// The `iced_aw` tab bar keeps `iced_aw`'s own look per property (spec
+/// §10, rule 0), each in the status `iced_aw` draws it in (`Active` the
+/// selected tab, `Disabled` one at rest): with the strip's fill unstated,
+/// its own strip; with a tab's fill or label unstated, its own for that
+/// tab, and the other tab's as stated.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_tab_bar_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{TabBarSource, tab_bar_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let t = super::aw::tab_bar_source(&r)?;
+        let at = |source: &TabBarSource, status| tab_bar_from(source)(&theme, status);
+        let (on, off) = (at(&t, Status::Active), at(&t, Status::Disabled));
+        let own_on = iced_aw::style::tab_bar::primary(&theme, Status::Active);
+        let own_off = iced_aw::style::tab_bar::primary(&theme, Status::Disabled);
+
+        let s = TabBarSource {
+            bar_background: None,
+            ..t
+        };
+        assert_eq!(
+            at(&s, Status::Active).background,
+            own_on.background,
+            "{preset:?} strip"
+        );
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+
+        let s = TabBarSource {
+            background: None,
+            ..t
+        };
+        assert_eq!(
+            at(&s, Status::Disabled).tab_label_background,
+            own_off.tab_label_background,
+            "{preset:?} fill"
+        );
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+
+        let s = TabBarSource {
+            active_background: None,
+            ..t
+        };
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            own_on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            at(&s, Status::Disabled).tab_label_background,
+            off.tab_label_background,
+            "{preset:?} fill"
+        );
+
+        let s = TabBarSource { label: None, ..t };
+        let s_off = at(&s, Status::Disabled);
+        assert_eq!(
+            (s_off.text_color, s_off.icon_color),
+            (own_off.text_color, own_off.icon_color),
+            "{preset:?} label"
+        );
+        assert_eq!(
+            at(&s, Status::Active).text_color,
+            on.text_color,
+            "{preset:?} selected label"
+        );
+
+        let s = TabBarSource {
+            active_label: None,
+            ..t
+        };
+        let s_on = at(&s, Status::Active);
+        assert_eq!(
+            (s_on.text_color, s_on.icon_color),
+            (own_on.text_color, own_on.icon_color),
+            "{preset:?} selected label"
+        );
+        assert_eq!(
+            at(&s, Status::Disabled).text_color,
+            off.text_color,
+            "{preset:?} label"
+        );
+    }
+    Ok(())
+}
+
+/// The `iced_aw` sidebar keeps `iced_aw`'s own look per property (spec
+/// §10, rule 0), each in the status `iced_aw` draws it in (`Active` the
+/// selected item, `Disabled` one at rest): with the panel's fill unstated,
+/// its own panel and item at rest; with the selected item's fill or a
+/// label unstated, its own for that item, and the other's as stated.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_sidebar_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{ListSource, sidebar_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let l = super::aw::sidebar_source(&r)?;
+        let at = |source: &ListSource, status| sidebar_from(source)(&theme, status);
+        let (on, off) = (at(&l, Status::Active), at(&l, Status::Disabled));
+        let own_on = iced_aw::style::sidebar::primary(&theme, Status::Active);
+        let own_off = iced_aw::style::sidebar::primary(&theme, Status::Disabled);
+
+        let s = ListSource {
+            background: None,
+            ..l
+        };
+        let s_off = at(&s, Status::Disabled);
+        assert_eq!(
+            (s_off.background, s_off.tab_label_background),
+            (own_off.background, own_off.tab_label_background),
+            "{preset:?} panel"
+        );
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+
+        let s = ListSource {
+            selection_background: None,
+            ..l
+        };
+        assert_eq!(
+            at(&s, Status::Active).tab_label_background,
+            own_on.tab_label_background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            at(&s, Status::Disabled).background,
+            off.background,
+            "{preset:?} panel"
+        );
+
+        let s = ListSource { label: None, ..l };
+        let s_off = at(&s, Status::Disabled);
+        assert_eq!(
+            (s_off.text_color, s_off.icon_color),
+            (own_off.text_color, own_off.icon_color),
+            "{preset:?} label"
+        );
+        assert_eq!(
+            at(&s, Status::Active).text_color,
+            on.text_color,
+            "{preset:?} selected label"
+        );
+
+        let s = ListSource {
+            selection_label: None,
+            ..l
+        };
+        let s_on = at(&s, Status::Active);
+        assert_eq!(
+            (s_on.text_color, s_on.icon_color),
+            (own_on.text_color, own_on.icon_color),
+            "{preset:?} selected label"
+        );
+        assert_eq!(
+            at(&s, Status::Disabled).text_color,
+            off.text_color,
+            "{preset:?} label"
+        );
+    }
+    Ok(())
+}
+
+/// The `iced_aw` selection list keeps `iced_aw`'s own look per property
+/// (spec §10, rule 0), each in the status `iced_aw` draws it in: with the
+/// list's fill unstated, its own and the theme's label; with a row's label
+/// unstated at rest, selected or disabled, its own in that status and the
+/// other rows' as stated; with the selected row's fill unstated, its own
+/// and the theme's list fill.
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_selection_list_keeps_iced_aws_own_per_property() -> TestResult {
+    use crate::styles::aw::{ListSource, selection_list_from};
+    use iced_aw::style::Status;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let l = super::aw::list_source(&r)?;
+        let at = |source: &ListSource, status| selection_list_from(source)(&theme, status);
+        let own = |status| iced_aw::style::selection_list::primary(&theme, status);
+        let stated = |status| at(&l, status);
+
+        let s = ListSource {
+            background: None,
+            ..l
+        };
+        assert_eq!(
+            at(&s, Status::Active).background,
+            own(Status::Active).background,
+            "{preset:?} fill"
+        );
+        assert_eq!(
+            at(&s, Status::Active).text_color,
+            stated(Status::Active).text_color,
+            "{preset:?} label"
+        );
+
+        let s = ListSource {
+            selection_background: None,
+            ..l
+        };
+        assert_eq!(
+            at(&s, Status::Selected).background,
+            own(Status::Selected).background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            at(&s, Status::Active).background,
+            stated(Status::Active).background,
+            "{preset:?} fill"
+        );
+
+        for (s, status, other) in [
+            (
+                ListSource { label: None, ..l },
+                Status::Active,
+                Status::Selected,
+            ),
+            (
+                ListSource {
+                    selection_label: None,
+                    ..l
+                },
+                Status::Selected,
+                Status::Active,
+            ),
+            (
+                ListSource {
+                    disabled_label: None,
+                    ..l
+                },
+                Status::Disabled,
+                Status::Active,
+            ),
+        ] {
+            assert_eq!(
+                at(&s, status).text_color,
+                own(status).text_color,
+                "{preset:?} {status:?} label"
+            );
+            assert_eq!(
+                at(&s, other).text_color,
+                stated(other).text_color,
+                "{preset:?} {other:?} label"
+            );
+        }
+    }
+    Ok(())
+}
