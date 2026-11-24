@@ -2,7 +2,6 @@
 
 use gpui::{App, Hsla, Rems, StyleRefinement, Styled};
 use gpui_component::theme::Theme;
-use native_theme_gpui::Native;
 use native_theme_gpui::next::{Mapped, Unmapped};
 /// The reads a claim in the 0.8.0 form makes of its home's property: the
 /// connector's own (`native_theme_gpui::next`), each `None` where the theme
@@ -12,7 +11,7 @@ pub use native_theme_gpui::next::{
     radius_of, state_stroke_color_of, stroke_color_of, stroke_width_of,
 };
 
-use crate::support::{native_geometry, next_value, refined};
+use crate::support::{next_value, refined};
 
 pub mod buttons;
 pub mod charts;
@@ -246,10 +245,6 @@ impl WidgetInfo {
 /// two tables to geometry.rs.
 pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
-        "button",
-        "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
-    ),
-    (
         "icon_size_toolbar",
         "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
     ),
@@ -257,10 +252,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ("icon_size_large", "defaults.icon_sizes.large"),
     ("icon_size_dialog", "defaults.icon_sizes.dialog"),
     ("icon_size_panel", "defaults.icon_sizes.panel"),
-    (
-        "default_button_rest",
-        "button.default_button_background as the fill and button.default_button_border_color (button.border.color where unstated) as the border colour of a dialog's default Button at rest, over variants::default_button, whose rest fill is a fifth of its border colour (button/button.rs, ButtonVariant::bg_color); nothing where the theme states no fill, and the Button is .primary()",
-    ),
 ];
 
 /// [`GEOMETRY_NOTES`] for the builders of `native_theme_gpui::next::geometry`
@@ -339,6 +330,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "button_checked",
         "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, the pressed pair (button.body(PRESSED).fill, button.label(PRESSED).color) where no rule states them for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button); where neither fill is stated the refinement sets none, and upstream's selected fill stands",
+    ),
+    (
+        "default_button_rest",
+        "button.body(DEFAULT).fill as the fill and button.body(DEFAULT).stroke.color (button.body(NONE).stroke.color where no rule states it for DEFAULT) as the border colour of a dialog's default Button at rest, over next::variants::default_button, whose rest fill is a fifth of its border colour (button/button.rs, ButtonVariant::bg_color); nothing where no rule states the default body's fill, and the Button is .primary()",
     ),
     ("icon_size_toolbar", "toolbar.button_icon(NONE).size"),
     (
@@ -471,28 +466,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
 ];
 
-/// `w` with the `build` refinement applied and `info` given `build`'s
-/// geometry line, both only when a native theme is installed; before `apply`
-/// ran the widget keeps upstream's geometry and `info` names no builder.
-/// `name` is `build`'s name, which `native_info_names_the_builder_it_applies`
-/// holds to it.
-pub fn native_info<W: Styled>(
-    w: W,
-    cx: &App,
-    build: fn(Native<'_>) -> StyleRefinement,
-    name: &'static str,
-    info: &mut WidgetInfo,
-) -> W {
-    let style = native_geometry(cx, build);
-    if style.is_some() {
-        *info = std::mem::take(info).geometry(name);
-    }
-    refined(w, style.as_ref())
-}
-
-/// [`native_info`] on the 0.8.0 model: `w` with the refinement a builder of
+/// `w` with the refinement a builder of
 /// `native_theme_gpui::next::geometry` gives for the installed 0.8.0 theme,
-/// and `info` given `build`'s geometry line. Where the theme states no value
+/// and `info` given `build`'s geometry line; `name` is `build`'s name, which
+/// `native_info_names_the_builder_it_applies` holds to it. Where the theme states no value
 /// gpui can take at a home the builder reads (unstated, or in a form gpui
 /// cannot draw), the widget keeps upstream's geometry and `info` names that
 /// home (spec §10, rule 0); before `apply` ran it names no builder.

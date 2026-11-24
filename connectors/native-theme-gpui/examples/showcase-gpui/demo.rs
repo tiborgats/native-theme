@@ -112,15 +112,13 @@ use native_theme_gpui::{
 
 use crate::app::{Quit, ShowPage};
 use crate::elements::{self, ListedExt as _};
-use crate::info::{
-    self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, native_info, next_native_info,
-};
+use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, next_native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
     SampleListDelegate, SampleTableDelegate, contrast_held, native_value, next_geometry,
-    next_inactive, next_metric, next_resolved, next_value, old_native, refined,
-    requested_preferences, toolbar_variant, with_gap, with_padding,
+    next_inactive, next_metric, next_resolved, next_value, refined, requested_preferences,
+    toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -11097,41 +11095,43 @@ pub(crate) fn toggle_state_line(
 }
 
 /// A dialog's default button, the one Enter activates, reading `label`.
-/// Where the theme gives it a look of its own (`variants::default_button`),
-/// a Button on that custom variant, refined by `geometry::button` and then
-/// by `geometry::default_button_rest`, its rest fill and frame, which the
-/// variant does not give (its own rest fill is a fifth of its border
-/// colour, button/button.rs, `ButtonVariant::bg_color`); elsewhere the
-/// primary Button, refined by `geometry::button` alone, as macOS and
-/// Windows draw it.
+/// Where the installed 0.8.0 theme gives it a look of its own
+/// (`next::variants::default_button`, a rule stating
+/// `button.body(DEFAULT).fill`), a Button on that custom variant, refined by
+/// `next::geometry::button` and then by `next::geometry::default_button_rest`,
+/// its rest fill and frame, which the variant does not give (its own rest
+/// fill is a fifth of its border colour, button/button.rs,
+/// `ButtonVariant::bg_color`); elsewhere the primary Button, refined by
+/// `next::geometry::button` alone, as macOS and Windows draw it, and
+/// upstream's own where the theme leaves a home the look needs without a
+/// value gpui can take, which its info names (spec §10, rule 0).
 pub(crate) fn dialog_default_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     label: &'static str,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let own = native.and_then(|n| {
-        let variant = variants::default_button(n, cx)?;
-        let rest = geometry::default_button_rest(n)?;
-        Some((n, variant, rest))
+    let own = next_resolved(cx).map(|r| -> next::Mapped<_> {
+        let variant = next::variants::default_button(r, cx)?;
+        let rest = next::geometry::default_button_rest(r)?;
+        Ok(variant.zip(rest).map(|look| (r, look)))
     });
     let (button, button_info) = match own {
-        Some((n, variant, rest)) => {
-            let mut button_info = info::buttons::dialog_default(cx.theme(), &n.resolved.button);
-            let button = native_info(
+        Some(Ok(Some((r, (variant, rest))))) => {
+            let mut button_info = info::buttons::dialog_default(cx.theme(), r);
+            let button = next_native_info(
                 Button::new(id).custom(variant),
                 cx,
-                geometry::button,
+                next::geometry::button,
                 "button",
                 &mut button_info,
             );
             (
                 refined(button, Some(&rest)),
-                button_info.geometry("default_button_rest"),
+                button_info.next_geometry("default_button_rest"),
             )
         }
-        None => {
+        own => {
             let mut button_info = info::buttons::button(
                 cx.theme(),
                 ButtonKind::Primary,
@@ -11141,6 +11141,15 @@ pub(crate) fn dialog_default_button(
                 None,
                 button_theme(cx),
             );
+            if let Some(Err(unmapped)) = own {
+                button_info = button_info.instance(
+                    "default look",
+                    format!(
+                        "the primary Button, gpui-component's own: the theme states no value gpui can take at {}, which next::variants::default_button and next::geometry::default_button_rest need",
+                        unmapped.home()
+                    ),
+                );
+            }
             let button = next_native_info(
                 Button::new(id).primary(),
                 cx,

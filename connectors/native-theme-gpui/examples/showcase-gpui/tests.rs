@@ -23,13 +23,11 @@ use crate::app::{
 use crate::chrome::menus;
 use crate::demo::{AREA_FILL_OPACITY, IconSizeContext, RADAR_FILL_OPACITY};
 use crate::info::{
-    GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, as_rgba, claim,
-    native_info, percent_text,
+    INFO_SETTLE, InfoExt as _, InfoRegistry, NEXT_GEOMETRY_NOTES, WidgetInfo, as_rgba, claim,
+    next_native_info, percent_text,
 };
 use crate::inspector::InspectorTab;
-use crate::support::{
-    CAROUSEL_SLIDES, ChromeIcon, load_gpui_icons, native_color, native_geometry, native_value,
-};
+use crate::support::{CAROUSEL_SLIDES, ChromeIcon, load_gpui_icons, native_color, native_value};
 use crate::{
     BASIC_INPUT_DISABLED, BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS,
     BUTTONS_LOADING_NO_ICON, BUTTONS_PRIMARY, BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART,
@@ -6140,6 +6138,64 @@ fn basic_body_text_takes_the_themes_line_height(cx: &mut TestAppContext) {
         (body - headline).abs() < 0.5,
         "body text is {body}px tall under a stated typography.body.line_height of {headline}px"
     );
+}
+
+/// The Basic page's dialog default button takes the installed 0.8.0
+/// theme's default look: under kde-breeze light, which a rule of states
+/// `button.body(DEFAULT).fill`, it is filled with that at rest
+/// (`next::geometry::default_button_rest`) and its info claims it; with the
+/// fill patched to the theme's `colors.window.border`, the button and its
+/// claim follow.
+#[gpui::test]
+fn the_dialog_default_button_takes_the_default_bodys_fill(cx: &mut TestAppContext) {
+    use native_theme::next::{ButtonRule, Paint, PartPatch, ThemePatch, WidgetState};
+    use native_theme_gpui::next::state_fill_of;
+    const ID: &str = "basic-button-dialog-default";
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let mut unpatched = None;
+    for patched in [false, true] {
+        let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |r| {
+            if !patched {
+                return Some(ThemePatch::new());
+            }
+            let border = r.colors.window.border?;
+            Some(
+                ThemePatch::new().button(
+                    ButtonRule::new()
+                        .states(WidgetState::DEFAULT)
+                        .body(PartPatch::new().fill(Paint::Solid(border))),
+                ),
+            )
+        });
+        let Some(r) = r else { return };
+        let fill = state_fill_of(&r.button.body(WidgetState::DEFAULT));
+        assert!(
+            fill.is_some(),
+            "patched {patched}: kde-breeze light states no button.body(DEFAULT).fill, so the sample is the primary Button"
+        );
+        if patched {
+            assert!(
+                unpatched.is_some_and(|before| Some(before) != fill),
+                "the patched default fill {fill:?} is kde-breeze light's own, so the test could not tell the two apart"
+            );
+        } else {
+            unpatched = fill;
+        }
+        hover(&mut cx, point(px(1200.), px(8900.)));
+        draw(&mut cx);
+        assert_eq!(
+            painted_fill(&mut cx, ID),
+            fill,
+            "patched {patched}: the dialog default button at rest is not filled with button.body(DEFAULT).fill"
+        );
+        let info = settle_on(&mut cx, &showcase, ID);
+        assert_eq!(
+            info.as_ref()
+                .and_then(|i| claim_of(i, "button.body(DEFAULT).fill")),
+            fill,
+            "patched {patched}: the dialog default button's info does not claim button.body(DEFAULT).fill: {info:?}"
+        );
+    }
 }
 
 /// The Basic page's tooltip is built by the application and refined by
@@ -17369,12 +17425,15 @@ fn an_empty_section_is_not_printed() {
 
 #[test]
 fn a_geometry_line_comes_from_the_table() {
-    let what = GEOMETRY_NOTES
+    let what = NEXT_GEOMETRY_NOTES
         .iter()
         .find(|(name, _)| *name == "button")
         .map(|(_, what)| *what);
-    assert!(what.is_some(), "GEOMETRY_NOTES has no entry for button");
-    let text = WidgetInfo::new("Button").geometry("button").to_text();
+    assert!(
+        what.is_some(),
+        "NEXT_GEOMETRY_NOTES has no entry for button"
+    );
+    let text = WidgetInfo::new("Button").next_geometry("button").to_text();
     assert_eq!(
         text,
         format!(
@@ -17387,35 +17446,41 @@ fn a_geometry_line_comes_from_the_table() {
 #[test]
 fn a_builder_the_table_lacks_says_so() {
     let text = WidgetInfo::new("Button")
-        .geometry("no_such_builder")
+        .next_geometry("no_such_builder")
         .to_text();
     assert!(
-        text.contains("  geometry: geometry::no_such_builder: (no GEOMETRY_NOTES entry)\n"),
+        text.contains("  geometry: geometry::no_such_builder: (no NEXT_GEOMETRY_NOTES entry)\n"),
         "{text}"
     );
 }
 
-/// `native_info` records a builder exactly when it applies it: before a
-/// native theme is installed the widget keeps upstream's geometry and its info
-/// names no builder; after, the widget takes the builder's refinement and its
-/// info carries the builder's line.
+/// `next_native_info` records a builder exactly when it applies it: before
+/// a native theme is installed the widget keeps upstream's geometry and its
+/// info names no builder; after, the widget takes the builder's refinement
+/// for the installed 0.8.0 theme and its info carries the builder's line.
 #[gpui::test]
 fn native_info_records_the_builder_only_when_it_applies_it(cx: &mut TestAppContext) {
+    use native_theme_gpui::next::geometry;
     let mut bare = WidgetInfo::new("Button");
     let mut unstyled =
-        cx.update(|cx| native_info(gpui::div(), cx, geometry::button, "button", &mut bare));
+        cx.update(|cx| next_native_info(gpui::div(), cx, geometry::button, "button", &mut bare));
     assert_eq!(bare, WidgetInfo::new("Button"));
     assert_eq!(unstyled.style().clone(), gpui::StyleRefinement::default());
 
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let expected = r.as_ref().map(geometry::button);
+    assert!(
+        matches!(expected, Some(Ok(_))),
+        "kde-breeze's 0.8.0 theme leaves a home next::geometry::button reads unstated: {expected:?}"
+    );
     let mut info = WidgetInfo::new("Button");
-    let expected = cx.update(|_w, cx| native_geometry(cx, geometry::button));
-    let mut styled =
-        cx.update(|_w, cx| native_info(gpui::div(), cx, geometry::button, "button", &mut info));
-    assert!(expected.is_some(), "no native theme is installed");
-    assert_eq!(Some(styled.style().clone()), expected);
-    assert_eq!(info, WidgetInfo::new("Button").geometry("button"));
+    let mut styled = cx
+        .update(|_w, cx| next_native_info(gpui::div(), cx, geometry::button, "button", &mut info));
+    assert_eq!(Some(styled.style().clone()), expected.and_then(Result::ok));
+    assert_eq!(info, WidgetInfo::new("Button").next_geometry("button"));
 }
 
 /// The Typography page's code Editor takes the platform's line height

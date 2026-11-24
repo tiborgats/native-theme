@@ -370,16 +370,6 @@ pub(crate) fn old_resolved(cx: &App) -> Option<&native_theme::theme::ResolvedThe
     old_native(cx).map(|n| n.resolved)
 }
 
-/// The geometry refinement a builder produces for the installed native theme,
-/// or `None` before `apply` ran (spec §9.1). Returns an owned value so the
-/// borrow of `cx` ends at once.
-pub(crate) fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
-    cx: &App,
-    build: F,
-) -> Option<StyleRefinement> {
-    old_native(cx).map(build)
-}
-
 /// The installed 0.8.0 theme for the styled theme's mode, or `None` before
 /// `native_theme_gpui::next::apply` ran.
 pub(crate) fn next_resolved(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {

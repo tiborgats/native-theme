@@ -1303,7 +1303,7 @@ pub fn palette_select(t: &Theme, native: Option<&native_theme::next::ResolvedThe
         )
         .instance(
             "old model",
-            "under a palette, gpui-component's theme colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette. Until their page group moves to the 0.8.0 model, these are still drawn from the 0.7.2 theme of the same choice (support::OldModel), which has no palettes, so they show the preset alone, in the palette's scheme: the button variant of variants::default_button with geometry::default_button_rest (the Basic page's default-button sample), and the showcase's own refinements on the pages and in the inspector not yet moved -- native_color, native_geometry and the inspector's text (sidebar.font); the tooltip says so",
+            "under a palette, gpui-component's theme colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette. Until their page group moves to the 0.8.0 model, these are still drawn from the 0.7.2 theme of the same choice (support::OldModel), which has no palettes, so they show the preset alone, in the palette's scheme: the showcase's own reads not yet moved -- the Icons page's icon sizes (IconSizeContext), the body text's line height (demo::body_label), the border width of the demos' frames (support::demo_border_width) and the inspector's resolved JSON; the tooltip says so",
         )
         .instance(
             "width",

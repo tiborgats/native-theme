@@ -2,7 +2,6 @@
 
 use gpui_component::{Colorize as _, Size, theme::Theme};
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
-use native_theme::theme::ResolvedButtonTheme;
 use native_theme_gpui::next::geometry::button_disabled;
 use native_theme_gpui::next::{
     self, padding_of, state_fill_of, state_text_color_of, text_color_of,
@@ -11,8 +10,8 @@ use native_theme_gpui::next::{
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
-    claim, edge_claim, percent_text, px_text, radius_of, state_stroke_color_of, stated,
-    stated_claim, stroke_color_of, stroke_width_of,
+    claim, edge_claim, percent_text, px_text, radius_of, state_stroke_color_of, stated_claim,
+    stroke_color_of, stroke_width_of,
 };
 use crate::demo::{ButtonKind, ButtonState};
 use crate::support::ChromeIcon;
@@ -670,82 +669,66 @@ pub fn button(
 }
 
 /// A dialog's default Button built through
-/// `native_theme_gpui::variants::default_button` under a theme that gives it
-/// a look of its own, `b` (`demo::dialog_default_button`): at rest
-/// `geometry::default_button_rest`'s fill and frame, under the pointer the
-/// variant's hover fill and its colour as the frame, pressed the plain
+/// `native_theme_gpui::next::variants::default_button` under a theme that
+/// gives it a look of its own, `r` (`demo::dialog_default_button`): at rest
+/// `next::geometry::default_button_rest`'s fill and frame, under the pointer
+/// the variant's hover fill and its colour as the frame, pressed the plain
 /// button's `button_active` in that frame, and one label in every state.
-pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
-    let width = Some(b.border.line_width);
+pub fn dialog_default(t: &Theme, r: &NextTheme) -> WidgetInfo {
+    let width = stroke_width_of(&r.button.body(WidgetState::NONE));
     let info = WidgetInfo::new("Button").variant("Dialog default");
-    let info = info.colors(stated_claim(
-        "bg",
-        "default_button_background",
-        b.default_button_background,
-        "native-theme-gpui/geometry.rs:2096",
-    ));
-    let info = match stated_claim(
-        "text",
-        "default_button_text_color",
-        b.default_button_text_color,
-        "native-theme-gpui/variants.rs:274",
-    ) {
-        Some(text) => info.color(text),
-        None => info.color(claim(
+    let info = info
+        .colors(stated_claim(
+            "bg",
+            "button.body(DEFAULT).fill",
+            state_fill_of(&r.button.body(WidgetState::DEFAULT)),
+            "native-theme-gpui/next/builders.rs:112",
+        ))
+        .colors(stated_claim(
             "text",
-            "color",
-            stated(b.font.color),
-            "native-theme-gpui/variants.rs:274",
-        )),
-    };
+            "button.label(DEFAULT).color",
+            text_color_of(&r.button.label(WidgetState::DEFAULT)),
+            "native-theme-gpui/next/builders.rs:869",
+        ));
     let rest = edge_claim(
         "border at rest",
-        "default_button_border_color",
-        b.default_button_border_color,
+        "button.body(DEFAULT).stroke.color",
+        state_stroke_color_of(&r.button.body(WidgetState::DEFAULT)),
         width,
-        "native-theme-gpui/geometry.rs:2097",
+        "native-theme-gpui/next/builders.rs:113",
     )
     .or_else(|| {
         edge_claim(
             "border at rest",
-            "border",
-            Some(b.border.color),
+            "button.body(NONE).stroke.color",
+            stroke_color_of(&r.button.body(WidgetState::NONE)),
             width,
-            "native-theme-gpui/geometry.rs:2098",
+            "native-theme-gpui/next/builders.rs:114",
         )
     });
     let hovered = edge_claim(
         "border, hovered or pressed",
-        "hover_border_color",
-        b.hover_border_color,
+        "button.body(HOVER).stroke.color",
+        state_stroke_color_of(&r.button.body(WidgetState::HOVER)),
         width,
-        "native-theme-gpui/variants.rs:275",
+        "native-theme-gpui/next/builders.rs:845",
     )
     .or_else(|| {
         edge_claim(
             "border, hovered or pressed",
-            "default_button_border_color",
-            b.default_button_border_color,
+            "button.body(DEFAULT).stroke.color",
+            stroke_color_of(&r.button.body(WidgetState::DEFAULT)),
             width,
-            "native-theme-gpui/variants.rs:271",
-        )
-    })
-    .or_else(|| {
-        edge_claim(
-            "border, hovered or pressed",
-            "border",
-            Some(b.border.color),
-            width,
-            "native-theme-gpui/variants.rs:271",
+            "native-theme-gpui/next/builders.rs:847",
         )
     });
     let info = info.colors(rest).colors(hovered);
     let info = info
         .colors(stated_claim(
             "hover",
-            "default_button_background",
-            b.default_button_background,
-            "native-theme-gpui/variants.rs:270",
+            "button.body(DEFAULT).fill",
+            state_fill_of(&r.button.body(WidgetState::DEFAULT)),
+            "native-theme-gpui/next/builders.rs:862",
         ))
         .color(claim(
             "active",
@@ -753,27 +736,21 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
             t.button_active,
             "native-theme-gpui/variants.rs:353",
         ));
-    let edge_note = if b.border.line_width <= 0.0 {
-        "none in any state: button.border.line_width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)"
+    let edge_note = if width.is_some_and(|width| width <= 0.0) {
+        "none in any state: button.body(NONE).stroke.width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)"
     } else {
-        "button.default_button_border_color at rest (button.border.color where unstated), from geometry::default_button_rest after geometry::button, which gives the border its width; hovered and pressed the variant's colour, button.hover_border_color where stated, else that frame -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)"
+        "button.body(DEFAULT).stroke.color at rest where a rule states it for DEFAULT (button.body(NONE).stroke.color where not), from geometry::default_button_rest after geometry::button, which gives the border button.body(NONE).stroke.width; hovered and pressed the variant's colour, button.body(HOVER).stroke.color where a rule states it for HOVER, else the default body's stroke -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)"
     };
-    styled_label_notes(info)
+    next_styled_label_notes(info)
         .not_themeable("edge", edge_note)
-        .not_themeable("shadow", "none: variants::default_button builds its custom variant with .shadow(false) (native-theme-gpui/variants.rs, default_button; button/button.rs, ButtonVariant::shadow)")
-        .instance("variant", "native_theme_gpui::variants::default_button: a custom variant with the default button's hover fill, label and hovered and pressed frame and the plain button's pressed fill (button_active); its rest fill and frame are geometry::default_button_rest's, refined after geometry::button")
+        .not_themeable("shadow", "none: next::variants::default_button builds its custom variant with .shadow(false) (native-theme-gpui/variants.rs, default_button_from; button/button.rs, ButtonVariant::shadow)")
+        .instance("variant", "native_theme_gpui::next::variants::default_button: a custom variant with the default button's hover fill (button.body(DEFAULT).fill), label (button.label(DEFAULT).color) and hovered and pressed frame and the plain button's pressed fill (button_active); its rest fill and frame are next::geometry::default_button_rest's, refined after next::geometry::button")
 }
 
-/// `info` with the label's two config lines of a Button that
-/// `geometry::button` styles: the weight it carries, and the size
-/// `next::geometry::button_label` gives the label (`demo::labelled`, which
-/// every labelled Button goes through).
-fn styled_label_notes(info: WidgetInfo) -> WidgetInfo {
-    next_label_size_note(info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"))
-}
-
-/// [`styled_label_notes`] of a Button the installed 0.8.0 theme styles,
-/// naming the homes `next::geometry::button` and `button_label` read.
+/// `info` with the label's two config lines of a Button the installed 0.8.0
+/// theme styles through `next::geometry::button`: the weight it carries,
+/// and the size `next::geometry::button_label` gives the label
+/// (`demo::labelled`, which every labelled Button goes through).
 fn next_styled_label_notes(info: WidgetInfo) -> WidgetInfo {
     next_label_size_note(info.config("font-weight", "geometry::button carries button.label(NONE).weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"))
 }
