@@ -1271,7 +1271,7 @@ pub(crate) fn ring_stroke(stroke: &Stroke, home: &'static str) -> Mapped<Option<
 /// # Errors
 ///
 /// [`Unmapped`] where the indicator is not a ring (`focus_ring.kind`), or a
-/// stroke is per side or the corners concentric ([`borders::corner_radii`]).
+/// stroke is per side or the corners concentric (`borders::corner_radii`).
 #[cfg(feature = "widgets")]
 pub fn ring_look(r: &ResolvedTheme, radius: f32) -> Mapped<Option<RingLook>> {
     use native_theme::next::{FocusKind, FocusTrigger};

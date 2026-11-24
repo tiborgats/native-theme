@@ -90,23 +90,48 @@
 
 [[row]]
 key = "defaults.font.family"
-homes = ["typography.body.family"]
+homes = [
+    "typography.body.family",
+    "switch.label(NONE).family",
+]
+homes_by_preset = { "ios-13" = ["typography.body.family"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
 
 [[row]]
 key = "defaults.font.size"
-homes = ["typography.body.size_px"]
+homes = [
+    "typography.body.size_px",
+    "switch.label(NONE).size_px",
+]
+homes_by_preset = { "ios-13" = ["typography.body.size_px"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
 
 [[row]]
 key = "defaults.font.defined_size"
-homes = ["typography.body.defined_size"]
+homes = [
+    "typography.body.defined_size",
+    "switch.label(NONE).defined_size",
+]
+homes_by_preset = { "ios-13" = ["typography.body.defined_size"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
 
 [[row]]
 key = "defaults.font.weight"
-homes = ["typography.body.weight"]
+homes = [
+    "typography.body.weight",
+    "switch.label(NONE).weight",
+]
+homes_by_preset = { "ios-13" = ["typography.body.weight"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
 
 [[row]]
 key = "defaults.font.style"
-homes = ["typography.body.style"]
+homes = [
+    "typography.body.style",
+    "switch.label(NONE).style",
+]
+homes_by_preset = { "ios-13" = ["typography.body.style"] }
+note = "the switch's label too, at rest (no rule for CHECKED or DISABLED states its font), which 0.7.2's showcases drew in defaults.font; ios-13 states none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
 
 [[row]]
 key = "defaults.font.color"
@@ -211,6 +236,7 @@ key = "defaults.disabled_text_color"
 homes = [
     "colors.disabled_text",
     "switch.label(DISABLED).color",
+    "switch.label(DISABLED|CHECKED).color",
 ]
 homes_by_preset = { "adwaita" = ["colors.disabled_text"], "ios-13" = ["colors.disabled_text"], "kde-breeze" = ["colors.disabled_text"], "macos-monterey" = ["colors.disabled_text"], "macos-tahoe" = ["colors.disabled_text"], "material-3" = ["colors.disabled_text"], "windows-11" = ["colors.disabled_text"] }
 note = "the disabled switch's label too, which 0.7.2's showcases drew in defaults.disabled_text_color; every preset states its own (switch_label in src/next/presets/: adwaita the row's text at the disabled opacity, kde-breeze Breeze's disabled text at 0.6, material-3 Android's label at 0.6, windows-11 ToggleSwitchContentForegroundDisabled, which differs from it under the high-contrast reader; the macOS label states no disabled colour, unmeasured, and ios-13 no label), so there the disabled text alone"

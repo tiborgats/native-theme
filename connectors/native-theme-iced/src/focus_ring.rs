@@ -26,7 +26,7 @@ use crate::palette::to_color;
 
 /// The focus ring a focused field is drawn with, as the theme states it:
 /// what [`crate::focus_ring()`] draws, read from the theme's
-/// `defaults.focus_ring_*` ([`ring_look`]), and what
+/// `defaults.focus_ring_*` (`focus_ring::ring_look`), and what
 /// [`crate::next::focus_ring_with`] draws, read from the 0.8.0 model's
 /// `focus_ring` ([`crate::next::ring_look`]).
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -32973,12 +32973,107 @@ mod tests {
         (
             "basic.icons.edit",
             "button.hover_text_color",
-            EDIT_CHECKED_LABEL,
+            TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.icons.edit",
             "button.active_text_color",
-            EDIT_CHECKED_LABEL,
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.edit",
+            "button.checked_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.copy",
+            "button.font.color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.copy",
+            "button.hover_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.copy",
+            "button.active_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.paste",
+            "button.font.color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.paste",
+            "button.hover_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.paste",
+            "button.active_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.delete",
+            "button.font.color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.delete",
+            "button.hover_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "basic.icons.delete",
+            "button.active_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.command_palette",
+            "button.font.color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.command_palette",
+            "button.hover_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.command_palette",
+            "button.active_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.reload_theme",
+            "button.font.color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.reload_theme",
+            "button.hover_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.reload_theme",
+            "button.active_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.preferences",
+            "button.font.color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.preferences",
+            "button.hover_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
+        ),
+        (
+            "chrome.toolbar.preferences",
+            "button.active_text_color",
+            TOOL_BUTTON_PUSH_LABEL,
         ),
         (
             "basic.buttons.toggle_on",
@@ -33085,14 +33180,13 @@ mod tests {
          button.label(PRESSED).color move only an unchecked toggle's pressed status, \
          `(false, Pressed)`: a checked toggle keeps its checked fill and label pressed";
 
-    /// Why the checked Edit button's hovered and pressed labels move no row
-    /// it draws.
-    const EDIT_CHECKED_LABEL: &str = "\
-         Edit opens checked, and button.label(HOVER).color and button.label(PRESSED).color \
-         move only an unchecked tool button's label, `(false, Hovered)` and \
-         `(false, Pressed)`: native_theme_iced::next::styles::toolbar_button letters a \
-         checked one in button.label(CHECKED).color where stated, else in the label its \
-         checked fill takes, in every status (src/next/styles.rs, `toolbar_button`)";
+    /// Why a tool button draws no push button's label.
+    const TOOL_BUTTON_PUSH_LABEL: &str = "\
+         native_theme_iced::next::styles::toolbar_button letters a tool button in \
+         toolbar.button_label(<state>).color, at rest where stated, in a state where a rule \
+         states it, else as iced's own secondary button changes the label at rest, never in \
+         the push button's button.label(<state>).color (src/next/styles.rs, \
+         `toolbar_button`)";
 
     /// Why a tool button draws no push button's hover or pressed fill.
     const TOOL_BUTTON_PUSH_FILL: &str = "\

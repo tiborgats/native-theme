@@ -859,6 +859,21 @@ pub(crate) struct ToolbarButtonSource {
     pub pressed_border_color: Option<Line>,
     pub checked_hover_border_color: Option<Line>,
     pub checked_pressed_border_color: Option<Line>,
+    /// The toolbar's own labels, on the 0.8.0 model; `None` on 0.7.2's,
+    /// whose toolbar button is lettered in the push button's labels.
+    pub labels: Option<ToolbarLabels>,
+}
+
+/// A toolbar button's labels on the 0.8.0 model: the label at rest where
+/// the theme states it, each other state's where a rule states it for the
+/// state; `None` is iced's own there (spec §10, rule 0).
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ToolbarLabels {
+    pub rest: Option<Color>,
+    pub hover: Option<Color>,
+    pub pressed: Option<Color>,
+    pub checked: Option<Color>,
+    pub disabled: Option<Color>,
 }
 
 impl ToolbarButtonSource {
@@ -888,6 +903,7 @@ impl ToolbarButtonSource {
             pressed_border_color: line(t.button_hover_border_color),
             checked_hover_border_color: checked_hover,
             checked_pressed_border_color: checked_hover,
+            labels: None,
         }
     }
 
@@ -937,17 +953,14 @@ pub(crate) fn toolbar_button_from(
     let pressed = t.active_background.map(Layer::as_given);
     let checked_fill = t.checked_background;
 
-    let label = b.label;
-    let hover_label = b.hover_label;
-    let active_label = b.active_label;
-    let checked_label = b.checked_label;
-    // A disabled label the theme leaves to iced is the label at rest, faded
-    // by the theme's disabled opacity as `button_from` fades it, or as
-    // iced's own classes fade it where the theme states no opacity.
-    let disabled_label = b.disabled_label.unwrap_or(match b.disabled_opacity {
-        Some(opacity) => faded(b.label, opacity),
-        None => b.label.scale_alpha(ICED_DISABLED_BUTTON_ALPHA),
-    });
+    let push_labels = (
+        b.label,
+        b.hover_label,
+        b.active_label,
+        b.checked_label,
+        b.disabled_label,
+    );
+    let disabled_opacity = b.disabled_opacity;
 
     let outline = Outline {
         line: Line::outside(Color::TRANSPARENT),
@@ -959,6 +972,27 @@ pub(crate) fn toolbar_button_from(
 
     move |theme, status| {
         let iced = Style::default();
+        // On the 0.8.0 model the toolbar's own labels, an unstated label at
+        // rest iced's own neutral class's; on 0.7.2's the push button's.
+        let (label, hover_label, active_label, checked_label, disabled_label) = match t.labels {
+            Some(l) => (
+                l.rest.unwrap_or_else(|| {
+                    iced_widget::button::secondary(theme, Status::Active).text_color
+                }),
+                l.hover,
+                l.pressed,
+                l.checked,
+                l.disabled,
+            ),
+            None => push_labels,
+        };
+        // A disabled label the theme leaves to iced is the label at rest, faded
+        // by the theme's disabled opacity as `button_from` fades it, or as
+        // iced's own classes fade it where the theme states no opacity.
+        let disabled_label = disabled_label.unwrap_or(match disabled_opacity {
+            Some(opacity) => faded(label, opacity),
+            None => label.scale_alpha(ICED_DISABLED_BUTTON_ALPHA),
+        });
         let state = |fill: Option<Color>, text: Option<Color>, status| {
             let own = (
                 iced_widget::button::secondary(theme, Status::Active),

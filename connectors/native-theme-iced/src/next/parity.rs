@@ -873,6 +873,31 @@ const TOOLBAR_STATE_FILLS: &str = "the theme states no fill for the hovered or t
      own secondary button, the toolbar button's fill at rest being none \
      (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
 
+/// The reason of a toolbar button lettered in the toolbar's own labels.
+const TOOLBAR_LABELS: &str = "0.7.2's connector lettered the toolbar button in the push \
+     button's labels (button.text_color and its hovered, pressed, checked and disabled \
+     colours); the 0.8.0 theme's toolbar button has a label of its own, \
+     toolbar.button_label(<state>) (docs/v0.8.0-spec.md §5, the 27-widget contract table; \
+     native-theme/tests/next_homes.toml, row toolbar.font.color), so the button is lettered \
+     in its colour at rest, in a state's where a rule for the state states it, and where none \
+     does as styles::in_state gives it against iced's own secondary button, a disabled label \
+     the one at rest faded by button.disabled_opacity, a stated checked fill in the checked \
+     label where a rule states it, else in the label at rest (0.7.2's connector: the pressed \
+     one), never the push button's labels (docs/v0.8.0-spec.md §2, from_state; §10, rules 0 \
+     and 0a)";
+
+/// A toolbar button lettered in the toolbar's own labels on `presets`
+/// ([`TOOLBAR_LABELS`]).
+const fn toolbar_labels(presets: &'static [&'static str]) -> Difference {
+    Difference {
+        leaf: "toolbar_button",
+        presets,
+        listed: Listed::aligned(LineAlign::Outside),
+        stated: &[],
+        reason: &[TOOLBAR_LABELS],
+    }
+}
+
 /// A toolbar button on `presets` whose hovered, pressed and checked fill
 /// the theme states nothing for ([`TOOLBAR_STATE_FILLS`], [`CHECKED`]).
 const fn unfilled_toolbar(presets: &'static [&'static str]) -> Difference {
@@ -1204,9 +1229,6 @@ const MONTEREY_BUTTON: &[&[Stated]] = &[
         ),
     ],
 ];
-
-/// macos-monterey's toolbar button: the button's pressed label.
-const MONTEREY_TOOLBAR: &[&[Stated]] = &[&[PRESSED_LABEL]];
 
 /// A check box's hovered stroke, checked or not (`checkbox.indicator(HOVER)`,
 /// `indicator(HOVER|CHECKED)` where a rule for HOVER states it).
@@ -1637,27 +1659,14 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         TOGGLE_PRESSED_STROKE,
     ),
-    unfilled_toolbar(&["macos-tahoe"])
-        .stating(TAHOE_TOOLBAR, &[TOOLBAR_STATE_FILLS, CHECKED, STATED]),
-    Difference {
-        leaf: "toolbar_button",
-        presets: &["ios-13"],
-        listed: Listed {
-            states: States {
-                hover_fill: true,
-                pressed_fill: true,
-                checked: true,
-                ..States::STATED
-            },
-            added: Added::CheckedButton,
-            ..Listed::aligned(LineAlign::Outside)
-        },
-        stated: &[&TOOLBAR_WIDTHS],
-        reason: &[TOOLBAR_STATE_FILLS, CHECKED, STATED_CHECKED, STATED],
-    },
+    unfilled_toolbar(&["macos-tahoe", "ios-13"]).stating(
+        TAHOE_TOOLBAR,
+        &[TOOLBAR_STATE_FILLS, CHECKED, STATED, TOOLBAR_LABELS],
+    ),
     unfilled_toolbar(&["macos-monterey"])
-        .stating(MONTEREY_TOOLBAR, &[TOOLBAR_STATE_FILLS, CHECKED, STATED]),
-    unfilled_toolbar(&["material-3"]),
+        .stating(&[], &[TOOLBAR_STATE_FILLS, CHECKED, TOOLBAR_LABELS]),
+    unfilled_toolbar(&["material-3"]).stating(&[], &[TOOLBAR_STATE_FILLS, CHECKED, TOOLBAR_LABELS]),
+    toolbar_labels(&["kde-breeze", "adwaita", "windows-11"]),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
     // default button is the primary one.
@@ -2952,7 +2961,7 @@ fn compare_styles(
     use crate::styles::{
         self as o, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource,
         LinkSource, MenuSource, Outline, PickListSource, ScrollbarSource, SegmentPosition,
-        SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
+        SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource, ToolbarLabels,
     };
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
 
@@ -2977,6 +2986,14 @@ fn compare_styles(
         }
     };
     let none = WidgetState::NONE;
+    let label = |state| new.toolbar.button_label(state);
+    let toolbar_labels = ToolbarLabels {
+        rest: super::text_color_of(&label(none)),
+        hover: super::state_text_color_of(&label(WidgetState::HOVER)),
+        pressed: super::state_text_color_of(&label(WidgetState::PRESSED)),
+        checked: super::state_text_color_of(&label(WidgetState::CHECKED)),
+        disabled: super::state_text_color_of(&label(WidgetState::DISABLED)),
+    };
     stated_style!(
         report,
         themes,
@@ -3009,7 +3026,17 @@ fn compare_styles(
             "toolbar_button",
             o::toolbar_button(old, checked),
             n::toolbar_button(new, checked),
-            |l: Listed| o::toolbar_button_from(&at(l), &t.listed(l), checked),
+            |l: Listed| {
+                let b = ButtonSource {
+                    checked_primary: true,
+                    ..at(l)
+                };
+                let t = ToolbarButtonSource {
+                    labels: Some(toolbar_labels),
+                    ..t.listed(l)
+                };
+                o::toolbar_button_from(&b, &t, checked)
+            },
             button,
             flags
         );

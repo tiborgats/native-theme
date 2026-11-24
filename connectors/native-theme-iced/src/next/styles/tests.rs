@@ -116,20 +116,84 @@ fn a_toolbar_button_fades_its_label_by_a_stated_opacity() -> TestResult {
     const OPACITY: f32 = 0.5;
     for (preset, r) in every_preset() {
         let mut b = super::button_source(&r)?;
-        b.disabled_label = None;
         b.disabled_opacity = Some(OPACITY);
-        let t = super::toolbar_button_source(&r)?;
+        let mut t = super::toolbar_button_source(&r)?;
+        let labels = t
+            .labels
+            .as_mut()
+            .ok_or("the 0.8.0 source names the toolbar's labels")?;
+        labels.disabled = None;
+        let rest = labels.rest;
         let theme = to_theme(&r)?;
+        let rest = rest.unwrap_or(
+            iced_widget::button::secondary(&theme, iced_widget::button::Status::Active).text_color,
+        );
         let style = crate::styles::toolbar_button_from(&b, &t, false)(
             &theme,
             iced_widget::button::Status::Disabled,
         );
         assert_eq!(
             style.text_color,
-            crate::styles::faded(b.label, OPACITY),
+            crate::styles::faded(rest, OPACITY),
             "{preset:?}"
         );
     }
+    Ok(())
+}
+
+/// A toolbar button is lettered in `toolbar.button_label(<state>)`, the
+/// label at rest iced's own where the toolbar states none (spec §10, rule
+/// 0), never in the push button's labels.
+#[test]
+fn a_toolbar_button_reads_the_toolbar_labels() -> TestResult {
+    use iced_widget::button::Status;
+    let push = IcedColor::from_rgb8(0xf0, 0xa0, 0x14);
+    let (mut stated, mut left) = (0, 0);
+    for (preset, r) in every_preset() {
+        let mut b = super::button_source(&r)?;
+        b.label = push;
+        b.hover_label = Some(push);
+        b.active_label = Some(push);
+        b.checked_label = Some(push);
+        b.disabled_label = Some(push);
+        let t = super::toolbar_button_source(&r)?;
+        let labels = t
+            .labels
+            .ok_or("the 0.8.0 source names the toolbar's labels")?;
+        let theme = to_theme(&r)?;
+        let style = crate::styles::toolbar_button_from(&b, &t, false);
+        let rest = style(&theme, Status::Active).text_color;
+        match labels.rest {
+            Some(label) => {
+                stated += 1;
+                assert_eq!(rest, label, "{preset:?}: the stated label at rest");
+            }
+            None => {
+                left += 1;
+                assert_eq!(
+                    rest,
+                    iced_widget::button::secondary(&theme, Status::Active).text_color,
+                    "{preset:?}: iced's own label at rest"
+                );
+            }
+        }
+        for (status, label) in [
+            (Status::Hovered, labels.hover),
+            (Status::Pressed, labels.pressed),
+            (Status::Disabled, labels.disabled),
+        ] {
+            let drawn = style(&theme, status).text_color;
+            if let Some(label) = label {
+                assert_eq!(drawn, label, "{preset:?} {status:?}: the stated label");
+            }
+            assert_ne!(drawn, push, "{preset:?} {status:?}: not the push button's");
+        }
+        assert_ne!(rest, push, "{preset:?}: not the push button's");
+    }
+    assert!(
+        stated > 0,
+        "a stated label at rest covered ({left} left to iced)"
+    );
     Ok(())
 }
 
@@ -298,7 +362,11 @@ fn an_unstated_state_is_iceds_change_to_the_secondary_button() -> TestResult {
                 .body(every_state())
                 .label(TextPatch::new().color(LABEL)),
         )
-        .toolbar(ToolbarRule::new().button(every_state()));
+        .toolbar(
+            ToolbarRule::new()
+                .button(every_state())
+                .button_label(TextPatch::new().color(LABEL)),
+        );
     let fill = Some(Background::Color(to_color(DISTINCT)));
     let label = to_color(LABEL);
     let mut changed = 0;
@@ -1553,21 +1621,24 @@ fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
         let theme = to_theme(&r)?;
         let primary = super::button_primary(&r)?;
         let plain = super::button(&r)?;
-        let label = r.button.label(WidgetState::CHECKED);
-        let checked_label = label
-            .from_state
-            .contains(TextStated::COLOR)
-            .then(|| text_color(&label, "label"))
-            .transpose()?;
-        for (stated, style, counted) in [
+        let stated_label = |label: native_theme::next::TextStyle| {
+            label
+                .from_state
+                .contains(TextStated::COLOR)
+                .then(|| text_color(&label, "label"))
+                .transpose()
+        };
+        for (stated, checked_label, style, counted) in [
             (
                 r.button.body(WidgetState::CHECKED),
+                stated_label(r.button.label(WidgetState::CHECKED))?,
                 Box::new(super::button_toggle(&r, true)?)
                     as Box<dyn Fn(&iced_core::theme::Theme, Status) -> iced_widget::button::Style>,
                 &mut unstated.0,
             ),
             (
                 r.toolbar.button(WidgetState::CHECKED),
+                stated_label(r.toolbar.button_label(WidgetState::CHECKED))?,
                 Box::new(super::toolbar_button(&r, true)?),
                 &mut unstated.1,
             ),

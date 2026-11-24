@@ -16,11 +16,14 @@ use native_theme::next::{
 use super::borders::{
     flagged, line, line_or_none, outline, outline_or_iced, radius, state_line, stroke_width,
 };
-use super::{Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, to_color};
+use super::{
+    Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, text_color_of,
+    to_color,
+};
 use crate::styles::{
     self as old, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource, Layer,
     Line, LinkSource, MenuSource, Outline, PickListSource, ScrollbarSource, SegmentPosition,
-    SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
+    SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource, ToolbarLabels,
 };
 
 /// A part's fill, where stated, as the state's whole fill (spec §9, step
@@ -135,6 +138,25 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
             &t.button(WidgetState::PRESSED | WidgetState::HOVER | WidgetState::CHECKED),
             "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color",
         )?,
+        labels: Some(ToolbarLabels {
+            rest: text_color_of(&t.button_label(WidgetState::NONE)),
+            hover: state_text_color(
+                &t.button_label(WidgetState::HOVER),
+                "toolbar.button_label(HOVER).color",
+            )?,
+            pressed: state_text_color(
+                &t.button_label(WidgetState::PRESSED),
+                "toolbar.button_label(PRESSED).color",
+            )?,
+            checked: state_text_color(
+                &t.button_label(WidgetState::CHECKED),
+                "toolbar.button_label(CHECKED).color",
+            )?,
+            disabled: state_text_color(
+                &t.button_label(WidgetState::DISABLED),
+                "toolbar.button_label(DISABLED).color",
+            )?,
+        }),
     })
 }
 
@@ -174,11 +196,14 @@ pub fn button_toggle(
 /// [`crate::styles::toolbar_button`]: a checked button whose theme states
 /// no checked fill (`toolbar.button(CHECKED)`) is drawn in
 /// [`button_primary`]'s fill and label in the same status, a stated
-/// `button.label(CHECKED)` laid over, and a stated checked fill lettered in
+/// `toolbar.button_label(CHECKED)` laid over, and a stated checked fill lettered in
 /// it, else in the label at rest, as [`button_toggle`] (spec §10, rule 0a).
 /// A hovered or pressed fill is `toolbar.button(HOVER)`'s or
 /// `toolbar.button(PRESSED)`'s where a rule states it, else iced's own
-/// (spec §10, rule 0), never the push button's.
+/// (spec §10, rule 0), never the push button's. The labels are
+/// `toolbar.button_label(<state>)`'s: at rest where stated, else iced's
+/// own; another state's where a rule states it, else as iced's own class
+/// derives it from the label at rest, never the push button's.
 ///
 /// # Errors
 ///

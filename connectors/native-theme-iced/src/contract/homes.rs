@@ -57,6 +57,10 @@ const QUERIED_HOMES: &[&str] = &[
     "switch.thumb(HOVER|CHECKED).fill",
     "tab.tab(NONE).stroke.color",
     "toolbar.button(PRESSED|HOVER|CHECKED).stroke.color",
+    "toolbar.button_label(CHECKED).color",
+    "toolbar.button_label(DISABLED).color",
+    "toolbar.button_label(HOVER).color",
+    "toolbar.button_label(PRESSED).color",
 ];
 
 /// A colour home that moves no row in any preset, and why: the kind of
@@ -119,6 +123,11 @@ const UNREAD_HOMES: &[UnreadHome] = &[
     },
     UnreadHome {
         home: "switch.label(DISABLED).color",
+        kind: "ruled",
+        why: SWITCH_LABEL,
+    },
+    UnreadHome {
+        home: "switch.label(DISABLED|CHECKED).color",
         kind: "ruled",
         why: SWITCH_LABEL,
     },
