@@ -6384,7 +6384,6 @@ fn windows_11_curving_out(is_dark: bool) -> native_theme::next::ResolvedTheme {
 fn the_basic_page_makes_room_for_both_flares() {
     use crate::pages::basic::basic_column_count;
     use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
-    use native_theme_gpui::next::geometry;
     let mut stated = NextTheme::preset(Preset::Windows11).resolve(&ThemeContext::light());
     stated.tab.active_outward_corner_radius = Some(4.0);
     assert!(
@@ -6403,8 +6402,8 @@ fn the_basic_page_makes_room_for_both_flares() {
             .map(f32::from)
             .unwrap_or_default()
     };
-    let margin = metric(geometry::window_margin);
-    let gap = metric(geometry::section_gap);
+    let margin = metric(next::geometry::window_margin);
+    let gap = metric(next::geometry::section_gap);
     let gutter = if stated.scrollbar.overlay_mode {
         0.0
     } else {
@@ -17553,10 +17552,10 @@ fn a_builder_the_table_lacks_says_so() {
 /// for the installed 0.8.0 theme and its info carries the builder's line.
 #[gpui::test]
 fn native_info_records_the_builder_only_when_it_applies_it(cx: &mut TestAppContext) {
-    use native_theme_gpui::next::geometry;
     let mut bare = WidgetInfo::new("Button");
-    let mut unstyled =
-        cx.update(|cx| next_native_info(gpui::div(), cx, geometry::button, "button", &mut bare));
+    let mut unstyled = cx.update(|cx| {
+        next_native_info(gpui::div(), cx, next::geometry::button, "button", &mut bare)
+    });
     assert_eq!(bare, WidgetInfo::new("Button"));
     assert_eq!(unstyled.style().clone(), gpui::StyleRefinement::default());
 
@@ -17564,14 +17563,15 @@ fn native_info_records_the_builder_only_when_it_applies_it(cx: &mut TestAppConte
     use_preset(&mut cx, &showcase, "kde-breeze");
     let r = next_theme(&mut cx, &showcase);
     assert!(r.is_some(), "no 0.8.0 theme is installed");
-    let expected = r.as_ref().map(geometry::button);
+    let expected = r.as_ref().map(next::geometry::button);
     assert!(
         matches!(expected, Some(Ok(_))),
         "kde-breeze's 0.8.0 theme leaves a home next::geometry::button reads unstated: {expected:?}"
     );
     let mut info = WidgetInfo::new("Button");
-    let mut styled = cx
-        .update(|_w, cx| next_native_info(gpui::div(), cx, geometry::button, "button", &mut info));
+    let mut styled = cx.update(|_w, cx| {
+        next_native_info(gpui::div(), cx, next::geometry::button, "button", &mut info)
+    });
     assert_eq!(Some(styled.style().clone()), expected.and_then(Result::ok));
     assert_eq!(info, WidgetInfo::new("Button").next_geometry("button"));
 }

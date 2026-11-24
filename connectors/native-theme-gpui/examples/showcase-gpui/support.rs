@@ -292,16 +292,12 @@ impl ContrastHeld {
     }
 }
 
-/// The accessibility preferences the installed theme was asked for: the
-/// 0.7.2 theme's own, where one is installed (`native_theme_gpui::apply`
-/// keeps them as given), else the installed 0.8.0 theme's ([`Requested`]);
-/// `None` before a theme was installed.
+/// The accessibility preferences the installed 0.8.0 theme was asked for
+/// ([`Requested`]); `None` before a theme was installed.
 pub(crate) fn requested_preferences(cx: &App) -> Option<AccessibilityPreferences> {
-    cx.native().map(|n| n.accessibility.clone()).or_else(|| {
-        cx.native_theme()?.next_resolved(cx)?;
-        cx.try_global::<Requested>()
-            .map(|requested| requested.preferences.clone())
-    })
+    cx.native_theme()?.next_resolved(cx)?;
+    cx.try_global::<Requested>()
+        .map(|requested| requested.preferences.clone())
 }
 
 /// Why the installed 0.8.0 theme's contrast is lower than its preferences
@@ -339,17 +335,14 @@ pub(crate) fn next_resolved(cx: &App) -> Option<&native_theme::next::ResolvedThe
     cx.native_theme()?.next_resolved(cx)
 }
 
-/// `variants::toolbar_button` for the installed theme. That builder reads
-/// the theme through `cx.native()`, which gives no 0.7.2 theme once a 0.8.0
-/// one is installed (`native_theme_gpui::next::apply`), so under a 0.8.0
-/// theme the variant is built from it (`next::variants::toolbar_button`,
-/// which the connector parity holds to the 0.7.2 builder's); where that
-/// theme lacks a source the builder reads, or a 0.7.2 theme is installed,
-/// the 0.7.2 builder's.
+/// The tool buttons' variant for the installed 0.8.0 theme,
+/// `next::variants::toolbar_button`; where no theme is installed, or it
+/// lacks a source the builder reads, `variants::ghost_button`, the variant
+/// that builder starts from, with no state of the theme's over it.
 pub(crate) fn toolbar_variant(cx: &App) -> ButtonCustomVariant {
     next_resolved(cx)
         .and_then(|r| native_theme_gpui::next::variants::toolbar_button(r, cx).ok())
-        .unwrap_or_else(|| native_theme_gpui::variants::toolbar_button(cx))
+        .unwrap_or_else(|| native_theme_gpui::variants::ghost_button(cx))
 }
 
 /// The installed 0.8.0 theme resolved for an inactive window

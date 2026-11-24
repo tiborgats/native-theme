@@ -436,6 +436,103 @@ fn the_showcase_exercises_every_builder() {
     );
 }
 
+/// The showcase's helpers that read the 0.7.2 theme, gone with the move to
+/// the 0.8.0 model, which no showcase file names again.
+const OLD_MODEL_READS: &[&str] = &[
+    "old_native",
+    "old_resolved",
+    "native_value",
+    "native_geometry",
+    "native_color",
+    "native_info",
+    "keep_old_beside_next",
+    "GEOMETRY_NOTES",
+    "OldModel",
+    "resolved_theme",
+];
+
+/// Whether `code` names `module::name` of the 0.7.2 model: a path of its
+/// own, as [`references`] reads one, with no `next::` before the module.
+fn names_old_path(code: &str, module: &str, name: &str) -> bool {
+    let path = format!("{module}::{name}");
+    code.match_indices(path.as_str()).any(|(at, m)| {
+        let head = code.get(..at).unwrap_or("");
+        let whole = head
+            .chars()
+            .next_back()
+            .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+            && code
+                .get(at + m.len()..)
+                .and_then(|t| t.chars().next())
+                .is_none_or(|c| !(c.is_alphanumeric() || c == '_'));
+        whole && !head.ends_with("next::")
+    })
+}
+
+/// The gpui showcase reads no 0.7.2 theme: no file of it, the tests
+/// included, names a helper of [`OLD_MODEL_READS`], reads the installed
+/// 0.7.2 theme (`ActiveNativeTheme::native`, `.native(`), or calls a 0.7.2
+/// builder that reads it -- a `geometry::` builder, or a `variants::` one
+/// but `ghost_button`, which reads gpui-component's theme alone -- other
+/// than through `next::`. Comments and strings are not read: a note may
+/// name what the 0.7.2 model did.
+#[test]
+fn the_showcase_reads_no_0_7_2_theme() {
+    let old_variants: Vec<&str> = public_fns(VARIANTS)
+        .into_iter()
+        .filter(|name| *name != "ghost_button")
+        .collect();
+    let old_builders = public_fns(GEOMETRY);
+    assert!(
+        !old_variants.is_empty() && !old_builders.is_empty(),
+        "geometry.rs or variants.rs declares no builder, so this test would pass vacuously"
+    );
+    let mut findings = Vec::new();
+    for (file, raw) in SHOWCASE_FILES {
+        let code = without_comments_or_strings(raw);
+        let starts = line_offsets(&code);
+        for name in OLD_MODEL_READS {
+            if mentions(&code, name) {
+                findings.push(format!("{file}: names {name}"));
+            }
+        }
+        for (at, _) in code.match_indices(".native(") {
+            findings.push(format!(
+                "{file}:{}: reads the installed 0.7.2 theme, .native(",
+                line_at(&starts, at)
+            ));
+        }
+        for (module, names) in [("geometry", &old_builders), ("variants", &old_variants)] {
+            for name in names.iter() {
+                if names_old_path(&code, module, name) {
+                    findings.push(format!("{file}: calls the 0.7.2 builder {module}::{name}"));
+                }
+            }
+        }
+    }
+    assert!(
+        findings.is_empty(),
+        "the gpui showcase still reads the 0.7.2 theme:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// [`names_old_path`] takes a 0.7.2 path, spelt out or not, and no
+/// `next::` path, longer name or longer module.
+#[test]
+fn names_old_path_tells_the_models_apart() {
+    let code = "let a = variants::toolbar_button(cx);\n\
+                let b = native_theme_gpui::variants::default_button(n, cx);\n\
+                let c = next::variants::bordered_button(r, cx);\n\
+                let d = my_variants::switch_color(n);\n";
+    assert!(names_old_path(code, "variants", "toolbar_button"));
+    assert!(names_old_path(code, "variants", "default_button"));
+    assert!(!names_old_path(code, "variants", "bordered_button"));
+    assert!(!names_old_path(code, "variants", "switch_color"));
+    let longer = "let e = variants::toolbar_button_from(s, cx);\n";
+    assert!(!names_old_path(longer, "variants", "toolbar_button"));
+}
+
 // ---------------------------------------------------------------------------
 // Geometry lines come from one table
 // ---------------------------------------------------------------------------
