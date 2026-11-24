@@ -15986,8 +15986,9 @@ fn line_zero(table: &str) -> String {
     format!("{table}.border.line_width 0")
 }
 
-/// The minimum size a Buttons-page button is laid out at, and the leaves
-/// and helpers it comes from.
+/// The minimum size a push button on the 0.7.2 theme is laid out at, and
+/// the leaves and helpers it comes from: the Extra page's card buttons'.
+#[cfg(feature = "iced_aw")]
 fn button_min_size_row(resolved: &native_theme::theme::ResolvedTheme) -> String {
     format!(
         "{:.0} x {:.0}px, button.min_width x button.min_height: \
@@ -17882,7 +17883,14 @@ fn grid_info(state: &State) -> String {
 /// The Widget Info of the Layout page's pane grid.
 fn pane_grid_info(state: &State) -> String {
     let resolved = &state.current_resolved;
-    let divider_width_s = format!("{:.0}px", resolved.splitter.divider_width);
+    let next = state.next_shown();
+    let divider_width_s = format!(
+        "{:.0}px, splitter.divider_width",
+        next.splitter.divider_width
+    );
+    let title_s = next_font_row("typography.body", &next.typography.body);
+    let controls_s = next_font_row("button.label(NONE)", &next.button.label(WidgetState::NONE));
+    let controls_min_s = next_button_min_size_row(next);
     widget_tooltip(
         "PaneGrid",
         &style_paints(
@@ -17903,20 +17911,15 @@ fn pane_grid_info(state: &State) -> String {
             ("title bar", "styles::container_card"),
             (
                 "padding",
-                "the pane's and its title bar's: card.border.padding inside \
-                 card.border.line_width, layout.container_margin on a side it leaves \
-                 unstated, as every card (card_padding)",
+                "the pane's and its title bar's: card.container(NONE).padding's stated \
+                 sides inside its stroke width, layout.container_margin on a side it \
+                 leaves unstated, none where that is unstated too, as every card \
+                 (next_card_padding)",
             ),
             ("controls gap", "layout.widget_gap, none where unstated"),
-            (
-                "title",
-                font_row("defaults.font", &resolved.defaults.font).as_str(),
-            ),
-            (
-                "controls",
-                font_row("button.font", &resolved.button.font).as_str(),
-            ),
-            ("controls' min size", button_min_size_row(resolved).as_str()),
+            ("title", title_s.as_str()),
+            ("controls", controls_s.as_str()),
+            ("controls' min size", controls_min_s.as_str()),
         ],
         &[
             (
@@ -17979,7 +17982,10 @@ fn layout_header_height(resolved: &ResolvedTheme, a11y: &AccessibilityPreference
 /// The Widget Info of the Layout page's table.
 fn table_info(state: &State) -> String {
     let resolved = &state.current_resolved;
-    let line_width_s = format!("{:.0}px", resolved.separator.line_width);
+    let line_width_s = format!(
+        "{:.0}px, separator.thickness",
+        state.next_shown().separator.thickness
+    );
     let header_height_s = match (
         native_theme_iced::list_header_height(resolved),
         layout_header_height(resolved, &state.accessibility),
@@ -18061,22 +18067,25 @@ fn table_info(state: &State) -> String {
 /// other widgets rather than paint a control.
 fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
-    let sep = &resolved.separator;
-    let sp_th = &resolved.splitter;
+    let next = state.next_shown();
+    let typography = &next.typography;
+    let gap = Gaps::from_next(&next.layout);
+    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let thickness = next.separator.thickness;
+    let divider = || rule::horizontal(thickness).style(styles::rule(resolved));
+    let split_width = next.splitter.divider_width;
     // The panes and their title bars are drawn as cards, and padded as every
-    // card is ([`card_padding`]).
-    let card_pad = card_padding(resolved, &state.layout);
+    // card is, as the Basic card on the installed 0.8.0 theme
+    // ([`next_card_padding`]); their colours and corners still
+    // `styles::container_card`'s.
+    let card_pad = next_card_padding(next);
 
-    let header = section_header(
+    let header = next_section_header(
         "Layout Widgets",
         "Grid, PaneGrid and Table: the modules that arrange other widgets",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
     // ---- Grid: the platform's own colors, four to a row ----
@@ -18098,12 +18107,12 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     let grid_demo = hoverable(
         UnlistedKey::Grid,
         column![
-            text("Grid (cells in columns)").role(section_title(ts), resolved, a11y),
+            title("Grid (cells in columns)"),
             text(
                 "iced_widget::grid distributes its children over a fixed number of \
                  columns. Here: eight of the colours ResolvedDefaults names."
             )
-            .body(resolved, a11y),
+            .next_body(next),
             probe(
                 probes::LAYOUT_GRID,
                 Fill,
@@ -18145,9 +18154,13 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
             2 => Some(ids[1]),
             _ => None,
         };
-        // Each control at least `button.min_width` by `button.min_height`, as
-        // the Buttons page's buttons are.
-        let btn_min = native_theme_iced::button_content_min_size(resolved);
+        // Each control laid out as the Buttons page's push buttons, on the
+        // installed 0.8.0 theme: its label `button.label(NONE)`, at least
+        // [`next_button_floor`], padded by [`next_button_padding`]; their
+        // colours still the 0.7.2 styles'.
+        let button_label = next.button.label(WidgetState::NONE);
+        let btn_min = next_button_floor(next);
+        let button_pad = next_button_padding(next);
         // The first pane's controls, where the tests measure them.
         let [split_vertical, split_horizontal, close] =
             probes::LAYOUT_PANE_BUTTONS.map(|(id, _)| id);
@@ -18162,51 +18175,46 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
             probed_control(
                 split_vertical,
                 button(at_least(
-                    text("split |").typeset(&resolved.button.font, a11y),
+                    text("split |").next_text(&button_label, typography),
                     btn_min
                 ))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Vertical, pane))
                 .style(styles::button(resolved))
-                .padding(native_theme_iced::button_padding(resolved)),
+                .padding(button_pad),
             ),
             probed_control(
                 split_horizontal,
                 button(at_least(
-                    text("split —").typeset(&resolved.button.font, a11y),
+                    text("split —").next_text(&button_label, typography),
                     btn_min
                 ))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Horizontal, pane))
                 .style(styles::button(resolved))
-                .padding(native_theme_iced::button_padding(resolved)),
+                .padding(button_pad),
             ),
             probed_control(
                 close,
                 button(at_least(
-                    text("close").typeset(&resolved.button.font, a11y),
+                    text("close").next_text(&button_label, typography),
                     btn_min
                 ))
                 .on_press(Message::PaneClosed(pane))
                 .style(styles::button_danger(resolved))
-                .padding(native_theme_iced::button_padding(resolved)),
+                .padding(button_pad),
             ),
         ]
         .spacing(gap.widget);
         // The title on its controls' labels' centre line, as iced lays both
         // out at the bar's top (pane_grid/title_bar.rs:275-345): each in a
         // box as tall as the taller of a control, a button's padding round
-        // one line of its label at iced's own line height
-        // (`LineHeight::default`, the labels set none), or
-        // `button.min_height` where that is taller, and the title's own
-        // line; the title inside the button's padding above and below, so a
-        // padding the theme states unequal (macos-monterey's 1 and 3) moves
-        // it as it moves the labels, which `at_least` centres between them.
-        let button_pad = native_theme_iced::button_padding(resolved);
-        let label_size = scaled_text_size(resolved.button.font.size, a11y);
-        let control_height = (button_pad.y()
-            + f32::from(text::LineHeight::default().to_absolute(label_size.into())))
-        .max(resolved.button.min_height);
-        let title_height = scaled_text_size(resolved.defaults.font.size, a11y)
-            * native_theme_iced::line_height(resolved);
+        // its label's line box ([`next_line_box`]), at least the floor's
+        // height and the padding, and the title's own line box inside that
+        // padding; the title inside the button's padding above and below,
+        // so a padding the theme states unequal moves it as it moves the
+        // labels, which `at_least` centres between them.
+        let control_height = (button_pad.y() + next_line_box(typography, &button_label))
+            .max(btn_min.height + button_pad.y());
+        let title_height = button_pad.y() + next_line_box(typography, &typography.body);
         let bar_line = control_height.max(title_height);
         let controls = container(controls)
             .height(Length::Fixed(bar_line))
@@ -18216,7 +18224,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
             None => controls.into(),
         };
 
-        let title = container(text(title).body(resolved, a11y))
+        let title = container(text(title).next_body(next))
             .padding(Padding::ZERO.top(button_pad.top).bottom(button_pad.bottom))
             .height(Length::Fixed(bar_line))
             .align_y(iced::Center);
@@ -18226,14 +18234,15 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
             .padding(card_pad)
             .style(styles::container_card(resolved));
 
-        let body = column![
-            text(if focused {
+        let body = column![next_caption_text(
+            state,
+            if focused {
                 "Focused. Drag the title bar onto another pane to move it."
             } else {
                 "Drag the split between the panes to resize."
-            })
-            .role(&ts.caption, resolved, a11y),
-        ]
+            },
+            None,
+        )]
         .spacing(gap.widget)
         .padding(card_pad)
         .width(Fill)
@@ -18249,21 +18258,21 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     })
     .width(Fill)
     .height(Length::Fixed(220.0))
-    .spacing(sp_th.divider_width)
+    .spacing(split_width)
     .on_click(Message::PaneClicked)
     .on_drag(Message::PaneDragged)
-    .on_resize(sp_th.divider_width, Message::PaneResized)
+    .on_resize(split_width, Message::PaneResized)
     .style(styles::pane_grid(resolved));
 
     let pane_demo = hoverable(
         UnlistedKey::PaneGrid,
         column![
-            text("PaneGrid (split, drag and resize)").role(section_title(ts), resolved, a11y),
+            title("PaneGrid (split, drag and resize)"),
             text(
                 "Split a pane, drag its title bar onto another one, or drag the \
                  divider between two panes."
             )
-            .body(resolved, a11y),
+            .next_body(next),
             probe(probes::LAYOUT_PANES, Fill, panes),
         ]
         .spacing(gap.widget)
@@ -18377,15 +18386,15 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     )
     .padding_x(0.0)
     .padding_y(0.0)
-    .separator_x(sep.line_width)
-    .separator_y(sep.line_width)
+    .separator_x(thickness)
+    .separator_y(thickness)
     .width(Fill);
 
     let table_demo = hoverable(
         UnlistedKey::Table,
         column![
-            text("Table (columns and rows)").role(section_title(ts), resolved, a11y),
-            text("The four typographic roles this theme resolves:").body(resolved, a11y),
+            title("Table (columns and rows)"),
+            text("The four typographic roles this theme resolves:").next_body(next),
             probe(probes::LAYOUT_TABLE, Length::Fill, scale_table),
         ]
         .spacing(gap.widget)
@@ -18395,9 +18404,9 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     column![
         header,
         grid_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        divider(),
         pane_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        divider(),
         table_demo,
     ]
     .spacing(gap.section)
@@ -30046,6 +30055,110 @@ mod tests {
         }
     }
 
+    /// The Layout page lays itself out on the installed 0.8.0 theme
+    /// ([`view_layout`]): kde-breeze with, on the 0.8.0 theme only, a card
+    /// padded 9 px inside a 2 px stroke, a body on a 23 px line, a 19 px
+    /// caption on a 29 px line, a 15 px widget gap, a 21 px section gap, a
+    /// 4 px separator and a 9 px split lays the first group's title
+    /// 15 + 4 + 21 px under the header's description, each pane's title
+    /// 23 px tall, each pane's note 29 tall and 11 px in from its body's
+    /// left edge, and the two panes' bodies 9 px apart.
+    #[test]
+    fn the_layout_page_lays_out_on_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.card.rules]]\n\
+             container.padding = { top = 9.0, right = 9.0, bottom = 9.0, left = 9.0 }\n\
+             container.stroke = { width = 2.0, color = \"#13579b\" }\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Layout);
+        state.side_panel_visible = false;
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.typography.body.line_height = 23.0;
+            r.typography.body.stated = r.typography.body.stated.union(TextStated::LINE_HEIGHT);
+            if let Some(caption) = r.typography.caption.as_mut() {
+                caption.size_px = 19.0;
+                caption.line_height = 29.0;
+                caption.stated = caption.stated.union(TextStated::LINE_HEIGHT);
+            }
+            r.layout.widget_gap = Some(15.0);
+            r.layout.section_gap = Some(21.0);
+            r.separator.thickness = 4.0;
+            r.splitter.divider_width = 9.0;
+        });
+        let next = state.next_shown();
+        let old = &state.current_resolved;
+        if native_theme_iced::next::text_scale(next)
+            .caption
+            .line_height
+            != 29.0
+            || next_card_padding(next).left != 11.0
+            || old.card.border.padding.left == Some(9.0)
+            || old.defaults.font.size * old.defaults.line_height == 23.0
+            || state.layout.widget_gap == Some(15.0)
+            || state.layout.section_gap == Some(21.0)
+            || old.separator.line_width == 4.0
+            || old.splitter.divider_width == 9.0
+        {
+            return Err("the splice states 0.7.2's sizes, or no caption".into());
+        }
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let mut ui = interface(&state);
+        let bodies = probes::LAYOUT_PANE_BODIES.map(|id| probe_bounds(&mut ui, id));
+        let found = texts(&mut ui);
+        drop(ui);
+        let at = |label: &str| {
+            found
+                .iter()
+                .find(|(content, _)| content.starts_with(label))
+                .map(|(_, bounds)| *bounds)
+        };
+        match (
+            at("Grid, PaneGrid and Table: the modules that arrange other widgets"),
+            at("Grid (cells in columns)"),
+        ) {
+            (Some(description), Some(title))
+                if near(
+                    title.y - (description.y + description.height),
+                    15.0 + 4.0 + 21.0,
+                ) => {}
+            pair => faults.push(format!("the description and the first title: {pair:?}")),
+        }
+        for label in ["Pane 1", "Pane 2"] {
+            match at(label) {
+                Some(title) if near(title.height, 23.0) => {}
+                other => faults.push(format!("{label}'s title: {other:?}")),
+            }
+        }
+        for body in bodies {
+            let note = found
+                .iter()
+                .find(|(content, bounds)| {
+                    (content.starts_with("Drag the split") || content.starts_with("Focused."))
+                        && body.contains(bounds.center())
+                })
+                .map(|(_, bounds)| *bounds);
+            match note {
+                Some(note) if near(note.height, 29.0) && near(note.x - body.x, 11.0) => {}
+                other => faults.push(format!("the note in the pane body {body:?}: {other:?}")),
+            }
+        }
+        let [first, second] = bodies;
+        let apart = (second.x - (first.x + first.width)).max(second.y - (first.y + first.height));
+        if !near(apart, 9.0) {
+            faults.push(format!(
+                "the panes' bodies {first:?} and {second:?} are {apart}px apart"
+            ));
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
     /// The Selection page's radio and switch infos and the Display page's
     /// Theme Information name the installed 0.8.0 theme's text styles, which
     /// the pages draw their texts in: the radios' label row
@@ -30148,21 +30261,23 @@ mod tests {
 
     /// M9-155, round 2: the push buttons of the Display, Layout and Extra
     /// pages are laid out at the minimum size the theme states, as the
-    /// Buttons page's are: the four tooltip buttons at the installed 0.8.0
-    /// theme's (`button.body(NONE).min_size`, each axis it states, the
-    /// Tooltip info naming it), and, at the 0.7.2 theme's
-    /// (`button.min_width` and `.min_height`), the first pane's three controls and, in the
-    /// `iced_aw` build, the card's Dismiss and the button that brings the
-    /// card back; and each page's Widget Info names the minimum. kde-breeze
-    /// states 82 by 32, which "close" and "Dismiss" fall short of; windows-11
-    /// 64 by 32.
+    /// Buttons page's are: the four tooltip buttons and the first pane's
+    /// three controls at the installed 0.8.0 theme's
+    /// (`button.body(NONE).min_size`, each axis it states, the Tooltip and
+    /// PaneGrid infos naming it), and, at the 0.7.2 theme's
+    /// (`button.min_width` and `.min_height`), in the `iced_aw` build, the
+    /// card's Dismiss and the button that brings the card back, the Card
+    /// info naming it. kde-breeze states 82 by 32, which "close" and
+    /// "Dismiss" fall short of; windows-11 64 by 32.
     #[test]
     fn the_other_pages_push_buttons_take_the_stated_minimum_size() {
         let mut faults = Vec::new();
         for preset in ["kde-breeze", "windows-11"] {
             let mut state = loaded(preset, false);
             state.side_panel_visible = false;
+            #[cfg(feature = "iced_aw")]
             let r = state.current_resolved.clone();
+            #[cfg(feature = "iced_aw")]
             let under = |what: &str, button: Rectangle| {
                 (button.width < r.button.min_width - 0.01
                     || button.height < r.button.min_height - 0.01)
@@ -30180,18 +30295,20 @@ mod tests {
             state.active_tab = Tab::Display;
             let next = state.next_shown().clone();
             let [min_width, min_height] = next.button.body(WidgetState::NONE).min_size;
-            let mut ui = interface(&state);
-            for id in probes::DISPLAY_TOOLTIPS {
-                let button = probe_bounds(&mut ui, id);
-                if min_width.is_some_and(|w| button.width < w - 0.01)
-                    || min_height.is_some_and(|h| button.height < h - 0.01)
-                {
-                    faults.push(format!(
-                        "{preset}: {id} is {} x {}px, under button.body(NONE).min_size \
+            let under_next = |what: &str, button: Rectangle| {
+                (min_width.is_some_and(|w| button.width < w - 0.01)
+                    || min_height.is_some_and(|h| button.height < h - 0.01))
+                .then(|| {
+                    format!(
+                        "{preset}: {what} is {} x {}px, under button.body(NONE).min_size \
                          {min_width:?} x {min_height:?}",
                         button.width, button.height
-                    ));
-                }
+                    )
+                })
+            };
+            let mut ui = interface(&state);
+            for id in probes::DISPLAY_TOOLTIPS {
+                faults.extend(under_next(id, probe_bounds(&mut ui, id)));
             }
             drop(ui);
             let want = format!("buttons' min size: {}", next_button_min_size_row(&next));
@@ -30202,8 +30319,8 @@ mod tests {
             state.active_tab = Tab::Layout;
             let mut ui = interface(&state);
             // The title bar's line, which the controls are centred in, holds
-            // them where `button.min_height` makes them taller than their
-            // label and padding.
+            // them where `button.body(NONE).min_size[1]` makes them taller
+            // than their label and padding.
             let bar = probe_bounds(&mut ui, probes::LAYOUT_PANE_CONTROLS[0]);
             for (id, label) in probes::LAYOUT_PANE_BUTTONS {
                 let control = probe_bounds(&mut ui, id);
@@ -30213,9 +30330,16 @@ mod tests {
                         control.height, bar.height
                     ));
                 }
-                faults.extend(under(label, control));
+                faults.extend(under_next(label, control));
             }
             drop(ui);
+            let want = format!("controls' min size: {}", next_button_min_size_row(&next));
+            if !pane_grid_info(&state)
+                .lines()
+                .any(|line| line.trim() == want)
+            {
+                faults.push(format!("{preset}: the PaneGrid info does not say {want:?}"));
+            }
 
             #[cfg(feature = "iced_aw")]
             {
@@ -30235,20 +30359,15 @@ mod tests {
                 ));
                 drop(ui);
                 state.aw_card_open = true;
-            }
-
-            let want = format!(
-                "min size: {:.0} x {:.0}px, button.min_width x button.min_height",
-                r.button.min_width, r.button.min_height
-            );
-            let infos = [
-                ("PaneGrid", pane_grid_info(&state)),
-                #[cfg(feature = "iced_aw")]
-                ("Card", aw_card_info(&state)),
-            ];
-            for (name, info) in infos {
-                if !info.lines().any(|line| line.contains(&want)) {
-                    faults.push(format!("{preset}: the {name} info does not say {want:?}"));
+                let want = format!(
+                    "min size: {:.0} x {:.0}px, button.min_width x button.min_height",
+                    r.button.min_width, r.button.min_height
+                );
+                if !aw_card_info(&state)
+                    .lines()
+                    .any(|line| line.contains(&want))
+                {
+                    faults.push(format!("{preset}: the Card info does not say {want:?}"));
                 }
             }
         }
