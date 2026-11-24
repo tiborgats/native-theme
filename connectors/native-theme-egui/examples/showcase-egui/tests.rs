@@ -1629,6 +1629,13 @@ fn open_page_under_at(
         prefs.text_scaling_factor = factor;
         harness.state_mut().settings.prefs = Some(prefs);
     }
+    install_under(&mut harness, theme, preset);
+    harness
+}
+
+/// `preset` installed into `harness` through the Theme row's path, in `theme`'s mode, as
+/// [`open_page_under`] installs it.
+fn install_under(harness: &mut Harness<'static, App>, theme: egui::Theme, preset: &str) {
     let ctx = harness.ctx.clone();
     let mode = match theme {
         egui::Theme::Light => ModeChoice::Light,
@@ -1640,7 +1647,6 @@ fn open_page_under_at(
     harness.run_steps(4);
     assert_eq!(harness.state().theme_error, None, "{preset} installs");
     assert_eq!(harness.ctx.theme(), theme, "{preset} is drawn in {theme:?}");
-    harness
 }
 
 /// [`open_page_under`], then the patch `patch` makes of the installed 0.8.0 theme of `theme`'s
@@ -2080,32 +2086,35 @@ fn the_context_menus_target_is_the_base_style_and_its_menu_the_menu_role() {
     );
 }
 
-/// Under a preset that states no `button.checked_background`, the Basic page's "On" toggle is
-/// filled from another leaf (`pages/basic.rs`, `buttons`: `button.active_background`, else
-/// `button.hover_background`), and its Widget Info says which under *Not themeable*; its text
-/// colour likewise, where `button.checked_text_color` is unstated (M9-111).
+/// Under a preset whose 0.8.0 theme states no `button.body(CHECKED).fill`, the Basic page's "On"
+/// toggle is filled from another home (`pages::basic::toggle_on`: `button.body(PRESSED).fill`,
+/// else `button.body(HOVER).fill`), and its Widget Info says which under *Not themeable*; its
+/// text colour likewise, where `button.label(CHECKED).color` is unstated (M9-111).
 #[test]
-fn the_toggle_that_is_on_names_the_leaf_its_fill_is_drawn_in() {
-    let prefs = AccessibilityPreferences::default();
-    // The platform presets of the 0.8.0 model, installed through the Theme row's path on any
-    // platform: no Linux one leaves `button.checked_background` unstated.
-    let (key, t) = native_theme::next::Preset::ALL
+fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() {
+    use crate::pages::basic::toggle_on;
+    use native_theme::next::{Preset, Theme, ThemeContext};
+    let own = egui::Visuals::light().widgets.active;
+    let (key, on) = Preset::ALL
         .iter()
-        .map(|preset| preset.as_str())
-        .find_map(|key| {
-            let (_, t) = from_preset(key, false, &prefs).ok()?;
-            t.button.checked_background.is_none().then_some((key, t))
+        .find_map(|preset| {
+            let r = Theme::preset(*preset).resolve(&ThemeContext::light());
+            let on = toggle_on(Some(&r), &own);
+            on.fill_from.is_some().then_some((preset.as_str(), on))
         })
-        .expect("a preset offered here states no button.checked_background");
-    let fill = if t.button.active_background.is_some() {
-        "button.active_background"
-    } else {
-        "button.hover_background"
-    };
+        .expect("a preset offered here states no button.body(CHECKED).fill");
+    let fill = on.fill_from.unwrap_or_default();
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, key);
-    let ctx = harness.ctx.clone();
-    harness.state_mut().set_mode(ModeChoice::Light, &ctx);
-    harness.run_steps(4);
+    let installed = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .map(|r| toggle_on(Some(r), &own));
+    assert_eq!(
+        installed.as_ref().map(|on| on.fill_from),
+        Some(on.fill_from),
+        "{key}: the installed theme's toggle"
+    );
     let pos = centre_of(&harness, "toggle button (on)");
     hover_and_settle(&mut harness, pos);
     let shown = harness
@@ -2130,14 +2139,78 @@ fn the_toggle_that_is_on_names_the_leaf_its_fill_is_drawn_in() {
             .any(|line| line.contains(unstated) && line.contains(drawn))
     };
     assert!(
-        names("button.checked_background", fill),
+        names("button.body(CHECKED).fill", fill),
         "{key}: no Not themeable line says the fill is {fill}: {lines:?}"
     );
     assert_eq!(
-        names("button.checked_text_color", "button.active_text_color"),
-        t.button.checked_text_color.is_none(),
+        on.text_from
+            .is_some_and(|from| names("button.label(CHECKED).color", from)),
+        on.text_from.is_some(),
         "{key}: the text colour's line: {lines:?}"
     );
+}
+
+/// `toggle_on` asks each home with one state flag and falls back in order: a stated
+/// `button.body(CHECKED).fill` and `button.label(CHECKED).color` are drawn and named nowhere; a
+/// theme stating neither takes the pressed fill and text; with no 0.8.0 theme, egui's own
+/// held-down button's, named so.
+#[test]
+fn the_toggle_takes_the_checked_then_the_pressed_colours() -> Result<(), String> {
+    use crate::pages::basic::toggle_on;
+    use native_theme::next::{
+        ButtonRule, Paint, PartPatch, Preset, TextPatch, Theme, ThemeContext, ThemePatch,
+        WidgetState,
+    };
+    let own = egui::Visuals::light().widgets.active;
+    let none = toggle_on(None, &own);
+    assert_eq!(
+        (none.fill, none.text),
+        (own.weak_bg_fill, own.fg_stroke.color)
+    );
+    assert!(none.fill_from.is_some() && none.text_from.is_some());
+    let magenta = native_theme::next::Color::from_hex("#ff00ff").map_err(|e| e.to_string())?;
+    let patch = ThemePatch::new().button(
+        ButtonRule::new()
+            .states(WidgetState::CHECKED)
+            .body(PartPatch::new().fill(Paint::Solid(magenta)))
+            .label(TextPatch::new().color(magenta)),
+    );
+    let mut checked = 0;
+    for preset in Preset::ALL {
+        let r = Theme::preset(*preset).resolve(&ThemeContext::light());
+        let stock = toggle_on(Some(&r), &own);
+        if stock.fill_from.is_some() {
+            let pressed =
+                native_theme_egui::next::state_fill_of(&r.button.body(WidgetState::PRESSED));
+            assert_eq!(
+                (pressed.is_some(), stock.fill_from),
+                (true, Some("button.body(PRESSED).fill")),
+                "{preset:?}: an unstated checked fill takes the pressed one"
+            );
+            assert_eq!(pressed, Some(stock.fill), "{preset:?}");
+        } else {
+            checked += 1;
+        }
+        let mut patched = r.clone();
+        patched.apply_patch(&patch);
+        let on = toggle_on(Some(&patched), &own);
+        let want = egui::Color32::from_rgb(255, 0, 255);
+        assert_eq!(
+            on,
+            crate::pages::basic::ToggleOn {
+                fill: want,
+                fill_from: None,
+                text: want,
+                text_from: None,
+            },
+            "{preset:?}: the stated checked colours"
+        );
+    }
+    assert!(
+        checked < Preset::ALL.len(),
+        "every preset states a checked fill: the pressed fallback is not reached"
+    );
+    Ok(())
 }
 
 /// A radio button and a check box take no selected flag of their own: the checked look is
@@ -4404,13 +4477,15 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
         .old_resolved(egui::Theme::Light)
         .button
         .min_width;
-    let (harness, r) =
-        open_patched(Page::Buttons, egui::Theme::Light, "kde-breeze", |r| {
+    let wider =
+        |r: &native_theme::next::ResolvedTheme| {
             let [width, _] = r.button.body(WidgetState::NONE).min_size;
             Some(ThemePatch::new().button(
                 ButtonRule::new().body(PartPatch::new().min_size([Some(1.5 * width?), None])),
             ))
-        })?;
+        };
+    let (basic, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", wider)?;
+    let (harness, r) = open_patched(Page::Buttons, egui::Theme::Light, "kde-breeze", wider)?;
     let [width, _] = r.button.body(WidgetState::NONE).min_size;
     let width = width.ok_or("the patch states no button.body(NONE).min_size[0]")?;
     assert!(
@@ -4436,6 +4511,20 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
             "{kind} is {rect:?}, narrower than the patched button.body(NONE).min_size[0] {width}"
         );
     }
+    for kind in [
+        "button (enabled)",
+        "button (suggested action)",
+        "button (disabled)",
+        "tooltip button",
+        "toggle button (on)",
+    ] {
+        let rect = rect_of(&basic, kind)?;
+        assert!(
+            rect.width() >= width - 0.01,
+            "Basic: {kind} is {rect:?}, narrower than the patched button.body(NONE).min_size[0] \
+             {width}"
+        );
+    }
 
     let plain = open_page_under(Page::Inputs, egui::Theme::Light, "kde-breeze");
     let old_height = plain
@@ -4444,13 +4533,15 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
         .old_resolved(egui::Theme::Light)
         .input
         .min_height;
-    let (harness, r) =
-        open_patched(Page::Inputs, egui::Theme::Light, "kde-breeze", |r| {
+    let taller =
+        |r: &native_theme::next::ResolvedTheme| {
             let [_, height] = r.input.field(WidgetState::NONE).min_size;
             Some(ThemePatch::new().input(
                 InputRule::new().field(PartPatch::new().min_size([None, Some(2.0 * height?)])),
             ))
-        })?;
+        };
+    let (basic, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", taller)?;
+    let (harness, r) = open_patched(Page::Inputs, egui::Theme::Light, "kde-breeze", taller)?;
     let [_, height] = r.input.field(WidgetState::NONE).min_size;
     let height = height.ok_or("the patch states no input.field(NONE).min_size[1]")?;
     assert!(
@@ -4473,6 +4564,19 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
         assert!(
             rect.height() >= height - 0.01,
             "{kind} is {rect:?}, under the patched input.field(NONE).min_size[1] {height}"
+        );
+    }
+    for kind in [
+        "TextEdit (hint)",
+        "TextEdit (single line)",
+        "TextEdit (disabled)",
+        "TextEdit (focused)",
+        "DragValue",
+    ] {
+        let rect = rect_of(&basic, kind)?;
+        assert!(
+            rect.height() >= height - 0.01,
+            "Basic: {kind} is {rect:?}, under the patched input.field(NONE).min_size[1] {height}"
         );
     }
     Ok(())
@@ -8416,20 +8520,21 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() {
 /// The Basic page's dialog default button is drawn in the state of its previous response
 /// (`default_button`'s per-state looks): under kde-breeze light, hovered, its frame is
 /// `hover_stroke` over its own `fill`; pressed, its frame is `hover_stroke` over the button
-/// role's pressed fill, never its own. With `button.hover_border_color` unstated, `hover_stroke`
-/// is not `focus_stroke`, and the hovered button is drawn in the first. Under adwaita light,
-/// whose theme gives the default button no look of its own, it is the selected (primary)
-/// button, filled with `button.primary_background` at rest. kde-breeze is installed by the
-/// test, since `--theme` takes only the platform's presets.
+/// role's pressed fill (`button.body(PRESSED).fill`), never its own. Under a patched hover frame
+/// (`button.body(HOVER).stroke`), which no 0.7.2 theme states, `hover_stroke` is that frame, not
+/// `focus_stroke`, and the hovered button is drawn in it. Under adwaita light, whose 0.8.0 theme
+/// gives the default button no look of its own, it is the selected (primary) button, filled with
+/// the primary button's fill at rest. The presets are installed by the test, since `--theme`
+/// takes only the platform's presets.
 #[test]
-fn the_dialog_default_button_is_drawn_in_its_state() {
+fn the_dialog_default_button_is_drawn_in_its_state() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, PartPatch, Stroke, StrokeAlign, ThemePatch, WidgetState,
+    };
     const KIND: &str = "button (dialog default)";
     let args = [("--theme", TEST_PRESET), ("--tab", "basic")];
-    let breeze = || edited_atlas("kde-breeze", |_, _| {});
     let mut probe = open(egui::Theme::Light, cli(&args));
-    let ctx = probe.ctx.clone();
-    probe.state_mut().adopt(&ctx, breeze());
-    probe.run_steps(4);
+    install_under(&mut probe, egui::Theme::Light, "kde-breeze");
     let Some(rect) = probe
         .state()
         .registry
@@ -8451,14 +8556,19 @@ fn the_dialog_default_button_is_drawn_in_its_state() {
                 _ => None,
             })
     };
-    // The pointer held over the button under `atlas`, pressed or not.
-    let held = |press: bool, atlas: native_theme_egui::ThemeAtlas| {
+    // The pointer held over the button under kde-breeze, with `patch` over its 0.8.0 themes
+    // where given (`OldAtlas::patched`), pressed or not.
+    let held = |press: bool, patch: Option<&native_theme::next::ThemePatch>| {
         let mut args = cli(&args);
         args.pointer = Some((rect.center().x as u16, rect.center().y as u16));
         args.press = press;
         let mut harness = open(egui::Theme::Light, args);
-        let ctx = harness.ctx.clone();
-        harness.state_mut().adopt(&ctx, atlas);
+        install_under(&mut harness, egui::Theme::Light, "kde-breeze");
+        if let Some(patch) = patch {
+            let patched = harness.state().atlas.patched(patch)?;
+            let ctx = harness.ctx.clone();
+            harness.state_mut().adopt_pair(&ctx, patched);
+        }
         for step in 0..16u32 {
             let ctx = harness.ctx.clone();
             let mut input = std::mem::take(harness.input_mut());
@@ -8467,17 +8577,18 @@ fn the_dialog_default_button_is_drawn_in_its_state() {
             *harness.input_mut() = input;
             harness.step();
         }
-        harness
+        Ok::<_, String>(harness)
     };
     let look = |harness: &Harness<'_, App>| {
-        let t = harness.state().atlas.old_resolved(egui::Theme::Light);
-        native_theme_egui::default_button(t)
+        harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .and_then(|r| native_theme_egui::next::default_button(r).ok().flatten())
     };
 
-    let hovered = held(false, breeze());
-    let Some(d) = look(&hovered) else {
-        panic!("kde-breeze light gives the default button no look of its own");
-    };
+    let hovered = held(false, None)?;
+    let d = look(&hovered).ok_or("kde-breeze light gives the default button no look of its own")?;
     assert_ne!(
         d.stroke, d.hover_stroke,
         "the hovered frame is not told apart"
@@ -8488,15 +8599,13 @@ fn the_dialog_default_button_is_drawn_in_its_state() {
         "hovered: the default button's fill and hover frame"
     );
 
-    let pressed = held(true, breeze());
-    let t = pressed.state().atlas.old_resolved(egui::Theme::Light);
-    let Some(active) = t
-        .button
-        .active_background
-        .map(native_theme_egui::convert::to_color32)
-    else {
-        panic!("kde-breeze light states no button.active_background");
-    };
+    let pressed = held(true, None)?;
+    let active = pressed
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .and_then(|r| native_theme_egui::next::state_fill_of(&r.button.body(WidgetState::PRESSED)))
+        .ok_or("kde-breeze light states no button.body(PRESSED).fill")?;
     assert_ne!(active, d.fill, "the pressed fill is not told apart");
     assert_eq!(
         drawn(&pressed),
@@ -8504,42 +8613,54 @@ fn the_dialog_default_button_is_drawn_in_its_state() {
         "pressed: the button role's pressed fill under the hover frame"
     );
 
-    let atlas = edited_atlas("kde-breeze", |_, t| t.button.hover_border_color = None);
-    let unstated = held(false, atlas);
-    let Some(d) = look(&unstated) else {
-        panic!("kde-breeze light without hover_border_color gives no default button");
-    };
+    // A hover frame of the 0.8.0 theme's own, which no 0.7.2 theme states: the hovered button
+    // is drawn in it, not in the focus frame.
+    let magenta = native_theme::next::Color::from_srgb8(255, 0, 255, 255);
+    let patch = ThemePatch::new().button(ButtonRule::new().states(WidgetState::HOVER).body(
+        PartPatch::new().stroke(Stroke::Uniform {
+            width: 3.0,
+            color: magenta,
+            align: StrokeAlign::Inside,
+        }),
+    ));
+    let patched = held(false, Some(&patch))?;
+    let d = look(&patched).ok_or("the patched kde-breeze gives no default button")?;
+    assert_eq!(
+        d.hover_stroke,
+        egui::Stroke::new(3.0, egui::Color32::from_rgb(255, 0, 255)),
+        "the patched hover frame"
+    );
     assert_ne!(
         d.hover_stroke, d.focus_stroke,
         "the hover frame is not told apart from the focus frame"
     );
     assert_eq!(
-        drawn(&unstated).map(|(_, stroke)| stroke),
+        drawn(&patched).map(|(_, stroke)| stroke),
         Some(d.hover_stroke),
-        "hovered, button.hover_border_color unstated: the hover frame, not the focus frame"
+        "hovered: the patched hover frame, not the focus frame"
     );
 
-    let mut adwaita = open(
-        egui::Theme::Light,
-        cli(&[("--theme", "adwaita"), ("--tab", "basic")]),
-    );
+    let mut adwaita = open_page_under(Page::Basic, egui::Theme::Light, "adwaita");
     adwaita.run_steps(4);
-    let Some(rect) = adwaita
+    let rect = adwaita
         .state()
         .registry
         .records()
         .iter()
         .find(|r| r.info.kind == KIND)
         .map(|r| r.rect)
-    else {
-        panic!("no {KIND} record under adwaita");
-    };
-    let t = adwaita.state().atlas.old_resolved(egui::Theme::Light);
-    assert_eq!(native_theme_egui::default_button(t), None);
-    let primary = native_theme_egui::convert::to_color32(t.button.primary_background);
+        .ok_or_else(|| format!("no {KIND} record under adwaita"))?;
+    let r = adwaita
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("adwaita: no 0.8.0 theme installed")?;
+    assert_eq!(native_theme_egui::next::default_button(r), Ok(None));
+    let primary = native_theme_egui::next::fill_of(&r.button.body(ButtonQuery::primary()))
+        .ok_or("adwaita states no primary fill")?;
     assert_ne!(
-        primary,
-        native_theme_egui::convert::to_color32(t.button.background_color),
+        Some(primary),
+        native_theme_egui::next::fill_of(&r.button.body(WidgetState::NONE)),
         "the primary fill is not told apart"
     );
     let fill = adwaita
@@ -8555,6 +8676,7 @@ fn the_dialog_default_button_is_drawn_in_its_state() {
         Some(primary),
         "adwaita: the selected (primary) button"
     );
+    Ok(())
 }
 
 /// A held pointer is moved there once and then left still, so the Basic page's tooltip, which

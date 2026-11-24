@@ -1603,13 +1603,6 @@ pub(crate) fn lined(
 /// [`lined`] on the 0.8.0 model: `text` one line box tall, the font's size times the installed
 /// 0.8.0 theme's line height (`next::line_height`, the body text's); without an installed
 /// 0.8.0 theme, the text as it is.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 pub(crate) fn next_lined(
     ui: &egui::Ui,
     text: impl Into<String>,
@@ -1661,6 +1654,13 @@ pub(crate) fn next_grown(
         return stated;
     }
     stated.max(line.ceil() + padding + rule)
+}
+
+/// A colour of the 0.8.0 model as egui's: its 8-bit sRGB channels with straight alpha,
+/// premultiplied, as the connector converts one (`native_theme_egui::next`, `to_color32`).
+pub(crate) fn next_color32(c: native_theme::next::Color) -> egui::Color32 {
+    let [r, g, b, a] = c.to_srgb8();
+    egui::Color32::from_rgba_unmultiplied(r, g, b, a)
 }
 
 /// The value `build` gives for the installed 0.8.0 theme the window shows
@@ -1715,7 +1715,7 @@ pub(crate) fn next_unstated_as(
     }
 }
 
-/// [`role_text`] on the 0.8.0 model: text in the installed 0.8.0 theme's text role `role`, its
+/// Text in the installed 0.8.0 theme's text role `role`, its
 /// size and line height through `next::text_role_font` and `next::text_role_line_height`, which
 /// the theme's resolve has scaled already, its weight through [`weighted_family`], in the text
 /// colour; without an installed 0.8.0 theme, egui's `Body` text.
@@ -1743,34 +1743,6 @@ pub(crate) fn next_role_text(
     };
     text.font(egui::FontId::new(size, family))
         .line_height(Some(line_height))
-}
-
-/// Text in one of the theme's text-scale roles (`text_scale.*`): its size and line height
-/// through `text_role_font` and `text_role_line_height`, its weight through
-/// [`weighted_family`], in the text colour. Without an installed atlas of the 0.7.2 model,
-/// egui's `Body` text.
-pub(crate) fn role_text(
-    ui: &egui::Ui,
-    role: native_theme_egui::TextRole,
-    text: impl Into<String>,
-) -> egui::RichText {
-    let colour = ui.visuals().text_color();
-    let Some(atlas) = crate::app::OldAtlas::from_ctx(ui.ctx()) else {
-        return egui::RichText::new(text).color(colour);
-    };
-    let t = atlas.old_resolved(ui.ctx().theme());
-    let prefs = atlas.accessibility();
-    let size = native_theme_egui::text_role_font(t, role, prefs).size;
-    let weight = native_theme_egui::text_role_weight(t, role);
-    egui::RichText::new(text)
-        .font(egui::FontId::new(
-            size,
-            weighted_family(ui, weight, t.defaults.font.weight),
-        ))
-        .line_height(Some(native_theme_egui::text_role_line_height(
-            t, role, prefs,
-        )))
-        .color(colour)
 }
 
 /// A row of tabs, as `tab_bar` draws it.

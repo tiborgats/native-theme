@@ -219,6 +219,36 @@ pub(crate) fn input_min_size(r: Option<&native_theme::next::ResolvedTheme>) -> e
     egui::vec2(0.0, height.unwrap_or_default())
 }
 
+/// The frame `build` (`next::input_frame` or `next::text_area_frame`) makes of the installed
+/// 0.8.0 theme `r` for the field `id`; `None`, egui's own frame, where the theme states none egui
+/// can take (`next::Unmapped`) or no 0.8.0 theme is installed.
+pub(crate) fn field_frame(
+    ui: &egui::Ui,
+    id: egui::Id,
+    r: Option<&native_theme::next::ResolvedTheme>,
+    build: fn(
+        &egui::Ui,
+        egui::Id,
+        &native_theme::next::ResolvedTheme,
+    ) -> native_theme_egui::next::Mapped<egui::Frame>,
+) -> Option<egui::Frame> {
+    r.and_then(|r| build(ui, id, r).ok())
+}
+
+/// A `TextEdit` in the frame [`field_frame`] gives, or in egui's own where it gives none.
+pub(crate) trait Framed {
+    fn framed(self, frame: Option<egui::Frame>) -> Self;
+}
+
+impl Framed for egui::TextEdit<'_> {
+    fn framed(self, frame: Option<egui::Frame>) -> Self {
+        match frame {
+            Some(frame) => self.frame(frame),
+            None => self,
+        }
+    }
+}
+
 /// A dialog extent the theme states, less the frame's own margins and stroke,
 /// floored at `0.0` and passed only when finite: `Ui::set_min_*` debug-assert a
 /// size of at least `0.0` (`egui/src/ui.rs:739-743`, `:749-753`), and

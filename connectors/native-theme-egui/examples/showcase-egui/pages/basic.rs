@@ -7,16 +7,16 @@
 
 use egui::Button;
 use egui::class::Classes;
-use egui::widget_style::{ButtonStyle, CheckboxStyle, StyleArgs, WidgetState};
+use egui::widget_style::{ButtonStyle, CheckboxStyle, StyleArgs, TextEditStyle, WidgetState};
 use native_theme::AccessibilityPreferences;
 use native_theme::icons::IconRole;
 use native_theme::icons::IconSet;
+use native_theme::next::WidgetState as NextState;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
-    Role, RoleVariant, Surface, TextRole, default_button, input_frame,
-    list_header_active_background, list_header_font, list_header_height,
-    list_header_hover_background, selection_inactive_background, selection_inactive_text_color,
-    text_area_frame,
+    Role, RoleVariant, Surface, TextRole, list_header_active_background, list_header_font,
+    list_header_height, list_header_hover_background, next, selection_inactive_background,
+    selection_inactive_text_color,
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
@@ -31,7 +31,7 @@ use native_theme_egui_widgets::spinner::Spinner;
 use native_theme_egui_widgets::switch::Switch;
 use native_theme_showcase_support::rows;
 
-use super::{DemoState, caption};
+use super::{DemoState, Framed, button_min_size, caption, field_frame, input_min_size};
 use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
@@ -242,7 +242,7 @@ fn group(
         9 => spinner(reg, ui),
         10 => segmented(reg, state, ui),
         11 => card(reg, atlas, ui),
-        12 => typography(reg, atlas, ui),
+        12 => typography(reg, ui),
         13 => separator(reg, ui),
         14 => progress_bar(reg, ui),
         15 => list_group(reg, state, atlas, ui),
@@ -482,7 +482,7 @@ fn text_button(
         // would wrap it to the room left (`TextWrapMode::Wrap`), where the row wraps before the
         // button instead (`wrap_before`).
         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-        let text = demo::lined(ui, text, egui::TextStyle::Button);
+        let text = demo::next_lined(ui, text, egui::TextStyle::Button);
         let r = ui.add_enabled(enabled, make(text.clone()).min_size(min));
         label = Some(button_label(ui, &r, text));
         r
@@ -533,12 +533,13 @@ fn remember_width(ui: &egui::Ui, key: &str, rect: egui::Rect) {
 /// further line where the column is too narrow for it (`horizontal_wrapped`), as the gpui
 /// (`flex_wrap`) and iced (`Row::wrap`) pages' rows wrap.
 fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
-    // `button.min_width`, which egui's `Button` never reads from the style: it raises only its
-    // height, to `interact_size.y` (`button.min_height` in the button scope), so the width is
-    // the application's, per call (connector spec §5.3, `Button::min_size`).
-    let min = egui::vec2(t.button.min_width, t.button.min_height);
+    // `button.body(NONE).min_size[0]`, which egui's `Button` never reads from the style: it
+    // raises only its height, to `interact_size.y`, the button scope's, so the width is the
+    // application's, per call (connector spec §5.3, `Button::min_size`); egui's own, none, where
+    // the theme states none.
+    let min = button_min_size(r);
     let plain = |text: egui::RichText| Button::new(text);
     let primary = |text: egui::RichText| Button::new(text).selected(true);
 
@@ -573,7 +574,7 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 }
                 tip.show(|ui| {
                     let text = demo::scoped(reg, ui, Role::Tooltip, normal, "tooltip text", |ui| {
-                        ui.label(demo::lined(ui, "A tooltip", egui::TextStyle::Body))
+                        ui.label(demo::next_lined(ui, "A tooltip", egui::TextStyle::Body))
                     });
                     reg.tag("basic.buttons.tooltip.bubble.text", &text);
                 })
@@ -584,25 +585,11 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
             reg.tag("basic.buttons.tooltip.bubble", &bubble);
         }
     });
-    // A toggle button: `Off` a button at rest, `On` the same button held on, in
-    // `button.checked_background` and `button.checked_text_color` (docs/platform-facts.md
-    // §2.3) — where the theme states none, the button role's pressed colours,
-    // `button.active_background` (its hover fill where it states none, §6.4) and
-    // `button.active_text_color` — per call: egui's `selected` flag would take the suggested
-    // action's `selection` colours.
-    // Each colour chosen once, with the leaf it is read from where that is not the checked one:
-    // the toggle is drawn in the colour and the note names the leaf, so the two cannot part.
-    let b = &t.button;
-    let (fill_instead, on_fill) = match (b.checked_background, b.active_background) {
-        (Some(fill), _) => (None, fill),
-        (None, Some(fill)) => (Some("button.active_background"), fill),
-        (None, None) => (Some("button.hover_background"), b.hover_background),
-    };
-    let (text_instead, on_text) = match b.checked_text_color {
-        Some(colour) => (None, colour),
-        None => (Some("button.active_text_color"), b.active_text_color),
-    };
-    let (on_fill, on_text) = (to_color32(on_fill), to_color32(on_text));
+    // A toggle button: `Off` a button at rest, `On` the same button held on, in the colours
+    // [`toggle_on`] picks, per call: egui's `selected` flag would take the suggested action's
+    // `selection` colours.
+    let on = toggle_on(r, &ui.visuals().widgets.active);
+    let (on_fill, on_text) = (on.fill, on.text);
     // A dialog's default button, the one Enter activates: where the theme gives it a look of its
     // own, per call, since `Button::fill` and `Button::stroke` override egui's on-hover effects,
     // in the state of its previous response, kept in the page's memory (focus before hover, as
@@ -613,7 +600,9 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         .ctx()
         .data(|d| d.get_temp::<(bool, bool, bool)>(state_key))
         .unwrap_or_default();
-    let look = default_button(t);
+    // `None`, the primary button, also where the theme states the look in a form egui cannot
+    // draw (`next::Unmapped`).
+    let look = r.and_then(|r| next::default_button(r).ok().flatten());
     ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
@@ -655,26 +644,96 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         }
         ui.ctx().data_mut(|d| d.insert_temp(state_key, now));
     });
-    // Where the theme states no checked colour, the leaf the toggle is drawn in instead.
-    if let Some(leaf) = fill_instead {
+    // Where the theme states no checked colour, what the toggle is drawn in instead.
+    if let Some(from) = on.fill_from {
         reg.note_element(
             "basic.buttons.toggle_on",
             "fill while on",
-            &format!("not stated by the theme (button.checked_background): {leaf}"),
+            &format!("not stated by the theme (button.body(CHECKED).fill): {from}"),
         );
     }
-    if let Some(leaf) = text_instead {
+    if let Some(from) = on.text_from {
         reg.note_element(
             "basic.buttons.toggle_on",
             "text colour while on",
-            &format!("not stated by the theme (button.checked_text_color): {leaf}"),
+            &format!("not stated by the theme (button.label(CHECKED).color): {from}"),
         );
+    }
+}
+
+/// The Basic page's toggle button while on, each colour with what it is read from where that is
+/// not the checked state's own home.
+#[derive(Debug, PartialEq)]
+pub(crate) struct ToggleOn {
+    pub(crate) fill: egui::Color32,
+    pub(crate) fill_from: Option<&'static str>,
+    pub(crate) text: egui::Color32,
+    pub(crate) text_from: Option<&'static str>,
+}
+
+/// The toggle button's colours while on, of the installed 0.8.0 theme `r`
+/// (docs/platform-facts.md §2.3), each asked with one state flag: the fill a rule states for
+/// `button.body(CHECKED)`, else the pressed one, `button.body(PRESSED)`, else the hovered one,
+/// `button.body(HOVER)`, as 0.7.2 fell back from `button.checked_background`; the text colour a
+/// rule states for `button.label(CHECKED)`, else `button.label(PRESSED)`'s. Each the theme leaves
+/// unstated, and both without an installed 0.8.0 theme, egui's own held-down button's, `own`
+/// (`widgets.active`): its `weak_bg_fill`, a `Button`'s fill, and its `fg_stroke` colour.
+pub(crate) fn toggle_on(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    own: &egui::style::WidgetVisuals,
+) -> ToggleOn {
+    use NextState as S;
+    let first = |homes: &[(S, &'static str)], read: &dyn Fn(S) -> Option<egui::Color32>| {
+        homes
+            .iter()
+            .enumerate()
+            .find_map(|(i, (state, home))| read(*state).map(|c| (c, (i > 0).then_some(*home))))
+    };
+    let (fill, fill_from) = r
+        .and_then(|r| {
+            first(
+                &[
+                    (S::CHECKED, "button.body(CHECKED).fill"),
+                    (S::PRESSED, "button.body(PRESSED).fill"),
+                    (S::HOVER, "button.body(HOVER).fill"),
+                ],
+                &|state| next::state_fill_of(&r.button.body(state)),
+            )
+        })
+        .unwrap_or((
+            own.weak_bg_fill,
+            Some("egui's own held-down button fill (widgets.active.weak_bg_fill)"),
+        ));
+    let (text, text_from) = r
+        .and_then(|r| {
+            first(
+                &[
+                    (S::CHECKED, "button.label(CHECKED).color"),
+                    (S::PRESSED, "button.label(PRESSED).color"),
+                ],
+                &|state| next::state_text_color_of(&r.button.label(state)),
+            )
+        })
+        .unwrap_or((
+            own.fg_stroke.color,
+            Some("egui's own held-down button text (widgets.active.fg_stroke)"),
+        ));
+    ToggleOn {
+        fill,
+        fill_from,
+        text,
+        text_from,
     }
 }
 
 /// The Checkboxes group.
 fn checkboxes(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    // The page's ground the disabled box fades over: `colors.window.background` of the installed
+    // 0.8.0 theme, egui's own panel fill where it states none or none is installed.
+    let ground = atlas
+        .next_shown(ui.ctx())
+        .and_then(|r| r.colors.window.background)
+        .map_or(ui.visuals().panel_fill, demo::next_color32);
     let normal = RoleVariant::Normal;
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
@@ -711,9 +770,8 @@ fn checkboxes(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         let mut value = checked;
         let mut parts = Vec::new();
         let response = demo::scoped(reg, ui, Role::Checkbox, variant, kind, |ui| {
-            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            let text = demo::next_lined(ui, label, egui::TextStyle::Body);
             let r = if !enabled {
-                let ground = to_color32(t.defaults.background_color);
                 ui.scope(|ui| {
                     // The check box faded as one over the page (the companion crate's rule,
                     // which its switch and radio button follow too).
@@ -755,7 +813,7 @@ fn radios(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
             normal
         };
         let r = demo::widget(reg, ui, Role::Checkbox, variant, "RadioButton", |ui| {
-            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            let text = demo::next_lined(ui, label, egui::TextStyle::Body);
             ui.add(RadioButton::new(selected, text))
         });
         reg.tag(id, &r);
@@ -796,7 +854,7 @@ fn switches(reg: &mut Registry, ui: &mut egui::Ui) {
         };
         let mut value = on;
         let r = demo::widget(reg, ui, Role::Switch, variant, kind, |ui| {
-            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            let text = demo::next_lined(ui, label, egui::TextStyle::Body);
             ui.add(Switch::new(&mut value).label(text).enabled(enabled))
         });
         reg.tag(id, &r);
@@ -806,36 +864,57 @@ fn switches(reg: &mut Registry, ui: &mut egui::Ui) {
 }
 
 /// A text field of the Basic page, built inside its `Role::Input` scope (`ui` is the scope's), so
-/// its frame is the style it paints in: the disabled field takes the disabled cell's
-/// `input.disabled_background`. `input.min_height` is a per-instance `min_size`, which a
-/// `TextEdit` never reads from the style: it is one row plus its margin tall, at least its
-/// `min_size` (connector spec §5.4); the row is centred in the height the minimum adds, as the
-/// platform centres a field's text.
+/// its frame is the style it paints in: the disabled field takes the disabled cell's fill.
+/// `input.field(NONE).min_size[1]` is a per-instance `min_size`, which a `TextEdit` never reads
+/// from the style: it is one row plus its margin tall, at least its `min_size` (connector spec
+/// §5.4); the row is centred in the height the minimum adds, as the platform centres a field's
+/// text. `frame` is [`field_frame`]'s, egui's own where it is `None`.
 fn field<'a>(
     text: &'a mut String,
     id: egui::Id,
-    ui: &egui::Ui,
-    t: &native_theme_egui::ResolvedTheme,
+    r: Option<&native_theme::next::ResolvedTheme>,
+    frame: Option<egui::Frame>,
 ) -> egui::TextEdit<'a> {
     egui::TextEdit::singleline(text)
         .desired_width(BASIC_WIDTH)
-        .min_size(egui::vec2(BASIC_WIDTH, t.input.min_height))
+        .min_size(egui::vec2(BASIC_WIDTH, input_min_size(r).y))
         .align(egui::Align2::LEFT_CENTER)
         .id(id)
-        .frame(input_frame(ui, id, t))
+        .framed(frame)
 }
 
 /// A `TextEdit` of `ui` lays each row out `row_height + extra_text_line_spacing` tall
 /// (`egui/src/widgets/text_edit/builder.rs:488-490`, `:512-514`); the connector writes the
-/// spacing only where the line box, the font's size times `defaults.line_height`, is taller
-/// than the font's own row (§6.15). Where the row is taller — a face whose row exceeds the
-/// theme's line box, Noto Sans (fontconfig's substitute for Inter) under catppuccin-mocha's 1.2
-/// — the spacing is the negative difference, written per field, so each row is one line box
-/// tall, as a label's is (`demo::lined`).
-fn line_box_rows(ui: &mut egui::Ui, t: &native_theme_egui::ResolvedTheme) {
+/// spacing only where the line box, the font's size times the installed 0.8.0 theme's line
+/// height (`next::line_height`), is taller than the font's own row (§6.15). Where the row is
+/// taller — a face whose row exceeds the theme's line box — the spacing is the negative
+/// difference, written per field, so each row is one line box tall, as a label's is
+/// (`demo::next_lined`). Without an installed 0.8.0 theme, egui's own spacing.
+fn line_box_rows(ui: &mut egui::Ui) {
+    let Some(line_height) = demo::next_value(ui, next::line_height) else {
+        return;
+    };
     let font = egui::FontSelection::Default.resolve(ui.style());
     let row = ui.fonts_mut(|f| f.row_height(&font));
-    ui.spacing_mut().extra_text_line_spacing = font.size * t.defaults.line_height - row;
+    ui.spacing_mut().extra_text_line_spacing = font.size * line_height - row;
+}
+
+/// The frame a `TextEdit` of `ui` draws in: `frame` where the page hands it one, else egui's own,
+/// the `TextEditStyle` of the scope at rest (`egui/src/widgets/text_edit/builder.rs`, which
+/// takes its `atom_layout.frame` where it is given none).
+fn drawn_frame(ui: &egui::Ui, frame: Option<egui::Frame>) -> egui::Frame {
+    frame.unwrap_or_else(|| {
+        ui.ctx()
+            .get_widget_style::<TextEditStyle>(&StyleArgs {
+                classes: &Classes::default(),
+                state: WidgetState::Inactive,
+                stack: ui.stack(),
+                style: ui.style(),
+                ctx: ui.ctx(),
+            })
+            .atom_layout
+            .frame
+    })
 }
 
 /// Where a `TextEdit` of `ui` laid `text` out: at the start of its frame's content, on the
@@ -852,7 +931,7 @@ fn field_text(
     let inner = inside(field.rect, frame.total_margin());
     let size = text_size(
         ui,
-        demo::lined(ui, text, egui::TextStyle::Body),
+        demo::next_lined(ui, text, egui::TextStyle::Body),
         egui::FontSelection::Default,
     );
     let top = if centred {
@@ -864,28 +943,26 @@ fn field_text(
 }
 
 /// A single-line field of the Basic page in `variant` of the input role, the element `id`: its
-/// text placed as `<id>.text`, `shown` the text it holds (or its hint).
+/// text placed as `<id>.text`, `shown` the text it holds (or its hint). `add` builds the field
+/// in the frame [`field_frame`] gives in the scope, `next::input_frame` of the installed 0.8.0
+/// theme `r`.
 fn text_field(
     reg: &mut Registry,
     ui: &mut egui::Ui,
     (id, kind, variant): (&str, &'static str, RoleVariant),
-    t: &native_theme_egui::ResolvedTheme,
+    r: Option<&native_theme::next::ResolvedTheme>,
     shown: &str,
-    add: impl FnOnce(&mut egui::Ui, egui::Id) -> egui::Response,
+    add: impl FnOnce(&mut egui::Ui, egui::Id, Option<egui::Frame>) -> egui::Response,
 ) -> egui::Response {
     let edit_id = ui.make_persistent_id(id);
     let mut text = None;
     let response = demo::scoped(reg, ui, Role::Input, variant, kind, |ui| {
-        line_box_rows(ui, t);
-        let r = add(ui, edit_id).accessible_name(kind);
-        text = Some(field_text(
-            ui,
-            &r,
-            &input_frame(ui, edit_id, t),
-            shown,
-            true,
-        ));
-        r
+        line_box_rows(ui);
+        let frame = field_frame(ui, edit_id, r, next::input_frame);
+        let field = add(ui, edit_id, frame).accessible_name(kind);
+        let frame = drawn_frame(ui, frame);
+        text = Some(field_text(ui, &field, &frame, shown, true));
+        field
     });
     reg.tag(id, &response);
     if let Some(text) = text {
@@ -897,19 +974,19 @@ fn text_field(
 /// Text inputs (the focused one their fourth row), the text area, the slider.
 /// The Text inputs group.
 fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
 
     heading(reg, ui, "basic.text_inputs.heading", "Text inputs");
     let kind = ("basic.text_inputs.placeholder", "TextEdit (hint)", normal);
-    text_field(reg, ui, kind, t, "Placeholder", |ui, id| {
-        let hint = demo::lined(ui, "Placeholder", egui::TextStyle::Body);
-        ui.add(field(&mut state.basic_hint, id, ui, t).hint_text(hint))
+    text_field(reg, ui, kind, r, "Placeholder", |ui, id, frame| {
+        let hint = demo::next_lined(ui, "Placeholder", egui::TextStyle::Body);
+        ui.add(field(&mut state.basic_hint, id, r, frame).hint_text(hint))
     });
     let kind = ("basic.text_inputs.filled", "TextEdit (single line)", normal);
     let shown = state.basic_text.clone();
-    text_field(reg, ui, kind, t, &shown, |ui, id| {
-        ui.add(field(&mut state.basic_text, id, ui, t))
+    text_field(reg, ui, kind, r, &shown, |ui, id, frame| {
+        ui.add(field(&mut state.basic_text, id, r, frame))
     });
     let kind = (
         "basic.text_inputs.disabled",
@@ -917,14 +994,14 @@ fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: 
         RoleVariant::Disabled,
     );
     let mut disabled = "Disabled".to_string();
-    text_field(reg, ui, kind, t, "Disabled", |ui, id| {
-        ui.add_enabled(false, field(&mut disabled, id, ui, t))
+    text_field(reg, ui, kind, r, "Disabled", |ui, id, frame| {
+        ui.add_enabled(false, field(&mut disabled, id, r, frame))
     });
     // A text field holding the keyboard focus from the start, so its focus border shows.
     let kind = ("basic.text_inputs.focused", "TextEdit (focused)", normal);
     let shown = state.basic_focused.clone();
-    let focused = text_field(reg, ui, kind, t, &shown, |ui, id| {
-        ui.add(field(&mut state.basic_focused, id, ui, t))
+    let focused = text_field(reg, ui, kind, r, &shown, |ui, id, frame| {
+        ui.add(field(&mut state.basic_focused, id, r, frame))
     });
     if !state.basic_focus_given {
         focused.request_focus();
@@ -932,28 +1009,30 @@ fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: 
     }
 }
 
-/// The Text area group.
+/// The Text area group: its frame `next::text_area_frame` of the installed 0.8.0 theme
+/// ([`field_frame`]), egui's own where the theme states none egui can take.
 fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.text_area.heading", "Text area");
     let id = ui.make_persistent_id("basic/area");
     let mut text = None;
     let kind = "TextEdit (multiline)";
     let area = demo::scoped(reg, ui, Role::Input, normal, kind, |ui| {
-        line_box_rows(ui, t);
-        let frame = text_area_frame(ui, id, t);
-        let r = ui
+        line_box_rows(ui);
+        let frame = field_frame(ui, id, r, next::text_area_frame);
+        let field = ui
             .add(
                 egui::TextEdit::multiline(&mut state.basic_area)
                     .desired_width(BASIC_WIDE)
                     .desired_rows(AREA_ROWS)
                     .id(id)
-                    .frame(frame),
+                    .framed(frame),
             )
             .accessible_name(kind);
-        text = Some(field_text(ui, &r, &frame, AREA_TEXT, false));
-        r
+        let frame = drawn_frame(ui, frame);
+        text = Some(field_text(ui, &field, &frame, AREA_TEXT, false));
+        field
     });
     reg.tag("basic.text_area.field", &area);
     if let Some(text) = text {
@@ -994,18 +1073,28 @@ fn progress_bar(reg: &mut Registry, ui: &mut egui::Ui) {
     place_parts(reg, ui, "basic.progress_bar.bar", &bar, &[("fill", "fill")]);
 }
 
+/// `combo_box.field(NONE).min_size[0]` of the installed 0.8.0 theme `r`, the drop-down's least
+/// width; `None` where it states none or none is installed.
+fn combo_min_width(r: Option<&native_theme::next::ResolvedTheme>) -> Option<f32> {
+    r.and_then(|r| {
+        let [width, _] = r.combo_box.field(NextState::NONE).min_size;
+        width
+    })
+}
+
 /// The Drop-down group: the companion crate's drop-down (docs/archive/todo_egui-widgets-spec.md §4.6),
 /// egui's own `ComboBox` in the combo-box scope, as tall as its text and padding make it, at
-/// least `combo_box.min_height`, where egui's square arrow box would make it taller.
+/// least `combo_box.field(NONE).min_size[1]`, where egui's square arrow box would make it taller.
 fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.drop_down.heading", "Drop-down");
     let current = FRUITS.get(state.basic_combo).copied().unwrap_or_default();
-    // `BASIC_WIDTH`, and at least `combo_box.min_width`, which egui's `ComboBox` never reads
-    // from the style: the width is the application's, per call, as the gpui page's select's
-    // refinement and the iced page's pick list take it.
-    let width = BASIC_WIDTH.max(t.combo_box.min_width);
+    // `BASIC_WIDTH`, and at least `combo_box.field(NONE).min_size[0]` of the installed 0.8.0
+    // theme, which egui's `ComboBox` never reads from the style: the width is the application's,
+    // per call, as the gpui page's select's refinement and the iced page's pick list take it;
+    // egui's own least width, none, where the theme states none.
+    let width = BASIC_WIDTH.max(combo_min_width(r).unwrap_or_default());
     let combo = demo::scoped_popup(
         reg,
         ui,
@@ -1014,7 +1103,7 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &m
         "ComboBox",
         |ui, modifier, row, reg| {
             let mut combo = ComboBox::from_id_salt("basic/combo")
-                .selected_text(demo::lined(ui, current, egui::TextStyle::Button))
+                .selected_text(demo::next_lined(ui, current, egui::TextStyle::Button))
                 .width(width);
             if let Some(modifier) = modifier {
                 combo = combo.popup_style(modifier);
@@ -1039,18 +1128,25 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &m
 /// The switches, the number input, the spinner, the segmented control, a card.
 /// The Number input group.
 fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let [_, height] = atlas
+        .next_shown(ui.ctx())
+        .map_or([None, None], |r| r.input.field(NextState::NONE).min_size);
     let normal = RoleVariant::Normal;
 
     // A number input: egui's `DragValue`, the number field egui has, in the input role's
-    // scope, `BASIC_WIDTH` wide and `input.min_height` tall (its `interact_size`, which
-    // `DragValue` sizes its button by, `egui/src/widgets/drag_value.rs`), stepping by 1. egui
-    // draws it as a button whose text a drag or a click edits: no step buttons.
+    // scope, `BASIC_WIDTH` wide and `input.field(NONE).min_size[1]` tall (its `interact_size`,
+    // which `DragValue` sizes its button by, `egui/src/widgets/drag_value.rs`), the scope's own
+    // height where the installed 0.8.0 theme states none, stepping by 1. egui draws it as a
+    // button whose text a drag or a click edits: no step buttons.
     heading(reg, ui, "basic.number_input.heading", "Number input");
     let shown = format!("{}", state.basic_number);
     let mut text = None;
     let number = demo::scoped(reg, ui, Role::Input, normal, "DragValue", |ui| {
-        ui.spacing_mut().interact_size = egui::vec2(BASIC_WIDTH, t.input.min_height);
+        let interact = &mut ui.spacing_mut().interact_size;
+        interact.x = BASIC_WIDTH;
+        if let Some(height) = height {
+            interact.y = height;
+        }
         // The field's frame as a text field's: `DragValue` is a `Button`, which pads by the
         // scope's `button_padding` with its stroke inside (`egui-0.37.0/src/theme/default_style.rs`,
         // `StyleProvider<ButtonStyle>`), as a plain `TextEdit` in the scope does
@@ -1095,7 +1191,7 @@ fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
         normal,
         "segmented control",
         |ui| {
-            let segments = SEGMENTS.map(|s| demo::lined(ui, s, egui::TextStyle::Button));
+            let segments = SEGMENTS.map(|s| demo::next_lined(ui, s, egui::TextStyle::Button));
             ui.add(SegmentedControl::new(&mut state.basic_segment, segments))
         },
     );
@@ -1170,7 +1266,7 @@ fn spinner(reg: &mut Registry, ui: &mut egui::Ui) {
     reg.tag("basic.spinner.indicator", &spinner);
 }
 
-/// One line of the Typography group in `role` (the base style's `Body`, `defaults.font`, for
+/// One line of the Typography group in `role` (the base style's `Body`, `typography.body`, for
 /// `None`), the element `id`.
 fn typography_line(
     reg: &mut Registry,
@@ -1180,20 +1276,20 @@ fn typography_line(
     id: &str,
 ) {
     let line = demo::base(reg, ui, "Label (typography)", |ui| match role {
-        Some(role) => ui.label(demo::role_text(ui, role, text)),
-        None => ui.label(demo::lined(ui, text, egui::TextStyle::Body)),
+        Some(role) => ui.label(demo::next_role_text(ui, role, text)),
+        None => ui.label(demo::next_lined(ui, text, egui::TextStyle::Body)),
     });
     reg.tag(id, &line);
 }
 
 /// The Typography group.
-fn typography(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+fn typography(reg: &mut Registry, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
 
     // One line in each of the theme's text roles: the text-scale roles through
-    // `demo::role_text`, the body in the base style's `Body` (`defaults.font`), the link in the
-    // link role, the monospace line in the base style's `Monospace` (`defaults.mono_font`).
+    // `demo::next_role_text`, the body in the base style's `Body` (`typography.body`), the link
+    // in the link role, the monospace line in the base style's `Monospace`
+    // (`typography.monospace`).
     heading(reg, ui, "basic.typography.heading", "Typography");
     typography_line(
         reg,
@@ -1208,7 +1304,7 @@ fn typography(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
     // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
     let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
-        let link = links::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
+        let link = links::link(ui, demo::next_lined(ui, "Link", egui::TextStyle::Body));
         ui.add(link)
     });
     reg.tag("basic.typography.link", &link);
@@ -1226,14 +1322,10 @@ fn typography(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     ] {
         typography_line(reg, ui, Some(role), text, id);
     }
-    // The line box `defaults.line_height` of the monospace font's size, as a body line's is.
+    // The line box of the monospace font's size at the theme's line height
+    // (`demo::next_lined`), as a body line's is.
     let mono = demo::base(reg, ui, "Label (monospace)", |ui| {
-        let size = egui::TextStyle::Monospace.resolve(ui.style()).size;
-        ui.label(
-            egui::RichText::new("Monospace")
-                .monospace()
-                .line_height(Some(size * t.defaults.line_height)),
-        )
+        ui.label(demo::next_lined(ui, "Monospace", egui::TextStyle::Monospace).monospace())
     });
     reg.tag("basic.typography.monospace", &mono);
 }
@@ -1446,26 +1538,40 @@ pub(crate) fn edit_look(
 }
 
 /// The Icons group's second row: the chosen set's open folder at the theme's three icon sizes,
-/// `defaults.icon_sizes`' small, toolbar and large, never another set's.
+/// `icons.sizes`' small, toolbar and large of the installed 0.8.0 theme `r`, never another set's;
+/// a size the theme states none of is not drawn, and a line names it.
 fn icons(
     reg: &mut Registry,
-    t: &native_theme_egui::ResolvedTheme,
+    r: Option<&native_theme::next::ResolvedTheme>,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
+    use native_theme_egui::icons::IconContext;
     let (set, icon_theme) = chosen;
-    let sizes = &t.defaults.icon_sizes;
+    let size = |context| r.and_then(|r| next::icon_size(r, context).ok());
+    let sizes = [
+        (size(IconContext::Small), "small", "basic.icons.small"),
+        (size(IconContext::Toolbar), "toolbar", "basic.icons.toolbar"),
+        (size(IconContext::Large), "large", "basic.icons.large"),
+    ];
+    let unstated: Vec<&str> = sizes
+        .iter()
+        .filter(|(size, _, _)| size.is_none())
+        .map(|(_, name, _)| *name)
+        .collect();
     ui.scope(|ui| {
         // One row, as tall as the largest icon, each icon centred on it: `ui.horizontal`
         // centres on the row's `interact_size.y` (`egui/src/ui.rs:2376-2379`).
-        ui.spacing_mut().interact_size.y = sizes.small.max(sizes.toolbar).max(sizes.large);
+        ui.spacing_mut().interact_size.y = sizes
+            .iter()
+            .filter_map(|(size, _, _)| *size)
+            .fold(0.0, f32::max);
         // Wrapping onto a further line where the column is too narrow for the three.
         ui.horizontal_wrapped(|ui| {
-            for (size, id) in [
-                (sizes.small, "basic.icons.small"),
-                (sizes.toolbar, "basic.icons.toolbar"),
-                (sizes.large, "basic.icons.large"),
-            ] {
+            for (size, _, id) in sizes {
+                let Some(size) = size else {
+                    continue;
+                };
                 let Some(image) =
                     demo::role_image(ui, IconRole::FolderOpen, *set, icon_theme.as_deref(), size)
                 else {
@@ -1485,6 +1591,18 @@ fn icons(
             }
         });
     });
+    if !unstated.is_empty() {
+        let names = unstated.join(", ");
+        demo::base(reg, ui, "Label · no icon size", |ui| {
+            ui.label(
+                egui::RichText::new(format!(
+                    "The theme states no icons.sizes {names}: those icons are not drawn"
+                ))
+                .small()
+                .weak(),
+            )
+        });
+    }
 }
 
 /// The Icons group: the icon buttons, then the icons at the theme's three sizes.
@@ -1495,10 +1613,9 @@ fn icons_group(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.old_resolved(ui.ctx().theme());
     heading(reg, ui, "basic.icons.heading", "Icons");
     icon_buttons(reg, state, atlas, ui, chosen);
-    icons(reg, t, ui, chosen);
+    icons(reg, atlas.next_shown(ui.ctx()), ui, chosen);
 }
 
 /// The Expander group.
@@ -1531,11 +1648,11 @@ fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
         ] {
             let mut shown = None;
             let header = demo::scoped(reg, ui, Role::Expander, normal, kind, |ui| {
-                let out = Expander::new(demo::lined(ui, title, egui::TextStyle::Button))
+                let out = Expander::new(demo::next_lined(ui, title, egui::TextStyle::Button))
                     .id_salt(("basic/expander", title))
                     .default_open(open)
                     .show(ui, |ui| {
-                        ui.label(demo::lined(ui, body, egui::TextStyle::Body))
+                        ui.label(demo::next_lined(ui, body, egui::TextStyle::Body))
                     });
                 shown = out.body_returned;
                 out.header_response
@@ -1575,27 +1692,34 @@ fn table_group(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     table(reg, atlas, ui);
 }
 
-/// The Card group: the card surface's frame (`card.background_color`, `card.border.*`),
+/// The Card group: the card surface's frame (`card.container(NONE)`),
 /// `BASIC_WIDE` across its border.
 fn card(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.card.heading", "Card");
-    // A side of the card's padding the theme leaves unstated is the container margin, inside
-    // its border (R11, D-card: KDE and macOS state no card padding, the card pads by the
-    // container margin), where the surface's frame would keep egui's own.
-    let margin = atlas.layout().container_margin;
-    let b = &t.card.border;
+    // A side of `card.container(NONE)`'s padding the installed 0.8.0 theme leaves unstated is
+    // `layout.container_margin`, inside its border (R11, D-card: KDE and macOS state no card
+    // padding, the card pads by the container margin), where the surface's frame would keep
+    // egui's own; the border is the stated stroke width, else the frame's own. Without an
+    // installed 0.8.0 theme, or a container margin, the surface's frame as it is.
     let pad_unstated = |frame: &mut egui::Frame| {
-        let Some(margin) = margin else {
+        let Some((margin, card)) = r.and_then(|r| {
+            Some((
+                r.layout.container_margin?,
+                r.card.container(NextState::NONE),
+            ))
+        }) else {
             return;
         };
-        let side = |stated: Option<f32>| stated.is_none().then_some(margin + b.line_width);
+        let width = next::stroke_width_of(&card).unwrap_or(frame.stroke.width);
+        let [top, right, bottom, left] =
+            next::padding_of(&card).map(|stated| stated.is_none().then_some(margin + width));
         let unstated = native_theme::theme::ResolvedPadding {
-            top: side(b.padding.top),
-            right: side(b.padding.right),
-            bottom: side(b.padding.bottom),
-            left: side(b.padding.left),
+            top,
+            right,
+            bottom,
+            left,
         };
         frame.inner_margin = to_margin(frame.inner_margin, &unstated);
     };
@@ -1611,7 +1735,7 @@ fn card(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 // The room inside the frame: `BASIC_WIDE` less its margins and border.
                 ui.set_min_width(ui.available_width());
                 let text = demo::scoped(reg, ui, Role::Card, normal, "card label", |ui| {
-                    ui.label(demo::lined(ui, "Card content", egui::TextStyle::Body))
+                    ui.label(demo::next_lined(ui, "Card content", egui::TextStyle::Body))
                 });
                 reg.tag("basic.card.text", &text);
             },

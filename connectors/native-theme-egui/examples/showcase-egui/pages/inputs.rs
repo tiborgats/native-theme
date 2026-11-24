@@ -4,35 +4,9 @@
 
 use native_theme_egui::{Role, RoleVariant, next};
 
-use super::{DemoState, caption, input_min_size};
+use super::{DemoState, Framed, caption, field_frame, input_min_size};
 use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
-
-/// The frame `build` (`next::input_frame` or `next::text_area_frame`) makes of the installed
-/// 0.8.0 theme `r` for the field `id`; `None`, egui's own frame, where the theme states none egui
-/// can take (`next::Unmapped`) or no 0.8.0 theme is installed.
-fn field_frame(
-    ui: &egui::Ui,
-    id: egui::Id,
-    r: Option<&native_theme::next::ResolvedTheme>,
-    build: fn(&egui::Ui, egui::Id, &native_theme::next::ResolvedTheme) -> next::Mapped<egui::Frame>,
-) -> Option<egui::Frame> {
-    r.and_then(|r| build(ui, id, r).ok())
-}
-
-/// A `TextEdit` in the frame [`field_frame`] gives, or in egui's own where it gives none.
-trait Framed {
-    fn framed(self, frame: Option<egui::Frame>) -> Self;
-}
-
-impl Framed for egui::TextEdit<'_> {
-    fn framed(self, frame: Option<egui::Frame>) -> Self {
-        match frame {
-            Some(frame) => self.frame(frame),
-            None => self,
-        }
-    }
-}
 
 pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
     let r = atlas.next_shown(ui.ctx());
