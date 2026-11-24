@@ -6887,8 +6887,9 @@ fn menu_bar_row(r: &native_theme::next::ResolvedTheme) -> Option<Color> {
 /// with its items above it, as gpui's `geometry::toolbar` takes it as a
 /// `min_h`. Under its padding the connector's rule
 /// (`iced_next::styles::toolbar_rule`, `toolbar.bar(NONE).stroke.color`;
-/// iced's own rule where unstated), a line `toolbar.bar(NONE).stroke.width`
-/// high.
+/// iced's own rule where unstated, none where stated none), a line
+/// `toolbar.bar(NONE).stroke.width` high; a stroke stated per side is not
+/// drawn, iced's rule being one line.
 /// §2.13 has no row for that border; Breeze draws no toolbar frame
 /// (`ToolBar_FrameWidth` 0, cited in §2.13's padding row); the showcase
 /// draws what the theme holds.
@@ -11140,7 +11141,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         .into(),
         ("toolbar", "border.line_width_px") => {
             "ToolbarLayout: toolbar.bar(NONE).stroke.width, the bottom rule's height, under \
-             the bar's padding; iced's own border width, no line, where unstated"
+             the bar's padding; iced's own border width, no line, where unstated or stated \
+             none; a stroke stated per side is not drawn, iced's rule being one line"
                 .into()
         }
         ("toolbar", f) if side(f).is_some() => format!(

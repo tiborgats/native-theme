@@ -794,6 +794,11 @@ rule 0).
   material-3, which states the container's 4 px corners and no item
   corners (docs/platform-facts.md §2.6, `container-shape`), the popup is
   drawn with its corners and the highlighted row is rounded by them too.
+- **The toolbar's rule.** iced's rule is one line (`iced_widget` 0.14.2
+  `src/rule.rs`: a `Style` of one colour), so a toolbar stroke stated per
+  side (`toolbar.bar(NONE).stroke`, a `Stroke::Complex`) is not drawn:
+  `next::styles::toolbar_rule` returns `Unmapped` for it. A stroke stated
+  as none is no rule, drawn transparent.
 - **The scroll bar.** A rail's `border` is one `Border` round all four
   sides (`iced_widget` 0.14.2 `src/scrollable.rs`, `Rail`), so the line
   Breeze draws along the bar's inner edge alone (spec §5, issue #4's

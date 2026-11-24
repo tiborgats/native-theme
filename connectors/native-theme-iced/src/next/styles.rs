@@ -1249,20 +1249,22 @@ pub fn rule(r: &ResolvedTheme) -> impl Fn(&Theme) -> iced_widget::rule::Style + 
 }
 
 /// [`crate::styles::toolbar_rule`]: the toolbar's stroke colour as stated,
-/// iced's own rule's where the theme leaves it unstated (spec §10, rule 0).
-/// The rule is a line of its own under the bar, not a border over the bar's
-/// fill, so no fill is composited under it.
+/// iced's own rule's where the theme leaves it unstated (spec §10, rule 0);
+/// a stroke stated as none is no rule, drawn transparent. The rule is a
+/// line of its own under the bar, not a border over the bar's fill, so no
+/// fill is composited under it.
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states a toolbar stroke that is not
-/// one stroke of one colour.
+/// [`super::Unmapped`] where the theme states a toolbar stroke per side:
+/// iced's rule is one line (spec §10, rule 4).
 pub fn toolbar_rule(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<>> {
     let bar = r.toolbar.bar(WidgetState::NONE);
     let line = match &bar.stroke {
         _ if !bar.stated.contains(PartStated::STROKE) => None,
+        Stroke::None => Some(iced_core::Color::TRANSPARENT),
         Stroke::Uniform { color, .. } => Some(to_color(*color)),
         _ => return Err(Unmapped("toolbar.bar(NONE).stroke.color")),
     };

@@ -2933,6 +2933,27 @@ fn a_toolbar_rule_keeps_iceds_own_per_property() -> TestResult {
     Ok(())
 }
 
+/// A toolbar stroke stated as none is drawn as none (spec §10, rule 0): the
+/// rule under the bar is transparent, its corners, fill mode and snapping
+/// iced's own rule's; on every preset with a rule stating no stroke.
+#[test]
+fn a_toolbar_stroke_stated_none_draws_no_rule() -> TestResult {
+    let patch = ThemePatch::from_toml("[[widgets.toolbar.rules]]\nbar.stroke = \"none\"\n")?;
+    for (preset, r) in every_preset_with(&patch) {
+        let bar = r.toolbar.bar(WidgetState::NONE);
+        assert!(bar.stated.contains(PartStated::STROKE), "{preset:?}");
+        assert_eq!(bar.stroke, Stroke::None, "{preset:?}");
+        let theme = to_theme(&r)?;
+        let own = iced_widget::rule::default(&theme);
+        let s = super::toolbar_rule(&r)?(&theme);
+        assert_eq!(s.color, IcedColor::TRANSPARENT, "{preset:?}");
+        assert_eq!(s.radius, own.radius, "{preset:?}");
+        assert_eq!(s.fill_mode, own.fill_mode, "{preset:?}");
+        assert_eq!(s.snap, own.snap, "{preset:?}");
+    }
+    Ok(())
+}
+
 /// The `iced_aw` card keeps `iced_aw`'s own card's look per property (spec
 /// §10, rule 0): with the fill unstated, its own fill and the theme's
 /// text; with the window's foreground unstated, its own text colours and
