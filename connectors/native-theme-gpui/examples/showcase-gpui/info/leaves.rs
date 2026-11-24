@@ -674,7 +674,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["checkbox.label(DISABLED).color"],
-        "gpui: checkbox.label(DISABLED).color (radio.label(DISABLED)), a disabled control's label, and its mark over a stated disabled fill (CheckboxLook::next_of)",
+        "gpui: checkbox.label(DISABLED).color (radio.label(DISABLED)), a disabled control's label where a rule states it for DISABLED; else gpui-component's own muted_foreground, colors.window.foreground_muted (CheckboxLook::next_of)",
     ),
     (
         "",
@@ -2469,7 +2469,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["switch.track(DISABLED|CHECKED).fill"],
-        "gpui: switch.track(DISABLED|CHECKED).fill, a disabled switch's track when on (SwitchLook::next_of)",
+        "gpui: switch.track(DISABLED|CHECKED).fill, a disabled switch's track when on, where a rule states it for DISABLED; else gpui-component's own, the enabled track at half alpha (SwitchLook::next_of)",
     ),
     (
         "",
@@ -2690,7 +2690,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["tab.label(HOVER).color"],
-        "gpui: an unselected tab's text under the pointer (TabLook)",
+        "gpui: an unselected tab's text under the pointer where a rule states it for HOVER; else the selected tab's, gpui-component's own (TabLook)",
     ),
     (
         "",

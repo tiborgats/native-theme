@@ -21372,9 +21372,12 @@ type Leaf = (&'static str, &'static str);
 /// checked state too where checked) where a rule states a disabled stroke
 /// (:422-427), else `indicator(CHECKED)`'s checked (:345-346), else
 /// `indicator(NONE)`'s (:352-353), at half alpha where disabled; the mark
-/// `label(DISABLED).color` over a stated disabled fill (:365-366), else
-/// `checkbox.checkmark(CHECKED).color` (:305) or `radio.dot(CHECKED).fill`
-/// (:300); the label `label(DISABLED).color` disabled (:365-366), else
+/// disabled `checkbox.checkmark(DISABLED|CHECKED).color` (:764) or
+/// `radio.dot(DISABLED|CHECKED).fill` (:403) where a rule states it for
+/// `DISABLED`, else `checkbox.checkmark(CHECKED).color` (:305) or
+/// `radio.dot(CHECKED).fill` (:300), at half alpha where disabled; the label
+/// disabled `label(DISABLED).color` where a rule states it (:365-366), else
+/// gpui-component's own, `colors.window.foreground_muted` (:795), enabled
 /// `label(NONE).color` (:360) -- as (fill, hover, hover edge, border, mark,
 /// label).
 #[cfg(feature = "widgets")]
@@ -21384,7 +21387,7 @@ fn checkbox_homes(
     checked: bool,
     disabled: bool,
 ) -> [Leaf; 6] {
-    use native_theme::next::{PartStated, WidgetState};
+    use native_theme::next::{IconStated, PartStated, TextStated, WidgetState};
     let at = |checkbox: Leaf, radio_home: Leaf| if radio { radio_home } else { checkbox };
     let indicator = |state: WidgetState| {
         if radio {
@@ -21527,18 +21530,52 @@ fn checkbox_homes(
             ),
         )
     };
-    let disabled_label = at(
+    let label_ruled = if radio {
+        r.radio.label(WidgetState::DISABLED)
+    } else {
+        r.checkbox.label(WidgetState::DISABLED)
+    }
+    .from_state
+    .contains(TextStated::COLOR);
+    let disabled_label = if label_ruled {
+        at(
+            (
+                "checkbox.label(DISABLED).color",
+                "native-theme-gpui/widgets/checkbox.rs:365",
+            ),
+            (
+                "radio.label(DISABLED).color",
+                "native-theme-gpui/widgets/checkbox.rs:366",
+            ),
+        )
+    } else {
         (
-            "checkbox.label(DISABLED).color",
-            "native-theme-gpui/widgets/checkbox.rs:365",
-        ),
-        (
-            "radio.label(DISABLED).color",
-            "native-theme-gpui/widgets/checkbox.rs:366",
-        ),
-    );
-    let mark = if stated_disabled {
-        disabled_label
+            "colors.window.foreground_muted",
+            "native-theme-gpui/widgets/checkbox.rs:795",
+        )
+    };
+    let mark_ruled = if radio {
+        r.radio
+            .dot(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::FILL)
+    } else {
+        r.checkbox
+            .checkmark(WidgetState::DISABLED)
+            .from_state
+            .contains(IconStated::COLOR)
+    };
+    let mark = if disabled && mark_ruled {
+        at(
+            (
+                "checkbox.checkmark(DISABLED|CHECKED).color",
+                "native-theme-gpui/widgets/checkbox.rs:764",
+            ),
+            (
+                "radio.dot(DISABLED|CHECKED).fill",
+                "native-theme-gpui/widgets/checkbox.rs:403",
+            ),
+        )
     } else {
         at(
             (
@@ -21662,7 +21699,9 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
 /// The home each colour of a switch's look is read at, `checked` or not,
 /// `disabled` or not, as `SwitchLook::next_of` reads them, with the line of
 /// widgets/switch.rs that spells it: the track `switch.track(<state>).fill`
-/// (:263-266) at the switch's state; the hover
+/// (:263-266) at the switch's state, disabled where a rule states the
+/// track's fill for `DISABLED`, else the enabled one's (:263-264), which
+/// gpui-component draws at half alpha; the hover
 /// `switch.track(HOVER).fill` (:247), or `switch.track(HOVER|CHECKED).fill`
 /// (:241) checked, over the track, where a rule states the hovered track's
 /// fill (`switch.track(HOVER).from_state`), else the track at rest (:232);
@@ -21683,6 +21722,34 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
         (false, true) => off,
         (true, true) => off_on,
     };
+    let track_ruled = r
+        .switch
+        .track(native_theme::next::WidgetState::DISABLED)
+        .from_state
+        .contains(native_theme::next::PartStated::FILL);
+    let (off, off_on) = if track_ruled {
+        (
+            (
+                "switch.track(DISABLED).fill",
+                "native-theme-gpui/widgets/switch.rs:265",
+            ),
+            (
+                "switch.track(DISABLED|CHECKED).fill",
+                "native-theme-gpui/widgets/switch.rs:266",
+            ),
+        )
+    } else {
+        (
+            (
+                "switch.track(NONE).fill",
+                "native-theme-gpui/widgets/switch.rs:263",
+            ),
+            (
+                "switch.track(CHECKED).fill",
+                "native-theme-gpui/widgets/switch.rs:264",
+            ),
+        )
+    };
     let track = pick([
         (
             "switch.track(NONE).fill",
@@ -21692,14 +21759,8 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
             "switch.track(CHECKED).fill",
             "native-theme-gpui/widgets/switch.rs:264",
         ),
-        (
-            "switch.track(DISABLED).fill",
-            "native-theme-gpui/widgets/switch.rs:265",
-        ),
-        (
-            "switch.track(DISABLED|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:266",
-        ),
+        off,
+        off_on,
     ]);
     let hover_ruled = r
         .switch

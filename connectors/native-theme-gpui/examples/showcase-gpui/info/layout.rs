@@ -1107,12 +1107,24 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
             state_fill_of(&r.tab.tab(WidgetState::HOVER)),
             "native-theme-gpui/widgets/tab_bar.rs:285",
         ))
-        .colors(stated_claim(
-            "hovered label",
-            "tab.label(HOVER).color",
-            text_color_of(&r.tab.label(WidgetState::HOVER)),
-            "native-theme-gpui/widgets/tab_bar.rs:286",
-        ))
+        .colors(
+            // With no rule for HOVER, gpui-component's own hovered label,
+            // the selected tab's (TabLook::next_of).
+            match state_text_color_of(&r.tab.label(WidgetState::HOVER)) {
+                Some(_) => stated_claim(
+                    "hovered label",
+                    "tab.label(HOVER).color",
+                    state_text_color_of(&r.tab.label(WidgetState::HOVER)),
+                    "native-theme-gpui/widgets/tab_bar.rs:286",
+                ),
+                None => stated_claim(
+                    "hovered label, none stated: the selected tab's, gpui-component's own",
+                    "tab.label(SELECTED).color",
+                    text_color_of(&r.tab.label(WidgetState::SELECTED)),
+                    "native-theme-gpui/widgets/tab_bar.rs:419",
+                ),
+            },
+        )
         // Only where the look has the line: TabBar draws none otherwise.
         .colors(stated_claim(
             "selected tab's line",

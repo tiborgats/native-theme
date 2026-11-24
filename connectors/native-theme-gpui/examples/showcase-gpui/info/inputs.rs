@@ -4,7 +4,7 @@
 use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
 #[cfg(feature = "widgets")]
-use native_theme::next::{FocusTrigger, PartStated, TextStyle};
+use native_theme::next::{FocusTrigger, IconStated, PartStated, TextStated, TextStyle};
 use native_theme::next::{ResolvedTheme as NextTheme, Stroke, WidgetState};
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
@@ -1432,7 +1432,7 @@ fn native_indicator(
             r.checkbox.indicator(state)
         }
     };
-    // A disabled fill a rule states replaces the box and its mark's colour;
+    // A disabled fill a rule states replaces the box's;
     // with none the fill is gpui-component's own disabled one, a checked
     // box's and a radio's the enabled fill at half alpha, an unchecked box's
     // the enabled fill (CheckboxLook::next_of).
@@ -1663,53 +1663,94 @@ fn native_indicator(
             "native-theme-gpui/widgets/checkbox.rs:353",
         ),
     });
-    // Over a stated disabled fill the mark takes the disabled label's colour.
-    let info = info.colors(match (radio, stated_disabled) {
-        (false, true) => stated_claim(
+    // Disabled, the mark a rule states for `DISABLED`; with none,
+    // gpui-component's own disabled mark, the enabled one at half alpha
+    // (CheckboxLook::next_of).
+    let mark_ruled = disabled
+        && if radio {
+            r.radio
+                .dot(WidgetState::DISABLED)
+                .from_state
+                .contains(PartStated::FILL)
+        } else {
+            r.checkbox
+                .checkmark(WidgetState::DISABLED)
+                .from_state
+                .contains(IconStated::COLOR)
+        };
+    let info = info.colors(match (radio, disabled, mark_ruled) {
+        (false, true, true) => stated_claim(
             "mark",
-            "checkbox.label(DISABLED).color",
+            "checkbox.checkmark(DISABLED|CHECKED).color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:365",
+            "native-theme-gpui/widgets/checkbox.rs:764",
         ),
-        (true, true) => stated_claim(
+        (true, true, true) => stated_claim(
             "mark",
-            "radio.label(DISABLED).color",
+            "radio.dot(DISABLED|CHECKED).fill",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:366",
+            "native-theme-gpui/widgets/checkbox.rs:403",
         ),
-        (false, false) => stated_claim(
+        (false, true, false) => stated_claim(
+            "mark, disabled, none stated: the enabled mark at half alpha, gpui-component's own",
+            "checkbox.checkmark(CHECKED).color",
+            checked.then_some(look.mark),
+            "native-theme-gpui/widgets/checkbox.rs:305",
+        ),
+        (true, true, false) => stated_claim(
+            "mark, disabled, none stated: the enabled mark at half alpha, gpui-component's own",
+            "radio.dot(CHECKED).fill",
+            checked.then_some(look.mark),
+            "native-theme-gpui/widgets/checkbox.rs:300",
+        ),
+        (false, false, _) => stated_claim(
             "mark",
             "checkbox.checkmark(CHECKED).color",
             checked.then_some(look.mark),
             "native-theme-gpui/widgets/checkbox.rs:305",
         ),
-        (true, false) => stated_claim(
+        (true, false, _) => stated_claim(
             "mark",
             "radio.dot(CHECKED).fill",
             checked.then_some(look.mark),
             "native-theme-gpui/widgets/checkbox.rs:300",
         ),
     });
-    info.color(match (radio, disabled) {
-        (false, true) => claim(
+    // Disabled, the label a rule states for `DISABLED`; with none,
+    // gpui-component's own muted_foreground (CheckboxLook::next_of).
+    let label_ruled = if radio {
+        r.radio.label(WidgetState::DISABLED)
+    } else {
+        r.checkbox.label(WidgetState::DISABLED)
+    }
+    .from_state
+    .contains(TextStated::COLOR);
+    info.color(match (radio, disabled, label_ruled) {
+        (_, true, false) => claim(
+            "label, disabled, none stated: gpui-component's own muted_foreground",
+            "colors.window.foreground_muted",
+            look.label,
+            "native-theme-gpui/widgets/checkbox.rs:795",
+        ),
+        (false, true, true) => claim(
             "label",
             "checkbox.label(DISABLED).color",
             look.label,
             "native-theme-gpui/widgets/checkbox.rs:365",
         ),
-        (true, true) => claim(
+        (true, true, true) => claim(
             "label",
             "radio.label(DISABLED).color",
             look.label,
             "native-theme-gpui/widgets/checkbox.rs:366",
         ),
-        (false, false) => claim(
+        (false, false, _) => claim(
             "label",
             "checkbox.label(NONE).color",
             look.label,
             "native-theme-gpui/widgets/checkbox.rs:360",
         ),
-        (true, false) => claim(
+        (true, false, _) => claim(
             "label",
             "radio.label(NONE).color",
             look.label,
@@ -1870,27 +1911,45 @@ pub fn native_switch(
     // Each claim names the home SwitchLook::next_of reads in this state and
     // cites the line that spells it (widgets/switch.rs,
     // SwitchLook::next_of); a state no rule states reads as the switch at
-    // rest.
-    let info = info.color(match (checked, disabled) {
-        (false, false) => claim(
+    // rest. A disabled track no rule states is gpui-component's own, the
+    // enabled track at half alpha.
+    let track_ruled = r
+        .switch
+        .track(WidgetState::DISABLED)
+        .from_state
+        .contains(PartStated::FILL);
+    let info = info.color(match (checked, disabled && !track_ruled, disabled) {
+        (false, true, _) => claim(
+            "track, disabled, none stated: the enabled track at half alpha, gpui-component's own",
+            "switch.track(NONE).fill",
+            look.track,
+            "native-theme-gpui/widgets/switch.rs:263",
+        ),
+        (true, true, _) => claim(
+            "track, disabled, none stated: the enabled track at half alpha, gpui-component's own",
+            "switch.track(CHECKED).fill",
+            look.track,
+            "native-theme-gpui/widgets/switch.rs:264",
+        ),
+        (false, false, false) => claim(
             "track",
             "switch.track(NONE).fill",
             look.track,
             "native-theme-gpui/widgets/switch.rs:263",
         ),
-        (true, false) => claim(
+        (true, false, false) => claim(
             "track",
             "switch.track(CHECKED).fill",
             look.track,
             "native-theme-gpui/widgets/switch.rs:264",
         ),
-        (false, true) => claim(
+        (false, false, true) => claim(
             "track",
             "switch.track(DISABLED).fill",
             look.track,
             "native-theme-gpui/widgets/switch.rs:265",
         ),
-        (true, true) => claim(
+        (true, false, true) => claim(
             "track",
             "switch.track(DISABLED|CHECKED).fill",
             look.track,
