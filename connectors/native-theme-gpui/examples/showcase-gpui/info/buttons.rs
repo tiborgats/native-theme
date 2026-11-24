@@ -653,6 +653,14 @@ pub fn button(
             .not_themeable("spinner", "where an icon would sit: a loading Button without an icon shows a Spinner there, turning the Button's loading icon, or the Spinner's own default, gpui-component's Loader, drawn as the application's icon resolver answers it (the `spinner icon` line says what is turned here), where it is given none (button/button.rs:777-786, loading_icon; gpui-component/spinner.rs, Spinner::new). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
     };
+    let info = match native {
+        Some(r) => super::own_ring_not_drawn(
+            info,
+            &r.button.body(native_theme::next::WidgetState::FOCUSED),
+            "button.body(FOCUSED).focus",
+        ),
+        None => info,
+    };
     let info = if icon && state == ButtonState::Idle {
         info.not_themeable("icon position", "leading, always: Button adds its icon before the label and has no setting for the other side (button/button.rs, Button::render)")
             .not_themeable("icon size", "size_3 / size_3p5 / size_4 / size_6 per the button's Size (icon.rs, Icon::into_svg) -- rems again, so it scales with the platform font, while defaults.icon_sizes is in absolute px and Button exposes no icon_size setter to take one")

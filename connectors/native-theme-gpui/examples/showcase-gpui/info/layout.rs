@@ -868,6 +868,11 @@ pub fn native_expander(
         .filter(|(_, open)| *open)
         .map(|(title, _)| *title)
         .collect();
+    let info = super::own_ring_not_drawn(
+        info,
+        &r.expander.header(WidgetState::FOCUSED),
+        "expander.header(FOCUSED).focus",
+    );
     info.config("title row", expander_title_row(e, &r.typography, t))
     .config("edge", expander_edge(e, t, gap))
     .config(
@@ -1245,7 +1250,7 @@ fn tab_bar_ring(info: WidgetInfo, r: &NextTheme) -> WidgetInfo {
         "focus ring",
         "focus_ring.stroke.color",
         ring_stroke_color_of(&r.focus_ring.stroke),
-        "native-theme-gpui/widgets/mod.rs:393-394",
+        "native-theme-gpui/widgets/mod.rs:521",
     ))
     .config(
         "focus ring",
@@ -1430,6 +1435,14 @@ pub fn segmented(
                 "gpui-component/tab/tab.rs:300",
             ))
             .not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
+    };
+    let info = match native {
+        Some(r) => super::own_ring_not_drawn(
+            info,
+            &r.segmented_control.segment(WidgetState::FOCUSED),
+            "segmented_control.segment(FOCUSED).focus",
+        ),
+        None => info,
     };
     info.instance("segments", labels.join(", "))
         .instance("selected", shown)

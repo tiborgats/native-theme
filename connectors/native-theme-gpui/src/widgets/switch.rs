@@ -821,7 +821,6 @@ impl Switch {
         };
         let look = look.faded_over(ground);
         let observer = self.observer.as_ref();
-        let keyboard_only = theme.keyboard_only();
         let thumb_left = spring(
             (self.id.clone(), "thumb"),
             look.thumb_left(checked),
@@ -836,14 +835,26 @@ impl Switch {
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
             .read(cx)
             .clone();
-        let focused = super::ring_shows(
+        let seen = super::focus_seen(
             (self.id.clone(), "focus-visible"),
             focus_handle.is_focused(window),
-            keyboard_only,
             window,
             cx,
         );
-        let track = self.track(&look, focused, thumb_left, window, cx);
+        // The track's own ring where the theme states one, else the global
+        // ring, round the track.
+        let at = super::checked_disabled(checked, disabled);
+        let ring = seen
+            .filter(|_| !self.disabled && self.focus_ring)
+            .and_then(|by_key| {
+                // Read again: the keyed states took `cx` mutably.
+                ThemeSource::of(cx)?.ring(
+                    by_key,
+                    move |r, focus| r.switch.track(focus | at),
+                    super::RingHomes::SWITCH,
+                )
+            });
+        let track = self.track(&look, ring, thumb_left, window, cx);
         Ok(BaseSwitch::new(self.id)
             .checked(checked)
             .disabled(self.disabled)
@@ -883,21 +894,18 @@ impl Switch {
 }
 
 impl Switch {
-    /// The track in `look`, its thumb `thumb_left` from its start edge; while
-    /// `focused` (a focus the theme rings, `ring_shows`), enabled, and told to
-    /// (`focus_ring`), it draws the focus ring.
+    /// The track in `look`, its thumb `thumb_left` from its start edge, and
+    /// `ring` over it: the focus ring, while focused (a focus the theme
+    /// rings, `ThemeSource::ring`), enabled, and told to (`focus_ring`).
     pub(super) fn track(
         &self,
         look: &SwitchLook,
-        focused: bool,
+        ring: Option<super::FocusRing>,
         thumb_left: Pixels,
         window: &Window,
         cx: &App,
     ) -> SwitchTrack {
         let observer = self.observer.as_ref();
-        let ring = (focused && !self.disabled && self.focus_ring)
-            .then(|| ThemeSource::of(cx).and_then(ThemeSource::focus_ring))
-            .flatten();
         SwitchTrack::new((self.id.clone(), "track"))
             .checked(self.checked)
             .disabled(self.disabled)

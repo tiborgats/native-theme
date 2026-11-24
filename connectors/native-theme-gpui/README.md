@@ -1140,6 +1140,14 @@ where the ring reaches inside the edge of a control whose border shows, that
 border is drawn as a child under the ring. A 0.8.0 indicator that is not a ring
 (`focus_ring.kind` `Fill` or `Underline`), a ring stated per side and concentric
 corners are unmapped (`widgets::focus_ring_unmapped`), and no ring is drawn.
+Where a 0.8.0 theme states a ring of the part's own (`PartStyle.focus` of
+`checkbox.indicator`, `radio.indicator`, `switch.track`, `slider.thumb` or
+`tab.tab`, read at the focused state), the control draws that ring round that
+part in place of the global one, by its own trigger, and none where the part
+states none (`widgets::part_focus`, `widgets::part_ring_unmapped`); gpui-component's
+own widgets (the button, the text field, the list row, the segment, the
+expander's header) draw their own ring and take no part's, which Widget Info
+reports not mapped.
 Where the theme says the platform shows its ring for keyboard focus
 only, a control draws it only for a focus that followed a key press: the answer
 is `Window::last_input_was_keyboard` when the focus arrives, kept until it

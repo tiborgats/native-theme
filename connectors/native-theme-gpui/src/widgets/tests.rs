@@ -2749,19 +2749,14 @@ fn without_a_native_theme_a_slider_passes_on_its_label_and_disabled_state(cx: &m
 /// inside it to 1 px outside), and told not to, none.
 #[gpui::test]
 fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
-    let r = resolved("kde-breeze", ColorMode::Light);
-    let look = SwitchLook::of(&r, false, false).expect("finite");
     for (focus_ring, drawn) in [(true, true), (false, false)] {
         let cx = window_with(
             cx,
             Some(("kde-breeze", ColorMode::Light)),
-            Box::new(move |window, cx| {
-                Switch::new("s")
-                    .focus_ring(focus_ring)
-                    .track(&look, true, look.thumb_left(false), window, cx)
-                    .into_any_element()
-            }),
+            Box::new(move |_, _| Switch::new("s").focus_ring(focus_ring).into_any_element()),
         );
+        a_key_that_moves_no_focus(cx);
+        focus_next(cx);
         redraw(cx);
         assert_eq!(
             cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
@@ -6221,6 +6216,145 @@ fn a_focused_control_draws_a_next_themes_ring(cx: &mut TestAppContext) {
         cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
         "no ring once focused"
     );
+}
+
+/// FR4's ring of a part's own: 2 px of [`OUTER`], 1 px out from the part's
+/// edge, the second ring 1 px of [`INNER`], unlike adwaita's global ring.
+fn own_ring() -> std::sync::Arc<native_theme::next::FocusIndicator> {
+    use native_theme::next::{FocusIndicator, FocusKind, Stroke};
+    std::sync::Arc::new(FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(2.0, OUTER),
+        Stroke::uniform(1.0, INNER),
+        1.0,
+        None,
+        None,
+    ))
+}
+
+/// adwaita, patched to state `focus` on the check box's indicator, the
+/// switch's track and the slider's thumb: `own` for each.
+fn with_own_rings(
+    own: Option<std::sync::Arc<native_theme::next::FocusIndicator>>,
+) -> native_theme::next::ResolvedTheme {
+    use native_theme::next::{
+        CheckboxRule, PartPatch, Preset, SliderRule, SwitchRule, Theme as NextTheme, ThemeContext,
+        ThemePatch,
+    };
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    let focus = || PartPatch::new().focus(own.clone());
+    r.apply_patch(
+        &ThemePatch::new()
+            .checkbox(CheckboxRule::new().indicator(focus()))
+            .switch(SwitchRule::new().track(focus()))
+            .slider(SliderRule::new().thumb(focus())),
+    );
+    r
+}
+
+/// FR4: where a part states its own focus ring (spec §2, `FocusIndicator`:
+/// `PartStyle.focus`), the focused theme-drawn control draws that ring round
+/// the part, in place of the global one: the check box's round its
+/// indicator, not its row, the switch's round its track, the slider's round
+/// its thumb, each in its own stroke's colour, a band of its width outward
+/// from the part's edge moved out by its offset, and its second ring inward
+/// from that line. A part that states none keeps the global ring: the radio,
+/// unpatched, rings its row in `focus_ring`'s colour.
+#[gpui::test]
+fn a_part_that_states_its_own_ring_draws_it(cx: &mut TestAppContext) {
+    let r = with_own_rings(Some(own_ring()));
+    let global = FocusRing::next_of(&r).ok().flatten();
+    assert!(global.is_some(), "adwaita states a global ring");
+    assert_ne!(
+        global.map(|ring| ring.color),
+        Some(crate::next::hsla(OUTER)),
+        "the global ring is not the parts' own"
+    );
+    let state = d4_slider_state(cx);
+    let parts = [
+        "native-checkbox-indicator",
+        "native-switch-track",
+        "native-slider-thumb",
+    ];
+    for ((name, build), part) in d4_controls(&state).into_iter().zip(parts) {
+        let cx = window_with_next_resolved(cx, &r, build);
+        focus_next(cx);
+        redraw(cx);
+        let edge = bounds(cx, part);
+        assert_eq!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR),
+            Some(edge.dilate(px(3.0))),
+            "{name}: the ring 1 px out plus its 2 px width round the {part}"
+        );
+        assert_eq!(
+            cx.debug_bounds(FOCUS_RING_INNER_SELECTOR),
+            Some(edge.dilate(px(1.0))),
+            "{name}: the second ring inward from the base line"
+        );
+        let outer = quads_round(cx, edge, 3.0);
+        assert!(
+            outer
+                .iter()
+                .any(|q| q.border_color == crate::next::hsla(OUTER)),
+            "{name}: the part's own stroke colour: {outer:?}"
+        );
+    }
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| Radio::new("r").label("R").into_any_element()),
+    );
+    focus_next(cx);
+    redraw(cx);
+    let row = cx.debug_bounds("native-checkbox-row");
+    assert!(row.is_some(), "the radio's row");
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR),
+        row.zip(global)
+            .map(|(row, ring)| row.dilate(px(ring.offset + ring.width))),
+        "the radio keeps the global ring round its row"
+    );
+}
+
+/// FR4: a part whose rule states `focus` with no indicator draws none where
+/// it has the focus; one stated in a form gpui cannot draw is [`Unmapped`]
+/// at the part's own home, and none is drawn.
+#[gpui::test]
+fn a_part_that_states_no_ring_or_one_gpui_cannot_draw_draws_none(cx: &mut TestAppContext) {
+    use native_theme::next::{FocusKind, WidgetState};
+    let r = with_own_rings(None);
+    let state = d4_slider_state(cx);
+    for (name, build) in d4_controls(&state) {
+        let cx = window_with_next_resolved(cx, &r, build);
+        focus_next(cx);
+        redraw(cx);
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+            "{name}: a ring the part states none of"
+        );
+    }
+    let mut fill = (*own_ring()).clone();
+    fill.kind = FocusKind::Fill;
+    let r = with_own_rings(Some(std::sync::Arc::new(fill)));
+    let track = r.switch.track(WidgetState::FOCUSED);
+    assert_eq!(
+        super::part_ring_unmapped(&r, &track, RingHomes::SWITCH),
+        Some(Unmapped("switch.track(FOCUSED).focus.kind"))
+    );
+    let thumb = r.slider.thumb(WidgetState::FOCUSED);
+    assert_eq!(
+        super::part_ring_unmapped(&r, &thumb, RingHomes::SLIDER),
+        Some(Unmapped("slider.thumb(FOCUSED).focus.kind"))
+    );
+    for (name, build) in d4_controls(&state) {
+        let cx = window_with_next_resolved(cx, &r, build);
+        focus_next(cx);
+        redraw(cx);
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+            "{name}: a fill gpui cannot draw"
+        );
+    }
 }
 
 /// A disabled checked box's mark is read at its own home where a rule states

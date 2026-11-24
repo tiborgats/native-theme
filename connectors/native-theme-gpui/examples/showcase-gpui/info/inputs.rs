@@ -8,11 +8,11 @@ use native_theme::next::{FocusTrigger, PartStated, TextStyle};
 use native_theme::next::{ResolvedTheme as NextTheme, Stroke, WidgetState};
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
-use native_theme_gpui::widgets::ring_stroke_color_of;
-#[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{
     CheckboxLook, SliderLook, SwitchLabelFont, SwitchLabelHome, SwitchLook, ThumbOutline,
 };
+#[cfg(feature = "widgets")]
+use native_theme_gpui::widgets::{RingHomes, ring_stroke_color_of};
 
 #[cfg(feature = "widgets")]
 use super::{LINE_AT_THE_MULTIPLIER, next_drawn_font, next_stated, percent_text};
@@ -53,6 +53,11 @@ pub fn input_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetInfo 
         None => info,
     };
     let unstroked = matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None);
+    let info = super::own_ring_not_drawn(
+        info,
+        &r.input.field(WidgetState::FOCUSED),
+        "input.field(FOCUSED).focus",
+    );
     surface(info, width, unstroked, "input")
 }
 
@@ -1216,7 +1221,19 @@ fn drawn_checkbox(
     let info = if disabled {
         info
     } else {
-        next_focus_ring(info, r, "row")
+        let at = if checked || mixed {
+            WidgetState::FOCUSED | WidgetState::CHECKED
+        } else {
+            WidgetState::FOCUSED
+        };
+        next_focus_ring(
+            info,
+            r,
+            "row",
+            &r.checkbox.indicator(at),
+            "indicator",
+            RingHomes::CHECKBOX,
+        )
     };
     checkbox_state(info.instance("label", label), checked, disabled, mixed)
 }
@@ -1281,18 +1298,45 @@ pub fn mixed_checkbox(t: &Theme, label: &'static str) -> WidgetInfo {
 /// over the part, inside its edge too, for a focus that followed a key press
 /// only where `focus_ring.trigger` says keyboard only. A ring the controls
 /// cannot draw (`widgets::focus_ring_unmapped`) is named at its home.
+///
+/// Where the theme states a ring of the part's own (`own`, the part at its
+/// focused state, whose fields' homes are `homes`; spec §2,
+/// `FocusIndicator`: `PartStyle.focus`), that ring in its place, round
+/// `own_part` (`widgets::part_focus`), and none where it states the part has
+/// none.
 #[cfg(feature = "widgets")]
-fn next_focus_ring(info: WidgetInfo, r: &NextTheme, part: &str) -> WidgetInfo {
-    if let Some(unmapped) = native_theme_gpui::widgets::focus_ring_unmapped(r) {
+fn next_focus_ring(
+    info: WidgetInfo,
+    r: &NextTheme,
+    part: &str,
+    own: &native_theme::next::PartStyle,
+    own_part: &str,
+    homes: RingHomes,
+) -> WidgetInfo {
+    let own_home = homes.kind.strip_suffix(".kind").unwrap_or(homes.kind);
+    let Some((f, homes)) = native_theme_gpui::widgets::part_focus(r, own, homes) else {
         return info.config(
             "focus ring",
             format!(
-                "none: the theme states no value gpui can take at {} (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+                "none: the theme states {own_home} with no indicator, so the {own_part} has none (native-theme-gpui/widgets/mod.rs, part_focus)"
+            ),
+        );
+    };
+    let part = if homes == RingHomes::GLOBAL {
+        part
+    } else {
+        own_part
+    };
+    let at = homes.kind.strip_suffix(".kind").unwrap_or(homes.kind);
+    if let Some(unmapped) = native_theme_gpui::widgets::part_ring_unmapped(r, own, homes) {
+        return info.config(
+            "focus ring",
+            format!(
+                "none: the theme states no value gpui can take at {} (native-theme-gpui/widgets/mod.rs, FocusRing::next_indicator)",
                 unmapped.home()
             ),
         );
     }
-    let f = &r.focus_ring;
     let offset = f.offset;
     let stroke = match &f.stroke {
         Stroke::Uniform { width, .. }
@@ -1305,48 +1349,62 @@ fn next_focus_ring(info: WidgetInfo, r: &NextTheme, part: &str) -> WidgetInfo {
     let Some(width) = stroke else {
         return info.config(
             "focus ring",
-            "none: the theme states no ring, its focus_ring.stroke.width not positive, or its focus_ring.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+            format!(
+                "none: the theme states no ring, its {at}.stroke.width not positive, or its {at}.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_indicator)"
+            ),
         );
     };
     let corners = match f.corners {
-        Some(_) => "focus_ring.corners, as stated".to_string(),
+        Some(_) => format!("{at}.corners, as stated"),
         None => format!("the {part}'s corners grown by the offset, floored at 0"),
     };
     let inner = match &f.inner_stroke {
         Stroke::Uniform { width, .. } if width.is_finite() && *width > 0.0 => Some(*width),
         _ => None,
     };
-    info.colors(stated_claim(
-        "focus ring",
-        "focus_ring.stroke.color",
-        ring_stroke_color_of(&r.focus_ring.stroke),
-        "native-theme-gpui/widgets/mod.rs:393-394",
-    ))
-    .colors(inner.and_then(|_| {
-        stated_claim(
-            "focus ring inner",
-            "focus_ring.inner_stroke.color",
-            ring_stroke_color_of(&r.focus_ring.inner_stroke),
-            "native-theme-gpui/widgets/mod.rs:398-401",
+    let info = if homes == RingHomes::GLOBAL {
+        info.colors(stated_claim(
+            "focus ring",
+            "focus_ring.stroke.color",
+            ring_stroke_color_of(&r.focus_ring.stroke),
+            "native-theme-gpui/widgets/mod.rs:521",
+        ))
+        .colors(inner.and_then(|_| {
+            stated_claim(
+                "focus ring inner",
+                "focus_ring.inner_stroke.color",
+                ring_stroke_color_of(&r.focus_ring.inner_stroke),
+                "native-theme-gpui/widgets/mod.rs:522",
+            )
+        }))
+    } else {
+        info.config(
+            "focus ring",
+            format!(
+                "the {own_part}'s own ring in place of the global one: {} and, where stated, {}, as stated (native-theme-gpui/widgets/mod.rs, part_focus, FocusRing::next_indicator)",
+                homes.stroke, homes.inner_stroke
+            ),
         )
-    }))
-    .config(
+    };
+    info.config(
         "focus ring",
         format!(
-            "focus_ring.stroke.width {}px wide outward from the base line, the {part}'s edge moved {}px out by focus_ring.offset, its corners {corners}{}, painted over the {part}, inside its edge too (native-theme-gpui/widgets/mod.rs, FocusRing::draw){}",
+            "{at}.stroke.width {}px wide outward from the base line, the {part}'s edge moved {}px out by {at}.offset, its corners {corners}{}, painted over the {part}, inside its edge too (native-theme-gpui/widgets/mod.rs, FocusRing::draw){}",
             px_text(width),
             px_text(offset),
             match inner {
                 Some(inner) => format!(
-                    ", and focus_ring.inner_stroke {}px wide inward from it",
+                    ", and {at}.inner_stroke {}px wide inward from it",
                     px_text(inner)
                 ),
                 None => String::new(),
             },
             if f.trigger == Some(FocusTrigger::KeyboardOnly) {
-                ", for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, ring_shows)"
+                format!(
+                    ", for a focus that followed a key press only, {at}.trigger (native-theme-gpui/widgets/mod.rs, ThemeSource::ring)"
+                )
             } else {
-                ""
+                String::new()
             }
         ),
     )
@@ -1754,7 +1812,19 @@ pub fn native_radio_column(
     );
     // The focused radio's row draws the ring, as gpui-component's and the
     // egui connector's do.
-    next_focus_ring(info.instance("selected", chosen), r, "row")
+    let at = if selected.is_some() {
+        WidgetState::FOCUSED | WidgetState::CHECKED
+    } else {
+        WidgetState::FOCUSED
+    };
+    next_focus_ring(
+        info.instance("selected", chosen),
+        r,
+        "row",
+        &r.radio.indicator(at),
+        "indicator",
+        RingHomes::RADIO,
+    )
 }
 
 /// A theme-drawn switch's `info` where the theme states no value gpui can
@@ -1912,7 +1982,19 @@ pub fn native_switch(
     let info = if disabled {
         info
     } else {
-        next_focus_ring(info, r, "track")
+        let at = if checked {
+            WidgetState::FOCUSED | WidgetState::CHECKED
+        } else {
+            WidgetState::FOCUSED
+        };
+        next_focus_ring(
+            info,
+            r,
+            "track",
+            &r.switch.track(at),
+            "track",
+            RingHomes::SWITCH,
+        )
     };
     let info = info.color(match (checked, disabled) {
         (false, false) => claim(
@@ -2132,7 +2214,17 @@ pub fn native_slider(r: &NextTheme, vertical: bool, range: bool) -> WidgetInfo {
         info
     };
     // The focused end thumb draws the ring.
-    slider_keys(next_focus_ring(info, r, "end thumb"), range)
+    slider_keys(
+        next_focus_ring(
+            info,
+            r,
+            "end thumb",
+            &r.slider.thumb(WidgetState::FOCUSED),
+            "end thumb",
+            RingHomes::SLIDER,
+        ),
+        range,
+    )
 }
 
 /// A theme-drawn slider's thumb outline in `info`, as the widget draws it

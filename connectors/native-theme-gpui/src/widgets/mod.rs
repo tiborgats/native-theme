@@ -383,25 +383,34 @@ impl FocusRing {
     /// is stated per side, or the corners are concentric, which needs the
     /// container's radius.
     fn next_of(r: &native_theme::next::ResolvedTheme) -> Mapped<Option<Self>> {
+        Self::next_indicator(&r.focus_ring, &RingHomes::GLOBAL)
+    }
+
+    /// The ring the indicator `f` states, as [`FocusRing::next_of`] reads the
+    /// global one, the homes of its fields `homes`.
+    ///
+    /// # Errors
+    ///
+    /// As [`FocusRing::next_of`], at `homes`.
+    fn next_indicator(f: &FocusIndicator, homes: &RingHomes) -> Mapped<Option<Self>> {
         use native_theme::next::{FocusKind, Stroke};
-        let f = &r.focus_ring;
         if f.kind != FocusKind::Ring {
-            return Err(Unmapped("focus_ring.kind"));
+            return Err(Unmapped(homes.kind));
         }
         let (width, stroke_color) = match &f.stroke {
             Stroke::None => return Ok(None),
             Stroke::Uniform { width, color, .. } => (*width, *color),
-            _ => return Err(Unmapped("focus_ring.stroke.color")),
+            _ => return Err(Unmapped(homes.stroke)),
         };
         let inner = match &f.inner_stroke {
             Stroke::None => None,
             Stroke::Uniform { width, color, .. } => {
                 (width.is_finite() && *width > 0.0).then(|| (crate::next::hsla(*color), *width))
             }
-            _ => return Err(Unmapped("focus_ring.inner_stroke.color")),
+            _ => return Err(Unmapped(homes.inner_stroke)),
         };
         let corners = match &f.corners {
-            Some(corners) => Some(ring_corners(corners)?),
+            Some(corners) => Some(ring_corners(corners, homes.corners)?),
             None => None,
         };
         let offset = f.offset;
@@ -489,6 +498,100 @@ pub fn focus_ring_unmapped(r: &native_theme::next::ResolvedTheme) -> Option<Unma
     FocusRing::next_of(r).err()
 }
 
+/// The homes of a focus indicator's fields, which [`Unmapped`] names where a
+/// theme-drawn control cannot draw one: the global ring's (`focus_ring`), or
+/// the ring a part states of its own (`PartStyle.focus`), read at the part's
+/// focused state.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RingHomes {
+    /// The indicator's `kind`.
+    pub kind: &'static str,
+    /// Its `stroke`, stated per side.
+    pub stroke: &'static str,
+    /// Its `inner_stroke`, stated per side.
+    pub inner_stroke: &'static str,
+    /// Its `corners`, concentric.
+    pub corners: &'static str,
+}
+
+impl RingHomes {
+    /// The global ring's, `focus_ring`.
+    pub const GLOBAL: Self = Self {
+        kind: "focus_ring.kind",
+        stroke: "focus_ring.stroke.color",
+        inner_stroke: "focus_ring.inner_stroke.color",
+        corners: "focus_ring.corners",
+    };
+    /// The theme-drawn check box's indicator's own, `checkbox.indicator`.
+    pub const CHECKBOX: Self = Self {
+        kind: "checkbox.indicator(FOCUSED).focus.kind",
+        stroke: "checkbox.indicator(FOCUSED).focus.stroke.color",
+        inner_stroke: "checkbox.indicator(FOCUSED).focus.inner_stroke.color",
+        corners: "checkbox.indicator(FOCUSED).focus.corners",
+    };
+    /// The theme-drawn radio's indicator's own, `radio.indicator`.
+    pub const RADIO: Self = Self {
+        kind: "radio.indicator(FOCUSED).focus.kind",
+        stroke: "radio.indicator(FOCUSED).focus.stroke.color",
+        inner_stroke: "radio.indicator(FOCUSED).focus.inner_stroke.color",
+        corners: "radio.indicator(FOCUSED).focus.corners",
+    };
+    /// The theme-drawn switch's track's own, `switch.track`.
+    pub const SWITCH: Self = Self {
+        kind: "switch.track(FOCUSED).focus.kind",
+        stroke: "switch.track(FOCUSED).focus.stroke.color",
+        inner_stroke: "switch.track(FOCUSED).focus.inner_stroke.color",
+        corners: "switch.track(FOCUSED).focus.corners",
+    };
+    /// The theme-drawn slider's thumb's own, `slider.thumb`.
+    pub const SLIDER: Self = Self {
+        kind: "slider.thumb(FOCUSED).focus.kind",
+        stroke: "slider.thumb(FOCUSED).focus.stroke.color",
+        inner_stroke: "slider.thumb(FOCUSED).focus.inner_stroke.color",
+        corners: "slider.thumb(FOCUSED).focus.corners",
+    };
+    /// The theme-drawn tab bar's tab's own, `tab.tab`.
+    pub const TAB: Self = Self {
+        kind: "tab.tab(FOCUSED).focus.kind",
+        stroke: "tab.tab(FOCUSED).focus.stroke.color",
+        inner_stroke: "tab.tab(FOCUSED).focus.inner_stroke.color",
+        corners: "tab.tab(FOCUSED).focus.corners",
+    };
+}
+
+/// The focus indicator a theme-drawn control draws round its part, `part`
+/// read at its focused state (spec §2, `FocusIndicator`: a preset states
+/// `PartStyle.focus` on a focusable part where its platform's indicator has
+/// a source), with the homes of its fields: the part's own where the theme
+/// states one, at `homes`; none where it states the part has none; else the
+/// global ring, `focus_ring`, at [`RingHomes::GLOBAL`].
+#[must_use]
+pub fn part_focus<'a>(
+    r: &'a native_theme::next::ResolvedTheme,
+    part: &'a native_theme::next::PartStyle,
+    homes: RingHomes,
+) -> Option<(&'a FocusIndicator, RingHomes)> {
+    if part.stated.contains(native_theme::next::PartStated::FOCUS) {
+        part.focus.as_deref().map(|f| (f, homes))
+    } else {
+        Some((&r.focus_ring, RingHomes::GLOBAL))
+    }
+}
+
+/// Where the focus indicator a theme-drawn control draws round `part`
+/// ([`part_focus`]) is one it cannot draw, its home, as
+/// [`focus_ring_unmapped`] names the global ring's; `None` where it draws
+/// the indicator, or there is none.
+#[must_use]
+pub fn part_ring_unmapped(
+    r: &native_theme::next::ResolvedTheme,
+    part: &native_theme::next::PartStyle,
+    homes: RingHomes,
+) -> Option<Unmapped> {
+    let (f, homes) = part_focus(r, part, homes)?;
+    FocusRing::next_indicator(f, &homes).err()
+}
+
 /// A 0.8.0 focus ring's stroke colour (`focus_ring.stroke`, or its
 /// `inner_stroke`), as the theme-drawn controls' ring takes it
 /// (`FocusRing::next_of`), where stated as one stroke of one colour; `None`
@@ -511,9 +614,9 @@ pub fn ring_stroke_color_of(stroke: &native_theme::next::Stroke) -> Option<Hsla>
 ///
 /// # Errors
 ///
-/// [`Unmapped`] `focus_ring.corners` for a concentric radius, which needs the
-/// container's radius.
-fn ring_corners(corners: &native_theme::next::Corners) -> Mapped<[f32; 4]> {
+/// [`Unmapped`] `home` (`focus_ring.corners`, or a part's own ring's) for a
+/// concentric radius, which needs the container's radius.
+fn ring_corners(corners: &native_theme::next::Corners, home: &'static str) -> Mapped<[f32; 4]> {
     use native_theme::next::CornerRadius;
     match corners.radius {
         CornerRadius::None => Ok([0.0; 4]),
@@ -525,7 +628,7 @@ fn ring_corners(corners: &native_theme::next::Corners) -> Mapped<[f32; 4]> {
             bottom_left,
         } => Ok([top_left, top_right, bottom_right, bottom_left]),
         CornerRadius::Pill => Ok([crate::next::PILL_RADIUS; 4]),
-        _ => Err(Unmapped("focus_ring.corners")),
+        _ => Err(Unmapped(home)),
     }
 }
 
@@ -588,22 +691,21 @@ struct FocusVisible {
     keyboard: bool,
 }
 
-/// Whether a theme-drawn control that is `focused` draws the theme's focus ring, its
-/// state keyed by `key` (the control's id and `"focus-visible"`), and `keyboard_only` the
-/// theme's `defaults.focus_ring_keyboard_only == Some(true)`.
+/// How a theme-drawn control that is `focused` has the focus, its state keyed by `key`
+/// (the control's id and `"focus-visible"`): `None` where it has none, else whether the
+/// focus followed a key press, which [`ThemeSource::ring`] takes for its rings.
 ///
 /// Where the theme says the platform shows its ring for keyboard focus only
 /// (`defaults.focus_ring_keyboard_only`), a control draws it only for a focus that
 /// followed a key press, decided when it gets the focus and kept until it loses it. The
 /// answer is taken at render, so a control that loses the focus and gets it back with no
 /// frame between keeps the first answer.
-fn ring_shows(
+fn focus_seen(
     key: impl Into<ElementId>,
     focused: bool,
-    keyboard_only: bool,
     window: &mut Window,
     cx: &mut App,
-) -> bool {
+) -> Option<bool> {
     let state = window.use_keyed_state(key, cx, |_, _| FocusVisible::default());
     let last = *state.read(cx);
     let mut seen = last;
@@ -616,7 +718,36 @@ fn ring_shows(
     if seen != last {
         state.update(cx, |stored, _| *stored = seen);
     }
-    focused && (!keyboard_only || seen.keyboard)
+    focused.then_some(seen.keyboard)
+}
+
+/// The state flag of a focus that followed a key press (`by_key`):
+/// `FOCUS_VISIBLE`, else `FOCUSED`.
+fn focus_state(by_key: bool) -> WidgetState {
+    if by_key {
+        WidgetState::FOCUS_VISIBLE
+    } else {
+        WidgetState::FOCUSED
+    }
+}
+
+/// A control's checked and disabled state flags.
+fn checked_disabled(checked: bool, disabled: bool) -> WidgetState {
+    let on = |set: bool, flag: WidgetState| if set { flag } else { WidgetState::NONE };
+    on(checked, WidgetState::CHECKED) | on(disabled, WidgetState::DISABLED)
+}
+
+/// Whether the 0.8.0 theme `r` states a ring of its own for the part `part`
+/// gives at the focused state ([`focus_state`] of `by_key`), which the
+/// control then draws round that part ([`part_focus`]).
+fn states_own_focus(
+    r: &native_theme::next::ResolvedTheme,
+    by_key: bool,
+    part: impl FnOnce(&native_theme::next::ResolvedTheme, WidgetState) -> native_theme::next::PartStyle,
+) -> bool {
+    part(r, focus_state(by_key))
+        .stated
+        .contains(native_theme::next::PartStated::FOCUS)
 }
 
 /// Whether the window's present focus followed a key, for a control whose focus handles are
@@ -752,7 +883,7 @@ fn text_size(size: f32, n: Native<'_>) -> Pixels {
 // The installed theme, of either model
 // ---------------------------------------------------------------------------
 
-use native_theme::next::{FocusTrigger, TextStyle};
+use native_theme::next::{FocusIndicator, FocusTrigger, TextStyle, WidgetState};
 
 use crate::ActiveNativeTheme as _;
 use crate::next::{Mapped, Unmapped};
@@ -809,13 +940,35 @@ impl<'a> ThemeSource<'a> {
         }
     }
 
-    /// The theme's focus ring ([`FocusRing::of`], [`FocusRing::next_of`]):
-    /// none where a 0.8.0 theme states one no theme-drawn control can draw.
-    fn focus_ring(self) -> Option<FocusRing> {
-        match self {
-            Self::Old(n) => FocusRing::of(n.resolved),
-            Self::Next(r) => FocusRing::next_of(r).ok().flatten(),
-        }
+    /// The ring a theme-drawn control draws round its part while it has the
+    /// focus, `by_key` whether the focus followed a key press ([`focus_seen`]):
+    /// of a 0.7.2 theme, its ring ([`FocusRing::of`]); of a 0.8.0 one, the
+    /// indicator [`part_focus`] picks for the part `part` gives at the focused
+    /// state, `FOCUS_VISIBLE` for a focus that followed a key and `FOCUSED`
+    /// for another ([`FocusRing::next_indicator`]), the part's own fields'
+    /// homes `homes`. `None` where the theme states none the control can draw,
+    /// or one shown for keyboard focus only and the focus followed no key
+    /// (spec §2, `FocusIndicator`'s trigger contract; where the trigger is
+    /// unstated, gpui-component's own rings any focus).
+    fn ring(
+        self,
+        by_key: bool,
+        part: impl FnOnce(
+            &native_theme::next::ResolvedTheme,
+            WidgetState,
+        ) -> native_theme::next::PartStyle,
+        homes: RingHomes,
+    ) -> Option<FocusRing> {
+        let r = match self {
+            Self::Old(n) => {
+                return FocusRing::of(n.resolved).filter(|_| by_key || !self.keyboard_only());
+            }
+            Self::Next(r) => r,
+        };
+        let part = part(r, focus_state(by_key));
+        let (f, homes) = part_focus(r, &part, homes)?;
+        let ring = FocusRing::next_indicator(f, &homes).ok().flatten()?;
+        (by_key || f.trigger != Some(FocusTrigger::KeyboardOnly)).then_some(ring)
     }
 
     /// Whether the platform shows its focus ring for keyboard focus only:

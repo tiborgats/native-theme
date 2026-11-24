@@ -590,6 +590,30 @@ pub fn stated(color: native_theme::color::Rgba) -> Hsla {
     Hsla::from(gpui::Rgba { r, g, b, a })
 }
 
+/// `info` with the note, where the 0.8.0 theme states a focus ring of its
+/// own for `part`, a part gpui-component draws, at `home` (spec §2,
+/// `FocusIndicator`: `PartStyle.focus`), that it is not mapped:
+/// gpui-component draws its own ring round the widget, from `ThemeColor`
+/// ring, the global ring's colour, and takes no ring of a part's
+/// (gpui-component/styled.rs:179-184, focus_ring_style; :250-298,
+/// focus_style), so the part's own is drawn nowhere (spec §10, rule 0).
+/// `info` as it is where the part states none.
+pub fn own_ring_not_drawn(
+    info: WidgetInfo,
+    part: &native_theme::next::PartStyle,
+    home: &str,
+) -> WidgetInfo {
+    if !part.stated.contains(native_theme::next::PartStated::FOCUS) {
+        return info;
+    }
+    info.config(
+        "focus ring",
+        format!(
+            "not mapped: the theme states {home}, a focus ring of the part's own, which gpui cannot hand to gpui-component: the widget draws its own ring, ThemeColor ring 3px wide at alpha 0.5, the global ring's colour (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style), so the part's own ring is drawn nowhere (spec §10, rule 0)"
+        ),
+    )
+}
+
 /// A colour of the installed 0.8.0 theme as gpui paints it, each channel
 /// clamped to [0, 1] as the connector converts one (native-theme-gpui
 /// colors.rs, `channels_to_hsla`): the value of a claim on a global colour

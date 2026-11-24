@@ -705,8 +705,19 @@ impl RenderOnce for TabBar {
         ) else {
             return self.fallback();
         };
-        let keyboard_only = theme.keyboard_only();
-        let ring = theme.focus_ring().filter(|_| !keyboard_only || by_key);
+        // A tab's own ring where the theme states one, at the tab's selected
+        // state or not; else the global ring.
+        let tab_ring = |at: native_theme::next::WidgetState| {
+            theme.ring(
+                by_key,
+                move |r, focus| r.tab.tab(focus | at),
+                super::RingHomes::TAB,
+            )
+        };
+        let (idle_ring, selected_ring) = (
+            tab_ring(native_theme::next::WidgetState::NONE),
+            tab_ring(native_theme::next::WidgetState::SELECTED),
+        );
         // The tab's sides from its start edge: the left in a left-to-right
         // layout, the right in a right-to-left one.
         let (pad_left, pad_right) = if rtl {
@@ -808,17 +819,24 @@ impl RenderOnce for TabBar {
                 // only, a focus that followed a key, `focus_followed_key`): the
                 // theme's ring as an inset shadow, inside the tab, its spread
                 // the ring's width.
-                .when_some(ring, |tab, ring| {
-                    tab.focus(move |style| {
-                        style.shadow(vec![gpui::BoxShadow {
-                            color: ring.color,
-                            offset: point(px(0.), px(0.)),
-                            blur_radius: px(0.),
-                            spread_radius: px(ring.width),
-                            inset: true,
-                        }])
-                    })
-                })
+                .when_some(
+                    if is_selected {
+                        selected_ring
+                    } else {
+                        idle_ring
+                    },
+                    |tab, ring| {
+                        tab.focus(move |style| {
+                            style.shadow(vec![gpui::BoxShadow {
+                                color: ring.color,
+                                offset: point(px(0.), px(0.)),
+                                blur_radius: px(0.),
+                                spread_radius: px(ring.width),
+                                inset: true,
+                            }])
+                        })
+                    },
+                )
                 // Right to left, the last tab, the leftmost, takes the free
                 // space before it, so the strip runs from the right; once the
                 // tabs overflow the margin is none, and they scroll from the

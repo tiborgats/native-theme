@@ -770,7 +770,16 @@ fn list_fill(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
 /// geometry line is recorded where `demo::list` applies the builder; its
 /// rows report themselves (`list_row`).
 pub fn list(rows: usize, native: Option<&NextTheme>) -> WidgetInfo {
-    list_fill(WidgetInfo::new("List").variant("selectable"), native)
+    let info = list_fill(WidgetInfo::new("List").variant("selectable"), native);
+    let info = match native {
+        Some(r) => super::own_ring_not_drawn(
+            info,
+            &r.list.row(native_theme::next::WidgetState::FOCUSED),
+            "list.row(FOCUSED).focus",
+        ),
+        None => info,
+    };
+    info
         .not_themeable("even rows", "the list_even token has no reader anywhere in gpui-component or gpui-base: a List paints every row the same, and the connector writes the slot for nothing (Tier U)")
         .instance("frame", "List paints no frame of its own (list/list.rs, RenderOnce for List), so the frame is the application's: the box around it")
         .instance("rows", format!("{rows}; a click selects one, and each reports itself"))

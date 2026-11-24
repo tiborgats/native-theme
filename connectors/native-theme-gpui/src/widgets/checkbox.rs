@@ -671,21 +671,37 @@ impl Parts {
         };
         let look = look.faded_over(ground);
         let text = font.text();
-        let ring = theme.focus_ring();
-        let keyboard_only = theme.keyboard_only();
-        let (indicator, label) = indicator_and_label(&self, &look, round, text, window, cx);
         let focus_handle = window
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
             .read(cx)
             .clone();
         let focused = focus_handle.is_focused(window);
-        let shows = super::ring_shows(
-            (self.id.clone(), "focus-visible"),
-            focused,
-            keyboard_only,
-            window,
-            cx,
-        );
+        let seen = super::focus_seen((self.id.clone(), "focus-visible"), focused, window, cx);
+        // The indicator's own ring where the theme states one, round the
+        // indicator; else the global ring, round the row.
+        let at = super::checked_disabled(checked, disabled);
+        let part = move |r: &native_theme::next::ResolvedTheme, focus| {
+            if round {
+                r.radio.indicator(focus | at)
+            } else {
+                r.checkbox.indicator(focus | at)
+            }
+        };
+        let homes = if round {
+            super::RingHomes::RADIO
+        } else {
+            super::RingHomes::CHECKBOX
+        };
+        // Read again: the keyed states took `cx` mutably.
+        let theme = ThemeSource::of(cx);
+        let own = match (theme, seen) {
+            (Some(ThemeSource::Next(r)), Some(by_key)) => super::states_own_focus(r, by_key, part),
+            _ => false,
+        };
+        let ring = seen.and_then(|by_key| theme?.ring(by_key, part, homes));
+        let (indicator_ring, row_ring) = if own { (ring, None) } else { (None, ring) };
+        let (indicator, label) =
+            indicator_and_label(&self, &look, round, text, indicator_ring, window, cx);
         let style = std::mem::take(&mut self.style);
         Ok(base(self, &focus_handle)
             .debug_selector(|| "native-checkbox-row".into())
@@ -704,7 +720,7 @@ impl Parts {
             // The ring follows the row, for a radio as for a checkbox, as
             // gpui-component's and the egui connector's do: last, over the indicator
             // and the label, and after the caller's refinement.
-            .when_some(ring.filter(|_| shows), |row, ring| ring.draw(row, window)))
+            .when_some(row_ring, |row, ring| ring.draw(row, window)))
     }
 }
 
@@ -843,6 +859,7 @@ fn indicator_and_label(
     look: &CheckboxLook,
     round: bool,
     text: gpui::Div,
+    ring: Option<super::FocusRing>,
     window: &mut Window,
     cx: &mut App,
 ) -> (AnyElement, Option<AnyElement>) {
@@ -979,7 +996,12 @@ fn indicator_and_label(
     )
     .debug_selector(|| "native-checkbox-indicator".into())
     .child(mark)
-    .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)))
+    .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)));
+    // The indicator's own ring, last, over its mark and its edge.
+    let indicator = match ring {
+        Some(ring) => ring.draw(indicator, window),
+        None => indicator,
+    }
     .into_any_element();
     let label = parts.label.clone().map(|label| {
         text.relative()
