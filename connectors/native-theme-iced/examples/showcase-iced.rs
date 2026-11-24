@@ -13426,15 +13426,6 @@ fn next_tooltip_gap(r: &native_theme::next::ResolvedTheme) -> f32 {
     next_gpui_rems(TOOLTIP_GAP_REMS, r)
 }
 
-/// `rems` of gpui-component's rem, its `Theme::font_size` (gpui-component
-/// 0.9.1 `src/root.rs:714`), which the gpui connector fills with the scaled
-/// `defaults.font.size` (`native-theme-gpui/src/lib.rs`, `to_theme`): the
-/// size a gpui showcase constant of `rems(..)` stands for under the
-/// installed theme (Addendum F's rem rule).
-fn gpui_rems(rems: f32, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32 {
-    a11y.scaled(resolved.defaults.font.size) * rems
-}
-
 /// What Widget Info says of a tooltip's gap to its control, which the theme
 /// does not state: [`next_tooltip_gap`]'s value under the installed 0.8.0
 /// theme, and its rule.
@@ -20421,48 +20412,38 @@ fn base_palette_info(state: &State) -> String {
             Paint::leaf("danger", "danger", palette.danger),
         ],
         &[],
-        &[("swatches", swatches_line(state).as_str())],
+        &[(
+            "swatches",
+            theme_map_swatches_line(state.next_shown()).as_str(),
+        )],
     )
 }
 
 fn view_theme_map(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let header = section_header(
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
+    let title =
+        |label: &'static str| text(label).next_text(next_section_title(next), &next.typography);
+    let header = next_section_header(
         "Theme Map",
         "All palette and extended palette colors from the current theme",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
     let palette = state.current_theme.palette();
     let extended = state.current_theme.extended_palette();
-    let swatch_border = native_theme_iced::border_color(&state.current_resolved);
-    let swatch_bw = state.current_resolved.defaults.border.line_width;
-    let swatch_r = native_theme_iced::border_corner_radius(&state.current_resolved);
-    let swatch_frame = iced::Border {
-        color: swatch_border,
-        width: swatch_bw,
-        radius: swatch_r.into(),
-    };
-    // Local closure for concise swatch calls
-    let caption = &ts.caption;
+    // The swatches' frame on the installed 0.8.0 theme ([`swatch_frame`]):
+    // `colors.window.border`, `layout.border_width` wide,
+    // `layout.corner_radius` round, none where the theme states no border
+    // colour.
+    let frame = swatch_frame(next);
     let cs = |label: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(label, color, swatch_frame, caption, resolved, a11y)
+        next_color_swatch(label, color, frame, next)
     };
 
     let swatch_style = SwatchStyle {
-        border_color: swatch_border,
-        border_width: swatch_bw,
-        radius: swatch_r,
-        heading: section_title(ts),
-        caption: &ts.caption,
-        resolved,
-        a11y,
+        frame,
+        next,
         widget_gap: gap.widget,
     };
 
@@ -20470,7 +20451,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     let base_palette = hoverable(
         UnlistedKey::BasePalette,
         column![
-            text("Base Palette (6 fields)").role(section_title(ts), resolved, a11y),
+            title("Base Palette (6 fields)"),
             row![
                 cs("background", palette.background),
                 cs("text", palette.text),
@@ -20495,76 +20476,24 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         ext_danger,
     ] = PaletteSection::ALL.map(|section| hoverable_ext_section(section, extended, &swatch_style));
 
-    // Resolved theme colors (defaults + selected per-widget)
+    // Resolved theme colors (defaults + selected per-widget), six to a row;
+    // a colour the theme leaves unstated has no swatch.
     let native_colors = {
-        let d = &state.current_resolved.defaults;
-        let r = &state.current_resolved;
-        let pairs: Vec<(&str, native_theme::color::Rgba)> = vec![
-            ("accent", d.accent_color),
-            ("background", d.background_color),
-            ("text", d.text_color),
-            ("surface", d.surface_color),
-            ("border", d.border.color),
-            ("muted", d.muted_color),
-            ("shadow", d.shadow_color),
-            ("accent_fg", d.accent_text_color),
-            ("btn_bg", r.button.background_color),
-            ("btn_fg", r.button.font.color),
-            ("btn_primary", r.button.primary_background),
-            ("danger", d.danger_color),
-            ("danger_fg", d.danger_text_color),
-            ("warning", d.warning_color),
-            ("warning_fg", d.warning_text_color),
-            ("success", d.success_color),
-            ("success_fg", d.success_text_color),
-            ("info", d.info_color),
-            ("info_fg", d.info_text_color),
-            ("selection", d.selection_background),
-            ("selection_fg", d.selection_text_color),
-            ("link", d.link_color),
-            ("focus_ring", d.focus_ring_color),
-            ("sidebar_bg", r.sidebar.background_color),
-            ("sidebar_fg", r.sidebar.font.color),
-            ("tooltip_bg", r.tooltip.background_color),
-            ("tooltip_fg", r.tooltip.font.color),
-            ("popover_bg", r.popover.background_color),
-            ("popover_fg", r.popover.font.color),
-            ("input_bg", r.input.background_color),
-            ("input_fg", r.input.font.color),
-            ("disabled_fg", d.disabled_text_color),
-            ("separator", r.separator.line_color),
-            ("alt_row", r.list.alternate_row_background),
-            ("sel_inactive", d.selection_inactive_background),
-            ("sel_inactive_fg", d.selection_inactive_text_color),
-            ("card_bg", r.card.background_color),
-        ];
-
-        // Wrap into rows of 6
-        let mut rows: Vec<Element<'_, Message>> = Vec::new();
-        for chunk in pairs.chunks(6) {
-            let row_items: Vec<Element<'_, Message>> = chunk
-                .iter()
-                .map(|(name, rgba)| {
-                    let [cr, cg, cb, ca] = rgba.to_f32_array();
-                    color_swatch(
-                        name,
-                        Color::from_rgba(cr, cg, cb, ca),
-                        swatch_frame,
-                        &ts.caption,
-                        resolved,
-                        a11y,
-                    )
-                })
-                .collect();
-            rows.push(row(row_items).spacing(SWATCH_GAP_X).into());
-        }
+        let swatches: Vec<(&'static str, Color)> = theme_map_colours(next)
+            .into_iter()
+            .filter_map(|(name, _, color)| color.map(|color| (name, color)))
+            .collect();
+        let rows: Vec<Element<'_, Message>> = swatches
+            .chunks(6)
+            .map(|chunk| {
+                row(chunk.iter().map(|(name, color)| cs(name, *color)))
+                    .spacing(SWATCH_GAP_X)
+                    .into()
+            })
+            .collect();
 
         column![
-            text("Resolved Theme Colors (defaults + per-widget)").role(
-                section_title(ts),
-                resolved,
-                a11y
-            ),
+            title("Resolved Theme Colors (defaults + per-widget)"),
             column(rows).spacing(SWATCH_GAP_Y),
         ]
         .spacing(gap.widget)
@@ -20573,24 +20502,177 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     column![
         header,
         base_palette,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_background,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_primary,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_secondary,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_success,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_warning,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_danger,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         native_colors,
     ]
     .spacing(gap.section)
     .width(Fill)
     .into()
+}
+
+/// One of the Theme Map's resolved colours: its name, the 0.8.0 home it is
+/// read from, and its colour there, `None` where the theme leaves the home
+/// unstated.
+type ThemeMapColour = (&'static str, &'static str, Option<Color>);
+
+/// The Theme Map's resolved colours on the installed 0.8.0 theme `r`, each
+/// named after the 0.7.2 field it showed and read from that field's 0.8.0
+/// home: a colour role as stated, a part's fill as `iced_next::fill_of`
+/// reads it and a text's colour as `iced_next::text_color_of` does, each
+/// `None` where unstated.
+fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 37] {
+    let c = &r.colors;
+    let role = |color: native_theme::next::Color| Some(next_colour(color));
+    let slot = |color: Option<native_theme::next::Color>| color.map(next_colour);
+    let none = WidgetState::NONE;
+    let alternate_row = native_theme::next::ListQuery::new(none).alternate(true);
+    [
+        ("accent", "colors.accent.fill", role(c.accent.fill)),
+        (
+            "background",
+            "colors.window.background",
+            slot(c.window.background),
+        ),
+        (
+            "text",
+            "colors.window.foreground",
+            slot(c.window.foreground),
+        ),
+        ("surface", "colors.view.background", slot(c.view.background)),
+        ("border", "colors.window.border", slot(c.window.border)),
+        (
+            "muted",
+            "colors.window.foreground_muted",
+            slot(c.window.foreground_muted),
+        ),
+        ("shadow", "colors.shadow", role(c.shadow)),
+        (
+            "accent_fg",
+            "colors.accent.foreground",
+            role(c.accent.foreground),
+        ),
+        (
+            "btn_bg",
+            "button.body(NONE).fill",
+            iced_next::fill_of(&r.button.body(none)),
+        ),
+        (
+            "btn_fg",
+            "button.label(NONE).color",
+            iced_next::text_color_of(&r.button.label(none)),
+        ),
+        (
+            "btn_primary",
+            "button.body(NONE;variant=Primary).fill",
+            iced_next::fill_of(&r.button.body(ButtonQuery::primary())),
+        ),
+        ("danger", "colors.error.fill", role(c.error.fill)),
+        (
+            "danger_fg",
+            "colors.error.foreground",
+            role(c.error.foreground),
+        ),
+        ("warning", "colors.warning.fill", role(c.warning.fill)),
+        (
+            "warning_fg",
+            "colors.warning.foreground",
+            role(c.warning.foreground),
+        ),
+        ("success", "colors.success.fill", role(c.success.fill)),
+        (
+            "success_fg",
+            "colors.success.foreground",
+            role(c.success.foreground),
+        ),
+        ("info", "colors.info.fill", role(c.info.fill)),
+        ("info_fg", "colors.info.foreground", role(c.info.foreground)),
+        (
+            "selection",
+            "colors.selection.background",
+            role(c.selection.background),
+        ),
+        (
+            "selection_fg",
+            "colors.selection.foreground",
+            role(c.selection.foreground),
+        ),
+        ("link", "colors.link", role(c.link)),
+        ("focus_ring", "colors.focus_ring", role(c.focus_ring)),
+        (
+            "sidebar_bg",
+            "sidebar.container(NONE).fill",
+            iced_next::fill_of(&r.sidebar.container(none)),
+        ),
+        (
+            "sidebar_fg",
+            "sidebar.item_label(NONE).color",
+            iced_next::text_color_of(&r.sidebar.item_label(none)),
+        ),
+        (
+            "tooltip_bg",
+            "tooltip.panel.fill",
+            iced_next::fill_of(&r.tooltip.panel),
+        ),
+        (
+            "tooltip_fg",
+            "tooltip.text.color",
+            iced_next::text_color_of(&r.tooltip.text),
+        ),
+        (
+            "popover_bg",
+            "popover.panel.fill",
+            iced_next::fill_of(&r.popover.panel),
+        ),
+        (
+            "popover_fg",
+            "popover.text.color",
+            iced_next::text_color_of(&r.popover.text),
+        ),
+        (
+            "input_bg",
+            "input.field(NONE).fill",
+            iced_next::fill_of(&r.input.field(none)),
+        ),
+        (
+            "input_fg",
+            "input.text(NONE).color",
+            iced_next::text_color_of(&r.input.text(none)),
+        ),
+        ("disabled_fg", "colors.disabled_text", role(c.disabled_text)),
+        ("separator", "separator.color", role(r.separator.color)),
+        (
+            "alt_row",
+            "list.row(NONE;alternate=true).fill",
+            iced_next::fill_of(&r.list.row(alternate_row)),
+        ),
+        (
+            "sel_inactive",
+            "colors.selection.unfocused_background",
+            slot(c.selection.unfocused_background),
+        ),
+        (
+            "sel_inactive_fg",
+            "colors.selection.unfocused_foreground",
+            slot(c.selection.unfocused_foreground),
+        ),
+        (
+            "card_bg",
+            "card.container(NONE).fill",
+            iced_next::fill_of(&r.card.container(none)),
+        ),
+    ]
 }
 
 /// `c` as native-theme's `Rgba` prints a theme colour: `#rrggbb`, or
@@ -20612,7 +20694,7 @@ const COLOR_SWATCH_PADDING: Padding = Padding {
 };
 
 /// The space between a colour swatch and its label, in gpui rems
-/// ([`gpui_rems`]) (spec §3.1): the gpui showcase's `SWATCH_LABEL_GAP`,
+/// ([`next_gpui_rems`]) (spec §3.1): the gpui showcase's `SWATCH_LABEL_GAP`,
 /// `rems(0.5)` (`showcase-gpui/pages/mod.rs`), as the theme states no
 /// swatch ([`swatches_line`]).
 const SWATCH_LABEL_GAP_REMS: f32 = 0.5;
@@ -20625,35 +20707,31 @@ const SWATCH_LABEL_GAP_REMS: f32 = 0.5;
 const SWATCH_GAP_X: f32 = 16.0;
 const SWATCH_GAP_Y: f32 = 4.0;
 
-/// The Widget Info line of a table of colour swatches on the 0.7.2 theme,
-/// the Theme Map's, which lays its swatches out by the Layout page Grid's
-/// rule ([`next_swatches_line`]): the showcase's own distances it draws
-/// them at, under the installed theme.
-fn swatches_line(state: &State) -> String {
-    let label_gap = gpui_rems(
-        SWATCH_LABEL_GAP_REMS,
-        &state.current_resolved,
-        &state.accessibility,
-    );
-    format!(
-        "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), its label \
-         {} below (SWATCH_LABEL_GAP_REMS, gpui's SWATCH_LABEL_GAP, a half of the scaled \
-         defaults.font.size); two rows SWATCH_GAP_Y (4px) apart, and on a row two swatches \
-         SWATCH_GAP_X (16px) apart: gpui's, as the theme states no swatch table",
-        px_text(label_gap)
-    )
-}
-
-/// [`swatches_line`] of the Layout page's Grid, on the installed 0.8.0
-/// theme `r` its swatches are laid out on ([`next_color_swatch`]).
-fn next_swatches_line(r: &native_theme::next::ResolvedTheme) -> String {
+/// The Widget Info line of a table of colour swatches on the installed
+/// 0.8.0 theme `r` its swatches are laid out on ([`next_color_swatch`]),
+/// its columns spaced as `columns` says: the showcase's own distances it
+/// draws them at.
+fn swatch_table_line(r: &native_theme::next::ResolvedTheme, columns: &str) -> String {
     format!(
         "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), its label \
          {} below (SWATCH_LABEL_GAP_REMS, gpui's SWATCH_LABEL_GAP, a half of \
-         typography.body.size_px); two rows SWATCH_GAP_Y (4px) apart, the columns splitting \
-         the grid's width evenly (iced's grid takes one spacing, grid.rs:63, :203-205): \
+         typography.body.size_px); two rows SWATCH_GAP_Y (4px) apart, {columns}: \
          gpui's, as the theme states no swatch table",
         px_text(next_gpui_rems(SWATCH_LABEL_GAP_REMS, r))
+    )
+}
+
+/// [`swatch_table_line`] of the Theme Map's tables, rows of swatches.
+fn theme_map_swatches_line(r: &native_theme::next::ResolvedTheme) -> String {
+    swatch_table_line(r, "and on a row two swatches SWATCH_GAP_X (16px) apart")
+}
+
+/// [`swatch_table_line`] of the Layout page's Grid.
+fn next_swatches_line(r: &native_theme::next::ResolvedTheme) -> String {
+    swatch_table_line(
+        r,
+        "the columns splitting the grid's width evenly (iced's grid takes one spacing, \
+         grid.rs:63, :203-205)",
     )
 }
 
@@ -20668,28 +20746,8 @@ fn next_caption_home(r: &native_theme::next::ResolvedTheme) -> &'static str {
     }
 }
 
-/// A colour swatch on the 0.7.2 theme, the Theme Map's: [`swatch_of`] with
-/// its hex and label in `caption`, the label [`SWATCH_LABEL_GAP_REMS`]
-/// below.
-fn color_swatch<'a>(
-    label: &'a str,
-    color: Color,
-    border: iced::Border,
-    caption: &ResolvedTextScaleEntry,
-    resolved: &ResolvedTheme,
-    a11y: &AccessibilityPreferences,
-) -> Element<'a, Message> {
-    swatch_of(
-        color,
-        border,
-        text(color_to_hex(color)).role(caption, resolved, a11y),
-        text(label).role(caption, resolved, a11y),
-        gpui_rems(SWATCH_LABEL_GAP_REMS, resolved, a11y),
-    )
-}
-
-/// [`color_swatch`] on the installed 0.8.0 theme `r`, the Layout page
-/// Grid's: [`swatch_of`] with its hex and label in the caption
+/// A colour swatch on the installed 0.8.0 theme `r`, the Layout page
+/// Grid's and the Theme Map's: [`swatch_of`] with its hex and label in the caption
 /// `native_theme_iced::next::text_scale` gives ([`Typeset::next_text`]),
 /// the label [`SWATCH_LABEL_GAP_REMS`] of the 0.8.0 rem below
 /// ([`next_gpui_rems`]).
@@ -20748,15 +20806,13 @@ fn swatch_of<'a>(
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Swatch rendering parameters shared across extended palette sections.
+/// Swatch rendering parameters shared across extended palette sections, on
+/// the installed 0.8.0 theme.
 struct SwatchStyle<'s> {
-    border_color: Color,
-    border_width: f32,
-    radius: f32,
-    heading: &'s ResolvedTextScaleEntry,
-    caption: &'s ResolvedTextScaleEntry,
-    resolved: &'s ResolvedTheme,
-    a11y: &'s AccessibilityPreferences,
+    /// The swatches' frame ([`swatch_frame`]).
+    frame: iced::Border,
+    /// The theme the headings and the swatches' texts are set in.
+    next: &'s native_theme::next::ResolvedTheme,
     /// `layout.widget_gap`, between a section's heading and its swatches.
     widget_gap: f32,
 }
@@ -20831,7 +20887,10 @@ fn palette_section_info(state: &State, section: PaletteSection) -> String {
             Paint::leaf("strong.text", "strong.text", strong.text),
         ],
         &[],
-        &[("swatches", swatches_line(state).as_str())],
+        &[(
+            "swatches",
+            theme_map_swatches_line(state.next_shown()).as_str(),
+        )],
     )
 }
 
@@ -20846,31 +20905,15 @@ fn hoverable_ext_section<'a>(
     let label = section.label();
     let [base, weak, strong] = section.pairs(extended);
     let SwatchStyle {
-        border_color,
-        border_width,
-        radius,
-        heading,
-        caption,
-        resolved,
-        a11y,
+        frame,
+        next,
         widget_gap,
     } = *style;
     let cs = |field: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(
-            field,
-            color,
-            iced::Border {
-                color: border_color,
-                width: border_width,
-                radius: radius.into(),
-            },
-            caption,
-            resolved,
-            a11y,
-        )
+        next_color_swatch(field, color, frame, next)
     };
     let content: Element<'a, Message> = column![
-        text(label).role(heading, resolved, a11y),
+        text(label).next_text(next_section_title(next), &next.typography),
         row![
             cs("base.color", base.color),
             cs("base.text", base.text),
@@ -20897,13 +20940,6 @@ fn arrow_handle(resolved: &ResolvedTheme) -> pick_list::Handle<iced::Font> {
     native_theme_iced::pick_list_handle::<iced::Renderer>(resolved)
 }
 
-/// The role a page's title is set in: `dialog_title`, the dialog or page title
-/// (`docs/platform-facts.md` §2.19). Not `display`, the hero text of
-/// onboarding and banners, which KDE does not have.
-fn page_title(ts: &ResolvedTextScale) -> &ResolvedTextScaleEntry {
-    &ts.dialog_title
-}
-
 /// The role a section title within a page is set in: `section_heading`, the
 /// section divider (`docs/platform-facts.md` §2.19).
 fn section_title(ts: &ResolvedTextScale) -> &ResolvedTextScaleEntry {
@@ -20928,7 +20964,6 @@ trait Typeset {
         a11y: &AccessibilityPreferences,
     ) -> Self;
     fn typeset(self, font: &ResolvedFontSpec, a11y: &AccessibilityPreferences) -> Self;
-    fn body(self, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Self;
     /// `typeset`, on the theme's line height, `defaults.line_height`.
     fn themed(
         self,
@@ -20944,7 +20979,7 @@ trait Typeset {
     /// where it gives one iced can draw, else in iced's own (spec §10,
     /// rule 0).
     fn next_text(self, style: &TextStyle, typography: &Typography) -> Self;
-    /// `body` on the 0.8.0 model: [`next_text`](Typeset::next_text) in
+    /// Body text on the 0.8.0 model: [`next_text`](Typeset::next_text) in
     /// `typography.body`.
     fn next_body(self, r: &native_theme::next::ResolvedTheme) -> Self;
 }
@@ -20965,10 +21000,6 @@ impl Typeset for iced::widget::Text<'_> {
     fn typeset(self, font: &ResolvedFontSpec, a11y: &AccessibilityPreferences) -> Self {
         self.size(scaled_text_size(font.size, a11y))
             .font(theme_font(font))
-    }
-
-    fn body(self, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Self {
-        self.themed(&resolved.defaults.font, resolved, a11y)
     }
 
     fn themed(
@@ -21010,9 +21041,12 @@ fn next_line_box(typography: &Typography, style: &TextStyle) -> f32 {
     }
 }
 
-/// [`page_title`] on the 0.8.0 model: `typography.title1`, or the body
-/// style where the theme defines none (`native_theme_iced::next::text_scale`,
-/// the table of homes' `text_scale.dialog_title`).
+/// The role a page's title is set in on the 0.8.0 model: `dialog_title`,
+/// the dialog or page title (`docs/platform-facts.md` §2.19), not
+/// `display`, the hero text of onboarding and banners, which KDE does not
+/// have; `typography.title1`, or the body style where the theme defines
+/// none (`native_theme_iced::next::text_scale`, the table of homes'
+/// `text_scale.dialog_title`).
 fn next_page_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
     native_theme_iced::next::text_scale(r).dialog_title
 }
@@ -21031,9 +21065,11 @@ fn next_theme_mono_font(r: &native_theme::next::ResolvedTheme) -> Option<iced::F
     next_font_from_database(&r.typography.monospace, true).map(|drawn| drawn.font)
 }
 
-/// [`gpui_rems`] on the 0.8.0 model: `rems` of gpui-component's rem, which
-/// the gpui connector fills with the body size the 0.8.0 theme resolved,
-/// the text scale already applied (`typography.body.size_px`).
+/// `rems` of gpui-component's rem, its `Theme::font_size` (gpui-component
+/// 0.9.1 `src/root.rs:714`), which the gpui connector fills with the body
+/// size the 0.8.0 theme resolved, the text scale already applied
+/// (`typography.body.size_px`): the size a gpui showcase constant of
+/// `rems(..)` stands for under the installed theme (Addendum F's rem rule).
 fn next_gpui_rems(rems: f32, r: &native_theme::next::ResolvedTheme) -> f32 {
     r.typography.body.size_px * rems
 }
@@ -21815,24 +21851,7 @@ fn register_weight(
     }
 }
 
-fn section_header<'a>(
-    title: &'a str,
-    description: &'a str,
-    resolved: &ResolvedTheme,
-    ts: &ResolvedTextScale,
-    a11y: &AccessibilityPreferences,
-    widget_gap: f32,
-) -> Element<'a, Message> {
-    column![
-        text(title).role(page_title(ts), resolved, a11y),
-        text(description).body(resolved, a11y),
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-    ]
-    .spacing(widget_gap)
-    .into()
-}
-
-/// [`section_header`] on the installed 0.8.0 theme: the title in
+/// A page's header on the installed 0.8.0 theme: the title in
 /// [`next_page_title`], the description in `typography.body`, a
 /// `layout.widget_gap` apart (none where unstated), over a rule
 /// `separator.thickness` thick, its colour still `styles::rule`'s.
@@ -25823,40 +25842,48 @@ mod tests {
     /// `docs/platform-facts.md` §2.19 defines for it -- `dialog_title` for a
     /// page, `section_heading` for a section -- and body text is the theme's
     /// font. KDE has no `display` role; set in it, a page title fell to body
-    /// size, below its own description.
+    /// size, below its own description. On the 0.8.0 model, the text
+    /// scale's roles as `native_theme_iced::next::text_scale` gives them.
     #[test]
     fn page_and_section_titles_take_their_defined_roles() {
-        for preset in [
+        let presets = [
             "kde-breeze",
             "adwaita",
             "macos-monterey",
             "macos-tahoe",
             "windows-11",
-        ] {
-            for is_dark in [false, true] {
-                let at = format!("{preset} (dark: {is_dark})");
-                let resolved = match native_theme_iced::from_preset(preset, is_dark) {
-                    Ok((_, resolved)) => resolved,
-                    Err(error) => panic!("{at}: {error}"),
-                };
-                let ts = &resolved.text_scale;
-                let page = page_title(ts).size;
-                let section = section_title(ts).size;
-                let body = resolved.defaults.font.size;
-                assert!(
-                    page >= section && section >= body,
-                    "{at}: page title {page}px, section title {section}px, body {body}px"
-                );
-                assert!(
-                    std::ptr::eq(page_title(ts), &ts.dialog_title),
-                    "{at}: a page title is not set in dialog_title"
-                );
-                assert!(
-                    std::ptr::eq(section_title(ts), &ts.section_heading),
-                    "{at}: a section title is not set in section_heading"
-                );
+        ];
+        let mut seen = 0;
+        for (at, r) in next_combinations() {
+            if !presets
+                .iter()
+                .any(|preset| at.split('/').next() == Some(*preset))
+            {
+                continue;
             }
+            seen += 1;
+            let scale = native_theme_iced::next::text_scale(&r);
+            let page = next_page_title(&r).size_px;
+            let section = next_section_title(&r).size_px;
+            let body = r.typography.body.size_px;
+            assert!(
+                page >= section && section >= body,
+                "{at}: page title {page}px, section title {section}px, body {body}px"
+            );
+            assert!(
+                std::ptr::eq(next_page_title(&r), scale.dialog_title),
+                "{at}: a page title is not set in dialog_title"
+            );
+            assert!(
+                std::ptr::eq(next_section_title(&r), scale.section_heading),
+                "{at}: a section title is not set in section_heading"
+            );
         }
+        assert_eq!(
+            seen,
+            presets.len() * 2,
+            "a preset is not among the 0.8.0 presets"
+        );
     }
 
     /// Text set in a `text_scale` role takes the role's weight with its size,
@@ -25884,16 +25911,15 @@ mod tests {
                 }
             }
         }
-        let header = match source.find("fn section_header") {
-            Some(start) => match source[start..].find("\n}") {
-                Some(len) => &source[start..start + len],
-                None => &source[start..],
-            },
-            None => panic!("section_header is gone"),
-        };
+        let header = source.find("fn next_section_header").and_then(|start| {
+            let rest = source.get(start..)?;
+            rest.find("\n}").and_then(|len| rest.get(..len))
+        });
         assert!(
-            header.contains("page_title(ts)"),
-            "section_header does not set its title in page_title"
+            header.is_some_and(|header| {
+                header.contains("next_text(next_page_title(next), &next.typography)")
+            }),
+            "next_section_header is gone, or does not set its title in next_page_title"
         );
     }
 
@@ -25992,7 +26018,7 @@ mod tests {
             "container(a).padding([0.0, 0.0])",
             "Padding::new(AW_MENU_PADDING)",
             "Padding::ZERO.top(row_inset / 2.0)",
-            "row![a].spacing(gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y))",
+            "row![a].spacing(next_gpui_rems(ICON_GRID_GAP_REMS, next))",
             "space().width(Fill)",
             "container(a).width(Length::Fixed(80.0))",
             "const PAD: Padding = Padding { top: 4.0, right: 8.0, bottom: 4.0, left: 8.0 };",
@@ -26328,7 +26354,7 @@ mod tests {
     /// gpui showcase constant has gpui's value, the chrome-parity rule, read
     /// from the gpui showcase's source (`showcase-gpui/demo.rs` and
     /// `pages/mod.rs`): a `px(..)` constant in logical pixels, a `rems(..)`
-    /// one as iced's `_REMS` constant of [`gpui_rems`]. The constants with no
+    /// one as iced's `_REMS` constant of [`next_gpui_rems`]. The constants with no
     /// gpui counterpart (`COLOR_SWATCH_PADDING`, `AW_MENU_GAP`) say so in
     /// their docs.
     #[test]
@@ -29482,6 +29508,81 @@ mod tests {
         );
     }
 
+    /// The Theme Map's resolved colours on the installed 0.8.0 theme
+    /// ([`theme_map_colours`]): each swatch is the colour at the 0.8.0 home
+    /// it names, so a colour of the test's own stated there
+    /// ([`with_home`]), on a home kde-breeze states or leaves unstated, is
+    /// the hex the page draws over the swatch's name in the page's
+    /// "Resolved Theme Colors" table; a colour the theme leaves unstated
+    /// has no swatch there.
+    #[test]
+    fn the_theme_map_draws_its_colours_from_their_homes() -> Result<(), String> {
+        const HEADING: &str = "Resolved Theme Colors (defaults + per-widget)";
+        let mut state = page_state("kde-breeze", Tab::ThemeMap);
+        let installed = state.next_shown().clone();
+        // The texts of the table under `state`: each swatch's name with the
+        // text drawn nearest above it in its column, its hex.
+        let table = |state: &State| -> Result<Vec<(String, Option<String>)>, String> {
+            let mut ui = interface(state);
+            let found = texts(&mut ui);
+            drop(ui);
+            let top = found
+                .iter()
+                .find(|(content, _)| content == HEADING)
+                .map(|(_, bounds)| bounds.y + bounds.height)
+                .ok_or_else(|| format!("the Theme Map draws no {HEADING:?}"))?;
+            let names = theme_map_colours(&installed).map(|(name, _, _)| name);
+            Ok(found
+                .iter()
+                .filter(|(content, bounds)| bounds.y >= top && names.contains(&content.as_str()))
+                .map(|(name, label)| {
+                    let hex = found
+                        .iter()
+                        .filter(|(_, above)| {
+                            above.y >= top
+                                && above.y + above.height <= label.y
+                                && (above.center_x() - label.center_x()).abs() < 0.5
+                        })
+                        .max_by(|a, b| a.1.y.total_cmp(&b.1.y))
+                        .map(|(hex, _)| hex.clone());
+                    (name.clone(), hex)
+                })
+                .collect())
+        };
+        let mut faults = Vec::new();
+        for (name, home, _) in theme_map_colours(&installed) {
+            let patched = with_home(&installed, home, "#13579b")
+                .ok_or_else(|| format!("{name}: no patch reaches {home}"))?;
+            splice_next(&mut state, |r| *r = patched.clone());
+            let drawn = table(&state)?;
+            let swatches: Vec<&(String, Option<String>)> =
+                drawn.iter().filter(|(label, _)| label == name).collect();
+            if swatches != [&(name.to_owned(), Some("#13579b".to_owned()))] {
+                faults.push(format!("{name}: {home} at #13579b draws {swatches:?}"));
+            }
+        }
+        splice_next(&mut state, |r| {
+            *r = installed.clone();
+            r.colors.window.foreground_muted = None;
+        });
+        let drawn = table(&state)?;
+        if drawn.iter().any(|(label, _)| label == "muted") {
+            faults.push(format!(
+                "an unstated colors.window.foreground_muted has a swatch: {drawn:?}"
+            ));
+        }
+        if drawn.len()
+            != theme_map_colours(state.next_shown())
+                .iter()
+                .filter(|c| c.2.is_some())
+                .count()
+        {
+            faults.push(format!("the table is not the stated colours: {drawn:?}"));
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+        Ok(())
+    }
+
     /// M9-098 (info-truth): the Grid's Widget Info names what spaces it,
     /// the swatch table's `SWATCH_GAP_Y` between two rows (the M9b final
     /// fix's residuals: the Grid and the Theme Map lay their swatches out by
@@ -30301,7 +30402,7 @@ mod tests {
             || old.text_scale.section_heading.size == 23.0
             || is(old.list.border.padding.left, 11.0)
             || is(native_theme_iced::list_header_height(old), 41.0)
-            || gpui_rems(SWATCH_LABEL_GAP_REMS, old, &state.accessibility) == 9.0
+            || state.accessibility.scaled(old.defaults.font.size) * SWATCH_LABEL_GAP_REMS == 9.0
         {
             return Err("the splice states 0.7.2's sizes, or no caption or headline".into());
         }
@@ -32639,15 +32740,18 @@ mod tests {
     /// answers the query at rest alone and leaves the other states' rules
     /// as the preset orders them; spec §9, step 3, `not_states`), of the
     /// variant `;variant=<Variant>` after them names (`button.body(HOVER;
-    /// variant=Flat).fill` written without the space), a
+    /// variant=Flat).fill` written without the space) or of the rows
+    /// `;alternate=<bool>` names (`list.row(NONE;alternate=true).fill`), a
     /// static widget's part patch, or the colour role. A stroke is stated
     /// 1 px wide in the colour, so a home whose stroke the theme leaves
     /// unstated draws it. A widget's own colour ([`WIDGET_COLOURS`]) is
     /// stated in the widget's table. `None` for any other home.
     fn home_patch_toml(home: &str, colour: &str) -> Option<String> {
         if let Some(role) = home.strip_prefix("colors.") {
-            let (surface, slot) = role.split_once('.')?;
-            return Some(format!("[colors.{surface}]\n{slot} = \"{colour}\"\n"));
+            return Some(match role.split_once('.') {
+                Some((surface, slot)) => format!("[colors.{surface}]\n{slot} = \"{colour}\"\n"),
+                None => format!("[colors]\n{role} = \"{colour}\"\n"),
+            });
         }
         if WIDGET_COLOURS.contains(&home) {
             let (widget, field) = home.split_once('.')?;
@@ -32673,11 +32777,17 @@ mod tests {
         Some(match states {
             None => format!("[widgets.{widget}]\n{value}\n"),
             Some(query) => {
-                let (states, variant) = match query.split_once(";variant=") {
-                    Some((states, variant)) => (
-                        states,
-                        format!("variant = \"{}\"\n", variant.to_lowercase()),
-                    ),
+                let (states, variant) = match query.split_once(';') {
+                    Some((states, matcher)) => match matcher.split_once('=')? {
+                        ("variant", variant) => (
+                            states,
+                            format!("variant = \"{}\"\n", variant.to_lowercase()),
+                        ),
+                        ("alternate", alternate @ ("true" | "false")) => {
+                            (states, format!("alternate = {alternate}\n"))
+                        }
+                        _ => return None,
+                    },
                     None => (query, String::new()),
                 };
                 let names: Vec<String> = states
