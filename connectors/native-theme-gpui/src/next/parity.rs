@@ -398,7 +398,7 @@ const DIFFERENCES: &[Difference] = &[
                  fills them with transparent, 0 and 0 \
                  (native-theme/src/resolve/validate_helpers.rs), values no source gives; the \
                  0.8.0 ios-13 states the .insetGrouped cell's measured edge, no line and \
-                 corners of 10 (ios-host run 45230061151, the card render, \
+                 continuous corners of 10, drawn circular (ios-host run 45230061151, the card render, \
                  docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d; \
                  native-theme/tests/next_homes.toml, rows card.border.color, \
                  card.border.line_width and card.border.corner_radius, listed differences), so \
@@ -957,18 +957,20 @@ fn button_states_as(
 }
 
 /// The card's edge as `geometry::group_box_content`'s entries in
-/// [`DIFFERENCES`] describe it: `card.container(NONE)`'s uniform circular
-/// corner radius, and its uniform stroke's width and colour where it draws
-/// one (`None` for a stroke stated as none, which leaves 0.7.2's width 0
-/// in transparent); `None` where the theme states either otherwise.
+/// [`DIFFERENCES`] describe it: `card.container(NONE)`'s uniform corner
+/// radius, on either curve, as gpui draws a continuous one circular
+/// ([`super::radius_of`], spec §10 rule 2), and its uniform stroke's width
+/// and colour where it draws one (`None` for a stroke stated as none, which
+/// leaves 0.7.2's width 0 in transparent); `None` where the theme states
+/// either otherwise.
 fn card_edge_of(new: &native_theme::next::ResolvedTheme) -> Option<(f32, Option<(f32, Hsla)>)> {
-    use native_theme::next::{CornerCurve, CornerRadius, PartStated, Stroke, WidgetState};
+    use native_theme::next::{CornerRadius, PartStated, Stroke, WidgetState};
     let c = new.card.container(WidgetState::NONE);
     if !c.stated.contains(PartStated::STROKE) || !c.stated.contains(PartStated::CORNERS) {
         return None;
     }
-    let radius = match (c.corners.radius, c.corners.curve) {
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => r,
+    let radius = match c.corners.radius {
+        CornerRadius::Uniform(r) => r,
         _ => return None,
     };
     let border = match c.stroke {
