@@ -500,7 +500,7 @@
             "disabled"
           ],
           "label": {
-            "color": "#ffffff5d"
+            "color": "#070707"
           }
         },
         {
@@ -2130,7 +2130,7 @@
             "pressed"
           ],
           "button_label": {
-            "color": "#ffffffc5"
+            "color": "#060606"
           }
         },
         {

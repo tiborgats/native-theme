@@ -2464,9 +2464,13 @@ fn button(
         [TextProp::Color(c.window_foreground_muted)],
     )
     .rule(primary(), [TextProp::Color(roles.accent.foreground)])
+    // Disabled, ButtonForegroundDisabled = TextFillColorDisabled (Button_themeresources.xaml:135 at
+    // microsoft-ui-xaml 8463f45); under high contrast SystemControlDisabledBaseMediumLowBrush
+    // (:85), SystemColorGrayTextColor (generic.xaml:2026), as AccentButtonForegroundDisabled
+    // (:61) gives the primary button.
     .rule(
         RuleSelector::on(WidgetState::DISABLED),
-        [TextProp::Color(c.disabled_text)],
+        [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
     )
     // The flat (subtle) button's label: SubtleButtonForeground… = TextFillColorPrimary at rest and
     // hovered, TextFillColorSecondary pressed, TextFillColorDisabled disabled, the push button's;
@@ -3669,7 +3673,9 @@ fn toolbar(
         .build();
     // Hovered, the label as at rest: AppBarButtonForegroundPointerOver = TextFillColorPrimary
     // (AppBarButton_themeresources.xaml:80, :79 at microsoft-ui-xaml 8463f45); pressed,
-    // AppBarButtonForegroundPressed = TextFillColorSecondary (:81, set :257-259); disabled,
+    // AppBarButtonForegroundPressed = TextFillColorSecondary (:81, set :257-259), under high
+    // contrast SystemControlHighlightAltBaseHighBrush (:46), SystemColorHighlightTextColor
+    // (generic.xaml:2058 at microsoft-ui-xaml 8463f45); disabled,
     // AppBarButtonForegroundDisabled = TextFillColorDisabled (:82, :12, set :268-270), under high
     // contrast SystemControlDisabledBaseMediumLowBrush (:47), SystemColorGrayTextColor
     // (generic.xaml:2026 at microsoft-ui-xaml 8463f45): the button's disabled opacity,
@@ -3680,7 +3686,9 @@ fn toolbar(
         .rules(selectors, color)
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [TextProp::Color(c.window_foreground_muted)],
+            [TextProp::Color(
+                hc.highlight_text.unwrap_or(c.window_foreground_muted),
+            )],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
