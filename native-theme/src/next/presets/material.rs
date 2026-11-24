@@ -1753,7 +1753,12 @@ fn weighted(mut label: TextStyle, weight: u16) -> TextStyle {
 /// Its label is the secondary container's text at its own weight, checked the
 /// secondary colour's text, primary the accent's (0.7.2: `primary_text_color`
 /// is `defaults.accent_text_color` where unstated), disabled the disabled
-/// text.
+/// text. The flat variant is M3's text button, which has no checked
+/// (selected) form: its token set states no `selected` token
+/// (`_md-comp-button-text.scss` at material-web 2.5.0, tokens/versions/latest),
+/// where the tonal button's states its selected container
+/// (`_md-comp-button-tonal.scss:78-79`, the same version). So no rule states
+/// a checked flat button, which draws the flat look of its other states.
 fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> ButtonWidget {
     let primary = || {
         RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {

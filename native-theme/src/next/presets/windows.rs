@@ -2308,6 +2308,13 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// unstated). Its label is the window's text, pressed the muted text, checked
 /// the accent's text, disabled the disabled text. Under high contrast the
 /// fill is the button face and the label the button text ([`HighContrast`]).
+/// The flat variant is WinUI's subtle button, which has no checked form:
+/// `SubtleButtonStyle` styles a `Button` (`TargetType="Button"`,
+/// `Button_themeresources.xaml:297` at microsoft-ui-xaml 8463f45), which
+/// cannot be checked, and `ToggleButton_themeresources.xaml` there defines
+/// `DefaultToggleButtonStyle` alone (:180), no subtle toggle. So no rule
+/// states a checked flat button, which draws the flat look of its other
+/// states.
 fn button(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -2467,7 +2474,15 @@ fn button(
     // (SystemControlHighlightBaseHighBrush, generic.xaml:2069) and SystemColorGrayTextColor
     // disabled (SystemControlDisabledBaseMediumLowBrush, generic.xaml:2026)
     // (Button_themeresources.xaml:21-24, :70-73 at microsoft-ui-xaml 2.5.1;
-    // `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021).
+    // `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021). At rest
+    // SubtleButtonForeground, under high contrast SystemColorButtonTextColor, stated with no state
+    // so that a checked flat button, which WinUI has not (the doc comment above), keeps it.
+    .rule(
+        flat(WidgetState::NONE),
+        [TextProp::Color(
+            hc.button_text.unwrap_or(c.window_foreground),
+        )],
+    )
     .rule(
         flat(WidgetState::HOVER),
         [TextProp::Color(hc.highlight.unwrap_or(c.window_foreground))],

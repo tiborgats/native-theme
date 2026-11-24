@@ -504,6 +504,12 @@
           }
         },
         {
+          "variant": "flat",
+          "label": {
+            "color": "#040404"
+          }
+        },
+        {
           "states": [
             "hover"
           ],
