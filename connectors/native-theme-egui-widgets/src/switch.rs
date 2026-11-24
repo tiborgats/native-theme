@@ -57,9 +57,9 @@ use crate::{next, scope};
 /// Under an atlas of the 0.8.0 model each of these is read at its home: `switch.track` and
 /// `switch.thumb` at the switch's state, the label in `switch.label`'s colour where stated, else
 /// the body text's, hovered and pressed in `switch.label(HOVER)`'s and `switch.label(PRESSED)`'s
-/// where a rule for the state states it (hovered, else in egui's own hovered label colour,
-/// `widgets.hovered.fg_stroke`, as egui's `Checkbox` letters its label where
-/// `override_text_color` is unset, spec §10 rule 0), at `switch.label(NONE)`'s size where stated, else
+/// where a rule for the state states it, else in egui's own hovered and pressed label colours,
+/// `widgets.hovered.fg_stroke` and `widgets.active.fg_stroke`, as egui's `Checkbox` letters its
+/// label where `override_text_color` is unset (spec §10 rule 0), at `switch.label(NONE)`'s size where stated, else
 /// egui's own, in egui's `Proportional` family as the connector's role fonts are (a family,
 /// weight or slant the label states is not drawn: the crate's README, *Limits under the 0.8.0
 /// model*), `switch.label_gap` from the track where stated, else egui's own `icon_spacing`,
@@ -283,7 +283,9 @@ pub(crate) struct Look {
     /// `src/theme/default_style.rs:172-186`, `src/widget_style/mod.rs:44-50`).
     pub(crate) hover_text: Option<egui::Color32>,
     /// A pressed switch's label: the 0.8.0 theme's `switch.label(PRESSED)` colour where a rule
-    /// for `PRESSED` states it; `None`, [`Self::text`].
+    /// for `PRESSED` states it, 0.7.2's [`Self::text`]; `None`, egui's own pressed label colour,
+    /// the scope's `widgets.active.fg_stroke.color` (egui 0.37.0
+    /// `src/theme/default_style.rs:172-186`, `src/widget_style/mod.rs:44-50`).
     pub(crate) pressed_text: Option<egui::Color32>,
     /// `defaults.disabled_text_color`: a disabled switch's label; `None`, egui's own.
     pub(crate) disabled_text: Option<egui::Color32>,
@@ -302,7 +304,7 @@ impl Look {
     /// `from_state`); the label's colour at `switch.label`, else the body text's
     /// (`typography.body.color`), a hovered and a pressed one's at `switch.label(HOVER)` and
     /// `switch.label(PRESSED)` where a rule for that state states it, else egui's own hovered
-    /// label colour ([`Self::hover_text`]) and the rest one's, a
+    /// and pressed label colours ([`Self::hover_text`], [`Self::pressed_text`]), a
     /// disabled one's at `switch.label(DISABLED)` where a rule states it, else
     /// `colors.disabled_text`; the window's background as the ground. `None`
     /// where the theme states no track fill or checked thumb fill, which sends the switch to
@@ -351,8 +353,7 @@ impl Look {
     /// The colours as the switch paints them, so two looks that paint alike compare equal: the
     /// thumb at rest, which `None` gives as the checked one, given as that one; a disabled
     /// colour, which `None` gives as the one it stands for, given as that one; and a hover
-    /// fill that is the track's rest fill, and a pressed label colour that is the rest one,
-    /// none.
+    /// fill that is the track's rest fill, none.
     #[cfg(test)]
     pub(crate) fn painted(self) -> Self {
         let layer = |hover: Option<egui::Color32>, base: egui::Color32| {
@@ -361,10 +362,7 @@ impl Look {
         let unchecked_thumb = self
             .unchecked_thumb_background
             .unwrap_or(self.thumb_background);
-        let in_state =
-            |state: Option<egui::Color32>| state.filter(|&colour| Some(colour) != self.text);
         Self {
-            pressed_text: in_state(self.pressed_text),
             hover_checked_background: layer(self.hover_checked_background, self.checked_background),
             hover_unchecked_background: layer(
                 self.hover_unchecked_background,
@@ -420,7 +418,7 @@ impl Look {
             checked_thumb_border_color: sw.thumb_border_color.map(c),
             text: Some(c(t.defaults.font.color)),
             hover_text: Some(c(t.defaults.font.color)),
-            pressed_text: None,
+            pressed_text: Some(c(t.defaults.font.color)),
             disabled_text: Some(c(t.defaults.disabled_text_color)),
             background: Some(c(t.defaults.background_color)),
         }
@@ -598,7 +596,10 @@ fn switch_ui(
     let text = if !enabled {
         sw.disabled_text
     } else if pressed {
-        sw.pressed_text.or(sw.text)
+        Some(
+            sw.pressed_text
+                .unwrap_or(ui.visuals().widgets.active.text_color()),
+        )
     } else if hovered {
         Some(
             sw.hover_text

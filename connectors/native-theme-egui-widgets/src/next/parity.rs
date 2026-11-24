@@ -135,6 +135,23 @@ const DIFFERENCES: &[Difference] = &[
                  next_drawn::an_unstated_hovered_switch_label_is_egui_s_own",
     },
     Difference {
+        leaf: "switch::Look.pressed_text",
+        presets: &["adwaita"],
+        reason: "0.7.2 has no switch label and lettered a pressed one in its rest colour, the \
+                 window's text, #2e3436 in light; the 0.8.0 adwaita states the pressed label \
+                 (switch.label(PRESSED)), #000005cc in light, AdwSwitchRow's title as \
+                 switch::Look.text's entry gives it; in dark both are white",
+    },
+    Difference {
+        leaf: "switch::Look.pressed_text",
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        reason: "0.7.2 has no switch label and lettered a pressed one in its rest colour; the \
+                 0.8.0 presets state no pressed switch label, so the switch letters it in \
+                 egui's own pressed label colour, the scope's widgets.active.fg_stroke, as \
+                 egui's Checkbox does (spec §10, rule 0); \
+                 next_drawn::an_unstated_pressed_switch_label_is_egui_s_own",
+    },
+    Difference {
         leaf: "switch::Geometry.label_gap",
         presets: &["kde-breeze", "adwaita", "windows-11"],
         reason: "0.7.2 has no switch label gap, so the label lies at the scope's own \

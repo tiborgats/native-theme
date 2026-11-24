@@ -1434,6 +1434,50 @@ fn an_unstated_hovered_switch_label_is_egui_s_own() -> TestResult {
     Ok(())
 }
 
+/// A pressed switch whose label no rule states for `PRESSED` letters it in egui's own pressed
+/// label colour, its scope's `widgets.active.fg_stroke` (spec §10, rule 0), as egui's
+/// `Checkbox` letters an uncoloured label, not in its rest colour; here on ios-13, which states
+/// no pressed switch label, its label at rest patched red, as its own is egui's pressed colour.
+#[test]
+fn an_unstated_pressed_switch_label_is_egui_s_own() -> TestResult {
+    use crate::switch::Look;
+    let red = egui::Color32::from_rgb(255, 0, 0);
+    let patch = "[[widgets.switch.rules]]\nlabel.color = \"#ff0000\"\n";
+    let look = Look::next_of(&patched(Preset::Ios13, patch)?).ok_or("no look")?;
+    assert_eq!(
+        (look.text, look.pressed_text),
+        (Some(red), None),
+        "the patched ios-13's rest and pressed switch labels"
+    );
+    let ctx = patched_installed(Preset::Ios13, patch)?;
+    let mut own = None;
+    let _ = response(&ctx, at(1.0), |ui| {
+        ui.native_scope(Role::Switch, RoleVariant::Normal, |ui| {
+            own = Some(ui.visuals().widgets.active.text_color());
+            ui.label("")
+        })
+        .inner
+    });
+    let own = own.ok_or("the scope was not shown")?;
+    let add = |ui: &mut egui::Ui| ui.add(Switch::new(&mut false).label("Wi-Fi"));
+    let (parts, shapes) = drawn_switch(&ctx);
+    let (_, rest) = drawn_text(&shapes).ok_or("no label drawn")?;
+    assert_ne!(
+        rest, own,
+        "the label at rest is egui's pressed colour: the test proves nothing"
+    );
+    let centre = parts.get("track").ok_or("no track")?.center();
+    let press = egui::RawInput {
+        time: Some(1.0),
+        ..pointer(centre, true)
+    };
+    let _ = response(&ctx, press, add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    assert!(r.is_pointer_button_down_on(), "the switch is not pressed");
+    assert_eq!(drawn_text(&flat(&out.shapes)).map(|(_, c)| c), Some(own));
+    Ok(())
+}
+
 /// `switch.label(NONE).size_px` letters the label at that size in egui's `Proportional` family,
 /// as the connector's role fonts are, here a size kde-breeze does not state; where it is
 /// unstated (ios-13 states no font of `switch.label`) the size is egui's own; a size that is not
