@@ -98,11 +98,21 @@ fn a_primary_button_keeps_the_accent_fill_until_disabled() {
     }
 }
 
+/// A checked indicator keeps its fill under the pointer; disabled, a checked
+/// or mixed box and a checked radio button take `AccentFillColorDisabled`
+/// (#37000000 / #28FFFFFF), filled and stroked, where an unchecked one keeps
+/// the disabled fill; the mark takes `TextOnAccentFillColorDisabled`
+/// (#FFFFFF / #87FFFFFF), the dot the rest's colour.
 #[test]
-fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_loses_it_when_disabled() {
-    for theme in both_schemes() {
+fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_its_own_when_disabled() {
+    let [light, dark] = both_schemes();
+    for (theme, accent_disabled, mark_disabled) in [
+        (light, [0, 0, 0, 0x37], [0xff, 0xff, 0xff, 0xff]),
+        (dark, [0xff, 0xff, 0xff, 0x28], [0xff, 0xff, 0xff, 0x87]),
+    ] {
         let checked = WidgetState::CHECKED;
         let hovered = checked | WidgetState::HOVER;
+        let disabled = WidgetState::DISABLED;
         assert_ne!(
             theme.checkbox.indicator(WidgetState::HOVER),
             theme.checkbox.indicator(checked)
@@ -115,12 +125,35 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_loses_it_when_disabl
             theme.radio.indicator(hovered),
             theme.radio.indicator(checked)
         );
+        for part in [
+            theme.checkbox.indicator(checked | disabled),
+            theme
+                .checkbox
+                .indicator(WidgetState::INDETERMINATE | disabled),
+            theme.radio.indicator(checked | disabled),
+        ] {
+            assert_ne!(part.fill, theme.checkbox.indicator(disabled).fill);
+            assert_eq!(
+                solid(&part.fill).map(Color::to_srgb8),
+                Some(accent_disabled)
+            );
+            let stroke = match part.stroke {
+                Stroke::Uniform { color, .. } => Some(color.to_srgb8()),
+                _ => None,
+            };
+            assert_eq!(stroke, Some(accent_disabled), "{:?}", part.stroke);
+        }
         assert_eq!(
             theme
                 .checkbox
-                .indicator(checked | WidgetState::DISABLED)
-                .fill,
-            theme.checkbox.indicator(WidgetState::DISABLED).fill
+                .checkmark(checked | disabled)
+                .color
+                .to_srgb8(),
+            mark_disabled
+        );
+        assert_eq!(
+            theme.radio.dot(checked | disabled).fill,
+            theme.radio.dot(checked).fill
         );
     }
 }

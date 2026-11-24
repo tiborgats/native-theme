@@ -1952,19 +1952,43 @@ fn checkbox(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Ch
 }
 
 /// The radio button: [`indicator`] at the radio's own size (0.7.2 states no
-/// corners for it), a dot in the accent's text colour
-/// (`checkbox.indicator_color`), [`check_label`].
+/// corners for it) with no fill checked or disabled, a dot in the accent's
+/// fill, [`check_label`].
 fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> RadioWidget {
+    // material-web draws the radio as one SVG, a ring and a dot, both in the icon's fill
+    // (radio.ts:108-120, the ring :113-118, the dot :119; _radio.scss:109-113 at material-web
+    // cbd34a8): checked, selected-icon-color = primary (_radio.scss:126-127;
+    // _md-comp-radio-button.scss:45, v0_192); disabled and checked,
+    // disabled-selected-icon-color on-surface at disabled-selected-icon-opacity 0.38
+    // (_radio.scss:180-183; _md-comp-radio-button.scss:28-29), the ring and the dot not
+    // overlapping, so each at alpha 0.38. Nothing fills the space between them in any state.
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
-            fill(roles.accent.foreground),
+            fill(roles.accent.fill),
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.disabled_content)],
+        )
+        .build();
+    let indicator = indicator(c, roles, RADIO_INDICATOR_SIZE, false)
+        .rules(
+            [
+                RuleSelector::on(WidgetState::CHECKED),
+                RuleSelector::on(WidgetState::DISABLED),
+            ],
+            [fill(TRANSPARENT)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [stroke(CHECKBOX_BORDER_WIDTH, c.disabled_content)],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, RADIO_INDICATOR_SIZE, false).build(),
+        indicator,
         dot,
         check_label(typography),
         CHECKBOX_LABEL_GAP,

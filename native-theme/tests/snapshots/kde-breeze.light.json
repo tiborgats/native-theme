@@ -782,6 +782,19 @@
         },
         {
           "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#eceded",
+            "stroke": {
+              "width": 1.0,
+              "color": "#e3e5e7"
+            }
+          }
+        },
+        {
+          "states": [
             "hover"
           ],
           "not_states": [
@@ -817,6 +830,19 @@
               "color": "#3daee9"
             }
           }
+        },
+        {
+          "states": [
+            "disabled",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#eceded",
+            "stroke": {
+              "width": 1.0,
+              "color": "#e3e5e7"
+            }
+          }
         }
       ]
     },
@@ -848,6 +874,14 @@
           ],
           "checkmark": {
             "color": "#232629"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "checkmark": {
+            "color": "#aaabac"
           }
         }
       ]
@@ -933,6 +967,19 @@
           "indicator": {
             "fill": "#f0f0f0"
           }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#eceded",
+            "stroke": {
+              "width": 1.0,
+              "color": "#e3e5e7"
+            }
+          }
         }
       ]
     },
@@ -955,6 +1002,14 @@
           ],
           "dot": {
             "fill": "#232629"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "dot": {
+            "fill": "#aaabac"
           }
         }
       ]

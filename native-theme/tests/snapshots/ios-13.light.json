@@ -650,7 +650,7 @@
   "checkbox": {
     "origin": "native",
     "label_gap": 8.0,
-    "disabled_opacity": 0.3,
+    "disabled_opacity": 1.0,
     "indicator": {
       "base": {
         "fill": "#ffffff",
@@ -720,6 +720,26 @@
           "indicator": {
             "fill": "#e5e5ea80"
           }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#eeeeef",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#eeeeef",
+            "stroke": "none"
+          }
         }
       ]
     },
@@ -742,6 +762,14 @@
           ],
           "checkmark": {
             "color": "srgb(1, 1, 1, 0.75)"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "checkmark": {
+            "color": "#3c3c434c"
           }
         }
       ]
@@ -772,7 +800,7 @@
   "radio": {
     "origin": "native",
     "label_gap": 8.0,
-    "disabled_opacity": 0.3,
+    "disabled_opacity": 1.0,
     "indicator": {
       "base": {
         "fill": "#ffffff",
@@ -841,13 +869,33 @@
           "indicator": {
             "fill": "#e5e5ea80"
           }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#eeeeef",
+            "stroke": "none"
+          }
         }
       ]
     },
     "dot": {
       "base": {
         "fill": "#ffffff"
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "disabled"
+          ],
+          "dot": {
+            "fill": "#3c3c434c"
+          }
+        }
+      ]
     },
     "label": {
       "base": {

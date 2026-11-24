@@ -298,6 +298,7 @@ struct SchemeColors {
     button_disabled_foreground: Color,
     checkbox_checked: Color,
     checkbox_pressed: Color,
+    checkbox_disabled_checked: Color,
     checkbox_frame: Color,
     view_foreground: Color,
     checkbox_disabled_foreground: Color,
@@ -589,6 +590,13 @@ const LIGHT: SchemeColors = SchemeColors {
     // the project's clean-room `qt_lighter` port's darker branch; Breeze's default Button, which a
     // system colour scheme does not replace here
     checkbox_pressed: srgb8(0xe5e5_e5ff),
+    // the disabled checked or partial box and the disabled checked radio: platform-facts.md
+    // (§2.5) `disabled_background`, checked or partial: Disabled [Colors:Button] BackgroundNormal
+    // #f0f0f0 under the Disabled Highlight #e3e5e7 at highlightBackgroundAlpha, Blend_Value 0.3
+    // held as 77/255 (breezehelper.cpp:862, :865-869, :1012-1019, :40 at breeze f0b1d75;
+    // breezemetrics.h:176); the Disabled Selection set reads [Colors:Window]
+    // (kcolorscheme.cpp:317-320 at kcolorscheme 27066d4); computed as `checked_background`
+    checkbox_disabled_checked: srgb8(0xeced_edff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     // `menu.separator_color`: platform-facts.md (§2.6): separatorColor(), mix(Window #eff0f1,
@@ -640,6 +648,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
     // ForegroundNormal, KColorScheme 6.31.0
     // `input.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    // the disabled check box's mark and radio's dot: platform-facts.md (§2.1.6): Disabled
+    // [Colors:View] ForegroundNormal, `palette.text()` (breezehelper.cpp:938, :1059 at breeze
+    // f0b1d75)
     view_disabled_foreground: srgb8(0xaaab_acff),
     // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
     // [Colors:Window] BackgroundNormal 239,240,241 (BreezeLight.colors:129, breeze v6.7.5) at
@@ -799,6 +810,8 @@ const LIGHT: SchemeColors = SchemeColors {
     switch_disabled_frame: srgb8(0xe2e2_e2ff),
     // `switch.disabled_checked_track_border_color`: platform-facts.md (§2.21): highlightColor in
     // the Disabled group, Disabled Selection
+    // the disabled checked or partial box's and the disabled checked radio's frame:
+    // platform-facts.md (§2.5) `disabled_background`, the Disabled Highlight
     switch_disabled_on_frame: srgb8(0xe3e5_e7ff),
     // `segmented_control.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     segment_hover: srgb8(0xdee0_e2ff),
@@ -1019,6 +1032,13 @@ const DARK: SchemeColors = SchemeColors {
     // the project's clean-room `qt_lighter` port's darker branch; Breeze's default Button, which a
     // system colour scheme does not replace here
     checkbox_pressed: srgb8(0x2528_2cff),
+    // the disabled checked or partial box and the disabled checked radio: platform-facts.md
+    // (§2.5) `disabled_background`, checked or partial: Disabled [Colors:Button] BackgroundNormal
+    // #272a2e under the Disabled Highlight #1f2124 at highlightBackgroundAlpha, Blend_Value 0.3
+    // held as 77/255 (breezehelper.cpp:862, :865-869, :1012-1019, :40 at breeze f0b1d75;
+    // breezemetrics.h:176); the Disabled Selection set reads [Colors:Window]
+    // (kcolorscheme.cpp:317-320 at kcolorscheme 27066d4); computed as `checked_background`
+    checkbox_disabled_checked: srgb8(0x2527_2bff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     // `menu.separator_color`: platform-facts.md (§2.6): separatorColor(), mix(Window #202326,
@@ -1071,6 +1091,9 @@ const DARK: SchemeColors = SchemeColors {
     // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
     // ForegroundNormal, KColorScheme 6.31.0
     // `input.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    // the disabled check box's mark and radio's dot: platform-facts.md (§2.1.6): Disabled
+    // [Colors:View] ForegroundNormal, `palette.text()` (breezehelper.cpp:938, :1059 at breeze
+    // f0b1d75)
     view_disabled_foreground: srgb8(0x6062_63ff),
     // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
     // [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130, breeze v6.7.5) at [KDE]
@@ -1233,6 +1256,8 @@ const DARK: SchemeColors = SchemeColors {
     switch_disabled_frame: srgb8(0x3437_3bff),
     // `switch.disabled_checked_track_border_color`: platform-facts.md (§2.21): highlightColor in
     // the Disabled group, Disabled Selection
+    // the disabled checked or partial box's and the disabled checked radio's frame:
+    // platform-facts.md (§2.5) `disabled_background`, the Disabled Highlight
     switch_disabled_on_frame: srgb8(0x1f21_24ff),
     // `segmented_control.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     segment_hover: srgb8(0x3136_3bff),
@@ -3351,7 +3376,12 @@ fn button(
 /// pointer, checked or not, the frame in `[Colors:View]` DecorationFocus
 /// (`checkbox.hover_border_color`: platform-facts.md (§2.5), "focusColor(),
 /// `[Colors:View]` DecorationFocus"), and no fill of its own ("Breeze adds no
-/// fill under the pointer"); disabled, the disabled button's background. A
+/// fill under the pointer"); disabled, the disabled button's background, and
+/// checked as well, that background under the Disabled Highlight in a frame
+/// of it (platform-facts.md (§2.5) `disabled_background`: the palette's
+/// Disabled group, `palette.highlight()` for the frame of a checked box or
+/// radio, breezehelper.cpp:853-854, :1005-1006 at breeze f0b1d75; the
+/// Disabled Highlight #e3e5e7 / #1f2124, platform-facts.md (§2.21)). A
 /// portal accent replaces neither frame colour (0.7.2's `apply_kde_accent`
 /// leaves both fields on kdeglobals' colours).
 fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle, PartProp> {
@@ -3378,6 +3408,13 @@ fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle,
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.button_disabled_background)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [
+                fill(c.checkbox_disabled_checked),
+                outline(layout, c.switch_disabled_on_frame),
+            ],
         )
 }
 
@@ -3419,6 +3456,14 @@ fn checkbox(
             }),
             roles.view.foreground.map(IconProp::Color),
         )
+        // Disabled, the mark and the partial mark (`CheckPartial`'s squares, breezehelper.cpp:948-952)
+        // in the same `palette.text()` from the Disabled group: Disabled `[Colors:View]`
+        // ForegroundNormal (platform-facts.md (§2.1.6), KColorScheme 6.31.0; breezestyle.cpp:4907
+        // passes the widget's palette, :4917-4918 for `State_NoChange`).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [IconProp::Color(c.view_disabled_foreground)],
+        )
         .build();
     // `hover_background`: platform-facts.md (§2.5), no hover fill, the box keeps palette.button()
     // (breezehelper.cpp:862 at breeze f0b1d75), stated for `HOVER` (spec §2, `from_state`).
@@ -3441,6 +3486,16 @@ fn checkbox(
         .rule(
             RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
             [outline(layout, c.accent)],
+        )
+        // A disabled partial box as a disabled checked one: `CheckPartial` is not `CheckOff`, so
+        // the highlight overlay and frame are drawn (breezehelper.cpp:853-854, :865-869;
+        // platform-facts.md (§2.5) `disabled_background`).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::INDETERMINATE),
+            [
+                fill(c.checkbox_disabled_checked),
+                outline(layout, c.switch_disabled_on_frame),
+            ],
         )
         .build();
     CheckboxWidget::new(
@@ -3476,6 +3531,12 @@ fn radio(
                 .foreground
                 .map(|_| RuleSelector::on(WidgetState::CHECKED)),
             roles.view.foreground.map(fill),
+        )
+        // Disabled, the dot in `palette.text()` from the Disabled group (breezehelper.cpp:1059):
+        // Disabled `[Colors:View]` ForegroundNormal (platform-facts.md (§2.1.6), KColorScheme 6.31.0).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.view_disabled_foreground)],
         )
         .build();
     RadioWidget::new(

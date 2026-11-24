@@ -2004,9 +2004,11 @@ fn button(
 /// `defaults.border.line_width` where unstated), no shadow, padded; under the
 /// pointer the hover fill and, unchecked, the hover outline; checked, the accent (0.7.2:
 /// `checkbox.checked_background` is `defaults.accent_color` where unstated)
-/// in the default border colour (`checkbox.border.color`). No disabled fill:
-/// a disabled check is its enabled self at the disabled opacity
-/// (`checkbox.unchecked_background`'s citation).
+/// with no outline (`box-shadow: none`, _checks.scss:52-56 at libadwaita
+/// 1.10.0; the outline is the inset box-shadow, :27). No disabled fill: a
+/// disabled check is its enabled self at the disabled opacity
+/// (`checkbox.unchecked_background`'s citation; `check:disabled, radio:disabled`
+/// change no colour, _checks.scss:62-64).
 fn indicator(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -2035,9 +2037,7 @@ fn indicator(
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(roles.accent.fill)]
-                .into_iter()
-                .chain(border(roles, layout.border_width)),
+            [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],
         )
 }
 
@@ -2062,9 +2062,10 @@ fn checkbox(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> CheckboxWidget {
-    // Hovered and pressed, the mark as at rest: a checked check's `color:
+    // Hovered, pressed and disabled, the mark as at rest: a checked or mixed check's `color:
     // var(--accent-fg-color)` holds in every state, :hover and :active lay a layer over the box,
-    // not the mark (_checks.scss:52-60, :70 at libadwaita 1.10.0).
+    // not the mark, and :disabled changes no colour, only the control's opacity
+    // (_checks.scss:52-64, :70, :80 at libadwaita 1.10.0).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base([
             IconProp::Color(roles.accent.foreground),
@@ -2074,17 +2075,23 @@ fn checkbox(
             [
                 RuleSelector::on(WidgetState::HOVER),
                 RuleSelector::on(WidgetState::PRESSED),
+                RuleSelector::on(WidgetState::DISABLED),
             ],
             [IconProp::Color(roles.accent.foreground)],
         )
         .build();
     // An unchecked box pressed: $trough_active_color and no outline (_checks.scss:42-44). A
-    // checked box keeps its checked look.
+    // checked box keeps its checked look. A mixed box is drawn as a checked one, the accent with
+    // no outline, in every state (`&:checked, &:indeterminate`, _checks.scss:52-56).
     let indicator = indicator(c, roles, layout)
         .base([corners(CHECKBOX_CORNER_RADIUS)])
         .rule(
             RuleSelector::on(WidgetState::PRESSED).except(WidgetState::CHECKED),
             [fill(c.trough_active), PartProp::Stroke(Stroke::None)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::INDETERMINATE),
+            [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],
         )
         .build();
     CheckboxWidget::new(
@@ -2106,12 +2113,18 @@ fn radio(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> RadioWidget {
+    // Disabled, the dot as at rest: `:disabled` changes no colour, only the control's opacity
+    // (_checks.scss:52-55, :62-64, :76 at libadwaita 1.10.0).
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
             fill(roles.accent.foreground),
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(roles.accent.foreground)],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,

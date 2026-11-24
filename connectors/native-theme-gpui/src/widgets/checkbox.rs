@@ -432,15 +432,15 @@ impl CheckboxLook {
         } else {
             c.unchecked_border
         };
-        // Disabled, the mark where a rule states it for `DISABLED`; else, where
-        // the platform's disabled look is a fill of its own, the label's
-        // disabled colour, as 0.7.2 draws it; where it is the control's
-        // opacity alone, the mark itself.
-        let (mark, label) = match (disabled, c.disabled_fill, c.disabled_mark) {
-            (true, _, Some(mark)) => (mark, c.disabled_text),
-            (true, Some(_), None) => (c.disabled_text, c.disabled_text),
-            (true, None, None) => (c.mark, c.disabled_text),
-            (false, ..) => (c.mark, c.label),
+        // Disabled, the mark where a rule states it for `DISABLED`; else
+        // gpui-component's own disabled mark (spec §10, rule 0).
+        let (mark, label) = match (disabled, c.disabled_mark) {
+            (true, Some(mark)) => (mark, c.disabled_text),
+            (true, None) => (
+                c.mark.opacity(UPSTREAM_DISABLED_MARK_OPACITY),
+                c.disabled_text,
+            ),
+            (false, _) => (c.mark, c.label),
         };
         let opacity = super::next_disabled_opacity(disabled, c.disabled_opacity);
         let hover_border = c.hover_border.filter(|_| !disabled);
@@ -658,6 +658,13 @@ impl Parts {
             .when_some(ring.filter(|_| shows), |row, ring| ring.draw(row, window)))
     }
 }
+
+/// The opacity gpui-component draws a disabled check box's and radio
+/// button's mark at, of its enabled colour (gpui-component 0.10.0
+/// `src/checkbox.rs:230-234`: `primary_foreground.opacity(0.5)` where
+/// disabled, the mark `src/radio.rs:249` draws too): the disabled mark a
+/// theme leaves unstated (spec §10, rule 0).
+pub(super) const UPSTREAM_DISABLED_MARK_OPACITY: f32 = 0.5;
 
 /// gpui-component's check mark, the Lucide `check` icon it draws as
 /// `IconName::Check` (gpui-kit-assets 0.9.1 `assets/icons/check.svg`,

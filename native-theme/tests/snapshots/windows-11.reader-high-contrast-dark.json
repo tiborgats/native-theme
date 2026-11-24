@@ -765,6 +765,32 @@
               "color": "#ffffff28"
             }
           }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff28",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff28"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#ffffff28",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff28"
+            }
+          }
         }
       ]
     },
@@ -787,6 +813,14 @@
           ],
           "checkmark": {
             "color": "#00000080"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "checkmark": {
+            "color": "#ffffff87"
           }
         }
       ]
@@ -863,6 +897,19 @@
           "indicator": {
             "fill": "#33333300"
           }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff28",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff28"
+            }
+          }
         }
       ]
     },
@@ -877,7 +924,17 @@
           12.0,
           12.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "disabled"
+          ],
+          "dot": {
+            "fill": "#060606"
+          }
+        }
+      ]
     },
     "label": {
       "base": {

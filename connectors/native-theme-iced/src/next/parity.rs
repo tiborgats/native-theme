@@ -134,7 +134,7 @@ enum Field {
     HandleBackground,
     /// `text_color`.
     TextColor,
-    /// A check box's `icon_color`.
+    /// A check box's `icon_color`, a radio's `dot_color`.
     IconColor,
     /// `border.width`.
     BorderWidth,
@@ -1188,13 +1188,6 @@ const EXPANDER_FILLS: [Stated; 2] = [
     ),
 ];
 
-/// A radio's hovered stroke (`radio.indicator(HOVER)`).
-const RADIO_HOVER_STROKE: &[Stated] = &[set(
-    at!(HOVER),
-    Field::BorderColor,
-    home!(stroke, radio.indicator(HOVER)),
-)];
-
 /// windows-11's radio under the pointer: the unselected circle's fill, and
 /// its stroke at rest laid over it (no rule for HOVER states one, and iced's
 /// own radio keeps its border colour under the pointer, iced_widget 0.14.2
@@ -1384,6 +1377,133 @@ const CHECKED_DISABLED_OUTLINE: Home = Home {
            faded as one over colors.window.background by checkbox.disabled_opacity",
     value: |t| disabled_outline(t, WidgetState::CHECKED),
 };
+
+/// A disabled box's fill, `checkbox.indicator(state)`, faded as one widget
+/// over the window by `checkbox.disabled_opacity`.
+fn disabled_fill(t: &native_theme::next::ResolvedTheme, state: WidgetState) -> Option<Value> {
+    Some(Value::Faded {
+        color: super::fill_of(&t.checkbox.indicator(state))?,
+        under: None,
+        ground: super::to_color(t.colors.window.background?),
+        opacity: t.checkbox.disabled_opacity,
+    })
+}
+
+/// [`disabled_fill`] of the box not checked.
+const CHECK_DISABLED_FILL: Home = Home {
+    path: "checkbox.indicator(DISABLED).fill, faded as one over colors.window.background by \
+           checkbox.disabled_opacity",
+    value: |t| disabled_fill(t, WidgetState::DISABLED),
+};
+
+/// [`disabled_fill`] of the checked box.
+const CHECKED_DISABLED_FILL: Home = Home {
+    path: "checkbox.indicator(DISABLED|CHECKED).fill, faded as one over \
+           colors.window.background by checkbox.disabled_opacity",
+    value: |t| disabled_fill(t, WidgetState::DISABLED.union(WidgetState::CHECKED)),
+};
+
+/// A disabled checked box whose fill and mark the theme states for the
+/// state (kde-breeze, windows-11: M2.FS4a3): the fill, the checked outline
+/// over it, and the mark on it.
+const CHECKED_DISABLED: [Stated; 3] = [
+    set(
+        at!(DISABLED | CHECKED),
+        Field::Background,
+        CHECKED_DISABLED_FILL,
+    ),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::BorderColor,
+        CHECKED_DISABLED_OUTLINE,
+    ),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::IconColor,
+        CHECKED_DISABLED_MARK,
+    ),
+];
+
+/// ios-13's disabled check box at its full opacity (WebKit's `opacity:
+/// initial`, M2.FS4a3): the fills, the label and the marks, checked or not.
+const IOS_CHECK_DISABLED_COLORS: [Stated; 6] = [
+    set(at!(DISABLED), Field::Background, CHECK_DISABLED_FILL),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::Background,
+        CHECKED_DISABLED_FILL,
+    ),
+    set(at!(DISABLED), Field::TextColor, CHECK_DISABLED_LABEL),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::TextColor,
+        CHECK_DISABLED_LABEL,
+    ),
+    set(at!(DISABLED), Field::IconColor, CHECK_DISABLED_MARK),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::IconColor,
+        CHECKED_DISABLED_MARK,
+    ),
+];
+
+/// adwaita's check box: no outline round a checked box (`box-shadow:
+/// none`, _checks.scss:52-56 at libadwaita 1.10.0), the hovered unchecked
+/// stroke ([`indicator_outline`]), and the checked outline, none, over the
+/// disabled box.
+const ADWAITA_CHECK: [Stated; 10] = {
+    let [a, b, c, d, e, f, g, h] = indicator_outline!(checkbox);
+    [
+        a,
+        b,
+        c,
+        d,
+        e,
+        f,
+        g,
+        h,
+        set(
+            at!(DISABLED | CHECKED),
+            Field::BorderWidth,
+            home!(width, checkbox.indicator(CHECKED)),
+        ),
+        set(
+            at!(DISABLED | CHECKED),
+            Field::BorderColor,
+            CHECKED_DISABLED_OUTLINE,
+        ),
+    ]
+};
+
+/// adwaita's radio button, as its check box ([`ADWAITA_CHECK`]; iced has no
+/// disabled radio status).
+const ADWAITA_RADIO: [Stated; 8] = indicator_outline!(radio);
+
+/// material-3's radio button: the dot in primary in every status (iced
+/// paints the dot of a checked radio alone; the builder reads
+/// `radio.dot(CHECKED)`, which no rule sets apart from the dot at rest), and
+/// nothing filling the checked circle (radio/internal/radio.ts:108-120 at
+/// material-web cbd34a8).
+const M3_RADIO: [Stated; 6] = [
+    set(at!(NONE), Field::IconColor, home!(fill, radio.dot(NONE))),
+    set(at!(CHECKED), Field::IconColor, home!(fill, radio.dot(NONE))),
+    set(at!(HOVER), Field::IconColor, home!(fill, radio.dot(NONE))),
+    set(
+        at!(HOVER | CHECKED),
+        Field::IconColor,
+        home!(fill, radio.dot(NONE)),
+    ),
+    set(
+        at!(CHECKED),
+        Field::Background,
+        home!(fill, radio.indicator(CHECKED)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::Background,
+        home!(fill, radio.indicator(HOVER | CHECKED)),
+    ),
+];
 
 /// ios-13's disabled check box: the outline at rest, checked or not, faded
 /// with the box ([`disabled_outline`]).
@@ -1838,13 +1958,19 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["ios-13"],
         LineAlign::Outside,
-        &[&IOS_CHECK, &IOS_CHECK_DISABLED],
+        &[&IOS_CHECK, &IOS_CHECK_DISABLED, &IOS_CHECK_DISABLED_COLORS],
     ),
     stated_fields(
         "checkbox",
         &["adwaita"],
         LineAlign::Outside,
-        &[&CHECK_HOVER_STROKES],
+        &[&ADWAITA_CHECK],
+    ),
+    stated_fields(
+        "checkbox",
+        &["kde-breeze"],
+        LineAlign::Outside,
+        &[&[CHECKED_DISABLED[0], CHECKED_DISABLED[2]]],
     ),
     stated_fields("checkbox", &["material-3"], LineAlign::Outside, &[M3_CHECK]),
     stated_fields(
@@ -1864,7 +1990,7 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["windows-11"],
         LineAlign::Inside,
-        &[W11_CHECK_HOVER],
+        &[W11_CHECK_HOVER, &CHECKED_DISABLED],
     ),
     hover(
         "checkbox",
@@ -1891,12 +2017,8 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Inside,
         &[W11_RADIO_HOVER],
     ),
-    stated_fields(
-        "radio",
-        &["adwaita"],
-        LineAlign::Outside,
-        &[RADIO_HOVER_STROKE],
-    ),
+    stated_fields("radio", &["adwaita"], LineAlign::Outside, &[&ADWAITA_RADIO]),
+    stated_fields("radio", &["material-3"], LineAlign::Outside, &[&M3_RADIO]),
     hover(
         "radio",
         &["macos-tahoe"],
@@ -2870,9 +2992,9 @@ impl Fields for iced_widget::radio::Style {
                 let fill = crate::styles::painted(Some(self.background));
                 self.border_color = line_over(field, &value, fill)?;
             }
+            Field::IconColor => self.dot_color = color_of(field, &value)?,
             Field::HandleBackground
             | Field::TextColor
-            | Field::IconColor
             | Field::InnerRadius
             | Field::Separator
             | Field::PickedSplitColor

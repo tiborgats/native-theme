@@ -1526,6 +1526,7 @@ const KEPT: &[Field] = &[
     ("button_disabled_foreground", |c| {
         c.button_disabled_foreground
     }),
+    ("checkbox_disabled_checked", |c| c.checkbox_disabled_checked),
     ("checkbox_disabled_foreground", |c| {
         c.checkbox_disabled_foreground
     }),

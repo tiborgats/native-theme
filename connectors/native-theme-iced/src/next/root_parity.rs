@@ -138,6 +138,43 @@ fn stated_combo_box_padding(_: &native_theme::next::ResolvedTheme) -> Option<Str
     None
 }
 
+/// The radio look as the builder reads it, its dot's colour from
+/// `radio.dot(CHECKED).fill` (`radio_look`), the circle's width from
+/// `radio.indicator(NONE).min_size`, the dot's diameter from
+/// `radio.dot(NONE).min_size`; `None` where the dot's diameter or colour is
+/// unstated.
+#[cfg(feature = "widgets")]
+fn stated_radio_dot(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    use native_theme::next::WidgetState;
+
+    let w = &new.radio;
+    let [width, _] = w.indicator(WidgetState::NONE).min_size;
+    let [diameter, _] = w.dot(WidgetState::NONE).min_size;
+    let color = super::fill_of(&w.dot(WidgetState::CHECKED))?;
+    Some(format!(
+        "{:?}",
+        ok(crate::RadioLook {
+            width,
+            label_gap: w.label_gap,
+            dot: Some((diameter?, color)),
+        })
+    ))
+}
+
+/// `radio` is compared with the `widgets` feature only, which builds it: no
+/// value to assert without it.
+#[cfg(not(feature = "widgets"))]
+fn stated_radio_dot(_: &native_theme::next::ResolvedTheme) -> Option<String> {
+    None
+}
+
+/// The reason of material-3's radio dot.
+const M3_RADIO_DOT: &str = "material-3 states the checked radio's dot in primary, \
+     selected-icon-color (radio/internal/_radio.scss:126-127, \
+     tokens/versions/v0_192/_md-comp-radio-button.scss:45 at material-web cbd34a8; \
+     native-theme/tests/next_homes.toml, row checkbox.indicator_color, a listed difference), \
+     where 0.7.2 draws it in the accent's text colour, as its check mark";
+
 /// The reason of the macOS 26 pop-up button's padding.
 const NO_POPUP_LINE: &str = "macos-tahoe states its pop-up button's outline as none (M2.FS4, \
      measured: os-probe run 45198750893, macOS 26, `*.normal.popup` `edge_*`; \
@@ -209,6 +246,12 @@ const DIFFERENCES: &[Difference] = &[
         preset: "macos-tahoe",
         new: New::Computed(stated_combo_box_padding),
         reason: NO_POPUP_LINE,
+    },
+    Difference {
+        name: "radio",
+        preset: "material-3",
+        new: New::Computed(stated_radio_dot),
+        reason: M3_RADIO_DOT,
     },
 ];
 
@@ -614,11 +657,11 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
         }
     }
     for d in DIFFERENCES {
-        // The button's and the combo box's helpers are compared with the
-        // `widgets` feature only.
+        // The button's, the combo box's and the radio's helpers are compared
+        // with the `widgets` feature only.
         if matches!(
             d.name,
-            "button_content_min_size" | "button_padding" | "combo_box_padding"
+            "button_content_min_size" | "button_padding" | "combo_box_padding" | "radio"
         ) && !cfg!(feature = "widgets")
         {
             continue;

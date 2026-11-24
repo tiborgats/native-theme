@@ -258,6 +258,7 @@ struct SchemeColors {
     subtle_fill_pressed: Color,
     alt_fill_quarternary: Color,
     accent_text_secondary: Color,
+    accent_text_disabled: Color,
     tab_pressed: Color,
     checkbox_hover: Color,
     tab_hover: Color,
@@ -419,6 +420,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // `switch.disabled_checked_background`: ToggleSwitchFillOnDisabled = AccentFillColorDisabled
     // #37000000 (ToggleSwitch_themeresources.xaml:146; Common_themeresources_any.xaml:242 at
     // microsoft-ui-xaml 8463f45)
+    // a disabled checked or mixed box's fill and a disabled checked radio's circle, fill and
+    // stroke: CheckBoxCheckBackgroundFillCheckedDisabled, …FillIndeterminateDisabled,
+    // RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled =
+    // AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:236, :240;
+    // RadioButton_themeresources.xaml:149, :145 at microsoft-ui-xaml 8463f45)
     accent_fill_disabled: srgb8(0x0000_0037),
     // `defaults.selection_text_color`: selection_background ← accent_color: platform-facts.md
     // (§2.1.3), a text box's TextControlSelectionHighlightColor =
@@ -513,6 +519,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `switch.disabled_unchecked_track_border_color`: platform-facts.md (§2.21):
     // ToggleSwitchStrokeOffDisabled = ControlStrongStrokeColorDisabled #37000000
     // (ToggleSwitch_themeresources.xaml:142; Common_themeresources_any.xaml:253)
+    // a disabled checked or mixed box's stroke: CheckBoxCheckBackgroundStrokeCheckedDisabled,
+    // …StrokeIndeterminateDisabled = ControlStrongStrokeColorDisabledBrush
+    // (CheckBox_themeresources.xaml:224, :228, set at :465, :578 at microsoft-ui-xaml 8463f45)
     strong_stroke_disabled: srgb8(0x0000_0037),
     // `slider.track_color`: platform-facts.md (§2.9): SliderTrackFill =
     // ControlStrongFillColorDefault #72000000; the outer thumb, SliderOuterThumbBackground =
@@ -555,6 +564,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // TextOnAccentFillColorSecondary #B3FFFFFF (CheckBox_themeresources.xaml:247;
     // Common_themeresources_any.xaml:217)
     accent_text_secondary: srgb8(0xffff_ffb3),
+    // a disabled checked or mixed box's mark, CheckBoxCheckGlyphForegroundCheckedDisabled and
+    // …IndeterminateDisabled = TextOnAccentFillColorDisabledBrush (CheckBox_themeresources.xaml:248,
+    // :252, set at :471, :587 at microsoft-ui-xaml 8463f45): TextOnAccentFillColorDisabled #FFFFFF
+    // (Common_themeresources_any.xaml:218)
+    accent_text_disabled: srgb8(0xffff_ffff),
     // a pressed tab, TabViewItemHeaderBackgroundPressed = LayerOnMicaBaseAltFillColorDefault
     // #B3FFFFFF (TabView_themeresources.xaml:10; TabView.xaml:327;
     // Common_themeresources_any.xaml:268)
@@ -760,6 +774,11 @@ const DARK: SchemeColors = SchemeColors {
     // `switch.disabled_checked_background`: ToggleSwitchFillOnDisabled = AccentFillColorDisabled
     // #28FFFFFF (ToggleSwitch_themeresources.xaml:26; Common_themeresources_any.xaml:38 at
     // microsoft-ui-xaml 8463f45)
+    // a disabled checked or mixed box's fill and a disabled checked radio's circle, fill and
+    // stroke: CheckBoxCheckBackgroundFillCheckedDisabled, …FillIndeterminateDisabled,
+    // RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled =
+    // AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:60, :64;
+    // RadioButton_themeresources.xaml:33, :29 at microsoft-ui-xaml 8463f45)
     accent_fill_disabled: srgb8(0xffff_ff28),
     // `defaults.selection_text_color`: selection_background ← accent_color: platform-facts.md
     // (§2.1.3), a text box's TextControlSelectionHighlightColor =
@@ -853,6 +872,9 @@ const DARK: SchemeColors = SchemeColors {
     // `switch.disabled_unchecked_track_border_color`: platform-facts.md (§2.21):
     // ToggleSwitchStrokeOffDisabled = ControlStrongStrokeColorDisabled #28FFFFFF
     // (ToggleSwitch_themeresources.xaml:22; Common_themeresources_any.xaml:49)
+    // a disabled checked or mixed box's stroke: CheckBoxCheckBackgroundStrokeCheckedDisabled,
+    // …StrokeIndeterminateDisabled = ControlStrongStrokeColorDisabledBrush
+    // (CheckBox_themeresources.xaml:48, :52, set at :465, :578 at microsoft-ui-xaml 8463f45)
     strong_stroke_disabled: srgb8(0xffff_ff28),
     // `slider.track_color`: platform-facts.md (§2.9): SliderTrackFill =
     // ControlStrongFillColorDefault #8BFFFFFF; the outer thumb, SliderOuterThumbBackground =
@@ -895,6 +917,11 @@ const DARK: SchemeColors = SchemeColors {
     // TextOnAccentFillColorSecondary #80000000 (CheckBox_themeresources.xaml:71;
     // Common_themeresources_any.xaml:13)
     accent_text_secondary: srgb8(0x0000_0080),
+    // a disabled checked or mixed box's mark, CheckBoxCheckGlyphForegroundCheckedDisabled and
+    // …IndeterminateDisabled = TextOnAccentFillColorDisabledBrush (CheckBox_themeresources.xaml:72,
+    // :76, set at :471, :587 at microsoft-ui-xaml 8463f45): TextOnAccentFillColorDisabled
+    // #87FFFFFF (Common_themeresources_any.xaml:14)
+    accent_text_disabled: srgb8(0xffff_ff87),
     // a pressed tab, TabViewItemHeaderBackgroundPressed = LayerOnMicaBaseAltFillColorDefault
     // #733A3A3A (TabView_themeresources.xaml:88; TabView.xaml:327;
     // Common_themeresources_any.xaml:64)
@@ -2365,7 +2392,8 @@ fn button(
 /// `defaults.border.line_width` where unstated), no shadow; under the pointer
 /// the hover fill; checked, the accent's fill in the default border colour
 /// (0.7.2's `checkbox.border.color`, `resolve_border_inheritance`);
-/// disabled, the disabled fill, checked or not.
+/// disabled, the disabled fill, which a checked check box and radio
+/// ([`checkbox`], [`radio`]) replace with their own.
 fn indicator(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -2430,6 +2458,12 @@ fn checkbox(
             RuleSelector::on(WidgetState::PRESSED),
             [IconProp::Color(c.accent_text_secondary)],
         )
+        // Disabled, checked or mixed: TextOnAccentFillColorDisabled (CheckBox_themeresources.xaml:248,
+        // :252, set by the CheckedDisabled and IndeterminateDisabled states, :471, :587).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [IconProp::Color(c.accent_text_disabled)],
+        )
         .build();
     // An unchecked box pressed: CheckBoxCheckBackgroundFillUncheckedPressed =
     // ControlAltFillColorQuarternary (CheckBox_themeresources.xaml:231 at microsoft-ui-xaml
@@ -2449,6 +2483,19 @@ fn checkbox(
                 .except(WidgetState::CHECKED | WidgetState::DISABLED),
             [
                 fill(c.alt_fill_quarternary),
+                stroke(layout.border_width, c.strong_stroke_disabled),
+            ],
+        )
+        // Disabled and checked or mixed: AccentFillColorDisabled in ControlStrongStrokeColorDisabled
+        // (CheckBoxCheckBackgroundFillCheckedDisabled, …StrokeCheckedDisabled, set at
+        // CheckBox_themeresources.xaml:465-468; …IndeterminateDisabled at :578-581).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+                RuleSelector::on(WidgetState::DISABLED | WidgetState::INDETERMINATE),
+            ],
+            [
+                fill(c.accent_fill_disabled),
                 stroke(layout.border_width, c.strong_stroke_disabled),
             ],
         )
@@ -2472,16 +2519,37 @@ fn radio(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> RadioWidget {
+    // Disabled, the dot as the source names it: RadioButtonCheckGlyphFillDisabled =
+    // TextOnAccentFillColorPrimary, the rest's colour (RadioButton_themeresources.xaml:153, :37,
+    // set at :333; the rest's RadioButtonCheckGlyphFill, :150, :34, at microsoft-ui-xaml 8463f45).
+    // The disabled key names the `Color` resource where the property is a `Brush`; what the
+    // runtime draws from it is not measured.
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
             fill(roles.accent.foreground),
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(roles.accent.foreground)],
+        )
+        .build();
+    // Disabled and checked, the circle filled and stroked in AccentFillColorDisabled
+    // (RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled, set at
+    // RadioButton_themeresources.xaml:326-330).
+    let indicator = indicator(c, roles, layout)
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [
+                fill(c.accent_fill_disabled),
+                stroke(layout.border_width, c.accent_fill_disabled),
+            ],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, layout).build(),
+        indicator,
         dot,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,

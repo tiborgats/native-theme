@@ -245,6 +245,53 @@ const DIFFERENCES: &[Difference] = &[
                  same part on ios-13",
     },
     Difference {
+        leaf: "CheckboxLook::of",
+        presets: &["kde-breeze", "windows-11"],
+        reason: "0.7.2 has one disabled fill for a checked and an unchecked box; 0.8.0 states \
+                 the disabled checked box's own (native-theme/tests/next_homes.toml, row \
+                 checkbox.disabled_background, a listed difference): kde-breeze the Disabled \
+                 Button under the Disabled Highlight at 0.3, #eceded / #25272b \
+                 (breezehelper.cpp:865-869 at breeze f0b1d75; docs/platform-facts.md §2.5 \
+                 disabled_background), windows-11 AccentFillColorDisabled #37000000 / \
+                 #28FFFFFF (CheckBox_themeresources.xaml:236, :60 at microsoft-ui-xaml \
+                 8463f45); the look reads it at checkbox.indicator(DISABLED|CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio",
+        presets: &["kde-breeze", "windows-11"],
+        reason: "as the check box's (CheckboxLook::of): the disabled checked radio's circle \
+                 is filled as the box (breezehelper.cpp:1012-1019; \
+                 RadioButtonOuterEllipseCheckedFillDisabled, RadioButton_themeresources.xaml:149, \
+                 :33)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita outlines a checked box in the default border colour; 0.8.0 \
+                 states none, as libadwaita draws a checked or mixed check with `box-shadow: \
+                 none`, its only outline (_checks.scss:27, :52-56 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row checkbox.border.color, a listed \
+                 difference), so the look's checked border is transparent",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio",
+        presets: &["adwaita"],
+        reason: "as the check box's (CheckboxLook::of): libadwaita's rule covers the radio \
+                 (_checks.scss:52-56)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio",
+        presets: &["material-3"],
+        reason: "0.7.2 fills a checked or disabled radio button as its check box and draws \
+                 the dot in on-primary; 0.8.0's material-3 states material-web's radio, a ring \
+                 and a dot in primary with nothing between them in any state, disabled and \
+                 checked both on-surface at 0.38 (radio/internal/radio.ts:108-120, \
+                 _radio.scss:126-127, :180-183, _md-comp-radio-button.scss:28-29, :45, v0_192 \
+                 at material-web cbd34a8; native-theme/tests/next_homes.toml, rows \
+                 checkbox.checked_background, checkbox.indicator_color and \
+                 checkbox.disabled_background, listed differences)",
+    },
+    Difference {
         leaf: "SliderLook::hover_thumb",
         presets: &["adwaita"],
         reason: "0.7.2's adwaita states an uncited slider.thumb_hover_color (#ebebeb / \
@@ -281,6 +328,44 @@ const DIFFERENCES: &[Difference] = &[
 /// calling that constructor ([`Report::home_leaf`]). The leaf must differ
 /// from 0.7.2's and equal that value; a home left unstated fails.
 const FROM_HOME: &[Difference] = &[
+    Difference {
+        leaf: "CheckboxLook::of label disabled",
+        presets: &["kde-breeze", "windows-11", "ios-13"],
+        reason: "0.7.2 draws a disabled box's mark in its disabled label colour (where a \
+                 disabled fill is stated); the 0.8.0 presets state the disabled checked or \
+                 mixed mark as the platform draws it, which the look reads at \
+                 checkbox.checkmark(DISABLED|CHECKED).color: kde-breeze palette.text() in the \
+                 Disabled group, Disabled [Colors:View] ForegroundNormal #aaabac / #606263 \
+                 (breezehelper.cpp:938, :948-952 at breeze f0b1d75; docs/platform-facts.md \
+                 §2.1.6); windows-11 TextOnAccentFillColorDisabled #FFFFFF / #87FFFFFF \
+                 (CheckBox_themeresources.xaml:248, :72, :471 at microsoft-ui-xaml 8463f45); \
+                 ios-13 WebKit's tertiaryLabel (RenderThemeIOS.mm:1410-1413, :1541-1542 at \
+                 WebKit 31adf9d); the label as before",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio label disabled",
+        presets: &["kde-breeze", "windows-11", "ios-13"],
+        reason: "as the check box's (CheckboxLook::of label disabled), the dot at \
+                 radio.dot(DISABLED|CHECKED).fill: kde-breeze palette.text() in the Disabled \
+                 group (breezehelper.cpp:1059); windows-11 RadioButtonCheckGlyphFillDisabled, \
+                 the rest's TextOnAccentFillColorPrimary as the source names it \
+                 (RadioButton_themeresources.xaml:153, :37, :333; the Color-for-a-Brush key's \
+                 drawn result not measured); ios-13 tertiaryLabel (RenderThemeIOS.mm:1578-1579)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of label disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the macOS presets state no disabled mark (no measurement of AppKit's disabled \
+                 checked box yet), so the look draws gpui-component's own disabled mark, the \
+                 checked mark at half its opacity (gpui-component 0.10.0 src/checkbox.rs:230-234; \
+                 docs/v0.8.0-spec.md §10, rule 0), where 0.7.2 draws the checked mark",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio label disabled",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "as the check box's (CheckboxLook::of label disabled): gpui-component's radio \
+                 draws the same mark (src/radio.rs:249)",
+    },
     Difference {
         leaf: "SwitchLook::label_gap",
         presets: &["macos-monterey", "macos-tahoe"],
@@ -434,6 +519,66 @@ impl Report {
             self.label
         ));
     }
+}
+
+/// The mark and the label of a disabled check box (`radio` false) or radio
+/// button, from their homes as `CheckboxLook::next_of` converts them: the
+/// mark at `checkbox.checkmark(DISABLED|CHECKED).color`
+/// (`radio.dot(DISABLED|CHECKED).fill`) where a rule states it for
+/// `DISABLED`, else the checked mark at gpui-component's own disabled
+/// opacity (spec §10, rule 0); the label at `checkbox.label(DISABLED).color`
+/// (`radio.label`). `None` where `disabled` is false or a home is unstated.
+fn disabled_text_of(
+    new: &native_theme::next::ResolvedTheme,
+    radio: bool,
+    disabled: bool,
+) -> Option<(gpui::Hsla, gpui::Hsla)> {
+    use native_theme::next::IconStated;
+    if !disabled {
+        return None;
+    }
+    let checked_disabled = WidgetState::DISABLED | WidgetState::CHECKED;
+    let (stated, mark) = if radio {
+        let stated = new
+            .radio
+            .dot(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::FILL);
+        let at = if stated {
+            checked_disabled
+        } else {
+            WidgetState::CHECKED
+        };
+        (stated, crate::next::fill_of(&new.radio.dot(at))?)
+    } else {
+        let stated = new
+            .checkbox
+            .checkmark(WidgetState::DISABLED)
+            .from_state
+            .contains(IconStated::COLOR);
+        let at = if stated {
+            checked_disabled
+        } else {
+            WidgetState::CHECKED
+        };
+        let mark = new.checkbox.checkmark(at);
+        if !mark.stated.contains(IconStated::COLOR) {
+            return None;
+        }
+        (stated, crate::next::hsla(mark.color))
+    };
+    let mark = if stated {
+        mark
+    } else {
+        mark.opacity(super::checkbox::UPSTREAM_DISABLED_MARK_OPACITY)
+    };
+    let label = if radio {
+        new.radio.label(WidgetState::DISABLED)
+    } else {
+        new.checkbox.label(WidgetState::DISABLED)
+    };
+    let label = crate::next::text_color(&label, "checkbox.label(DISABLED).color").ok()?;
+    Some((mark, label))
 }
 
 /// The two resolved themes of `preset` for `is_dark`.
@@ -619,8 +764,8 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             // The hover outline and the hover fill apart, so a listed difference of either leaves
             // the rest of the look compared.
             // The label apart too, so a listed difference of the disabled label leaves the rest
-            // of the look compared; disabled with it the mark, which the look draws in the
-            // label's disabled colour where a disabled fill is stated (`CheckboxLook::next_of`).
+            // of the look compared; disabled with it the mark, which the look reads at its own
+            // disabled home, else draws as gpui-component does (`CheckboxLook::next_of`).
             let unframed = |look: CheckboxLook| CheckboxLook {
                 hover_border: None,
                 hover_fill: None,
@@ -652,7 +797,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_box.map(unframed),
                 new_box.map(unframed),
             );
-            r.leaf(
+            r.home_leaf(
                 if disabled {
                     "CheckboxLook::of label disabled"
                 } else {
@@ -661,6 +806,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 &state,
                 old_box.map(text),
                 new_box.map(text),
+                disabled_text_of(&new, false, disabled),
             );
             r.leaf(
                 "CheckboxLook::of hover_border",
@@ -688,7 +834,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_radio.map(unframed),
                 new_radio.map(unframed),
             );
-            r.leaf(
+            r.home_leaf(
                 if disabled {
                     "CheckboxLook::radio label disabled"
                 } else {
@@ -697,6 +843,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 &state,
                 old_radio.map(text),
                 new_radio.map(text),
+                disabled_text_of(&new, true, disabled),
             );
             r.leaf(
                 "CheckboxLook::radio hover_border",

@@ -920,7 +920,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Checkbox/SelectedDisabled",
-        &[M3],
+        &[K, W, M3, I],
         ".visuals.widgets.inactive.fg_stroke.color",
         home!(checkbox.checkmark(DISABLED | CHECKED).color),
     ),
@@ -1091,40 +1091,58 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     // for the state alone (`build::variant_source`)
     s(
         "Checkbox/Selected",
-        &[M, T, I],
+        &[A, M, T, I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(checkbox.indicator(HOVER | CHECKED).stroke.color),
     ),
     s(
         "Checkbox/Selected",
-        &[M, T, I],
+        &[A, M, T, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(checkbox.indicator(PRESSED | CHECKED).stroke.color),
     ),
     s(
         "Checkbox/Selected",
-        &[I],
+        &[A, I],
         ".visuals.widgets.hovered.bg_stroke.width",
         home!(checkbox.indicator(HOVER | CHECKED).stroke.width),
     ),
     s(
         "Checkbox/Selected",
-        &[I],
+        &[A, I],
         ".visuals.widgets.active.bg_stroke.width",
         home!(checkbox.indicator(PRESSED | CHECKED).stroke.width),
     ),
     s(
         "Checkbox/Selected",
-        &[I],
+        &[A, I],
         ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),
-    // the checked box's outline, which the disabled checked cell keeps
+    // the checked box's outline, which the disabled checked cell keeps, over its disabled fill
     s(
         "Checkbox/SelectedDisabled",
-        &[I],
+        &[W, I],
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
+    ),
+    // the disabled checked box's own fill (M2.FS4a3)
+    s(
+        "Checkbox/SelectedDisabled",
+        &[K, W, I],
+        ".visuals.widgets.inactive.bg_fill",
+        home!(checkbox.indicator(DISABLED | CHECKED).fill),
+    ),
+    // ios-13's check box at full opacity disabled (WebKit's `opacity: initial`, M2.FS4a3)
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.disabled_alpha",
+        Home {
+            path: "checkbox.disabled_opacity",
+            stated: |r: &ResolvedTheme| r.checkbox.disabled_opacity.is_some(),
+            value: |r: &ResolvedTheme| r.checkbox.disabled_opacity.map(HomeValue::Width),
+        },
     ),
     // the disabled cell keeps the outline at rest over its disabled fill
     s(

@@ -256,6 +256,8 @@ struct SchemeColors {
     placeholder: Color,
     /// `opaqueSecondaryFill`.
     secondary_fill: Color,
+    /// `opaqueTertiaryFill`.
+    tertiary_fill: Color,
     control_hover: Color,
     button_pressed: Color,
     /// A checked toggle's fill under the default tint.
@@ -363,6 +365,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // (html.css:996-1003; ios-18 expected.txt:181)
     // `combo_box.disabled_text_color`: (WebKit) tertiaryLabel, a disabled select's text
     // (html.css:996-1003; ios-18 expected.txt:181)
+    // (WebKit) tertiaryLabel, a disabled check box's mark and bar and a disabled radio's dot
+    // (RenderThemeIOS.mm:1410-1413, :1541-1542, :1578-1579; ios-18 expected.txt:180-181)
     tertiary_label: srgb8(0x3c3c_434c),
     // `input.placeholder_color`: placeholderText, "The color for placeholder text in controls or
     // text views" (UIKit https://developer.apple.com/tutorials/data/documentation/uikit/uicolor/placeholdertext.json,
@@ -373,6 +377,10 @@ const LIGHT: SchemeColors = SchemeColors {
     // `combo_box.background_color`: (WebKit) opaqueSecondaryFill, an iOS select's fill
     // (html.css:1106; ios-18 expected.txt:85)
     secondary_fill: srgb8(0xe9e9_eaff),
+    // (WebKit) opaqueTertiaryFill, a disabled checked or mixed box's and a disabled checked
+    // radio's fill (RenderThemeIOS.mm:1387-1388, :1502, :1561-1563; tertiarySystemFillColor made
+    // opaque over white, :1046, :1085-1086); rgb(238, 238, 239) (ios-18 expected.txt:90-91)
+    tertiary_fill: srgb8(0xeeee_efff),
     // `button.hover_background`, `checkbox.hover_background`, `combo_box.hover_background`,
     // `segmented_control.hover_background`: 0.7.2 ios-13.toml (uncited)
     control_hover: srgb8(0xd1d1_d6ff),
@@ -531,6 +539,8 @@ const DARK: SchemeColors = SchemeColors {
     // (html.css:996-1003; ios-18 expected.txt:183)
     // `combo_box.disabled_text_color`: (WebKit) tertiaryLabel, a disabled select's text
     // (html.css:996-1003; ios-18 expected.txt:183)
+    // (WebKit) tertiaryLabel, a disabled check box's mark and bar and a disabled radio's dot
+    // (RenderThemeIOS.mm:1410-1413, :1541-1542, :1578-1579; ios-18 expected.txt:180, :183)
     tertiary_label: srgb8(0xebeb_f54c),
     // `input.placeholder_color`: placeholderText, "The color for placeholder text in controls or
     // text views" (UIKit https://developer.apple.com/tutorials/data/documentation/uikit/uicolor/placeholdertext.json,
@@ -541,6 +551,10 @@ const DARK: SchemeColors = SchemeColors {
     // `combo_box.background_color`: (WebKit) opaqueSecondaryFill, an iOS select's fill
     // (html.css:1106; ios-18 expected.txt:87)
     secondary_fill: srgb8(0x2626_29ff),
+    // (WebKit) opaqueTertiaryFill, a disabled checked or mixed box's and a disabled checked
+    // radio's fill (RenderThemeIOS.mm:1387-1388, :1502, :1561-1563; tertiarySystemFillColor made
+    // opaque over black, :1046, :1085-1086); rgb(28, 28, 30) (ios-18 expected.txt:90, :93)
+    tertiary_fill: srgb8(0x1c1c_1eff),
     // `button.hover_background`, `checkbox.hover_background`, `combo_box.hover_background`,
     // `segmented_control.hover_background`: 0.7.2 ios-13.toml (uncited)
     control_hover: srgb8(0x3a3a_3cff),
@@ -703,6 +717,10 @@ const BORDER_OPACITY: f32 = 0.22;
 const SHADOW_ENABLED: bool = true;
 // `defaults.disabled_opacity`: 0.7.2 ios-13.toml (uncited)
 const DISABLED_OPACITY: f32 = 0.3;
+// (WebKit) a disabled check box or radio button is drawn at full opacity: the iOS style sheet's
+// `opacity: initial` for them (html.css:1031-1034, :1040-1047 at WebKit 31adf9d) resets the
+// disabled input's `opacity: 0.4` (:962-963); their disabled colours are the theme's own
+const CHECK_DISABLED_OPACITY: f32 = 1.0;
 // (WebKit) pressedStateOpacity, "the opacity applied to UIKit controls" (RenderThemeIOS.mm:830-831),
 // by which a pressed check box's or radio button's fill and mark (:1390-1393, :1416-1417) and a
 // pressed select's background and text (:862-870) are multiplied
@@ -1515,7 +1533,7 @@ fn button(
 /// unchecked fill in WebKit's outline, no shadow; under the pointer its
 /// hover fill; checked, the accent (0.7.2: `checkbox.checked_background` is
 /// `defaults.accent_color` where unstated) with no outline; disabled, its
-/// disabled fill, checked or not.
+/// disabled fill, and checked, WebKit's `opaqueTertiaryFill` with no outline.
 fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, PartProp> {
     let size = [Some(CHECKBOX_INDICATOR_SIZE); 2];
     // (WebKit) checkboxRadioBorderColor: secondaryLabel (ios.rs's `muted`), read for Enabled and
@@ -1570,6 +1588,13 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, Par
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_fill)],
         )
+        // (WebKit) checkboxRadioBackgroundColor: not enabled and not empty, opaqueTertiaryFill
+        // (RenderThemeIOS.mm:1372, :1387-1388); a checked box or circle is filled only (:1502,
+        // :1561-1563).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [fill(c.tertiary_fill), PartProp::Stroke(Stroke::None)],
+        )
 }
 
 /// The label of a check box or a radio button: the UI font in its colour;
@@ -1607,17 +1632,28 @@ fn checkbox(
                 roles.accent.foreground.mul_alpha(PRESSED_STATE_OPACITY),
             )],
         )
+        // Disabled, the mark and the mixed bar in tertiaryLabel (checkboxRadioIndicatorColor,
+        // RenderThemeIOS.mm:1410-1413; the bar :1510-1516, the mark :1517-1542).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [IconProp::Color(c.tertiary_label)],
+        )
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
         indicator(c, roles)
             .base([corners(layout.corner_radius)])
+            // A disabled mixed box as a disabled checked one (`isEmpty` false,
+            // RenderThemeIOS.mm:1372, :1387-1388; filled only, :1502).
+            .rule(
+                RuleSelector::on(WidgetState::DISABLED | WidgetState::INDETERMINATE),
+                [fill(c.tertiary_fill), PartProp::Stroke(Stroke::None)],
+            )
             .build(),
         checkmark,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
-        // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
-        Some(roles.disabled_opacity),
+        Some(CHECK_DISABLED_OPACITY),
     )
 }
 
@@ -1625,8 +1661,14 @@ fn checkbox(
 /// in the accent's text colour (`checkbox.indicator_color`; 0.7.2 states no
 /// dot size), [`check_label`].
 fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> RadioWidget {
+    // Disabled, the dot in tertiaryLabel (checkboxRadioIndicatorColor, RenderThemeIOS.mm:1410-1413,
+    // :1578-1579 at WebKit 31adf9d).
     let dot = RuleBuilder::new(PartStyle::default())
         .base([fill(roles.accent.foreground)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.tertiary_label)],
+        )
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
@@ -1634,8 +1676,7 @@ fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Radio
         dot,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
-        // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
-        Some(roles.disabled_opacity),
+        Some(CHECK_DISABLED_OPACITY),
     )
 }
 

@@ -710,10 +710,7 @@
           ],
           "indicator": {
             "fill": "#9141ac",
-            "stroke": {
-              "width": 1.0,
-              "color": "#434347"
-            }
+            "stroke": "none"
           }
         },
         {
@@ -725,6 +722,15 @@
           ],
           "indicator": {
             "fill": "#ffffff40",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#9141ac",
             "stroke": "none"
           }
         }
@@ -747,6 +753,14 @@
         {
           "states": [
             "pressed"
+          ],
+          "checkmark": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
           ],
           "checkmark": {
             "color": "#ffffff"
@@ -833,10 +847,7 @@
           ],
           "indicator": {
             "fill": "#9141ac",
-            "stroke": {
-              "width": 1.0,
-              "color": "#434347"
-            }
+            "stroke": "none"
           }
         }
       ]
@@ -852,7 +863,17 @@
           8.0,
           8.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "disabled"
+          ],
+          "dot": {
+            "fill": "#ffffff"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
