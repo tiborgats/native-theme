@@ -128,8 +128,10 @@ const fn set(at: WidgetState, field: Field, home: Home) -> Stated {
 /// colour is laid over the fill as set before it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Field {
-    /// `background` (a tab bar's `tab_label_background`).
+    /// `background` (a tab bar's and a sidebar's `tab_label_background`).
     Background,
+    /// A sidebar's `background`: the panel behind its items.
+    Panel,
     /// A slider's `handle.background`.
     HandleBackground,
     /// `text_color`.
@@ -161,8 +163,9 @@ enum Field {
 }
 
 impl Field {
-    const ALL: [Self; 12] = [
+    const ALL: [Self; 13] = [
         Self::Background,
+        Self::Panel,
         Self::HandleBackground,
         Self::TextColor,
         Self::IconColor,
@@ -1039,6 +1042,21 @@ const BUTTON_STATE_FILLS: [Stated; 2] = [
         home!(fill, button.body(PRESSED)),
     ),
 ];
+
+/// A sidebar's panel (`sidebar.container(NONE)`) and its outline laid over
+/// it, in each state [`sidebar_at`] gives a status: the style paints the
+/// panel in every status.
+macro_rules! sidebar_panel {
+    ($($s:ident),+) => {
+        [$(
+            set(at!($s), Field::Panel, home!(fill, sidebar.container(NONE))),
+            set(at!($s), Field::BorderColor, home!(stroke, sidebar.container(NONE))),
+        )+]
+    };
+}
+
+/// [`sidebar_panel`] in every status.
+const SIDEBAR_PANEL: [Stated; 10] = sidebar_panel!(NONE, SELECTED, HOVER, PRESSED, FOCUSED);
 
 /// A button's outline in every status ([`button_outline`]).
 const BUTTON_OUTLINE: [Stated; 8] = button_outline!(;);
@@ -2852,7 +2870,10 @@ const DIFFERENCES: &[Difference] = &[
         &[TAB_STROKE, TAB_IDLE_STROKE, STATED],
     ),
     // iced_aw: sidebar.container(NONE)'s stroke and sidebar.item(HOVER).
-    // the macOS presets state a hovered source-list row's fill transparent (`sidebar.item(HOVER)`).
+    // the macOS presets state a hovered source-list row's fill transparent (`sidebar.item(HOVER)`),
+    // and the panel and its items' label as the source-list row's measured rest fill and label
+    // (os-probe run 45252258079, `*.normal.source_list_row`), where 0.7.2 read the Reduce
+    // Transparency material and labelColor.
     aw(
         "aw::sidebar",
         MACOS,
@@ -2862,11 +2883,41 @@ const DIFFERENCES: &[Difference] = &[
         &[INSIDE],
     )
     .stating(
-        &[&[set(
-            at!(HOVER),
-            Field::Background,
-            home!(fill, sidebar.item(HOVER)),
-        )]],
+        &[
+            &SIDEBAR_PANEL,
+            &[
+                set(
+                    at!(NONE),
+                    Field::Background,
+                    home!(fill, sidebar.container(NONE)),
+                ),
+                set(
+                    at!(NONE),
+                    Field::TextColor,
+                    home!(color, sidebar.item_label(NONE)),
+                ),
+                set(
+                    at!(NONE),
+                    Field::IconColor,
+                    home!(color, sidebar.item_label(NONE)),
+                ),
+                set(
+                    at!(HOVER),
+                    Field::Background,
+                    home!(fill, sidebar.item(HOVER)),
+                ),
+                set(
+                    at!(HOVER),
+                    Field::TextColor,
+                    home!(color, sidebar.item_label(NONE)),
+                ),
+                set(
+                    at!(HOVER),
+                    Field::IconColor,
+                    home!(color, sidebar.item_label(NONE)),
+                ),
+            ],
+        ],
         &[INSIDE, STATED],
     ),
     // iced_aw: list.container(NONE)'s stroke, list.highlight(HOVER) and
@@ -3400,6 +3451,7 @@ impl Fields for iced_widget::button::Style {
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
             | Field::Radius
+            | Field::Panel
             | Field::RailFill => return no_field(field, "button::Style"),
         }
         Ok(())
@@ -3429,6 +3481,7 @@ impl Fields for iced_widget::checkbox::Style {
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
             | Field::Radius
+            | Field::Panel
             | Field::RailFill => {
                 return no_field(field, "checkbox::Style");
             }
@@ -3456,6 +3509,7 @@ impl Fields for iced_widget::radio::Style {
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
             | Field::Radius
+            | Field::Panel
             | Field::RailFill => {
                 return no_field(field, "radio::Style");
             }
@@ -3480,6 +3534,7 @@ impl Fields for iced_widget::toggler::Style {
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
             | Field::Radius
+            | Field::Panel
             | Field::RailFill => return no_field(field, "toggler::Style"),
         }
         Ok(())
@@ -3506,7 +3561,8 @@ impl Fields for iced_widget::slider::Style {
             | Field::Separator
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
-            | Field::Radius => return no_field(field, "slider::Style"),
+            | Field::Radius
+            | Field::Panel => return no_field(field, "slider::Style"),
         }
         Ok(())
     }
@@ -3531,6 +3587,7 @@ impl Fields for iced_widget::pick_list::Style {
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
             | Field::Radius
+            | Field::Panel
             | Field::RailFill => return no_field(field, "pick_list::Style"),
         }
         Ok(())
@@ -3573,6 +3630,7 @@ impl Fields for iced_widget::container::Style {
             | Field::InnerRadius
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
+            | Field::Panel
             | Field::RailFill => return no_field(field, "container::Style"),
         }
         Ok(())
@@ -3594,6 +3652,7 @@ impl Fields for iced_widget::pane_grid::Style {
             | Field::InnerRadius
             | Field::Separator
             | Field::Radius
+            | Field::Panel
             | Field::RailFill => return no_field(field, "pane_grid::Style"),
         }
         Ok(())
@@ -3654,6 +3713,7 @@ macro_rules! field_fields {
                     | Field::PickedSplitColor
                     | Field::HoveredSplitColor
                     | Field::Radius
+                    | Field::Panel
                     | Field::RailFill => return no_field(field, $name),
                 }
                 Ok(())
@@ -3697,6 +3757,7 @@ impl Fields for iced_aw::style::tab_bar::Style {
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
             | Field::Radius
+            | Field::Panel
             | Field::RailFill => return no_field(field, "tab_bar::Style"),
         }
         Ok(())
@@ -3723,6 +3784,7 @@ impl Fields for iced_aw::style::card::Style {
             | Field::Separator
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
+            | Field::Panel
             | Field::RailFill => return no_field(field, "card::Style"),
         }
         Ok(())
@@ -3745,6 +3807,7 @@ impl Fields for iced_aw::style::menu_bar::Style {
             | Field::Separator
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
+            | Field::Panel
             | Field::RailFill => return no_field(field, "menu_bar::Style"),
         }
         Ok(())
@@ -3759,11 +3822,15 @@ impl Fields for iced_aw::style::sidebar::Style {
             Field::Background => {
                 self.tab_label_background = Background::Color(color_of(field, &value)?);
             }
+            Field::Panel => self.background = Some(Background::Color(color_of(field, &value)?)),
+            Field::TextColor => self.text_color = color_of(field, &value)?,
+            Field::IconColor => self.icon_color = color_of(field, &value)?,
+            Field::BorderColor => {
+                let fill = crate::styles::painted(self.background);
+                self.border_color = Some(line_over(field, &value, fill)?);
+            }
             Field::HandleBackground
-            | Field::TextColor
-            | Field::IconColor
             | Field::BorderWidth
-            | Field::BorderColor
             | Field::InnerRadius
             | Field::Separator
             | Field::PickedSplitColor
@@ -3791,6 +3858,7 @@ impl Fields for iced_aw::style::selection_list::Style {
             | Field::PickedSplitColor
             | Field::HoveredSplitColor
             | Field::Radius
+            | Field::Panel
             | Field::RailFill => return no_field(field, "selection_list::Style"),
         }
         Ok(())
@@ -3798,13 +3866,32 @@ impl Fields for iced_aw::style::selection_list::Style {
 }
 
 /// An `iced_aw` status as the state the 0.8.0 theme is queried with for a
-/// card, a sidebar or a selection list: the row under the pointer `HOVER`,
+/// selection list: the row under the pointer `HOVER`,
 /// every other status the rest (no field is stated for one).
 #[cfg(feature = "iced_aw")]
 fn hover_at(status: iced_aw::style::Status) -> WidgetState {
     match status {
         iced_aw::style::Status::Hovered => WidgetState::HOVER,
         _ => WidgetState::NONE,
+    }
+}
+
+/// A sidebar's status as the state of its item, as `iced_aw` spells an
+/// item's states as a tab's (`crate::styles::aw::sidebar`): the item under
+/// the pointer, the selected item (`Active`) and an item not selected
+/// (`Disabled`), the three iced_aw 0.14.1 asks for
+/// (`widget/sidebar/sidebar.rs`); each status it never asks for, whose item
+/// the style leaves to `iced_aw` and whose panel it paints, as the flag it
+/// names, `Selected` as the selected item's.
+#[cfg(feature = "iced_aw")]
+fn sidebar_at(status: iced_aw::style::Status) -> WidgetState {
+    use iced_aw::style::Status;
+    match status {
+        Status::Hovered => WidgetState::HOVER,
+        Status::Active | Status::Selected => WidgetState::SELECTED,
+        Status::Disabled => WidgetState::NONE,
+        Status::Pressed => WidgetState::PRESSED,
+        Status::Focused => WidgetState::FOCUSED,
     }
 }
 
@@ -4644,7 +4731,7 @@ fn compare_aw(
         for status in statuses {
             report.stated_leaf(
                 &format!("aw::sidebar({status:?})"),
-                Some(hover_at(status)),
+                Some(sidebar_at(status)),
                 (
                     aw_leaves::sidebar(old_sidebar(old_theme, status)),
                     aw_leaves::sidebar(new_sidebar(new_theme, status)),

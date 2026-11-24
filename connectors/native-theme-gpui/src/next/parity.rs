@@ -913,6 +913,28 @@ const DIFFERENCES: &[Difference] = &[
                  tab.label(SELECTED)'s colour; every other leaf of the theme is equal",
     },
     Difference {
+        leaf: SIDEBAR_FILL,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's #f6f6f6 / #383838 is the sidebar material read with Reduce \
+                 Transparency on; the 0.8.0 presets state the source-list row's measured rest \
+                 fill under the default conditions, #dddddd / #424242 on both (os-probe run \
+                 45252258079, Reduce Transparency off, `*.normal.source_list_row` `fill`; \
+                 native-theme/tests/next_homes.toml, row sidebar.background_color, a listed \
+                 difference), so the sidebar slot, its token and its stored config string are \
+                 sidebar.container(NONE)'s fill; every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: SIDEBAR_TEXT,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's sidebar text is labelColor; the 0.8.0 presets state the source-list \
+                 row's measured rest label, #424242 / #ececec on macos-monterey, #000000 / \
+                 #ffffff on macos-tahoe (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.normal.source_list_row` `label`; native-theme/tests/next_homes.toml, row \
+                 sidebar.font.color, a listed difference), so the sidebar_foreground slot, its \
+                 token and its stored config string are sidebar.item_label(NONE)'s colour; \
+                 every other leaf of the theme is equal",
+    },
+    Difference {
         leaf: "variants::toolbar_button",
         presets: &["macos-monterey", "macos-tahoe"],
         reason: "0.7.2's macOS toolbar states no button fill; the 0.8.0 presets state the real \
@@ -940,6 +962,15 @@ const TAB_ACTIVE: &str = "to_theme: tab_active";
 /// `ThemeColor` slot `tab_active_foreground`, its token and its stored config
 /// string.
 const TAB_ACTIVE_TEXT: &str = "to_theme: tab_active_foreground";
+
+/// The leaf of [`DIFFERENCES`]' entry for the sidebar's fill: the
+/// `ThemeColor` slot `sidebar`, its token and its stored config string.
+const SIDEBAR_FILL: &str = "to_theme: sidebar";
+
+/// The leaf of [`DIFFERENCES`]' entry for the sidebar's text: the
+/// `ThemeColor` slot `sidebar_foreground`, its token and its stored config
+/// string.
+const SIDEBAR_TEXT: &str = "to_theme: sidebar_foreground";
 
 /// The leaf of [`DIFFERENCES`]' entry for the text field's outline: the
 /// `ThemeColor` slot `input`, its token and its stored config string,
@@ -1109,6 +1140,39 @@ const STATED_SLOTS: &[StatedSlot] = &[
         },
         copy_config: |config, from| {
             config.tab_active_foreground = from.tab_active_foreground.clone();
+        },
+    },
+    StatedSlot {
+        leaf: SIDEBAR_FILL,
+        what: "the sidebar's stated fill",
+        of: |new| super::fill_of(&new.sidebar.container(native_theme::next::WidgetState::NONE)),
+        color: |c| c.sidebar,
+        token: |t| t.sidebar,
+        config: |c| c.sidebar.clone(),
+        copy: |theme, from| {
+            theme.colors.sidebar = from.colors.sidebar;
+            theme.tokens.sidebar = from.tokens.sidebar;
+        },
+        copy_config: |config, from| config.sidebar = from.sidebar.clone(),
+    },
+    StatedSlot {
+        leaf: SIDEBAR_TEXT,
+        what: "the sidebar's stated text",
+        of: |new| {
+            super::text_color_of(
+                &new.sidebar
+                    .item_label(native_theme::next::WidgetState::NONE),
+            )
+        },
+        color: |c| c.sidebar_foreground,
+        token: |t| t.sidebar_foreground,
+        config: |c| c.sidebar_foreground.clone(),
+        copy: |theme, from| {
+            theme.colors.sidebar_foreground = from.colors.sidebar_foreground;
+            theme.tokens.sidebar_foreground = from.tokens.sidebar_foreground;
+        },
+        copy_config: |config, from| {
+            config.sidebar_foreground = from.sidebar_foreground.clone();
         },
     },
 ];

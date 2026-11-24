@@ -1446,6 +1446,36 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         home!(sidebar.item(HOVER).fill),
     ),
     s(
+        "Sidebar",
+        &[M, T],
+        ".visuals.widgets.{noninteractive,inactive,open}.fg_stroke.color",
+        home!(sidebar.item_label(NONE).color),
+    ),
+    s(
+        "Sidebar",
+        &[M, T],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(sidebar.item_label(HOVER).color),
+    ),
+    s(
+        "Sidebar",
+        &[M, T],
+        ".visuals.panel_fill",
+        home!(sidebar.container(NONE).fill),
+    ),
+    s(
+        "Panel(Left)",
+        &[M, T],
+        ".fill",
+        home!(sidebar.container(NONE).fill),
+    ),
+    s(
+        "Panel(Right)",
+        &[M, T],
+        ".fill",
+        home!(sidebar.container(NONE).fill),
+    ),
+    s(
         "Slider",
         &[M, I],
         ".visuals.widgets.active.bg_fill",

@@ -1544,7 +1544,7 @@
     "item_gap": null,
     "container": {
       "base": {
-        "fill": "#383838",
+        "fill": "#424242",
         "stroke": {
           "width": 0.5,
           "color": "#05cd0a"
@@ -1583,7 +1583,7 @@
     "item_label": {
       "base": {
         "family": "SF Pro",
-        "color": "#01c902",
+        "color": "#ffffff",
         "size_px": 13.0,
         "weight": 400,
         "style": "normal",
@@ -1597,7 +1597,7 @@
             "hover"
           ],
           "item_label": {
-            "color": "#01c902"
+            "color": "#ffffff"
           }
         },
         {

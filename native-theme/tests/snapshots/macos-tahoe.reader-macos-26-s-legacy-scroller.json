@@ -1553,7 +1553,7 @@
     "item_gap": null,
     "container": {
       "base": {
-        "fill": "#f6f6f6",
+        "fill": "#dddddd",
         "stroke": {
           "width": 0.5,
           "color": "#c8c8c8"

@@ -558,12 +558,12 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // 45198750893, macOS 15, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xf0f0_f0ff),
     tab_selected: None,
-    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
-    // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
-    // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
-    sidebar_background: srgb8(0xf6f6_f6ff),
-    // `sidebar.font.color`: platform-facts.md (§2.12): ← defaults.font.color, labelColor (probe)
-    sidebar_foreground: Some(srgb8(0x0000_00d8)),
+    // `sidebar.background_color`: the source-list row at rest, #dddddd, NSVisualEffectView's
+    // sidebar material behind it, opaque, and its label #424242 (measured, os-probe run
+    // 45252258079, macOS 15, Reduce Transparency off, `*.normal.source_list_row` `fill`, `label`),
+    // where the Reduce Transparency on reading #f6f6f6 stood (run 40320895749)
+    sidebar_background: srgb8(0xdddd_ddff),
+    sidebar_foreground: Some(srgb8(0x4242_42ff)),
     // `sidebar.item(PRESSED).fill`: #2d92fb, on the default accent (measured, os-probe run
     // 45252258079, macOS 15, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x2d92_fbff)),
@@ -824,12 +824,12 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // os-probe run 45198750893, macOS 15, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xffff_ff64),
     tab_selected: None,
-    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
-    // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
-    // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
-    sidebar_background: srgb8(0x3838_38ff),
-    // `sidebar.font.color`: platform-facts.md (§2.12): ← defaults.font.color, labelColor (probe)
-    sidebar_foreground: Some(srgb8(0xffff_ffd8)),
+    // `sidebar.background_color`: the source-list row at rest, #424242, the sidebar material behind
+    // it, opaque, and its label #ececec (measured, os-probe run 45252258079, macOS 15, Reduce
+    // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
+    // on reading #383838 stood (run 40320895749)
+    sidebar_background: srgb8(0x4242_42ff),
+    sidebar_foreground: Some(srgb8(0xecec_ecff)),
     // `sidebar.item(PRESSED).fill`: #378ce5, on the default accent (measured, os-probe run
     // 45252258079, macOS 15, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x378c_e5ff)),
@@ -1093,12 +1093,12 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `tab.tab(SELECTED).fill`: #0077f9, on the default accent, lettered white (measured, os-probe
     // run 45252258079, macOS 26, Reduce Transparency off, `aqua.normal.tab_One` `fill`, `label`)
     tab_selected: Some(srgb8(0x0077_f9ff)),
-    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
-    // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
-    // macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749,
-    // os-probe-macos-26/probe.toml)
-    sidebar_background: srgb8(0xf6f6_f6ff),
-    sidebar_foreground: None,
+    // `sidebar.background_color`: the source-list row at rest, #dddddd, the sidebar material behind
+    // it, opaque, and its label #000000 (measured, os-probe run 45252258079, macOS 26, Reduce
+    // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
+    // on reading #f6f6f6 stood (run 40320895749)
+    sidebar_background: srgb8(0xdddd_ddff),
+    sidebar_foreground: Some(srgb8(0x0000_00ff)),
     // `sidebar.item(PRESSED).fill`: #0069ee, on the default accent (measured, os-probe run
     // 45252258079, macOS 26, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x0069_eeff)),
@@ -1358,12 +1358,12 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // run 45252258079, macOS 26, Reduce Transparency off, `darkAqua.normal.tab_One` `fill`,
     // `label`)
     tab_selected: Some(srgb8(0x077d_ffff)),
-    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
-    // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
-    // macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749,
-    // os-probe-macos-26/probe.toml)
-    sidebar_background: srgb8(0x3838_38ff),
-    sidebar_foreground: None,
+    // `sidebar.background_color`: the source-list row at rest, #424242, the sidebar material behind
+    // it, opaque, and its label #ffffff (measured, os-probe run 45252258079, macOS 26, Reduce
+    // Transparency off, `*.normal.source_list_row` `fill`, `label`), where the Reduce Transparency
+    // on reading #383838 stood (run 40320895749)
+    sidebar_background: srgb8(0x4242_42ff),
+    sidebar_foreground: Some(srgb8(0xffff_ffff)),
     // `sidebar.item(PRESSED).fill`: #219bff, on the default accent (measured, os-probe run
     // 45252258079, macOS 26, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
     sidebar_pressed: Some(srgb8(0x219b_ffff)),
@@ -3969,9 +3969,9 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
 /// selected item in the selection's colours (0.7.2:
 /// `sidebar.selection_background` and `selection_text_color` are the
 /// selection's where unstated); the UI font (0.7.2: `sidebar.font` is
-/// `defaults.font` where unstated) in `macos-monterey`'s own colour, which its
-/// TOML states as labelColor's constant and so keeps under the system's
-/// colours, else in the window's text. No hover fill (0.7.2:
+/// `defaults.font` where unstated) in the measured source-list row's label
+/// ([`SchemeColors::sidebar_foreground`]), or in the palette's text where
+/// the system's colours are laid over ([`lay_palette_over`]). No hover fill (0.7.2:
 /// `sidebar.hover_background` unset is the pane's fill, "no tint"); a
 /// pressed item in its measured fill and the selection's text.
 fn sidebar(
