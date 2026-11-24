@@ -1337,8 +1337,9 @@ impl<'a> DrawnFamilies<'a> {
 
 /// The OS's faces of the theme's family at the weights the showcase draws besides the body's:
 /// its semibold face, for the inspector's headings gpui draws `font_semibold()` (parity decision
-/// 3), and the face at each weight of each variant's text-scale roles (`text_scale.*.weight`)
-/// and table header (`list.header_font.weight`), for the page's section headings, its
+/// 3), and the face at each weight of each installed 0.8.0 theme's text roles
+/// (`next::text_role_weight`) and table header (`list.header_label(NONE).weight`), for the
+/// page's section headings, its
 /// Typography group and its table. Each is `native_theme::fonts::system_face` at its weight, added with
 /// `Context::add_font` after every `ThemeAtlas::install`, whose `set_fonts` replaces the
 /// definitions: the semibold one under `SEMIBOLD_FAMILY`, the others under [`weight_family`].
@@ -1355,7 +1356,8 @@ pub(crate) struct Semibold {
 
 impl Semibold {
     /// After `atlas.install(ctx)`: the faces of the family the connector's font plan registers
-    /// for the theme's light variant (§4.6) — the family it names, or the platform's substitute
+    /// for the installed 0.8.0 light theme's body text (§4.6) — the family it names, or the
+    /// platform's substitute
     /// where the OS lacks it, as the atlas's notes record ([`drawn_family`]) — where the OS has
     /// them, each where epaint can load it ([`Semibold::add_face`]); none otherwise, and the
     /// text keeps the regular face. One `native_theme::fonts::system_face` per weight
@@ -1363,27 +1365,58 @@ impl Semibold {
     pub(crate) fn register(&mut self, ctx: &egui::Context, atlas: &crate::app::OldAtlas) {
         #[cfg(feature = "system-fonts")]
         {
-            let light = atlas.old_resolved(egui::Theme::Light);
-            let body = &light.defaults.font;
+            use native_theme::next::{FontStyle, TextStated, WidgetState};
+            use native_theme::theme::FontStyle as Slant;
+            use native_theme_egui::{TextRole, next};
+
             self.registrations = self.registrations.saturating_add(1);
+            self.invalid.clear();
+            // The faces the connector's font plan asks for (`next::font_plan_from_system(light)`):
+            // the light theme's body text, where it states its family and slant, as the
+            // connector's face request reads them, each slant the one `system_face` takes.
+            let Some(light) = atlas.next_resolved(egui::Theme::Light) else {
+                return;
+            };
+            let body = &light.typography.body;
+            let style = match body.style {
+                FontStyle::Normal => Slant::Normal,
+                FontStyle::Italic => Slant::Italic,
+                FontStyle::Oblique => Slant::Oblique,
+                _ => return,
+            };
+            if !body.stated.contains(TextStated::FAMILY | TextStated::STYLE) {
+                return;
+            }
             let mut families = vec![(
                 crate::SEMIBOLD_WEIGHT,
                 egui::FontFamily::Name(SEMIBOLD_FAMILY.into()),
             )];
+            // The weights the pages draw text at besides the body's (`weighted_family`): each
+            // text role's (`next::text_role_weight`, the section headings and the Typography
+            // group) and the table header's where stated (`pages::data::TableHeader`), of each
+            // scheme's installed theme whose body weight is stated (`next::font_weight`).
             for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-                let t = atlas.old_resolved(scheme);
-                let s = &t.text_scale;
-                for weight in [
-                    s.caption.weight,
-                    s.section_heading.weight,
-                    s.dialog_title.weight,
-                    s.display.weight,
-                    t.list.header_font.weight,
-                ] {
+                let Some(t) = atlas.next_resolved(scheme) else {
+                    continue;
+                };
+                let Ok(body_weight) = next::font_weight(t) else {
+                    continue;
+                };
+                let header = t.list.header_label(WidgetState::NONE);
+                let roles = [
+                    TextRole::Caption,
+                    TextRole::SectionHeading,
+                    TextRole::DialogTitle,
+                    TextRole::Display,
+                ]
+                .map(|role| next::text_role_weight(t, role));
+                let header = header
+                    .stated
+                    .contains(TextStated::WEIGHT)
+                    .then_some(header.weight);
+                for weight in roles.into_iter().chain(header) {
                     let family = weight_family(weight);
-                    if weight != t.defaults.font.weight
-                        && !families.iter().any(|(_, f)| *f == family)
-                    {
+                    if weight != body_weight && !families.iter().any(|(_, f)| *f == family) {
                         families.push((weight, family));
                     }
                 }
@@ -1393,9 +1426,8 @@ impl Semibold {
             // the OS lacks the theme's family, else the theme's own.
             let unavailable = unavailable_families(atlas.notes());
             let drawn = drawn_family(&unavailable, &body.family).unwrap_or(&body.family);
-            self.invalid.clear();
             for (weight, family) in families {
-                let Some(face) = native_theme::fonts::system_face(drawn, weight, body.style) else {
+                let Some(face) = native_theme::fonts::system_face(drawn, weight, style) else {
                     continue;
                 };
                 self.add_face(ctx, (drawn, weight), family, face.data.to_vec(), face.index);

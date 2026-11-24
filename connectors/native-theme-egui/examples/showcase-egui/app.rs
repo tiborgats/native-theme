@@ -316,6 +316,19 @@ pub(crate) fn effective_preferences(
     }
 }
 
+/// The accessibility preferences of `ctx`, as the connector reads a 0.8.0 theme's context back
+/// as them (docs/v0.8.0-spec.md §5, the table of homes' `accessibility.*` rows:
+/// `reduce_motion` is a motion other than `Full`, `high_contrast` a contrast other than
+/// `Normal`), as the gpui showcase's `preferences_of`.
+pub(crate) fn preferences_of(ctx: &ThemeContext) -> AccessibilityPreferences {
+    let mut prefs = AccessibilityPreferences::DEFAULT.clone();
+    prefs.text_scaling_factor = ctx.text_scale;
+    prefs.reduce_motion = ctx.motion != MotionPreference::Full;
+    prefs.high_contrast = ctx.contrast != Contrast::Normal;
+    prefs.reduce_transparency = ctx.reduced_transparency;
+    prefs
+}
+
 /// The text of the error [`OldAtlas::of`]'s `None` gives.
 pub(crate) const NOT_OLD: &str = "the atlas holds no 0.7.2 theme, which the showcase's pages read";
 
@@ -453,8 +466,8 @@ pub(crate) fn palette_rows() -> Vec<(Option<&'static str>, String)> {
 /// model read it -- where the read failed, the default context every preset alone is resolved
 /// in (`next::Theme::preset`) -- in `scheme`, for an active window, left to right as the
 /// showcase lays itself out, with `prefs` as its text scale, motion, contrast and reduced
-/// transparency: the accessibility preferences the 0.7.2 theme of the same choice is built
-/// with, the OS's with the user's over them ([`effective_preferences`]). A preference set keeps
+/// transparency: the accessibility preferences the theme is installed with, the OS's with the
+/// user's over them ([`App::rebuild_atlas`]). A preference set keeps
 /// the desktop's own level where that is one of its kind (a contrast `Increased`, a motion
 /// `None`), as the gpui and iced showcases' (`Showcase::next_context`, `next_context`).
 pub(crate) fn next_context(
@@ -520,8 +533,9 @@ struct NextSlots {
 pub(crate) struct OldAtlas {
     atlas: ThemeAtlas,
     old: std::sync::Arc<[native_theme_egui::ResolvedTheme; 2]>,
-    /// The accessibility preferences the install asked for: the 0.7.2 atlas's, which the 0.8.0
-    /// theme's context reads back lowered where the theme holds a level back.
+    /// The accessibility preferences the install asked for (an atlas of the 0.7.2 model alone:
+    /// its own), which the 0.8.0 theme's context reads back lowered where the theme holds a
+    /// level back.
     asked: AccessibilityPreferences,
     next: Option<std::sync::Arc<NextSlots>>,
 }
@@ -953,8 +967,10 @@ impl App {
     /// desktop's own as the 0.8.0 model read it (`system`), or a preset alone -- with the
     /// palette chosen laid over it (`next::Theme::with_palette`, which locks the scheme to the
     /// palette's), is resolved per scheme slot in [`next_context`] (on the desktop's context
-    /// where it was read) with the preferences the 0.7.2 atlas of the choice is built with
-    /// ([`App::rebuild_old`]), and for an inactive window beside it; the atlas installed is
+    /// where it was read) with the OS's accessibility preferences, those of the desktop's
+    /// context ([`preferences_of`]) -- where the read failed, the detection cache's, which
+    /// `ReloadTheme` and the watcher clear -- with the user's over them
+    /// ([`effective_preferences`]), and for an inactive window beside it; the atlas installed is
     /// built from those four themes by `ThemeAtlas::next_builder`, with the OS's faces for the
     /// light theme's text where `system-fonts` is on (`next::font_plan_from_system`), as the
     /// 0.7.2 atlas takes them, and the OS colour mode: the desktop's scheme where the 0.8.0
@@ -990,7 +1006,11 @@ impl App {
             }
         };
         let base = system.as_ref().ok().map(|system| system.context().clone());
-        let asked = old.accessibility().clone();
+        let os = base.as_ref().map_or_else(
+            native_theme::detect::accessibility_preferences,
+            preferences_of,
+        );
+        let asked = effective_preferences(&os, settings.prefs.as_ref());
         let slot = |scheme| {
             let ctx = next_context(base.as_ref(), scheme, &asked);
             let resolved = theme.resolve(&ctx);

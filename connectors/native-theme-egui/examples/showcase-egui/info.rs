@@ -714,10 +714,60 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     ),
 ];
 
+/// The rows of tabs `demo::tab_bar` draws, each bar's element and its tabs': the Basic page's,
+/// the page tabs and the inspector's tabs.
+pub(crate) const TAB_ELEMENTS: [&str; 9] = [
+    "basic.tabs.bar",
+    "basic.tabs.one",
+    "basic.tabs.two",
+    "chrome.page_tabs",
+    "chrome.page_tabs.basic",
+    "chrome.page_tabs.buttons",
+    "chrome.side_panel.inspector_tabs",
+    "chrome.side_panel.inspector_tabs.widget",
+    "chrome.side_panel.inspector_tabs.theme",
+];
+
+/// The homes a row of tabs draws per call from the installed 0.8.0 theme
+/// (`demo::TabLook::next`), each with its route: what egui's `Button` and the tab scope's style
+/// carry none of.
+pub(crate) const TAB_PER_CALL_ROUTES: [(&str, &str); 6] = [
+    (
+        "tab.tab(NONE).min_size[0]",
+        "egui: per call, the least tab width, which egui's Button never reads from the style \
+         (demo::TabLook::next, demo::tab_bar)",
+    ),
+    (
+        "tab.indicator(SELECTED).fill",
+        "egui: per call, the colour of the selected tab's line (demo::next_indicator_line, \
+         painted by demo::tab_bar)",
+    ),
+    (
+        "tab.indicator(SELECTED).min_size[1]",
+        "egui: per call, the thickness of the selected tab's line, the indicator's exact height \
+         (demo::next_indicator_line)",
+    ),
+    (
+        "tab.indicator(SELECTED).max_size[1]",
+        "egui: per call, not read: the selected tab's line is min_size[1] thick, the \
+         indicator's exact height (demo::next_indicator_line)",
+    ),
+    (
+        "tab.indicator_side",
+        "egui: per call, the edge of the selected tab its line lies along \
+         (demo::next_indicator_line)",
+    ),
+    (
+        "tab.active_outward_corner_radius",
+        "egui: per call, the selected tab's outward corners, in its fill and outline \
+         (demo::next_outward_radius, painted by demo::tab_bar)",
+    ),
+];
+
 /// The line under a listed element's row: the call that applies it where a page or the chrome
 /// paints it per call ([`PER_CALL_ROUTES`], whose `row_` ids name every row by prefix and whose
-/// other ids name one element each), else [`how_line`]'s, from the `mapping.toml` row that holds
-/// the home.
+/// other ids name one element each; [`TAB_PER_CALL_ROUTES`] on [`TAB_ELEMENTS`]), else
+/// [`how_line`]'s, from the `mapping.toml` row that holds the home.
 pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: &[Seam]) -> String {
     let names = |id: &str| {
         if id.ends_with("row_") {
@@ -726,13 +776,17 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
             element == id
         }
     };
+    let tab_route = TAB_ELEMENTS
+        .contains(&element)
+        .then(|| TAB_PER_CALL_ROUTES.iter().find(|(h, _)| *h == home))
+        .flatten()
+        .map(|(_, line)| *line);
     PER_CALL_ROUTES
         .iter()
         .find(|(id, h, _)| names(id) && *h == home)
-        .map_or_else(
-            || how_line(manifest, home, seams),
-            |(_, _, line)| line.to_string(),
-        )
+        .map(|(_, _, line)| *line)
+        .or(tab_route)
+        .map_or_else(|| how_line(manifest, home, seams), str::to_string)
 }
 
 /// The rows of a `mapping.toml` row for an instance drawn with `seams` under `preset`: one per

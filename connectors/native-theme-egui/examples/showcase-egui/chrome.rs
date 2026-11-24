@@ -871,11 +871,15 @@ fn status_bar_padding(ui: &egui::Ui) -> (f32, f32) {
 
 /// The status bar's environment items (`status::environment_drawn`, the three showcases'
 /// text): the desktop, the preset by its key (`default` by the preset it builds on), with the
-/// palette laid over it, and the mode, the font by the family egui draws (`demo::DrawnFamilies`) in its defined unit (§8.7),
-/// the text-scaling factor and the flags that are set.
+/// palette laid over it, and the mode, then, of the installed 0.8.0 theme the window shows
+/// (`OldAtlas::next_shown`), the body text's font by the family egui draws
+/// (`demo::DrawnFamilies`) in its defined unit (§8.7), and the context it was resolved in: its
+/// text scale and the preferences it sets (`next::status::environment_drawn`), where a level the
+/// user asked for is held back the one used (`OldAtlas::contrast_held`), as Widget Info states
+/// what is drawn and as the iced showcase's `status_environment`. Without a 0.8.0 theme, the
+/// desktop and the preset and mode alone.
 pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
     let theme = ctx.theme();
-    let t = app.atlas.old_resolved(theme);
     let mode = if theme == egui::Theme::Dark {
         "dark"
     } else {
@@ -891,15 +895,17 @@ pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
         Some(palette) => format!("{preset} + {palette}"),
         None => preset,
     };
+    let Some(t) = app.atlas.next_shown(ctx) else {
+        return vec![status::desktop(), format!("{preset} {mode}")];
+    };
     let families = crate::demo::DrawnFamilies::of(ctx, &app.atlas);
-    status::environment_drawn(
+    let body = &t.typography.body;
+    native_theme_showcase_support::next::status::environment_drawn(
         &preset,
         mode,
-        &t.defaults.font,
-        families.drawn_at(&t.defaults.font.family, false),
-        // What the user asked for: the installed theme's context can hold a level back
-        // (`OldAtlas::contrast_held`).
-        Some(app.atlas.asked()),
+        body,
+        families.drawn_at(&body.family, false),
+        Some(&t.context),
     )
 }
 

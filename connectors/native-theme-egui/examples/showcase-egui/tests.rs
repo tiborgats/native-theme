@@ -11024,7 +11024,7 @@ fn open_menu_theme_places_the_theme_menus_rows() {
 /// row per leaf of the list, in its order, each with a route; parts and the layout boxes are
 /// never Widget Info's targets.
 #[test]
-fn widget_info_shows_the_listed_elements_rows() {
+fn widget_info_shows_the_listed_elements_rows() -> Result<(), String> {
     let elements = listed_elements();
     let mut harness = open_page(Page::Basic, egui::Theme::Light);
     let pos = centre_of(&harness, "button (enabled)");
@@ -11035,9 +11035,7 @@ fn widget_info_shows_the_listed_elements_rows() {
         Some("basic.buttons.default")
     );
     let listed = elements.iter().find(|e| e.id == "basic.buttons.default");
-    let read = manifest_and_json(&harness);
-    assert!(read.is_ok(), "{read:?}");
-    let Ok((manifest, json)) = read else { return };
+    let (manifest, json) = manifest_and_json(&harness)?;
     if let (Some(shown), Some(listed)) = (shown, listed) {
         let scheme = (&harness.state().atlas, &harness.ctx);
         let view =
@@ -11053,11 +11051,12 @@ fn widget_info_shows_the_listed_elements_rows() {
             "{:#?}",
             view.rows
         );
+        let first = want
+            .first()
+            .copied()
+            .ok_or("basic.buttons.default: its list row names no home")?;
         assert!(
-            harness
-                .query_all_by_label_contains(want.first().copied().unwrap_or("(no home)"))
-                .next()
-                .is_some(),
+            harness.query_all_by_label_contains(first).next().is_some(),
             "the Widget tab does not show the button's first row"
         );
     }
@@ -11081,6 +11080,54 @@ fn widget_info_shows_the_listed_elements_rows() {
             "the layout box {id} is a Widget Info target"
         );
     }
+    Ok(())
+}
+
+/// The Basic tabs, the page tabs and the inspector's tabs take their least width, the selected
+/// tab's line and its outward corners per call from the installed 0.8.0 theme
+/// (`demo::TabLook::next`), so those rows' routes name the showcase's call, not the 0.7.2
+/// connector helpers' tests `mapping.toml` names (`tested_by = "T18(a)"`); an element that is
+/// no tab keeps the manifest's route.
+#[test]
+fn the_tab_routes_name_the_call_that_draws_them() -> Result<(), String> {
+    use crate::info::{TAB_ELEMENTS, TAB_PER_CALL_ROUTES};
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Tab,
+        RoleVariant::Normal,
+    )];
+    let elements = listed_elements();
+    let mut checked = 0usize;
+    let mut wrong = Vec::new();
+    for id in TAB_ELEMENTS {
+        let element = elements
+            .iter()
+            .find(|e| e.id == id)
+            .ok_or_else(|| format!("{id} is not listed"))?;
+        for (home, _) in TAB_PER_CALL_ROUTES {
+            if !element.homes.iter().any(|h| h == home) {
+                continue;
+            }
+            checked += 1;
+            let how = crate::info::listed_how(&manifest, id, home, &seams);
+            if !how.contains("(demo::") || how.contains("install_tests") {
+                wrong.push(format!("{id} {home}: {how:?}"));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    assert_eq!(
+        checked, 24,
+        "each bar's outward radius, its selected tab's six homes and the other tab's least width, \
+         on three bars"
+    );
+    let home = "tab.active_outward_corner_radius";
+    assert_eq!(
+        crate::info::listed_how(&manifest, "basic.page", home, &seams),
+        crate::info::how_line(&manifest, home, &seams),
+        "the Basic page's layout box takes a tab's route"
+    );
+    Ok(())
 }
 
 /// The Basic page paints the List's and the table's frames per call (`pages::basic::list_frame`)
@@ -11492,13 +11539,6 @@ fn info_row_value(harness: &Harness<'_, App>, leaf: &str) -> String {
 #[test]
 fn every_font_label_names_the_drawn_family() -> Result<(), String> {
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
-    // The status bar still reads the 0.7.2 theme of the choice; the Theme tab and Widget Info
-    // the 0.8.0 one.
-    let t = harness
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
     let r = harness
         .state()
         .atlas
@@ -11512,7 +11552,6 @@ fn every_font_label_names_the_drawn_family() -> Result<(), String> {
     println!("windows-11's {mono_family:?} is shown as {mono:?}");
     let button_family = r.button.label(native_theme::next::WidgetState::NONE).family;
     let button = drawn_label(&harness, &button_family, false);
-    let status = drawn_label(&harness, &t.defaults.font.family, false);
     // A `Label`'s text is its AccessKit value (`egui/src/response.rs:962-964`).
     let values = |harness: &Harness<'_, App>| -> Vec<String> {
         harness
@@ -11521,8 +11560,8 @@ fn every_font_label_names_the_drawn_family() -> Result<(), String> {
             .collect()
     };
     let font_item = format!(
-        "{status} {}",
-        native_theme_showcase_support::status::defined_size(&t.defaults.font)
+        "{body} {}",
+        native_theme_showcase_support::next::status::defined_size(&r.typography.body)
     );
     let environment = values(&harness)
         .into_iter()
@@ -11567,38 +11606,6 @@ fn every_font_label_names_the_drawn_family() -> Result<(), String> {
         );
     }
     Ok(())
-}
-
-/// `preset`'s atlas, built as `from_preset` builds it, from its two resolved variants with
-/// `edit` applied to each (handed its scheme): the resolved themes' fields are public, so a
-/// test can give a font a family no bundled preset states.
-fn edited_atlas(
-    preset: &str,
-    edit: impl Fn(egui::Theme, &mut native_theme_egui::ResolvedTheme),
-) -> native_theme_egui::ThemeAtlas {
-    let prefs = AccessibilityPreferences::default();
-    let (built, _) = from_preset(preset, false, &prefs).expect("a bundled preset builds");
-    let old = crate::app::OldAtlas::of(built.clone());
-    assert!(old.is_some(), "{preset}'s atlas holds its 0.7.2 themes");
-    let Some(built) = old else { return built };
-    let [mut light, mut dark] =
-        [egui::Theme::Light, egui::Theme::Dark].map(|theme| built.old_resolved(theme).clone());
-    edit(egui::Theme::Light, &mut light);
-    edit(egui::Theme::Dark, &mut dark);
-    let mut builder = native_theme_egui::ThemeAtlas::builder(built.name(), &light, &dark)
-        .layout(built.layout())
-        .accessibility(built.accessibility())
-        .icon_set(built.icon_set());
-    for theme in [egui::Theme::Light, egui::Theme::Dark] {
-        if let Some(name) = built.icon_theme(theme) {
-            builder = builder.icon_theme(theme, name);
-        }
-    }
-    #[cfg(feature = "system-fonts")]
-    {
-        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
-    }
-    builder.build()
 }
 
 /// What egui draws a font whose stated family is not the one the font plan loaded for its kind
@@ -11663,32 +11670,30 @@ fn a_widget_font_of_another_family_is_named_by_the_face_egui_draws() -> Result<(
     Ok(())
 }
 
-/// Under a dark variant whose `defaults.font.family` is not the light one's, the status bar and
-/// the Theme tab name the face egui draws, the light variant's: the connector's font plan
-/// reads the light variant alone (`FontPlan::from_system(&light)`). No bundled preset or OS
-/// reader gives the two variants other families; the test sets one.
+/// Under a dark theme whose `typography.body.family` is not the light one's, the status bar and
+/// the Theme tab name the face egui draws, the light theme's: the connector's font plan reads
+/// the light theme alone (`next::font_plan_from_system(light)`). No bundled preset or OS reader
+/// gives the two schemes other families; the test sets one on the installed 0.8.0 themes.
 #[test]
-fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() {
-    let mut harness = open(
-        egui::Theme::Dark,
-        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
-    );
-    harness.run_steps(4);
-    let atlas = edited_atlas("kde-breeze", |theme, t| {
-        if theme == egui::Theme::Dark {
-            t.defaults.font.family = "Noto Serif".into();
+fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() -> Result<(), String> {
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Dark, "kde-breeze");
+    let edited = harness.state().atlas.edited(|r| {
+        if r.context.scheme == native_theme::next::Scheme::Dark {
+            r.typography.body.family = "Noto Serif".into();
         }
-    });
+    })?;
     let ctx = harness.ctx.clone();
-    harness.state_mut().adopt(&ctx, atlas);
+    harness.state_mut().adopt_pair(&ctx, edited);
     harness.run_steps(4);
     assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
     let label = other_font_label(&harness, "Noto Serif", false);
-    let t = harness
+    let body = harness
         .state()
         .atlas
-        .old_resolved(egui::Theme::Dark)
-        .clone();
+        .next_resolved(egui::Theme::Dark)
+        .map(|r| r.typography.body.clone())
+        .ok_or("no 0.8.0 dark theme installed")?;
+    assert_eq!(&*body.family, "Noto Serif");
     let values = |harness: &Harness<'_, App>| -> Vec<String> {
         harness
             .query_all(By::new().predicate(|n| n.value().is_some()))
@@ -11697,31 +11702,16 @@ fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() {
     };
     let font_item = format!(
         "{label} {}",
-        native_theme_showcase_support::status::defined_size(&t.defaults.font)
+        native_theme_showcase_support::next::status::defined_size(&body)
     );
     let environment = values(&harness)
         .into_iter()
-        .find(|v| v.contains(" · ") && v.contains(TEST_PRESET))
-        .expect("one environment line");
+        .find(|v| v.contains(" · ") && v.contains("kde-breeze"))
+        .ok_or("no environment line")?;
     assert!(
         environment.split(" · ").any(|item| item == font_item),
         "the status bar does not name the face egui draws as {font_item:?}: {environment}"
     );
-    // The Theme tab reads the installed 0.8.0 theme: its dark slot given a body family of its
-    // own.
-    let mut harness = open_page_under(Page::Basic, egui::Theme::Dark, "kde-breeze");
-    let edited = harness.state().atlas.edited(|r| {
-        if r.context.scheme == native_theme::next::Scheme::Dark {
-            r.typography.body.family = "Noto Serif".into();
-        }
-    });
-    assert!(edited.is_ok(), "{edited:?}");
-    let Ok(edited) = edited else { return };
-    let ctx = harness.ctx.clone();
-    harness.state_mut().adopt_pair(&ctx, edited);
-    harness.run_steps(4);
-    assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
-    let label = other_font_label(&harness, "Noto Serif", false);
     harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
     harness.run_steps(2);
     let row = format!("font_family\n{label}");
@@ -11729,6 +11719,7 @@ fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() {
         values(&harness).contains(&row),
         "the Theme tab shows no {row:?}"
     );
+    Ok(())
 }
 
 /// The dump is the object `docs/showcase-elements.toml` describes: the kind, the preset, the
