@@ -43,6 +43,8 @@ pub(crate) struct CheckedBox {
     pub state_border: [Option<StateLine>; 2],
     /// The checked box's fill where the theme states a disabled fill.
     pub disabled_fill: Read<Rgba>,
+    /// The checked box's mark where the theme states a disabled mark.
+    pub disabled_mark: Option<Rgba>,
 }
 
 /// The primary button's disabled look: its fill where the theme states one, and the label
@@ -120,6 +122,7 @@ impl VariantSource {
                 disabled_fill: k
                     .disabled_background
                     .map(|c| (c, "checkbox.disabled_background")),
+                disabled_mark: None,
             },
             input: disabled(
                 t.input.disabled_text_color,
@@ -292,6 +295,17 @@ pub(crate) fn selected_disabled_cell(
             v.widgets.inactive.fg_stroke.color = text;
         }
         outline_over(&mut v.widgets.inactive, k.outline, k.align, FillField::Bg);
+    }
+    // A disabled mark the theme states is drawn in its own colour. egui 0.37.0 letters the
+    // label in the mark's `fg_stroke` where `override_text_color` is unset
+    // (`src/theme/default_style.rs:183-201`, `src/widget_text.rs:831-835`), so the label is
+    // first held to the colour it had.
+    if let Some(mark) = k.disabled_mark {
+        let w = &mut v.widgets.inactive;
+        if v.override_text_color.is_none() {
+            v.override_text_color = Some(w.fg_stroke.color);
+        }
+        w.fg_stroke.color = to_color32(mark);
     }
     Some(style)
 }

@@ -886,7 +886,10 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
     let k = &r.checkbox;
     let i = &r.input;
     let checked = k.indicator(S::CHECKED);
-    let (checked_outline, checked_align) = edge(&checked);
+    let (_, checked_align) = edge(&checked);
+    // a checked outline stated as none is transparent (spec §10, rule 2), so the checked cell
+    // does not keep the unchecked box's
+    let checked_outline = line_of(&checked, "checkbox.indicator(CHECKED).stroke.width");
     let primary_disabled = ButtonQuery::primary().with_state(S::DISABLED);
     // the combined state's outline where a rule states one for `state` alone
     let checked_state_line = |state: WidgetState, home: &'static str| {
@@ -944,6 +947,8 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
                     "checkbox.indicator(DISABLED|CHECKED).fill",
                 )
             }),
+            disabled_mark: state_icon_color(&k.checkmark(S::DISABLED))
+                .and_then(|_| icon_color(&k.checkmark(S::DISABLED | S::CHECKED))),
         },
         input: Disabled {
             text: state_text_color(&i.text(S::DISABLED)),

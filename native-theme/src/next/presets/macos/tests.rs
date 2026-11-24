@@ -43,7 +43,7 @@ fn the_constant_colours_are_their_8_bit_channels() {
         TAHOE_DARK.slider_disabled_fill.to_srgb8(),
         [0xff, 0xff, 0xff, 0x1f]
     );
-    assert_eq!(TAHOE_LIGHT.combo_hover, None);
+    assert_eq!(TAHOE_LIGHT.combo_disabled, None);
 }
 
 #[test]
@@ -74,15 +74,21 @@ fn a_primary_button_keeps_the_accent_fill_until_disabled() {
             theme.colors.disabled_text,
             "{preset:?}"
         );
-        // `macos-tahoe` states no pressed fill: pressed and hovered, its body is the hovered one.
-        let pressed_hover = ButtonQuery::new(WidgetState::PRESSED | WidgetState::HOVER);
-        let expected = match preset {
-            Preset::MacosTahoe => WidgetState::HOVER,
-            _ => WidgetState::PRESSED,
-        };
+        // Pressed and hovered, the body is the pressed one: hover draws nothing on a push button.
+        let pressed_hover = theme
+            .button
+            .body(ButtonQuery::new(WidgetState::PRESSED | WidgetState::HOVER));
+        let pressed = theme.button.body(ButtonQuery::new(WidgetState::PRESSED));
         assert_eq!(
-            theme.button.body(pressed_hover),
-            theme.button.body(ButtonQuery::new(expected)),
+            (pressed_hover.fill, pressed_hover.stroke),
+            (pressed.fill, pressed.stroke),
+            "{preset:?}"
+        );
+        let hovered = theme.button.body(ButtonQuery::new(WidgetState::HOVER));
+        let rest = theme.button.body(ButtonQuery::new(WidgetState::NONE));
+        assert_eq!(
+            (hovered.fill, hovered.stroke),
+            (rest.fill, rest.stroke),
             "{preset:?}"
         );
     }
@@ -842,11 +848,6 @@ fn a_palette_recolours_what_it_states_and_nothing_else() {
             ("dialog", solid(&theme.dialog.panel.fill), p.surface_bg),
             ("tooltip", solid(&theme.tooltip.panel.fill), p.tooltip_bg),
             (
-                "button's outline",
-                stroke_color(&theme.button.body(ButtonQuery::new(none)).stroke),
-                p.border,
-            ),
-            (
                 "text field's outline",
                 stroke_color(&theme.input.field(none).stroke),
                 p.border,
@@ -875,6 +876,16 @@ fn a_palette_recolours_what_it_states_and_nothing_else() {
         ] {
             assert_eq!(got, Some(want), "{preset:?} {scheme:?} {name}");
         }
+        // The button's outline, where the generation draws one: macos-tahoe's push button has none.
+        let outline = match preset {
+            Preset::MacosTahoe => None,
+            _ => Some(p.border),
+        };
+        assert_eq!(
+            stroke_color(&theme.button.body(ButtonQuery::new(none)).stroke),
+            outline,
+            "{preset:?} {scheme:?} button's outline"
+        );
         for (name, got, want) in [
             ("body", theme.typography.body.color, p.foreground),
             ("tooltip", theme.tooltip.text.color, p.foreground),

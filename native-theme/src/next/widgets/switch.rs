@@ -1,6 +1,7 @@
 //! The switch (spec §5).
 
 use super::{PartRules, TextRules, WidgetOrigin, unstated_part, unstated_text};
+use crate::next::layout::LabelSide;
 use crate::next::query::StyleQuery;
 use crate::next::style::{PartStyle, TextStyle};
 
@@ -11,9 +12,17 @@ use crate::next::style::{PartStyle, TextStyle};
 pub struct SwitchWidget {
     /// Native or synthesized.
     pub origin: WidgetOrigin,
-    /// The space between the switch and its label, in logical pixels; `None`
-    /// where no source states it.
+    /// Which side of the track the label sits at; `None` where no source
+    /// states it.
+    pub label_side: Option<LabelSide>,
+    /// The space between the switch and its label, in logical pixels, of a
+    /// switch no wider than its content; `None` where no source states it.
     pub label_gap: Option<f32>,
+    /// Whether a switch laid out wider than its content puts the width left
+    /// over between its label and its track (`true`: the two at the ends of
+    /// the width, `label_gap` the least space between them) or keeps them
+    /// together at `label_gap` (`false`); `None` where no source states it.
+    pub label_gap_stretches: Option<bool>,
     /// Whether the track shows on and off glyphs; `None` where no source
     /// states it.
     pub show_state_glyphs: Option<bool>,
@@ -39,18 +48,26 @@ pub struct SwitchParts {
 
 impl SwitchWidget {
     /// A switch of these rule sets and metrics.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one rule set per part of spec §5's table, and its metrics"
+    )]
     pub(crate) fn new(
         origin: WidgetOrigin,
         track: PartRules,
         thumb: PartRules,
         label: TextRules,
+        label_side: Option<LabelSide>,
         label_gap: Option<f32>,
+        label_gap_stretches: Option<bool>,
         show_state_glyphs: Option<bool>,
         disabled_opacity: Option<f32>,
     ) -> Self {
         Self {
             origin,
+            label_side,
             label_gap,
+            label_gap_stretches,
             show_state_glyphs,
             disabled_opacity,
             track,
@@ -67,6 +84,8 @@ impl SwitchWidget {
             unstated_part(),
             unstated_part(),
             unstated_text(),
+            None,
+            None,
             None,
             None,
             None,

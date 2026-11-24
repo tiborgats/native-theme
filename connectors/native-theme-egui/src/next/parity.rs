@@ -64,15 +64,15 @@ use std::sync::Arc;
 
 use egui::style::{WidgetVisuals, Widgets};
 use native_theme::next::{
-    IconStated, IconStyle, PartStated, Preset, ResolvedTheme, TextStated, TextStyle, ThemeContext,
-    ThemePatch, WidgetState,
+    Color, IconStated, IconStyle, PartStated, PartStyle, Preset, ResolvedTheme, Stroke, TextStated,
+    TextStyle, ThemeContext, ThemePatch, WidgetState,
 };
 use native_theme::theme::ColorMode;
 
-use super::build::{base_source, cell_source, variant_source};
+use super::build::{self, base_source, cell_source, variant_source};
 use super::root_parity::{PRESETS, resolve};
 use crate::atlas::SchemeStyles;
-use crate::convert::to_color32;
+use crate::convert::{Rgba, button_padding_outside, padding_with_line, to_color32};
 use crate::style::cells::CellSource;
 use crate::style::frames::{FrameSource, surface_frame_from};
 use crate::style::line::{Line, LineAlign};
@@ -81,7 +81,7 @@ use crate::style::variants::{disabled_cell, selected_cell, selected_disabled_cel
 use crate::{AccessibilityPreferences, Role, RoleVariant, Surface};
 
 /// Why a leaf differs, which gives the value the 0.8.0 side holds there.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 enum Cause {
     /// The 0.8.0 theme states no value for a hovered or pressed state where egui's own entries
     /// change it from rest, and egui's own stays (spec §10, rule 0): egui's own style's value
@@ -110,10 +110,24 @@ enum Cause {
     /// the entry's expansion is the resting one less the width by which the entry's own
     /// outline is wider than the resting one's.
     Knob,
+    /// The 0.8.0 preset states the value at the home, where 0.7.2's resolver gave another: the
+    /// home's value as the builder converts it, a stroke colour over the fill its entry paints
+    /// (`style::line`); no value where the home is unstated.
+    Stated(Home),
+    /// `spacing.button_padding` as the builder sums it from a part the 0.8.0 preset states
+    /// (`style::base::button_padding_of`): each stated padding side plus the part's stated
+    /// stroke width (`convert::padding_with_line`), a pair's unstated side targeting the
+    /// starting style's component (egui's own on the base style, the base style's in a role
+    /// cell); no value where the part states no padding side or no stroke.
+    Padding(PaddingHome),
+    /// The role writes the leaf alike on both models over a base style that differs: the 0.7.2
+    /// role built over the 0.8.0 base style holds the 0.8.0 value (the base's own difference is
+    /// listed on `base`).
+    OverBase,
 }
 
 impl Cause {
-    const ALL: [Self; 7] = [
+    const ALL: [Self; 8] = [
         Self::Rule0,
         Self::StateKeepsBase,
         Self::Egui,
@@ -121,6 +135,7 @@ impl Cause {
         Self::OverFill,
         Self::RestingStroke,
         Self::Knob,
+        Self::OverBase,
     ];
 
     /// Whether the difference records a model gap.
@@ -194,8 +209,9 @@ const BUTTON_MIN_HEIGHT: &str = "button.min_height: 0.7.2's 32 is the height at 
 /// A role's resting outline, beside its hovered and pressed one that rule 0 gives.
 const OUTLINE_AT_REST: &str = ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color";
 
-/// The hovered and pressed outline a role keeps at rest.
-const STATE_STROKES: &str = ".visuals.widgets.{hovered,active}.bg_stroke.color";
+/// The pressed outline a role keeps at rest; its hovered one is the base's on both models, the
+/// 0.8.0 presets stating the button's hovered outline.
+const STATE_STROKES: &str = ".visuals.widgets.active.bg_stroke.color";
 
 const RESTING: &str = "the role keeps its resting stroke under the pointer and on a press, the \
      base style's: macOS's push-button border over its fill";
@@ -258,14 +274,14 @@ const DIFFERENCES: &[Difference] = &[
     ),
     d(
         "base",
-        &[M, T],
+        &[M],
         ".visuals.widgets.{inactive,open}.bg_stroke.color",
         Cause::OverFill,
         INSIDE,
     ),
     d(
         "Button",
-        &[M, T],
+        &[M],
         ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
         Cause::OverFill,
         INSIDE,
@@ -286,7 +302,7 @@ const DIFFERENCES: &[Difference] = &[
     ),
     d(
         "Button/Disabled",
-        &[M, T],
+        &[M],
         ".visuals.widgets.inactive.bg_stroke.color",
         Cause::OverFill,
         INSIDE,
@@ -300,14 +316,14 @@ const DIFFERENCES: &[Difference] = &[
     ),
     d(
         "ComboBox",
-        &[W, M, T],
+        &[W, M],
         OUTLINE_AT_REST,
         Cause::OverFill,
         INSIDE,
     ),
     d(
         "SegmentedControl",
-        &[W, M, T],
+        &[W, M],
         OUTLINE_AT_REST,
         Cause::OverFill,
         INSIDE,
@@ -321,16 +337,19 @@ const DIFFERENCES: &[Difference] = &[
          it in the 0.8.0 theme, where 0.7.2 stated no alignment",
     ),
     d("Tab", &[W], OUTLINE_AT_REST, Cause::OverFill, INSIDE),
+    d("Tab", &[M, I], WIDGET_STROKES, Cause::Base, TAB_OUTLINE),
+    // hovered and pressed, the tab's outline on adwaita and material-3 is alike on both models
+    d("Tab", &[A, M3], OUTLINE_AT_REST, Cause::Base, TAB_OUTLINE),
     d(
         "Tab",
-        &[A, M, T, M3, I],
-        WIDGET_STROKES,
+        &[T],
+        ".visuals.widgets.{noninteractive,open}.bg_stroke.color",
         Cause::Base,
         TAB_OUTLINE,
     ),
     d(
         "Tab",
-        &[M, T, I],
+        &[M, I],
         ".visuals.widgets.*.bg_stroke.width",
         Cause::Base,
         TAB_OUTLINE,
@@ -370,51 +389,33 @@ const DIFFERENCES: &[Difference] = &[
         Cause::Knob,
         KNOB,
     ),
-    d(
-        "List",
-        &[M, T],
-        STATE_STROKES,
-        Cause::RestingStroke,
-        RESTING,
-    ),
+    d("List", &[M], STATE_STROKES, Cause::RestingStroke, RESTING),
     d(
         "Scrollbar",
-        &[M, T],
+        &[M],
         STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
     d(
         "Sidebar",
-        &[M, T],
+        &[M],
         STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
-    d(
-        "Slider",
-        &[M, T],
-        STATE_STROKES,
-        Cause::RestingStroke,
-        RESTING,
-    ),
+    d("Slider", &[M], STATE_STROKES, Cause::RestingStroke, RESTING),
     d(
         "StatusBar",
-        &[M, T],
+        &[M],
         STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
-    d(
-        "Switch",
-        &[M, T],
-        STATE_STROKES,
-        Cause::RestingStroke,
-        RESTING,
-    ),
+    d("Switch", &[M], STATE_STROKES, Cause::RestingStroke, RESTING),
     d(
         "Toolbar",
-        &[M, T],
+        &[M],
         STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
@@ -450,7 +451,7 @@ const DIFFERENCES: &[Difference] = &[
     d("Card", &[W], ".stroke.color", Cause::OverFill, FRAME_INSIDE),
     d(
         "Card",
-        &[A, M, T, M3, I],
+        &[M, T, I],
         ".stroke.width",
         Cause::Base,
         CARD_OUTLINE,
@@ -480,56 +481,183 @@ struct Gap {
     home: Home,
 }
 
-/// A 0.8.0 home a model gap leaves unstated for its state: its path, and the query whose
-/// `from_state` bit says whether a rule states it for that state (spec §2).
+/// The part whose padding sides and stroke width a cell's `spacing.button_padding` sums, on a
+/// resolved theme.
+#[derive(Clone, Copy, Debug)]
+struct PaddingHome {
+    part: fn(&ResolvedTheme) -> PartStyle,
+}
+
+/// The leaf [`Cause::Padding`]'s part gives on `new` over the starting style's `over`, as
+/// `Debug` writes it; `None` where the part states no padding side or no stroke.
+fn padding_leaf(home: PaddingHome, new: &ResolvedTheme, over: egui::Vec2) -> Option<String> {
+    let part = (home.part)(new);
+    let width = super::stroke_width_of(&part)?;
+    let [top, right, bottom, left] = super::padding_of(&part);
+    if [top, right, bottom, left].iter().all(Option::is_none) {
+        return None;
+    }
+    let padding = native_theme::theme::ResolvedPadding {
+        top,
+        right,
+        bottom,
+        left,
+    };
+    let sum = button_padding_outside(over, &padding_with_line(&padding, width));
+    Some(format!("{sum:?}"))
+}
+
+/// A 0.8.0 home: its path, the query whose `from_state` bit says whether a rule states it for
+/// its state (spec §2; at rest, whether the theme states it at all), and its value where so
+/// stated, as the builder reads it.
+#[derive(Clone, Copy, Debug)]
 struct Home {
     path: &'static str,
     stated: fn(&ResolvedTheme) -> bool,
+    value: fn(&ResolvedTheme) -> Option<HomeValue>,
 }
 
-/// A text style's or an icon's `from_state` bit of its colour.
-trait ColorFromState {
-    fn color_from_state(&self) -> bool;
+/// A home's value as the builder reads it: a fill or a text colour, written as given; a stroke
+/// colour, which the builder lays over the fill its entry paints; a stroke width.
+#[derive(Clone, Copy, Debug)]
+enum HomeValue {
+    Color(Rgba),
+    Line(Rgba),
+    Width(f32),
 }
 
-impl ColorFromState for TextStyle {
-    fn color_from_state(&self) -> bool {
-        self.from_state.contains(TextStated::COLOR)
+/// Whether `bit` of a part is stated for `state`: by a rule for the state (`from_state`), or,
+/// at rest, by the theme.
+fn part_stated(part: &PartStyle, bit: PartStated, state: WidgetState) -> bool {
+    if state == WidgetState::NONE {
+        part.stated.contains(bit)
+    } else {
+        part.from_state.contains(bit)
     }
 }
 
-impl ColorFromState for IconStyle {
-    fn color_from_state(&self) -> bool {
-        self.from_state.contains(IconStated::COLOR)
+/// A part's stroke colour for `state` as the builder reads it: at rest the stated line
+/// (`build::edge`), in a state also a stroke stated as none, transparent (`build::state_line`).
+fn line_value(part: &PartStyle, state: WidgetState) -> Option<HomeValue> {
+    let color = match part.stroke {
+        Stroke::None if state != WidgetState::NONE => Some(build::rgba(Color::TRANSPARENT)),
+        _ => build::line(part),
+    };
+    part_stated(part, PartStated::STROKE, state)
+        .then_some(color)
+        .flatten()
+        .map(HomeValue::Line)
+}
+
+/// A text style's or an icon's colour: whether it is stated for `state`, and its value so.
+trait ColorAt {
+    fn color_stated(&self, state: WidgetState) -> bool;
+    fn color(&self) -> Option<Rgba>;
+}
+
+impl ColorAt for TextStyle {
+    fn color_stated(&self, state: WidgetState) -> bool {
+        if state == WidgetState::NONE {
+            self.stated.contains(TextStated::COLOR)
+        } else {
+            self.from_state.contains(TextStated::COLOR)
+        }
+    }
+
+    fn color(&self) -> Option<Rgba> {
+        build::text_color(self)
+    }
+}
+
+impl ColorAt for IconStyle {
+    fn color_stated(&self, state: WidgetState) -> bool {
+        if state == WidgetState::NONE {
+            self.stated.contains(IconStated::COLOR)
+        } else {
+            self.from_state.contains(IconStated::COLOR)
+        }
+    }
+
+    fn color(&self) -> Option<Rgba> {
+        super::reads::icon(self).map(build::rgba)
     }
 }
 
 /// The [`Home`] `<widget>.<part>(<STATE>).<property>`, `property` a part's `fill`,
-/// `stroke.color` or `stroke.width`, or a text style's or an icon's `color`.
+/// `stroke.color` or `stroke.width`, or a text style's or an icon's `color`; `<STATE>` one
+/// state or several joined by `|`.
 macro_rules! home {
-    (@at $w:ident . $p:ident ($s:ident) . $($prop:ident).+, $stated:expr) => {
+    (@at $w:ident . $p:ident ($($s:ident)|+) . $($prop:ident).+, $stated:expr, $value:expr) => {
         Home {
             path: concat!(
-                stringify!($w), ".", stringify!($p), "(", stringify!($s), ").",
+                stringify!($w), ".", stringify!($p), "(", stringify!($($s)|+), ").",
                 stringify!($($prop).+)
             ),
             stated: $stated,
+            value: $value,
         }
     };
-    ($w:ident . $p:ident ($s:ident) . fill) => {
-        home!(@at $w.$p($s).fill, |r: &ResolvedTheme| {
-            r.$w.$p(WidgetState::$s).from_state.contains(PartStated::FILL)
-        })
+    ($w:ident . $p:ident ($($s:ident)|+) . fill) => {
+        home!(
+            @at $w.$p($($s)|+).fill,
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                part_stated(&r.$w.$p(s), PartStated::FILL, s)
+            },
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                let part = r.$w.$p(s);
+                part_stated(&part, PartStated::FILL, s)
+                    .then(|| build::fill(&part))
+                    .flatten()
+                    .map(HomeValue::Color)
+            }
+        )
     };
-    ($w:ident . $p:ident ($s:ident) . stroke . $prop:ident) => {
-        home!(@at $w.$p($s).stroke.$prop, |r: &ResolvedTheme| {
-            r.$w.$p(WidgetState::$s).from_state.contains(PartStated::STROKE)
-        })
+    ($w:ident . $p:ident ($($s:ident)|+) . stroke . color) => {
+        home!(
+            @at $w.$p($($s)|+).stroke.color,
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                part_stated(&r.$w.$p(s), PartStated::STROKE, s)
+            },
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                line_value(&r.$w.$p(s), s)
+            }
+        )
     };
-    ($w:ident . $p:ident ($s:ident) . color) => {
-        home!(@at $w.$p($s).color, |r: &ResolvedTheme| {
-            r.$w.$p(WidgetState::$s).color_from_state()
-        })
+    ($w:ident . $p:ident ($($s:ident)|+) . stroke . width) => {
+        home!(
+            @at $w.$p($($s)|+).stroke.width,
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                part_stated(&r.$w.$p(s), PartStated::STROKE, s)
+            },
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                let part = r.$w.$p(s);
+                part_stated(&part, PartStated::STROKE, s)
+                    .then(|| super::stroke_width_of(&part))
+                    .flatten()
+                    .map(HomeValue::Width)
+            }
+        )
+    };
+    ($w:ident . $p:ident ($($s:ident)|+) . color) => {
+        home!(
+            @at $w.$p($($s)|+).color,
+            |r: &ResolvedTheme| r.$w.$p($(WidgetState::$s)|+).color_stated($(WidgetState::$s)|+),
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                let style = r.$w.$p(s);
+                style
+                    .color_stated(s)
+                    .then(|| style.color())
+                    .flatten()
+                    .map(HomeValue::Color)
+            }
+        )
     };
 }
 
@@ -565,25 +693,603 @@ const fn r0(
     }
 }
 
-const RULE_0_ON_A_PRESET: &[Gap] = &[
-    r0(
+/// A value the 0.8.0 preset states where 0.7.2's resolver gave another.
+const STATED: &str = "the 0.8.0 preset states the value at the home, from the source its \
+     comment there cites (M2.FS4); 0.7.2's resolver gave the resting value, another state's, or \
+     a layer laid over the resting fill";
+
+/// A button stroked as none at rest.
+const NO_LINE_AT_REST: &str = "macos-tahoe states its push button's bezel stroked as none \
+     (M2.FS4, measured): the width is 0 (spec §10, rule 2) and the colour under it egui's own, \
+     which draws nothing; 0.7.2 stated a translucent hairline";
+
+/// The preset states `what`'s `path` at `home` on `presets`.
+const fn s(
+    what: &'static str,
+    presets: &'static [&'static str],
+    path: &'static str,
+    home: Home,
+) -> Difference {
+    d(what, presets, path, Cause::Stated(home), STATED)
+}
+
+/// The values the FS4 presets state at a home where 0.7.2's resolver gave another (M2.FS4b).
+const STATED_ON_A_PRESET: &[Difference] = &[
+    s(
         "base",
-        &[A, W, M, T, M3, I],
+        &[M, T],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(button.body(HOVER).fill),
+    ),
+    s(
+        "base",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(button.body(PRESSED).fill),
+    ),
+    s(
+        "base",
+        &[T, I],
+        ".visuals.widgets.{inactive,open}.bg_stroke.width",
+        home!(button.body(NONE).stroke.width),
+    ),
+    d(
+        "base",
+        &[T],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        Cause::Egui,
+        NO_LINE_AT_REST,
+    ),
+    s(
+        "base",
+        &[I],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        home!(button.body(NONE).stroke.color),
+    ),
+    s(
+        "base",
+        &[T, I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(button.body(HOVER).stroke.width),
+    ),
+    s(
+        "base",
+        &[T, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(button.body(PRESSED).stroke.width),
+    ),
+    s(
+        "base",
+        &[M, T, M3, I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(button.body(HOVER).stroke.color),
     ),
-    r0(
+    s(
         "base",
-        &[A, W, M, T, M3, I],
+        &[W, M, T, M3, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(button.body(PRESSED).stroke.color),
     ),
-    r0(
-        "base",
-        &[M, T, I],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(button.label(HOVER).color),
+    s(
+        "Button",
+        &[M, T],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(button.body(HOVER).fill),
     ),
+    s(
+        "Button",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(button.body(PRESSED).fill),
+    ),
+    s(
+        "Button",
+        &[M],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(button.label(PRESSED).color),
+    ),
+    s(
+        "Button",
+        &[T, I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(button.body(NONE).stroke.width),
+    ),
+    d(
+        "Button",
+        &[T],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        Cause::Egui,
+        NO_LINE_AT_REST,
+    ),
+    s(
+        "Button",
+        &[I],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        home!(button.body(NONE).stroke.color),
+    ),
+    s(
+        "Button",
+        &[I],
+        ".visuals.widgets.noninteractive.bg_stroke.color",
+        home!(button.body(NONE).stroke.color),
+    ),
+    s(
+        "Button",
+        &[T, I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(button.body(HOVER).stroke.width),
+    ),
+    s(
+        "Button",
+        &[T, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(button.body(PRESSED).stroke.width),
+    ),
+    s(
+        "Button",
+        &[M, T, M3, I],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(button.body(HOVER).stroke.color),
+    ),
+    s(
+        "Button",
+        &[W, M, T, M3, I],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(button.body(PRESSED).stroke.color),
+    ),
+    s(
+        "Button/Disabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(button.body(NONE).stroke.color),
+    ),
+    s(
+        "Checkbox",
+        &[W],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(checkbox.indicator(HOVER).fill),
+    ),
+    s(
+        "Checkbox",
+        &[K, A, W, M3, I],
+        ".visuals.widgets.active.bg_fill",
+        home!(checkbox.indicator(PRESSED).fill),
+    ),
+    s(
+        "Checkbox",
+        &[A, M, T, M3, I],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(checkbox.indicator(HOVER).stroke.color),
+    ),
+    s(
+        "Checkbox",
+        &[A, W, M, T, M3, I],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(checkbox.indicator(PRESSED).stroke.color),
+    ),
+    s(
+        "Checkbox",
+        &[A, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(checkbox.indicator(PRESSED).stroke.width),
+    ),
+    s(
+        "Checkbox",
+        &[W, I],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(checkbox.checkmark(PRESSED).color),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.active.bg_fill",
+        home!(checkbox.indicator(PRESSED | CHECKED).fill),
+    ),
+    s(
+        "Checkbox/Disabled",
+        &[M3],
+        ".visuals.override_text_color.0",
+        home!(checkbox.label(DISABLED).color),
+    ),
+    s(
+        "Checkbox/Disabled",
+        &[M3],
+        ".visuals.widgets.inactive.fg_stroke.color",
+        home!(checkbox.label(DISABLED).color),
+    ),
+    s(
+        "Checkbox/SelectedDisabled",
+        &[M3],
+        ".visuals.override_text_color.0",
+        home!(checkbox.label(CHECKED | DISABLED).color),
+    ),
+    s(
+        "Checkbox/SelectedDisabled",
+        &[M3],
+        ".visuals.widgets.inactive.fg_stroke.color",
+        home!(checkbox.checkmark(DISABLED | CHECKED).color),
+    ),
+    s(
+        "ComboBox",
+        &[K, A, W, I],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(combo_box.field(PRESSED).fill),
+    ),
+    s(
+        "ComboBox",
+        &[W, I],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(combo_box.label(PRESSED).color),
+    ),
+    s(
+        "Expander",
+        &[W, M3],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(expander.header(HOVER).fill),
+    ),
+    s(
+        "Expander",
+        &[A, W, M3],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(expander.header(PRESSED).fill),
+    ),
+    s(
+        "Input",
+        &[I],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(input.field(PRESSED).stroke.color),
+    ),
+    s(
+        "List",
+        &[A, W, M3],
+        ".visuals.widgets.active.bg_fill",
+        home!(list.highlight(PRESSED).fill),
+    ),
+    s(
+        "SegmentedControl",
+        &[W, M3],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(segmented_control.segment(HOVER).fill),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, M3],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(segmented_control.segment(PRESSED).fill),
+    ),
+    s(
+        "SegmentedControl",
+        &[W],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(segmented_control.label(PRESSED).color),
+    ),
+    s(
+        "Sidebar",
+        &[A, W, M3],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(sidebar.item(PRESSED).fill),
+    ),
+    s(
+        "Sidebar",
+        &[M3],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(sidebar.item_label(HOVER).color),
+    ),
+    s(
+        "Sidebar",
+        &[W, M3],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(sidebar.item_label(PRESSED).color),
+    ),
+    s(
+        "Switch",
+        &[A, W, I],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(switch.track(PRESSED).fill),
+    ),
+    s(
+        "Tab",
+        &[A],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(tab.tab(HOVER).fill),
+    ),
+    s(
+        "Tab",
+        &[A, W, M3],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(tab.tab(PRESSED).fill),
+    ),
+    d(
+        "Tab",
+        &[T],
+        ".visuals.widgets.noninteractive.bg_stroke.width",
+        Cause::Base,
+        "macos-tahoe's tab outline home (`tab.tab(SELECTED).stroke`) gives the cell no width \
+         (`build::edge`): the cell keeps its base style's; 0.7.2's resolver gave the tab a \
+         border width of 0",
+    ),
+    s(
+        "Tab",
+        &[W],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(tab.label(PRESSED).color),
+    ),
+    s(
+        "Toolbar",
+        &[W],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(toolbar.button_label(PRESSED).color),
+    ),
+    d(
+        "base",
+        &[T],
+        ".spacing.button_padding",
+        Cause::Padding(BUTTON_PADDING),
+        PADDING_NO_LINE,
+    ),
+    d(
+        "Button",
+        &[T],
+        ".spacing.button_padding",
+        Cause::Padding(BUTTON_PADDING),
+        PADDING_NO_LINE,
+    ),
+    d(
+        "ComboBox",
+        &[T],
+        ".spacing.button_padding",
+        Cause::Padding(COMBO_BOX_PADDING),
+        "the pop-up button states its padding above, below and on the side away from its \
+         arrow, each plus its 0.5 outline; the arrow's side is unstated, so the horizontal pair \
+         targets the base style's `button_padding.x`, which macos-tahoe's push button stroked \
+         as none (M2.FS4, measured) now leaves at its padding alone, 12 where 0.7.2's was 12.5",
+    ),
+    d(
+        "List",
+        &[T],
+        ".spacing.button_padding",
+        Cause::OverBase,
+        "the list writes only the vertical padding, narrowed to fit its stated row height \
+         (`roles::fit_row_padding`), alike on both models; the horizontal is the base style's, \
+         which macos-tahoe's push button stroked as none (M2.FS4, measured) now leaves at its \
+         padding alone",
+    ),
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(checkbox.indicator(HOVER).stroke.width),
+    ),
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(checkbox.indicator(NONE).stroke.width),
+    ),
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        home!(checkbox.indicator(NONE).stroke.color),
+    ),
+    // the checked box's hover and press outline, the combined state's where a rule states one
+    // for the state alone (`build::variant_source`)
+    s(
+        "Checkbox/Selected",
+        &[M, T, I],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(checkbox.indicator(HOVER | CHECKED).stroke.color),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[M, T, I],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(checkbox.indicator(PRESSED | CHECKED).stroke.color),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(checkbox.indicator(HOVER | CHECKED).stroke.width),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(checkbox.indicator(PRESSED | CHECKED).stroke.width),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        home!(checkbox.indicator(CHECKED).stroke.color),
+    ),
+    // the checked box's outline, which the disabled checked cell keeps
+    s(
+        "Checkbox/SelectedDisabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(checkbox.indicator(CHECKED).stroke.color),
+    ),
+    // the disabled cell keeps the outline at rest over its disabled fill
+    s(
+        "Checkbox/Disabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(checkbox.indicator(NONE).stroke.color),
+    ),
+    s(
+        "ComboBox",
+        &[M],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(combo_box.field(HOVER).fill),
+    ),
+    s(
+        "ComboBox",
+        &[W, M, T, I],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(combo_box.field(HOVER).stroke.color),
+    ),
+    s(
+        "ComboBox",
+        &[W, M, T, I],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(combo_box.field(PRESSED).stroke.color),
+    ),
+    s(
+        "ComboBox",
+        &[T, I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(combo_box.field(HOVER).stroke.width),
+    ),
+    s(
+        "ComboBox",
+        &[T, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(combo_box.field(PRESSED).stroke.width),
+    ),
+    s(
+        "ComboBox",
+        &[T, I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(combo_box.field(NONE).stroke.width),
+    ),
+    d(
+        "ComboBox",
+        &[T],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        Cause::Egui,
+        NO_OUTLINE_AT_REST,
+    ),
+    s(
+        "ComboBox",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        home!(combo_box.field(NONE).stroke.color),
+    ),
+    // the disabled cell keeps the outline at rest, as the Button's does
+    s(
+        "ComboBox/Disabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(combo_box.field(NONE).stroke.color),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, M, T],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(segmented_control.segment(HOVER).stroke.color),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, T],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(segmented_control.segment(PRESSED).stroke.color),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, T],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(segmented_control.segment(HOVER).stroke.width),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, T],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(segmented_control.segment(PRESSED).stroke.width),
+    ),
+    s(
+        "SegmentedControl",
+        &[T],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(segmented_control.track(NONE).stroke.width),
+    ),
+    d(
+        "SegmentedControl",
+        &[T],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        Cause::Egui,
+        NO_OUTLINE_AT_REST,
+    ),
+    s(
+        "Slider",
+        &[A],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(slider.thumb(HOVER).fill),
+    ),
+    s(
+        "Slider",
+        &[A],
+        ".visuals.widgets.active.bg_fill",
+        home!(slider.thumb(PRESSED).fill),
+    ),
+    s(
+        "Splitter",
+        &[K, A],
+        ".visuals.widgets.noninteractive.bg_stroke.color",
+        home!(splitter.handle(NONE).fill),
+    ),
+    s(
+        "Splitter",
+        &[K, A],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(splitter.handle(HOVER).fill),
+    ),
+    s(
+        "Splitter",
+        &[K, A, M3],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(splitter.handle(PRESSED).fill),
+    ),
+    s(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(tab.tab(HOVER).stroke.color),
+    ),
+    s(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(tab.tab(PRESSED).stroke.color),
+    ),
+    s(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(tab.tab(HOVER).stroke.width),
+    ),
+    s(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(tab.tab(PRESSED).stroke.width),
+    ),
+];
+
+/// A pop-up button or a segmented control stroked as none at rest.
+const NO_OUTLINE_AT_REST: &str = "macos-tahoe states the pop-up button's and the segmented \
+     control's outline as none (M2.FS4, measured): the width is 0 (spec §10, rule 2) and the \
+     colour under it egui's own, which draws nothing; 0.7.2 stated a translucent hairline";
+
+/// `button.body(NONE)`, whose padding and stroke width the base style's and the Button cell's
+/// `button_padding` sum.
+const BUTTON_PADDING: PaddingHome = PaddingHome {
+    part: |r| r.button.body(WidgetState::NONE),
+};
+
+/// `combo_box.field(NONE)`, whose padding and stroke width the ComboBox cell's
+/// `button_padding` sums.
+const COMBO_BOX_PADDING: PaddingHome = PaddingHome {
+    part: |r| r.combo_box.field(WidgetState::NONE),
+};
+
+/// The push button's padding with no line round it.
+const PADDING_NO_LINE: &str = "macos-tahoe states its push button's bezel stroked as none \
+     (M2.FS4, measured): the padding is the stated sides plus a width of 0 (spec §10, rule 2), \
+     where 0.7.2 added its 0.5 hairline";
+
+const RULE_0_ON_A_PRESET: &[Gap] = &[
     // the base style's `bg_fill` is the scroll bar's thumb (`base_style_from`, §5.9), the
     // button's fill its `weak_bg_fill`
     r0(
@@ -599,150 +1305,89 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         home!(scrollbar.thumb(PRESSED).fill),
     ),
     r0(
-        "base",
-        &[T],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(button.body(PRESSED).fill),
-    ),
-    r0(
-        "Button",
-        &[K, M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(button.label(PRESSED).color),
-    ),
-    r0(
         "Checkbox",
-        &[K, T],
+        &[T],
         ".visuals.widgets.hovered.bg_fill",
         home!(checkbox.indicator(HOVER).fill),
     ),
     r0(
         "Checkbox",
-        ALL,
+        &[M, T],
         ".visuals.widgets.active.bg_fill",
         home!(checkbox.indicator(PRESSED).fill),
-    ),
-    r0(
-        "Checkbox",
-        &[A, W, M, T, M3, I],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(checkbox.indicator(HOVER).stroke.color),
-    ),
-    r0(
-        "Checkbox",
-        ALL,
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(checkbox.indicator(PRESSED).stroke.color),
-    ),
-    // the checked box's hover and press outline, the state asked alone (spec §2, `from_state`)
-    r0(
-        "Checkbox/Selected",
-        &[A, W, M, T, M3, I],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(checkbox.indicator(HOVER).stroke.color),
-    ),
-    r0(
-        "Checkbox/Selected",
-        ALL,
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(checkbox.indicator(PRESSED).stroke.color),
     ),
     // the checked box's hover and press fill, the state asked alone (spec §2, `from_state`)
     r0(
         "Checkbox/Selected",
-        &[K, T],
+        &[T],
         ".visuals.widgets.hovered.bg_fill",
         home!(checkbox.indicator(HOVER).fill),
     ),
     r0(
         "Checkbox/Selected",
-        ALL,
+        &[M, T],
         ".visuals.widgets.active.bg_fill",
         home!(checkbox.indicator(PRESSED).fill),
     ),
     r0(
         "Checkbox",
-        ALL,
+        &[M, T],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(checkbox.checkmark(HOVER).color),
     ),
     r0(
         "Checkbox",
-        ALL,
+        &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(checkbox.checkmark(PRESSED).color),
     ),
     r0(
         "ComboBox",
-        &[K, T, M3],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(combo_box.field(HOVER).fill),
-    ),
-    r0(
-        "ComboBox",
-        ALL,
+        &[M, T],
         ".visuals.widgets.active.weak_bg_fill",
         home!(combo_box.field(PRESSED).fill),
     ),
     r0(
         "ComboBox",
-        ALL,
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(combo_box.field(PRESSED).stroke.color),
-    ),
-    r0(
-        "ComboBox",
-        ALL,
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(combo_box.label(HOVER).color),
-    ),
-    r0(
-        "ComboBox",
-        ALL,
+        &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(combo_box.label(PRESSED).color),
     ),
     r0(
         "Expander",
-        &[K, W, T],
+        &[T],
         ".visuals.widgets.hovered.weak_bg_fill",
         home!(expander.header(HOVER).fill),
     ),
     r0(
         "Expander",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.active.weak_bg_fill",
         home!(expander.header(PRESSED).fill),
     ),
     r0(
         "Expander",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(expander.header_label(HOVER).color),
     ),
     r0(
         "Expander",
-        &[K, A, W, M, T, M3],
+        &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(expander.header_label(PRESSED).color),
     ),
     r0(
         "Input",
-        ALL,
+        &[M, T],
         ".visuals.widgets.active.bg_stroke.color",
         home!(input.field(PRESSED).stroke.color),
     ),
     r0(
         "Input",
-        ALL,
+        &[M, T],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(input.text(HOVER).color),
-    ),
-    r0(
-        "Input",
-        &[K, A, W, M3],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(input.text(PRESSED).color),
     ),
     r0(
         "List",
@@ -752,7 +1397,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "List",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.active.bg_fill",
         home!(list.highlight(PRESSED).fill),
     ),
@@ -764,19 +1409,19 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "SegmentedControl",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.active.weak_bg_fill",
         home!(segmented_control.segment(PRESSED).fill),
     ),
     r0(
         "SegmentedControl",
-        ALL,
+        &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(segmented_control.label(HOVER).color),
     ),
     r0(
         "SegmentedControl",
-        &[K, A, W, M, T, M3],
+        &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(segmented_control.label(PRESSED).color),
     ),
@@ -788,31 +1433,31 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Sidebar",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.active.weak_bg_fill",
         home!(sidebar.item(PRESSED).fill),
     ),
     r0(
         "Sidebar",
-        ALL,
+        &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(sidebar.item_label(HOVER).color),
     ),
     r0(
         "Sidebar",
-        &[K, A, W, M, T, M3],
+        &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(sidebar.item_label(PRESSED).color),
     ),
     r0(
         "Slider",
-        &[K, W, M, T],
+        &[M, T],
         ".visuals.widgets.hovered.bg_fill",
         home!(slider.thumb(HOVER).fill),
     ),
     r0(
         "Slider",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.active.bg_fill",
         home!(slider.thumb(PRESSED).fill),
     ),
@@ -824,7 +1469,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Switch",
-        ALL,
+        &[M, T],
         ".visuals.widgets.active.weak_bg_fill",
         home!(switch.track(PRESSED).fill),
     ),
@@ -836,25 +1481,25 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Tab",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.active.weak_bg_fill",
         home!(tab.tab(PRESSED).fill),
     ),
     r0(
         "Tab",
-        &[K, A, W, M, T, M3],
+        &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(tab.label(PRESSED).color),
     ),
     r0(
         "Toolbar",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(toolbar.button_label(HOVER).color),
     ),
     r0(
         "Toolbar",
-        &[K, A, W, M, T, M3],
+        &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(toolbar.button_label(PRESSED).color),
     ),
@@ -871,7 +1516,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     Gap {
         diff: d(
             "Splitter",
-            &[W, T],
+            &[T],
             ".visuals.widgets.hovered.fg_stroke.color",
             Cause::StateKeepsBase,
             STATE_KEEPS_BASE,
@@ -880,116 +1525,13 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     },
     r0(
         "Splitter",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.active.fg_stroke.color",
         home!(splitter.handle(PRESSED).fill),
     ),
     r0(
-        "base",
-        &[A, M, T, M3, I],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(button.body(HOVER).stroke.width),
-    ),
-    r0(
-        "base",
-        &[A, M, T, M3, I],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(button.body(PRESSED).stroke.width),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T, M3, I],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(checkbox.indicator(HOVER).stroke.width),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T, M3, I],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(checkbox.indicator(PRESSED).stroke.width),
-    ),
-    r0(
-        "Checkbox/Selected",
-        &[M, T, M3, I],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(checkbox.indicator(HOVER).stroke.width),
-    ),
-    r0(
-        "Checkbox/Selected",
-        &[M, T, M3, I],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(checkbox.indicator(PRESSED).stroke.width),
-    ),
-    // the Button cell writes the button's states as the base style does
-    r0(
-        "Button",
-        &[A, W, M, T, M3, I],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(button.body(HOVER).stroke.color),
-    ),
-    r0(
-        "Button",
-        &[A, W, M, T, M3, I],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(button.body(PRESSED).stroke.color),
-    ),
-    r0(
-        "Button",
-        &[A, M, T, M3, I],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(button.body(HOVER).stroke.width),
-    ),
-    r0(
-        "Button",
-        &[A, M, T, M3, I],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(button.body(PRESSED).stroke.width),
-    ),
-    r0(
-        "Button",
-        &[M, T, I],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(button.label(HOVER).color),
-    ),
-    r0(
-        "Button",
-        &[T],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(button.body(PRESSED).fill),
-    ),
-    r0(
-        "ComboBox",
-        &[A, W, M, T, I],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(combo_box.field(HOVER).stroke.color),
-    ),
-    r0(
-        "ComboBox",
-        &[A, M, T, I],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(combo_box.field(HOVER).stroke.width),
-    ),
-    r0(
-        "ComboBox",
-        &[A, M, T, I],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(combo_box.field(PRESSED).stroke.width),
-    ),
-    r0(
         "Input",
-        &[A, M, T],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(input.field(HOVER).stroke.color),
-    ),
-    r0(
-        "Input",
-        &[A, M, T],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(input.field(HOVER).stroke.width),
-    ),
-    r0(
-        "Input",
-        &[A, M, T, I],
+        &[M, T],
         ".visuals.widgets.active.bg_stroke.width",
         home!(input.field(PRESSED).stroke.width),
     ),
@@ -1008,65 +1550,36 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "SegmentedControl",
-        ALL,
+        &[I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(segmented_control.segment(HOVER).stroke.color),
     ),
     r0(
         "SegmentedControl",
-        ALL,
+        &[M, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(segmented_control.segment(PRESSED).stroke.color),
     ),
     r0(
         "SegmentedControl",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.hovered.bg_stroke.width",
         home!(segmented_control.segment(HOVER).stroke.width),
     ),
     r0(
         "SegmentedControl",
-        &[M, T, I],
+        &[M, I],
         ".visuals.widgets.active.bg_stroke.width",
         home!(segmented_control.segment(PRESSED).stroke.width),
     ),
-    r0(
-        "Tab",
-        &[K, W],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(tab.tab(HOVER).stroke.color),
-    ),
-    r0(
-        "Tab",
-        &[K, W],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(tab.tab(PRESSED).stroke.color),
-    ),
-    r0(
-        "Tab",
-        &[A, M3],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(tab.tab(HOVER).stroke.width),
-    ),
-    r0(
-        "Tab",
-        &[A, M3],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(tab.tab(PRESSED).stroke.width),
-    ),
-    r0(
-        "Tab",
-        &[M, T],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(tab.label(HOVER).color),
-    ),
 ];
 
-/// Every listed difference: [`DIFFERENCES`], then the model gaps'.
+/// Every listed difference: [`DIFFERENCES`], the model gaps', then [`STATED_ON_A_PRESET`].
 fn listed() -> impl Iterator<Item = &'static Difference> {
     DIFFERENCES
         .iter()
         .chain(RULE_0_ON_A_PRESET.iter().map(|g| &g.diff))
+        .chain(STATED_ON_A_PRESET)
 }
 
 /// Whether `path` is the leaf `pattern` names, a `*` segment standing for any one and a
@@ -1286,7 +1799,10 @@ fn compare(
         let want = expected(path, d.cause);
         if want.as_ref() == Some(n) && !d.reason.is_empty() {
             tally.seen.insert((i, side.preset, path.clone()));
-            if let Some(gap) = i.checked_sub(DIFFERENCES.len()) {
+            if let Some(gap) = i
+                .checked_sub(DIFFERENCES.len())
+                .filter(|gap| *gap < RULE_0_ON_A_PRESET.len())
+            {
                 tally.gaps.push(GapHit {
                     gap,
                     label: label.to_owned(),
@@ -1301,6 +1817,21 @@ fn compare(
                 d.cause
             ));
         }
+    }
+}
+
+/// The leaf [`Cause::Stated`]'s home gives on `new`, as `Debug` writes it: a colour or a width
+/// as it is, a stroke colour as `over` lays it over the fill its entry paints; `None` where the
+/// home is unstated.
+fn stated_leaf(
+    home: Home,
+    new: &ResolvedTheme,
+    over: impl FnOnce(egui::Color32) -> Option<String>,
+) -> Option<String> {
+    match (home.value)(new)? {
+        HomeValue::Color(c) => Some(format!("{:?}", to_color32(c))),
+        HomeValue::Line(c) => over(to_color32(c)),
+        HomeValue::Width(w) => Some(format!("{w:?}")),
     }
 }
 
@@ -1377,7 +1908,11 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
             .failures
             .push("ALL is not the presets compared".to_owned());
     }
-    for d in DIFFERENCES.iter().filter(|d| d.cause.is_gap()) {
+    for d in DIFFERENCES
+        .iter()
+        .chain(STATED_ON_A_PRESET)
+        .filter(|d| d.cause.is_gap())
+    {
         tally.failures.push(format!(
             "{} {}: a model gap's cause, listed outside RULE_0_ON_A_PRESET",
             d.what, d.path
@@ -1509,22 +2044,31 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
             let new_leaves = leaves(&format!("{new_base:#?}"));
             // `open` paints the resting fill (`OpenFrom::Inactive`); its `weak_bg_fill` is
             // then the title bar's
+            let base_over = |color: egui::Color32, path: &str| {
+                let w = &new_base.visuals.widgets;
+                let fill = if path.ends_with("open.bg_stroke.color") {
+                    w.inactive.weak_bg_fill
+                } else {
+                    entry(w, path)?.weak_bg_fill
+                };
+                let line = Line {
+                    color,
+                    align: new_src.button.align,
+                };
+                Some(format!("{:?}", line.over(Some(fill))))
+            };
             let base_expected = |path: &str, cause: Cause| match cause {
                 Cause::Rule0 | Cause::Egui => leaf_at(&own, path),
-                Cause::OverFill => {
-                    let w = &new_base.visuals.widgets;
-                    let fill = if path.ends_with("open.bg_stroke.color") {
-                        w.inactive.weak_bg_fill
-                    } else {
-                        entry(w, path)?.weak_bg_fill
-                    };
-                    let line = Line {
-                        color: to_color32(old.button.border.color),
-                        align: new_src.button.align,
-                    };
-                    Some(format!("{:?}", line.over(Some(fill))))
+                Cause::OverFill => base_over(to_color32(old.button.border.color), path),
+                Cause::Stated(home) => stated_leaf(home, new, |c| base_over(c, path)),
+                Cause::Padding(home) => {
+                    padding_leaf(home, new, scheme.default_style().spacing.button_padding)
                 }
-                Cause::StateKeepsBase | Cause::Base | Cause::RestingStroke | Cause::Knob => None,
+                Cause::StateKeepsBase
+                | Cause::Base
+                | Cause::RestingStroke
+                | Cause::Knob
+                | Cause::OverBase => None,
             };
             let side = Side {
                 what: "base",
@@ -1544,25 +2088,40 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                     (path.contains(".hovered.") || path.contains(".active."))
                         .then(|| path.replacen(".active.", ".hovered.", 1))
                 };
+                let cell_over = |color: egui::Color32, path: &str| {
+                    let (align, weak) = outline_of(*role, &new_cells)?;
+                    let painted = entry(&new_cell.visuals.widgets, path)?;
+                    let line = Line { color, align };
+                    let fill = weak.map(|weak| {
+                        if weak {
+                            painted.weak_bg_fill
+                        } else {
+                            painted.bg_fill
+                        }
+                    });
+                    Some(format!("{:?}", line.over(fill)))
+                };
+                // each side's role over the other side's base
+                let swapped = |sources: &crate::style::Sources,
+                               input: &CellInput<'_>,
+                               base: &egui::Style| {
+                    let cell = role_cell_from(*role, base, &sources.cells, input, &mut Vec::new());
+                    leaves(&format!("{cell:#?}"))
+                };
+                let old_swapped = swapped(&old_sources, &old_input, new_base);
+                let new_swapped = swapped(&new_sources, &new_input, old_base);
                 let cell_expected = |path: &str, cause: Cause| match cause {
                     Cause::Rule0 | Cause::Egui => leaf_at(&own, path),
                     Cause::StateKeepsBase | Cause::Base => leaf_at(&new_leaves, path),
-                    Cause::OverFill => {
-                        let (align, weak) = outline_of(*role, &new_cells)?;
-                        let painted = entry(&new_cell.visuals.widgets, path)?;
-                        let line = Line {
-                            color: entry(&old_cell.visuals.widgets, path)?.bg_stroke.color,
-                            align,
-                        };
-                        let fill = weak.map(|weak| {
-                            if weak {
-                                painted.weak_bg_fill
-                            } else {
-                                painted.bg_fill
-                            }
-                        });
-                        Some(format!("{:?}", line.over(fill)))
+                    Cause::OverFill => cell_over(
+                        entry(&old_cell.visuals.widgets, path)?.bg_stroke.color,
+                        path,
+                    ),
+                    Cause::Stated(home) => stated_leaf(home, new, |c| cell_over(c, path)),
+                    Cause::Padding(home) => {
+                        padding_leaf(home, new, new_base.spacing.button_padding)
                     }
+                    Cause::OverBase => leaf_at(&old_swapped, path),
                     Cause::RestingStroke => {
                         let rest = pressed(path)?.replacen(".hovered.", ".inactive.", 1);
                         leaf_at(&new_leaves, &rest)
@@ -1574,15 +2133,6 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                         Some(format!("{:?}", rest - outline))
                     }
                 };
-                // each side's role over the other side's base
-                let swapped = |sources: &crate::style::Sources,
-                               input: &CellInput<'_>,
-                               base: &egui::Style| {
-                    let cell = role_cell_from(*role, base, &sources.cells, input, &mut Vec::new());
-                    leaves(&format!("{cell:#?}"))
-                };
-                let old_swapped = swapped(&old_sources, &old_input, new_base);
-                let new_swapped = swapped(&new_sources, &new_input, old_base);
                 let side = Side {
                     what: &what,
                     preset: key,
@@ -1649,30 +2199,34 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                         old_styles.cell(*role, from_variant),
                     );
                     let checked = variant != RoleVariant::Disabled;
+                    let variant_over = |color: egui::Color32, path: &str| {
+                        let (align, weak) = if checked {
+                            (new_variant_src.checked.align, Some(false))
+                        } else {
+                            outline_of(*role, &new_cells)?
+                        };
+                        let painted = entry(&n.visuals.widgets, path)?;
+                        let line = Line { color, align };
+                        let fill = weak.map(|weak| {
+                            if weak {
+                                painted.weak_bg_fill
+                            } else {
+                                painted.bg_fill
+                            }
+                        });
+                        Some(format!("{:?}", line.over(fill)))
+                    };
                     let variant_expected = |path: &str, cause: Cause| match cause {
                         Cause::Rule0 | Cause::Egui => leaf_at(&own, path),
                         Cause::StateKeepsBase | Cause::Base => leaf_at(&new_leaves, path),
                         Cause::OverFill => {
-                            let (align, weak) = if checked {
-                                (new_variant_src.checked.align, Some(false))
-                            } else {
-                                outline_of(*role, &new_cells)?
-                            };
-                            let painted = entry(&n.visuals.widgets, path)?;
-                            let line = Line {
-                                color: entry(&o.visuals.widgets, path)?.bg_stroke.color,
-                                align,
-                            };
-                            let fill = weak.map(|weak| {
-                                if weak {
-                                    painted.weak_bg_fill
-                                } else {
-                                    painted.bg_fill
-                                }
-                            });
-                            Some(format!("{:?}", line.over(fill)))
+                            variant_over(entry(&o.visuals.widgets, path)?.bg_stroke.color, path)
                         }
-                        Cause::RestingStroke | Cause::Knob => None,
+                        Cause::Stated(home) => stated_leaf(home, new, |c| variant_over(c, path)),
+                        Cause::RestingStroke
+                        | Cause::Knob
+                        | Cause::Padding(_)
+                        | Cause::OverBase => None,
                     };
                     let side = Side {
                         what: &what,

@@ -23,13 +23,13 @@ use crate::styles::{
     SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
 };
 
-/// A part's fill, where stated, as a layer the style lays over the fill
-/// under it: its colour as [`fill`] reads it, or, for a stated
-/// `Paint::None`, no fill, which paints nothing in that state.
+/// A part's fill, where stated, as the state's whole fill (spec §9, step
+/// 2): its colour as [`fill`] reads it, or, for a stated `Paint::None`, no
+/// fill, which paints nothing in that state.
 fn layer(part: &PartStyle, home: &'static str) -> Mapped<Layer> {
     match part.fill {
         Paint::None if part.stated.contains(PartStated::FILL) => Ok(Layer::Nothing),
-        _ => fill(part, home).map(Layer::Color),
+        _ => fill(part, home).map(Layer::Whole),
     }
 }
 
@@ -176,6 +176,9 @@ pub fn button_toggle(
 /// [`button_primary`]'s fill and label in the same status, a stated
 /// `button.label(CHECKED)` laid over, and a stated checked fill lettered in
 /// it, else in the label at rest, as [`button_toggle`] (spec §10, rule 0a).
+/// A hovered or pressed fill is `toolbar.button(HOVER)`'s or
+/// `toolbar.button(PRESSED)`'s where a rule states it, else iced's own
+/// (spec §10, rule 0), never the push button's.
 ///
 /// # Errors
 ///
@@ -475,6 +478,14 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
         )?,
         disabled_opacity: c.disabled_opacity,
         mark: to_color(mark.color),
+        disabled_mark: {
+            let checked = c.checkmark(WidgetState::DISABLED | WidgetState::CHECKED);
+            (c.checkmark(WidgetState::DISABLED)
+                .from_state
+                .contains(IconStated::COLOR)
+                && checked.stated.contains(IconStated::COLOR))
+            .then(|| to_color(checked.color))
+        },
         label: text_color(&c.label(WidgetState::NONE), "checkbox.label(NONE).color")?,
         disabled_label: text_color(
             &c.label(WidgetState::DISABLED),
@@ -733,7 +744,7 @@ fn shadow(part: &PartStyle) -> Option<Shadow> {
 /// rounds the popup and the item highlight with one radius, which is
 /// `menu.item`'s corners where the theme states them (spec §5,
 /// `menu.border`), else `menu.panel`'s (material-3's container shape,
-/// platform-facts.md §2.6); the panel's shadow is [`shadow`]'s. Each value
+/// platform-facts.md §2.6); the panel's shadow is `shadow`'s. Each value
 /// the theme leaves unstated is iced's own.
 ///
 /// # Errors
@@ -955,7 +966,7 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
 
 /// [`crate::styles::segmented_control`]: the group fill and the outline,
 /// its stroke laid over the group by its alignment, and the track's shadow
-/// as [`shadow`] gives it.
+/// as `shadow` gives it.
 ///
 /// # Errors
 ///
@@ -1037,7 +1048,7 @@ pub fn expander(
 }
 
 /// [`crate::styles::expander_frame`], with the container's shadow as
-/// [`shadow`] gives it where the frame is drawn.
+/// `shadow` gives it where the frame is drawn.
 ///
 /// # Errors
 ///

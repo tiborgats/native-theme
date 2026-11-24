@@ -18,6 +18,8 @@
 #                                               "window" for the content area's origin
 #   leaves = ["checkbox.font", ...]             docs/property-registry.toml paths, spelled as the
 #                                               registry spells them, in Widget Info order
+#   homes  = ["checkbox.label(NONE)", ...]      where those leaves live in the 0.8.0 model: homes
+#                                               in the grammar below, in the order of `leaves`
 #   states = ["Checked"]                        the state or variant the page shows
 #   part   = true                               (optional) a part of a control: dumped and
 #                                               compared, never a Widget Info target of its own
@@ -34,6 +36,55 @@
 # by the sub-fields the element draws (`button.border.corner_radius_px`, the four
 # `padding_*_px` sides). Order: the element's own table first, in registry order, then every
 # other table it reads, in registry order. A control's leaves are the union of its parts'.
+#
+# `homes` is `leaves` on the 0.8.0 model (`native_theme::next::ResolvedTheme`): for each leaf, the
+# homes its row of native-theme/tests/next_homes.toml gives it, in the order of `leaves`, each home
+# once. A whole font is its text part or global text style named whole (`button.font` is
+# `button.label(NONE)`, `defaults.font` is `typography.body`), a `text_scale` entry its typography
+# role named whole (`text_scale.section_heading` is `typography.headline`); `theme_variant.icon_set`
+# and `defaults.icon_theme` are `icons.set` and `icons.theme`. Where a row gives several homes, the
+# entry lists all of them where they are one part under one query (a size's `min_size` and
+# `max_size`, a padding's two sides) and where the row names homes for a preset of its own
+# (`homes_by_preset`: kde-breeze's list highlight margins, kde-breeze's thumb of a view without the
+# focus, material-3's menu panel corners); else the ones the element draws, by its widget (a check
+# box's `checkbox.*`, a radio button's `radio.*`), its state (an unchecked indicator's `HOVER`, a
+# checked one's `HOVER|CHECKED`; every state the element enters where the one leaf colours each)
+# or its axis, said in a `# homes:` comment above the entry's `homes`.
+#
+# A home is one of:
+#
+#   <global>                         a field of the resolved theme outside the widgets, by its path in
+#                                    docs/v0.8.0-spec.md, §§4-5: `colors.view.background`,
+#                                    `typography.body.size_px`, `icons.set`, `layout.widget_gap`,
+#                                    `timings.tooltip_show_ms`, `focus_ring.stroke.color`,
+#                                    `context.scheme` (the resolved theme's context: the level used)
+#   <widget>.<metric>                a direct metric of a widget (docs/v0.8.0-spec.md §5's table):
+#                                    `button.icon_text_gap`
+#   <widget>.<part>.<property>       a part of a static widget: `tooltip.panel.fill`
+#   <widget>.<part>(<query>).<property>
+#                                    a part of a ruled widget as its query returns it. <query> is the
+#                                    state, `NONE` for the rest state or `WidgetState` bits joined by
+#                                    `|` (`HOVER|CHECKED`), then optionally `; ` and axis values joined
+#                                    by `, `: `variant=Primary`, `shape=Pill`, `alternate=true`,
+#                                    `orientation=Vertical`, `size=Small`, `surface=View`,
+#                                    `position=First`
+#   window.<getter>(normal).<property>
+#                                    `WindowChrome`'s `frame`, `title_bar` or `title` (docs/v0.8.0-spec.md §4) at
+#                                    `WindowState::default()`: `window.title_bar(normal).fill`
+#   <text part> or <global text style>, named whole
+#                                    a text part (`button.label(NONE)`) or a global text style
+#                                    (`typography.body`) whole: its family, size, weight and style,
+#                                    as a whole font leaf shows them
+#
+# A part's property is a field of `PartStyle` (`fill`, `stroke.color`, `stroke.width`, `corners`,
+# `shadows`, `opacity`, `padding.top` .. `padding.left`, `margin.top` .. `margin.left`,
+# `min_size[0]` (width), `min_size[1]` (height), `max_size[0]`, `max_size[1]`, `focus`, `ripple`,
+# `transition`, `cursor`, `transform`), of `TextStyle` (`family`, `color`, `size_px`,
+# `defined_size`, `weight`, `style`, `width`, `line_height`, `letter_spacing`, `optical_size`,
+# `decoration`, `blend_mode`) or of `IconStyle` (`size`, `color`, `opacity`, `weight`,
+# `rendering_mode`, `stroke_width`, `blend_mode`), by the part's kind. `stroke.color` and
+# `stroke.width` are the two fields of the part's `Stroke::Uniform`. `input.*` and `text_area.*`
+# are the two input widgets, `checkbox.*` and `radio.*` the check box and the radio button.
 #
 # The rectangle of an element is what it paints: a line's is the line, a label's is its text
 # box, a control's is its frame without the label unless the control's hit area holds both
@@ -77,6 +128,17 @@
 #
 # The `<leaf path>` a row shows is the entry of `leaves` as written here. A `_px` leaf's value is
 # its number and ` px` (`12 px`), a `_ms` leaf's its number and ` ms` (`700 ms`).
+#
+# On the 0.8.0 model a row is an entry of `homes`, `<home> <value>`, the home evaluated by a typed
+# query on `native_theme::next::ResolvedTheme`. A row shows: the value where stated; "not stated"
+# where the `stated` bit is clear or the global is `null` (the theme does not state it at all);
+# where the query has a state and the property is stated but its `from_state` bit is clear (the
+# value comes from the part's base or a rule requiring no state, not a rule for that state,
+# docs/v0.8.0-spec.md §2), the query's value marked as stated at rest, `<value> (stated at rest)`
+# (a statement about the theme; what a toolkit draws there is the route line's business);
+# the stated form's text where the property is stated in a shape the path does not address
+# (`stroke` "none", a per-side stroke), never "not stated" there; an error for an unknown name.
+# Units from the property's kind (a small table for globals and metrics).
 #
 # ---------------------------------------------------------------------------------------------
 # How a showcase reads the list
@@ -159,6 +221,7 @@ id = "chrome.window"
 name = "Window"
 parent = "window"
 leaves = ["window.background_color"]
+homes = ["window.frame(normal).fill"]
 states = ["Normal"]
 
 # --- Menu bar --------------------------------------------------------------------------------
@@ -168,6 +231,8 @@ id = "chrome.menu_bar"
 name = "Menu bar"
 parent = "chrome.window"
 leaves = ["toolbar.background_color", "layout.container_margin_px"]
+# homes: menu_bar.* not toolbar.*: the menu bar.
+homes = ["menu_bar.bar(NONE).fill", "layout.container_margin"]
 states = ["Normal"]
 sample = { fill = [1.0, 0.5, -2.5, 0.0] }
 
@@ -176,6 +241,10 @@ id = "chrome.menu_bar.file"
 name = "Menu title"
 parent = "chrome.menu_bar"
 leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.bar_hover_background", "menu.bar_open_background", "menu.bar_hover_text_color", "menu.bar_padding_horizontal_px", "menu.bar_padding_vertical_px", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+# homes: menu.bar_hover_text_color: HOVER and OPEN, the title's label under the pointer and while
+#          its menu is open, both drawn.
+#        menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu_bar.item(HOVER).fill", "menu_bar.item(OPEN).fill", "menu_bar.item_label(HOVER).color", "menu_bar.item_label(OPEN).color", "menu_bar.item(NONE).padding.left", "menu_bar.item(NONE).padding.right", "menu_bar.item(NONE).padding.top", "menu_bar.item(NONE).padding.bottom", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -184,6 +253,10 @@ id = "chrome.menu_bar.view"
 name = "Menu title"
 parent = "chrome.menu_bar.file"
 leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.bar_hover_background", "menu.bar_open_background", "menu.bar_hover_text_color", "menu.bar_padding_horizontal_px", "menu.bar_padding_vertical_px", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+# homes: menu.bar_hover_text_color: HOVER and OPEN, the title's label under the pointer and while
+#          its menu is open, both drawn.
+#        menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu_bar.item(HOVER).fill", "menu_bar.item(OPEN).fill", "menu_bar.item_label(HOVER).color", "menu_bar.item_label(OPEN).color", "menu_bar.item(NONE).padding.left", "menu_bar.item(NONE).padding.right", "menu_bar.item(NONE).padding.top", "menu_bar.item(NONE).padding.bottom", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -192,6 +265,10 @@ id = "chrome.menu_bar.theme"
 name = "Menu title"
 parent = "chrome.menu_bar.view"
 leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.bar_hover_background", "menu.bar_open_background", "menu.bar_hover_text_color", "menu.bar_padding_horizontal_px", "menu.bar_padding_vertical_px", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+# homes: menu.bar_hover_text_color: HOVER and OPEN, the title's label under the pointer and while
+#          its menu is open, both drawn.
+#        menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu_bar.item(HOVER).fill", "menu_bar.item(OPEN).fill", "menu_bar.item_label(HOVER).color", "menu_bar.item_label(OPEN).color", "menu_bar.item(NONE).padding.left", "menu_bar.item(NONE).padding.right", "menu_bar.item(NONE).padding.top", "menu_bar.item(NONE).padding.bottom", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -200,6 +277,10 @@ id = "chrome.menu_bar.help"
 name = "Menu title"
 parent = "chrome.menu_bar.theme"
 leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.bar_hover_background", "menu.bar_open_background", "menu.bar_hover_text_color", "menu.bar_padding_horizontal_px", "menu.bar_padding_vertical_px", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+# homes: menu.bar_hover_text_color: HOVER and OPEN, the title's label under the pointer and while
+#          its menu is open, both drawn.
+#        menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu_bar.item(HOVER).fill", "menu_bar.item(OPEN).fill", "menu_bar.item_label(HOVER).color", "menu_bar.item_label(OPEN).color", "menu_bar.item(NONE).padding.left", "menu_bar.item(NONE).padding.right", "menu_bar.item(NONE).padding.top", "menu_bar.item(NONE).padding.bottom", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -212,6 +293,7 @@ id = "chrome.menu.theme"
 name = "Menu"
 parent = "chrome.menu_bar.theme"
 leaves = ["menu.background_color", "menu.panel_padding_horizontal_px", "menu.panel_padding_vertical_px", "popover.border.color", "popover.border.corner_radius_px", "popover.border.line_width_px", "popover.border.shadow_enabled", "popover.border.padding_top_px", "popover.border.padding_right_px", "popover.border.padding_bottom_px", "popover.border.padding_left_px"]
+homes = ["menu.panel(NONE).fill", "menu.panel(NONE).padding.left", "menu.panel(NONE).padding.right", "menu.panel(NONE).padding.top", "menu.panel(NONE).padding.bottom", "popover.panel.stroke.color", "popover.panel.corners", "popover.panel.stroke.width", "popover.panel.shadows", "popover.panel.padding.top", "popover.panel.padding.right", "popover.panel.padding.bottom", "popover.panel.padding.left"]
 states = ["Open"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
@@ -221,6 +303,8 @@ id = "chrome.menu.theme.reload"
 name = "Menu item"
 parent = "chrome.menu.theme"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
+# homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -230,6 +314,7 @@ id = "chrome.menu.theme.separator_1"
 name = "Menu separator"
 parent = "chrome.menu.theme.reload"
 leaves = ["menu.separator_color", "separator.line_width_px"]
+homes = ["menu.separator(NONE).fill", "separator.thickness"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { line = [0.5, 0.5] }
@@ -239,6 +324,8 @@ id = "chrome.menu.theme.system"
 name = "Menu item"
 parent = "chrome.menu.theme.separator_1"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
+# homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -248,6 +335,8 @@ id = "chrome.menu.theme.light"
 name = "Menu item"
 parent = "chrome.menu.theme.system"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
+# homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -257,6 +346,8 @@ id = "chrome.menu.theme.dark"
 name = "Menu item"
 parent = "chrome.menu.theme.light"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
+# homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -266,6 +357,7 @@ id = "chrome.menu.theme.separator_2"
 name = "Menu separator"
 parent = "chrome.menu.theme.dark"
 leaves = ["menu.separator_color", "separator.line_width_px"]
+homes = ["menu.separator(NONE).fill", "separator.thickness"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { line = [0.5, 0.5] }
@@ -275,6 +367,8 @@ id = "chrome.menu.theme.preferences"
 name = "Menu item"
 parent = "chrome.menu.theme.separator_2"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
+# homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -284,6 +378,7 @@ id = "chrome.menu.theme.preferences.shortcut"
 name = "Menu shortcut"
 parent = "chrome.menu.theme.preferences"
 leaves = ["menu.font", "defaults.line_height"]
+homes = ["menu.item_label(NONE)", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 when = "the Theme menu is open (--open-menu theme)"
@@ -295,6 +390,8 @@ id = "chrome.toolbar"
 name = "Toolbar"
 parent = "chrome.window"
 leaves = ["toolbar.bar_height_px", "toolbar.item_gap_px", "toolbar.background_color", "toolbar.border.color", "toolbar.border.line_width_px", "toolbar.border.padding_top_px", "toolbar.border.padding_right_px", "toolbar.border.padding_bottom_px", "toolbar.border.padding_left_px"]
+# homes: toolbar.* not menu_bar.*: the toolbar.
+homes = ["toolbar.bar(NONE).min_size[1]", "toolbar.item_gap", "toolbar.bar(NONE).fill", "toolbar.bar(NONE).stroke.color", "toolbar.bar(NONE).stroke.width", "toolbar.bar(NONE).padding.top", "toolbar.bar(NONE).padding.right", "toolbar.bar(NONE).padding.bottom", "toolbar.bar(NONE).padding.left"]
 states = ["Normal"]
 sample = { fill = [1.0, 0.5, -2.5, 0.0] }
 
@@ -303,6 +400,9 @@ id = "chrome.toolbar.command_palette"
 name = "Tool button"
 parent = "chrome.toolbar"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
+# homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
+#          button hovered and pressed, both drawn.
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_label(NONE)", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -311,6 +411,7 @@ id = "chrome.toolbar.command_palette.icon"
 name = "Icon"
 parent = "chrome.toolbar.command_palette"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size"]
 states = ["Normal"]
 part = true
 
@@ -319,6 +420,9 @@ id = "chrome.toolbar.reload_theme"
 name = "Tool button"
 parent = "chrome.toolbar.command_palette"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
+# homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
+#          button hovered and pressed, both drawn.
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_label(NONE)", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -327,6 +431,7 @@ id = "chrome.toolbar.reload_theme.icon"
 name = "Icon"
 parent = "chrome.toolbar.reload_theme"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size"]
 states = ["Normal"]
 part = true
 
@@ -335,6 +440,9 @@ id = "chrome.toolbar.preferences"
 name = "Tool button"
 parent = "chrome.toolbar.reload_theme"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
+# homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
+#          button hovered and pressed, both drawn.
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_label(NONE)", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -343,6 +451,7 @@ id = "chrome.toolbar.preferences.icon"
 name = "Icon"
 parent = "chrome.toolbar.preferences"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size"]
 states = ["Normal"]
 part = true
 
@@ -353,6 +462,7 @@ id = "chrome.side_panel"
 name = "Side panel"
 parent = "chrome.window"
 leaves = ["sidebar.background_color", "sidebar.border.padding_top_px", "sidebar.border.padding_right_px", "sidebar.border.padding_bottom_px", "sidebar.border.padding_left_px", "layout.container_margin_px"]
+homes = ["sidebar.container(NONE).fill", "sidebar.container(NONE).padding.top", "sidebar.container(NONE).padding.right", "sidebar.container(NONE).padding.bottom", "sidebar.container(NONE).padding.left", "layout.container_margin"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.9, 2.5, 0.0] }
 
@@ -361,6 +471,7 @@ id = "chrome.side_panel.settings"
 name = "Theme settings"
 parent = "chrome.side_panel"
 leaves = ["layout.widget_gap_px", "layout.container_margin_px"]
+homes = ["layout.widget_gap", "layout.container_margin"]
 states = ["Normal"]
 
 [[element]]
@@ -368,6 +479,7 @@ id = "chrome.side_panel.settings.theme_label"
 name = "Side panel label"
 parent = "chrome.side_panel.settings"
 leaves = ["sidebar.font", "sidebar.font.color", "defaults.line_height"]
+homes = ["sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -376,6 +488,7 @@ id = "chrome.side_panel.settings.theme"
 name = "Drop-down"
 parent = "chrome.side_panel.settings.theme_label"
 leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
+homes = ["combo_box.field(NONE).fill", "combo_box.label(NONE)", "combo_box.label(NONE).color", "combo_box.field(NONE).min_size[1]", "combo_box.field(NONE).min_size[0]", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width", "combo_box.field(HOVER).fill", "combo_box.field(HOVER).stroke.color", "combo_box.field(NONE).stroke.color", "combo_box.field(NONE).corners", "combo_box.field(NONE).stroke.width", "combo_box.field(NONE).shadows", "combo_box.field(NONE).padding.top", "combo_box.field(NONE).padding.right", "combo_box.field(NONE).padding.bottom", "combo_box.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = { glyph = [0.0, 0.2, 0.6, 0.8] } }
 
@@ -384,6 +497,7 @@ id = "chrome.side_panel.settings.mode_label"
 name = "Side panel label"
 parent = "chrome.side_panel.settings.theme"
 leaves = ["sidebar.font", "sidebar.font.color", "defaults.line_height"]
+homes = ["sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -392,6 +506,7 @@ id = "chrome.side_panel.settings.mode"
 name = "Drop-down"
 parent = "chrome.side_panel.settings.mode_label"
 leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
+homes = ["combo_box.field(NONE).fill", "combo_box.label(NONE)", "combo_box.label(NONE).color", "combo_box.field(NONE).min_size[1]", "combo_box.field(NONE).min_size[0]", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width", "combo_box.field(HOVER).fill", "combo_box.field(HOVER).stroke.color", "combo_box.field(NONE).stroke.color", "combo_box.field(NONE).corners", "combo_box.field(NONE).stroke.width", "combo_box.field(NONE).shadows", "combo_box.field(NONE).padding.top", "combo_box.field(NONE).padding.right", "combo_box.field(NONE).padding.bottom", "combo_box.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = { glyph = [0.0, 0.2, 0.6, 0.8] } }
 
@@ -400,6 +515,7 @@ id = "chrome.side_panel.settings.icon_theme_label"
 name = "Side panel label"
 parent = "chrome.side_panel.settings.mode"
 leaves = ["sidebar.font", "sidebar.font.color", "defaults.line_height"]
+homes = ["sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -408,6 +524,7 @@ id = "chrome.side_panel.settings.icon_theme"
 name = "Drop-down"
 parent = "chrome.side_panel.settings.icon_theme_label"
 leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
+homes = ["combo_box.field(NONE).fill", "combo_box.label(NONE)", "combo_box.label(NONE).color", "combo_box.field(NONE).min_size[1]", "combo_box.field(NONE).min_size[0]", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width", "combo_box.field(HOVER).fill", "combo_box.field(HOVER).stroke.color", "combo_box.field(NONE).stroke.color", "combo_box.field(NONE).corners", "combo_box.field(NONE).stroke.width", "combo_box.field(NONE).shadows", "combo_box.field(NONE).padding.top", "combo_box.field(NONE).padding.right", "combo_box.field(NONE).padding.bottom", "combo_box.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = { glyph = [0.0, 0.2, 0.6, 0.8] } }
 
@@ -416,6 +533,7 @@ id = "chrome.side_panel.separator"
 name = "Separator"
 parent = "chrome.side_panel"
 leaves = ["separator.line_color", "separator.line_width_px"]
+homes = ["separator.color", "separator.thickness"]
 states = ["Normal"]
 sample = { line = [0.5, 0.5] }
 
@@ -424,6 +542,7 @@ id = "chrome.side_panel.inspector_tabs"
 name = "Tab bar"
 parent = "chrome.side_panel.separator"
 leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "layout.container_margin_px"]
+homes = ["tab.bar(NONE).fill", "tab.item_gap", "tab.active_outward_corner_radius", "layout.container_margin"]
 states = ["Normal"]
 
 [[element]]
@@ -431,6 +550,7 @@ id = "chrome.side_panel.inspector_tabs.widget"
 name = "Tab"
 parent = "chrome.side_panel.inspector_tabs"
 leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
+homes = ["tab.tab(SELECTED).fill", "tab.label(SELECTED).color", "tab.tab(NONE).min_size[0]", "tab.tab(NONE).min_size[1]", "tab.label(NONE)", "tab.tab(SELECTED).stroke.color", "tab.tab(SELECTED).corners", "tab.tab(SELECTED).stroke.width", "tab.tab(NONE).padding.top", "tab.tab(NONE).padding.right", "tab.tab(NONE).padding.bottom", "tab.tab(NONE).padding.left", "tab.indicator(SELECTED).fill", "tab.indicator(SELECTED).min_size[1]", "tab.indicator(SELECTED).max_size[1]", "tab.indicator_side", "tab.active_outward_corner_radius", "typography.line_height_multiplier"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -439,6 +559,7 @@ id = "chrome.side_panel.inspector_tabs.theme"
 name = "Tab"
 parent = "chrome.side_panel.inspector_tabs.widget"
 leaves = ["tab.background_color", "tab.min_width_px", "tab.min_height_px", "tab.hover_background", "tab.hover_text_color", "tab.font", "tab.font.color", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "defaults.line_height"]
+homes = ["tab.tab(NONE).fill", "tab.tab(NONE).min_size[0]", "tab.tab(NONE).min_size[1]", "tab.tab(HOVER).fill", "tab.label(HOVER).color", "tab.label(NONE)", "tab.label(NONE).color", "tab.tab(NONE).padding.top", "tab.tab(NONE).padding.right", "tab.tab(NONE).padding.bottom", "tab.tab(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -447,6 +568,7 @@ id = "chrome.side_panel.inspector"
 name = "Inspector"
 parent = "chrome.side_panel.inspector_tabs"
 leaves = ["layout.widget_gap_px", "layout.container_margin_px"]
+homes = ["layout.widget_gap", "layout.container_margin"]
 states = ["Widget"]
 
 # Widget Info. Before any hover it shows the hint; after one, the title row, the "Theme"
@@ -458,6 +580,7 @@ id = "chrome.info.hint"
 name = "Widget Info hint"
 parent = "chrome.side_panel.inspector"
 leaves = ["sidebar.font", "defaults.line_height", "defaults.muted_color"]
+homes = ["sidebar.item_label(NONE)", "typography.line_height_multiplier", "colors.window.foreground_muted"]
 states = ["Normal"]
 when = "no widget has been hovered"
 sample = { text = "glyph" }
@@ -467,6 +590,7 @@ id = "chrome.info.title"
 name = "Widget Info title"
 parent = "chrome.side_panel.inspector"
 leaves = ["sidebar.font", "sidebar.font.color", "defaults.line_height"]
+homes = ["sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 when = "a widget is hovered"
 sample = { text = "glyph" }
@@ -476,6 +600,7 @@ id = "chrome.info.copy"
 name = "Copy button"
 parent = "chrome.info.title"
 leaves = ["button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height", "sidebar.font", "sidebar.font.color"]
+homes = ["button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier", "sidebar.item_label(NONE)", "sidebar.item_label(NONE).color"]
 states = ["Normal"]
 when = "a widget is hovered"
 sample = { text = { glyph = [0.1, 0.1, 0.9, 0.9] } }
@@ -485,6 +610,7 @@ id = "chrome.info.section.theme"
 name = "Widget Info section"
 parent = "chrome.info.title"
 leaves = ["sidebar.font", "sidebar.font.color", "defaults.line_height", "layout.section_gap_px"]
+homes = ["sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "typography.line_height_multiplier", "layout.section_gap"]
 states = ["Normal"]
 when = "a widget is hovered"
 sample = { text = "glyph" }
@@ -494,6 +620,7 @@ id = "chrome.info.row_1"
 name = "Widget Info row"
 parent = "chrome.info.section.theme"
 leaves = ["layout.widget_gap_px"]
+homes = ["layout.widget_gap"]
 states = ["Normal"]
 when = "a widget is hovered"
 
@@ -502,6 +629,7 @@ id = "chrome.info.row_1.swatch"
 name = "Swatch"
 parent = "chrome.info.row_1"
 leaves = ["defaults.border.color", "defaults.border.corner_radius_px", "defaults.border.line_width_px"]
+homes = ["colors.window.border", "layout.corner_radius", "layout.border_width"]
 states = ["Normal"]
 part = true
 when = "a widget is hovered and its first leaf is a colour"
@@ -512,6 +640,7 @@ id = "chrome.info.row_1.text"
 name = "Widget Info leaf"
 parent = "chrome.info.row_1"
 leaves = ["sidebar.font", "sidebar.font.color", "defaults.line_height"]
+homes = ["sidebar.item_label(NONE)", "sidebar.item_label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 when = "a widget is hovered"
@@ -522,6 +651,7 @@ id = "chrome.info.row_1.how"
 name = "Widget Info route"
 parent = "chrome.info.row_1.text"
 leaves = ["sidebar.font", "defaults.line_height", "defaults.muted_color"]
+homes = ["sidebar.item_label(NONE)", "typography.line_height_multiplier", "colors.window.foreground_muted"]
 states = ["Normal"]
 part = true
 when = "a widget is hovered"
@@ -534,6 +664,7 @@ id = "chrome.splitter"
 name = "Splitter"
 parent = "chrome.side_panel"
 leaves = ["splitter.divider_width_px", "splitter.divider_color", "splitter.hover_color"]
+homes = ["splitter.divider_width", "splitter.handle(NONE).fill", "splitter.handle(HOVER).fill"]
 states = ["Normal"]
 sample = { line = [0.5, 0.5] }
 
@@ -544,6 +675,7 @@ id = "chrome.content"
 name = "Page area"
 parent = "chrome.window"
 leaves = ["window.background_color", "layout.window_margin_px"]
+homes = ["window.frame(normal).fill", "layout.window_margin"]
 states = ["Normal"]
 sample = { fill = [1.0, 1.0, -3.5, -3.5] }
 clip = true
@@ -553,6 +685,7 @@ id = "chrome.page_tabs"
 name = "Tab bar"
 parent = "chrome.content"
 leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "layout.container_margin_px"]
+homes = ["tab.bar(NONE).fill", "tab.item_gap", "tab.active_outward_corner_radius", "layout.container_margin"]
 states = ["Normal"]
 
 [[element]]
@@ -560,6 +693,7 @@ id = "chrome.page_tabs.basic"
 name = "Tab"
 parent = "chrome.page_tabs"
 leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
+homes = ["tab.tab(SELECTED).fill", "tab.label(SELECTED).color", "tab.tab(NONE).min_size[0]", "tab.tab(NONE).min_size[1]", "tab.label(NONE)", "tab.tab(SELECTED).stroke.color", "tab.tab(SELECTED).corners", "tab.tab(SELECTED).stroke.width", "tab.tab(NONE).padding.top", "tab.tab(NONE).padding.right", "tab.tab(NONE).padding.bottom", "tab.tab(NONE).padding.left", "tab.indicator(SELECTED).fill", "tab.indicator(SELECTED).min_size[1]", "tab.indicator(SELECTED).max_size[1]", "tab.indicator_side", "tab.active_outward_corner_radius", "typography.line_height_multiplier"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -568,6 +702,7 @@ id = "chrome.page_tabs.buttons"
 name = "Tab"
 parent = "chrome.page_tabs.basic"
 leaves = ["tab.background_color", "tab.min_width_px", "tab.min_height_px", "tab.hover_background", "tab.hover_text_color", "tab.font", "tab.font.color", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "defaults.line_height"]
+homes = ["tab.tab(NONE).fill", "tab.tab(NONE).min_size[0]", "tab.tab(NONE).min_size[1]", "tab.tab(HOVER).fill", "tab.label(HOVER).color", "tab.label(NONE)", "tab.label(NONE).color", "tab.tab(NONE).padding.top", "tab.tab(NONE).padding.right", "tab.tab(NONE).padding.bottom", "tab.tab(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -576,6 +711,7 @@ id = "chrome.page_tabs.menu"
 name = "Pages menu button"
 parent = "chrome.page_tabs"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set"]
 states = ["Normal"]
 
 [[element]]
@@ -583,6 +719,7 @@ id = "chrome.page_tabs.menu.icon"
 name = "Icon"
 parent = "chrome.page_tabs.menu"
 leaves = ["defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["icons.sizes.small", "icons.theme", "icons.set"]
 states = ["Normal"]
 part = true
 
@@ -591,6 +728,7 @@ id = "chrome.page_tabs.rule"
 name = "Separator"
 parent = "chrome.page_tabs"
 leaves = ["separator.line_color", "separator.line_width_px"]
+homes = ["separator.color", "separator.thickness"]
 states = ["Normal"]
 sample = { line = [0.5, 0.5] }
 
@@ -601,6 +739,7 @@ id = "chrome.status_bar"
 name = "Status bar"
 parent = "chrome.window"
 leaves = ["status_bar.background_color", "status_bar.border.color", "status_bar.border.line_width_px", "status_bar.border.padding_top_px", "status_bar.border.padding_right_px", "status_bar.border.padding_bottom_px", "status_bar.border.padding_left_px", "layout.widget_gap_px", "layout.container_margin_px"]
+homes = ["status_bar.bar.fill", "status_bar.bar.stroke.color", "status_bar.bar.stroke.width", "status_bar.bar.padding.top", "status_bar.bar.padding.right", "status_bar.bar.padding.bottom", "status_bar.bar.padding.left", "layout.widget_gap", "layout.container_margin"]
 states = ["Normal"]
 sample = { fill = [0.6, 0.5], border = [0.6, 0.0, 0.0, 0.5] }
 
@@ -612,6 +751,7 @@ id = "chrome.status_bar.toggle"
 name = "Side panel toggle"
 parent = "chrome.status_bar"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.sizes.small", "icons.theme", "icons.set"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -620,6 +760,7 @@ id = "chrome.status_bar.toggle.icon"
 name = "Icon"
 parent = "chrome.status_bar.toggle"
 leaves = ["defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["icons.sizes.small", "icons.theme", "icons.set"]
 states = ["Normal"]
 part = true
 
@@ -628,6 +769,7 @@ id = "chrome.status_bar.environment"
 name = "Status text"
 parent = "chrome.status_bar.toggle"
 leaves = ["status_bar.font", "status_bar.font.color", "defaults.line_height"]
+homes = ["status_bar.label", "status_bar.label.color", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -636,6 +778,7 @@ id = "chrome.status_bar.shown"
 name = "Status text"
 parent = "chrome.status_bar"
 leaves = ["status_bar.font", "status_bar.font.color", "defaults.line_height"]
+homes = ["status_bar.label", "status_bar.label.color", "typography.line_height_multiplier"]
 states = ["Normal"]
 when = "a widget is hovered"
 sample = { text = "glyph" }
@@ -679,6 +822,8 @@ id = "basic.page"
 name = "Basic page"
 parent = "chrome.content"
 leaves = ["layout.window_margin_px", "layout.section_gap_px", "scrollbar.groove_width_px", "scrollbar.overlay_mode", "tab.min_width_px", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "combo_box.min_width_px"]
+# homes: scrollbar.groove_width_px: orientation=Vertical, the page scrolls vertically.
+homes = ["layout.window_margin", "layout.section_gap", "scrollbar.track(NONE; orientation=Vertical).min_size[0]", "scrollbar.track(NONE; orientation=Vertical).max_size[0]", "scrollbar.overlay_mode", "tab.tab(NONE).min_size[0]", "tab.item_gap", "tab.active_outward_corner_radius", "combo_box.field(NONE).min_size[0]"]
 states = ["Normal"]
 
 [[element]]
@@ -686,6 +831,7 @@ id = "basic.column_1"
 name = "Column"
 parent = "basic.page"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
+homes = ["layout.widget_gap", "layout.section_gap"]
 states = ["Normal"]
 
 [[element]]
@@ -693,6 +839,7 @@ id = "basic.column_2"
 name = "Column"
 parent = "basic.column_1"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
+homes = ["layout.widget_gap", "layout.section_gap"]
 states = ["Normal"]
 when = "the page has two columns or more"
 
@@ -701,6 +848,7 @@ id = "basic.column_3"
 name = "Column"
 parent = "basic.column_2"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
+homes = ["layout.widget_gap", "layout.section_gap"]
 states = ["Normal"]
 when = "the page has three columns or more"
 
@@ -709,6 +857,7 @@ id = "basic.column_4"
 name = "Column"
 parent = "basic.column_3"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
+homes = ["layout.widget_gap", "layout.section_gap"]
 states = ["Normal"]
 when = "the page has four columns or five"
 
@@ -717,6 +866,7 @@ id = "basic.column_5"
 name = "Column"
 parent = "basic.column_4"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
+homes = ["layout.widget_gap", "layout.section_gap"]
 states = ["Normal"]
 when = "the page has five columns"
 
@@ -727,6 +877,7 @@ id = "basic.buttons.heading"
 name = "Section heading"
 parent = "basic.column_1"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -735,6 +886,9 @@ id = "basic.buttons.default"
 name = "Button"
 parent = "basic.buttons.heading"
 leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+# homes: button.hover_border_color: HOVER and PRESSED, a pressed button keeps the hover outline
+#          (0.7.2), and the button is hovered and pressed.
+homes = ["button.body(NONE).fill", "button.label(NONE)", "button.label(NONE).color", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -743,6 +897,7 @@ id = "basic.buttons.default.label"
 name = "Button label"
 parent = "basic.buttons.default"
 leaves = ["button.font", "button.font.color", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -752,6 +907,9 @@ id = "basic.buttons.primary"
 name = "Button"
 parent = "basic.buttons.default"
 leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.primary_background", "button.primary_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+# homes: button.hover_border_color: HOVER and PRESSED, a pressed button keeps the hover outline
+#          (0.7.2), and the button is hovered and pressed.
+homes = ["button.label(NONE)", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(NONE; variant=Primary).fill", "button.label(NONE; variant=Primary).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Primary"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -760,6 +918,7 @@ id = "basic.buttons.primary.label"
 name = "Button label"
 parent = "basic.buttons.primary"
 leaves = ["button.font", "button.primary_text_color", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.label(NONE; variant=Primary).color", "typography.line_height_multiplier"]
 states = ["Primary"]
 part = true
 sample = { text = "glyph" }
@@ -769,6 +928,7 @@ id = "basic.buttons.disabled"
 name = "Button"
 parent = "basic.buttons.default"
 leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.disabled_opacity", "button.disabled_background", "button.disabled_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.disabled_opacity", "button.body(DISABLED).fill", "button.label(DISABLED).color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Disabled"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -777,6 +937,7 @@ id = "basic.buttons.disabled.label"
 name = "Button label"
 parent = "basic.buttons.disabled"
 leaves = ["button.font", "button.disabled_opacity", "button.disabled_text_color", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.disabled_opacity", "button.label(DISABLED).color", "typography.line_height_multiplier"]
 states = ["Disabled"]
 part = true
 sample = { text = "glyph" }
@@ -786,6 +947,9 @@ id = "basic.buttons.tooltip"
 name = "Button"
 parent = "basic.buttons.disabled"
 leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+# homes: button.hover_border_color: HOVER and PRESSED, a pressed button keeps the hover outline
+#          (0.7.2), and the button is hovered and pressed.
+homes = ["button.body(NONE).fill", "button.label(NONE)", "button.label(NONE).color", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -794,6 +958,7 @@ id = "basic.buttons.tooltip.label"
 name = "Button label"
 parent = "basic.buttons.tooltip"
 leaves = ["button.font", "button.font.color", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -803,6 +968,7 @@ id = "basic.buttons.tooltip.bubble"
 name = "Tooltip"
 parent = "basic.buttons.tooltip"
 leaves = ["tooltip.background_color", "tooltip.font", "tooltip.font.color", "tooltip.max_width_px", "tooltip.show_delay_ms", "tooltip.border.color", "tooltip.border.corner_radius_px", "tooltip.border.line_width_px", "tooltip.border.shadow_enabled", "tooltip.border.padding_top_px", "tooltip.border.padding_right_px", "tooltip.border.padding_bottom_px", "tooltip.border.padding_left_px", "defaults.line_height"]
+homes = ["tooltip.panel.fill", "tooltip.text", "tooltip.text.color", "tooltip.panel.max_size[0]", "timings.tooltip_show_ms", "tooltip.panel.stroke.color", "tooltip.panel.corners", "tooltip.panel.stroke.width", "tooltip.panel.shadows", "tooltip.panel.padding.top", "tooltip.panel.padding.right", "tooltip.panel.padding.bottom", "tooltip.panel.padding.left", "typography.line_height_multiplier"]
 states = ["Shown"]
 when = "the Tooltip button is hovered"
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.0, 0.5, 0.5, 0.0] }
@@ -812,6 +978,7 @@ id = "basic.buttons.tooltip.bubble.text"
 name = "Tooltip text"
 parent = "basic.buttons.tooltip.bubble"
 leaves = ["tooltip.font", "tooltip.font.color", "defaults.line_height"]
+homes = ["tooltip.text", "tooltip.text.color", "typography.line_height_multiplier"]
 states = ["Shown"]
 part = true
 when = "the Tooltip button is hovered"
@@ -824,6 +991,9 @@ id = "basic.buttons.toggle_off"
 name = "Toggle button"
 parent = "basic.buttons.disabled"
 leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+# homes: button.hover_border_color: HOVER and PRESSED, a pressed button keeps the hover outline
+#          (0.7.2), and the button is hovered and pressed.
+homes = ["button.body(NONE).fill", "button.label(NONE)", "button.label(NONE).color", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Off"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -832,6 +1002,7 @@ id = "basic.buttons.toggle_off.label"
 name = "Button label"
 parent = "basic.buttons.toggle_off"
 leaves = ["button.font", "button.font.color", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.label(NONE).color", "typography.line_height_multiplier"]
 states = ["Off"]
 part = true
 sample = { text = "glyph" }
@@ -843,6 +1014,9 @@ id = "basic.buttons.toggle_on"
 name = "Toggle button"
 parent = "basic.buttons.toggle_off"
 leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.checked_background", "button.checked_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+# homes: button.hover_border_color: HOVER and PRESSED, a pressed button keeps the hover outline
+#          (0.7.2), and the button is hovered and pressed.
+homes = ["button.label(NONE)", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(CHECKED).fill", "button.label(CHECKED).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["On"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -851,6 +1025,7 @@ id = "basic.buttons.toggle_on.label"
 name = "Button label"
 parent = "basic.buttons.toggle_on"
 leaves = ["button.font", "button.checked_text_color", "button.active_text_color", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.label(CHECKED).color", "button.label(PRESSED).color", "typography.line_height_multiplier"]
 states = ["On"]
 part = true
 sample = { text = "glyph" }
@@ -862,6 +1037,9 @@ id = "basic.buttons.dialog_default"
 name = "Button"
 parent = "basic.buttons.toggle_on"
 leaves = ["button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.primary_background", "button.primary_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.default_button_background", "button.default_button_text_color", "button.default_button_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+# homes: button.hover_border_color: HOVER and PRESSED, a pressed button keeps the hover outline
+#          (0.7.2), and the button is hovered and pressed.
+homes = ["button.label(NONE)", "button.label(NONE).color", "button.body(NONE).min_size[0]", "button.body(NONE).min_size[1]", "button.body(NONE; variant=Primary).fill", "button.label(NONE; variant=Primary).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color", "button.body(FOCUS_VISIBLE).stroke.color", "button.body(DEFAULT).fill", "button.label(DEFAULT).color", "button.body(DEFAULT).stroke.color", "button.body(NONE).stroke.color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).shadows", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Default"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -870,6 +1048,7 @@ id = "basic.buttons.dialog_default.label"
 name = "Button label"
 parent = "basic.buttons.dialog_default"
 leaves = ["button.font", "button.font.color", "button.primary_text_color", "button.active_text_color", "button.default_button_text_color", "defaults.line_height"]
+homes = ["button.label(NONE)", "button.label(NONE).color", "button.label(NONE; variant=Primary).color", "button.label(PRESSED).color", "button.label(DEFAULT).color", "typography.line_height_multiplier"]
 states = ["Default"]
 part = true
 sample = { text = "glyph" }
@@ -881,6 +1060,7 @@ id = "basic.checkboxes.heading"
 name = "Section heading"
 parent = "basic.buttons.toggle_off"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -889,6 +1069,9 @@ id = "basic.checkboxes.unchecked"
 name = "Checkbox"
 parent = "basic.checkboxes.heading"
 leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px", "defaults.line_height"]
+# homes: checkbox.* not radio.*: a check box.
+#        checkbox.hover_border_color: HOVER, not HOVER|CHECKED: shown unchecked (Unchecked).
+homes = ["checkbox.indicator(NONE).fill", "checkbox.label(NONE)", "checkbox.label(NONE).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.label_gap", "checkbox.indicator(HOVER).fill", "checkbox.indicator(HOVER).stroke.color", "checkbox.indicator(NONE).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
 states = ["Unchecked"]
 
 [[element]]
@@ -896,6 +1079,9 @@ id = "basic.checkboxes.unchecked.indicator"
 name = "Checkbox indicator"
 parent = "basic.checkboxes.unchecked"
 leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px"]
+# homes: checkbox.* not radio.*: a check box.
+#        checkbox.hover_border_color: HOVER, not HOVER|CHECKED: shown unchecked (Unchecked).
+homes = ["checkbox.indicator(NONE).fill", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.indicator(HOVER).fill", "checkbox.indicator(HOVER).stroke.color", "checkbox.indicator(NONE).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width"]
 states = ["Unchecked"]
 part = true
 sample = { fill = [0.5, 0.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -905,6 +1091,8 @@ id = "basic.checkboxes.unchecked.label"
 name = "Checkbox label"
 parent = "basic.checkboxes.unchecked.indicator"
 leaves = ["checkbox.font", "checkbox.font.color", "checkbox.label_gap_px", "defaults.line_height"]
+# homes: checkbox.* not radio.*: a check box.
+homes = ["checkbox.label(NONE)", "checkbox.label(NONE).color", "checkbox.label_gap", "typography.line_height_multiplier"]
 states = ["Unchecked"]
 part = true
 sample = { text = "glyph" }
@@ -914,6 +1102,9 @@ id = "basic.checkboxes.checked"
 name = "Checkbox"
 parent = "basic.checkboxes.unchecked"
 leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.check_mark_stroke_width_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px", "checkbox.border.padding_top_px", "checkbox.border.padding_right_px", "checkbox.border.padding_bottom_px", "checkbox.border.padding_left_px", "defaults.line_height"]
+# homes: checkbox.* not radio.*: a check box.
+#        checkbox.hover_border_color: HOVER|CHECKED, not HOVER: shown checked (Checked).
+homes = ["checkbox.label(NONE)", "checkbox.label(NONE).color", "checkbox.checkmark(CHECKED).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.checkmark(NONE).stroke_width", "checkbox.label_gap", "checkbox.indicator(CHECKED).fill", "checkbox.indicator(HOVER|CHECKED).stroke.color", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Checked"]
 
 [[element]]
@@ -921,6 +1112,9 @@ id = "basic.checkboxes.checked.indicator"
 name = "Checkbox indicator"
 parent = "basic.checkboxes.checked"
 leaves = ["checkbox.indicator_width_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px"]
+# homes: checkbox.* not radio.*: a check box.
+#        checkbox.hover_border_color: HOVER|CHECKED, not HOVER: shown checked (Checked).
+homes = ["checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.indicator(CHECKED).fill", "checkbox.indicator(HOVER|CHECKED).stroke.color", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width"]
 states = ["Checked"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -930,6 +1124,8 @@ id = "basic.checkboxes.checked.mark"
 name = "Check mark"
 parent = "basic.checkboxes.checked.indicator"
 leaves = ["checkbox.indicator_color", "checkbox.check_mark_stroke_width_px", "checkbox.border.padding_top_px", "checkbox.border.padding_right_px", "checkbox.border.padding_bottom_px", "checkbox.border.padding_left_px"]
+# homes: checkbox.* not radio.*: a check box.
+homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(NONE).stroke_width", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left"]
 states = ["Checked"]
 part = true
 sample = { mark = "glyph" }
@@ -939,6 +1135,8 @@ id = "basic.checkboxes.checked.label"
 name = "Checkbox label"
 parent = "basic.checkboxes.checked.indicator"
 leaves = ["checkbox.font", "checkbox.font.color", "checkbox.label_gap_px", "defaults.line_height"]
+# homes: checkbox.* not radio.*: a check box.
+homes = ["checkbox.label(NONE)", "checkbox.label(NONE).color", "checkbox.label_gap", "typography.line_height_multiplier"]
 states = ["Checked"]
 part = true
 sample = { text = "glyph" }
@@ -948,6 +1146,10 @@ id = "basic.checkboxes.disabled"
 name = "Checkbox"
 parent = "basic.checkboxes.checked"
 leaves = ["checkbox.font", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.check_mark_stroke_width_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.disabled_opacity", "checkbox.disabled_background", "checkbox.disabled_text_color", "checkbox.border.color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px", "checkbox.border.padding_top_px", "checkbox.border.padding_right_px", "checkbox.border.padding_bottom_px", "checkbox.border.padding_left_px", "defaults.line_height"]
+# homes: checkbox.* not radio.*: a check box.
+#        checkbox.disabled_background: DISABLED|CHECKED, not DISABLED: shown checked (Checked,
+#          disabled).
+homes = ["checkbox.label(NONE)", "checkbox.checkmark(CHECKED).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.checkmark(NONE).stroke_width", "checkbox.label_gap", "checkbox.indicator(CHECKED).fill", "checkbox.disabled_opacity", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.label(DISABLED).color", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Checked, disabled"]
 
 [[element]]
@@ -955,6 +1157,10 @@ id = "basic.checkboxes.disabled.indicator"
 name = "Checkbox indicator"
 parent = "basic.checkboxes.disabled"
 leaves = ["checkbox.indicator_width_px", "checkbox.checked_background", "checkbox.disabled_opacity", "checkbox.disabled_background", "checkbox.border.color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px"]
+# homes: checkbox.* not radio.*: a check box.
+#        checkbox.disabled_background: DISABLED|CHECKED, not DISABLED: shown checked (Checked,
+#          disabled).
+homes = ["checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "checkbox.indicator(CHECKED).fill", "checkbox.disabled_opacity", "checkbox.indicator(DISABLED|CHECKED).fill", "checkbox.indicator(CHECKED).stroke.color", "checkbox.indicator(NONE).corners", "checkbox.indicator(NONE).stroke.width"]
 states = ["Checked, disabled"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -964,6 +1170,8 @@ id = "basic.checkboxes.disabled.mark"
 name = "Check mark"
 parent = "basic.checkboxes.disabled.indicator"
 leaves = ["checkbox.indicator_color", "checkbox.check_mark_stroke_width_px", "checkbox.disabled_opacity", "checkbox.disabled_text_color", "checkbox.border.padding_top_px", "checkbox.border.padding_right_px", "checkbox.border.padding_bottom_px", "checkbox.border.padding_left_px"]
+# homes: checkbox.* not radio.*: a check box.
+homes = ["checkbox.checkmark(CHECKED).color", "checkbox.checkmark(NONE).stroke_width", "checkbox.disabled_opacity", "checkbox.label(DISABLED).color", "checkbox.indicator(NONE).padding.top", "checkbox.indicator(NONE).padding.right", "checkbox.indicator(NONE).padding.bottom", "checkbox.indicator(NONE).padding.left"]
 states = ["Checked, disabled"]
 part = true
 sample = { mark = "glyph" }
@@ -973,6 +1181,8 @@ id = "basic.checkboxes.disabled.label"
 name = "Checkbox label"
 parent = "basic.checkboxes.disabled.indicator"
 leaves = ["checkbox.font", "checkbox.label_gap_px", "checkbox.disabled_opacity", "checkbox.disabled_text_color", "defaults.line_height"]
+# homes: checkbox.* not radio.*: a check box.
+homes = ["checkbox.label(NONE)", "checkbox.label_gap", "checkbox.disabled_opacity", "checkbox.label(DISABLED).color", "typography.line_height_multiplier"]
 states = ["Checked, disabled"]
 part = true
 sample = { text = "glyph" }
@@ -984,6 +1194,7 @@ id = "basic.radios.heading"
 name = "Section heading"
 parent = "basic.checkboxes.disabled"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -992,6 +1203,9 @@ id = "basic.radios.option_a"
 name = "Radio button"
 parent = "basic.radios.heading"
 leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
+# homes: radio.* not checkbox.*: a radio button.
+#        checkbox.hover_border_color: HOVER|CHECKED, not HOVER: shown checked (Selected).
+homes = ["radio.label(NONE)", "radio.label(NONE).color", "radio.dot(CHECKED).fill", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.dot(NONE).min_size[0]", "radio.dot(NONE).max_size[0]", "radio.dot(NONE).min_size[1]", "radio.dot(NONE).max_size[1]", "radio.label_gap", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
 states = ["Selected"]
 
 [[element]]
@@ -999,6 +1213,9 @@ id = "basic.radios.option_a.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_a"
 leaves = ["checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px"]
+# homes: radio.* not checkbox.*: a radio button.
+#        checkbox.hover_border_color: HOVER|CHECKED, not HOVER: shown checked (Selected).
+homes = ["checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(CHECKED).fill", "radio.indicator(HOVER|CHECKED).stroke.color", "radio.indicator(CHECKED).stroke.color", "radio.indicator(NONE).stroke.width"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -1008,6 +1225,8 @@ id = "basic.radios.option_a.dot"
 name = "Radio dot"
 parent = "basic.radios.option_a.indicator"
 leaves = ["checkbox.indicator_color", "checkbox.radio_dot_diameter_px"]
+# homes: radio.* not checkbox.*: a radio button.
+homes = ["radio.dot(CHECKED).fill", "radio.dot(NONE).min_size[0]", "radio.dot(NONE).max_size[0]", "radio.dot(NONE).min_size[1]", "radio.dot(NONE).max_size[1]"]
 states = ["Selected"]
 part = true
 sample = { mark = [0.5, 0.5] }
@@ -1017,6 +1236,8 @@ id = "basic.radios.option_a.label"
 name = "Radio label"
 parent = "basic.radios.option_a.indicator"
 leaves = ["checkbox.font", "checkbox.font.color", "checkbox.label_gap_px", "defaults.line_height"]
+# homes: radio.* not checkbox.*: a radio button.
+homes = ["radio.label(NONE)", "radio.label(NONE).color", "radio.label_gap", "typography.line_height_multiplier"]
 states = ["Selected"]
 part = true
 sample = { text = "glyph" }
@@ -1026,6 +1247,9 @@ id = "basic.radios.option_b"
 name = "Radio button"
 parent = "basic.radios.option_a"
 leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
+# homes: radio.* not checkbox.*: a radio button.
+#        checkbox.hover_border_color: HOVER, not HOVER|CHECKED: shown unchecked (Normal).
+homes = ["radio.indicator(NONE).fill", "radio.label(NONE)", "radio.label(NONE).color", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.label_gap", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width", "typography.line_height_multiplier"]
 states = ["Normal"]
 
 [[element]]
@@ -1033,6 +1257,9 @@ id = "basic.radios.option_b.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_b"
 leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
+# homes: radio.* not checkbox.*: a radio button.
+#        checkbox.hover_border_color: HOVER, not HOVER|CHECKED: shown unchecked (Normal).
+homes = ["radio.indicator(NONE).fill", "checkbox.indicator(NONE).min_size[0]", "checkbox.indicator(NONE).max_size[0]", "checkbox.indicator(NONE).min_size[1]", "checkbox.indicator(NONE).max_size[1]", "radio.indicator(NONE).min_size[0]", "radio.indicator(NONE).max_size[0]", "radio.indicator(NONE).min_size[1]", "radio.indicator(NONE).max_size[1]", "radio.indicator(HOVER).fill", "radio.indicator(HOVER).stroke.color", "radio.indicator(NONE).stroke.color", "radio.indicator(NONE).stroke.width"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.5, 0.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -1042,6 +1269,8 @@ id = "basic.radios.option_b.label"
 name = "Radio label"
 parent = "basic.radios.option_b.indicator"
 leaves = ["checkbox.font", "checkbox.font.color", "checkbox.label_gap_px", "defaults.line_height"]
+# homes: radio.* not checkbox.*: a radio button.
+homes = ["radio.label(NONE)", "radio.label(NONE).color", "radio.label_gap", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -1053,6 +1282,7 @@ id = "basic.switches.heading"
 name = "Section heading"
 parent = "basic.column_3"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1061,6 +1291,8 @@ id = "basic.switches.off"
 name = "Switch"
 parent = "basic.switches.heading"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.unchecked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
+# homes: switch.thumb_border_color: NONE, not CHECKED: shown unchecked (Off).
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(NONE).fill", "switch.thumb(CHECKED).fill", "switch.thumb(NONE).fill", "switch.track(HOVER).fill", "typography.body", "typography.body.color", "typography.line_height_multiplier", "switch.track(NONE).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width"]
 states = ["Off"]
 
 [[element]]
@@ -1068,6 +1300,7 @@ id = "basic.switches.off.track"
 name = "Switch track"
 parent = "basic.switches.off"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.unchecked_background", "switch.hover_unchecked_background", "switch.unchecked_track_border_color", "switch.track_border_line_width_px"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(NONE).fill", "switch.track(HOVER).fill", "switch.track(NONE).stroke.color", "switch.track(NONE).stroke.width"]
 states = ["Off"]
 part = true
 sample = { fill = [0.75, 0.5] }
@@ -1077,6 +1310,8 @@ id = "basic.switches.off.thumb"
 name = "Switch thumb"
 parent = "basic.switches.off.track"
 leaves = ["switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
+# homes: switch.thumb_border_color: NONE, not CHECKED: shown unchecked (Off).
+homes = ["switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.thumb(CHECKED).fill", "switch.thumb(NONE).fill", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width"]
 states = ["Off"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1086,6 +1321,7 @@ id = "basic.switches.off.label"
 name = "Switch label"
 parent = "basic.switches.off.track"
 leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
+homes = ["typography.body", "typography.body.color", "typography.line_height_multiplier"]
 states = ["Off"]
 part = true
 sample = { text = "glyph" }
@@ -1095,6 +1331,8 @@ id = "basic.switches.on"
 name = "Switch"
 parent = "basic.switches.off"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.hover_checked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.checked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
+# homes: switch.thumb_border_color: CHECKED, not NONE: shown checked (On).
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.track(HOVER|CHECKED).fill", "typography.body", "typography.body.color", "typography.line_height_multiplier", "switch.track(CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width"]
 states = ["On"]
 
 [[element]]
@@ -1102,6 +1340,7 @@ id = "basic.switches.on.track"
 name = "Switch track"
 parent = "basic.switches.on"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.hover_checked_background", "switch.checked_track_border_color", "switch.track_border_line_width_px"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.track(HOVER|CHECKED).fill", "switch.track(CHECKED).stroke.color", "switch.track(NONE).stroke.width"]
 states = ["On"]
 part = true
 sample = { fill = [0.25, 0.5] }
@@ -1111,6 +1350,8 @@ id = "basic.switches.on.thumb"
 name = "Switch thumb"
 parent = "basic.switches.on.track"
 leaves = ["switch.thumb_diameter_px", "switch.thumb_background", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
+# homes: switch.thumb_border_color: CHECKED, not NONE: shown checked (On).
+homes = ["switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(CHECKED).fill", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width"]
 states = ["On"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1120,6 +1361,7 @@ id = "basic.switches.on.label"
 name = "Switch label"
 parent = "basic.switches.on.track"
 leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
+homes = ["typography.body", "typography.body.color", "typography.line_height_multiplier"]
 states = ["On"]
 part = true
 sample = { text = "glyph" }
@@ -1129,6 +1371,9 @@ id = "basic.switches.disabled"
 name = "Switch"
 parent = "basic.switches.on"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_checked_background", "switch.disabled_thumb_color", "defaults.font", "defaults.line_height", "defaults.disabled_text_color", "switch.checked_track_border_color", "switch.disabled_checked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
+# homes: switch.disabled_thumb_color: DISABLED|CHECKED, not DISABLED: shown checked (On, disabled).
+#        switch.thumb_border_color: CHECKED, not NONE: shown checked (On, disabled).
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.thumb(CHECKED).fill", "switch.disabled_opacity", "switch.track(DISABLED|CHECKED).fill", "switch.thumb(DISABLED|CHECKED).fill", "typography.body", "typography.line_height_multiplier", "colors.disabled_text", "switch.track(CHECKED).stroke.color", "switch.track(DISABLED|CHECKED).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width"]
 states = ["On, disabled"]
 
 [[element]]
@@ -1136,6 +1381,7 @@ id = "basic.switches.disabled.track"
 name = "Switch track"
 parent = "basic.switches.disabled"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.disabled_opacity", "switch.disabled_checked_background", "switch.checked_track_border_color", "switch.disabled_checked_track_border_color", "switch.track_border_line_width_px"]
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(CHECKED).fill", "switch.disabled_opacity", "switch.track(DISABLED|CHECKED).fill", "switch.track(CHECKED).stroke.color", "switch.track(DISABLED|CHECKED).stroke.color", "switch.track(NONE).stroke.width"]
 states = ["On, disabled"]
 part = true
 sample = { fill = [0.25, 0.5] }
@@ -1145,6 +1391,9 @@ id = "basic.switches.disabled.thumb"
 name = "Switch thumb"
 parent = "basic.switches.disabled.track"
 leaves = ["switch.thumb_diameter_px", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_thumb_color", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
+# homes: switch.disabled_thumb_color: DISABLED|CHECKED, not DISABLED: shown checked (On, disabled).
+#        switch.thumb_border_color: CHECKED, not NONE: shown checked (On, disabled).
+homes = ["switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(CHECKED).fill", "switch.disabled_opacity", "switch.thumb(DISABLED|CHECKED).fill", "switch.thumb(CHECKED).stroke.color", "switch.thumb(NONE).stroke.width"]
 states = ["On, disabled"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1154,6 +1403,7 @@ id = "basic.switches.disabled.label"
 name = "Switch label"
 parent = "basic.switches.disabled.track"
 leaves = ["switch.disabled_opacity", "defaults.font", "defaults.line_height", "defaults.disabled_text_color"]
+homes = ["switch.disabled_opacity", "typography.body", "typography.line_height_multiplier", "colors.disabled_text"]
 states = ["On, disabled"]
 part = true
 sample = { text = "glyph" }
@@ -1165,6 +1415,7 @@ id = "basic.text_inputs.heading"
 name = "Section heading"
 parent = "basic.column_2"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1173,6 +1424,8 @@ id = "basic.text_inputs.placeholder"
 name = "Text input"
 parent = "basic.text_inputs.heading"
 leaves = ["input.background_color", "input.placeholder_color", "input.font", "input.min_height_px", "input.hover_border_color", "input.border.color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height"]
+# homes: input.* not text_area.*: a one-line text input.
+homes = ["input.field(NONE).fill", "input.placeholder(NONE).color", "input.text(NONE)", "input.field(NONE).min_size[1]", "input.field(HOVER).stroke.color", "input.field(NONE).stroke.color", "input.field(NONE).corners", "input.field(NONE).stroke.width", "input.field(NONE).shadows", "input.field(NONE).padding.top", "input.field(NONE).padding.right", "input.field(NONE).padding.bottom", "input.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Placeholder"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
@@ -1181,6 +1434,8 @@ id = "basic.text_inputs.placeholder.text"
 name = "Input text"
 parent = "basic.text_inputs.placeholder"
 leaves = ["input.placeholder_color", "input.font", "defaults.line_height"]
+# homes: input.* not text_area.*: a one-line text input.
+homes = ["input.placeholder(NONE).color", "input.text(NONE)", "typography.line_height_multiplier"]
 states = ["Placeholder"]
 part = true
 sample = { text = "glyph" }
@@ -1190,6 +1445,8 @@ id = "basic.text_inputs.filled"
 name = "Text input"
 parent = "basic.text_inputs.placeholder"
 leaves = ["input.background_color", "input.font", "input.font.color", "input.min_height_px", "input.hover_border_color", "input.border.color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height"]
+# homes: input.* not text_area.*: a one-line text input.
+homes = ["input.field(NONE).fill", "input.text(NONE)", "input.text(NONE).color", "input.field(NONE).min_size[1]", "input.field(HOVER).stroke.color", "input.field(NONE).stroke.color", "input.field(NONE).corners", "input.field(NONE).stroke.width", "input.field(NONE).shadows", "input.field(NONE).padding.top", "input.field(NONE).padding.right", "input.field(NONE).padding.bottom", "input.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
@@ -1198,6 +1455,8 @@ id = "basic.text_inputs.filled.text"
 name = "Input text"
 parent = "basic.text_inputs.filled"
 leaves = ["input.font", "input.font.color", "defaults.line_height"]
+# homes: input.* not text_area.*: a one-line text input.
+homes = ["input.text(NONE)", "input.text(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -1207,6 +1466,8 @@ id = "basic.text_inputs.disabled"
 name = "Text input"
 parent = "basic.text_inputs.filled"
 leaves = ["input.font", "input.min_height_px", "input.disabled_opacity", "input.disabled_background", "input.disabled_text_color", "input.border.color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height"]
+# homes: input.* not text_area.*: a one-line text input.
+homes = ["input.text(NONE)", "input.field(NONE).min_size[1]", "input.disabled_opacity", "input.field(DISABLED).fill", "input.text(DISABLED).color", "input.field(NONE).stroke.color", "input.field(NONE).corners", "input.field(NONE).stroke.width", "input.field(NONE).shadows", "input.field(NONE).padding.top", "input.field(NONE).padding.right", "input.field(NONE).padding.bottom", "input.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Disabled"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
@@ -1215,6 +1476,8 @@ id = "basic.text_inputs.disabled.text"
 name = "Input text"
 parent = "basic.text_inputs.disabled"
 leaves = ["input.font", "input.disabled_opacity", "input.disabled_text_color", "defaults.line_height"]
+# homes: input.* not text_area.*: a one-line text input.
+homes = ["input.text(NONE)", "input.disabled_opacity", "input.text(DISABLED).color", "typography.line_height_multiplier"]
 states = ["Disabled"]
 part = true
 sample = { text = "glyph" }
@@ -1224,6 +1487,10 @@ id = "basic.text_inputs.focused"
 name = "Text input"
 parent = "basic.text_inputs.disabled"
 leaves = ["input.background_color", "input.caret_color", "input.caret_blink_on_ms", "input.caret_blink_off_ms", "input.caret_blink_timeout_ms", "input.font", "input.font.color", "input.min_height_px", "input.focus_border_color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height", "defaults.focus_ring_color", "defaults.focus_ring_width_px", "defaults.focus_ring_offset_px", "defaults.focus_ring_keyboard_only"]
+# homes: input.* not text_area.*: a one-line text input.
+#        defaults.focus_ring_color: focus_ring.stroke.color, the focus ring's own stroke, beside its
+#          width, offset and trigger, not the role colours.focus_ring.
+homes = ["input.field(NONE).fill", "colors.caret", "caret.blink_on_ms", "caret.blink_off_ms", "caret.blink_timeout_ms", "input.text(NONE)", "input.text(NONE).color", "input.field(NONE).min_size[1]", "input.field(FOCUSED).stroke.color", "input.field(NONE).corners", "input.field(NONE).stroke.width", "input.field(NONE).shadows", "input.field(NONE).padding.top", "input.field(NONE).padding.right", "input.field(NONE).padding.bottom", "input.field(NONE).padding.left", "typography.line_height_multiplier", "focus_ring.stroke.color", "focus_ring.stroke.width", "focus_ring.offset", "focus_ring.trigger"]
 states = ["Focused"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
@@ -1232,6 +1499,8 @@ id = "basic.text_inputs.focused.text"
 name = "Input text"
 parent = "basic.text_inputs.focused"
 leaves = ["input.font", "input.font.color", "defaults.line_height"]
+# homes: input.* not text_area.*: a one-line text input.
+homes = ["input.text(NONE)", "input.text(NONE).color", "typography.line_height_multiplier"]
 states = ["Focused"]
 part = true
 sample = { text = "glyph" }
@@ -1243,6 +1512,7 @@ id = "basic.text_area.heading"
 name = "Section heading"
 parent = "basic.text_inputs.focused"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1251,6 +1521,8 @@ id = "basic.text_area.field"
 name = "Text area"
 parent = "basic.text_area.heading"
 leaves = ["input.background_color", "input.font", "input.font.color", "input.hover_border_color", "text_area.border.color", "text_area.border.corner_radius_px", "text_area.border.line_width_px", "text_area.border.shadow_enabled", "text_area.border.padding_top_px", "text_area.border.padding_right_px", "text_area.border.padding_bottom_px", "text_area.border.padding_left_px", "defaults.line_height"]
+# homes: text_area.* not input.*: a text area.
+homes = ["text_area.field(NONE).fill", "text_area.text(NONE)", "text_area.text(NONE).color", "text_area.field(HOVER).stroke.color", "text_area.field(NONE).stroke.color", "text_area.field(NONE).corners", "text_area.field(NONE).stroke.width", "text_area.field(NONE).shadows", "text_area.field(NONE).padding.top", "text_area.field(NONE).padding.right", "text_area.field(NONE).padding.bottom", "text_area.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
@@ -1259,6 +1531,8 @@ id = "basic.text_area.field.text"
 name = "Text area text"
 parent = "basic.text_area.field"
 leaves = ["input.font", "input.font.color", "defaults.line_height"]
+# homes: text_area.* not input.*: a text area.
+homes = ["text_area.text(NONE)", "text_area.text(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -1270,6 +1544,7 @@ id = "basic.drop_down.heading"
 name = "Section heading"
 parent = "basic.radios.option_b"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1278,6 +1553,11 @@ id = "basic.drop_down.trigger"
 name = "Drop-down"
 parent = "basic.drop_down.heading"
 leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.open_background", "combo_box.open_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
+# homes: combo_box.open_background: OPEN and OPEN|HOVER, the open field with the pointer over it or
+#          away, both drawn.
+#        combo_box.open_border_color: OPEN and OPEN|HOVER, the open field with the pointer over it
+#          or away, both drawn.
+homes = ["combo_box.field(NONE).fill", "combo_box.label(NONE)", "combo_box.label(NONE).color", "combo_box.field(NONE).min_size[1]", "combo_box.field(NONE).min_size[0]", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width", "combo_box.field(HOVER).fill", "combo_box.field(HOVER).stroke.color", "combo_box.field(OPEN).fill", "combo_box.field(OPEN|HOVER).fill", "combo_box.field(OPEN).stroke.color", "combo_box.field(OPEN|HOVER).stroke.color", "combo_box.field(NONE).stroke.color", "combo_box.field(NONE).corners", "combo_box.field(NONE).stroke.width", "combo_box.field(NONE).shadows", "combo_box.field(NONE).padding.top", "combo_box.field(NONE).padding.right", "combo_box.field(NONE).padding.bottom", "combo_box.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
@@ -1286,6 +1566,7 @@ id = "basic.drop_down.trigger.text"
 name = "Drop-down text"
 parent = "basic.drop_down.trigger"
 leaves = ["combo_box.font", "combo_box.font.color", "defaults.line_height"]
+homes = ["combo_box.label(NONE)", "combo_box.label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -1295,6 +1576,7 @@ id = "basic.drop_down.trigger.arrow"
 name = "Drop-down arrow"
 parent = "basic.drop_down.trigger"
 leaves = ["combo_box.font.color", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px"]
+homes = ["combo_box.label(NONE).color", "combo_box.chevron(NONE).size", "combo_box.arrow_area_width"]
 states = ["Normal"]
 part = true
 sample = { mark = "glyph" }
@@ -1309,6 +1591,7 @@ id = "basic.number_input.heading"
 name = "Section heading"
 parent = "basic.switches.disabled"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1317,6 +1600,8 @@ id = "basic.number_input.field"
 name = "Number input"
 parent = "basic.number_input.heading"
 leaves = ["input.background_color", "input.font", "input.font.color", "input.min_height_px", "input.hover_border_color", "input.border.color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height"]
+# homes: input.* not text_area.*: a number input, a one-line field.
+homes = ["input.field(NONE).fill", "input.text(NONE)", "input.text(NONE).color", "input.field(NONE).min_size[1]", "input.field(HOVER).stroke.color", "input.field(NONE).stroke.color", "input.field(NONE).corners", "input.field(NONE).stroke.width", "input.field(NONE).shadows", "input.field(NONE).padding.top", "input.field(NONE).padding.right", "input.field(NONE).padding.bottom", "input.field(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1325,6 +1610,8 @@ id = "basic.number_input.field.text"
 name = "Input text"
 parent = "basic.number_input.field"
 leaves = ["input.font", "input.font.color", "defaults.line_height"]
+# homes: input.* not text_area.*: a number input, a one-line field.
+homes = ["input.text(NONE)", "input.text(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -1336,6 +1623,7 @@ id = "basic.slider.heading"
 name = "Section heading"
 parent = "basic.text_area.field"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1344,6 +1632,11 @@ id = "basic.slider.control"
 name = "Slider"
 parent = "basic.slider.heading"
 leaves = ["slider.fill_color", "slider.track_color", "slider.thumb_color", "slider.track_height_px", "slider.thumb_diameter_px", "slider.thumb_hover_color", "slider.thumb_border_color", "slider.thumb_border_line_width_px", "slider.thumb_hover_border_color", "slider.thumb_focus_border_color"]
+# homes: slider.track_height_px: orientation=Horizontal, the Basic page's slider is horizontal
+#          (Axis::Horizontal).
+#        slider.thumb_hover_border_color: HOVER and PRESSED and HOVER|FOCUSED, the thumb hovered,
+#          dragged and hovered while focused, all drawn.
+homes = ["slider.active_track(NONE).fill", "slider.track(NONE).fill", "slider.thumb(NONE).fill", "slider.track(NONE; orientation=Horizontal).min_size[1]", "slider.track(NONE; orientation=Horizontal).max_size[1]", "slider.thumb(NONE).min_size[0]", "slider.thumb(NONE).max_size[0]", "slider.thumb(NONE).min_size[1]", "slider.thumb(NONE).max_size[1]", "slider.thumb(HOVER).fill", "slider.thumb(NONE).stroke.color", "slider.thumb(NONE).stroke.width", "slider.thumb(HOVER).stroke.color", "slider.thumb(PRESSED).stroke.color", "slider.thumb(HOVER|FOCUSED).stroke.color", "slider.thumb(FOCUSED).stroke.color"]
 states = ["40"]
 
 [[element]]
@@ -1351,6 +1644,9 @@ id = "basic.slider.control.track"
 name = "Slider track"
 parent = "basic.slider.control"
 leaves = ["slider.track_color", "slider.track_height_px"]
+# homes: slider.track_height_px: orientation=Horizontal, the Basic page's slider is horizontal
+#          (Axis::Horizontal).
+homes = ["slider.track(NONE).fill", "slider.track(NONE; orientation=Horizontal).min_size[1]", "slider.track(NONE; orientation=Horizontal).max_size[1]"]
 states = ["40"]
 part = true
 sample = { fill = [0.9, 0.5] }
@@ -1360,6 +1656,9 @@ id = "basic.slider.control.fill"
 name = "Slider fill"
 parent = "basic.slider.control.track"
 leaves = ["slider.fill_color", "slider.track_height_px"]
+# homes: slider.track_height_px: orientation=Horizontal, the Basic page's slider is horizontal
+#          (Axis::Horizontal).
+homes = ["slider.active_track(NONE).fill", "slider.track(NONE; orientation=Horizontal).min_size[1]", "slider.track(NONE; orientation=Horizontal).max_size[1]"]
 states = ["40"]
 part = true
 sample = { fill = [0.25, 0.5] }
@@ -1369,6 +1668,9 @@ id = "basic.slider.control.thumb"
 name = "Slider thumb"
 parent = "basic.slider.control.track"
 leaves = ["slider.thumb_color", "slider.thumb_diameter_px", "slider.thumb_hover_color", "slider.thumb_border_color", "slider.thumb_border_line_width_px", "slider.thumb_hover_border_color", "slider.thumb_focus_border_color"]
+# homes: slider.thumb_hover_border_color: HOVER and PRESSED and HOVER|FOCUSED, the thumb hovered,
+#          dragged and hovered while focused, all drawn.
+homes = ["slider.thumb(NONE).fill", "slider.thumb(NONE).min_size[0]", "slider.thumb(NONE).max_size[0]", "slider.thumb(NONE).min_size[1]", "slider.thumb(NONE).max_size[1]", "slider.thumb(HOVER).fill", "slider.thumb(NONE).stroke.color", "slider.thumb(NONE).stroke.width", "slider.thumb(HOVER).stroke.color", "slider.thumb(PRESSED).stroke.color", "slider.thumb(HOVER|FOCUSED).stroke.color", "slider.thumb(FOCUSED).stroke.color"]
 states = ["40"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1380,6 +1682,7 @@ id = "basic.progress_bar.heading"
 name = "Section heading"
 parent = "basic.separator.line"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1388,6 +1691,7 @@ id = "basic.progress_bar.bar"
 name = "Progress bar"
 parent = "basic.progress_bar.heading"
 leaves = ["progress_bar.fill_color", "progress_bar.track_color", "progress_bar.track_height_px", "progress_bar.min_width_px", "progress_bar.border.color", "progress_bar.border.corner_radius_px", "progress_bar.border.line_width_px"]
+homes = ["progress_bar.fill(NONE).fill", "progress_bar.track(NONE).fill", "progress_bar.track(NONE).min_size[1]", "progress_bar.track(NONE).max_size[1]", "progress_bar.track(NONE).min_size[0]", "progress_bar.track(NONE).stroke.color", "progress_bar.track(NONE).corners", "progress_bar.track(NONE).stroke.width"]
 states = ["40 %"]
 sample = { track = [0.9, 0.5] }
 
@@ -1396,6 +1700,7 @@ id = "basic.progress_bar.bar.fill"
 name = "Progress fill"
 parent = "basic.progress_bar.bar"
 leaves = ["progress_bar.fill_color", "progress_bar.track_height_px"]
+homes = ["progress_bar.fill(NONE).fill", "progress_bar.track(NONE).min_size[1]", "progress_bar.track(NONE).max_size[1]"]
 states = ["40 %"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1407,6 +1712,7 @@ id = "basic.spinner.heading"
 name = "Section heading"
 parent = "basic.number_input.field"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1415,6 +1721,7 @@ id = "basic.spinner.indicator"
 name = "Spinner"
 parent = "basic.spinner.heading"
 leaves = ["spinner.diameter_px", "spinner.min_diameter_px", "spinner.stroke_width_px", "spinner.fill_color", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["spinner.diameter", "spinner.min_diameter", "spinner.stroke_width", "spinner.color", "icons.theme", "icons.set"]
 states = ["Spinning"]
 sample = { arc = "glyph" }
 
@@ -1425,6 +1732,7 @@ id = "basic.tabs.heading"
 name = "Section heading"
 parent = "basic.icons.small"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1433,6 +1741,7 @@ id = "basic.tabs.bar"
 name = "Tab bar"
 parent = "basic.tabs.heading"
 leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px"]
+homes = ["tab.bar(NONE).fill", "tab.item_gap", "tab.active_outward_corner_radius"]
 states = ["Normal"]
 
 [[element]]
@@ -1440,6 +1749,7 @@ id = "basic.tabs.one"
 name = "Tab"
 parent = "basic.tabs.bar"
 leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
+homes = ["tab.tab(SELECTED).fill", "tab.label(SELECTED).color", "tab.tab(NONE).min_size[0]", "tab.tab(NONE).min_size[1]", "tab.label(NONE)", "tab.tab(SELECTED).stroke.color", "tab.tab(SELECTED).corners", "tab.tab(SELECTED).stroke.width", "tab.tab(NONE).padding.top", "tab.tab(NONE).padding.right", "tab.tab(NONE).padding.bottom", "tab.tab(NONE).padding.left", "tab.indicator(SELECTED).fill", "tab.indicator(SELECTED).min_size[1]", "tab.indicator(SELECTED).max_size[1]", "tab.indicator_side", "tab.active_outward_corner_radius", "typography.line_height_multiplier"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], border = [0.0, 0.5, 0.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -1448,6 +1758,7 @@ id = "basic.tabs.two"
 name = "Tab"
 parent = "basic.tabs.one"
 leaves = ["tab.background_color", "tab.min_width_px", "tab.min_height_px", "tab.hover_background", "tab.hover_text_color", "tab.font", "tab.font.color", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "defaults.line_height"]
+homes = ["tab.tab(NONE).fill", "tab.tab(NONE).min_size[0]", "tab.tab(NONE).min_size[1]", "tab.tab(HOVER).fill", "tab.label(HOVER).color", "tab.label(NONE)", "tab.label(NONE).color", "tab.tab(NONE).padding.top", "tab.tab(NONE).padding.right", "tab.tab(NONE).padding.bottom", "tab.tab(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -1458,6 +1769,7 @@ id = "basic.segmented.heading"
 name = "Section heading"
 parent = "basic.spinner.indicator"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1466,6 +1778,7 @@ id = "basic.segmented.control"
 name = "Segmented control"
 parent = "basic.segmented.heading"
 leaves = ["segmented_control.background_color", "segmented_control.font", "segmented_control.font.color", "segmented_control.active_background", "segmented_control.active_text_color", "segmented_control.segment_height_px", "segmented_control.separator_width_px", "segmented_control.hover_background", "segmented_control.border.color", "segmented_control.border.corner_radius_px", "segmented_control.border.line_width_px", "segmented_control.border.padding_top_px", "segmented_control.border.padding_right_px", "segmented_control.border.padding_bottom_px", "segmented_control.border.padding_left_px", "defaults.line_height"]
+homes = ["segmented_control.track(NONE).fill", "segmented_control.label(NONE)", "segmented_control.label(NONE).color", "segmented_control.segment(SELECTED).fill", "segmented_control.label(SELECTED).color", "segmented_control.segment(NONE).min_size[1]", "segmented_control.separator_width", "segmented_control.segment(HOVER).fill", "segmented_control.track(NONE).stroke.color", "segmented_control.track(NONE).corners", "segmented_control.track(NONE).stroke.width", "segmented_control.segment(NONE).padding.top", "segmented_control.segment(NONE).padding.right", "segmented_control.segment(NONE).padding.bottom", "segmented_control.segment(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Week"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1474,6 +1787,7 @@ id = "basic.segmented.day"
 name = "Segment"
 parent = "basic.segmented.control"
 leaves = ["segmented_control.background_color", "segmented_control.font", "segmented_control.font.color", "segmented_control.segment_height_px", "segmented_control.hover_background", "segmented_control.border.padding_top_px", "segmented_control.border.padding_right_px", "segmented_control.border.padding_bottom_px", "segmented_control.border.padding_left_px", "defaults.line_height"]
+homes = ["segmented_control.track(NONE).fill", "segmented_control.label(NONE)", "segmented_control.label(NONE).color", "segmented_control.segment(NONE).min_size[1]", "segmented_control.segment(HOVER).fill", "segmented_control.segment(NONE).padding.top", "segmented_control.segment(NONE).padding.right", "segmented_control.segment(NONE).padding.bottom", "segmented_control.segment(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
@@ -1483,6 +1797,7 @@ id = "basic.segmented.divider_1"
 name = "Segment divider"
 parent = "basic.segmented.day"
 leaves = ["segmented_control.separator_width_px", "segmented_control.border.color"]
+homes = ["segmented_control.separator_width", "segmented_control.track(NONE).stroke.color"]
 states = ["Normal"]
 part = true
 sample = { line = [0.5, 0.5] }
@@ -1492,6 +1807,7 @@ id = "basic.segmented.week"
 name = "Segment"
 parent = "basic.segmented.day"
 leaves = ["segmented_control.font", "segmented_control.active_background", "segmented_control.active_text_color", "segmented_control.segment_height_px", "segmented_control.border.padding_top_px", "segmented_control.border.padding_right_px", "segmented_control.border.padding_bottom_px", "segmented_control.border.padding_left_px", "defaults.line_height"]
+homes = ["segmented_control.label(NONE)", "segmented_control.segment(SELECTED).fill", "segmented_control.label(SELECTED).color", "segmented_control.segment(NONE).min_size[1]", "segmented_control.segment(NONE).padding.top", "segmented_control.segment(NONE).padding.right", "segmented_control.segment(NONE).padding.bottom", "segmented_control.segment(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
@@ -1501,6 +1817,7 @@ id = "basic.segmented.divider_2"
 name = "Segment divider"
 parent = "basic.segmented.week"
 leaves = ["segmented_control.separator_width_px", "segmented_control.border.color"]
+homes = ["segmented_control.separator_width", "segmented_control.track(NONE).stroke.color"]
 states = ["Normal"]
 part = true
 sample = { line = [0.5, 0.5] }
@@ -1510,6 +1827,7 @@ id = "basic.segmented.month"
 name = "Segment"
 parent = "basic.segmented.week"
 leaves = ["segmented_control.background_color", "segmented_control.font", "segmented_control.font.color", "segmented_control.segment_height_px", "segmented_control.hover_background", "segmented_control.border.padding_top_px", "segmented_control.border.padding_right_px", "segmented_control.border.padding_bottom_px", "segmented_control.border.padding_left_px", "defaults.line_height"]
+homes = ["segmented_control.track(NONE).fill", "segmented_control.label(NONE)", "segmented_control.label(NONE).color", "segmented_control.segment(NONE).min_size[1]", "segmented_control.segment(HOVER).fill", "segmented_control.segment(NONE).padding.top", "segmented_control.segment(NONE).padding.right", "segmented_control.segment(NONE).padding.bottom", "segmented_control.segment(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
@@ -1521,6 +1839,7 @@ id = "basic.typography.heading"
 name = "Section heading"
 parent = "basic.column_4"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1529,6 +1848,7 @@ id = "basic.typography.caption"
 name = "Text"
 parent = "basic.typography.heading"
 leaves = ["text_scale.caption", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.caption", "typography.body.family", "typography.body.color"]
 states = ["Caption"]
 sample = { text = "glyph" }
 
@@ -1537,6 +1857,7 @@ id = "basic.typography.body"
 name = "Text"
 parent = "basic.typography.caption"
 leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
+homes = ["typography.body", "typography.body.color", "typography.line_height_multiplier"]
 states = ["Body"]
 sample = { text = "glyph" }
 
@@ -1545,6 +1866,7 @@ id = "basic.typography.link"
 name = "Link"
 parent = "basic.typography.body"
 leaves = ["link.font", "link.font.color", "link.underline_enabled", "link.background_color", "link.hover_background", "link.hover_text_color", "link.active_text_color", "defaults.line_height"]
+homes = ["link.label(NONE)", "link.label(NONE).color", "link.label(NONE).decoration", "link.container(NONE).fill", "link.container(HOVER).fill", "link.label(HOVER).color", "link.label(PRESSED).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1553,6 +1875,7 @@ id = "basic.typography.section_heading"
 name = "Text"
 parent = "basic.typography.link"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Section heading"]
 sample = { text = "glyph" }
 
@@ -1561,6 +1884,7 @@ id = "basic.typography.dialog_title"
 name = "Text"
 parent = "basic.typography.section_heading"
 leaves = ["text_scale.dialog_title", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.title1", "typography.body.family", "typography.body.color"]
 states = ["Dialog title"]
 sample = { text = "glyph" }
 
@@ -1569,6 +1893,7 @@ id = "basic.typography.monospace"
 name = "Text"
 parent = "basic.typography.dialog_title"
 leaves = ["defaults.line_height", "defaults.mono_font", "defaults.mono_font.color"]
+homes = ["typography.line_height_multiplier", "typography.monospace", "typography.monospace.color"]
 states = ["Monospace"]
 sample = { text = "glyph" }
 
@@ -1581,6 +1906,7 @@ id = "basic.icons.heading"
 name = "Section heading"
 parent = "basic.column_5"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1589,6 +1915,9 @@ id = "basic.icons.copy"
 name = "Tool button"
 parent = "basic.icons.heading"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
+# homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
+#          button hovered and pressed, both drawn.
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -1597,6 +1926,7 @@ id = "basic.icons.copy.icon"
 name = "Icon"
 parent = "basic.icons.copy"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size"]
 states = ["Normal"]
 part = true
 
@@ -1605,6 +1935,9 @@ id = "basic.icons.paste"
 name = "Tool button"
 parent = "basic.icons.copy"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
+# homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
+#          button hovered and pressed, both drawn.
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -1613,6 +1946,7 @@ id = "basic.icons.paste.icon"
 name = "Icon"
 parent = "basic.icons.paste"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size"]
 states = ["Normal"]
 part = true
 
@@ -1621,6 +1955,9 @@ id = "basic.icons.delete"
 name = "Tool button"
 parent = "basic.icons.paste"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
+# homes: toolbar.button_hover_border_color: HOVER and PRESSED, not HOVER|CHECKED: an unchecked tool
+#          button hovered and pressed, both drawn.
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER).stroke.color", "toolbar.button(PRESSED).stroke.color", "toolbar.button(PRESSED).fill"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -1629,6 +1966,7 @@ id = "basic.icons.delete.icon"
 name = "Icon"
 parent = "basic.icons.delete"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size"]
 states = ["Normal"]
 part = true
 
@@ -1637,6 +1975,9 @@ id = "basic.icons.edit"
 name = "Tool button"
 parent = "basic.icons.delete"
 leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.checked_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background", "toolbar.button_checked_background", "toolbar.button_checked_border_color"]
+# homes: toolbar.button_hover_border_color: HOVER|CHECKED, not HOVER, PRESSED: shown checked
+#          (Checked).
+homes = ["button.label(NONE).color", "button.body(HOVER).fill", "button.label(HOVER).color", "button.body(PRESSED).fill", "button.label(PRESSED).color", "button.label(CHECKED).color", "button.body(NONE).corners", "button.body(NONE).stroke.width", "button.body(NONE).padding.top", "button.body(NONE).padding.right", "button.body(NONE).padding.bottom", "button.body(NONE).padding.left", "icons.theme", "icons.set", "toolbar.button_icon(NONE).size", "toolbar.button(HOVER).fill", "toolbar.button(HOVER|CHECKED).stroke.color", "toolbar.button(PRESSED).fill", "toolbar.button(CHECKED).fill", "toolbar.button(CHECKED).stroke.color"]
 states = ["Checked"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -1645,6 +1986,7 @@ id = "basic.icons.edit.icon"
 name = "Icon"
 parent = "basic.icons.edit"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+homes = ["icons.theme", "icons.set", "toolbar.button_icon(NONE).size"]
 states = ["Checked"]
 part = true
 
@@ -1653,6 +1995,7 @@ id = "basic.icons.small"
 name = "Icon"
 parent = "basic.icons.copy"
 leaves = ["defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["icons.sizes.small", "icons.theme", "icons.set"]
 states = ["Small"]
 
 [[element]]
@@ -1660,6 +2003,7 @@ id = "basic.icons.toolbar"
 name = "Icon"
 parent = "basic.icons.small"
 leaves = ["defaults.icon_sizes.toolbar_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["icons.sizes.toolbar", "icons.theme", "icons.set"]
 states = ["Toolbar"]
 
 [[element]]
@@ -1667,6 +2011,7 @@ id = "basic.icons.large"
 name = "Icon"
 parent = "basic.icons.toolbar"
 leaves = ["defaults.icon_sizes.large_px", "defaults.icon_theme", "theme_variant.icon_set"]
+homes = ["icons.sizes.large", "icons.theme", "icons.set"]
 states = ["Large"]
 
 # --- Column 3: Card ---------------------------------------------------------------------------
@@ -1676,6 +2021,7 @@ id = "basic.card.heading"
 name = "Section heading"
 parent = "basic.segmented.control"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1684,6 +2030,7 @@ id = "basic.card.frame"
 name = "Card"
 parent = "basic.card.heading"
 leaves = ["card.background_color", "card.border.color", "card.border.corner_radius_px", "card.border.line_width_px", "card.border.shadow_enabled", "card.border.padding_top_px", "card.border.padding_right_px", "card.border.padding_bottom_px", "card.border.padding_left_px", "layout.container_margin_px"]
+homes = ["card.container(NONE).fill", "card.container(NONE).stroke.color", "card.container(NONE).corners", "card.container(NONE).stroke.width", "card.container(NONE).shadows", "card.container(NONE).padding.top", "card.container(NONE).padding.right", "card.container(NONE).padding.bottom", "card.container(NONE).padding.left", "layout.container_margin"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
@@ -1692,6 +2039,7 @@ id = "basic.card.text"
 name = "Label"
 parent = "basic.card.frame"
 leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
+homes = ["typography.body", "typography.body.color", "typography.line_height_multiplier"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1702,6 +2050,7 @@ id = "basic.separator.heading"
 name = "Section heading"
 parent = "basic.typography.monospace"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1710,6 +2059,7 @@ id = "basic.separator.line"
 name = "Separator"
 parent = "basic.separator.heading"
 leaves = ["separator.line_color", "separator.line_width_px"]
+homes = ["separator.color", "separator.thickness"]
 states = ["Normal"]
 sample = { line = [0.5, 0.5] }
 
@@ -1721,6 +2071,7 @@ id = "basic.list.heading"
 name = "Section heading"
 parent = "basic.progress_bar.bar"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1729,6 +2080,9 @@ id = "basic.list.frame"
 name = "List"
 parent = "basic.list.heading"
 leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.selection_inactive_background", "defaults.selection_inactive_text_color", "defaults.border.line_width_px"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.container(NONE).fill", "list.item_label(NONE)", "list.item_label(NONE).color", "list.highlight(SELECTED).fill", "list.item_label(SELECTED).color", "list.row(NONE).min_size[1]", "list.highlight(HOVER).fill", "list.item_label(HOVER).color", "list.highlight(HOVER).stroke.color", "list.container(NONE).stroke.color", "list.container(NONE).corners", "list.container(NONE).stroke.width", "list.row(NONE).padding.top", "list.highlight(NONE).margin.top", "list.row(NONE).padding.right", "list.highlight(NONE).margin.right", "list.row(NONE).padding.bottom", "list.highlight(NONE).margin.bottom", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier", "colors.selection.unfocused_background", "colors.selection.unfocused_foreground", "layout.border_width"]
 states = ["Item 2 selected"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1737,6 +2091,9 @@ id = "basic.list.row_1"
 name = "List row"
 parent = "basic.list.frame"
 leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.container(NONE).fill", "list.item_label(NONE)", "list.item_label(NONE).color", "list.row(NONE).min_size[1]", "list.highlight(HOVER).fill", "list.item_label(HOVER).color", "list.highlight(HOVER).stroke.color", "list.container(NONE).corners", "list.container(NONE).stroke.width", "list.row(NONE).padding.top", "list.highlight(NONE).margin.top", "list.row(NONE).padding.right", "list.highlight(NONE).margin.right", "list.row(NONE).padding.bottom", "list.highlight(NONE).margin.bottom", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1746,6 +2103,7 @@ id = "basic.list.row_1.text"
 name = "Label"
 parent = "basic.list.row_1"
 leaves = ["list.item_font", "list.item_font.color", "defaults.line_height"]
+homes = ["list.item_label(NONE)", "list.item_label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -1755,6 +2113,9 @@ id = "basic.list.row_2"
 name = "List row"
 parent = "basic.list.row_1"
 leaves = ["list.item_font", "list.selection_background", "list.selection_text_color", "list.row_height_px", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.selection_inactive_background", "defaults.selection_inactive_text_color"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.item_label(NONE)", "list.highlight(SELECTED).fill", "list.item_label(SELECTED).color", "list.row(NONE).min_size[1]", "list.container(NONE).corners", "list.container(NONE).stroke.width", "list.row(NONE).padding.top", "list.highlight(NONE).margin.top", "list.row(NONE).padding.right", "list.highlight(NONE).margin.right", "list.row(NONE).padding.bottom", "list.highlight(NONE).margin.bottom", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier", "colors.selection.unfocused_background", "colors.selection.unfocused_foreground"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1764,6 +2125,7 @@ id = "basic.list.row_2.text"
 name = "Label"
 parent = "basic.list.row_2"
 leaves = ["list.item_font", "list.selection_text_color", "defaults.line_height", "defaults.selection_inactive_text_color"]
+homes = ["list.item_label(NONE)", "list.item_label(SELECTED).color", "typography.line_height_multiplier", "colors.selection.unfocused_foreground"]
 states = ["Selected"]
 part = true
 sample = { text = "glyph" }
@@ -1773,6 +2135,9 @@ id = "basic.list.row_3"
 name = "List row"
 parent = "basic.list.row_2"
 leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.container(NONE).fill", "list.item_label(NONE)", "list.item_label(NONE).color", "list.row(NONE).min_size[1]", "list.highlight(HOVER).fill", "list.item_label(HOVER).color", "list.highlight(HOVER).stroke.color", "list.container(NONE).corners", "list.container(NONE).stroke.width", "list.row(NONE).padding.top", "list.highlight(NONE).margin.top", "list.row(NONE).padding.right", "list.highlight(NONE).margin.right", "list.row(NONE).padding.bottom", "list.highlight(NONE).margin.bottom", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1782,6 +2147,7 @@ id = "basic.list.row_3.text"
 name = "Label"
 parent = "basic.list.row_3"
 leaves = ["list.item_font", "list.item_font.color", "defaults.line_height"]
+homes = ["list.item_label(NONE)", "list.item_label(NONE).color", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -1792,6 +2158,11 @@ id = "basic.list.scrollbar"
 name = "Scrollbar"
 parent = "basic.list.frame"
 leaves = ["scrollbar.track_color", "scrollbar.thumb_color", "scrollbar.thumb_hover_color", "scrollbar.groove_width_px", "scrollbar.min_thumb_length_px", "scrollbar.thumb_width_px", "scrollbar.overlay_mode", "scrollbar.thumb_active_color"]
+# homes: scrollbar.groove_width_px: orientation=Vertical, the list's scrollbar is vertical.
+#        scrollbar.thumb_width_px: orientation=Vertical, the list's scrollbar is vertical.
+#        scrollbar.thumb_color: also kde-breeze's scrollbar.thumb(UNFOCUSED_VIEW).fill
+#          (homes_by_preset).
+homes = ["scrollbar.track(NONE).fill", "scrollbar.thumb(NONE).fill", "scrollbar.thumb(UNFOCUSED_VIEW).fill", "scrollbar.thumb(HOVER).fill", "scrollbar.track(NONE; orientation=Vertical).min_size[0]", "scrollbar.track(NONE; orientation=Vertical).max_size[0]", "scrollbar.min_thumb_length", "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]", "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]", "scrollbar.overlay_mode", "scrollbar.thumb(PRESSED).fill"]
 states = ["Normal"]
 part = true
 when = "the scrollbar is shown at rest"
@@ -1802,6 +2173,10 @@ id = "basic.list.scrollbar.thumb"
 name = "Scrollbar thumb"
 parent = "basic.list.scrollbar"
 leaves = ["scrollbar.thumb_color", "scrollbar.min_thumb_length_px", "scrollbar.thumb_width_px"]
+# homes: scrollbar.thumb_width_px: orientation=Vertical, the list's scrollbar is vertical.
+#        scrollbar.thumb_color: also kde-breeze's scrollbar.thumb(UNFOCUSED_VIEW).fill
+#          (homes_by_preset).
+homes = ["scrollbar.thumb(NONE).fill", "scrollbar.thumb(UNFOCUSED_VIEW).fill", "scrollbar.min_thumb_length", "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]", "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]"]
 states = ["Normal"]
 part = true
 when = "the scrollbar is shown at rest"
@@ -1815,6 +2190,7 @@ id = "basic.expander.heading"
 name = "Section heading"
 parent = "basic.tabs.bar"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1823,6 +2199,7 @@ id = "basic.expander.details"
 name = "Expander"
 parent = "basic.expander.heading"
 leaves = ["expander.font", "expander.font.color", "expander.header_height_px", "expander.arrow_icon_size_px", "expander.hover_background", "expander.arrow_color", "expander.arrow_side", "expander.arrow_gap_px", "expander.content_indent_px", "expander.frame_enabled", "expander.border.color", "expander.border.corner_radius_px", "expander.border.line_width_px", "expander.border.padding_top_px", "expander.border.padding_right_px", "expander.border.padding_bottom_px", "expander.border.padding_left_px", "defaults.font", "defaults.font.color", "defaults.line_height"]
+homes = ["expander.header_label(NONE)", "expander.header_label(NONE).color", "expander.header(NONE).min_size[1]", "expander.arrow(NONE).size", "expander.header(HOVER).fill", "expander.arrow(NONE).color", "expander.arrow_side", "expander.arrow_gap", "expander.content_indent", "expander.frame_enabled", "expander.container(NONE).stroke.color", "expander.container(NONE).corners", "expander.container(NONE).stroke.width", "expander.header(NONE).padding.top", "expander.header(NONE).padding.right", "expander.header(NONE).padding.bottom", "expander.header(NONE).padding.left", "typography.body", "typography.body.color", "typography.line_height_multiplier"]
 states = ["Expanded"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1831,6 +2208,7 @@ id = "basic.expander.details.header"
 name = "Expander header"
 parent = "basic.expander.details"
 leaves = ["expander.header_height_px", "expander.hover_background", "expander.border.padding_top_px", "expander.border.padding_right_px", "expander.border.padding_bottom_px", "expander.border.padding_left_px"]
+homes = ["expander.header(NONE).min_size[1]", "expander.header(HOVER).fill", "expander.header(NONE).padding.top", "expander.header(NONE).padding.right", "expander.header(NONE).padding.bottom", "expander.header(NONE).padding.left"]
 states = ["Expanded"]
 part = true
 
@@ -1839,6 +2217,7 @@ id = "basic.expander.details.arrow"
 name = "Expander arrow"
 parent = "basic.expander.details.header"
 leaves = ["expander.arrow_icon_size_px", "expander.arrow_color", "expander.arrow_side"]
+homes = ["expander.arrow(NONE).size", "expander.arrow(NONE).color", "expander.arrow_side"]
 states = ["Expanded"]
 part = true
 sample = { mark = "glyph" }
@@ -1848,6 +2227,7 @@ id = "basic.expander.details.title"
 name = "Expander title"
 parent = "basic.expander.details.header"
 leaves = ["expander.font", "expander.font.color", "expander.arrow_gap_px", "defaults.line_height"]
+homes = ["expander.header_label(NONE)", "expander.header_label(NONE).color", "expander.arrow_gap", "typography.line_height_multiplier"]
 states = ["Expanded"]
 part = true
 sample = { text = "glyph" }
@@ -1857,6 +2237,7 @@ id = "basic.expander.details.body"
 name = "Expander body"
 parent = "basic.expander.details.header"
 leaves = ["expander.content_indent_px", "defaults.font", "defaults.font.color", "defaults.line_height"]
+homes = ["expander.content_indent", "typography.body", "typography.body.color", "typography.line_height_multiplier"]
 states = ["Expanded"]
 part = true
 sample = { text = "glyph" }
@@ -1866,6 +2247,7 @@ id = "basic.expander.more"
 name = "Expander"
 parent = "basic.expander.details"
 leaves = ["expander.font", "expander.font.color", "expander.header_height_px", "expander.arrow_icon_size_px", "expander.hover_background", "expander.arrow_color", "expander.arrow_side", "expander.arrow_gap_px", "expander.frame_enabled", "expander.border.color", "expander.border.corner_radius_px", "expander.border.line_width_px", "expander.border.padding_top_px", "expander.border.padding_right_px", "expander.border.padding_bottom_px", "expander.border.padding_left_px", "defaults.line_height"]
+homes = ["expander.header_label(NONE)", "expander.header_label(NONE).color", "expander.header(NONE).min_size[1]", "expander.arrow(NONE).size", "expander.header(HOVER).fill", "expander.arrow(NONE).color", "expander.arrow_side", "expander.arrow_gap", "expander.frame_enabled", "expander.container(NONE).stroke.color", "expander.container(NONE).corners", "expander.container(NONE).stroke.width", "expander.header(NONE).padding.top", "expander.header(NONE).padding.right", "expander.header(NONE).padding.bottom", "expander.header(NONE).padding.left", "typography.line_height_multiplier"]
 states = ["Collapsed"]
 
 [[element]]
@@ -1873,6 +2255,7 @@ id = "basic.expander.more.header"
 name = "Expander header"
 parent = "basic.expander.more"
 leaves = ["expander.header_height_px", "expander.hover_background", "expander.border.padding_top_px", "expander.border.padding_right_px", "expander.border.padding_bottom_px", "expander.border.padding_left_px"]
+homes = ["expander.header(NONE).min_size[1]", "expander.header(HOVER).fill", "expander.header(NONE).padding.top", "expander.header(NONE).padding.right", "expander.header(NONE).padding.bottom", "expander.header(NONE).padding.left"]
 states = ["Collapsed"]
 part = true
 
@@ -1881,6 +2264,7 @@ id = "basic.expander.more.arrow"
 name = "Expander arrow"
 parent = "basic.expander.more.header"
 leaves = ["expander.arrow_icon_size_px", "expander.arrow_color", "expander.arrow_side"]
+homes = ["expander.arrow(NONE).size", "expander.arrow(NONE).color", "expander.arrow_side"]
 states = ["Collapsed"]
 part = true
 sample = { mark = "glyph" }
@@ -1890,6 +2274,7 @@ id = "basic.expander.more.title"
 name = "Expander title"
 parent = "basic.expander.more.header"
 leaves = ["expander.font", "expander.font.color", "expander.arrow_gap_px", "defaults.line_height"]
+homes = ["expander.header_label(NONE)", "expander.header_label(NONE).color", "expander.arrow_gap", "typography.line_height_multiplier"]
 states = ["Collapsed"]
 part = true
 sample = { text = "glyph" }
@@ -1902,6 +2287,7 @@ id = "basic.table.heading"
 name = "Section heading"
 parent = "basic.expander.more"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+homes = ["typography.headline", "typography.body.family", "typography.body.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -1910,6 +2296,9 @@ id = "basic.table.frame"
 name = "Table"
 parent = "basic.table.heading"
 leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "separator.line_width_px", "list.row_height_px", "list.header_height_px", "list.header_hover_background", "list.header_active_background", "list.header_separator_color", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.selection_inactive_background", "defaults.selection_inactive_text_color", "defaults.border.line_width_px"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.container(NONE).fill", "list.item_label(NONE)", "list.item_label(NONE).color", "list.highlight(SELECTED).fill", "list.item_label(SELECTED).color", "list.header_label(NONE)", "list.header_label(NONE).color", "list.header(NONE).fill", "list.grid_color", "separator.thickness", "list.row(NONE).min_size[1]", "list.header(NONE).min_size[1]", "list.header(HOVER).fill", "list.header(PRESSED).fill", "list.header_separator(NONE).fill", "list.highlight(HOVER).fill", "list.item_label(HOVER).color", "list.highlight(HOVER).stroke.color", "list.container(NONE).stroke.color", "list.container(NONE).corners", "list.container(NONE).stroke.width", "list.row(NONE).padding.top", "list.highlight(NONE).margin.top", "list.row(NONE).padding.right", "list.highlight(NONE).margin.right", "list.row(NONE).padding.bottom", "list.highlight(NONE).margin.bottom", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier", "colors.selection.unfocused_background", "colors.selection.unfocused_foreground", "layout.border_width"]
 states = ["Row 2 selected"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1918,6 +2307,9 @@ id = "basic.table.header"
 name = "Table header"
 parent = "basic.table.frame"
 leaves = ["list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "separator.line_width_px", "list.row_height_px", "list.header_height_px", "list.header_hover_background", "list.header_active_background", "list.header_separator_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.header_label(NONE)", "list.header_label(NONE).color", "list.header(NONE).fill", "list.grid_color", "separator.thickness", "list.row(NONE).min_size[1]", "list.header(NONE).min_size[1]", "list.header(HOVER).fill", "list.header(PRESSED).fill", "list.header_separator(NONE).fill", "list.container(NONE).corners", "list.container(NONE).stroke.width", "list.row(NONE).padding.top", "list.highlight(NONE).margin.top", "list.row(NONE).padding.right", "list.highlight(NONE).margin.right", "list.row(NONE).padding.bottom", "list.highlight(NONE).margin.bottom", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.45, 0.5] }
@@ -1927,6 +2319,9 @@ id = "basic.table.header.name"
 name = "Table header cell"
 parent = "basic.table.header"
 leaves = ["list.header_font", "list.header_font.color", "list.header_hover_background", "list.header_active_background", "list.border.padding_left_px", "defaults.line_height"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.header_label(NONE)", "list.header_label(NONE).color", "list.header(HOVER).fill", "list.header(PRESSED).fill", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph" }
@@ -1936,6 +2331,9 @@ id = "basic.table.header.size"
 name = "Table header cell"
 parent = "basic.table.header.name"
 leaves = ["list.header_font", "list.header_font.color", "list.grid_color", "list.header_hover_background", "list.header_active_background", "list.header_separator_color", "list.border.padding_left_px", "defaults.line_height"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.header_label(NONE)", "list.header_label(NONE).color", "list.grid_color", "list.header(HOVER).fill", "list.header(PRESSED).fill", "list.header_separator(NONE).fill", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier"]
 states = ["Normal"]
 part = true
 sample = { text = "glyph", grid = [0.0, 0.5, 0.5, 0.0] }
@@ -1945,6 +2343,9 @@ id = "basic.table.row_1"
 name = "Table row"
 parent = "basic.table.header"
 leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.grid_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.container(NONE).fill", "list.item_label(NONE)", "list.item_label(NONE).color", "list.grid_color", "list.row(NONE).min_size[1]", "list.highlight(HOVER).fill", "list.item_label(HOVER).color", "list.highlight(HOVER).stroke.color", "list.row(NONE).padding.top", "list.highlight(NONE).margin.top", "list.row(NONE).padding.right", "list.highlight(NONE).margin.right", "list.row(NONE).padding.bottom", "list.highlight(NONE).margin.bottom", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.45, 0.5], text = { glyph = [0.0, 0.0, 0.4, 1.0] } }
@@ -1962,6 +2363,9 @@ id = "basic.table.row_2"
 name = "Table row"
 parent = "basic.table.row_1"
 leaves = ["list.item_font", "list.selection_background", "list.selection_text_color", "list.grid_color", "list.row_height_px", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.selection_inactive_background", "defaults.selection_inactive_text_color"]
+# homes: list.border.padding_*_px: also kde-breeze's list.highlight(NONE).margin.*
+#          (homes_by_preset).
+homes = ["list.item_label(NONE)", "list.highlight(SELECTED).fill", "list.item_label(SELECTED).color", "list.grid_color", "list.row(NONE).min_size[1]", "list.container(NONE).corners", "list.container(NONE).stroke.width", "list.row(NONE).padding.top", "list.highlight(NONE).margin.top", "list.row(NONE).padding.right", "list.highlight(NONE).margin.right", "list.row(NONE).padding.bottom", "list.highlight(NONE).margin.bottom", "list.row(NONE).padding.left", "list.highlight(NONE).margin.left", "typography.line_height_multiplier", "colors.selection.unfocused_background", "colors.selection.unfocused_foreground"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.45, 0.5], text = { glyph = [0.1, 0.0, 0.4, 1.0] } }

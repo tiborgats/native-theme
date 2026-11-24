@@ -295,7 +295,9 @@ const WIDGETS: &[Widget] = &[
         parts: &[("track", P), ("thumb", P), ("label", T)],
         metrics: &[
             "origin",
+            "label_side",
             "label_gap",
+            "label_gap_stretches",
             "show_state_glyphs",
             "disabled_opacity",
         ],
@@ -1028,7 +1030,9 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
 
         // A listed difference states its presets, its reason, its citation and, for each of its presets
         // and no other, the value 0.8.0 has at the homes: "unstated" or a single value, or a table of
-        // exactly `light` and `dark`, each a single value, where the two schemes differ.
+        // exactly `light` and `dark`, each a single value, where the two schemes differ; where the homes
+        // differ, a table of such values by home, naming every home of the row on the preset and no
+        // other. "none" (no outline) is a value at a part's stroke only.
         match (
             &row.difference_presets,
             &row.difference_reason,
@@ -1048,21 +1052,65 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
                 }
                 let single =
                     |v: &toml::Value| !matches!(v, toml::Value::Table(_) | toml::Value::Array(_));
+                let per_scheme_or_single = |v: &toml::Value| match v {
+                    toml::Value::Table(schemes) => {
+                        schemes.len() == 2
+                            && ["light", "dark"]
+                                .iter()
+                                .all(|s| schemes.get(*s).is_some_and(single))
+                    }
+                    other => single(other),
+                };
+                let no_outline = |v: &toml::Value| match v {
+                    toml::Value::Table(schemes) => {
+                        schemes.values().any(|v| v.as_str() == Some("none"))
+                    }
+                    other => other.as_str() == Some("none"),
+                };
+                let not_a_stroke = |preset: &str, home: &str| {
+                    format!(
+                        "`{key}`: difference_values for `{preset}` names \"none\" at `{home}`, \
+                         which is no part's stroke"
+                    )
+                };
                 for (preset, value) in values {
-                    let valid = match value {
-                        toml::Value::Table(schemes) => {
-                            schemes.len() == 2
-                                && ["light", "dark"]
-                                    .iter()
-                                    .all(|s| schemes.get(*s).is_some_and(single))
+                    let homes = row.homes_by_preset.get(preset).unwrap_or(&row.homes);
+                    match value {
+                        toml::Value::Table(table) if !compare::is_per_scheme(table) => {
+                            let named: BTreeSet<&str> = table.keys().map(String::as_str).collect();
+                            let expected: BTreeSet<&str> =
+                                homes.iter().map(String::as_str).collect();
+                            if named != expected {
+                                found.push(format!(
+                                    "`{key}`: difference_values for `{preset}` by home must name \
+                                     exactly the row's homes on it"
+                                ));
+                            }
+                            for (home, value) in table {
+                                if !per_scheme_or_single(value) {
+                                    found.push(format!(
+                                        "`{key}`: difference_values for `{preset}` at `{home}` is \
+                                         not a single value or a table of `light` and `dark`"
+                                    ));
+                                }
+                                if no_outline(value) && !compare::is_stroke_home(home) {
+                                    found.push(not_a_stroke(preset, home));
+                                }
+                            }
                         }
-                        other => single(other),
-                    };
-                    if !valid {
-                        found.push(format!(
-                            "`{key}`: difference_values for `{preset}` is not a single value \
-                             or a table of `light` and `dark`"
-                        ));
+                        other => {
+                            if !per_scheme_or_single(other) {
+                                found.push(format!(
+                                    "`{key}`: difference_values for `{preset}` is not a single \
+                                     value or a table of `light` and `dark`"
+                                ));
+                            }
+                            if no_outline(other) {
+                                for home in homes.iter().filter(|h| !compare::is_stroke_home(h)) {
+                                    found.push(not_a_stroke(preset, home));
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1143,7 +1191,7 @@ fn the_checks_catch_what_they_check() -> TestResult {
         .map(String::from)
         .collect();
     let table: Table = toml::from_str(
-        r#"
+        r##"
         [[row]]
         key = "button.min_width"
         homes = ["button.body(NONE).min_size[0]"]
@@ -1179,7 +1227,23 @@ fn the_checks_catch_what_they_check() -> TestResult {
         difference_reason = "a reason"
         difference_citation = "a citation"
         difference_values = { "kde-breeze" = { light = "unstated" } }
-        "#,
+
+        [[row]]
+        key = "button.gone"
+        homes = ["button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color"]
+        difference_presets = ["adwaita", "windows-11", "material-3"]
+        difference_reason = "a reason"
+        difference_citation = "a citation"
+        difference_values = { "adwaita" = { "button.body(HOVER).stroke.color" = "#ffffff" }, "windows-11" = { "button.body(HOVER).stroke.color" = "none", "button.body(PRESSED).stroke.color" = { light = "#000000" } }, "material-3" = { "button.body(HOVER).stroke.color" = "none", "button.body(PRESSED).stroke.color" = { light = "#000000", dark = "none" } } }
+
+        [[row]]
+        key = "button.gone"
+        homes = ["button.body(NONE).fill"]
+        difference_presets = ["kde-breeze", "ios-13"]
+        difference_reason = "a reason"
+        difference_citation = "a citation"
+        difference_values = { "kde-breeze" = "none", "ios-13" = { "button.body(NONE).fill" = { light = "#000000", dark = "none" } } }
+        "##,
     )?;
     for bad in [
         "null_means = \"unset\"",
@@ -1205,12 +1269,25 @@ fn the_checks_catch_what_they_check() -> TestResult {
          not `button.body(NONE).min_size[1]`",
         "`button.gone`: difference_values for `kde-breeze` is not a single value \
          or a table of `light` and `dark`",
+        "`button.gone`: difference_values for `adwaita` by home must name exactly the row's \
+         homes on it",
+        "`button.gone`: difference_values for `windows-11` at `button.body(PRESSED).stroke.color` \
+         is not a single value or a table of `light` and `dark`",
+        "`button.gone`: difference_values for `kde-breeze` names \"none\" at \
+         `button.body(NONE).fill`, which is no part's stroke",
+        "`button.gone`: difference_values for `ios-13` names \"none\" at \
+         `button.body(NONE).fill`, which is no part's stroke",
     ] {
         assert!(
             found.iter().any(|p| p.contains(expected)),
             "{expected}: {found:?}"
         );
     }
+    // A table by home naming exactly the row's homes, "none" at a stroke, is well formed.
+    assert!(
+        !found.iter().any(|p| p.contains("`material-3`")),
+        "{found:?}"
+    );
     Ok(())
 }
 
@@ -2117,7 +2194,8 @@ fn old_merged_reader_in(
 /// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
 /// `SystemOverrides` and resolved for the file's context (its motion level and text scale at their
 /// defaults, its animation scale unset, as 0.7.2 applies neither), over the table of homes, the
-/// snapshot's context compared. Zero mismatches over every row of [`PORTED_GROUPS`], the four `snapshot.context.*` rows
+/// snapshot's context compared. Zero mismatches over every row of [`PORTED_GROUPS`] but [`KDE_BUTTON_HOVER`]'s
+/// on [`KDE_FIXTURES_OTHER_BUTTON`], the four `snapshot.context.*` rows
 /// compared and equal, the one skip for its named reason; the other rows counted and reported, the two
 /// counts making the whole table; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
@@ -2132,7 +2210,18 @@ fn reader_parity_kde() -> TestResult {
     assert_eq!(paths.len(), KDE_FIXTURES, "the files of {dir:?}");
     for path in &paths {
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        reader_parity_on(name, &std::fs::read_to_string(path)?, &table)?;
+        let other_button = KDE_FIXTURES_OTHER_BUTTON.contains(&name);
+        let other_window = KDE_FIXTURES_OTHER_WINDOW.contains(&name);
+        let listed: Vec<&str> = table
+            .row
+            .iter()
+            .map(|row| row.key.as_str())
+            .filter(|key| {
+                (other_button && KDE_BUTTON_HOVER.contains(key))
+                    || (other_window && KDE_SEPARATOR.contains(key))
+            })
+            .collect();
+        reader_parity_on(name, &std::fs::read_to_string(path)?, &table, &listed)?;
     }
     Ok(())
 }
@@ -2144,12 +2233,14 @@ fn kde_fixtures() -> std::path::PathBuf {
 }
 
 /// Reader parity of the kde-breeze builder on the kdeglobals `content` named `name`, as
-/// [`reader_parity_kde`] states it for each file; the 0.7.2 reader path's theme.
+/// [`reader_parity_kde`] states it for each file, with the listed differences `listed`; the 0.7.2
+/// reader path's theme.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 fn reader_parity_on(
     name: &str,
     content: &str,
     table: &Table,
+    listed: &[&str],
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     use crate::next::reader::kde::snapshot_from_kdeglobals;
 
@@ -2164,7 +2255,7 @@ fn reader_parity_on(
         &old_name,
         &snapshot,
         table,
-        &KDE_READER_EXPECTED,
+        &kde_reader_expected(listed),
     )?;
     Ok(old)
 }
@@ -2181,15 +2272,67 @@ struct ReaderExpected<'a> {
     listed: &'a [&'a str],
 }
 
-/// The kde-breeze builder's reader parity on every KDE fixture: every row of the ported groups equal but
-/// `checkbox.background_color`, skipped where `checkbox.unchecked_background` is stated (the table's
-/// listed differences).
+/// The kde-breeze builder's reader parity on a KDE input whose listed differences are `listed`: every
+/// other row of the ported groups compared and equal but `checkbox.background_color`, skipped where
+/// `checkbox.unchecked_background` is stated (the table's listed differences).
 #[cfg(all(target_os = "linux", feature = "kde"))]
-const KDE_READER_EXPECTED: ReaderExpected<'static> = ReaderExpected {
-    totals: READER_TOTALS,
-    skip: |key| (key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated),
-    listed: &[],
-};
+fn kde_reader_expected<'a>(listed: &'a [&'a str]) -> ReaderExpected<'a> {
+    let [rows, compared, ..] = READER_TOTALS;
+    ReaderExpected {
+        totals: [
+            rows,
+            compared,
+            compared.saturating_sub(listed.len()),
+            listed.len(),
+            rows.saturating_sub(compared),
+        ],
+        skip: |key| (key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated),
+        listed,
+    }
+}
+
+/// M2.FS4: the rows the kde-breeze builder fills in the colour scheme's Button background,
+/// `[Colors:Button] BackgroundNormal`, where 0.7.2's reader leaves the preset's Breeze-default
+/// constant: the hovered check box and radio (platform-facts.md (§2.5) `hover_background`, the box
+/// keeps palette.button(), breezehelper.cpp:862 at breeze f0b1d75), slider handle (platform-facts.md
+/// (§2.9) `thumb_hover_color`, QPalette::Button in every state, breezestyle.cpp:8122) and combo box
+/// (platform-facts.md (§2.24) `hover_background`, a button frame whose hover turns only the pen,
+/// breezehelper.cpp:710-712). They differ on a fixture whose Button background is not Breeze's.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_BUTTON_HOVER: &[&str] = &[
+    "checkbox.hover_background",
+    "slider.thumb_hover_color",
+    "combo_box.hover_background",
+];
+
+/// The KDE fixtures whose `[Colors:Button] BackgroundNormal` (49,54,59) is not the kde-breeze preset's
+/// Button background (#292c30 dark, #fcfcfc light): [`KDE_BUTTON_HOVER`] is listed on them.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_FIXTURES_OTHER_BUTTON: &[&str] = &[
+    "breeze-dark.ini",
+    "custom-accent.ini",
+    "high-dpi.ini",
+    "missing-groups.ini",
+];
+
+/// M2.FS4: the rows of the splitter's handle, which the kde-breeze builder fills in Breeze's
+/// `separatorColor()`, the mix of the colour scheme's `[Colors:Window]` background and text by
+/// `frameContrast` (platform-facts.md (§2.17) `hover_color`, breezehelper.cpp:329-332 at breeze
+/// f0b1d75), where the table's listed difference gives the preset's Breeze colours. They differ on
+/// an input whose Window colours or `frameContrast` are not Breeze's.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_SEPARATOR: &[&str] = &["splitter.divider_color", "splitter.hover_color"];
+
+/// The KDE fixtures whose `[Colors:Window]` background and text (49,54,59 and 239,240,241) are not
+/// the kde-breeze preset's Breeze Dark ones: [`KDE_SEPARATOR`] is listed on them.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_FIXTURES_OTHER_WINDOW: &[&str] = &[
+    "breeze-dark.ini",
+    "custom-accent.ini",
+    "high-dpi.ini",
+    "minimal.ini",
+    "missing-groups.ini",
+];
 
 /// Reader parity of the builder of `snapshot`'s preset given `snapshot` against the 0.7.2 reader path's
 /// theme `old` (`unresolved` before its resolution, `old_name` its name), as [`reader_parity_kde`] states
@@ -2313,7 +2456,7 @@ fn live_system_parity_kde() -> TestResult {
         &result.name,
         &snapshot,
         &table,
-        &KDE_READER_EXPECTED,
+        &kde_reader_expected(&[]),
     )?;
     println!("the live desktop: equal through the 0.7.2 and the 0.8.0 path");
     Ok(())
@@ -2322,8 +2465,9 @@ fn live_system_parity_kde() -> TestResult {
 /// Reader parity on kdeglobals texts that move off their defaults the settings no fixture
 /// states: Breeze Light's file with `[KDE] frameContrast=0.5`, `contrast=3` and
 /// `[ColorEffects:Inactive] ChangeSelectionColor=false`, and with only `[ColorEffects:Inactive]
-/// Enable=false`. Zero mismatches in the ported groups on both, and every row those settings feed differs from the
-/// plain file's, so that equality proves the builder used them.
+/// Enable=false`. Zero mismatches in the ported groups on both but [`KDE_SEPARATOR`] on the first,
+/// whose `frameContrast` moves the separator off the table's listed Breeze colour, and every row those
+/// settings feed differs from the plain file's, so that equality proves the builder used them.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde_settings() -> TestResult {
@@ -2333,7 +2477,7 @@ fn reader_parity_kde_settings() -> TestResult {
     ];
     let table: Table = toml::from_str(HOMES)?;
     let plain = std::fs::read_to_string(kde_fixtures().join("breeze-light.ini"))?;
-    let base = reader_parity_on("breeze-light.ini", &plain, &table)?;
+    let base = reader_parity_on("breeze-light.ini", &plain, &table, &[])?;
     let contrasts = plain.replacen("[KDE]\n", "[KDE]\nframeContrast=0.5\ncontrast=3\n", 1);
     assert_ne!(contrasts, plain, "no [KDE] group in breeze-light.ini");
     let settings = format!("{contrasts}\n[ColorEffects:Inactive]\nChangeSelectionColor=false\n");
@@ -2355,19 +2499,21 @@ fn reader_parity_kde_settings() -> TestResult {
     .into_iter()
     .chain(INACTIVE_SELECTION)
     .collect::<Vec<_>>();
-    for (name, content, fed) in [
+    for (name, content, fed, listed) in [
         (
             "frameContrast, contrast, ChangeSelectionColor",
             settings,
             fed_by_settings,
+            KDE_SEPARATOR,
         ),
         (
             "inactive effects off",
             effects_off,
             INACTIVE_SELECTION.to_vec(),
+            &[][..],
         ),
     ] {
-        let old = reader_parity_on(name, &content, &table)?;
+        let old = reader_parity_on(name, &content, &table, listed)?;
         for key in fed {
             let pointer = format!("/{}", key.replace('.', "/"));
             let got = old.pointer(&pointer);
@@ -2867,6 +3013,17 @@ pub(crate) fn windows_cases() -> Vec<(
         AccessibilityData, AllFonts, CARET_BLINK_NONE, SysColors, WidgetSizing, WindowsSettings,
     };
     const WHITE: crate::Rgba = crate::Rgba::rgb(255, 255, 255);
+    // M2.FS4: the hovered on switch's fill is a listed difference of the table (`next_homes.toml`),
+    // whose value is the preset's accent fill at 0.9, which every case's accent (and high contrast's
+    // button face) replaces.
+    const ACCENT: &[&str] = &["switch.hover_checked_background"];
+    const HIGH_CONTRAST: &[&str] = &[
+        "button.hover_border_color",
+        "checkbox.hover_border_color",
+        "switch.hover_checked_background",
+        "combo_box.hover_border_color",
+        "expander.hover_background",
+    ];
     let shades = || [1, 2, 3, 4, 5, 6].map(|b| Some(crate::Rgba::rgb(0, 0, b)));
     let named_fonts = || {
         let spec = |size, weight| crate::model::FontSpec {
@@ -2905,14 +3062,14 @@ pub(crate) fn windows_cases() -> Vec<(
     };
     let base = default_windows_settings;
     vec![
-        ("light, no shade", base(), &[]),
+        ("light, no shade", base(), ACCENT),
         (
             "dark, no shade",
             WindowsSettings {
                 foreground: WHITE,
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "light, the shades",
@@ -2920,7 +3077,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 accent_shades: shades(),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "dark, the shades",
@@ -2929,7 +3086,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 accent_shades: shades(),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "light, AccentDark1 unread",
@@ -2941,7 +3098,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 },
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "dark, AccentLight2 and AccentLight3 unread",
@@ -2955,7 +3112,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 },
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "the named fonts, light",
@@ -2963,7 +3120,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 fonts: named_fonts(),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "the named fonts, dark",
@@ -2972,7 +3129,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 fonts: named_fonts(),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "the icon sizes",
@@ -2980,7 +3137,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 icon_sizes: Some((16.0, 32.0)),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "other icon sizes and metrics",
@@ -2993,21 +3150,24 @@ pub(crate) fn windows_cases() -> Vec<(
                 },
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
+        // M2.FS4: the button's hover and pressed outline, the check box's hover outline and the
+        // expander header's fill are listed differences of the table (`next_homes.toml`), whose
+        // values are the preset's colours, which high contrast replaces.
         (
             "high contrast, light",
             high_contrast(crate::Rgba::rgb(0, 0, 0)),
-            &[],
+            HIGH_CONTRAST,
         ),
-        ("high contrast, dark", high_contrast(WHITE), &[]),
+        ("high contrast, dark", high_contrast(WHITE), HIGH_CONTRAST),
         (
             "a caret blink time",
             WindowsSettings {
                 caret_blink_time: 530,
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "another caret blink time",
@@ -3015,7 +3175,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 caret_blink_time: 1200,
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "a caret that does not blink",
@@ -3023,7 +3183,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 caret_blink_time: CARET_BLINK_NONE,
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "animations and transparency off, a text scale",
@@ -3036,7 +3196,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 }),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
     ]
 }
@@ -3525,6 +3685,21 @@ fn reader_parity_macos() -> TestResult {
             snapshot.preset = preset;
         }
         let (old, unresolved, old_name) = old_macos_reader(&settings, snapshot.preset)?;
+        // M2.FS4: a hovered control keeps its outline in the separator the reader states, where
+        // the table's listed difference gives the preset's own line.
+        let hover_border: &[&str] = if MACOS_CASES_PRESET_BORDER.contains(&name) {
+            &[]
+        } else if snapshot.preset == crate::next::preset::Preset::MacosMonterey {
+            MONTEREY_HOVER_BORDER
+        } else {
+            TAHOE_HOVER_BORDER
+        };
+        let listed: Vec<&str> = table
+            .row
+            .iter()
+            .map(|row| row.key.as_str())
+            .filter(|key| hover_border.contains(key) || listed.contains(key))
+            .collect();
         assert_reader_parity(
             name,
             &old,
@@ -3532,11 +3707,34 @@ fn reader_parity_macos() -> TestResult {
             &old_name,
             &snapshot,
             &table,
-            &macos_reader_expected(snapshot.preset, listed),
+            &macos_reader_expected(snapshot.preset, &listed),
         )?;
     }
     Ok(())
 }
+
+/// M2.FS4: the rows of a hovered control's outline on macos-monterey (the push button's, also
+/// pressed; the check box's and radio's, checked; the text field's; the pop-up button's), listed
+/// differences of the table whose value is the preset's default line; a reader's separator replaces
+/// that line.
+const MONTEREY_HOVER_BORDER: &[&str] = &[
+    "button.hover_border_color",
+    "checkbox.hover_border_color",
+    "input.hover_border_color",
+    "combo_box.hover_border_color",
+];
+
+/// The same rows on macos-tahoe, whose push button and pop-up button have no outline: the checked
+/// check box's and radio's and the text field's.
+const TAHOE_HOVER_BORDER: &[&str] = &["checkbox.hover_border_color", "input.hover_border_color"];
+
+/// The macOS reader cases whose scheme has no separator of the reader's, so the preset's own line
+/// stays: [`MONTEREY_HOVER_BORDER`] or [`TAHOE_HOVER_BORDER`] is listed on every other one.
+const MACOS_CASES_PRESET_BORDER: &[&str] = &[
+    "a custom accent, light",
+    "macOS 26, a custom accent, dark",
+    "Aqua alone, dark",
+];
 
 /// What macOS' reader parity expects of a case on `preset` whose listed differences are `listed`: every
 /// other row of the ported groups compared and equal but the rows [`macos_expected_skip`] skips with a

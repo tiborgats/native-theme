@@ -442,6 +442,131 @@ fn a_listed_difference_compares_the_value_stated_for_its_preset() -> TestResult 
     Ok(())
 }
 
+const DIFFERENCE_BY_HOME: &str = r##"
+[[row]]
+key = "h.stroke"
+homes = ["button.body(HOVER).stroke.color", "button.body(PRESSED).stroke.color"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = { "button.body(HOVER).stroke.color" = { light = "#bcbec0", dark = "#000000" }, "button.body(PRESSED).stroke.color" = "none" } }
+"##;
+
+#[test]
+fn a_listed_difference_by_home_compares_each_homes_value() -> TestResult {
+    let c = srgb(STROKE);
+    let body = |pressed: Option<Stroke>| {
+        let mut t = theme();
+        let mut part = RuleBuilder::new(PartStyle::default())
+            .base([PartProp::Stroke(Stroke::uniform(1.0, c))]);
+        if let Some(stroke) = pressed {
+            part = part.rule(
+                RuleSelector::on(WidgetState::PRESSED),
+                [PartProp::Stroke(stroke)],
+            );
+        }
+        t.button = ButtonWidget::new(
+            WidgetOrigin::Native,
+            part.build(),
+            RuleBuilder::new(TextStyle::default()).build(),
+            RuleBuilder::new(IconStyle::default()).build(),
+            4.0,
+            None,
+        );
+        t
+    };
+    let rows = rows(DIFFERENCE_BY_HOME)?;
+    let old = json!({ "h": { "stroke": "#ffffff" } });
+    let report = compare_rows(
+        &rows,
+        &old,
+        &body(Some(Stroke::None)),
+        None,
+        Preset::KdeBreeze,
+    )?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    assert_eq!(
+        report.rows.first().and_then(|r| r.value.clone()),
+        Some(json!({
+            "button.body(HOVER).stroke.color": "#bcbec0",
+            "button.body(PRESSED).stroke.color": "none",
+        }))
+    );
+    // Where the pressed body keeps the stroke, or states another, the "none" home alone mismatches.
+    for pressed in [None, Some(Stroke::uniform(1.0, srgb(COLOR)))] {
+        let report = compare_rows(&rows, &old, &body(pressed), None, Preset::KdeBreeze)?;
+        let Some(Outcome::Mismatch(homes)) = report.rows.first().map(|r| &r.outcome) else {
+            return Err(format!("no mismatch: {report}").into());
+        };
+        let at: Vec<&str> = homes.iter().map(|m| m.home.as_str()).collect();
+        assert_eq!(at, vec!["button.body(PRESSED).stroke.color"], "{report}");
+    }
+    // An unstated stroke is no outline stated.
+    let report = compare_rows(&rows, &old, &with_body(vec![]), None, Preset::KdeBreeze)?;
+    assert_eq!(report.mismatched_keys(), vec!["h.stroke"], "{report}");
+    // On another preset the old value is compared at every home.
+    let other = compare_rows(
+        &rows,
+        &old,
+        &body(Some(Stroke::None)),
+        None,
+        Preset::Adwaita,
+    )?;
+    assert_eq!(other.mismatched_keys(), vec!["h.stroke"], "{other}");
+    // A table that does not name exactly the row's homes, and "none" at a home that is no stroke, are
+    // errors naming the row.
+    for (from, to, expected) in [
+        (
+            "\"button.body(PRESSED).stroke.color\" = \"none\"",
+            "\"button.body(NONE).stroke.color\" = \"none\"",
+            "name the homes",
+        ),
+        (
+            "\"button.body(PRESSED).stroke.color\"]",
+            "\"button.body(PRESSED).stroke.color\", \"button.body(NONE).fill\"]",
+            "name the homes",
+        ),
+        (
+            "\"button.body(PRESSED).stroke.color\"]",
+            "\"button.body(PRESSED).fill\"]",
+            "name the homes",
+        ),
+    ] {
+        let changed = DIFFERENCE_BY_HOME.replacen(from, to, 1);
+        match compare_rows(
+            &self::rows(&changed)?,
+            &old,
+            &body(Some(Stroke::None)),
+            None,
+            Preset::KdeBreeze,
+        ) {
+            Err(e) => assert!(
+                e.starts_with("row `h.stroke`") && e.contains(expected),
+                "{e}"
+            ),
+            Ok(report) => return Err(format!("no error for {to}: {report}").into()),
+        }
+    }
+    let not_a_stroke = DIFFERENCE_BY_HOME.replace(
+        "button.body(PRESSED).stroke.color",
+        "button.body(PRESSED).fill",
+    );
+    match compare_rows(
+        &self::rows(&not_a_stroke)?,
+        &old,
+        &body(Some(Stroke::None)),
+        None,
+        Preset::KdeBreeze,
+    ) {
+        Err(e) => assert!(
+            e.starts_with("row `h.stroke`") && e.contains("no part's stroke"),
+            "{e}"
+        ),
+        Ok(report) => return Err(format!("no error: {report}").into()),
+    }
+    Ok(())
+}
+
 const NULL_AT_A_STATE: &str = r#"
 [[row]]
 key = "n.hover_stroke"
