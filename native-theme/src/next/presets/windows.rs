@@ -1689,7 +1689,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(c, &colors, &layout),
         spinner: spinner(c),
         popover: popover(c, &colors, &typography, &layout),
-        switch: switch(c, &typography),
+        switch: switch(c, &hc, &typography),
         dialog: dialog(c, &colors, &typography, units, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, direction),
         segmented_control: segmented_control(c, &hc, &typography, &layout),
@@ -3840,7 +3840,7 @@ fn switch_hover_on(c: &SchemeColors) -> Color {
 /// off in the muted text, on in the accent's text, with no outline (0.7.2
 /// states none for it); its On and Off content [`switch_label`], after the
 /// track at [`SWITCH_LABEL_GAP`], keeping to it.
-fn switch(c: &SchemeColors, typography: &Typography) -> SwitchWidget {
+fn switch(c: &SchemeColors, hc: &HighContrast, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -3903,7 +3903,7 @@ fn switch(c: &SchemeColors, typography: &Typography) -> SwitchWidget {
         WidgetOrigin::Native,
         track,
         thumb,
-        switch_label(c, typography),
+        switch_label(c, hc, typography),
         // `label_side`, `label_gap_stretches`: the template's inner grid is
         // `HorizontalAlignment="Left"`, its columns `Auto`, 12, `Auto`, the content after the
         // switch (ToggleSwitch_themeresources.xaml:493-503, :505-506 at microsoft-ui-xaml
@@ -3926,8 +3926,13 @@ fn switch(c: &SchemeColors, typography: &Typography) -> SwitchWidget {
 /// style sets none, :190-202); the PointerOver, Pressed and On states animate
 /// no presenter's `Foreground` (:245-324, :461-487), and `Disabled` sets both
 /// to `ToggleSwitchContentForegroundDisabled` = `TextFillColorDisabledBrush`
-/// (:325-336, :128 and :8), on or off.
-fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+/// (:325-336, :128 and :8), on or off; under high contrast
+/// `SystemColorGrayTextColorBrush` (:68), `hc`'s grey text.
+fn switch_label(
+    c: &SchemeColors,
+    hc: &HighContrast,
+    typography: &Typography,
+) -> RuleSet<TextStyle, TextProp> {
     let same = [
         RuleSelector::on(WidgetState::HOVER),
         RuleSelector::on(WidgetState::PRESSED),
@@ -3937,7 +3942,7 @@ fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle,
         .rules(same, [TextProp::Color(typography.body.color)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(c.disabled_text)],
+            [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
         )
         .build()
 }
