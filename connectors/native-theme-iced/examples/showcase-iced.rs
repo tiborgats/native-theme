@@ -15952,19 +15952,6 @@ fn outline_zero(
     why.join(", ")
 }
 
-/// The size of a switch's thumb while it is off, and the leaf it comes from:
-/// `switch.unchecked_thumb_diameter` where the theme states one, the on
-/// thumb's where not.
-fn off_thumb_size(s: &native_theme::theme::ResolvedSwitchTheme) -> String {
-    match s.unchecked_thumb_diameter {
-        Some(d) => format!("{d:.0}px, switch.unchecked_thumb_diameter"),
-        None => format!(
-            "{:.0}px, switch.thumb_diameter (switch.unchecked_thumb_diameter unstated)",
-            s.thumb_diameter
-        ),
-    }
-}
-
 /// The size rows of a switch's Widget Info as [`next_switch`] draws it on
 /// `r`, the installed 0.8.0 theme: the track, the thumb on and off and the
 /// label gap, each with the home it comes from. Where the connector cannot
@@ -16905,47 +16892,86 @@ fn menu_paints(state: &State) -> Vec<Paint> {
     )
 }
 
-/// The size of iced's toggler's thumb, on or off: the stated diameter, which
-/// `styles::toggler` gives it as its padding ratio where it fits the track,
-/// or iced's own ratio where it does not.
-fn toggler_thumb(s: &native_theme::theme::ResolvedSwitchTheme, is_toggled: bool) -> String {
-    let stated = if is_toggled {
-        format!("{:.0}px, switch.thumb_diameter", s.thumb_diameter)
-    } else {
-        off_thumb_size(s)
-    };
-    let (diameter, source) = match (is_toggled, s.unchecked_thumb_diameter) {
-        (false, Some(d)) => (d, "switch.unchecked_thumb_diameter"),
-        (false, None) => (
-            s.thumb_diameter,
-            "switch.thumb_diameter, switch.unchecked_thumb_diameter unstated",
-        ),
-        (true, _) => (s.thumb_diameter, "switch.thumb_diameter"),
-    };
-    if s.track_height > 0.0 && (0.0..=s.track_height).contains(&diameter) {
-        stated
-    } else {
-        format!(
-            "{diameter:.0}px ({source}) does not fit the {:.0}px track: iced's own padding ratio",
-            s.track_height
-        )
+/// The height iced's own Toggler is laid out at on the installed 0.8.0
+/// theme: `switch.track(NONE).min_size[1]` where stated and
+/// `iced_next::styles::toggler` gives the toggler its colours; else iced's
+/// own, `Toggler::DEFAULT_SIZE` (iced_widget 0.14.2 `src/toggler.rs`).
+fn next_toggler_size(r: &native_theme::next::ResolvedTheme) -> f32 {
+    let own = iced::widget::Toggler::<'static, Message>::DEFAULT_SIZE;
+    match iced_next::styles::toggler(r) {
+        Ok(_) => r.switch.track(WidgetState::NONE).min_size[1].unwrap_or(own),
+        Err(_) => own,
     }
+}
+
+/// The size rows of iced's own Toggler's Widget Info on `r`, the installed
+/// 0.8.0 theme, as [`next_toggler_size`] and `iced_next::styles::toggler`
+/// draw it: the corners, the track's height, and the thumb on and off,
+/// which iced insets by the style's padding ratio, the theme's where the
+/// thumb fits its track and iced's own where it does not; each with its
+/// home, or iced's own with what the theme lacks.
+fn next_toggler_rows(r: &native_theme::next::ResolvedTheme) -> [(&'static str, String); 4] {
+    let own = iced::widget::Toggler::<'static, Message>::DEFAULT_SIZE;
+    if let Err(unmapped) = iced_next::styles::toggler(r) {
+        let why = unmapped.to_string();
+        return [
+            ("border-radius", format!("iced's own toggler's: {why}")),
+            (
+                "track height",
+                format!("{own:.0}px, iced's own Toggler::DEFAULT_SIZE: {why}"),
+            ),
+            ("on thumb size", format!("iced's own toggler's: {why}")),
+            ("off thumb size", format!("iced's own toggler's: {why}")),
+        ];
+    }
+    let s = &r.switch;
+    let track = s.track(WidgetState::NONE);
+    let height = track.min_size[1];
+    let radius = match iced_next::radius_of(&track) {
+        Some(radius) => format!("{radius:.0}px, switch.track(NONE).corners"),
+        None => "iced's own, round ends: switch.track(NONE).corners unstated".to_owned(),
+    };
+    let size = match height {
+        Some(px) => format!("{px:.0}px, switch.track(NONE).min_size[1]"),
+        None => format!(
+            "{own:.0}px, iced's own Toggler::DEFAULT_SIZE: switch.track(NONE).min_size[1] \
+             unstated"
+        ),
+    };
+    let thumb = |state: WidgetState, home: &str| match (height, s.thumb(state).min_size[0]) {
+        (Some(track), Some(px)) if track > 0.0 && (0.0..=track).contains(&px) => {
+            format!("{px:.0}px, {home}")
+        }
+        (Some(track), Some(px)) => format!(
+            "{px:.0}px ({home}) does not fit the {track:.0}px track: iced's own padding ratio"
+        ),
+        _ => format!("iced's own padding ratio: {home} or switch.track(NONE).min_size[1] unstated"),
+    };
+    [
+        ("border-radius", radius),
+        ("track height", size),
+        (
+            "on thumb size",
+            thumb(WidgetState::CHECKED, "switch.thumb(CHECKED).min_size[0]"),
+        ),
+        (
+            "off thumb size",
+            thumb(WidgetState::NONE, "switch.thumb(NONE).min_size[0]"),
+        ),
+    ]
 }
 
 /// The Widget Info of the Selection page's iced Toggler.
 fn iced_toggler_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let sw = &resolved.switch;
-    let track_radius_s = format!("{:.0}px", sw.track_radius);
-    let track_height_s = format!("{:.0}px", sw.track_height);
+    let [radius, height, on, off] = next_toggler_rows(state.next_shown());
     widget_tooltip(
         "iced's Toggler",
         &toggler_paints(state),
         &[
-            ("border-radius", &track_radius_s),
-            ("track height", &track_height_s),
-            ("on thumb size", &toggler_thumb(sw, true)),
-            ("off thumb size", &toggler_thumb(sw, false)),
+            (radius.0, &radius.1),
+            (height.0, &height.1),
+            (on.0, &on.1),
+            (off.0, &off.1),
             (
                 "label",
                 format!(
@@ -17131,9 +17157,9 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     // the gap iced's toggler leaves where unstated. iced's own toggler stays
     // shown below it, so the widget iced offers is on show under the theme
     // too, its track twice its height. Their labels in `typography.body`
-    // (the model states no font for a switch); the toggler's size, whose
-    // `styles::toggler` padding ratio sizes its thumb, still the 0.7.2
-    // theme's.
+    // (the model states no font for a switch); the toggler
+    // [`next_toggler_size`] tall, its thumb inset by
+    // `iced_next::styles::toggler`'s padding ratio.
     let switch = hoverable(
         UnlistedKey::Switch,
         row![
@@ -17158,11 +17184,13 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         UnlistedKey::IcedToggler,
         toggler(state.toggler_enabled)
             .label("iced's Toggler")
-            .size(resolved.switch.track_height)
+            .size(next_toggler_size(next))
             .text_size(body.size_px)
             .text_line_height(iced::Pixels(next_line_box(typography, body)))
             .next_font(body, |toggler, font| toggler.font(font))
-            .style(styles::toggler(resolved))
+            .next_style(iced_next::styles::toggler(next), |toggler, style| {
+                toggler.style(style)
+            })
             .on_toggle(Message::TogglerToggled)
             .into(),
     );
@@ -36697,6 +36725,7 @@ mod tests {
         "segment_separator",
         "expander",
         "expander_frame",
+        "toggler",
     ];
 
     /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`] on the
@@ -36784,6 +36813,32 @@ mod tests {
         } else {
             Err(faults.join("\n"))
         }
+    }
+
+    /// iced's own Toggler on the Selection page is as tall as the installed
+    /// 0.8.0 theme's `switch.track(NONE).min_size[1]`, and its Widget Info
+    /// says so with the home.
+    #[test]
+    fn the_iced_toggler_takes_the_0_8_0_track_height() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.switch.rules]]\ntrack.min_size = [\"none\", 31.0]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Selection);
+        splice_next(&mut state, |r| r.apply_patch(&patch));
+        if state.current_resolved.switch.track_height == 31.0 {
+            return Err("the splice states 0.7.2's track height".into());
+        }
+        let next = state.next_shown();
+        if let Err(unmapped) = iced_next::styles::toggler(next) {
+            return Err(format!("the toggler is iced's own: {unmapped}"));
+        }
+        let size = next_toggler_size(next);
+        let [_, (_, height), _, _] = next_toggler_rows(next);
+        if size != 31.0 || height != "31px, switch.track(NONE).min_size[1]" {
+            return Err(format!("{size} tall, {height:?}"));
+        }
+        Ok(())
     }
 
     /// The expander header's pressed title is the theme's
@@ -37568,10 +37623,11 @@ mod tests {
     /// the Theme row installs, in both modes: its off thumb
     /// `switch.thumb(NONE).min_size[0]`, its on thumb
     /// `switch.thumb(CHECKED).min_size[0]`, or iced's own toggler where the
-    /// connector cannot draw it. iced's toggler, still on the 0.7.2 theme:
-    /// `switch.unchecked_thumb_diameter` where the theme states one (16
-    /// against material-3's 24), the on thumb's elsewhere, as its padding
-    /// ratio where it fits the track.
+    /// connector cannot draw it. iced's toggler, on the same theme:
+    /// `switch.thumb(NONE).min_size[0]` as its padding ratio where it fits
+    /// the track, `switch.track(NONE).min_size[1]`, iced's own ratio where
+    /// it does not, and iced's own toggler where the theme lacks a value
+    /// `iced_next::styles::toggler` needs.
     #[test]
     fn the_switch_infos_size_the_off_thumb_as_drawn() {
         let mut failures = Vec::new();
@@ -37613,42 +37669,31 @@ mod tests {
                         ));
                     }
                 }
-            }
-        }
-        let mut state = State {
-            accessibility: native_theme_iced::AccessibilityPreferences::default(),
-            ..State::default()
-        };
-        for preset in native_theme::theme::Theme::list_presets() {
-            for dark in [false, true] {
-                let choice = ThemeChoice::Preset(preset.key.to_owned());
-                state.current_choice = choice.clone();
-                state.is_dark = dark;
-                let loaded = state.load_theme(&choice, dark);
-                assert!(loaded.is_ok(), "{} (dark: {dark}): {loaded:?}", preset.key);
-                let s = state.current_resolved.switch.clone();
-                let off = s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter);
-                let leaf = match s.unchecked_thumb_diameter {
-                    Some(_) => "switch.unchecked_thumb_diameter",
-                    None => "switch.thumb_diameter",
-                };
-                let fits = s.track_height > 0.0 && (0.0..=s.track_height).contains(&off);
-                let infos = built_infos(&mut state);
+                let s = &r.switch;
+                let track = s.track(WidgetState::NONE).min_size[1];
+                let off = s.thumb(WidgetState::NONE).min_size[0];
+                let leaf = "switch.thumb(NONE).min_size[0]";
                 let title = "iced's Toggler";
                 let line = info_titled(&infos, title)
                     .and_then(|info| info.lines().find(|l| l.starts_with("  off thumb size: ")));
-                let holds = line.is_some_and(|l| {
-                    if fits {
-                        l.contains(&format!("{off:.0}px, {leaf}"))
-                    } else {
-                        l.contains(&format!("{off:.0}px ({leaf}"))
-                            && l.ends_with(" track: iced's own padding ratio")
-                    }
-                });
+                let holds =
+                    line.is_some_and(|l| match (iced_next::styles::toggler(&r), track, off) {
+                        (Err(unmapped), _, _) => l.ends_with(&format!(": {unmapped}")),
+                        (Ok(_), Some(track), Some(off))
+                            if track > 0.0 && (0.0..=track).contains(&off) =>
+                        {
+                            l.contains(&format!("{off:.0}px, {leaf}"))
+                        }
+                        (Ok(_), Some(_), Some(off)) => {
+                            l.contains(&format!("{off:.0}px ({leaf}"))
+                                && l.ends_with(" track: iced's own padding ratio")
+                        }
+                        (Ok(_), _, _) => l.contains("iced's own padding ratio"),
+                    });
                 if !holds {
                     failures.push(format!(
-                        "{} (dark: {dark}): {title}: {line:?}, drawn {off}px ({leaf})",
-                        preset.key
+                        "{preset} (dark: {dark}): {title}: {line:?}, drawn {off:?} ({leaf}) \
+                         on a {track:?} track"
                     ));
                 }
             }
