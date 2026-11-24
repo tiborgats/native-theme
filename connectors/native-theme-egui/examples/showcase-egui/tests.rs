@@ -13029,3 +13029,92 @@ fn the_page_tabs_hide_no_tab_behind_the_page_menu() -> Result<(), String> {
     );
     Ok(())
 }
+
+/// The Basic table's rows are painted, not recorded, so the "Table" record names what egui's
+/// own selectable row gives them, as each list row's record does (`RowLook::own_note`). Under
+/// each bundled preset leaving the Table variant's `list.highlight(SELECTED).stroke` unstated,
+/// the selected row is outlined as egui's own selected row is, in the List scope's resting
+/// widget line where it is visible (`Style::interact_selectable` keeps `bg_stroke`,
+/// `egui-0.37.0/src/style.rs`, and `Button::frame_when_inactive(selected)` draws the frame,
+/// `src/widgets/button.rs`), and the record names that stroke exactly then: not under adwaita,
+/// whose List scope's resting line is 0 wide, which `pages::basic::own_row` counts as no line.
+#[test]
+fn the_basic_tables_record_names_egui_own_row() -> Result<(), String> {
+    use crate::pages::basic::{OWN_ROW, TABLE_SELECTED};
+    use native_theme::next::{ListKind, ListQuery, ListVariant, PartStated, Preset, WidgetState};
+    let (mut own_stroke, mut own_none) = (false, false);
+    for preset in Preset::ALL.iter().map(|p| p.as_str()) {
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+        let lit = r
+            .list
+            .highlight(ListQuery::new(WidgetState::SELECTED).variant(ListKind {
+                variant: ListVariant::Table,
+                alternate: false,
+            }));
+        if lit.from_state.contains(PartStated::STROKE) {
+            continue;
+        }
+        let notes: Vec<String> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == "Table")
+            .flat_map(|r| r.info.not_themeable.iter())
+            .filter(|(what, _)| *what == OWN_ROW)
+            .map(|(_, note)| note.clone())
+            .collect();
+        let row = place_of(&harness, &format!("basic.table.row_{}", TABLE_SELECTED + 1));
+        let lines: Vec<egui::Stroke> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(s)
+                    if row.contains_rect(s.rect)
+                        && s.stroke.width > 0.0
+                        && s.stroke.color.a() > 0 =>
+                {
+                    Some(s.stroke)
+                }
+                _ => None,
+            })
+            .collect();
+        let atlas = native_theme_egui::ThemeAtlas::from_ctx(&harness.ctx)
+            .ok_or_else(|| format!("{preset}: no atlas installed"))?;
+        let mut scope = egui::Style::default();
+        atlas
+            .role_modifier(
+                egui::Theme::Light,
+                native_theme_egui::Role::List,
+                RoleVariant::Normal,
+            )
+            .apply(&mut scope);
+        let own = scope.visuals.widgets.inactive.bg_stroke;
+        let drawn = own.width > 0.0 && own.color.a() > 0;
+        assert_eq!(
+            lines,
+            if drawn { vec![own] } else { Vec::new() },
+            "{preset}: the selected table row's outline, egui's own selected row's line"
+        );
+        let named = notes.iter().any(|n| n.contains("stroke"));
+        own_stroke |= named;
+        assert_eq!(
+            named, drawn,
+            "{preset}: egui's own outline {own:?}, named in the Table record: {notes:?}"
+        );
+        own_none |= !drawn;
+    }
+    assert!(
+        own_stroke && own_none,
+        "no preset leaves the selected table row's stroke unstated under a List scope line \
+         egui draws ({own_stroke}) and one under a line it paints nothing of ({own_none}), so \
+         the test proves nothing"
+    );
+    Ok(())
+}

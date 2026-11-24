@@ -1913,7 +1913,8 @@ fn row_metrics(
 /// `selected` (egui-0.37.0 `src/style.rs`, `Style::interact_selectable`, as
 /// `src/theme/default_style.rs` lays them on a selected button); its frame, the fill and
 /// stroke, hidden at rest while not selected (`Button::frame_when_inactive(selected)`,
-/// `src/widgets/button.rs`). Its fill, stroke and text colour.
+/// `src/widgets/button.rs`). Its fill, stroke (none where egui paints nothing of it) and text
+/// colour.
 fn own_row(
     ui: &egui::Ui,
     selected: bool,
@@ -1930,7 +1931,13 @@ fn own_row(
     if !selected && std::ptr::eq(at, &widgets.inactive) {
         (None, egui::Stroke::NONE, v.text_color())
     } else {
-        (Some(v.weak_bg_fill), v.bg_stroke, v.text_color())
+        // a line egui paints nothing of (no width, or transparent) is no line
+        let line = if v.bg_stroke.width > 0.0 && v.bg_stroke.color.a() > 0 {
+            v.bg_stroke
+        } else {
+            egui::Stroke::NONE
+        };
+        (Some(v.weak_bg_fill), line, v.text_color())
     }
 }
 
@@ -2412,6 +2419,7 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     let r = atlas.next_shown(ui.ctx());
     let table = ListVariant::Table;
     let mut places: Vec<(String, egui::Rect)> = Vec::new();
+    let mut own_notes: Vec<String> = Vec::new();
     let frame_response = demo::scoped_container(
         reg,
         ui,
@@ -2506,6 +2514,11 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                             egui::vec2(inner, row_height),
                         );
                         let look = RowLook::of(ui, r, table, i == TABLE_SELECTED, None);
+                        if let Some(note) = look.own_note()
+                            && !own_notes.contains(&note)
+                        {
+                            own_notes.push(note);
+                        }
                         let last = i.saturating_add(1) == TABLE_ROWS.len();
                         // the row first, across the whole of it, then its highlight
                         if let Some(fill) = look.row {
@@ -2574,6 +2587,11 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                 .response
         },
     );
+    // The rows are painted, not recorded: the table's record names what egui's own row gives
+    // them, as each list row's does.
+    for note in &own_notes {
+        reg.note_last(OWN_ROW, note);
+    }
     reg.tag("basic.table.frame", &frame_response);
     for (id, rect) in places {
         reg.place(ui, &id, rect);
