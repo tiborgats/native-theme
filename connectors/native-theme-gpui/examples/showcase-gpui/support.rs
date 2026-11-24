@@ -24,14 +24,15 @@ use native_theme::icons::{
     FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
     SegoeFluentLoader, SfSymbolsLoader,
 };
-use native_theme::next::{Contrast, Palette, Preset};
+use native_theme::next::{Contrast, Palette, Preset, ThemeContext};
 use native_theme_gpui::icons::{IconUse, load_gpui_icon, mask_drawable};
 use native_theme_gpui::next::Mapped;
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme, Native};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme};
 use native_theme_showcase_support::rows;
 
 use crate::demo::{self, BodyRow, DataTableRow};
 use crate::info::InfoRegistry;
+use crate::info::buttons::ToolVariant;
 
 // ---------------------------------------------------------------------------
 // Sample content (Carousel slides, code editor, Markdown)
@@ -234,38 +235,16 @@ apply_system_theme(&system, cx);
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// The 0.7.2 theme the theme settings' choice resolves to, beside the 0.8.0
-/// theme it installed (`Showcase::apply_theme_by_name`), for the pages not
-/// yet on the 0.8.0 model: `cx.native()` gives no 0.7.2 theme once a 0.8.0
-/// one is installed (`native_theme_gpui::next::apply`). Under a palette, which
-/// the 0.7.2 model has no equivalent of, it is the preset alone, in the
-/// scheme the palette resolved the 0.8.0 theme to.
-pub(crate) struct OldModel {
-    pub(crate) resolved: native_theme::theme::ResolvedTheme,
-    /// The preferences the theme was installed with.
-    pub(crate) accessibility: AccessibilityPreferences,
-}
-
-impl gpui::Global for OldModel {}
-
 /// The 0.8.0 theme of the installed choice resolved for an inactive window
 /// (`ThemeContext::window_active` false), beside the one installed, for the
 /// views of an inactive window (`native_theme_gpui::next::geometry::title_bar_inactive`).
-pub(crate) struct NextInactive(
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups read it as they move to the 0.8.0 model"
-        )
-    )]
-    pub(crate) native_theme::next::ResolvedTheme,
-);
+pub(crate) struct NextInactive(pub(crate) native_theme::next::ResolvedTheme);
 
 impl gpui::Global for NextInactive {}
 
 /// What the installed 0.8.0 theme was asked for (`Showcase::try_install`):
-/// the preferences it was installed with -- the OS's with the user's over
+/// the context it was resolved in (`Showcase::next_context`) and the
+/// preferences that context was made with -- the OS's with the user's over
 /// them (`demo::PreferenceOverrides`) -- which the Preferences sheet and the
 /// status bar show, why the theme's contrast is lower than they ask, where
 /// it is, and the palette chosen that High contrast set aside, where it set
@@ -273,6 +252,7 @@ impl gpui::Global for NextInactive {}
 /// to (`NativeTheme::accessibility`), whose contrast level the theme may have
 /// lowered (docs/v0.8.0-spec.md §6, resolution step 1).
 pub(crate) struct Requested {
+    pub(crate) context: ThemeContext,
     pub(crate) preferences: AccessibilityPreferences,
     pub(crate) contrast_held: Option<ContrastHeld>,
     pub(crate) palette_set_aside: Option<&'static str>,
@@ -315,16 +295,20 @@ impl ContrastHeld {
     }
 }
 
-/// The accessibility preferences the installed theme was asked for: the
-/// 0.7.2 theme's own, where one is installed (`native_theme_gpui::apply`
-/// keeps them as given), else the installed 0.8.0 theme's ([`Requested`]);
-/// `None` before a theme was installed.
+/// The accessibility preferences the installed 0.8.0 theme was asked for
+/// ([`Requested`]); `None` before a theme was installed.
 pub(crate) fn requested_preferences(cx: &App) -> Option<AccessibilityPreferences> {
-    cx.native().map(|n| n.accessibility.clone()).or_else(|| {
-        cx.native_theme()?.next_resolved(cx)?;
-        cx.try_global::<Requested>()
-            .map(|requested| requested.preferences.clone())
-    })
+    cx.native_theme()?.next_resolved(cx)?;
+    cx.try_global::<Requested>()
+        .map(|requested| requested.preferences.clone())
+}
+
+/// The context the installed 0.8.0 theme was asked to be resolved in
+/// ([`Requested`]); `None` before a theme was installed.
+pub(crate) fn requested_context(cx: &App) -> Option<&ThemeContext> {
+    cx.native_theme()?.next_resolved(cx)?;
+    cx.try_global::<Requested>()
+        .map(|requested| &requested.context)
 }
 
 /// Why the installed 0.8.0 theme's contrast is lower than its preferences
@@ -356,75 +340,42 @@ pub(crate) fn palette_set_aside_text(palette: &str) -> String {
     )
 }
 
-/// What the pages still on the 0.7.2 model read where they read
-/// `cx.native()`: the 0.7.2 theme installed, where one is
-/// (`native_theme_gpui::apply`), else the 0.7.2 theme of the choice the
-/// installed 0.8.0 theme was built from ([`OldModel`]); `None` before a
-/// theme was installed.
-pub(crate) fn old_native(cx: &App) -> Option<Native<'_>> {
-    cx.native().or_else(|| {
-        let installed = cx.native_theme()?;
-        installed.next_resolved(cx)?;
-        cx.try_global::<OldModel>().map(|old| Native {
-            resolved: &old.resolved,
-            accessibility: &old.accessibility,
-        })
-    })
-}
-
-/// The 0.7.2 resolved theme of [`old_native`], which only the tests still
-/// read.
-#[cfg(test)]
-pub(crate) fn old_resolved(cx: &App) -> Option<&native_theme::theme::ResolvedTheme> {
-    old_native(cx).map(|n| n.resolved)
-}
-
-/// The geometry refinement a builder produces for the installed native theme,
-/// or `None` before `apply` ran (spec §9.1). Returns an owned value so the
-/// borrow of `cx` ends at once.
-pub(crate) fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
-    cx: &App,
-    build: F,
-) -> Option<StyleRefinement> {
-    old_native(cx).map(build)
-}
-
 /// The installed 0.8.0 theme for the styled theme's mode, or `None` before
 /// `native_theme_gpui::next::apply` ran.
 pub(crate) fn next_resolved(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
     cx.native_theme()?.next_resolved(cx)
 }
 
-/// `variants::toolbar_button` for the installed theme. That builder reads
-/// the theme through `cx.native()`, which gives no 0.7.2 theme once a 0.8.0
-/// one is installed (`native_theme_gpui::next::apply`), so under a 0.8.0
-/// theme the variant is built from it (`next::variants::toolbar_button`,
-/// which the connector parity holds to the 0.7.2 builder's); where that
-/// theme lacks a source the builder reads, or a 0.7.2 theme is installed,
-/// the 0.7.2 builder's.
-pub(crate) fn toolbar_variant(cx: &App) -> ButtonCustomVariant {
-    next_resolved(cx)
-        .and_then(|r| native_theme_gpui::next::variants::toolbar_button(r, cx).ok())
-        .unwrap_or_else(|| native_theme_gpui::variants::toolbar_button(cx))
+/// The tool buttons' variant for the installed 0.8.0 theme,
+/// `next::variants::toolbar_button`; where no theme is installed, or it
+/// states a home the builder reads in a form gpui cannot take,
+/// `variants::ghost_button`, the variant that builder starts from, with no
+/// state of the theme's over it. With it, what it is built from, which the
+/// tool button's info claims its colours by and which says the home lacked
+/// (`info::buttons::ToolVariant`).
+pub(crate) fn toolbar_variant(cx: &App) -> (ButtonCustomVariant, ToolVariant) {
+    match next_resolved(cx).map(|r| native_theme_gpui::next::variants::toolbar_button(r, cx)) {
+        Some(Ok(variant)) => (variant, ToolVariant::Toolbar),
+        Some(Err(unstated)) => (
+            native_theme_gpui::variants::ghost_button(cx),
+            ToolVariant::Ghost(Some(unstated)),
+        ),
+        None => (
+            native_theme_gpui::variants::ghost_button(cx),
+            ToolVariant::Ghost(None),
+        ),
+    }
 }
 
 /// The installed 0.8.0 theme resolved for an inactive window
 /// ([`NextInactive`]), or `None` before `native_theme_gpui::next::apply` ran.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 pub(crate) fn next_inactive(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
     next_resolved(cx)?;
     cx.try_global::<NextInactive>().map(|inactive| &inactive.0)
 }
 
-/// [`native_value`] on the 0.8.0 model: the value `build` gives for the
-/// installed 0.8.0 theme, or `None` before `native_theme_gpui::next::apply`
-/// ran.
+/// The value `build` gives for the installed 0.8.0 theme, or `None` before
+/// `native_theme_gpui::next::apply` ran.
 pub(crate) fn next_value<T, F: FnOnce(&native_theme::next::ResolvedTheme) -> T>(
     cx: &App,
     build: F,
@@ -443,7 +394,7 @@ pub(crate) fn next_metric(
     next_value(cx, build).and_then(Result::ok).flatten()
 }
 
-/// [`native_geometry`] on the 0.8.0 model: the refinement a builder of
+/// The refinement a builder of
 /// `native_theme_gpui::next::geometry` produces for the installed 0.8.0
 /// theme, or the source it lacks (`Unmapped`); `None` before
 /// `native_theme_gpui::next::apply` ran.
@@ -456,7 +407,7 @@ pub(crate) fn next_geometry<
     next_resolved(cx).map(build)
 }
 
-/// `native_color` on the 0.8.0 model: the colour `pick` gives for the
+/// The colour `pick` gives for the
 /// installed 0.8.0 theme, as gpui paints it; `None` before
 /// `native_theme_gpui::next::apply` ran, or where the theme states no such
 /// colour (`pick` gives `None`).
@@ -485,9 +436,9 @@ pub(crate) fn next_color<
 
 /// Applies a geometry refinement when one is available; the widget keeps
 /// upstream's geometry otherwise.
-/// `.native(cx, geometry::button)`: the builder's refinement when the native
-/// theme is installed, nothing otherwise. Called straight after the
-/// constructor, so any style the call site sets afterwards still wins.
+/// `.next_native(cx, next::geometry::button)`: the builder's refinement when
+/// the native theme is installed, nothing otherwise. Called straight after
+/// the constructor, so any style the call site sets afterwards still wins.
 ///
 /// Every widget in this showcase that has a `geometry` builder takes it, with
 /// three kinds of exception, each marked where it occurs: the "Button Sizes"
@@ -497,22 +448,11 @@ pub(crate) fn next_color<
 /// `DropdownButton` children still take `geometry::button_label` on their
 /// label; it is their frame the group manages.
 pub(crate) trait NativeStyled: Styled + Sized {
-    fn native(self, cx: &App, build: fn(Native<'_>) -> StyleRefinement) -> Self {
-        refined(self, native_geometry(cx, build).as_ref())
-    }
-
-    /// `.next_native(cx, next::geometry::button)`: [`native`](Self::native)
-    /// on the 0.8.0 model, the builder's refinement when a 0.8.0 theme is
+    /// `.next_native(cx, next::geometry::button)`: the builder's
+    /// refinement when a 0.8.0 theme is
     /// installed and states what the builder needs; nothing otherwise, so
     /// the widget keeps upstream's geometry where the theme states none
     /// (spec §10, rule 0).
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "every widget on the 0.8.0 model so far records the builder in its info, through next_native_value; the tests hold this one"
-        )
-    )]
     fn next_native(
         self,
         cx: &App,
@@ -550,11 +490,12 @@ pub(crate) trait NativeStyled: Styled + Sized {
 }
 impl<W: Styled> NativeStyled for W {}
 
-/// The line width of a frame the showcase draws: the platform's own, or the
-/// 1 px `border_1()` asks for where no native theme is installed yet. The
-/// fallback is gpui's own width, never a theme value.
+/// The line width of a frame the showcase draws: the installed 0.8.0
+/// theme's `layout.border_width`, or the 1 px `border_1()` asks for where no
+/// native theme is installed yet. The fallback is gpui's own width, never a
+/// theme value.
 pub(crate) fn demo_border_width(cx: &App) -> Pixels {
-    native_value(cx, |n| px(n.resolved.defaults.border.line_width)).unwrap_or(px(1.0))
+    next_value(cx, |r| px(r.layout.border_width)).unwrap_or(px(1.0))
 }
 
 /// Hand the images a cache is about to replace back to gpui.
@@ -588,26 +529,6 @@ pub(crate) fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> 
     }
 }
 
-/// The value a size or length builder gives for the installed native theme,
-/// or `None` before `apply` ran (spec §9.3, §9.4).
-pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) -> Option<T> {
-    old_native(cx).map(build)
-}
-
-/// A colour of the installed native theme, as gpui paints it, or `None`
-/// before `apply` ran: for a widget whose own setter or refinement takes a
-/// colour the connector's tokens do not carry. Only the tests still read it.
-#[cfg(test)]
-pub(crate) fn native_color<F: FnOnce(Native<'_>) -> native_theme::color::Rgba>(
-    cx: &App,
-    pick: F,
-) -> Option<gpui::Hsla> {
-    native_value(cx, pick).map(|color| {
-        let [r, g, b, a] = color.to_f32_array();
-        gpui::Hsla::from(gpui::Rgba { r, g, b, a })
-    })
-}
-
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
 /// wherever the platform specifies nothing (platform-facts §2.20). Where it
 /// is `None` no gap is set, so none is drawn: nothing native is known to
@@ -626,8 +547,10 @@ pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
 /// root the caller sizes, a scroll area filling it, the content at least the
 /// area's height, the scrollbar laid over the root; this one leaves out the root's flex
 /// column, :203-207, and the `gpui_base::ScrollBounce` 0.9.1 wraps the area in, :209-215),
-/// on the application's own `handle`, so the content keeps `geometry::scrollbar_gutter`'s strip
-/// free only while it overflows the area. gpui-base hides the bar while the
+/// on the application's own `handle`, so the content keeps `next::geometry::scrollbar_gutter`'s
+/// strip of the installed 0.8.0 theme free only while it overflows the area;
+/// none where the theme states no scroll bar the builder can take, as
+/// upstream's `Scrollable` keeps none (spec §10, rule 0). gpui-base hides the bar while the
 /// content fits (gpui-base src/scrollbar.rs:1421-1424), and the platform's
 /// bar then takes no room either. The strip follows the last layout's
 /// overflow; a frame whose layout changes it calls `relayout`, which asks
@@ -644,7 +567,7 @@ pub(crate) fn gutter_scroll(
     let overflows = |h: &gpui::ScrollHandle| h.max_offset().y > px(0.);
     let reserved = overflows(handle);
     let content = if reserved {
-        content.native(cx, native_theme_gpui::geometry::scrollbar_gutter)
+        content.next_native(cx, native_theme_gpui::next::geometry::scrollbar_gutter)
     } else {
         content
     };
@@ -750,12 +673,12 @@ pub(crate) fn is_system_set(set: IconSet) -> bool {
     )
 }
 
-/// The desktop's own theme, read: `SystemTheme::from_system`, which
+/// The desktop's settings, read: `next::Theme::from_system`, which
 /// `default` installs. Counted in the self-tests (`SYSTEM_READS`).
-pub(crate) fn read_system_theme() -> native_theme::Result<native_theme::SystemTheme> {
+pub(crate) fn read_system_theme() -> native_theme::next::Result<native_theme::next::Theme> {
     #[cfg(test)]
     SYSTEM_READS.with(|reads| reads.set(reads.get().saturating_add(1)));
-    native_theme::SystemTheme::from_system()
+    native_theme::next::Theme::from_system()
 }
 
 #[cfg(test)]
@@ -1218,7 +1141,7 @@ pub(crate) struct DialogIcons {
 /// anew for every frame, from a builder that cannot borrow the view (root.rs,
 /// `WindowState::dialog_layer`), so
 /// this is how a dialog shows the icon theme installed now, not the one it
-/// opened under. `Showcase::overlay_gap` does the same for the gap.
+/// opened under.
 #[derive(Clone, Default)]
 pub(crate) struct SharedDialogIcons(Rc<Cell<Option<Rc<DialogIcons>>>>);
 

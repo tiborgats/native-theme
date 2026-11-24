@@ -711,23 +711,20 @@ and each crate-root accessor has a twin there. Where egui has a receiver,
 listed here, and a value the theme leaves unstated is egui's own
 (docs/v0.8.0-spec.md §10, rule 0).
 
-- **The focus ring's kind and alignment.** The install plugin strokes one
-  ring round the focused widget's rect, outside it at the ring's offset
-  (src/plugin.rs, `paint_focus_ring`; `Painter::rect_stroke` with
+- **The focus ring's kind.** The install plugin strokes one ring round
+  the focused widget's rect grown by the ring's offset, outward from that
+  line (src/plugin.rs, `paint_focus_ring`; `Painter::rect_stroke` with
   `StrokeKind::Outside`, `egui-0.37.0/src/painter.rs`), in
   `focus_ring.stroke`'s colour and width, shown as `focus_ring.trigger`
-  says. Its corners are the widget's grown by the offset, or the ring's own
-  outer corners where the theme states `focus_ring.corners`; a second ring
-  inside the first is drawn where it states `inner_stroke` (a second
-  `rect_stroke`, `StrokeKind::Inside`). The stroke's alignment is not
-  drawn: every bundled preset states its ring with `Stroke::uniform`, whose
-  alignment is `Inside` by construction, while the presets describe a ring
-  outside the part at the offset, so the ring lies outside at the offset
-  whatever the alignment says. A `kind` of `Fill` or `Underline` is no
-  ring: `next::to_theme` returns `Unmapped("focus_ring.kind")` for it; a
-  second ring stated per side is `Unmapped`, and so are concentric
-  corners, which need the container's radius. A ring stated per side is
-  no ring, with no error and no note.
+  says; a second ring is drawn inward from the same line where the theme
+  states `inner_stroke` (a second `rect_stroke`, `StrokeKind::Inside`), as
+  the model places a ring (spec §2, `FocusIndicator`). The line's corners
+  are the widget's grown by the offset, or `focus_ring.corners` where the
+  theme states them; each ring's far edge is concentric. A `kind` of
+  `Fill` or `Underline` is no ring: `next::to_theme` returns
+  `Unmapped("focus_ring.kind")` for it; a second ring stated per side is
+  `Unmapped`, and so are concentric corners, which need the container's
+  radius. A ring stated per side is no ring, with no error and no note.
 - **A part's own focus ring.** Where the part a role's cell reads its fill
   and stroke from states a ring of its own (`PartStyle.focus`, spec §2
   `FocusIndicator`), the plugin strokes that ring in place of
@@ -776,13 +773,19 @@ listed here, and a value the theme leaves unstated is egui's own
   and the atlas rounds each part by one radius (`next::radius_of`). A
   continuous corner (`CornerCurve::Continuous`, Apple's) is drawn as the
   circular corner of the stated radius (docs/v0.8.0-spec.md §10, rule 2),
-  per-corner radii that are one as that radius, and a pill as 255, which
-  epaint clamps to half the rect's shorter side (`epaint-0.37.0`
-  `src/rounded_rect.rs`, `RoundedRect::new`). Where the theme states a
+  and Widget Info marks its value `(drawn circular)`; per-corner radii
+  that are one are drawn as that radius, and a pill as 255, which epaint
+  clamps to half the rect's shorter side (`epaint-0.37.0`
+  `src/rounded_rect.rs`, `RoundedRect::new`), so a part whose shorter side
+  passes 510 points is rounded by 255 only. Where the theme states a
   part's radii per corner and they differ, or states them concentric with
   a container, the part keeps egui's own radius, and the atlas (and
   `next::text_area_frame`, for the multi-line field) reports it as a
-  `Note::Unmapped` at the corners' home.
+  `Note::Unmapped` at the corners' home. Per-corner radii that differ are
+  a limit of this connector, not of egui, whose `CornerRadius` holds one
+  radius per corner: the atlas carries one radius per part (one `f32`). A
+  concentric radius is the container's radius less an inset, which the
+  atlas does not know.
 - **Shadows beyond one outset layer.** egui's `Shadow` is one outset
   shadow: an offset in whole points (`[i8; 2]`), a blur and a spread in
   whole points (`u8`), and a colour (`epaint-0.37.0/src/shadow.rs`), one

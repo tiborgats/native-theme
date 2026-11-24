@@ -137,7 +137,9 @@
 # docs/v0.8.0-spec.md §2), the query's value marked as stated at rest, `<value> (stated at rest)`
 # (a statement about the theme; what a toolkit draws there is the route line's business);
 # the stated form's text where the property is stated in a shape the path does not address
-# (`stroke` "none", a per-side stroke), never "not stated" there; an error for an unknown name.
+# (`stroke` "none", a per-side stroke), never "not stated" there; rounded corners whose curve is
+# continuous as their radius marked `<value> (drawn circular)`, the three toolkits' corner being
+# circular (docs/v0.8.0-spec.md §10, rule 2); an error for an unknown name.
 # Units from the property's kind (a small table for globals and metrics).
 #
 # ---------------------------------------------------------------------------------------------
@@ -304,7 +306,7 @@ name = "Menu item"
 parent = "chrome.menu.theme"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 # homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
-homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(PRESSED).fill", "menu.item_label(PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -325,7 +327,7 @@ name = "Menu item"
 parent = "chrome.menu.theme.separator_1"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 # homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
-homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(PRESSED).fill", "menu.item_label(PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -336,7 +338,7 @@ name = "Menu item"
 parent = "chrome.menu.theme.system"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 # homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
-homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(PRESSED).fill", "menu.item_label(PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -347,7 +349,7 @@ name = "Menu item"
 parent = "chrome.menu.theme.light"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 # homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
-homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(PRESSED).fill", "menu.item_label(PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -368,7 +370,7 @@ name = "Menu item"
 parent = "chrome.menu.theme.separator_2"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.min_row_height_px", "menu.icon_text_gap_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.active_background", "menu.active_text_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 # homes: menu.border.corner_radius_px: also material-3's menu.panel(NONE).corners (homes_by_preset).
-homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(HOVER|PRESSED).fill", "menu.item_label(HOVER|PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
+homes = ["menu.item_label(NONE)", "menu.item_label(NONE).color", "menu.item(NONE).max_size[1]", "menu.item(NONE).min_size[1]", "menu.icon_text_gap", "menu.item(HOVER).fill", "menu.item_label(HOVER).color", "menu.item(HOVER).stroke.color", "menu.item(PRESSED).fill", "menu.item_label(PRESSED).color", "menu.item(NONE).corners", "menu.panel(NONE).corners", "menu.item(NONE).padding.top", "menu.item(NONE).padding.right", "menu.item(NONE).padding.bottom", "menu.item(NONE).padding.left", "typography.line_height_multiplier", "layout.border_width"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { text = { glyph = [0.0, 0.0, 0.5, 1.0] } }

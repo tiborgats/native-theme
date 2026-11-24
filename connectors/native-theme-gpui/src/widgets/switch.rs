@@ -181,9 +181,9 @@ impl SwitchLook {
     /// The look of a switch of a 0.8.0 theme, `checked` or not, `disabled` or
     /// not, each field read at its home: the track and the thumb at the
     /// switch's state (`switch.track` and `switch.thumb` at `CHECKED` where
-    /// checked and `DISABLED` where disabled, where a theme without a rule
-    /// for a disabled state gives the enabled part, the disabled colour's
-    /// `None`), the hovered track's fill where a rule states it, the track's
+    /// checked and `DISABLED` where disabled; a track with no fill ruled for
+    /// `DISABLED` is gpui-component's own disabled one, the enabled one at half
+    /// its alpha), the hovered track's fill where a rule states it, the track's
     /// and the thumb's strokes (the colour at the state, the width at rest; no
     /// stroke is no outline), the track's minimum size and corners, the
     /// thumb's minimum width at the checked state, the label's colour
@@ -257,8 +257,8 @@ impl SwitchLook {
             Self::from_reads(
                 &SwitchReads {
                     base,
-                    track: fill(
-                        &s.track(state),
+                    track: track_at(
+                        (s, state, base),
                         at([
                             "switch.track(NONE).fill",
                             "switch.track(CHECKED).fill",
@@ -498,6 +498,48 @@ fn next_label(
     Ok((colour, home))
 }
 
+/// The alpha gpui-component draws a disabled switch's track at, the enabled
+/// track's, checked or not (gpui-component 0.10.0 switch.rs:192, :285): what
+/// a 0.8.0 theme's disabled track is where no rule states its fill for
+/// `DISABLED` (spec §10, rule 0).
+pub(super) const DISABLED_TRACK_ALPHA: f32 = 0.5;
+
+/// The track's fill of the switch `s` at `state`, its home `home`, `base` the
+/// enabled track at the switch's checked state: disabled, where no rule
+/// states the track's fill for `DISABLED`, gpui-component's own disabled
+/// track, `base` at [`DISABLED_TRACK_ALPHA`]; else the fill at `state`.
+fn track_at(
+    (s, state, base): (
+        &native_theme::next::SwitchWidget,
+        native_theme::next::WidgetState,
+        Hsla,
+    ),
+    home: &'static str,
+) -> Mapped<Hsla> {
+    use native_theme::next::{PartStated, WidgetState};
+    let ruled = s
+        .track(WidgetState::DISABLED)
+        .from_state
+        .contains(PartStated::FILL);
+    if state.contains(WidgetState::DISABLED) && !ruled {
+        return Ok(base.opacity(DISABLED_TRACK_ALPHA));
+    }
+    fill(&s.track(state), home)
+}
+
+impl SwitchLook {
+    /// Where a 0.8.0 theme states that the track shows on and off glyphs
+    /// (`switch.show_state_glyphs`, spec §5), its home: [`Switch`] draws none,
+    /// as gpui-component's switch draws none (gpui-component 0.10.0
+    /// switch.rs, `Switch::render`), and the model states no glyph to draw;
+    /// `None` where the theme states none or states that the track shows
+    /// none.
+    #[must_use]
+    pub fn next_glyphs_unmapped(r: &native_theme::next::ResolvedTheme) -> Option<Unmapped> {
+        (r.switch.show_state_glyphs == Some(true)).then_some(Unmapped("switch.show_state_glyphs"))
+    }
+}
+
 /// The font a switch of a 0.8.0 theme letters its label in, each property
 /// where `switch.label(NONE)` states it, else gpui-component's own (spec
 /// §10, rule 0): its switch's label sets no family, weight or slant, so
@@ -643,7 +685,12 @@ fn outline_width(part: &native_theme::next::PartStyle, home: &'static str) -> Ma
 /// (`LayoutDirection::global`), the right in a right-to-left layout, as
 /// gpui-component's switch is (gpui-component 0.10.0 switch.rs, `label_side`
 /// and `inset_s`): the label after the track, and the thumb off at the
-/// track's start end and on at its far end.
+/// track's start end and on at its far end. A 0.8.0 theme places the label
+/// before the track where `switch.label_side` says leading, and at the far
+/// end of a row laid out wider than its content where
+/// `switch.label_gap_stretches` says so; the state glyphs
+/// `switch.show_state_glyphs` asks for are not drawn
+/// ([`SwitchLook::next_glyphs_unmapped`]).
 ///
 /// Controlled: [`Switch::on_change`] receives the requested value. Its
 /// `Styled` style refines the row, after the widget's own: the row's layout,
@@ -816,12 +863,24 @@ impl Switch {
             }),
             ThemeSource::Next(r) => SwitchLabelFont::next_of(r).ok().map(|font| font.text()),
         };
+        // Where a 0.8.0 theme places the label (spec §5, the switch's
+        // label): before the track where `switch.label_side` says leading,
+        // else after it, gpui-component's own side (gpui-component 0.10.0
+        // switch.rs, `label_side`, `Side::Right`); at the two ends of a row
+        // laid out wider than its content where `switch.label_gap_stretches`
+        // says so, else together at the gap, as gpui-component keeps them.
+        let (leading, stretches) = match theme {
+            ThemeSource::Old(_) => (false, false),
+            ThemeSource::Next(r) => (
+                r.switch.label_side == Some(native_theme::next::LabelSide::Leading),
+                r.switch.label_gap_stretches == Some(true),
+            ),
+        };
         let (Some(look), Some(ground), Some(text)) = (looks, ground, text) else {
             return Err(Box::new(self));
         };
         let look = look.faded_over(ground);
         let observer = self.observer.as_ref();
-        let keyboard_only = theme.keyboard_only();
         let thumb_left = spring(
             (self.id.clone(), "thumb"),
             look.thumb_left(checked),
@@ -836,14 +895,27 @@ impl Switch {
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
             .read(cx)
             .clone();
-        let focused = super::ring_shows(
+        let seen = super::focus_seen(
             (self.id.clone(), "focus-visible"),
             focus_handle.is_focused(window),
-            keyboard_only,
             window,
             cx,
         );
-        let track = self.track(&look, focused, thumb_left, window, cx);
+        // The track's own ring where the theme states one, else the global
+        // ring, round the track.
+        let at = super::checked_disabled(checked, disabled);
+        let ring = seen
+            .filter(|_| !self.disabled && self.focus_ring)
+            .and_then(|by_key| {
+                // Read again: the keyed states took `cx` mutably.
+                ThemeSource::of(cx)?.ring(
+                    by_key,
+                    super::OwnTrigger::AnyFocus,
+                    move |r, focus| r.switch.track(focus | at),
+                    super::RingHomes::SWITCH,
+                )
+            });
+        let track = self.track(&look, ring, thumb_left, window, cx);
         Ok(BaseSwitch::new(self.id)
             .checked(checked)
             .disabled(self.disabled)
@@ -865,39 +937,41 @@ impl Switch {
                 Some(gap) => row.gap(gap),
                 None => row.gap(LABEL_GAP),
             })
+            .when(stretches, |row| row.justify_between())
             .opacity(look.opacity)
             // The caller's style, refined onto the row after the widget's
             // own, as gpui-component refines its checkbox's (checkbox.rs:294);
             // its switch refines it onto a box round the row (switch.rs:228).
             .refine_style(&self.style)
-            .child(track)
-            .when_some(self.label, |switch, label| {
-                switch.child(
+            .map(|row| {
+                let label = self.label.map(|label| {
                     text.text_color(look.label)
                         .debug_selector(|| "native-switch-label".into())
                         .child(label)
-                        .children(observer.map(|o| part_bounds(Part::Label, o, px(0.)))),
-                )
+                        .children(observer.map(|o| part_bounds(Part::Label, o, px(0.))))
+                });
+                if leading {
+                    row.children(label).child(track)
+                } else {
+                    row.child(track).children(label)
+                }
             }))
     }
 }
 
 impl Switch {
-    /// The track in `look`, its thumb `thumb_left` from its start edge; while
-    /// `focused` (a focus the theme rings, `ring_shows`), enabled, and told to
-    /// (`focus_ring`), it draws the focus ring.
+    /// The track in `look`, its thumb `thumb_left` from its start edge, and
+    /// `ring` over it: the focus ring, while focused (a focus the theme
+    /// rings, `ThemeSource::ring`), enabled, and told to (`focus_ring`).
     pub(super) fn track(
         &self,
         look: &SwitchLook,
-        focused: bool,
+        ring: Option<super::FocusRing>,
         thumb_left: Pixels,
         window: &Window,
         cx: &App,
     ) -> SwitchTrack {
         let observer = self.observer.as_ref();
-        let ring = (focused && !self.disabled && self.focus_ring)
-            .then(|| ThemeSource::of(cx).and_then(ThemeSource::focus_ring))
-            .flatten();
         SwitchTrack::new((self.id.clone(), "track"))
             .checked(self.checked)
             .disabled(self.disabled)

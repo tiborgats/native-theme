@@ -476,6 +476,16 @@ fn font_family_replaces_the_ui_family_wherever_it_stands() -> Result<(), String>
 }
 
 #[test]
+fn a_typography_slot_is_drawn_in_the_patched_ui_family() -> Result<(), String> {
+    let theme = patched([ThemePatch::new().font_family("Patch Sans")]);
+    let t = &theme.typography;
+    let caption = t.caption.as_ref().ok_or("kde-breeze states a caption")?;
+    assert!(!caption.stated.contains(TextStated::FAMILY));
+    assert_eq!(&*t.over_body(Some(caption)).family, "Patch Sans");
+    Ok(())
+}
+
+#[test]
 fn monospace_family_replaces_only_the_monospace_family() {
     let base = breeze();
     let theme = patched([ThemePatch::new().monospace_family("Patch Mono")]);

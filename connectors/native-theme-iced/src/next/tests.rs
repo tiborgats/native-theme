@@ -170,7 +170,8 @@ fn a_stated_width_class_is_the_fonts_stretch() -> TestResult {
 }
 
 /// A ring with a stated inner stroke draws a second ring inside the first,
-/// concentric with it; stated corners are the ring's outer corners, and
+/// concentric with it; stated corners are those of the line the offset
+/// places, between the two rings, the outer edge grown by the width, and
 /// where none are stated the ring is concentric with the field's.
 #[cfg(feature = "widgets")]
 #[test]
@@ -194,12 +195,19 @@ fn a_stated_inner_stroke_and_corners_are_drawn_on_the_ring() -> TestResult {
         assert_eq!(ring.bounds, field.expand(Padding::new(3.0)), "{preset:?}");
         assert_eq!(ring.border.color, super::to_color(OUTER), "{preset:?}");
         assert_eq!(ring.border.width, 2.0, "{preset:?}");
-        assert_eq!(ring.border.radius, Radius::from(9.0), "{preset:?}");
+        assert_eq!(ring.border.radius, Radius::from(11.0), "{preset:?}");
         let (inner, _) = look.inner_quad(field).ok_or("the inner ring's quad")?;
         assert_eq!(inner.bounds, field.expand(Padding::new(1.0)), "{preset:?}");
         assert_eq!(inner.border.color, super::to_color(INNER), "{preset:?}");
         assert_eq!(inner.border.width, 1.0, "{preset:?}");
-        assert_eq!(inner.border.radius, Radius::from(7.0), "{preset:?}");
+        assert_eq!(inner.border.radius, Radius::from(9.0), "{preset:?}");
+
+        r.focus_ring.corners = Some(Corners::continuous(4.0));
+        let look = super::ring_look(&r, 4.0)?.ok_or("a ring")?;
+        let (ring, _) = look.quad(field).ok_or("the ring's quad")?;
+        assert_eq!(ring.border.radius, Radius::from(6.0), "{preset:?}");
+        let (inner, _) = look.inner_quad(field).ok_or("the inner ring's quad")?;
+        assert_eq!(inner.border.radius, Radius::from(4.0), "{preset:?}");
 
         r.focus_ring.corners = None;
         let look = super::ring_look(&r, 4.0)?.ok_or("a ring")?;
@@ -216,12 +224,13 @@ fn a_stated_inner_stroke_and_corners_are_drawn_on_the_ring() -> TestResult {
 }
 
 /// A focus indicator iced's ring cannot draw is [`Unmapped`]: a fill or an
-/// underline, an inner stroke per side, squircle corners.
+/// underline, an inner stroke per side, concentric corners; continuous
+/// corners are drawn circular (spec §10, rule 2).
 #[cfg(feature = "widgets")]
 #[test]
 fn a_focus_indicator_iced_cannot_draw_is_unmapped() -> TestResult {
     use native_theme::next::{
-        Corners, FocusIndicator, FocusKind, Paint, Stroke, StrokeAlign, StrokeSide,
+        CornerRadius, Corners, FocusIndicator, FocusKind, Paint, Stroke, StrokeAlign, StrokeSide,
     };
 
     let ring = || {
@@ -261,11 +270,90 @@ fn a_focus_indicator_iced_cannot_draw_is_unmapped() -> TestResult {
         r.focus_ring = ring();
         r.focus_ring.corners = Some(Corners::continuous(4.0));
         assert_eq!(
+            super::ring_look(&r, 4.0)?.and_then(|look| look.corners),
+            Some(iced_core::border::Radius::from(4.0)),
+            "{preset:?}"
+        );
+        r.focus_ring.corners = Some(Corners {
+            radius: CornerRadius::Concentric {
+                inset: 2.0,
+                min_radius: 1.0,
+            },
+            ..Corners::default()
+        });
+        assert_eq!(
             super::ring_look(&r, 4.0).err(),
             Some(Unmapped("focus_ring.corners")),
             "{preset:?}"
         );
     }
+    Ok(())
+}
+
+/// Each form of a stated radius as the one-radius read and the per-corner
+/// read take it: a continuous curve drawn as the circular corner of its
+/// radius (spec §10, rule 2), a pill as the radius iced clamps to half the
+/// shorter side, per-corner radii corner by corner, and as one radius only
+/// where the four are one; a concentric radius, which needs the container's,
+/// in neither.
+#[cfg(feature = "widgets")]
+#[test]
+fn every_radius_form_is_read_as_iced_rounds_it() -> TestResult {
+    use iced_core::border::Radius;
+    use native_theme::next::{CornerRadius, Corners, PartStated, PartStyle};
+
+    use super::borders::part_radii;
+
+    let part = |corners: Corners| {
+        let mut part = PartStyle::default();
+        part.corners = corners;
+        part.stated |= PartStated::CORNERS;
+        part
+    };
+    let per_corner = |top_left, top_right, bottom_right, bottom_left| Corners {
+        radius: CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        },
+        ..Corners::default()
+    };
+    let continuous = part(Corners::continuous(4.0));
+    assert_eq!(super::radius_of(&continuous), Some(4.0));
+    assert_eq!(part_radii(&continuous, "h")?, Radius::from(4.0));
+    let pill = part(Corners::pill());
+    assert_eq!(
+        super::radius_of(&pill),
+        Some(crate::styles::pill().top_left)
+    );
+    assert_eq!(part_radii(&pill, "h")?, crate::styles::pill());
+    let same = part(per_corner(3.0, 3.0, 3.0, 3.0));
+    assert_eq!(super::radius_of(&same), Some(3.0));
+    let differ = part(per_corner(1.0, 2.0, 3.0, 4.0));
+    assert_eq!(super::radius_of(&differ), None);
+    assert_eq!(
+        part_radii(&differ, "h")?,
+        Radius {
+            top_left: 1.0,
+            top_right: 2.0,
+            bottom_right: 3.0,
+            bottom_left: 4.0,
+        }
+    );
+    let concentric = part(Corners {
+        radius: CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        },
+        ..Corners::default()
+    });
+    assert_eq!(super::radius_of(&concentric), None);
+    assert_eq!(part_radii(&concentric, "h").err(), Some(Unmapped("h")));
+    assert_eq!(
+        part_radii(&PartStyle::default(), "h").err(),
+        Some(Unmapped("h"))
+    );
     Ok(())
 }
 

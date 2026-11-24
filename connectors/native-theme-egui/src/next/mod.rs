@@ -513,10 +513,10 @@ pub fn focus_ring_offset(r: &ResolvedTheme) -> f32 {
 // Typography
 // ---------------------------------------------------------------------------
 
-/// The typography's style of `role`, or the body's where the theme defines
-/// no such style (the table of homes, rows `text_scale.*`,
-/// `home_fallback`).
-fn text_role_style(r: &ResolvedTheme, role: TextRole) -> &TextStyle {
+/// The typography's style of `role` laid over the body
+/// (`Typography::over_body`), or the body's where the theme defines no such
+/// style (the table of homes, rows `text_scale.*`, `home_fallback`).
+fn text_role_style(r: &ResolvedTheme, role: TextRole) -> TextStyle {
     let t = &r.typography;
     let style = match role {
         TextRole::Caption => &t.caption,
@@ -524,7 +524,7 @@ fn text_role_style(r: &ResolvedTheme, role: TextRole) -> &TextStyle {
         TextRole::DialogTitle => &t.title1,
         TextRole::Display => &t.display,
     };
-    style.as_ref().unwrap_or(&t.body)
+    t.over_body(style.as_ref())
 }
 
 /// The egui text style whose stock size stands in for a degenerate size of

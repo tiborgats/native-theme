@@ -222,8 +222,9 @@ fn drop_shadow(part: &PartStyle, home: &'static str) -> Option<DropShadow> {
 
 /// [`BaseSource`] of the 0.8.0 model. The scroll bar's thumb at rest is the handle of a view
 /// without the focus, where 0.7.2's `scrollbar.thumb_color` lives on kde-breeze; a theme with
-/// no rule for that state returns its plain thumb there. A caption or headline style the
-/// typography does not define is the body's (the table's `home_fallback`).
+/// no rule for that state returns its plain thumb there. A caption or headline style is laid
+/// over the body (`Typography::over_body`); one the typography does not define is the body's
+/// (the table's `home_fallback`).
 pub(crate) fn base_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> BaseSource {
     let c = &r.colors;
     let t = &r.typography;
@@ -237,14 +238,14 @@ pub(crate) fn base_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> BaseSourc
     BaseSource {
         sizes: [
             size(
-                t.caption.as_ref().unwrap_or(&t.body),
+                &t.over_body(t.caption.as_ref()),
                 "typography.caption.size_px",
             ),
             size(&t.body, "typography.body.size_px"),
             size(&t.monospace, "typography.monospace.size_px"),
             size(&b.label(WidgetState::NONE), "button.label(NONE).size_px"),
             size(
-                t.headline.as_ref().unwrap_or(&t.body),
+                &t.over_body(t.headline.as_ref()),
                 "typography.headline.size_px",
             ),
         ],
@@ -1522,17 +1523,17 @@ fn part_ring_sources(r: &ResolvedTheme, notes: &mut Vec<Note>) -> crate::style::
 /// [`FocusRingSource`] of the 0.8.0 model: the ring's stroke where it is one stroke of one
 /// colour (a stroke stated as none is a zero width, no ring; a per-side one gives no ring, as
 /// [`super::focus_ring_width`] cannot map it), its offset, its trigger, the second ring inside
-/// it (`inner_stroke`) and its outer corners (`corners`) where the theme states them. The
-/// plugin strokes the ring outside the widget's edge grown by the offset, whatever alignment
-/// the stroke states (README, what egui cannot draw).
+/// it (`inner_stroke`) and the corners of the line the offset places (`corners`) where the
+/// theme states them. The plugin strokes the ring outward from the widget's edge grown by the
+/// offset and the second ring inward from it (spec §2, `FocusIndicator`); a continuous curve
+/// is drawn as the circular corner of its radius (spec §10, rule 2).
 ///
 /// # Errors
 ///
 /// [`Unmapped`] `focus_ring.kind` where the indicator is not a ring (a fill, an underline),
 /// which the plugin's ring cannot draw, `focus_ring.inner_stroke` where the second ring is
 /// stated per side, and `focus_ring.corners` where the corners are concentric, which needs
-/// the container's radius; a continuous curve is drawn as the circular corner of its radius
-/// (spec §10, rule 2).
+/// the container's radius.
 pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
     indicator_source(&r.focus_ring, &GLOBAL_RING)
 }

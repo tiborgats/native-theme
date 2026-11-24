@@ -603,6 +603,14 @@ and `Select` (an open combo box's fill and frame: it shows `ring` while
 open). The showcase draws the first four with its own elements; the
 `widgets` module's `Slider` draws the thumb's outline.
 
+A pressed button's border: the bordered, default and toolbar variants are
+custom variants, and a custom variant has one border colour for hover and
+press (gpui-component 0.10.0 `button/button.rs:1134`, `border_color`'s
+`Custom` arm). A pressed bordered or default button keeps
+`button.body(HOVER).stroke.color`, and a pressed tool button
+`toolbar.button(HOVER).stroke.color`; a `PRESSED` stroke the theme states
+apart from its hover one is not drawn.
+
 ## Theme-drawn widgets
 
 With the `widgets` feature (on by default), `native_theme_gpui::widgets` has
@@ -614,7 +622,7 @@ role, and paints every part from the theme leaf that states it:
 | Widget | Paints | Instead of gpui-component's |
 |---|---|---|
 | `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border and its colour under the pointer (`hover_border_color`), radius, mark and its stroke (`check_mark_stroke_width`), the mixed state's dash (`Checkbox::indeterminate`), the radio's dot (`radio_dot_diameter`), label gap and font. Where the theme states no stroke (and, for a radio, no dot), the mark is gpui-component's `IconName::Check` through the application's icon resolver (`set_icon_resolver`), as gpui-component's own check box draws it; where it states one, the connector strokes that glyph at its width | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
-| `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
+| `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover; on a 0.8.0 theme the label in `switch.label` (its colour per state), `switch.label_gap` from the track, before it where `switch.label_side` says leading, and at the far end of a row laid out wider than its content where `switch.label_gap_stretches` says so. The on and off glyphs `switch.show_state_glyphs` asks for are not drawn: gpui-component's switch draws none and the model gives no glyph (`SwitchLook::next_glyphs_unmapped`) | pixel literals per `Size` |
 | `Slider` | `slider.*`: rail, fill, thumb, hover; the thumb's outline where `slider.thumb_border_line_width` is stated (`ThumbOutline`), in its hover colour with the pointer on the thumb though not while it is dragged (gpui applies no hover style during a drag), and on the end thumb in its focus colour while the slider has the focus (a press on the rail gives it, a press on a thumb does not); keyboard steps; horizontal or vertical (`Slider::axis`) | a rail of its fill at 20% alpha, a thumb of its own size and a ring of its fill at half alpha |
 | `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width; indeterminate with `ProgressBar::loading`, its fill sweeping on gpui-component's motion | a track of its fill at 20% alpha |
 | `Spinner` | the icon set's own loading indicator (Breeze's `process-working`, Material's and Lucide's), `spinner.diameter` across at `Size::Medium` and × 0.75 / × 0.875 / × 1.5 at XSmall / Small / Large -- gpui-component's own spinner's ratios to its Medium (`icon.rs`, `Icon::with_size`) -- never below `spinner.min_diameter`, the bundled sets tinted `spinner.fill_color`; a 240° arc in `spinner.fill_color` at `spinner.stroke_width` only for a set without one | a turning icon of its own |
@@ -936,6 +944,18 @@ platform does; no border colour can take the fill away. A per-side stroke
 (different widths or colours per side) is not drawn: the builder reports the
 part's stroke as unmapped.
 
+**Corners are circular, one radius a part.** gpui rounds a quad with four
+circular radii (gpui-pre 0.3.12 `src/geometry.rs`, `Corners`), and
+gpui-component's theme and widgets take one radius each. A continuous corner
+(`CornerCurve::Continuous`, Apple's) is drawn as the circular corner of the
+stated radius (docs/v0.8.0-spec.md §10, rule 2), and Widget Info marks its
+value `(drawn circular)`. A pill is drawn as gpui-component's full radius,
+9999 px, which gpui clamps to half the shorter side (gpui-component 0.10.0
+`src/theme/mod.rs`, `RADIUS_FULL`). Per-corner radii that differ, and a
+concentric radius (`CornerRadius::Concentric`, the container's radius less an
+inset, which a builder does not know), are reported as unmapped; no preset
+states either.
+
 **An expander's edge keeps gpui-component's width.** `next::geometry::accordion`
 gives the edge's colour (and a width of 0 where the stroke is stated as none),
 but not a stated visible width: its one refinement lands on the `Accordion`,
@@ -1105,17 +1125,43 @@ argument has no effect. `icons::to_image_source` documents it.
 Non-finite or non-positive scaling factors count as 1.0.
 
 Keyboard focus: the theme-drawn `Checkbox`, `Radio`, `Slider` and `Switch` draw the
-theme's focus ring while focused: `defaults.focus_ring_color` as stated, a band
-`defaults.focus_ring_width` wide whose outer edge lies `focus_ring_offset` plus the
-width outside the control, over its other parts; where the ring lies inset at the
-edge (libadwaita's) it is a band inside the edge, the control having no border of
-its own. Where the theme says the platform shows its ring for keyboard focus
+theme's focus ring while focused, placed as the model places it
+(docs/v0.8.0-spec.md §2, `FocusIndicator`): its base line is the control's edge
+moved out by `defaults.focus_ring_offset` (inward where negative), its corners the
+control's grown by the offset, floored at 0, or, on a 0.8.0 theme,
+`focus_ring.corners` where stated; the ring is a band
+`defaults.focus_ring_width` wide outward from that line in
+`defaults.focus_ring_color` as stated (on a 0.8.0 theme `focus_ring.stroke`'s own
+width and colour), and a 0.8.0 theme's `focus_ring.inner_stroke` a second band
+inward from it, each far edge concentric. Both are painted over the control,
+inside its edge too, where an inset ring (libadwaita's) lies; gpui paints a box's
+border after its children (gpui-pre 0.3.12 `src/style.rs`, `Style::paint`), so
+where the ring reaches inside the edge of a control whose border shows, that
+border is drawn as a child under the ring. A 0.8.0 indicator that is not a ring
+(`focus_ring.kind` `Fill` or `Underline`), a ring stated per side and concentric
+corners are unmapped (`widgets::focus_ring_unmapped`), and no ring is drawn.
+Where a 0.8.0 theme states a ring of the part's own (`PartStyle.focus` of
+`checkbox.indicator`, `radio.indicator`, `switch.track`, `slider.thumb` or
+`tab.tab`, read at the focused state), the control draws that ring round that
+part in place of the global one, by its own trigger, and none where the part
+states none (`widgets::part_focus`, `widgets::part_ring_unmapped`); gpui-component's
+own widgets (the button, the text field, the list row, the segment, the
+expander's header) draw their own ring and take no part's, which Widget Info
+reports not mapped.
+Where the theme says the platform shows its ring for keyboard focus
 only, a control draws it only for a focus that followed a key press: the answer
 is `Window::last_input_was_keyboard` when the focus arrives, kept until it
-leaves. The theme-drawn `TabBar` rings the focused tab by the same rule, inside
-the tab, in `defaults.focus_ring_color` and `focus_ring_width`;
-`focus_ring_offset` is not reached there, since the tabs' scrolling row would
-cut a band outside the tab away. A click selects a tab without focusing it;
+leaves. The theme-drawn `TabBar` rings the focused tab by the same rule (with
+`tab.tab`'s own ring where a 0.8.0 theme states one) as an inset shadow inside
+the tab, against its edge, in `defaults.focus_ring_color` and
+`focus_ring_width`, and a 0.8.0 theme's `focus_ring.inner_stroke` as a second
+band inward from it. The ring's offset (unless it is minus the width, which
+puts the band against the edge) and its stated corners are not drawn there,
+and Widget Info reports them not mapped (`TabLook::next_ring_unmapped`): the
+ring keeps inside the tab and in its corners because the tabs' row scrolls
+sideways, and gpui clips a scrolling box on its scrolling axis (gpui-pre
+0.3.12 `src/style.rs`, `Style::overflow_mask`), so a ring outside the tabs
+would lose its band left of the first tab and right of the last. A click selects a tab without focusing it;
 the tabs take the focus from the keyboard, the arrow keys moving it along the
 bar. gpui-component's own widgets draw their 3 px ring in `ring` with its
 alpha set to 0.5, whatever the colour's own, where `Theme::focus_ring` is on

@@ -46,8 +46,8 @@ use gpui_base::ResizableTheme;
 use gpui_base::input::CursorBlink;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig, ThemeMode};
 use native_theme::next::{
-    ButtonQuery, Color, Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FocusTrigger,
-    FontStyle, IconSizes, ListQuery, MotionPreference, Orientation, Paint, PartStated, PartStyle,
+    ButtonQuery, Color, Contrast, CornerRadius, DialogButtonOrder, FocusTrigger, FontStyle,
+    IconSizes, ListQuery, MotionPreference, Orientation, Paint, PartStated, PartStyle,
     ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
 
@@ -182,23 +182,42 @@ pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     }
 }
 
-/// A part's corner radius, where stated as one circular radius, or as square
-/// corners, which are no radius.
+/// A part's corner radius as [`radius_of`] reads it, where it is one radius.
 pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     stated(radius_of(part), home)
 }
 
-/// A part's corner radius as `radius` reads it, `None` where it is not
-/// stated, or stated in a form gpui cannot draw (not one circular radius,
-/// nor square corners: pill, per-corner or concentric corners, a continuous
-/// curve).
+/// The radius gpui-component rounds a pill or a circle by, past half any
+/// shape's shorter side, which gpui clamps to that half (gpui-component
+/// 0.10.0 `src/theme/mod.rs`, `RADIUS_FULL`, `px(9999.)`; gpui-pre 0.3.12
+/// `src/style.rs`, `Style::paint`, `clamp_radii_for_quad_size`).
+pub(crate) const PILL_RADIUS: f32 = 9999.0;
+
+/// A part's corner radius as one radius: one radius stated for every
+/// corner, square corners, which are no radius, or a pill, gpui-component's
+/// full radius (9999), which gpui clamps to half the shorter side
+/// (gpui-component 0.10.0 `src/theme/mod.rs`, `RADIUS_FULL`); `None` where
+/// it is not stated, or stated as per-corner radii that differ, or as a
+/// concentric radius, which needs the container's. gpui's corner is
+/// circular, so a continuous curve is drawn as the circular corner of its
+/// radius (spec §10, rule 2).
 pub fn radius_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return None;
     }
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Some(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+    match part.corners.radius {
+        CornerRadius::None => Some(0.0),
+        CornerRadius::Uniform(r) => Some(r),
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => [top_right, bottom_right, bottom_left]
+            .iter()
+            .all(|&r| r == top_left)
+            .then_some(top_left),
+        CornerRadius::Pill => Some(PILL_RADIUS),
         _ => None,
     }
 }
@@ -317,7 +336,7 @@ pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped
 
 /// A text style's colour where a rule states it for the queried state, as
 /// [`text_color`] reads it; `None` where none does.
-fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+pub(crate) fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
     state_option(
         state_text_color_of(text),
         text.from_state.contains(TextStated::COLOR),
@@ -731,7 +750,7 @@ pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
 /// else gpui-component's own (spec §10, rule 0). A rule that names no variant
 /// is the flat button's too (spec §2), so a theme that states no flat rule
 /// gives it the push button's stated fills.
-fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
+pub(crate) fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
     let b = &r.button;
     let upstream = upstream_colors(r);
     let flat = ButtonQuery::flat();
@@ -1019,29 +1038,31 @@ pub fn icon_sizes(r: &ResolvedTheme) -> &IconSizes {
 }
 
 /// The four text roles of 0.7.2's `text_scale`, each the typography's style
-/// at its home, or the body's where the theme defines no such role (the
-/// table of homes, rows `text_scale.*`, `home_fallback`).
-#[derive(Clone, Copy, Debug)]
-pub struct TextScale<'a> {
+/// at its home laid over the body (`Typography::over_body`), or the body's
+/// where the theme defines no such role (the table of homes, rows
+/// `text_scale.*`, `home_fallback`).
+#[derive(Clone, Debug)]
+pub struct TextScale {
     /// `typography.caption`.
-    pub caption: &'a TextStyle,
+    pub caption: TextStyle,
     /// `typography.headline`.
-    pub section_heading: &'a TextStyle,
+    pub section_heading: TextStyle,
     /// `typography.title1`.
-    pub dialog_title: &'a TextStyle,
+    pub dialog_title: TextStyle,
     /// `typography.display`.
-    pub display: &'a TextStyle,
+    pub display: TextStyle,
 }
 
-/// [`crate::text_scale`]: the four text roles 0.7.2 names.
+/// [`crate::text_scale`]: the four text roles 0.7.2 names, in the body's
+/// family, colour and slant where a role states none.
 #[must_use]
-pub fn text_scale(r: &ResolvedTheme) -> TextScale<'_> {
+pub fn text_scale(r: &ResolvedTheme) -> TextScale {
     let t = &r.typography;
     TextScale {
-        caption: t.caption.as_ref().unwrap_or(&t.body),
-        section_heading: t.headline.as_ref().unwrap_or(&t.body),
-        dialog_title: t.title1.as_ref().unwrap_or(&t.body),
-        display: t.display.as_ref().unwrap_or(&t.body),
+        caption: t.over_body(t.caption.as_ref()),
+        section_heading: t.over_body(t.headline.as_ref()),
+        dialog_title: t.over_body(t.title1.as_ref()),
+        display: t.over_body(t.display.as_ref()),
     }
 }
 
@@ -1886,6 +1907,74 @@ mod tests {
                 "{hover:?}"
             );
         }
+        Ok(())
+    }
+
+    /// Each form of a stated radius as the one-radius read takes it: a
+    /// continuous curve drawn as the circular corner of its radius (spec §10,
+    /// rule 2), a pill as gpui-component's full radius, per-corner radii where
+    /// the four are one; per-corner radii that differ and a concentric radius,
+    /// which needs the container's, not. On a patched theme a continuous
+    /// button's geometry is the circular button's of the same radius.
+    #[test]
+    fn every_radius_form_is_read_as_gpui_rounds_it() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, CornerCurve, Corners, PartPatch, Preset, Theme, ThemeContext, ThemePatch,
+        };
+
+        let part = |radius: CornerRadius, curve: CornerCurve| {
+            let mut part = PartStyle::default();
+            part.corners = Corners { radius, curve };
+            part.stated |= PartStated::CORNERS;
+            part
+        };
+        let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        };
+        for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
+            let read = |radius| radius_of(&part(radius, curve));
+            assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
+            assert_eq!(read(CornerRadius::None), Some(0.0));
+            assert_eq!(read(CornerRadius::Pill), Some(PILL_RADIUS));
+            assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
+            assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
+            assert_eq!(
+                read(CornerRadius::Concentric {
+                    inset: 2.0,
+                    min_radius: 1.0,
+                }),
+                None
+            );
+        }
+        assert_eq!(
+            radius(
+                &part(per_corner(1.0, 2.0, 3.0, 4.0), CornerCurve::Circular),
+                "h"
+            )
+            .err(),
+            Some(Unmapped("h"))
+        );
+
+        let patched = |corners: Corners| {
+            let mut r = Theme::preset(Preset::MacosTahoe).resolve(&ThemeContext::light());
+            r.apply_patch(
+                &ThemePatch::new()
+                    .button(ButtonRule::new().body(PartPatch::new().corners(corners))),
+            );
+            r
+        };
+        let continuous = patched(Corners::continuous(4.0));
+        assert_eq!(
+            radius_of(&continuous.button.body(WidgetState::NONE)),
+            Some(4.0)
+        );
+        assert_eq!(
+            builders::button(&continuous)?,
+            builders::button(&patched(Corners::uniform(4.0)))?
+        );
         Ok(())
     }
 }

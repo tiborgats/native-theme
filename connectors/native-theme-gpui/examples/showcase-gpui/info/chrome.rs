@@ -2,13 +2,14 @@
 
 use std::time::Duration;
 
-use gpui::Pixels;
+use gpui::{Hsla, Pixels};
 use gpui_component::{Colorize as _, theme::Theme};
-use native_theme::theme::{ResolvedButtonTheme, ResolvedPadding};
-use native_theme_gpui::ResolvedTheme;
+use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
+use native_theme_gpui::next::{self, fill_of, state_fill_of, state_text_color_of, text_color_of};
 
 use super::{
-    ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, stated, stated_claim,
+    ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, radius_of,
+    state_stroke_color_of, stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{PanelToggle, Severity, SheetSide};
 use crate::support::ChromeIcon;
@@ -35,7 +36,7 @@ pub fn title_bar(t: &Theme, label: &str, inactive: bool) -> WidgetInfo {
     )
     .instance(
         "label",
-        format!("\"{label}\", this crate's name and version: the same string, WINDOW_TITLE, is the title the OS shows and the one the Windows screenshot capture finds the window by. The installed preset and colour mode are in the status bar. Plain text rather than a Label: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour geometry::title_bar gives the bar"),
+        format!("\"{label}\", this crate's name and version: the same string, WINDOW_TITLE, is the title the OS shows and the one the Windows screenshot capture finds the window by. The installed preset and colour mode are in the status bar. Plain text rather than a Label: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour next::geometry::title_bar gives the bar"),
     )
     .instance(
         "window controls",
@@ -134,7 +135,7 @@ pub fn menu_row_window(os: &str) -> String {
 
 /// What a `TitleBar` paints: its fill and border, and with `controls` drawn,
 /// its window controls' colours. `inactive` is whether
-/// `geometry::title_bar_inactive` refined it, whose geometry line then names
+/// `next::geometry::title_bar_inactive` refined it, whose geometry line then names
 /// the fill.
 fn title_bar_colours(t: &Theme, controls: bool, inactive: bool) -> WidgetInfo {
     let info = WidgetInfo::new("TitleBar");
@@ -211,12 +212,12 @@ fn title_bar_notes(info: WidgetInfo, inactive: bool) -> WidgetInfo {
     if inactive {
         info.config(
             "fill",
-            "a gradient between window.inactive_title_bar_background and background, upstream's gradient drawn from the inactive colour, which geometry::title_bar_inactive gives the bar while the window is not the active one, and window.inactive_title_bar_text_color over geometry::title_bar's text (title_bar.rs, default_title_bar_background)",
+            "a gradient between window.title_bar(normal).fill of the theme resolved for an inactive window and window.frame(normal).fill, upstream's gradient drawn from the inactive colour, which next::geometry::title_bar_inactive gives the bar while the window is not the active one, and that theme's window.title(normal).color over next::geometry::title_bar's text (title_bar.rs, default_title_bar_background)",
         )
     } else {
         info.not_themeable(
             "fill",
-            "a gradient between title_bar and background (title_bar.rs, default_title_bar_background); while the window is not the active one, the same gradient from window.inactive_title_bar_background, through geometry::title_bar_inactive",
+            "a gradient between title_bar and background (title_bar.rs, default_title_bar_background); while the window is not the active one, the same gradient from window.title_bar(normal).fill of the theme resolved for an inactive window, through next::geometry::title_bar_inactive, where that theme states it",
         )
     }
 }
@@ -231,13 +232,13 @@ pub enum MenuHost {
 }
 
 /// The menu-bar row (spec S8), at the top of a window whose frame the window
-/// manager draws, filled with `native`'s `toolbar.background_color` where a
-/// native theme is installed. `margin` is the installed layout's
-/// `layout.container_margin`, which the row borrows, and `own` the showcase's
-/// `MENU_BAR_PADDING`.
+/// manager draws, filled with the installed 0.8.0 theme `native`'s
+/// `menu_bar.bar(NONE).fill` where it states one. `margin` is the installed
+/// layout's `layout.container_margin`, which the row borrows, and `own` the
+/// showcase's `MENU_BAR_PADDING`.
 pub fn menu_bar(
     t: &Theme,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
     margin: Option<Pixels>,
     own: Pixels,
 ) -> WidgetInfo {
@@ -252,19 +253,26 @@ pub fn menu_bar(
         ),
     };
     let info = WidgetInfo::new("Menu bar");
-    let info = match native {
-        Some(r) => info
-            .color(claim(
+    let fill = native.and_then(|r| fill_of(&r.menu_bar.bar(WidgetState::NONE)));
+    let info = match (native, fill) {
+        (Some(r), Some(_)) => info
+            .colors(stated_claim(
                 "bg",
-                "background_color",
-                stated(r.toolbar.background_color),
+                "menu_bar.bar(NONE).fill",
+                fill_of(&r.menu_bar.bar(WidgetState::NONE)),
                 "showcase",
             ))
             .config(
                 "fill",
-                "toolbar.background_color: the model fills a menu bar as the toolbar, the one tools area Breeze paints (platform-facts §2.6, §2.13)",
+                "menu_bar.bar(NONE).fill, the menu bar's own fill (platform-facts §2.6, §2.13: Breeze fills it as the toolbar, the one tools area it paints)",
             ),
-        None => info
+        (Some(_), None) => info
+            .color(claim("bg (the window's)", "background", t.background, "showcase"))
+            .config(
+                "fill",
+                "none of its own: the theme states no menu_bar.bar(NONE).fill, and the row is the application's own element, with no toolkit fill to keep, so the view's background shows through",
+            ),
+        (None, _) => info
             .color(claim("bg (the window's)", "background", t.background, "showcase"))
             .not_themeable(
                 "fill",
@@ -273,11 +281,11 @@ pub fn menu_bar(
     };
     info.not_themeable(
             "widget",
-            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus. The model states no menu-bar widget: its menu is the popup a menu opens, and its rule fills the bar as the toolbar, where a native theme is installed (platform-facts §2.6)",
+            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus, filled as the model's menu_bar.bar (platform-facts §2.6)",
         )
         .not_themeable(
             "inset",
-            "the model states no menu-bar inset. The row borrows layout.container_margin, the padding inside containers, so its menus start where the toolbar's buttons do wherever toolbar.border states no left padding of its own: the showcase's choice",
+            "the row does not read menu_bar.bar(NONE)'s padding, which no bundled preset states. It borrows layout.container_margin, the padding inside containers, so its menus start where the toolbar's buttons do wherever toolbar.bar(NONE) states no left padding of its own: the showcase's choice",
         )
         .instance("window", menu_row_window(std::env::consts::OS))
         .instance(
@@ -289,177 +297,10 @@ pub fn menu_bar(
 /// The application's menus as the showcase draws them (spec §2.2), in
 /// `host`: their titles, and the popups they open, in `native`'s menu theme
 /// where a native theme is installed (`demo::app_menus`).
-pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&NextTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Menus").variant("drawn by the showcase");
     let info = match native {
-        Some(r) => {
-            let m = &r.menu;
-            // Which titles the item's hover colours still reach: a title
-            // takes `bar_hover_background` under the pointer and
-            // `bar_open_background`, else that, while open (demo::MenuLook).
-            let line_width = r.defaults.border.line_width;
-            let info = info.color(claim(
-                "title and item text",
-                "color",
-                stated(m.font.color),
-                "showcase",
-            ));
-            let info = match (m.bar_hover_background, m.bar_open_background) {
-                (None, None) => info.color(claim(
-                    "hovered or open title, hovered item",
-                    "hover_background",
-                    stated(m.hover_background),
-                    "showcase",
-                )),
-                (None, Some(_)) => info.color(claim(
-                    "hovered title, hovered item",
-                    "hover_background",
-                    stated(m.hover_background),
-                    "showcase",
-                )),
-                (Some(_), _) => info.color(claim(
-                    "hovered item",
-                    "hover_background",
-                    stated(m.hover_background),
-                    "showcase",
-                )),
-            };
-            let info = match m.bar_hover_text_color {
-                None => info.color(claim(
-                    "its text",
-                    "hover_text_color",
-                    stated(m.hover_text_color),
-                    "showcase",
-                )),
-                Some(_) => info.color(claim(
-                    "a hovered item's text",
-                    "hover_text_color",
-                    stated(m.hover_text_color),
-                    "showcase",
-                )),
-            };
-            let info = match m.bar_open_background {
-                None => info.colors(stated_claim(
-                    "hovered or open title",
-                    "bar_hover_background",
-                    m.bar_hover_background,
-                    "showcase",
-                )),
-                Some(_) => info.colors(stated_claim(
-                    "hovered title",
-                    "bar_hover_background",
-                    m.bar_hover_background,
-                    "showcase",
-                )),
-            };
-            let info = info
-                .colors(stated_claim(
-                    "open title",
-                    "bar_open_background",
-                    m.bar_open_background,
-                    "showcase",
-                ))
-                .colors(stated_claim(
-                    "hovered or open title's text",
-                    "bar_hover_text_color",
-                    m.bar_hover_text_color,
-                    "showcase",
-                ))
-                .colors(edge_claim(
-                    "hovered item edge",
-                    "hover_border_color",
-                    m.hover_border_color,
-                    Some(line_width),
-                    "showcase",
-                ))
-                .colors(stated_claim(
-                    "pressed item",
-                    "active_background",
-                    m.active_background,
-                    "showcase",
-                ))
-                .colors(stated_claim(
-                    "pressed item text",
-                    "active_text_color",
-                    m.active_text_color,
-                    "showcase",
-                ));
-            let info = match (m.active_background, m.active_text_color) {
-                (None, None) => info,
-                (Some(_), _) => info.config("pressed item", "menu.active_background while the mouse button is held on an item, with no outline, and menu.active_text_color where stated, else the hover text"),
-                (None, Some(_)) => info.config("pressed item", "the hover look, its outline included, lettered menu.active_text_color while the mouse button is held on an item: the theme states no menu.active_background"),
-            };
-            let info = match (m.hover_border_color, line_width > 0.0) {
-                (Some(_), true) => info.config("hovered item edge", format!("menu.hover_border_color at defaults.border.line_width, {}px, a box over the highlighted item, its padding included, so nothing moves, rounded as the highlight", px_text(line_width))),
-                (Some(_), false) => info.config("hovered item edge", "none: defaults.border.line_width is 0"),
-                (None, _) => info,
-            };
-            let title_sides: Vec<String> = [
-                m.bar_padding_horizontal.map(|x| {
-                    format!(
-                        "menu.bar_padding_horizontal, {}px, at the left and right",
-                        px_text(x)
-                    )
-                }),
-                m.bar_padding_vertical.map(|y| {
-                    format!(
-                        "menu.bar_padding_vertical, {}px, at the top and bottom",
-                        px_text(y)
-                    )
-                }),
-            ]
-            .into_iter()
-            .flatten()
-            .collect();
-            let info = if title_sides.is_empty() {
-                info
-            } else {
-                info.config(
-                    "title padding",
-                    format!(
-                        "{} of each title, over menu.border.padding's sides",
-                        title_sides.join(" and ")
-                    ),
-                )
-            };
-            info.color(claim("menu bg", "background_color", stated(m.background_color), "showcase"))
-                .color(claim("menu separator", "separator_color", stated(m.separator_color), "showcase"))
-                .colors(edge_claim("menu edge", "border", Some(r.popover.border.color), Some(r.popover.border.line_width), "showcase"))
-                .config("font", format!("menu.font: {}, on the titles and the items, as geometry::menu_item sets it", super::drawn_font(&m.font)))
-                .config("highlight", format!("rectangular where menu.border.corner_radius is 0 (platform-facts §2.6: the items are rectangular), here {}px", px_text(m.border.corner_radius)))
-                .config("padding", format!("menu.border.padding's stated sides on each title and item, an item's through geometry::menu_item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5, and an item's {} at the sides (MENU_ROW_PADDING_X) and nothing above or below, its height the item-height line's (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)", super::rems_text(crate::demo::MENU_ROW_PADDING_X, t)))
-                .config("item height", match (m.row_height, m.min_row_height) {
-                    (Some(h), _) => format!("menu.row_height, {}px, by geometry::menu_item's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1", px_text(h)),
-                    (None, Some(least)) => format!("at least menu.min_row_height, {}px, by geometry::menu_item: the font's line and menu.border.padding where they are taller (platform-facts §2.6)", px_text(least)),
-                    (None, None) if m.border.padding.top.is_none() && m.border.padding.bottom.is_none() => format!("{}, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item), by the connector's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1; the theme states neither menu.row_height nor a vertical padding", super::rems_text(crate::demo::MENU_ROW_HEIGHT, t)),
-                    (None, None) => "the font's line and menu.border.padding: the theme states no menu.row_height, the item sizes to its font (platform-facts §2.6)".to_string(),
-                })
-                .config("menu inset", {
-                    let sides: Vec<String> = [
-                        m.panel_padding_horizontal.map(|x| format!("menu.panel_padding_horizontal, {}px, at the left and right", px_text(x))),
-                        m.panel_padding_vertical.map(|y| format!("menu.panel_padding_vertical, {}px, at the top and bottom", px_text(y))),
-                    ]
-                    .into_iter()
-                    .flatten()
-                    .collect();
-                    let rows = if m.panel_padding_vertical.is_some() {
-                        "the items touching".to_string()
-                    } else {
-                        format!("the items {} apart, upstream's gap_y_0p5 (MENU_POPUP_ROW_GAP; menu/popup_menu.rs, PopupMenu::render)", super::rems_text(crate::demo::MENU_POPUP_ROW_GAP, t))
-                    };
-                    if sides.is_empty() {
-                        format!("popover.border.padding's stated sides round the items, upstream's p_1 on an unstated side (menu/popup_menu.rs, PopupMenu::render); {rows}")
-                    } else {
-                        format!("{} inside the frame's line, over popover.border.padding's sides; {rows}", sides.join(" and "))
-                    }
-                })
-                .config("menu edge", if r.popover.border.line_width > 0.0 {
-                    format!("popover.border: {}px, radius {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.line_width), px_text(r.popover.border.corner_radius))
-                } else {
-                    format!("none: popover.border.line_width is 0; the popup is still rounded by popover.border.corner_radius, {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.corner_radius))
-                })
-                .config("menu separator", format!("separator.line_width, {}px, one device pixel at least (widgets::Separator)", px_text(r.separator.line_width)))
-        }
+        Some(r) => menu_look(info, t, r),
         None => info
             .color(claim(
                 "menu bg",
@@ -470,34 +311,392 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
             .color(claim("hovered item", "accent", t.accent, "showcase"))
             .color(claim("menu separator", "border", t.border, "showcase"))
             .not_themeable(
+                "menu shadow",
+                "popover_style's ring and shadow, the popover's own (styled.rs, popover_style)",
+            )
+            .not_themeable(
                 "font",
-                "text_sm, a rem step: no native theme is installed, so there is no menu.font",
+                "text_sm, a rem step, and upstream's look: no native theme is installed",
             ),
     };
     info.not_themeable(
         "widget",
-        "the showcase's own titles, each opening the showcase's own popup under it as upstream's AppMenu places its menu: upstream's AppMenuBar builds its titles as Small ghost Buttons and its menus as PopupMenus, which set text_sm, a rounded hover in accent and the popover fill on themselves (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item), so menu.font, the rectangular items and menu.background_color would not reach them",
+        "the showcase's own titles, each opening the showcase's own popup under it as upstream's AppMenu places its menu: upstream's AppMenuBar builds its titles as Small ghost Buttons and its menus as PopupMenus, which set text_sm, a rounded hover in accent and the popover fill on themselves (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item), so menu.item_label's font, the rectangular items and menu.panel's fill would not reach them",
     )
     .instance(
         "keyboard",
         "as the AppMenuBar and its PopupMenus answer it (menu/app_menu_bar.rs, AppMenuBar; menu/popup_menu.rs, PopupMenu): with a menu open, Left and Right move to the neighbouring menu, Up and Down between its items, Enter runs the highlighted one and Escape closes the menu, handing the focus back",
     )
     .not_themeable(
-        "menu shadow",
-        "popover_style's ring and shadow, the popover's own (styled.rs, popover_style); the model states popover.border.shadow_enabled and no shadow geometry",
-    )
-    .not_themeable(
         "fill",
         match host {
-            MenuHost::Row if native.is_some() => "none behind the titles: the menu bar's, toolbar.background_color, shows through (platform-facts §2.6, §2.13: the bar takes the toolbar's fill)",
+            MenuHost::Row if native.is_some() => "none behind the titles: the menu bar's, menu_bar.bar(NONE).fill where the theme states one, shows through (platform-facts §2.6, §2.13)",
             MenuHost::Row => "none behind the titles: the window's background shows through, as no native theme is installed",
-            MenuHost::TitleBar => "none behind the titles: the title bar's fill shows through, as the showcase does not repaint under them; the model's menu-bar fill, toolbar.background_color, applies to the menu-bar row (platform-facts §2.6, §2.13)",
+            MenuHost::TitleBar => "none behind the titles: the title bar's fill shows through, as the showcase does not repaint under them; the model's menu-bar fill, menu_bar.bar(NONE).fill, applies to the menu-bar row (platform-facts §2.6, §2.13)",
         },
     )
     .instance(
         "menus",
         "File, View, Theme and Help; each item runs a gpui action, and where the item has a key binding it shows it, and the binding runs the same action",
     )
+}
+
+/// The padding sides `sides` states (top, right, bottom, left, as
+/// `next::padding_of` gives them), each as `<home>.padding.<side>, <v>px`,
+/// joined; `None` where it states none.
+fn stated_sides(home: &str, sides: [Option<f32>; 4]) -> Option<String> {
+    let [top, right, bottom, left] = sides;
+    let named: Vec<String> = [
+        ("top", top),
+        ("right", right),
+        ("bottom", bottom),
+        ("left", left),
+    ]
+    .into_iter()
+    .filter_map(|(side, v)| v.map(|v| format!("{home}.padding.{side}, {}px", px_text(v))))
+    .collect();
+    (!named.is_empty()).then(|| named.join(", "))
+}
+
+/// Where a hovered menu row's text is from (`demo::menu_hover_of`): the
+/// colour a rule states for `menu.item_label(HOVER)`; over a hover fill a
+/// rule states, the text at rest; else gpui-component's `accent_foreground`.
+#[derive(Clone, Copy)]
+pub(super) enum HoverText {
+    Stated,
+    AtRest,
+    Accent,
+}
+
+/// What the menus painted in the menu look the installed 0.8.0 theme `r`
+/// states (`demo::MenuLook::next_of`) claim and say.
+fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
+    let (m, bar) = (&r.menu, &r.menu_bar);
+    let hovered = m.item(WidgetState::HOVER);
+    let rest = m.item(WidgetState::NONE);
+    let panel = m.panel(WidgetState::NONE);
+    let bar_hover = next::state_fill_of(&bar.item(WidgetState::HOVER));
+    let bar_open = next::state_fill_of(&bar.item(WidgetState::OPEN));
+    let bar_hover_text = next::state_text_color_of(&bar.item_label(WidgetState::HOVER));
+    let bar_open_text = next::state_text_color_of(&bar.item_label(WidgetState::OPEN));
+    let edge = next::state_stroke_color_of(&hovered);
+    let edge_width = stroke_width_of(&hovered).filter(|width| *width > 0.0);
+    let active = next::state_fill_of(&m.item(WidgetState::PRESSED));
+    let active_text = next::state_text_color_of(&m.item_label(WidgetState::PRESSED));
+    let look = crate::demo::MenuLook::next_of(r, t);
+    let rows = look.rows();
+    // Which titles the item's hover colours still reach: a title takes the
+    // bar's hover colours under the pointer, else those; while open, the
+    // bar's open ones, else gpui-component's own open title
+    // (demo::MenuLook).
+    let info = match text_color_of(&r.menu.item_label(WidgetState::NONE)) {
+        Some(_) => info.colors(stated_claim(
+            "title and item text",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        None => info
+            .color(claim(
+                "item text, none stated: the popup's own",
+                "popover_foreground",
+                t.popover_foreground,
+                "gpui-component/styled.rs:191",
+            ))
+            .not_themeable(
+                "title text",
+                "the menu bar's own: the theme states no menu.item_label(NONE).color",
+            ),
+    };
+    // A hovered item's fill and text where a rule states them for the hover
+    // state, else what gpui-component paints, the accent the connector
+    // writes (demo::menu_hover_of).
+    let hover_stated = state_fill_of(&hovered).is_some();
+    let hover_text_from = match (
+        state_text_color_of(&m.item_label(WidgetState::HOVER)).is_some(),
+        hover_stated,
+    ) {
+        (true, _) => HoverText::Stated,
+        (false, true) => HoverText::AtRest,
+        (false, false) => HoverText::Accent,
+    };
+    let info = match (bar_hover, hover_stated) {
+        (None, true) => info.colors(stated_claim(
+            "hovered title, hovered item",
+            "menu.item(HOVER).fill",
+            state_fill_of(&r.menu.item(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (None, false) => info.color(claim(
+            "hovered title, hovered item, none stated: gpui-component's own",
+            "accent",
+            t.accent,
+            "showcase",
+        )),
+        (Some(_), true) => info.colors(stated_claim(
+            "hovered item",
+            "menu.item(HOVER).fill",
+            state_fill_of(&r.menu.item(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (Some(_), false) => info.color(claim(
+            "hovered item, none stated: gpui-component's own",
+            "accent",
+            t.accent,
+            "showcase",
+        )),
+    };
+    let info = match (bar_hover_text, hover_text_from) {
+        (None, HoverText::Stated) => info.colors(stated_claim(
+            "a hovered title's text, a hovered item's",
+            "menu.item_label(HOVER).color",
+            state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (None, HoverText::AtRest) => info.colors(stated_claim(
+            "a hovered title's text, a hovered item's, none stated over the stated hover fill: the text at rest",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        (None, HoverText::Accent) => info.color(claim(
+            "a hovered title's text, a hovered item's, none stated: gpui-component's own",
+            "accent_foreground",
+            t.accent_foreground,
+            "showcase",
+        )),
+        (Some(_), HoverText::Stated) => info.colors(stated_claim(
+            "a hovered item's text",
+            "menu.item_label(HOVER).color",
+            state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (Some(_), HoverText::AtRest) => info.colors(stated_claim(
+            "a hovered item's text, none stated over the stated hover fill: the text at rest",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        (Some(_), HoverText::Accent) => info.color(claim(
+            "a hovered item's text, none stated: gpui-component's own",
+            "accent_foreground",
+            t.accent_foreground,
+            "showcase",
+        )),
+    };
+    // An open title where the bar states no open look is gpui-component's
+    // own, a selected Ghost button: its fill secondary_active, its text the
+    // title's at rest (demo::MenuLook).
+    let info = match bar_open {
+        Some(_) => info.colors(stated_claim(
+            "open title",
+            "menu_bar.item(OPEN).fill",
+            state_fill_of(&r.menu_bar.item(WidgetState::OPEN)),
+            "showcase",
+        )),
+        None => info.color(claim(
+            "open title, none stated: gpui-component's own selected Ghost",
+            "secondary_active",
+            t.secondary_active,
+            "gpui-component/button/button.rs:1346",
+        )),
+    };
+    let info = match (bar_open_text, text_color_of(&m.item_label(WidgetState::NONE))) {
+        (Some(_), _) => info.colors(stated_claim(
+            "open title's text",
+            "menu_bar.item_label(OPEN).color",
+            state_text_color_of(&r.menu_bar.item_label(WidgetState::OPEN)),
+            "showcase",
+        )),
+        (None, Some(_)) => info.colors(stated_claim(
+            "open title's text, none stated: the title's at rest",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        (None, None) => info.not_themeable(
+            "open title text",
+            "the title's at rest, the menu bar's own: the theme states neither menu_bar.item_label(OPEN).color nor menu.item_label(NONE).color",
+        ),
+    };
+    let info = info
+        .colors(stated_claim(
+            "hovered title",
+            "menu_bar.item(HOVER).fill",
+            state_fill_of(&r.menu_bar.item(WidgetState::HOVER)),
+            "showcase",
+        ))
+        .colors(stated_claim(
+            "hovered title's text",
+            "menu_bar.item_label(HOVER).color",
+            state_text_color_of(&r.menu_bar.item_label(WidgetState::HOVER)),
+            "showcase",
+        ))
+        .colors(edge_claim(
+            "hovered item edge",
+            "menu.item(HOVER).stroke.color",
+            state_stroke_color_of(&r.menu.item(WidgetState::HOVER)),
+            edge_width,
+            "showcase",
+        ))
+        .colors(stated_claim(
+            "pressed item",
+            "menu.item(PRESSED).fill",
+            state_fill_of(&r.menu.item(WidgetState::PRESSED)),
+            "showcase",
+        ))
+        .colors(stated_claim(
+            "pressed item text",
+            "menu.item_label(PRESSED).color",
+            state_text_color_of(&r.menu.item_label(WidgetState::PRESSED)),
+            "showcase",
+        ));
+    let info = match (active, active_text) {
+        (None, None) => info,
+        (Some(_), _) => info.config("pressed item", "the fill a rule states for menu.item(PRESSED), asked of the pressed state alone (spec §2, from_state), while the mouse button is held on an item, and the colour one states for menu.item_label(PRESSED), else the hover text"),
+        (None, Some(_)) => info.config("pressed item", "the hover fill, lettered in the colour a rule states for menu.item_label(PRESSED) while the mouse button is held on an item: no rule states a fill for menu.item(PRESSED)"),
+    };
+    let pressed_edge = crate::demo::menu_pressed_edge(&m.item(WidgetState::PRESSED));
+    let info = info.colors(edge_claim(
+        "pressed item edge",
+        "menu.item(PRESSED).stroke.color",
+        state_stroke_color_of(&r.menu.item(WidgetState::PRESSED)),
+        pressed_edge.map(|(_, width)| width.as_f32()),
+        "showcase",
+    ));
+    let info = pressed_menu_edge(
+        info,
+        pressed_edge,
+        edge.is_some() && edge_width.is_some(),
+        &m.item(WidgetState::PRESSED),
+    );
+    let info = match (edge, edge_width) {
+        (Some(_), Some(width)) => info.config("hovered item edge", format!("the stroke a rule states for menu.item(HOVER), {}px, a box over the highlighted item, its padding included, so nothing moves, rounded as the highlight", px_text(width))),
+        (Some(_), None) => info.config("hovered item edge", "none: the stroke a rule states for menu.item(HOVER) is 0 wide"),
+        (None, _) => hovered_menu_edge_unmapped(info, &hovered),
+    };
+    let info = match stated_sides(
+        "menu_bar.item(NONE)",
+        next::padding_of(&bar.item(WidgetState::NONE)),
+    ) {
+        Some(sides) => info.config(
+            "title padding",
+            format!("{sides} of each title, over menu.item(NONE)'s sides"),
+        ),
+        None => info,
+    };
+    let radius = rows.frame_radius.0.as_f32();
+    let info = match rows.frame_width {
+        (_, None) => info.not_themeable(
+            "menu edge",
+            format!("popover_style's ring, foreground at 10% inside its shadow (styled.rs, popover_ring), rounded {}px: neither menu.panel(NONE) nor popover.panel states a stroke width", px_text(radius)),
+        ),
+        (width, Some(from)) => {
+            let width = width.as_f32();
+            let (home, edge) = match from {
+                crate::demo::FrameFrom::Menu => (
+                    "menu.panel(NONE)",
+                    edge_claim(
+                        "menu edge",
+                        "menu.panel(NONE).stroke.color",
+                        stroke_color_of(&r.menu.panel(WidgetState::NONE)),
+                        Some(width),
+                        "showcase",
+                    ),
+                ),
+                crate::demo::FrameFrom::Popover => (
+                    "popover.panel",
+                    edge_claim(
+                        "menu edge",
+                        "popover.panel.stroke.color",
+                        stroke_color_of(&r.popover.panel),
+                        Some(width),
+                        "showcase",
+                    ),
+                ),
+            };
+            info.colors(edge)
+                .config("menu edge", if width > 0.0 {
+                    format!("{home}'s stroke, {}px, rounded {}px (platform-facts §2.6: a menu's popup border is §2.16's; the popover's where the menu's panel states none)", px_text(width), px_text(radius))
+                } else {
+                    format!("none: {home}'s stroke is 0 wide; the popup is still rounded {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(radius))
+                })
+        }
+    };
+    let [top, _, bottom, _] = next::padding_of(&rest);
+    let [panel_top, _, panel_bottom, _] = next::padding_of(&panel);
+    let info = match fill_of(&panel) {
+        Some(_) => info.colors(stated_claim(
+            "menu bg",
+            "menu.panel(NONE).fill",
+            fill_of(&r.menu.panel(WidgetState::NONE)),
+            "showcase",
+        )),
+        None => info.color(claim(
+            "menu bg, none stated: the popup's own",
+            "popover",
+            t.popover,
+            "gpui-component/styled.rs:190",
+        )),
+    };
+    let info = match fill_of(&m.separator(WidgetState::NONE)) {
+        Some(_) => info.colors(stated_claim(
+            "menu separator",
+            "menu.separator(NONE).fill",
+            fill_of(&r.menu.separator(WidgetState::NONE)),
+            "showcase",
+        )),
+        None => info.color(claim(
+            "menu separator, none stated",
+            "border",
+            t.border,
+            "showcase",
+        )),
+    };
+    let font = match next::geometry::menu_item(r) {
+        Ok(_) => format!(
+            "menu.item_label(NONE): {}, on the titles and the items, as next::geometry::menu_item sets it",
+            super::next_drawn_font(
+                &m.item_label(WidgetState::NONE),
+                super::LINE_AT_THE_MULTIPLIER
+            )
+        ),
+        Err(unmapped) => format!(
+            "text_sm, a rem step, upstream's (menu/popup_menu.rs, PopupMenu::render_item), on the titles and the items, which are MENU_ROW_HEIGHT tall where no top or bottom padding is stated: the theme states no value gpui can take at {}",
+            unmapped.home()
+        ),
+    };
+    let shadow = match (rows.frame_width.1, r.popover.panel.stated.contains(native_theme::next::PartStated::SHADOWS), crate::demo::menu_popup_shadow(&r.popover.panel, super::next_stated(r.colors.shadow))) {
+        (None, _, _) => "popover_style's ring and shadow, the popover's own (styled.rs, popover_style): the ring is the popup's edge where neither panel states a stroke width".to_string(),
+        (Some(_), _, Err(home)) => format!("popover_style's ring and shadow, the popover's own (styled.rs, popover_style): the theme states shadow layers at {home}, which gpui cannot take"),
+        (Some(_), true, Ok(_)) => "none: popover.panel states no shadows".to_string(),
+        (Some(_), false, Ok(_)) => "upstream's popover_shadow, two layers (gpui-component/styled.rs, popover_shadow), in colors.shadow: the theme states no popover.panel.shadows (spec §10, rule 0), and popover_style's ring gives way to the frame".to_string(),
+    };
+    info.config("font", font)
+        .config("highlight", match radius_of(&rest) {
+            Some(radius) => format!("rounded by menu.item(NONE).corners, {}px (platform-facts §2.6: the items are rectangular where it is 0)", px_text(radius)),
+            None => "square: the theme states no menu.item(NONE).corners gpui can take (platform-facts §2.6: the items are rectangular)".to_string(),
+        })
+        .config("padding", format!("menu.item(NONE)'s stated padding sides on each title and item, an item's through next::geometry::menu_item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5, and an item's {} at the sides (MENU_ROW_PADDING_X) and nothing above or below, its height the item-height line's (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)", super::rems_text(crate::demo::MENU_ROW_PADDING_X, t)))
+        .config("item height", match (rest.max_size[1], rest.min_size[1]) {
+            (Some(h), _) => format!("menu.item(NONE).max_size[1], {}px, by next::geometry::menu_item's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1", px_text(h)),
+            (None, Some(least)) => format!("at least menu.item(NONE).min_size[1], {}px, by next::geometry::menu_item: the font's line and menu.item(NONE)'s padding where they are taller (platform-facts §2.6)", px_text(least)),
+            (None, None) if top.is_none() && bottom.is_none() => format!("{}, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item), by the connector's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1; the theme states neither a size of menu.item(NONE) nor a top or bottom padding", super::rems_text(crate::demo::MENU_ROW_HEIGHT, t)),
+            (None, None) => "the font's line and menu.item(NONE)'s padding: the theme states no size of menu.item(NONE), the item sizes to its font (platform-facts §2.6)".to_string(),
+        })
+        .config("menu inset", {
+            let rows = if panel_top.is_some() || panel_bottom.is_some() {
+                "the items touching".to_string()
+            } else {
+                format!("the items {} apart, upstream's gap_y_0p5 (MENU_POPUP_ROW_GAP; menu/popup_menu.rs, PopupMenu::render)", super::rems_text(crate::demo::MENU_POPUP_ROW_GAP, t))
+            };
+            match stated_sides("menu.panel(NONE)", next::padding_of(&panel)) {
+                None => format!("popover.panel's stated padding sides round the items, upstream's p_1 on an unstated side (menu/popup_menu.rs, PopupMenu::render); {rows}"),
+                Some(sides) => format!("{sides} inside the frame's line, over popover.panel's padding sides; {rows}"),
+            }
+        })
+        .config("menu shadow", shadow)
+        .config("menu separator", format!("separator.thickness, {}px, one device pixel at least (widgets::Separator)", px_text(r.separator.thickness)))
 }
 
 /// What every `PopupMenu` the showcase opens paints -- the Overlays page's
@@ -603,13 +802,14 @@ impl ToolbarGap {
 /// `layout.container_margin`, `own` the showcase's `TOOLBAR_PADDING`, and
 /// `gap` where the gap between the items comes from.
 pub fn toolbar(
-    stated: ResolvedPadding,
+    stated: [Option<f32>; 4],
     margin: Option<Pixels>,
     own: Pixels,
     gap: ToolbarGap,
 ) -> WidgetInfo {
+    let [top, right, bottom, left] = stated;
     let side = |name: &str, value: Option<f32>| match (value, margin) {
-        (Some(v), _) => format!("{name} {}px, toolbar.border's", px_text(v)),
+        (Some(v), _) => format!("{name} {}px, toolbar.bar(NONE).padding.{name}", px_text(v)),
         (None, Some(m)) => format!("{name} {}px, layout.container_margin", px_text(m.as_f32())),
         (None, None) => format!(
             "{name} {}px, TOOLBAR_PADDING, the showcase's own",
@@ -619,20 +819,20 @@ pub fn toolbar(
     WidgetInfo::new("Toolbar")
         .not_themeable(
             "widget",
-            "the application's own h_flex, not gpui-component's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
+            "the application's own h_flex, not gpui-component's Toolbar, which the Buttons page shows (rationale K12): next::geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
         )
         .config(
             "edge",
-            "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, inside the bar: geometry::toolbar draws it where a native theme is installed, as the theme states it, and none at a width of 0",
+            "the bar's bottom rule, toolbar.bar(NONE)'s stroke, inside the bar: next::geometry::toolbar draws it as the installed theme states it, and none at a width of 0",
         )
         .instance(
             "padding",
             format!(
-                "{}; {}; {}; {}. A side toolbar.border leaves unstated takes layout.container_margin, and where that is unstated too, TOOLBAR_PADDING, {}px, the showcase's own choice rather than a platform's: the row is the application's own element, with no toolkit default to keep (spec §3.1)",
-                side("top", stated.top),
-                side("right", stated.right),
-                side("bottom", stated.bottom),
-                side("left", stated.left),
+                "{}; {}; {}; {}. A side toolbar.bar(NONE) leaves unstated takes layout.container_margin, and where that is unstated too, TOOLBAR_PADDING, {}px, the showcase's own choice rather than a platform's: the row is the application's own element, with no toolkit default to keep (spec §3.1)",
+                side("top", top),
+                side("right", right),
+                side("bottom", bottom),
+                side("left", left),
                 px_text(own.as_f32()),
             ),
         )
@@ -648,14 +848,15 @@ pub fn toolbar(
 /// `spec.set`, selected while its panel is `spec.open`, which `spec.state`
 /// describes. Its icon-size line is recorded where `demo::panel_toggle`
 /// applies the builder; `tooltip_delay` is the delay its tooltip is given,
-/// the theme's `tooltip.show_delay_ms`; it is sized as
-/// `buttons::tool_button_size` says under `native`'s `button`.
+/// the theme's `timings.tooltip_show_ms`; it is sized as
+/// `buttons::tool_button_size` says under the installed 0.8.0 theme
+/// `native`.
 pub fn panel_toggle(
     t: &Theme,
     spec: &PanelToggle<'_>,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
-    native: Option<&ResolvedButtonTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let (icon, set, open) = (&spec.drawn, spec.set, spec.open);
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
@@ -700,15 +901,16 @@ pub fn panel_toggle(
 }
 
 /// The side panel (spec S2): the theme settings, a Separator and the
-/// inspector. `sidebar` is `sidebar.border.padding` where the theme states
-/// any side of it, which then pads the whole panel, and `container_margin`
-/// the installed layout's, which pads a side `sidebar` leaves unstated, or
-/// the settings where there is no `sidebar`. Its geometry line is recorded
-/// where `demo::side_panel` pads with the margin.
+/// inspector. `sidebar` is `sidebar.container(NONE)`'s padding sides (top,
+/// right, bottom, left) where the installed 0.8.0 theme states any of them,
+/// which then pad the whole panel, and `container_margin` the installed
+/// layout's, which pads a side `sidebar` leaves unstated, or the settings
+/// where there is no `sidebar`. Its geometry line is recorded where
+/// `demo::side_panel` pads with the margin.
 pub fn side_panel(
     t: &Theme,
     container_margin: Option<Pixels>,
-    sidebar: Option<ResolvedPadding>,
+    sidebar: Option<[Option<f32>; 4]>,
 ) -> WidgetInfo {
     WidgetInfo::new("Side panel")
         .not_themeable(
@@ -724,7 +926,7 @@ pub fn side_panel(
         ))
         .config(
             "colours",
-            "sidebar.background_color and sidebar.font's colour, the sidebar and sidebar_foreground tokens the connector installs, which the showcase paints the panel with",
+            "sidebar.container(NONE).fill and sidebar.item_label(NONE).color, the sidebar and sidebar_foreground tokens the connector installs, which the showcase paints the panel with",
         )
         .instance(
             "holds",
@@ -733,20 +935,20 @@ pub fn side_panel(
         .instance(
             "padding",
             match (sidebar, container_margin) {
-                (Some(p), _) => {
+                (Some([top, right, bottom, left]), _) => {
                     let side = |name: &str, stated: Option<f32>| match (stated, container_margin) {
-                        (Some(v), _) => format!("{name} {}px, sidebar.border's", px_text(v)),
+                        (Some(v), _) => format!("{name} {}px, sidebar.container(NONE)'s", px_text(v)),
                         (None, Some(m)) => {
                             format!("{name} {}px, layout.container_margin", px_text(m.as_f32()))
                         }
-                        (None, None) => format!("{name} none: sidebar.border.padding and layout.container_margin leave it unstated"),
+                        (None, None) => format!("{name} none: sidebar.container(NONE) and layout.container_margin leave it unstated"),
                     };
                     format!(
-                        "the whole panel, by sidebar.border.padding, a side it leaves unstated by layout.container_margin: {}; {}; {}; {}. The theme settings, the inspector's tab row and its content add none",
-                        side("top", p.top),
-                        side("right", p.right),
-                        side("bottom", p.bottom),
-                        side("left", p.left),
+                        "the whole panel, by sidebar.container(NONE)'s padding, a side it leaves unstated by layout.container_margin: {}; {}; {}; {}. The theme settings, the inspector's tab row and its content add none",
+                        side("top", top),
+                        side("right", right),
+                        side("bottom", bottom),
+                        side("left", left),
                     )
                 }
                 (None, Some(margin)) => format!(
@@ -810,7 +1012,7 @@ pub fn sidebar_label_font(
     match native_theme_gpui::next::label_font_unmapped(label, "sidebar.item_label(NONE)") {
         None => format!(
             "sidebar.item_label(NONE): {}: plain text, not a Label, whose render paints foreground over the side panel's colour (gpui-component/label.rs, Label::render)",
-            super::typography::text_style_font(typography, label)
+            super::next_drawn_font(label, &super::typography::line_box_text(typography, label))
         ),
         Some(unstated) => format!(
             "text_sm, a rem step, gpui's own: the theme states no value gpui can take at {} (spec §10, rule 0)",
@@ -854,12 +1056,9 @@ pub fn theme_settings(widget_gap: Option<Pixels>, own: Pixels) -> WidgetInfo {
 
 /// What an Underline `TabBar` at `Size::Small` paints and how it is laid
 /// out, under `variant`: gpui-component's, each Tab given `native`'s
-/// `tab.min_height` where a native theme is installed (`demo::tab_bar`).
-fn underline_tab_bar(
-    t: &Theme,
-    variant: &'static str,
-    native: Option<&ResolvedTheme>,
-) -> WidgetInfo {
+/// `tab.tab(NONE).min_size[1]` where a 0.8.0 theme is installed and states
+/// it (`demo::tab_bar`, `demo::next_tab`).
+fn underline_tab_bar(t: &Theme, variant: &'static str, native: Option<&NextTheme>) -> WidgetInfo {
     WidgetInfo::new("TabBar")
         .variant(variant)
         .color(claim(
@@ -910,35 +1109,53 @@ fn underline_tab_bar(
         )
         .not_themeable(
             "height",
-            match native {
-                Some(r) => format!(
-                    "a per-Size literal set with .h() over the caller's style, which tab.min_height, {}px, raises: demo::tab_bar gives each Tab it as min_h through the Tab's style, which its own h does not clear (tab/tab.rs, Tab::render)",
-                    px_text(r.tab.min_height)
-                ),
-                None => "a per-Size literal set with .h() over the caller's style, but a Tab never sets min_h, which leaves tab.min_height a receiver. Nothing applies it: there is no geometry::tab -- our gap (tab/tab.rs, Tab::render)".to_string(),
-            },
+            tab_height_note(native.map(|r| r.tab.tab(WidgetState::NONE).min_size[1])),
         )
 }
 
+/// An upstream Underline tab's height note, where `min_height` is the
+/// installed 0.8.0 theme's `tab.tab(NONE).min_size[1]` (`None` where no
+/// 0.8.0 theme is installed, `Some(None)` where it states none).
+pub(crate) fn tab_height_note(min_height: Option<Option<f32>>) -> String {
+    match min_height {
+        Some(Some(height)) => format!(
+            "a per-Size literal set with .h() over the caller's style, which tab.tab(NONE).min_size[1], {}px, raises: demo::tab_bar gives each Tab it as min_h through the Tab's style, which its own h does not clear (tab/tab.rs, Tab::render)",
+            px_text(height)
+        ),
+        Some(None) => "a per-Size literal set with .h() over the caller's style, upstream's own, as the theme states no tab.tab(NONE).min_size[1] for demo::tab_bar to give each Tab as min_h (tab/tab.rs, Tab::render)".to_string(),
+        None => "a per-Size literal set with .h() over the caller's style, but a Tab never sets min_h, which leaves tab.tab(NONE).min_size[1] a receiver. Nothing applies it: there is no geometry::tab -- our gap (tab/tab.rs, Tab::render)".to_string(),
+    }
+}
+
 /// The inspector's TabBar (spec §2.6, §4.4): chrome, so it reports itself,
-/// unlike the content below it. `native` is the installed native theme,
-/// whose `tab.min_height` each Tab takes.
-pub fn inspector_tab_bar(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// unlike the content below it. `native` is the installed 0.8.0 theme, whose
+/// `tab.tab(NONE).min_size[1]` each Tab takes.
+pub fn inspector_tab_bar(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
     underline_tab_bar(t, "Underline, small", native).instance(
         "tabs",
         "Widget, the info the pointer settled on, and Theme, what the theme and the window set that no widget carries",
     )
 }
 
-/// What `native`'s tab theme sets on a chrome TabBar's tabs where a native
-/// theme is installed (`demo::tab_bar`): each label a child in `tab.font`,
-/// each tab at least `tab.min_width` by `tab.min_height`.
-pub fn tab_font(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// What `native`'s tab theme sets on a chrome TabBar's tabs where a 0.8.0
+/// theme is installed (`demo::tab_bar`, `demo::next_tab`): each label a
+/// child in `tab.label(NONE)` where it gives a font gpui can letter it in,
+/// each tab at least `tab.tab(NONE)`'s stated least size.
+pub fn tab_font(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
     match native {
         Some(r) => info
-            .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", super::drawn_font(&r.tab.font)))
-            .config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px, through the Tab's style, which its own h does not clear (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.min_width), px_text(r.tab.min_height))),
-        None => info.not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
+            .config(
+                "font",
+                super::layout::folder_tab_font(&r.typography, &r.tab.label(WidgetState::NONE)),
+            )
+            .config(
+                "size",
+                super::layout::folder_tab_size(r.tab.tab(WidgetState::NONE).min_size),
+            ),
+        None => info.not_themeable(
+            "font",
+            "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)",
+        ),
     }
 }
 
@@ -955,9 +1172,9 @@ pub fn tab_bar_padding(container_margin: Option<Pixels>) -> String {
 }
 
 /// The content panel's page TabBar (spec S3), with upstream's menu of every
-/// tab. `native` is the installed native theme, whose `tab.min_height` each
-/// Tab takes.
-pub fn page_tab_bar(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// tab. `native` is the installed 0.8.0 theme, whose
+/// `tab.tab(NONE).min_size[1]` each Tab takes.
+pub fn page_tab_bar(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
     underline_tab_bar(t, "Underline, small, menu", native)
         .instance(
             "tabs",
@@ -1200,8 +1417,8 @@ pub fn palette_select(t: &Theme, native: Option<&native_theme::next::ResolvedThe
             "none, the theme's own colours, then the palettes native_theme::next::Palette::BUNDLED_NAMES names; choosing one installs the chosen theme again with it laid over (next::Theme::with_palette), which locks the scheme to the palette's, so the colour mode chosen does not change it while the palette is chosen (Showcase::choose_palette)",
         )
         .instance(
-            "old model",
-            "under a palette, gpui-component's theme colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette. Until their page group moves to the 0.8.0 model, these are still drawn from the 0.7.2 theme of the same choice (support::OldModel), which has no palettes, so they show the preset alone, in the palette's scheme: the button variant of variants::default_button with geometry::default_button_rest (the Basic page's default-button sample), variants::switch_color (the checked track of the Preferences Switches built without the widgets feature), and the showcase's own refinements -- native_color, native_geometry, MenuLook and the side panel's padding and label font (sidebar.border.padding, sidebar.font); the tooltip says so",
+            "under a palette",
+            "gpui-component's theme colours, the connector's widgets::* and the showcase's own refinements are drawn from the 0.8.0 theme with the palette, and so is the colour the icons of the chosen icon theme are tinted with (Showcase::original_font, typography.body.color); the tooltip says so",
         )
         .instance(
             "width",
@@ -1253,9 +1470,11 @@ pub fn icon_set_select(
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
 /// showing `icon` of the icon theme named `set`, coloured as
 /// `buttons::native_toolbar` says and sized as `buttons::tool_button_size`
-/// says under `native`'s `button`. Its icon-size line is recorded where
-/// `demo::toolbar_button` applies the builder; `tooltip_delay` is the delay
-/// its tooltip is given, the theme's `tooltip.show_delay_ms`.
+/// says under the installed 0.8.0 theme `native`, its variant built from
+/// `from`. Its icon-size line is recorded where `demo::toolbar_button`
+/// applies the builder; `tooltip_delay` is the delay its tooltip is given,
+/// the theme's `timings.tooltip_show_ms`.
+#[allow(clippy::too_many_arguments)]
 pub fn toolbar_button(
     t: &Theme,
     action: &'static str,
@@ -1263,7 +1482,8 @@ pub fn toolbar_button(
     set: &str,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
+    from: super::buttons::ToolVariant,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -1272,12 +1492,12 @@ pub fn toolbar_button(
         "Toolbar, labelled"
     });
     let info = action_tooltip(
-        super::buttons::native_toolbar(info, t, native),
+        super::buttons::native_toolbar(info, t, native, from),
         t,
         tooltip_styled,
         tooltip_delay,
     )
-    .not_themeable("fill", super::buttons::toolbar_fill(native));
+    .not_themeable("fill", super::buttons::toolbar_fill(native, from));
     let info = if drawn {
         info.not_themeable("icon", child_icon_line(icon))
     } else {
@@ -1287,7 +1507,7 @@ pub fn toolbar_button(
         info,
         ToolSize::Medium,
         drawn,
-        native.map(|r| &r.button),
+        native,
         super::buttons::rest_border(native),
     )
     .instance(
@@ -1303,9 +1523,9 @@ pub fn toolbar_button(
 
 /// What a chrome Button's tooltip paints: built by the application on the
 /// element around the Button (`demo::action_tooltip`) and refined by
-/// `geometry::tooltip` where `styled`, whose line the helper records;
+/// `next::geometry::tooltip` where `styled`, whose line the helper records;
 /// upstream's colours where no native theme refined it. `delay` is the
-/// theme's `tooltip.show_delay_ms`, which the element is given.
+/// theme's `timings.tooltip_show_ms`, which the element is given.
 fn action_tooltip(
     info: WidgetInfo,
     t: &Theme,
@@ -1319,19 +1539,19 @@ fn action_tooltip(
     };
     let info = info.instance(
         "tooltip",
-        "Tooltip::new with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. Where a native theme is installed the bubble is given tooltip.max_width as its max width, so the bubble, the key binding included, keeps within it and the text wraps beside the key. The text as an element refined by geometry::tooltip_content would not: that width counts the text alone, so with a key binding the bubble would be wider than tooltip.max_width by the key and the gap before it; without one the two are the same bubble (gpui-component/tooltip.rs, Tooltip::render)",
+        "Tooltip::new with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. Where the installed theme states it, the bubble is given tooltip.panel.max_size[0] as its max width, so the bubble, the key binding included, keeps within it and the text wraps beside the key. The text as an element refined by next::geometry::tooltip_content would not: that width counts the text alone, so with a key binding the bubble would be wider than tooltip.panel.max_size[0] by the key and the gap before it; without one the two are the same bubble (gpui-component/tooltip.rs, Tooltip::render)",
 );
     match delay {
         Some(delay) => info.config(
             "tooltip delay",
             format!(
-                "tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through the Button, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay)",
+                "timings.tooltip_show_ms, {}ms: gpui's own tooltip, set on an element rather than through the Button, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/next/mod.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay)",
                 delay.as_millis()
             ),
         ),
         None => info.not_themeable(
             "tooltip delay",
-            "500ms: gpui's own tooltip, set on an element rather than through the Button, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed",
+            "500ms: gpui's own tooltip, set on an element rather than through the Button, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase sets to the theme's timings.tooltip_show_ms where the theme states one; this one states none, or no native theme is installed",
         ),
     }
 }
@@ -1353,7 +1573,7 @@ pub(crate) fn child_icon_line(icon: &ChromeIcon) -> String {
 
 /// The colour a raster icon of the chosen set is drawn in
 /// (`ChromeIcon::Raster`), which no widget's colour reaches.
-pub(crate) const RASTER_ICON_COLOUR: &str = "which takes no text colour: it shows the colour its loader drew it in -- an SF Symbol or a Segoe Fluent glyph in defaults.font.color where a native theme is installed (the showcase's icon_tint), else in the loader's own (SF Symbols black, Segoe Fluent white: native-theme icons.rs, SfSymbolsLoader, SegoeFluentLoader); a freedesktop theme's raster icon, or its SVG in several colours, in its own colours";
+pub(crate) const RASTER_ICON_COLOUR: &str = "which takes no text colour: it shows the colour its loader drew it in -- an SF Symbol or a Segoe Fluent glyph in typography.body.color where a native theme is installed (the showcase's icon_tint), else in the loader's own (SF Symbols black, Segoe Fluent white: native-theme icons.rs, SfSymbolsLoader, SegoeFluentLoader); a freedesktop theme's raster icon, or its SVG in several colours, in its own colours";
 
 /// What a chrome icon's info says it is: `icon` as the icon theme named
 /// `set` gives it, and `absent` what its widget shows where the icon theme
@@ -1379,11 +1599,12 @@ pub(crate) fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> St
 }
 
 /// The window's `StatusBar` (spec §2.7). Its geometry line is recorded by
-/// `native_info` where `demo::status_bar` applies the builder; `styled` is
-/// whether it does, which decides the colour of the text. `environment` is
-/// the whole text the bar draws after its toggle, which a bar too narrow
-/// for it cuts short.
-pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
+/// `next_native_info` where `demo::status_bar` applies the builder; `styled`
+/// is whether it does, which decides the colour of the text, and `edge`
+/// whether the theme states the top edge's width. `environment` is the whole
+/// text the bar draws after its toggle, which a bar too narrow for it cuts
+/// short.
+pub fn status_bar(t: &Theme, styled: bool, edge: bool, environment: &str) -> WidgetInfo {
     let info = WidgetInfo::new("StatusBar")
         .color(claim(
             "bg",
@@ -1397,7 +1618,7 @@ pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
             t.status_bar_border,
             "gpui-component/status_bar.rs:101",
         ));
-    // geometry::status_bar paints the text with status_bar.font's colour,
+    // next::geometry::status_bar paints the text with status_bar.label's colour,
     // which no ThemeColor field holds, over upstream's.
     let info = if styled {
         info
@@ -1412,29 +1633,29 @@ pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
     let info = info
         .not_themeable(
             "region gap",
-            "gap_2, 0.5rem, between the regions: upstream sets it on the bar before refine_style (status_bar.rs:88, :96), so a refinement could replace it, but the model states no status-bar item gap and geometry::status_bar sets none",
+            "gap_2, 0.5rem, between the regions: upstream sets it on the bar before refine_style (status_bar.rs:88, :96), so a refinement could replace it, but the model states no status-bar item gap and next::geometry::status_bar sets none",
         )
         .not_themeable(
             "item gap",
             "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84); the middle region opens with one item, the side-panel toggle and the environment text, which demo::status_bar spaces by layout.widget_gap, none where it is unstated",
         );
-    // Under a native theme demo::status_bar draws the top edge
-    // status_bar.border.line_width thick, over upstream's border_t_1, and
+    // Where the theme states it, demo::status_bar draws the top edge
+    // status_bar.bar.stroke.width thick, over upstream's border_t_1, and
     // says so in its "top edge" line.
-    let info = if styled {
+    let info = if edge {
         info
     } else {
         info.not_themeable(
             "edge",
-            "border_t_1, upstream's 1px rule along the top: with no native theme installed, demo::status_bar sets no status_bar.border.line_width over it (status_bar.rs, StatusBar::render)",
+            "border_t_1, upstream's 1px rule along the top: where the installed theme states no status_bar.bar.stroke.width, or none is installed, demo::status_bar sets none over it (status_bar.rs, StatusBar::render)",
         )
     };
     info.instance(
         "left",
         if cfg!(target_os = "linux") {
-            "the side-panel toggle at the bar's left end, then the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- SystemTheme::from_system then asks the portal, then kdeglobals, and the preset names what it settled on; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+            "the side-panel toggle at the bar's left end, then the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- next::Theme::from_system reads the desktop with the reader of the platform's preset (Preset::detect), and the preset names the one it read; the installed preset and colour mode; the font the installed theme states as typography.body, in the unit its source stated, or (family not stated); the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         } else {
-            "the side-panel toggle at the bar's left end, then the operating system; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+            "the side-panel toggle at the bar's left end, then the operating system; the installed preset and colour mode; the font the installed theme states as typography.body, in the unit its source stated, or (family not stated); the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         },
     )
     .instance(
@@ -1449,17 +1670,17 @@ pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
     )
     .instance(
         "text",
-        "the environment and the shown title are plain text rather than Labels: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour geometry::status_bar gives the bar",
+        "the environment and the shown title are plain text rather than Labels: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour next::geometry::status_bar gives the bar",
     )
 }
 
 /// A handle of the window's resizable group (spec §1.1, §4.3.5), between the
 /// panels `between` names. `base` is gpui-base's theme, where the handle's
-/// colours live.
+/// colours live; `native` the installed 0.8.0 theme.
 pub fn resize_handle(
     base: &gpui_base::Theme,
     between: &'static str,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("ResizeHandle")
         .variant(between)
@@ -1479,40 +1700,44 @@ pub fn resize_handle(
         ))
         .instance(
             "colour source",
-            "handle and active_handle are gpui-base's fields, always filled: upstream projects border and drag_border into them (theme/mod.rs, Theme::base_theme), and the connector then writes the platform's splitter.divider_color and splitter.hover_color over both (native-theme-gpui/base_layer.rs, resizable_theme). Only where the installed theme has no variant for the current colour mode are border and drag_border written back (native-theme-gpui/lib.rs, base_overrides_for). So the fallbacks gpui-base reads for an unset field, border at rest and ring while pressed, never apply here (gpui-base/resizable/resize_handle.rs, handle_color)",
+            "handle and active_handle are gpui-base's fields, always filled: upstream projects border and drag_border into them (theme/mod.rs, Theme::base_theme), and the connector then writes the platform's splitter.handle(NONE).fill and splitter.handle(HOVER).fill over both (native-theme-gpui/next/mod.rs, resizable_theme), and installs no 0.8.0 theme that leaves either unstated (next/mod.rs, Installed::of). Only where the installed theme has no variant for the current colour mode are border and drag_border written back (native-theme-gpui/lib.rs, base_overrides_for). So the fallbacks gpui-base reads for an unset field, border at rest and ring while pressed, never apply here (gpui-base/resizable/resize_handle.rs, handle_color)",
         )
         .instance(
             "drawn by",
             "the showcase, which with_handle_appearance hands the painted part of each handle to (resizable/panel.rs, with_handle_appearance): it paints the colour upstream would (resizable/resize_handle.rs, handle_color) and lays this info over the hit area. The drag and the cursor stay upstream's",
         );
     let info = match native {
-        Some(r) => info
-            .color(claim(
-                "line under the pointer",
-                "hover_color",
-                stated(r.splitter.hover_color),
-                "showcase",
-            ))
-            .config(
-                "width",
-                format!(
-                    "splitter.divider_width, {}px, which the showcase paints the line at, reaching from the boundary back over the side panel's edge: the handle itself lays out 1px wide with 4px of padding on each side, upstream's constants (resizable/resize_handle.rs, HANDLE_SIZE), and is absolutely placed, so the side panel's content keeps clear of the line by the width beyond that 1px (demo.rs, splitter_reserve), and the line takes a margin of neither panel",
-                    px_text(r.splitter.divider_width)
-                ),
-            )
+        Some(r) => info.config(
+            "width",
+            format!(
+                "splitter.divider_width, {}px, which the showcase paints the line at, reaching from the boundary back over the side panel's edge: the handle itself lays out 1px wide with 4px of padding on each side, upstream's constants (resizable/resize_handle.rs, HANDLE_SIZE), and is absolutely placed, so the side panel's content keeps clear of the line by the width beyond that 1px (demo.rs, splitter_reserve), and the line takes a margin of neither panel",
+                px_text(r.splitter.divider_width)
+            ),
+        ),
+        None => info.not_themeable(
+            "width",
+            "a 1px line, upstream's HANDLE_SIZE: no native theme is installed, so there is no splitter.divider_width (resizable/resize_handle.rs, HANDLE_SIZE)",
+        ),
+    };
+    let hover = native.and_then(|r| {
+        stated_claim(
+            "line under the pointer",
+            "splitter.handle(HOVER).fill",
+            fill_of(&r.splitter.handle(WidgetState::HOVER)),
+            "showcase",
+        )
+    });
+    let info = match hover {
+        Some(hover) => info
+            .color(hover)
             .config(
                 "hover",
-                "splitter.hover_color under the pointer, through the group the handle is named in (resizable/resize_handle.rs, ResizeHandle); while it is pressed, active_handle, which the connector fills with the same colour",
+                "splitter.handle(HOVER).fill under the pointer, through the group the handle is named in (resizable/resize_handle.rs, ResizeHandle); while it is pressed, active_handle, which the connector fills with the same colour",
             ),
-        None => info
-            .not_themeable(
-                "hover",
-                "none: a hovered handle keeps its resting colour; no native theme is installed, so there is no splitter.hover_color to paint (resizable/resize_handle.rs, ResizeHandleState)",
-            )
-            .not_themeable(
-                "width",
-                "a 1px line, upstream's HANDLE_SIZE: no native theme is installed, so there is no splitter.divider_width (resizable/resize_handle.rs, HANDLE_SIZE)",
-            ),
+        None => info.not_themeable(
+            "hover",
+            "none: a hovered handle keeps its resting colour, upstream's own; no native theme states a splitter.handle(HOVER).fill to paint (resizable/resize_handle.rs, ResizeHandleState)",
+        ),
     };
     info
         .instance(
@@ -1521,19 +1746,105 @@ pub fn resize_handle(
         )
 }
 
+/// `info` saying where a rule states `hovered`'s stroke (`menu.item(HOVER)`)
+/// in a form gpui cannot draw, which no outline then takes: the home is
+/// unmapped, not unstated (`demo::state_stroke_unmapped`).
+pub(super) fn hovered_menu_edge_unmapped(
+    info: WidgetInfo,
+    hovered: &native_theme::next::PartStyle,
+) -> WidgetInfo {
+    if crate::demo::state_stroke_unmapped(hovered) {
+        info.config(
+            "hovered item edge",
+            "not mapped: a rule states menu.item(HOVER).stroke for the hover state in a form gpui cannot draw (not one stroke of one colour, nor none), so a hovered item has no outline, as gpui-component's own has none (spec §10, rule 0; menu/menu_item.rs, MenuItemElement::render)",
+        )
+    } else {
+        info
+    }
+}
+
+/// What a menu row's outline is while the mouse button is held on it, where
+/// `edge` is `demo::menu_pressed_edge`'s: the stroke a rule states for
+/// `menu.item(PRESSED)`, or where none does, the hover outline, which
+/// `hovered` says the row has.
+pub(super) fn pressed_menu_edge(
+    info: WidgetInfo,
+    edge: Option<(Hsla, Pixels)>,
+    hovered: bool,
+    pressed: &native_theme::next::PartStyle,
+) -> WidgetInfo {
+    let unmapped = crate::demo::state_stroke_unmapped(pressed);
+    match edge {
+        None if unmapped => info.config(
+            "pressed item edge",
+            if hovered {
+                "not mapped: a rule states menu.item(PRESSED).stroke for the pressed state in a form gpui cannot draw (not one stroke of one colour, nor none), so a pressed item keeps the hover outline, gpui-component's own, which draws a pressed item as a hovered one (spec §10, rule 0; menu/menu_item.rs, MenuItemElement::render)"
+            } else {
+                "not mapped: a rule states menu.item(PRESSED).stroke for the pressed state in a form gpui cannot draw (not one stroke of one colour, nor none), so a pressed item has no outline, as gpui-component's own has none (spec §10, rule 0; menu/menu_item.rs, MenuItemElement::render)"
+            },
+        ),
+        Some((_, width)) if width.as_f32() > 0.0 => info.config(
+            "pressed item edge",
+            format!(
+                "the stroke a rule states for menu.item(PRESSED), asked of the pressed state alone (spec §2, from_state), {}px, in place of the hover outline while the mouse button is held on an item",
+                px_text(width.as_f32())
+            ),
+        ),
+        Some(_) => info.config(
+            "pressed item edge",
+            "none while the mouse button is held on an item: the stroke a rule states for menu.item(PRESSED) is none or 0 wide (spec §10, rule 2)",
+        ),
+        None if hovered => info.config(
+            "pressed item edge",
+            "the hover outline, while the mouse button is held on an item too: no rule states a stroke for menu.item(PRESSED), and gpui-component draws a pressed item as a hovered one, with a hover style and no pressed one (menu/menu_item.rs, MenuItemElement::render)",
+        ),
+        None => info,
+    }
+}
+
+/// How a Dialog enters, as `geometry::dialog_entrance` gives the installed
+/// 0.8.0 theme's `dialog.entrance` (`demo::next_entrance_of`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ThemedEntrance {
+    /// The theme states an entrance without motion, which the Dialog takes
+    /// as `DialogEntrance::None`.
+    NoneStated,
+    /// No 0.8.0 theme is installed, or it states no `dialog.entrance`: the
+    /// Dialog keeps upstream's default entrance.
+    Unstated,
+    /// The theme states the entrance in a form gpui cannot take, at the
+    /// home named (spec §10, rule 4): the Dialog keeps upstream's default
+    /// entrance, and the note says why.
+    Unmapped(&'static str),
+    /// The theme states an entrance with motion, which the Dialog takes as
+    /// `DialogEntrance::Fade`.
+    Stated,
+}
+
+/// The animation `note` of a Dialog entering as `entrance`, with the home
+/// gpui cannot take where the theme states the entrance in such a form.
+fn entrance_note(entrance: ThemedEntrance, note: &str) -> String {
+    match entrance {
+        ThemedEntrance::Unmapped(home) => format!(
+            "{note}; the theme states the entrance in a form gpui cannot take ({home}), so the showcase keeps that default entrance"
+        ),
+        _ => note.to_string(),
+    }
+}
+
 /// The Dialog's own colours, which every Dialog the showcase opens paints:
 /// the surface, its edge, and the backdrop behind it; and what upstream
 /// builds around the parts it is given. `close_button` is whether the Dialog
 /// draws its close button, `reported` the parts that report it,
 /// `reduce_motion` gpui's reduced motion while it is drawn, `entrance`
-/// whether it enters as `geometry::dialog_entrance` gives the theme's
+/// how it enters as `geometry::dialog_entrance` gives the theme's
 /// `dialog.entrance`, and `styled` whether `geometry::dialog` refined it,
 /// whose geometry line then names the surface's fill and edge.
 pub(super) fn dialog_surface(
     info: WidgetInfo,
     t: &Theme,
     reduce_motion: bool,
-    entrance: bool,
+    entrance: ThemedEntrance,
     styled: bool,
     close_button: bool,
     reported: &str,
@@ -1547,7 +1858,7 @@ pub(super) fn dialog_surface(
         info
     };
     // geometry::dialog paints the surface and its edge with
-    // dialog.background_color and dialog.border.color, which no ThemeColor
+    // dialog.panel.fill and dialog.panel.stroke.color, which no ThemeColor
     // field holds, over upstream's.
     let info = if styled {
         info
@@ -1566,7 +1877,7 @@ pub(super) fn dialog_surface(
         ))
         .not_themeable(
             "fill",
-            "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog); geometry::dialog gives it dialog.background_color where a native theme is installed",
+            "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog); geometry::dialog gives it dialog.panel.fill where a native theme is installed",
         )
     };
     info.color(claim(
@@ -1577,7 +1888,7 @@ pub(super) fn dialog_surface(
     ))
     .not_themeable(
         "width",
-        "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog holds it at least dialog.min_width and geometry::dialog_max_width caps it",
+        "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog holds it at least dialog.panel.min_size[0] and geometry::dialog_max_width caps it at dialog.panel.max_size[0]",
     )
     .not_themeable(
         "placement",
@@ -1585,12 +1896,13 @@ pub(super) fn dialog_surface(
     )
     .not_themeable(
         "animation",
-        match (entrance, reduce_motion) {
-            (false, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would slide and fade in as it opens, and out as it closes, over 0.25s on a literal curve, the same both ways, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-            (false, false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens, in as the Dialog opens and out as it closes, on the same curve and duration both ways: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-            (true, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would fade in place as it opens, and out as it closes, over the motion tokens' duration_normal on their easing_enter, the same both ways, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp) -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-            (true, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp), not a literal, in as the Dialog opens and out as it closes, on the same curve and duration both ways: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-        },
+        entrance_note(entrance, match (entrance, reduce_motion) {
+            (ThemedEntrance::NoneStated, _) => "none: the theme states an entrance without motion (dialog.entrance), which geometry::dialog_entrance gives as DialogEntrance::None, so the Dialog appears at rest at once and leaves at once, reduced motion on or off (dialog/entrance.rs, DialogEntrance::None; dialog/dialog.rs, Dialog::exit_duration)",
+            (ThemedEntrance::Unstated | ThemedEntrance::Unmapped(_), true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would slide and fade in as it opens, and out as it closes, over 0.25s on a literal curve, the same both ways, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::Unstated | ThemedEntrance::Unmapped(_), false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens, in as the Dialog opens and out as it closes, on the same curve and duration both ways: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::Stated, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would fade in place as it opens, and out as it closes, over the motion tokens' duration_normal on their easing_enter, the same both ways, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp) -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::Stated, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp), not a literal, in as the Dialog opens and out as it closes, on the same curve and duration both ways: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+        }),
     )
     .instance(
         "unreported",
@@ -1611,7 +1923,12 @@ pub(super) fn dialog_surface(
 /// `demo::command_palette` applies the builders; its info target is the
 /// title, because the Command fills the rest of its content. `entrance` as
 /// `dialog_surface`'s.
-pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bool) -> WidgetInfo {
+pub fn palette_dialog(
+    t: &Theme,
+    reduce_motion: bool,
+    entrance: ThemedEntrance,
+    styled: bool,
+) -> WidgetInfo {
     dialog_surface(
         WidgetInfo::new("Dialog").variant("Command Palette"),
         t,
@@ -1904,31 +2221,36 @@ pub fn preferences_settings(t: &Theme) -> WidgetInfo {
 }
 
 /// One of the Preferences sheet's switches, `checked` or not, `disabled`
-/// while no native theme is installed, its checked track handed `native`'s
-/// `switch.checked_background` where one is.
+/// while no native theme is installed, its checked track handed the
+/// installed 0.8.0 theme `native`'s `switch.track(CHECKED).fill` through
+/// `next::variants::switch_color` where that maps it.
 pub fn preference_switch(
     t: &Theme,
     field: &'static str,
     checked: bool,
     disabled: bool,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Switch").variant(match (checked, disabled) {
         (_, true) => "disabled",
         (true, false) => "on",
         (false, false) => "off",
     });
-    let info = match (checked, disabled, native) {
+    let native = native.filter(|r| next::variants::switch_color(r).is_ok());
+    let on = native.and_then(|r| {
+        stated_claim(
+            "track",
+            "switch.track(CHECKED).fill",
+            fill_of(&r.switch.track(WidgetState::CHECKED)),
+            "showcase",
+        )
+    });
+    let info = match (checked, disabled, on) {
         (_, true, _) => info.not_themeable(
             "disabled",
             "the row at half opacity (setting/item.rs, SettingItem), and the track at half alpha within it (gpui-component/switch.rs, Switch)",
         ),
-        (true, false, Some(r)) => info.color(claim(
-            "track",
-            "checked_background",
-            stated(r.switch.checked_background),
-            "showcase",
-        )),
+        (true, false, Some(on)) => info.color(on),
         (true, false, None) => info.color(claim(
             "track",
             "primary",
@@ -1954,7 +2276,7 @@ pub fn preference_switch(
     )
     .not_themeable(
         "on track",
-        "primary by default; Switch::color replaces it, and the showcase hands it variants::switch_color, the model's switch.checked_background, where a native theme is installed (gpui-component/switch.rs, Switch; native-theme-gpui/variants.rs, switch_color)",
+        "primary by default; Switch::color replaces it, and the showcase hands it next::variants::switch_color, the model's switch.track(CHECKED).fill, where a 0.8.0 theme that states it is installed (gpui-component/switch.rs, Switch; native-theme-gpui/next/variants.rs, switch_color)",
     )
     .instance(
         "preference",
@@ -1979,7 +2301,7 @@ pub fn about_dialog(
     t: &Theme,
     gapped: bool,
     reduce_motion: bool,
-    entrance: bool,
+    entrance: ThemedEntrance,
     styled: bool,
 ) -> WidgetInfo {
     dialog_surface(
@@ -2008,10 +2330,10 @@ pub fn about_dialog(
 
 /// The About dialog's link to the README's Compatibility table: the
 /// Typography page's Link, pointing somewhere else, refined by
-/// `geometry::link` by `underline`, the `link.underline_enabled` of the
-/// installed native theme, as every Link is.
+/// `next::geometry::link` by `underline`, whether the installed 0.8.0
+/// theme's `link.label(NONE).decoration` underlines it, as every Link is.
 pub fn about_link(t: &Theme, underline: Option<bool>) -> WidgetInfo {
-    super::typography::link(t, underline).instance(
+    super::typography::next_link(t, underline).instance(
         "target",
         "the connector README at this version's tag, v-prefixed as the text says, at its Compatibility heading. The tag exists once the version is released; before that the page is missing",
     )

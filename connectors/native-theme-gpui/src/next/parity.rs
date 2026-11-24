@@ -527,6 +527,28 @@ const DIFFERENCES: &[Difference] = &[
                  secondary_foreground is equal",
     },
     Difference {
+        leaf: "variants::ghost_button, edge",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ],
+        reason: "0.7.2's ghost variant has no outline (no colour, no rest refinement); \
+                 crate::next's edges it with the flat button's hovered stroke, \
+                 button.body(HOVER; variant=Flat).stroke.color, where a rule states it for the \
+                 state, and lays it out by next::geometry::ghost_button_rest; no preset states a \
+                 flat rule yet, so the flat query returns the push button's rule (spec §1, \
+                 \"Axis values without data\"), whose hovered stroke every preset states \
+                 (variants::bordered_button's entries; kde-breeze's button.hover_border_color in \
+                 0.7.2 as well): the edge is the push button's hovered outline, \
+                 variants::hover_border's, at the hovered stroke's width inside the push \
+                 button's padding",
+    },
+    Difference {
         leaf: "geometry::button_checked",
         presets: &["macos-monterey"],
         reason: "neither model states a checked toggle on macos-monterey (a checked toggle in \
@@ -546,16 +568,22 @@ const DIFFERENCES: &[Difference] = &[
         leaf: "geometry::toolbar_button_checked",
         presets: &["macos-monterey", "macos-tahoe"],
         reason: "neither model states a toolbar button's checked or pressed fill on the macOS \
-                 presets, so the refinement's fill is the push button's pressed one \
-                 (crate::geometry::toolbar_button_checked); the 0.8.0 presets state the \
+                 presets, so 0.7.2's refinement's fill is the push button's pressed one \
+                 (crate::geometry::toolbar_button_checked), and 0.8.0's gpui-component's own \
+                 selected ghost's, secondary_active (gpui-component 0.10.0 \
+                 button/button.rs:1346; spec §10, rule 0a), which crate::next installs from the \
+                 flat button's pressed fill, button.body(PRESSED; variant=Flat), and the \
+                 presets, stating no flat rule, give the push button's (spec §1, \"Axis values \
+                 without data\"); the 0.8.0 presets state the \
                  measured pressed fill (docs/facts/macos/button.toml on v0.8.0-rc1 at \
                  78ee0efd, `button.body.fill` states [pressed]: macos-monterey #f0f0f0 / \
                  #ffffff5c, os-probe run 41006842699, macOS 15; macos-tahoe #0000002a / \
                  #ffffff2a, the same run, macOS 26; native-theme/tests/next_homes.toml, row \
                  button.active_background, a listed difference), where 0.7.2 gives \
                  macos-monterey's soft option #d6d6db / #4e4e50 and on macos-tahoe none (no \
-                 fill); so the refinement's background is button.body(PRESSED)'s fill; every \
-                 other field of the refinement is equal",
+                 fill); so the refinement's background is secondary_active, the flat button's \
+                 pressed fill, here button.body(PRESSED)'s; every other field of the \
+                 refinement is equal",
     },
     Difference {
         leaf: "geometry::button",
@@ -1748,15 +1776,15 @@ fn compare_builders(
                 use native_theme::next::WidgetState;
                 report.count(toolbar_checked);
                 let o = crate::geometry::toolbar_button_checked(Native::unscaled(old));
-                let t = &new.toolbar;
-                let unstated = super::state_fill_of(&t.button(WidgetState::CHECKED)).is_none()
-                    && super::state_fill_of(&t.button(WidgetState::PRESSED)).is_none();
-                let pressed = super::state_fill_of(&new.button.body(WidgetState::PRESSED));
+                let unstated =
+                    super::state_fill_of(&new.toolbar.button(WidgetState::CHECKED)).is_none();
+                let own = super::flat_button_states(new)
+                    .ok()
+                    .map(|(_, pressed)| pressed);
                 let mut corrected = o.clone();
                 corrected.background = n.background.clone();
-                let filled =
-                    pressed.map(|fill| gpui::StyleRefinement::default().bg(fill).background);
-                if !unstated || filled != Some(n.background.clone()) || corrected != n {
+                let filled = own.map(|fill| gpui::StyleRefinement::default().bg(fill).background);
+                if !unstated || filled != Some(n.background.clone()) || corrected != n || o == n {
                     report.failures.push(format!(
                         "{}: {toolbar_checked}: the listed difference ({}) no longer \
                          describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
@@ -1773,6 +1801,38 @@ fn compare_builders(
         crate::variants::toolbar_button_states(Native::unscaled(old)),
         super::builders::toolbar_button_states(new),
     );
+    // 0.7.2's ghost has no edge: no colour on its variant, no rest refinement.
+    let ghost_edge = "variants::ghost_button, edge";
+    let o = (None, gpui::StyleRefinement::default());
+    let n = super::builders::ghost_hover_border(new)
+        .and_then(|edge| super::builders::ghost_button_rest(new).map(|rest| (edge, rest)));
+    match report.listed(ghost_edge) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(ghost_edge, n) {
+                use native_theme::next::WidgetState;
+                report.count(ghost_edge);
+                let hovered = new.button.body(WidgetState::HOVER);
+                let push = super::builders::hover_border(new).ok().flatten();
+                let rest = super::stroke_width(&hovered, "button.body(HOVER).stroke.width")
+                    .ok()
+                    .map(|w| {
+                        crate::geometry::toolbar_button_rest_from(
+                            true,
+                            w,
+                            super::padding_of(&new.button.body(WidgetState::NONE)),
+                        )
+                    });
+                if push.is_none() || n.0 != push || Some(n.1.clone()) != rest || n == o {
+                    report.failures.push(format!(
+                        "{}: {ghost_edge}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => compare_mapped(report, ghost_edge, o, n),
+    }
     let max_width = "geometry::dialog_max_width";
     match report.listed(max_width) {
         Some(listed) => {
@@ -1920,7 +1980,7 @@ fn compare_root(report: &mut Report, old: &ResolvedTheme, new: &native_theme::ne
         "root::text_scale",
         [&o.caption, &o.section_heading, &o.dialog_title, &o.display]
             .map(|e| (e.size, e.weight, e.line_height)),
-        [n.caption, n.section_heading, n.dialog_title, n.display]
+        [&n.caption, &n.section_heading, &n.dialog_title, &n.display]
             .map(|t| (t.size_px, t.weight, t.line_height)),
     );
     report.leaf(
@@ -2629,6 +2689,13 @@ fn every_next_function_succeeds_on_every_covered_preset(cx: &mut gpui::TestAppCo
                 "geometry::title_bar_inactive",
                 super::geometry::title_bar_inactive(&r, &inactive)
             );
+            succeeds!(
+                c,
+                f,
+                l,
+                "geometry::ghost_button_rest",
+                super::geometry::ghost_button_rest(&r)
+            );
             for disabled in [false, true] {
                 succeeds!(
                     c,
@@ -2666,6 +2733,13 @@ fn every_next_function_succeeds_on_every_covered_preset(cx: &mut gpui::TestAppCo
                     l,
                     "variants::default_button",
                     super::variants::default_button(&r, cx)
+                );
+                succeeds!(
+                    c,
+                    f,
+                    l,
+                    "variants::ghost_button",
+                    super::variants::ghost_button(&r, cx)
                 );
                 succeeds!(c, f, l, "root::apply", super::apply(&r, cx));
             });

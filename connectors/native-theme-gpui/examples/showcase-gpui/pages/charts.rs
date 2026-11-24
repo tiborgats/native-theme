@@ -4,7 +4,7 @@ use gpui::{Context, IntoElement, ParentElement, Styled, prelude::*};
 
 use crate::app::Showcase;
 use crate::demo;
-use crate::pages::page_root;
+use crate::pages::next_page_root;
 use crate::{
     CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
     CHARTS_PIE_CHART, CHARTS_RADAR_CHART, CHARTS_SANKEY_CHART,
@@ -19,7 +19,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
-        page_root(&self.layout)
+        next_page_root(cx)
             .flex_1()
             .child(demo::heading(
                 ui,
