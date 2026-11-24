@@ -5150,19 +5150,19 @@ fn recoloured_icon<'a>(
 }
 
 /// The colour [`icon_button`] gives a bundled set's icon on a tool button:
-/// the label's, `button.font.color`, or, while `selected`, the checked
-/// label `styles::toolbar_button` gives it: `button.checked_text_color`
-/// where the theme states `toolbar.button_checked_background` and it, else
-/// `button.active_text_color`. A flat button's is [`icon_colour`]'s. An OS
-/// icon theme's icons keep theirs.
-fn tool_icon_colour(resolved: &ResolvedTheme, selected: bool) -> Color {
-    let b = &resolved.button;
-    let checked_fill = resolved.toolbar.button_checked_background.is_some();
-    to_color(match (selected, checked_fill) {
-        (true, true) => b.checked_text_color.unwrap_or(b.active_text_color),
-        (true, false) => b.active_text_color,
-        (false, _) => b.font.color,
-    })
+/// the label `iced_next::styles::toolbar_button` gives it at rest, `selected`
+/// or not, which is iced's own button's where the connector maps no style
+/// (`next::Unmapped`; the button is then iced's own, [`NextDressed`]). A
+/// flat button's is [`icon_colour`]'s. An OS icon theme's icons keep theirs.
+fn tool_icon_colour(r: &native_theme::next::ResolvedTheme, theme: &Theme, selected: bool) -> Color {
+    match iced_next::styles::toolbar_button(r, selected) {
+        Ok(style) => style(theme, button::Status::Active).text_color,
+        Err(_) => {
+            use button::Catalog as _;
+            let class = <Theme as button::Catalog>::default();
+            theme.style(&class, button::Status::Active).text_color
+        }
+    }
 }
 
 /// The colour [`icon_button`] gives a bundled set's icon on a flat button:
@@ -5203,7 +5203,7 @@ fn in_state<T: PartialEq>(stated: Option<T>, rest: T, iced: (T, T)) -> T {
 /// unstated in a status is iced's own flat button's, `button::text`
 /// ([`in_state`]: iced's value where it changes the property in that
 /// status, else the theme's at rest). The toolbar's buttons take
-/// `styles::toolbar_button`.
+/// `iced_next::styles::toolbar_button`.
 fn ghost_button(
     r: &native_theme::next::ResolvedTheme,
     selected: bool,
@@ -5252,7 +5252,7 @@ fn ghost_button(
 /// `button.body(NONE;variant=Flat).padding` states ([`flat`]), iced's own
 /// button padding, `button::DEFAULT_PADDING`, on a side it leaves unstated.
 /// No line width is added: a flat button draws no border at rest, and a
-/// toolbar button's hover outline (`styles::toolbar_button`) is drawn on its
+/// toolbar button's hover outline (`iced_next::styles::toolbar_button`) is drawn on its
 /// bounds, over the padding, so it moves nothing.
 fn ghost_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
     stated_sides(
@@ -6525,7 +6525,7 @@ struct IconButton<'a> {
     font: TextStyle,
     padding: Padding,
     selected: bool,
-    /// Styled as a toolbar's button, `styles::toolbar_button`.
+    /// Styled as a toolbar's button, `iced_next::styles::toolbar_button`.
     toolbar: bool,
     action: Message,
     /// The list's ids of the button and of its icon, where the list names
@@ -6540,10 +6540,9 @@ struct IconButton<'a> {
 }
 
 fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
     let r = state.next_shown();
     let color = if spec.toolbar {
-        tool_icon_colour(resolved, spec.selected)
+        tool_icon_colour(r, &state.current_theme, spec.selected)
     } else {
         icon_colour(r, &state.current_theme, spec.selected)
     };
@@ -6559,7 +6558,10 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
             };
             let button = button(icon).padding(spec.padding);
             if spec.toolbar {
-                button.style(styles::toolbar_button(resolved, spec.selected))
+                button.next_style(
+                    iced_next::styles::toolbar_button(r, spec.selected),
+                    |b, s| b.style(s),
+                )
             } else {
                 button.style(ghost_button(r, spec.selected))
             }
@@ -6568,7 +6570,10 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
             let button =
                 button(text(spec.label).next_text(&spec.font, &r.typography)).padding(spec.padding);
             if spec.toolbar {
-                button.style(styles::toolbar_button(resolved, spec.selected))
+                button.next_style(
+                    iced_next::styles::toolbar_button(r, spec.selected),
+                    |b, s| b.style(s),
+                )
             } else {
                 button.style(ghost_button(r, spec.selected))
             }
@@ -8719,30 +8724,23 @@ fn copy_button(
 }
 
 // ---------------------------------------------------------------------------
-// The contract's export (connectors/native-theme-iced/contract-leaves.toml)
+// The contract's export (connectors/native-theme-iced/contract-homes.toml)
 // ---------------------------------------------------------------------------
 
-/// The iced connector's contract as its colour-leaf walk exports it: per
-/// colour leaf of `ResolvedTheme`, the rows it moves under which statuses and
-/// the bundled combinations in which it does not, or why no row reads it
-/// (the file's header). Widget Info's colour routes are read from it, so a
-/// colour claim names a row the contract proves.
-const CONTRACT_LEAVES: &str = include_str!("../contract-leaves.toml");
-
-/// One row a colour leaf moves, as the export records it.
+/// One row a colour home moves, as the export records it.
 struct RowMove {
     row: String,
     /// The statuses it moves the row under, `{:?}` of the widget's status;
     /// empty for a row that takes none.
     statuses: Vec<String>,
-    /// The bundled combinations, `<preset>/<mode>`, in which it does not.
+    /// The platform combinations, `<preset>/<mode>`, in which it does not.
     except: Vec<String>,
 }
 
-/// What the export records for one colour leaf.
-enum LeafReach {
+/// What the export records for one colour home.
+enum HomeReach {
     Moves(Vec<RowMove>),
-    /// No row reads it in any bundled combination: the kind of reason the
+    /// No row reads it in any platform combination: the kind of reason the
     /// naming entry gives, and the reason.
     Named {
         kind: String,
@@ -8751,19 +8749,48 @@ enum LeafReach {
 }
 
 /// The export, read.
-struct ContractLeaves {
-    /// The bundled preset/mode combinations the walk spliced in, by the
-    /// contract's names (`<preset>/<mode>`), which an `except` list uses.
+struct ContractHomes {
+    /// The platform preset/mode combinations the walk stated colours in, by
+    /// the contract's names (`<preset>/<mode>`), which an `except` list uses.
     combinations: Vec<String>,
-    leaves: BTreeMap<String, LeafReach>,
-    /// Every row a leaf moves.
+    homes: BTreeMap<String, HomeReach>,
+    /// Per home, the 0.7.2 colour leaves the table of homes places there:
+    /// the bridge from a Widget Info row's leaf to the element's homes.
+    leaves: BTreeMap<String, Vec<String>>,
+    /// Every row a home moves.
     rows: BTreeMap<String, ExportRow>,
+}
+
+impl ContractHomes {
+    /// The homes of `element` the export places the 0.7.2 colour leaf `leaf`
+    /// at, in the element's order; none for a leaf that is no colour.
+    fn homes_of<'a>(&self, element: &'a ShowcaseElement, leaf: &str) -> Vec<&'a str> {
+        element
+            .homes
+            .iter()
+            .filter(|home| {
+                self.leaves
+                    .get(home.as_str())
+                    .is_some_and(|leaves| leaves.iter().any(|l| l == leaf))
+            })
+            .map(String::as_str)
+            .collect()
+    }
+
+    /// Whether the export places the 0.7.2 leaf `leaf` at a home: whether it
+    /// is a colour leaf.
+    #[cfg(test)]
+    fn has_leaf(&self, leaf: &str) -> bool {
+        self.leaves
+            .values()
+            .any(|leaves| leaves.iter().any(|l| l == leaf))
+    }
 }
 
 /// What the export records for one row.
 struct ExportRow {
-    /// The colour leaves that move it, in some status and combination.
-    leaves: Vec<String>,
+    /// The colour homes that move it, in some status and combination.
+    homes: Vec<String>,
     /// The connector feature it exists under, where a build can lack it.
     cfg: Option<String>,
 }
@@ -8782,15 +8809,9 @@ fn toml_strings(value: Option<&toml::Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// Reads `text` in the export's format.
-fn parse_contract_leaves(text: &str) -> Result<ContractLeaves, String> {
-    parse_export(text, "leaves")
-}
-
-/// Reads `text` in the format both exports share, its keys -- 0.7.2 leaves
-/// or 0.8.0 homes -- under `key` (`leaves`, `homes`): the `[<key>]` tables
-/// and each row's list of what moves it.
-fn parse_export(text: &str, key: &str) -> Result<ContractLeaves, String> {
+/// Reads `text` in the export's format: the `[homes]` tables, each home's
+/// 0.7.2 leaves, and each row's list of the homes that move it.
+fn parse_contract_homes(text: &str) -> Result<ContractHomes, String> {
     let table: toml::Table = text.parse().map_err(|e| format!("{e}"))?;
     let section = |name: &str| {
         table
@@ -8798,13 +8819,15 @@ fn parse_export(text: &str, key: &str) -> Result<ContractLeaves, String> {
             .and_then(toml::Value::as_table)
             .ok_or_else(|| format!("no [{name}] table"))
     };
+    let mut homes = BTreeMap::new();
     let mut leaves = BTreeMap::new();
-    for (leaf, entry) in section(key)? {
+    for (home, entry) in section("homes")? {
         let entry = entry
             .as_table()
-            .ok_or_else(|| format!("{key}.{leaf} is no table"))?;
+            .ok_or_else(|| format!("homes.{home} is no table"))?;
+        leaves.insert(home.clone(), toml_strings(entry.get("leaves")));
         let reach = match entry.get("moves").and_then(toml::Value::as_array) {
-            Some(moves) => LeafReach::Moves(
+            Some(moves) => HomeReach::Moves(
                 moves
                     .iter()
                     .filter_map(toml::Value::as_table)
@@ -8823,15 +8846,15 @@ fn parse_export(text: &str, key: &str) -> Result<ContractLeaves, String> {
                         .get(name)
                         .and_then(toml::Value::as_str)
                         .map(str::to_owned)
-                        .ok_or_else(|| format!("{key}.{leaf} has neither moves nor {name}"))
+                        .ok_or_else(|| format!("homes.{home} has neither moves nor {name}"))
                 };
-                LeafReach::Named {
+                HomeReach::Named {
                     kind: field("kind")?,
                     why: field("why")?,
                 }
             }
         };
-        leaves.insert(leaf.clone(), reach);
+        homes.insert(home.clone(), reach);
     }
     let rows = section("rows")?
         .iter()
@@ -8840,40 +8863,34 @@ fn parse_export(text: &str, key: &str) -> Result<ContractLeaves, String> {
                 .get("cfg")
                 .and_then(toml::Value::as_str)
                 .map(str::to_owned);
-            let leaves = toml_strings(entry.get(key));
-            (row.clone(), ExportRow { leaves, cfg })
+            let homes = toml_strings(entry.get("homes"));
+            (row.clone(), ExportRow { homes, cfg })
         })
         .collect();
-    Ok(ContractLeaves {
+    Ok(ContractHomes {
         combinations: toml_strings(table.get("combinations")),
+        homes,
         leaves,
         rows,
     })
 }
 
-/// The export, read once; `None` if it does not parse, which
-/// `the_contract_export_parses_and_names_the_listed_colour_leaves` rules out.
-fn contract_leaves() -> Option<&'static ContractLeaves> {
-    static EXPORT: OnceLock<Result<ContractLeaves, String>> = OnceLock::new();
-    EXPORT
-        .get_or_init(|| parse_contract_leaves(CONTRACT_LEAVES))
-        .as_ref()
-        .ok()
-}
-
-/// The contract's export on the 0.8.0 model (connectors/native-theme-iced/
-/// contract-homes.toml): per colour home of the 0.8.0 model, the rows of
-/// `native_theme_iced::next` it moves under which statuses and the platform
-/// combinations in which it does not, or why no row reads it. A style row's
-/// colour line names the homes that move it.
+/// The iced connector's contract as its colour-home walk exports it
+/// (connectors/native-theme-iced/contract-homes.toml): per colour home of
+/// the 0.8.0 model, the rows of `native_theme_iced::next` it moves under
+/// which statuses and the platform combinations in which it does not, or
+/// why no row reads it, and the 0.7.2 colour leaves it holds (the file's
+/// header). Widget Info's colour routes and a style row's colour line are
+/// read from it, so a colour claim names a row the contract proves and the
+/// homes that move it.
 const CONTRACT_HOMES: &str = include_str!("../contract-homes.toml");
 
-/// The home export, read once; `None` if it does not parse, which
-/// `a_page_colour_names_the_homes_that_move_it` rules out.
-fn contract_homes() -> Option<&'static ContractLeaves> {
-    static EXPORT: OnceLock<Result<ContractLeaves, String>> = OnceLock::new();
+/// The export, read once; `None` if it does not parse, which
+/// `the_home_export_parses_and_places_the_listed_colour_leaves` rules out.
+fn contract_homes() -> Option<&'static ContractHomes> {
+    static EXPORT: OnceLock<Result<ContractHomes, String>> = OnceLock::new();
     EXPORT
-        .get_or_init(|| parse_export(CONTRACT_HOMES, "homes"))
+        .get_or_init(|| parse_contract_homes(CONTRACT_HOMES))
         .as_ref()
         .ok()
 }
@@ -9020,8 +9037,8 @@ fn tab_open(state: &State, id: &str) -> Option<bool> {
 }
 
 /// Whether the list's id `id` names a tool button, drawn in
-/// `styles::toolbar_button`: the toolbar's three and the Basic page's icon
-/// buttons, not their icons.
+/// `iced_next::styles::toolbar_button`: the toolbar's three and the Basic
+/// page's icon buttons, not their icons.
 fn tool_button(id: &str) -> bool {
     matches!(
         id,
@@ -9033,76 +9050,6 @@ fn tool_button(id: &str) -> bool {
             | "basic.icons.delete"
             | "basic.icons.edit"
     )
-}
-
-/// The route of a tool button's fill or outline leaf `leaf` that the theme
-/// leaves unstated: what `styles::toolbar_button(resolved, checked)` draws
-/// in its place, where it draws anything. A checked button keeps its checked
-/// fill in every enabled status, so that fill is what it draws under the
-/// pointer and pressed, and its checked pen there where the theme states no
-/// hover outline. `None` for a stated leaf, one no tool button reads,
-/// or the checked fill of a button that is not checked, which the export's
-/// rows route.
-fn unstated_tool_colour(resolved: &ResolvedTheme, leaf: &str, checked: bool) -> Option<String> {
-    let b = &resolved.button;
-    let t = &resolved.toolbar;
-    // The pressed fill of a button that is not checked, and the checked
-    // fill where the theme states none.
-    let pressed = if t.button_active_background.is_some() {
-        "toolbar.button_active_background"
-    } else if b.active_background.is_some() {
-        "button.active_background"
-    } else {
-        "button.hover_background"
-    };
-    let checked_fill = if t.button_checked_background.is_some() {
-        "toolbar.button_checked_background"
-    } else {
-        pressed
-    };
-    let (stated, in_its_place) = match leaf {
-        "button.active_background" => (
-            b.active_background.is_some(),
-            if checked {
-                Some(checked_fill)
-            } else {
-                t.button_active_background
-                    .is_none()
-                    .then_some("button.hover_background")
-            },
-        ),
-        "toolbar.button_hover_background" => (
-            t.button_hover_background.is_some(),
-            Some(if checked {
-                checked_fill
-            } else {
-                "button.hover_background"
-            }),
-        ),
-        "toolbar.button_hover_border_color" => (
-            t.button_hover_border_color.is_some(),
-            (checked && t.button_checked_border_color.is_some())
-                .then_some("toolbar.button_checked_border_color"),
-        ),
-        "toolbar.button_checked_border_color" => (t.button_checked_border_color.is_some(), None),
-        "toolbar.button_active_background" => (
-            t.button_active_background.is_some(),
-            Some(if checked { checked_fill } else { pressed }),
-        ),
-        "toolbar.button_checked_background" if checked => {
-            (t.button_checked_background.is_some(), Some(pressed))
-        }
-        _ => return None,
-    };
-    if stated {
-        return None;
-    }
-    Some(match in_its_place {
-        Some(other) => {
-            format!("not drawn: unstated; styles::toolbar_button takes {other} in its place")
-        }
-        None => "not drawn: unstated".to_owned(),
-    })
 }
 
 /// What draws a colour leaf of `element` as `shown`: the connector, through
@@ -9243,34 +9190,10 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         ]),
         _ if under("basic.card") => Drawing::of(&["styles::container_card."]),
         _ if under("basic.typography.link") => Drawing::enabled(&["styles::button_link."]),
-        // A tool button's colour the theme leaves unstated: the hand line
-        // names what `styles::toolbar_button` draws in its place.
-        _ if tool_button(id)
-            && unstated_tool_colour(
-                resolved,
-                leaf,
-                id == "basic.icons.edit" && shown.basic_edit,
-            )
-            .is_some() =>
-        {
-            return None;
-        }
-        // A tool button's label colours: its icon, where one shows, takes
-        // its colour as it loads ([`icon_colour`]), so the hand lines say
-        // whether the icon or the label shows.
-        _ if tool_button(id)
-            && matches!(
-                leaf,
-                "button.font.color"
-                    | "button.hover_text_color"
-                    | "button.active_text_color"
-                    | "button.checked_text_color"
-            ) =>
-        {
-            return None;
-        }
         // Edit, the edit-mode switch, is checked while it is on; the other
-        // tool buttons are never checked.
+        // tool buttons are never checked. Their label colours are the
+        // label's; where an icon shows in the label's place, [`iced_route`]
+        // routes them ([`tool_icon_route`]).
         _ if id == "basic.icons.edit" && shown.basic_edit => {
             Drawing::only(TOOLBAR_BUTTON, &["(true, "], &["Disabled"])
         }
@@ -9331,11 +9254,11 @@ fn status_name(status: &str) -> &str {
 }
 
 /// The rows of `moves` a [`colour_route`] names: those of `drawing` this
-/// build has, moved on `installed` (every bundled combination where `None`),
+/// build has, moved on `installed` (every platform combination where `None`),
 /// each with the statuses the page draws it in, by variant name; a row with
 /// statuses none of which is drawn is left out.
 fn shown_rows<'a>(
-    export: &ContractLeaves,
+    export: &ContractHomes,
     moves: &'a [RowMove],
     drawing: &Drawing,
     installed: Option<&str>,
@@ -9375,39 +9298,100 @@ fn shown_rows<'a>(
     rows
 }
 
+/// The rows a [`colour_route`] names, each with the statuses it names and
+/// the homes that move it there.
+type RouteRow<'a> = (&'a str, Vec<&'a str>, Vec<&'a str>);
+
+/// The rows of `drawing` the colour homes `homes` move, as [`shown_rows`]
+/// names them on `installed`, each with the homes that move it; and, where
+/// none of them moves a row in any platform combination, the reason the
+/// first of them is named by.
+fn home_rows<'a>(
+    export: &'a ContractHomes,
+    homes: &[&'a str],
+    drawing: &Drawing,
+    installed: Option<&str>,
+) -> (Vec<RouteRow<'a>>, Option<(&'a str, &'a str)>) {
+    let mut rows: Vec<RouteRow<'a>> = Vec::new();
+    let mut named = None;
+    let mut moving = false;
+    for &home in homes {
+        match export.homes.get(home) {
+            Some(HomeReach::Moves(moves)) => {
+                moving = true;
+                for (row, statuses) in shown_rows(export, moves, drawing, installed) {
+                    match rows.iter_mut().find(|(r, _, _)| *r == row) {
+                        Some((_, seen, by)) => {
+                            for s in statuses {
+                                if !seen.contains(&s) {
+                                    seen.push(s);
+                                }
+                            }
+                            by.push(home);
+                        }
+                        None => rows.push((row, statuses, vec![home])),
+                    }
+                }
+            }
+            Some(HomeReach::Named { kind, why }) => {
+                named.get_or_insert((kind.as_str(), why.as_str()));
+            }
+            None => {}
+        }
+    }
+    (rows, named.filter(|_| !moving))
+}
+
 /// How the connector draws `leaf` on `element` as `shown`, read from the
-/// contract's export: the rows of its [`Drawing`] the leaf moves, under
-/// the statuses the page draws, on `installed`, the bundled combination
-/// shown (`<preset>/<mode>`), or in any bundled one where the theme is the
-/// OS's (`None`); or why no row reads it. `None` where the showcase draws the
-/// leaf itself, or the export has no such leaf.
+/// contract's export: the rows of its [`Drawing`] the element's homes of the
+/// leaf ([`ContractHomes::homes_of`]) move, under the statuses the page
+/// draws, on `installed`, the platform combination shown (`<preset>/<mode>`),
+/// or in any platform one where the theme is not one the export names
+/// (`None`), each with the homes that move it; or why no row reads them.
+/// `None` where the showcase draws the leaf itself, or no home of the
+/// element holds the leaf.
 fn colour_route(
     element: &ShowcaseElement,
     leaf: &str,
     shown: Shown<'_>,
     installed: Option<&str>,
 ) -> Option<String> {
-    let export = contract_leaves()?;
-    // A combination the export does not name is no bundled one: its routes
-    // are the OS theme's.
+    let export = contract_homes()?;
+    // A combination the export does not name is no platform one: its routes
+    // are those of any platform theme.
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
-    let reach = export.leaves.get(leaf)?;
+    let homes = export.homes_of(element, leaf);
+    if homes.is_empty() {
+        return None;
+    }
     let drawing = drawing(element, leaf, shown)?;
-    let moves = match reach {
-        LeafReach::Named { kind, why } => {
-            return Some(match kind.as_str() {
-                "inherited" | "ruled" => format!("not drawn: {why}"),
-                _ => match kind.strip_prefix("fallback of ") {
-                    Some(option) => format!(
-                        "not drawn in a bundled theme, each of which states {option}: {why}"
-                    ),
-                    None => format!("not reachable: {why}"),
-                },
-            });
-        }
-        LeafReach::Moves(moves) => moves,
-    };
-    let rows = shown_rows(export, moves, &drawing, installed);
+    Some(drawing_route(export, &homes, &drawing, installed))
+}
+
+/// [`colour_route`]'s route of the colour homes `homes` drawn as `drawing`
+/// on `installed`, a combination the export names, or any platform one
+/// (`None`).
+fn drawing_route(
+    export: &ContractHomes,
+    homes: &[&str],
+    drawing: &Drawing,
+    installed: Option<&str>,
+) -> String {
+    let (rows, named) = home_rows(export, homes, drawing, installed);
+    if let Some((kind, why)) = named {
+        return match kind {
+            "inherited" | "ruled" | "not read" | "read at another query" => {
+                format!("not drawn: {why}")
+            }
+            "no patch" => format!("not proved by the contract: {why}"),
+            _ => match kind.strip_prefix("fallback of ") {
+                Some(option) => {
+                    format!("not drawn in a platform theme, each of which states {option}: {why}")
+                }
+                None => format!("not reachable: {why}"),
+            },
+        };
+    }
     if rows.is_empty() {
         let names = drawing
             .rows
@@ -9415,22 +9399,24 @@ fn colour_route(
             .map(|prefix| prefix.trim_end_matches('.'))
             .collect::<Vec<_>>()
             .join(" or ");
-        return Some(match installed {
+        return match installed {
             Some(label) => {
                 format!("not drawn here: on {label} it moves no row of {names} in the state shown")
             }
             None => format!(
-                "not drawn here: it moves no row of {names} in the state shown, in any bundled theme"
+                "not drawn here: it moves no row of {names} in the state shown, in any platform \
+                 theme"
             ),
-        });
+        };
     }
     let line = rows
         .iter()
-        .map(|(row, statuses)| {
+        .map(|(row, statuses, by)| {
             let mut text = (*row).to_owned();
             if !statuses.is_empty() {
                 text.push_str(&format!(" ({})", statuses.join(", ")));
             }
+            text.push_str(&format!(" moved by {}", by.join(", ")));
             if let Some((_, sentence)) = DERIVED_ROWS.iter().find(|(key, _)| key == row) {
                 text.push_str(&format!(", {sentence}"));
             }
@@ -9438,9 +9424,61 @@ fn colour_route(
         })
         .collect::<Vec<_>>()
         .join("; ");
-    Some(match installed {
+    match installed {
         Some(_) => format!("iced: {line}"),
-        None => format!("iced: {line} (in a bundled theme)"),
+        None => format!("iced: {line} (in a platform theme)"),
+    }
+}
+
+/// The route of a tool button's label colour `leaf` on `element` where an
+/// icon shows in the label's place: an OS icon theme's (`os_icon`) keeps its
+/// own colours; the set's takes, as it loads, the label
+/// `iced_next::styles::toolbar_button` gives the button at rest, `checked`
+/// or not ([`tool_icon_colour`]), so the route names the rows of the
+/// export's `styles::toolbar_button.text_color` at that status the
+/// element's homes of the leaf move, or that the icon stands in for the
+/// label. `None` for a leaf that is no label colour, or no home of the
+/// element holds.
+fn tool_icon_route(
+    element: &ShowcaseElement,
+    leaf: &str,
+    (checked, os_icon): (bool, bool),
+    installed: Option<&str>,
+) -> Option<String> {
+    if !matches!(
+        leaf,
+        "button.font.color"
+            | "button.hover_text_color"
+            | "button.active_text_color"
+            | "button.checked_text_color"
+    ) {
+        return None;
+    }
+    if os_icon {
+        return Some(OS_ICON_COLOURS.to_owned());
+    }
+    let export = contract_homes()?;
+    let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
+    let homes = export.homes_of(element, leaf);
+    if homes.is_empty() {
+        return None;
+    }
+    let at_rest = Drawing::only(
+        &["styles::toolbar_button.text_color"],
+        if checked {
+            &["(true, Active)"]
+        } else {
+            &["(false, Active)"]
+        },
+        &[],
+    );
+    let route = drawing_route(export, &homes, &at_rest, installed);
+    Some(match route.strip_prefix("iced: ") {
+        Some(rows) => {
+            format!("icon_button: the icon's colour, set as it loads (tool_icon_colour): {rows}")
+        }
+        None if route.starts_with("not drawn here") => ICON_FOR_LABEL.to_owned(),
+        None => route,
     })
 }
 
@@ -10400,14 +10438,23 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     if leaf == "defaults.focus_ring_color" && ring_round_the_field(resolved) {
         return "native_theme_iced::focus_ring: the ring round the focused field".to_owned();
     }
-    // The edit-mode switch while it is on, which `styles::toolbar_button`
-    // draws checked.
+    // The edit-mode switch while it is on, which
+    // `iced_next::styles::toolbar_button` draws checked.
     let checked = id == "basic.icons.edit" && state.basic_edit;
-    if let Some(line) = unstated_tool_colour(resolved, leaf, checked).filter(|_| tool_button(id)) {
-        return line;
-    }
     let theme_row = id == "chrome.side_panel.settings.theme";
     let installed = state.installed_combination();
+    if tool_button(id)
+        && let Some(line) = ghost_icon(state, id).and_then(|_| {
+            tool_icon_route(
+                element,
+                leaf,
+                (checked, state.chrome_icons.system),
+                installed.as_deref(),
+            )
+        })
+    {
+        return line;
+    }
     if let Some(line) = colour_route(element, leaf, Shown::of(state), installed.as_deref()) {
         return if theme_row && line.starts_with("iced: ") {
             format!("{line}; the field's text_input::Style (theme_picker_style)")
@@ -10423,25 +10470,15 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     let ghost = under("chrome.page_tabs.menu")
         || under("chrome.status_bar.toggle")
         || id == "chrome.info.copy";
-    // The tool buttons, drawn in `styles::toolbar_button`: the toolbar's
-    // and the Basic page's icon buttons.
+    // The tool buttons, drawn in `iced_next::styles::toolbar_button`: the
+    // toolbar's and the Basic page's icon buttons.
     let tool = tool_button(id);
     // The icon a flat button shows in its label's place, drawn in a colour
     // fixed as it loads ([`icon_button`]); the side-panel toggle while the
     // panel shows, which `ghost_button` draws selected in every status.
-    let icon = ghost_icon(state, id).filter(|_| ghost || tool);
+    let icon = ghost_icon(state, id).filter(|_| ghost);
     let os_icon = icon.is_some() && state.chrome_icons.system;
-    let selected = checked || (id == "chrome.status_bar.toggle" && state.side_panel_visible);
-    // A checked tool button is lettered `button.checked_text_color` where
-    // the theme states it and the toolbar's checked fill, as
-    // `styles::toolbar_button` letters it.
-    let checked_text = resolved.toolbar.button_checked_background.is_some()
-        && resolved.button.checked_text_color.is_some();
-    let checked_lettering = if checked_text {
-        "not drawn: the checked button is lettered button.checked_text_color"
-    } else {
-        "not drawn: the checked button is lettered button.active_text_color"
-    };
+    let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
     // Whether the showcase paints the check mark: on the Basic page, where
     // the installed 0.8.0 theme states its line,
     // `checkbox.checkmark(NONE).stroke_width`.
@@ -10451,7 +10488,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         resolved.checkbox.check_mark_stroke_width.is_some()
     };
     let class = if tool {
-        "styles::toolbar_button"
+        "iced_next::styles::toolbar_button"
     } else if ghost {
         "ghost_button"
     } else if under("basic.buttons.toggle_on") {
@@ -10563,46 +10600,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("button", "font") => "the label's Text::size and theme_font (family, weight)".into(),
-        ("button", "font.color") if tool => match (icon.is_some(), selected) {
-            (_, true) => checked_lettering.into(),
-            (true, false) if os_icon => OS_ICON_COLOURS.into(),
-            (true, false) => "icon_button: the icon's colour, set as the icon loads".into(),
-            (false, false) => "styles::toolbar_button: the label's text_color at rest".into(),
-        },
-        ("button", "hover_text_color") if tool => match (selected, icon) {
-            (true, _) => checked_lettering.into(),
-            (false, Some(_)) if os_icon => OS_ICON_COLOURS.into(),
-            (false, Some(_)) => ICON_FOR_LABEL.into(),
-            (false, None) => "styles::toolbar_button: the Hovered text_color".into(),
-        },
-        ("button", "active_text_color") if tool => match (selected, icon) {
-            (true, _) if checked_text => checked_lettering.into(),
-            (_, Some(_)) if os_icon => OS_ICON_COLOURS.into(),
-            (true, Some(_)) => "icon_button: the icon's colour while checked".into(),
-            (true, None) => {
-                "styles::toolbar_button: the checked label's text_color, in every status".into()
-            }
-            (false, Some(_)) => ICON_FOR_LABEL.into(),
-            (false, None) => "styles::toolbar_button: the Pressed text_color".into(),
-        },
-        ("button", "checked_text_color") if tool => match (selected, icon) {
-            (false, _) => "not drawn: the button is not checked".into(),
-            (true, _) if resolved.toolbar.button_checked_background.is_none() => {
-                "not drawn: the toolbar's checked fill is unstated, so the label is \
-                 button.active_text_color"
-                    .into()
-            }
-            (true, _) if !checked_text => {
-                "not drawn: button.checked_text_color is unstated, so the label is \
-                 button.active_text_color"
-                    .into()
-            }
-            (true, Some(_)) if os_icon => OS_ICON_COLOURS.into(),
-            (true, Some(_)) => "icon_button: the icon's colour while checked".into(),
-            (true, None) => "styles::toolbar_button: the checked label's text_color, where \
-                             toolbar.button_checked_background is stated"
-                .into(),
-        },
         ("button", "font.color") if id == "chrome.info.copy" => {
             copy_route(state.next_shown(), leaf).into()
         }
@@ -10629,7 +10626,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             format!("{class}: button::Style::border.radius").into()
         }
         ("button", "border.line_width_px") if tool => {
-            "styles::toolbar_button: button::Style::border.width, the outline under the \
+            "iced_next::styles::toolbar_button: button::Style::border.width, the outline under the \
              pointer, drawn inside the bounds"
                 .into()
         }
@@ -12756,14 +12753,11 @@ fn moved_by(row: &str, status: Option<&str>, installed: Option<&str>) -> String 
         return String::new();
     };
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
-    let candidates = export
-        .rows
-        .get(row)
-        .map_or(&[][..], |r| r.leaves.as_slice());
+    let candidates = export.rows.get(row).map_or(&[][..], |r| r.homes.as_slice());
     let leaves: Vec<&str> = candidates
         .iter()
-        .filter(|leaf| match export.leaves.get(leaf.as_str()) {
-            Some(LeafReach::Moves(moves)) => moves.iter().any(|m| {
+        .filter(|home| match export.homes.get(home.as_str()) {
+            Some(HomeReach::Moves(moves)) => moves.iter().any(|m| {
                 m.row == row
                     && status.is_none_or(|s| m.statuses.iter().any(|t| t == s))
                     && installed.is_none_or(|label| !m.except.iter().any(|e| e == label))
@@ -22777,13 +22771,15 @@ mod tests {
     // -----------------------------------------------------------------------
 
     /// The Basic page's edit-mode switch, Edit, starts checked and a click
-    /// switches it: the icon row hands it `styles::toolbar_button(resolved,
-    /// true)` while it is on, whose fill is `toolbar.button_checked_background`
-    /// (a mark spliced into it fills the button) and whose icon is the checked
-    /// text, and `styles::toolbar_button(resolved, false)` once a click
+    /// switches it: the icon row hands it
+    /// `iced_next::styles::toolbar_button(r, true)` while it is on, whose
+    /// fill is `toolbar.button(CHECKED).fill` (a mark stated there fills the
+    /// button) and whose icon is the checked label,
+    /// `button.label(CHECKED).color`, and
+    /// `iced_next::styles::toolbar_button(r, false)` once a click
     /// (`BasicEditToggled`) turned it off, which leaves it unfilled at rest; a
     /// second click checks it again. Under kde-breeze light, which states the
-    /// checked fill and text.
+    /// checked fill and label.
     #[test]
     fn the_basic_edit_button_starts_checked_and_switches() {
         let mut state = State::default();
@@ -22792,28 +22788,37 @@ mod tests {
             &mut state,
             Message::ThemeSelected(ThemeChoice::Preset("kde-breeze".to_string())),
         );
-        let r = state.current_resolved.clone();
-        let checked_text = r.button.checked_text_color;
+        let r = state.next_shown().clone();
+        let checked_fill = iced_next::state_fill_of(&r.toolbar.button(WidgetState::CHECKED));
+        let checked_text = iced_next::state_text_color_of(&r.button.label(WidgetState::CHECKED));
         assert!(
-            r.toolbar.button_checked_background.is_some() && checked_text.is_some(),
-            "kde-breeze no longer states the checked toolbar fill and text, so this test proves nothing"
+            checked_fill.is_some() && checked_text.is_some(),
+            "kde-breeze no longer states the checked toolbar fill and label, so this test proves nothing"
         );
         if let Some(text) = checked_text {
             assert_eq!(
-                tool_icon_colour(&r, true),
-                to_color(text),
-                "the checked tool button's icon is not button.checked_text_color"
+                tool_icon_colour(&r, &state.current_theme, true),
+                text,
+                "the checked tool button's icon is not button.label(CHECKED).color"
             );
         }
-        let mark = native_theme::color::Rgba::rgb(0x13, 0x57, 0x9b);
-        let want = to_color(mark).into_rgba8();
-        // Whether the button is filled with the mark spliced into the
+        let mark = "#13579b";
+        let want = match mark.parse::<native_theme::color::Rgba>() {
+            Ok(colour) => to_color(colour).into_rgba8(),
+            Err(error) => panic!("{error}"),
+        };
+        // Whether the button is filled with the mark stated at the
         // toolbar's checked fill: most of its pixels are the mark.
         let marked = |state: &mut State| {
-            let theirs = state.current_resolved.toolbar.button_checked_background;
-            state.current_resolved.toolbar.button_checked_background = Some(mark);
+            let kept = (state.next_resolved.clone(), state.next_inactive.clone());
+            for next in [&mut state.next_resolved, &mut state.next_inactive] {
+                match with_home(next, "toolbar.button(CHECKED).fill", mark) {
+                    Some(marked) => *next = marked,
+                    None => panic!("no patch reaches toolbar.button(CHECKED).fill"),
+                }
+            }
             let (image, laid, scale) = basic_frame(state);
-            state.current_resolved.toolbar.button_checked_background = theirs;
+            (state.next_resolved, state.next_inactive) = kept;
             let rect = laid.get("basic.icons.edit");
             assert!(rect.is_some(), "basic.icons.edit is not drawn");
             let pixels = rect.map(|rect| pixels_in(&image, *rect, scale));
@@ -22827,7 +22832,7 @@ mod tests {
         let filled = marked(&mut state);
         assert!(
             filled,
-            "the checked edit button is not filled with toolbar.button_checked_background"
+            "the checked edit button is not filled with toolbar.button(CHECKED).fill"
         );
 
         // Where the interface lays the button out, in the window.
@@ -22861,7 +22866,7 @@ mod tests {
         let filled = marked(&mut state);
         assert!(
             !filled,
-            "the edit button that is off is filled with toolbar.button_checked_background"
+            "the edit button that is off is filled with toolbar.button(CHECKED).fill"
         );
         let messages = click(&mut state);
         assert!(
@@ -32535,8 +32540,9 @@ mod tests {
     /// leaves another value unstated, in a state no bundled preset has, not
     /// in the state the element opens in, or, under the presets whose drawing
     /// of the element names other rows, in none of those rows, each with the
-    /// reason: the export moves no row of their drawing in any bundled
-    /// combination, so their routes say they are not drawn there.
+    /// reason: the element's homes of the leaf move no row of their drawing
+    /// in any platform combination of the home export, so their routes say
+    /// they are not drawn there.
     const DRAWN_IN_NO_BUNDLED_THEME: &[(&str, &str, &str)] = &[
         (
             "basic.text_inputs.focused",
@@ -32549,66 +32555,184 @@ mod tests {
         (
             "basic.icons.edit",
             "toolbar.button_hover_background",
-            "Edit opens checked, and styles::toolbar_button keeps a checked button's \
-             checked fill under the pointer (styles.rs, `toolbar_button`): the toolbar's \
-             hover fill is drawn once a click has turned it off",
+            "Edit opens checked, and native_theme_iced::next::styles::toolbar_button keeps a \
+             checked button's checked fill under the pointer (src/next/styles.rs, \
+             `toolbar_button`): toolbar.button(HOVER).fill is drawn once a click has turned \
+             it off",
         ),
         (
-            "basic.buttons.dialog_default",
-            "button.font.color",
-            DIALOG_DEFAULT_LABEL_UNSTATED,
+            "basic.icons.edit",
+            "toolbar.button_active_background",
+            "Edit opens checked, and toolbar.button(PRESSED).fill moves only an unchecked \
+             tool button's pressed fill, `(false, Pressed)`: a checked one keeps its checked \
+             fill pressed",
         ),
         (
-            "basic.buttons.dialog_default.label",
-            "button.font.color",
-            DIALOG_DEFAULT_LABEL_UNSTATED,
+            "basic.icons.edit",
+            "button.hover_text_color",
+            EDIT_CHECKED_LABEL,
         ),
         (
-            "basic.buttons.dialog_default",
+            "basic.icons.edit",
+            "button.active_text_color",
+            EDIT_CHECKED_LABEL,
+        ),
+        (
+            "basic.buttons.toggle_on",
             "button.active_background",
-            DIALOG_DEFAULT_PRESSED_STATED,
+            TOGGLE_ON_PRESSED,
         ),
         (
-            "basic.buttons.dialog_default",
+            "basic.buttons.toggle_on",
             "button.active_text_color",
-            DIALOG_DEFAULT_PRESSED_STATED,
+            TOGGLE_ON_PRESSED,
         ),
         (
-            "basic.buttons.dialog_default.label",
+            "basic.buttons.toggle_on.label",
             "button.active_text_color",
-            DIALOG_DEFAULT_PRESSED_STATED,
+            TOGGLE_ON_PRESSED,
+        ),
+        (
+            "basic.icons.copy",
+            "button.active_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "basic.icons.copy",
+            "button.hover_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "basic.icons.paste",
+            "button.active_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "basic.icons.paste",
+            "button.hover_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "basic.icons.delete",
+            "button.active_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "basic.icons.delete",
+            "button.hover_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "basic.icons.edit",
+            "button.active_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "basic.icons.edit",
+            "button.hover_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "chrome.toolbar.command_palette",
+            "button.active_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "chrome.toolbar.command_palette",
+            "button.hover_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "chrome.toolbar.reload_theme",
+            "button.active_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "chrome.toolbar.reload_theme",
+            "button.hover_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "chrome.toolbar.preferences",
+            "button.active_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "chrome.toolbar.preferences",
+            "button.hover_background",
+            TOOL_BUTTON_PUSH_FILL,
+        ),
+        (
+            "basic.checkboxes.disabled",
+            "checkbox.border.color",
+            DISABLED_CHECKBOX_OUTLINE,
+        ),
+        (
+            "basic.checkboxes.disabled.indicator",
+            "checkbox.border.color",
+            DISABLED_CHECKBOX_OUTLINE,
+        ),
+        (
+            "basic.switches.off",
+            "switch.thumb_background",
+            OFF_SWITCH_THUMB,
+        ),
+        (
+            "basic.switches.off.thumb",
+            "switch.thumb_background",
+            OFF_SWITCH_THUMB,
         ),
     ];
 
-    /// Why the default button's label falls back to `button.font.color` in no
-    /// bundled theme.
-    const DIALOG_DEFAULT_LABEL_UNSTATED: &str = "\
-         styles::button_default letters a stated default-button fill in button.font.color \
-         only where button.default_button_text_color is unstated (styles.rs, \
-         `button_default`): kde-breeze, the one bundled preset that states the fill, states \
-         the text colour too, and elsewhere the button is styles::button_primary, lettered \
-         button.primary_text_color";
+    /// Why the On toggle's pressed colours move no row it draws: its homes,
+    /// `button.body(PRESSED).fill` and `button.label(PRESSED).color`, move
+    /// only an unchecked toggle's pressed status.
+    const TOGGLE_ON_PRESSED: &str = "\
+         the On toggle is checked, and the pressed homes button.body(PRESSED).fill and \
+         button.label(PRESSED).color move only an unchecked toggle's pressed status, \
+         `(false, Pressed)`: a checked toggle keeps its checked fill and label pressed";
 
-    /// Why the default button wears the plain button's pressed pair in one
-    /// bundled preset alone.
-    const DIALOG_DEFAULT_PRESSED_STATED: &str = "\
-         styles::button_default is pressed in styles::button's pressed pair only where the \
-         theme states button.default_button_background (styles.rs, `button_default`), \
-         kde-breeze alone among the bundled presets; elsewhere it is styles::button_primary, \
-         whose pressed fill and label are iced's derivation from button.primary_background";
+    /// Why the checked Edit button's hovered and pressed labels move no row
+    /// it draws.
+    const EDIT_CHECKED_LABEL: &str = "\
+         Edit opens checked, and button.label(HOVER).color and button.label(PRESSED).color \
+         move only an unchecked tool button's label, `(false, Hovered)` and \
+         `(false, Pressed)`: native_theme_iced::next::styles::toolbar_button letters a \
+         checked one in button.label(CHECKED).color where stated, else in the label its \
+         checked fill takes, in every status (src/next/styles.rs, `toolbar_button`)";
 
-    /// The contract's export parses, and names every colour leaf the element
-    /// list gives an element: a leaf whose value is a colour in the resolved
-    /// theme, or an unstated colour, is one the walk spliced. A connector-drawn
-    /// leaf's route names a row its drawing moves in a bundled theme, or why
-    /// no row reads it, save the leaves `DRAWN_IN_NO_BUNDLED_THEME` lists.
+    /// Why a tool button draws no push button's hover or pressed fill.
+    const TOOL_BUTTON_PUSH_FILL: &str = "\
+         native_theme_iced::next::styles::toolbar_button draws a hovered or pressed fill \
+         from toolbar.button(HOVER) or toolbar.button(PRESSED) where a rule states it, else \
+         iced's own, never the push button's button.body(HOVER).fill or \
+         button.body(PRESSED).fill (src/next/styles.rs, `toolbar_button`)";
+
+    /// Why the disabled check box's listed outline home moves no row it
+    /// draws.
+    const DISABLED_CHECKBOX_OUTLINE: &str = "\
+         the element's home of checkbox.border.color, checkbox.indicator(CHECKED).stroke.color, \
+         moves the enabled checked statuses alone; the disabled box is drawn at \
+         `Disabled { is_checked: true }`";
+
+    /// Why the off switch's listed thumb home moves no row it draws.
+    const OFF_SWITCH_THUMB: &str = "\
+         the element's home of switch.thumb_background, switch.thumb(CHECKED).fill, moves \
+         the on statuses alone, `is_toggled: true`; the off switch is drawn off";
+
+    /// The contract's home export parses, and places every colour leaf the
+    /// element list gives an element at one of the element's homes: a leaf
+    /// whose value is a colour in a bundled resolved theme is one whose homes
+    /// the walk stated colours at. A connector-drawn leaf's route names a row
+    /// its drawing moves in a platform theme, or why no row reads it, save the
+    /// leaves `DRAWN_IN_NO_BUNDLED_THEME` lists.
     #[test]
-    fn the_contract_export_parses_and_names_the_listed_colour_leaves() {
-        let export = match parse_contract_leaves(CONTRACT_LEAVES) {
+    fn the_home_export_parses_and_places_the_listed_colour_leaves() {
+        let export = match parse_contract_homes(CONTRACT_HOMES) {
             Ok(export) => export,
-            Err(error) => panic!("contract-leaves.toml: {error}"),
+            Err(error) => panic!("contract-homes.toml: {error}"),
         };
-        assert!(contract_leaves().is_some(), "the export is read");
+        assert!(contract_homes().is_some(), "the export is read");
         let bundled = bundled_combinations();
         let jsons: Vec<serde_json::Value> = bundled
             .iter()
@@ -32628,13 +32752,17 @@ mod tests {
                             .is_some_and(|s| s.parse::<native_theme::color::Rgba>().is_ok())
                     })
                 });
-                if colour && !export.leaves.contains_key(leaf) {
-                    failures.push(format!("{}: {leaf} is not in the export", element.id));
+                let placed = !export.homes_of(element, leaf).is_empty();
+                if colour && !placed {
+                    failures.push(format!(
+                        "{}: the export places {leaf} at none of its homes",
+                        element.id
+                    ));
                 }
                 let excepted = DRAWN_IN_NO_BUNDLED_THEME
                     .iter()
                     .any(|(id, l, _)| *id == element.id && l == leaf);
-                let undrawn = export.leaves.contains_key(leaf)
+                let undrawn = placed
                     && bundled.iter().any(|(_, r)| {
                         drawing(element, leaf, Shown::opening(r)).is_some()
                             && colour_route(element, leaf, Shown::opening(r), None)
@@ -32655,37 +32783,38 @@ mod tests {
     }
 
     /// The installed preset's name is the contract's for the same
-    /// combination (`Combination::label`, which the export lists as
-    /// `combinations`): every bundled preset in both modes names one of them,
-    /// all 34 are named, and the OS theme names none.
+    /// combination (`<preset>/<scheme>`, which the home export lists as
+    /// `combinations`): every bundled preset in both modes is named so, the
+    /// 14 platform combinations of the export are each a bundled preset's,
+    /// and the OS theme names none.
     #[test]
     fn the_installed_combination_is_named_as_the_contract_names_it() {
-        let Some(export) = contract_leaves() else {
-            panic!("contract-leaves.toml does not parse");
+        let Some(export) = contract_homes() else {
+            panic!("contract-homes.toml does not parse");
         };
         let mut state = State::default();
         let mut named = BTreeSet::new();
         for info in native_theme::theme::Theme::list_presets() {
-            for is_dark in [false, true] {
+            for (is_dark, mode) in [(false, "light"), (true, "dark")] {
                 state.current_choice = ThemeChoice::Preset(info.key.to_owned());
                 state.is_dark = is_dark;
                 let label = state.installed_combination();
-                assert!(
-                    label
-                        .as_ref()
-                        .is_some_and(|l| export.combinations.contains(l)),
-                    "{} (dark: {is_dark}) is named {label:?}, which the export does not name",
+                assert_eq!(
+                    label.as_deref(),
+                    Some(format!("{}/{mode}", info.key).as_str()),
+                    "{} (dark: {is_dark})",
                     info.key
                 );
                 named.extend(label);
             }
         }
         let listed: BTreeSet<String> = export.combinations.iter().cloned().collect();
-        assert_eq!(
-            named, listed,
-            "the presets name every combination of the export"
+        assert!(
+            listed.is_subset(&named),
+            "the export names combinations no preset is installed as: {:?}",
+            listed.difference(&named).collect::<Vec<_>>()
         );
-        assert_eq!(listed.len(), 34, "17 presets in both modes");
+        assert_eq!(listed.len(), 14, "7 platform presets in both schemes");
         state.current_choice = ThemeChoice::OsTheme("default".to_owned());
         assert_eq!(
             state.installed_combination(),
@@ -32694,28 +32823,37 @@ mod tests {
         );
     }
 
-    /// D1: on a bundled preset a colour route names only the rows the leaf
-    /// moves there -- a row its `except` lists for that preset is left out,
-    /// every other row of the element's drawing it moves in a drawn state is
-    /// named -- and no "(in a bundled theme)"; under the OS theme it names
-    /// every row it moves in any bundled one, and says so. Over every listed
-    /// colour leaf the connector draws and every bundled combination.
+    /// D1: on a platform preset a colour route names only the rows the
+    /// element's homes of the leaf move there -- a row their `except` lists
+    /// for that preset is left out, every other row of the element's drawing
+    /// they move in a drawn state is named, with each home that moves it --
+    /// and no "(in a platform theme)"; on another theme it names every row
+    /// they move in any platform one, and says so. Over every listed colour
+    /// leaf the connector draws and every bundled combination.
     #[test]
     fn a_colour_route_names_the_rows_moved_on_the_installed_preset() {
-        let Some(export) = contract_leaves() else {
-            panic!("contract-leaves.toml does not parse");
+        let Some(export) = contract_homes() else {
+            panic!("contract-homes.toml does not parse");
         };
         let bundled = bundled_combinations();
         let mut failures = Vec::new();
         for element in elements::elements() {
             for leaf in &element.leaves {
+                let moving: Vec<(&str, &[RowMove])> = export
+                    .homes_of(element, leaf)
+                    .into_iter()
+                    .filter_map(|home| match export.homes.get(home) {
+                        Some(HomeReach::Moves(moves)) => Some((home, moves.as_slice())),
+                        _ => None,
+                    })
+                    .collect();
+                if moving.is_empty() {
+                    continue;
+                }
                 // The element as each bundled combination draws it, installed
-                // and under the OS theme.
+                // (a platform one) and as any other theme.
                 for (combination, r) in &bundled {
-                    let (Some(drawing), Some(LeafReach::Moves(moves))) = (
-                        drawing(element, leaf, Shown::opening(r)),
-                        export.leaves.get(leaf),
-                    ) else {
+                    let Some(drawing) = drawing(element, leaf, Shown::opening(r)) else {
                         continue;
                     };
                     // A move the element draws: its row is the drawing's and
@@ -32727,15 +32865,25 @@ mod tests {
                             && (m.statuses.is_empty()
                                 || m.statuses.iter().any(|s| drawing.draws_status(s)))
                     };
-                    for label in [Some(combination.as_str()), None] {
+                    let platform = export.combinations.contains(combination);
+                    let labels = [platform.then_some(combination.as_str()), None];
+                    for label in labels.into_iter().skip(usize::from(!platform)) {
                         let moved = |m: &&RowMove| {
                             drawn(m) && label.is_none_or(|l| !m.except.iter().any(|e| e == l))
                         };
-                        let want: BTreeSet<&str> =
-                            moves.iter().filter(moved).map(|m| m.row.as_str()).collect();
-                        let shown: BTreeSet<&str> = shown_rows(export, moves, &drawing, label)
-                            .into_iter()
-                            .map(|(row, _)| row)
+                        let want: BTreeSet<(&str, &str)> = moving
+                            .iter()
+                            .flat_map(|(home, moves)| {
+                                moves.iter().filter(moved).map(|m| (m.row.as_str(), *home))
+                            })
+                            .collect();
+                        let shown: BTreeSet<(&str, &str)> = moving
+                            .iter()
+                            .flat_map(|(home, moves)| {
+                                shown_rows(export, moves, &drawing, label)
+                                    .into_iter()
+                                    .map(|(row, _)| (row, *home))
+                            })
                             .collect();
                         if shown != want {
                             failures.push(format!(
@@ -32751,15 +32899,19 @@ mod tests {
                             }
                             (Some(_), false) => {
                                 route.starts_with("iced: ")
-                                    && !route.ends_with("(in a bundled theme)")
+                                    && !route.ends_with("(in a platform theme)")
                             }
                             (None, true) => route.starts_with("not drawn here: "),
                             (None, false) => {
                                 route.starts_with("iced: ")
-                                    && route.ends_with("(in a bundled theme)")
+                                    && route.ends_with("(in a platform theme)")
                             }
                         };
-                        if !holds || want.iter().any(|row| !route.contains(row)) {
+                        if !holds
+                            || want
+                                .iter()
+                                .any(|(row, home)| !route.contains(row) || !route.contains(home))
+                        {
                             failures.push(format!(
                                 "{} {leaf} on {label:?}: \"{route}\" for {want:?}",
                                 element.id
@@ -32772,65 +32924,50 @@ mod tests {
         failures.dedup();
         assert!(failures.is_empty(), "{failures:#?}");
 
-        // The fixed case: the On toggle's pressed fill is its checked fill only
-        // where the theme states no checked pair (`except` lists those that do).
+        // The fixed case: the On toggle stays in its checked fill pressed, so
+        // its pressed fill moves no row it draws in any platform theme, and
+        // its checked fill is drawn at rest, hovered and pressed.
         let Some(element) = elements::element("basic.buttons.toggle_on") else {
             panic!("basic.buttons.toggle_on is not listed");
         };
-        let leaf = "button.active_background";
-        let Some(LeafReach::Moves(moves)) = export.leaves.get(leaf) else {
-            panic!("{leaf} moves no row");
-        };
-        let checked = moves
+        let Some((label, r)) = bundled
             .iter()
-            .filter(|m| m.row == "styles::button_toggle.background")
-            .find(|m| m.statuses.iter().any(|s| s.starts_with("(true, Active)")));
-        let Some(checked) = checked else {
-            panic!("{leaf} moves no checked toggle's fill");
-        };
-        let Some(states) = checked.except.first() else {
-            panic!("every bundled preset leaves the checked pair unstated");
-        };
-        let Some(leaves) = export
-            .combinations
-            .iter()
-            .find(|c| !checked.except.contains(*c))
+            .find(|(label, _)| export.combinations.contains(label))
         else {
-            panic!("every bundled preset states the checked pair");
+            panic!("no bundled combination is a platform one");
         };
-        let resolved = |label: &str| match bundled.iter().find(|(l, _)| l == label) {
-            Some((_, r)) => r,
-            None => panic!("{label} is no bundled combination"),
-        };
-        let on_states = colour_route(
+        let pressed = colour_route(
             element,
-            leaf,
-            Shown::opening(resolved(states)),
-            Some(states),
+            "button.active_background",
+            Shown::opening(r),
+            Some(label),
         )
         .unwrap_or_default();
         assert!(
-            on_states.starts_with("not drawn here: "),
-            "{states} states the checked pair: {on_states}"
+            pressed.starts_with("not drawn here: "),
+            "{label}: the On toggle's pressed fill: {pressed}"
         );
-        let on_leaves = colour_route(
+        let checked = colour_route(
             element,
-            leaf,
-            Shown::opening(resolved(leaves)),
-            Some(leaves),
+            "button.checked_background",
+            Shown::opening(r),
+            Some(label),
         )
         .unwrap_or_default();
         assert!(
-            on_leaves.contains("styles::button_toggle.background (Active, Hovered, Pressed)"),
-            "{leaves} leaves the checked pair unstated: {on_leaves}"
+            checked.contains(
+                "styles::button_toggle.background (Active, Hovered, Pressed) moved by \
+                 button.body(CHECKED).fill"
+            ),
+            "{label}: the On toggle's checked fill: {checked}"
         );
     }
 
     /// Every key of the derivation sentences is a row the export records.
     #[test]
     fn every_derivation_sentence_names_an_exported_row() {
-        let Some(export) = contract_leaves() else {
-            panic!("contract-leaves.toml does not parse");
+        let Some(export) = contract_homes() else {
+            panic!("contract-homes.toml does not parse");
         };
         let stale: Vec<&str> = DERIVED_ROWS
             .iter()
@@ -32876,7 +33013,8 @@ mod tests {
         "button.active_background",
         "button.active_text_color",
     ];
-    /// And a tool button's own, which `styles::toolbar_button` reads besides.
+    /// And a tool button's own, which `iced_next::styles::toolbar_button`
+    /// reads besides.
     const TOOL_BUTTON_COLOURS: &[&str] = &[
         "button.checked_text_color",
         "toolbar.button_hover_background",
@@ -32979,19 +33117,6 @@ mod tests {
                     .join("/")
             })
             .join("|")
-    }
-
-    /// `r` with its colour leaf `leaf` set to a colour no bundled theme
-    /// states; `None` where the theme leaves the leaf unstated, so that
-    /// nothing draws it.
-    fn with_colour(r: &ResolvedTheme, leaf: &str) -> Option<ResolvedTheme> {
-        let mut json = serde_json::to_value(r).ok()?;
-        let value = json.pointer_mut(&format!("/{}", leaf.replace('.', "/")))?;
-        if !value.is_string() {
-            return None;
-        }
-        *value = serde_json::Value::String("#13579b".to_owned());
-        serde_json::from_value(json).ok()
     }
 
     /// The widgets of the 0.8.0 model without rules, whose homes name a part
@@ -33138,9 +33263,8 @@ mod tests {
         })
     }
 
-    /// `r` with `colour` stated at `home` ([`home_patch_toml`]), as
-    /// `with_colour` splices a 0.7.2 leaf; `None` where no patch reaches the
-    /// home.
+    /// `r` with `colour` stated at `home` ([`home_patch_toml`]); `None` where
+    /// no patch reaches the home.
     fn with_home(
         r: &native_theme::next::ResolvedTheme,
         home: &str,
@@ -33782,13 +33906,20 @@ mod tests {
         faults
     }
 
-    /// What `styles::toolbar_button` and the icon draw of a tool button
-    /// under `r`, `checked` or not, as text: the fill and the border colour
-    /// in each status a pointer can give it, the label's colour where the
-    /// label shows, the icon's where `icon_button` colours it.
-    fn toolbar_drawn(r: &ResolvedTheme, checked: bool, shows: Shows) -> String {
-        let theme = native_theme_iced::to_theme(r, "splice");
-        let style = styles::toolbar_button(r, checked);
+    /// What `iced_next::styles::toolbar_button` and the icon draw of a tool
+    /// button under `r`, the 0.8.0 theme, `checked` or not, as text: the fill
+    /// and the border colour in each status a pointer can give it, the
+    /// label's colour where the label shows, the icon's where `icon_button`
+    /// colours it ([`tool_icon_colour`]).
+    fn toolbar_drawn(r: &native_theme::next::ResolvedTheme, checked: bool, shows: Shows) -> String {
+        let theme = match native_theme_iced::next::to_theme(r) {
+            Ok(theme) => theme,
+            Err(error) => return format!("no iced theme: {error:?}"),
+        };
+        let style = match iced_next::styles::toolbar_button(r, checked) {
+            Ok(style) => style,
+            Err(error) => return format!("unmapped: {error:?}"),
+        };
         let mut drawn = String::new();
         for status in [
             button::Status::Active,
@@ -33802,7 +33933,7 @@ mod tests {
             }
         }
         if shows == Shows::BundledIcon {
-            drawn.push_str(&format!("{:?}", tool_icon_colour(r, checked)));
+            drawn.push_str(&format!("{:?}", tool_icon_colour(r, &theme, checked)));
         }
         drawn
     }
@@ -33822,12 +33953,6 @@ mod tests {
         ]
         .map(|status| format!("{:?}", style(&theme, status)))
         .join(";")
-    }
-
-    /// Whether splicing the colour leaf `leaf` moves what `drawn` draws:
-    /// whether the state shown draws it.
-    fn moves(r: &ResolvedTheme, leaf: &str, drawn: impl Fn(&ResolvedTheme) -> String) -> bool {
-        with_colour(r, leaf).is_some_and(|spliced| drawn(&spliced) != drawn(r))
     }
 
     /// The listed tab rows' two tabs each: the Basic page's, the page tabs'
@@ -33885,9 +34010,9 @@ mod tests {
     /// What a route of `element`'s `leaf` claims that `state` does not draw:
     /// a check mark the theme states no line for, an `iced_aw` widget the
     /// build has not, a flat button's or a tab's colour its drawing function
-    /// does not draw in the state shown (spliced into `ghost_button`,
-    /// `styles::toolbar_button`, the icon's colour and `tab_style`), an OS
-    /// icon theme's icon called
+    /// does not draw in the state shown (its homes stated in
+    /// `ghost_button`, `iced_next::styles::toolbar_button`, the icon's colour
+    /// and `tab_style`), an OS icon theme's icon called
     /// coloured by `icon_button`, a closed tab's line or frame, a spinner's
     /// arc or tint where the set's indicator is drawn. `laid` is what the
     /// interface lays out under `state`, `opens` which tabs it draws open
@@ -33903,7 +34028,6 @@ mod tests {
         let mut faults = Vec::new();
         let id = element.id.as_str();
         let mut fault = |what: &str| faults.push(format!("{id} {leaf}: {what}: \"{route}\""));
-        let r = &state.current_resolved;
         let not_drawn = route.starts_with("not drawn");
         if id.starts_with("basic.checkboxes.") {
             match next_check_stroke(state.next_shown()) {
@@ -33940,8 +34064,17 @@ mod tests {
                 fault("an OS icon theme's icon is not coloured by icon_button");
             }
             if tool_button(id) {
+                let homes = contract_homes()
+                    .map(|export| export.homes_of(element, leaf))
+                    .unwrap_or_default();
+                let mut moved = homes.iter().filter_map(|home| {
+                    home_moves(state.next_shown(), home, |r| {
+                        toolbar_drawn(r, selected, shows)
+                    })
+                });
                 if (BUTTON_COLOURS.contains(&leaf) || TOOL_BUTTON_COLOURS.contains(&leaf))
-                    && moves(r, leaf, |r| toolbar_drawn(r, selected, shows)) == not_drawn
+                    && !homes.is_empty()
+                    && moved.any(|moved| moved) == not_drawn
                 {
                     fault("the tool button's drawing");
                 }
@@ -37855,10 +37988,10 @@ mod tests {
                 .strip_suffix(" (in a platform theme)")
                 .unwrap_or(label);
             let want: BTreeSet<&str> = export
-                .leaves
+                .homes
                 .iter()
                 .filter(|(_, reach)| match reach {
-                    LeafReach::Moves(moves) => moves.iter().any(|m| {
+                    HomeReach::Moves(moves) => moves.iter().any(|m| {
                         m.row == row
                             && match status {
                                 Some(s) => m.statuses.iter().any(|t| t == s),
@@ -37866,7 +37999,7 @@ mod tests {
                             }
                             && !(platform && m.except.iter().any(|e| e == combination))
                     }),
-                    LeafReach::Named { .. } => false,
+                    HomeReach::Named { .. } => false,
                 })
                 .map(|(leaf, _)| leaf.as_str())
                 .collect();
@@ -37947,7 +38080,7 @@ mod tests {
             {
                 faults.push(format!("{title}: {row} is not a row of {functions:?}"));
             }
-            if contract_leaves().is_none_or(|export| !export.rows.contains_key(row)) {
+            if contract_homes().is_none_or(|export| !export.rows.contains_key(row)) {
                 faults.push(format!("{title}: {row} is no row of the export"));
             }
             let Some(ink) = row_ink(row, status, &state.current_resolved, &state.current_theme)
@@ -38053,19 +38186,27 @@ mod tests {
 
     /// Minor 1 of the M9b T4 review: each field an extractor names is the
     /// field of the style output by that name. For every style row a page
-    /// widget's info shows, the first leaf the export's `rows."<row>".leaves`
-    /// lists that moves it at a status the test draws, spliced in a bundled
-    /// combination it moves it in, moves the extractor's field of that row's
-    /// name; read by the contract's own record, not by the extractor.
+    /// widget's info shows, a 0.7.2 leaf of a home the export's
+    /// `rows."<row>".homes` lists, spliced in a platform combination the home
+    /// moves the row in at a status the move names and the test draws, moves
+    /// the extractor's field of that row's name; read by the contract's own
+    /// record, not by the extractor. (The page's colour rows are still drawn
+    /// in the 0.7.2 `styles::*`, the export's rows are `next::styles`'; a
+    /// home's 0.7.2 leaves bridge the two.)
     #[test]
     fn every_extractor_field_moves_with_a_leaf_of_its_row() {
-        let Some(export) = contract_leaves() else {
-            panic!("contract-leaves.toml does not parse");
+        let Some(export) = contract_homes() else {
+            panic!("contract-homes.toml does not parse");
         };
-        let bundled: Vec<(String, ResolvedTheme, serde_json::Value)> = bundled_combinations()
+        type Platform = (String, ResolvedTheme, serde_json::Value, Theme);
+        let platform: Vec<Platform> = bundled_combinations()
             .into_iter()
+            .filter(|(label, _)| export.combinations.contains(label))
             .map(|(label, r)| match serde_json::to_value(&r) {
-                Ok(json) => (label, r, json),
+                Ok(json) => {
+                    let theme = native_theme_iced::to_theme(&r, "splice");
+                    (label, r, json, theme)
+                }
                 Err(error) => panic!("{label}: {error}"),
             })
             .collect();
@@ -38079,50 +38220,55 @@ mod tests {
         });
         let mut failures = Vec::new();
         for row in &shown {
-            let leaves = export
-                .rows
-                .get(row)
-                .map_or(&[][..], |r| r.leaves.as_slice());
-            // The first leaf with a move of the row at a status the test
-            // draws, the status and a combination it moves it in.
-            let splice = leaves.iter().find_map(|leaf| {
-                let Some(LeafReach::Moves(moves)) = export.leaves.get(leaf) else {
-                    return None;
+            let homes = export.rows.get(row).map_or(&[][..], |r| r.homes.as_slice());
+            // Each 0.7.2 leaf of a home with a move of the row, at each
+            // status of the move the test draws, in each platform combination
+            // the home moves it in.
+            let mut tried = 0;
+            let moved = homes.iter().any(|home| {
+                let (Some(HomeReach::Moves(moves)), Some(leaves)) =
+                    (export.homes.get(home), export.leaves.get(home))
+                else {
+                    return false;
                 };
-                moves.iter().filter(|m| m.row == *row).find_map(|m| {
+                moves.iter().filter(|m| m.row == *row).any(|m| {
                     let statuses: Vec<Option<&str>> = match m.statuses.is_empty() {
                         true => vec![None],
                         false => m.statuses.iter().map(|s| Some(s.as_str())).collect(),
                     };
-                    let (label, r, json) = bundled
-                        .iter()
-                        .find(|(label, _, _)| !m.except.iter().any(|e| e == label))?;
-                    let theme = native_theme_iced::to_theme(r, "splice");
-                    let status = statuses
-                        .into_iter()
-                        .find(|status| row_ink(row, *status, r, &theme).is_some())?;
-                    Some((leaf, label, r, json, status, theme))
+                    platform.iter().any(|(label, r, json, theme)| {
+                        if m.except.iter().any(|e| e == label) {
+                            return false;
+                        }
+                        statuses.iter().any(|&status| {
+                            let base = row_ink(row, status, r, theme);
+                            if base.is_none() {
+                                return false;
+                            }
+                            leaves.iter().any(|leaf| {
+                                tried += 1;
+                                let pointer = format!("/{}", leaf.replace('.', "/"));
+                                ["#123456", "#fedcba", "#12345680"].iter().any(|hex| {
+                                    let mut spliced = json.clone();
+                                    let Some(value) = spliced.pointer_mut(&pointer) else {
+                                        return false;
+                                    };
+                                    *value = serde_json::Value::from(*hex);
+                                    serde_json::from_value::<ResolvedTheme>(spliced).is_ok_and(
+                                        |spliced| row_ink(row, status, &spliced, theme) != base,
+                                    )
+                                })
+                            })
+                        })
+                    })
                 })
             });
-            let Some((leaf, label, r, json, status, theme)) = splice else {
-                failures.push(format!("{row}: no leaf of the export moves it where drawn"));
-                continue;
-            };
-            let base = row_ink(row, status, r, &theme);
-            let pointer = format!("/{}", leaf.replace('.', "/"));
-            let moved = ["#123456", "#fedcba", "#12345680"].iter().any(|hex| {
-                let mut spliced = json.clone();
-                let Some(value) = spliced.pointer_mut(&pointer) else {
-                    return false;
-                };
-                *value = serde_json::Value::from(*hex);
-                serde_json::from_value::<ResolvedTheme>(spliced)
-                    .is_ok_and(|spliced| row_ink(row, status, &spliced, &theme) != base)
-            });
-            if !moved {
+            if tried == 0 {
+                failures.push(format!("{row}: no home of the export moves it where drawn"));
+            } else if !moved {
                 failures.push(format!(
-                    "{row} ({}): {leaf} spliced on {label} does not move the extractor's field",
-                    status.unwrap_or("no status")
+                    "{row}: no 0.7.2 leaf of the homes that move it, spliced where they move \
+                     it, moves the extractor's field"
                 ));
             }
         }
@@ -38467,37 +38613,6 @@ mod tests {
             }
         }
         out
-    }
-
-    /// What `function`, a showcase function a hand-written colour route
-    /// names, draws on `r`, in every state it draws, as text: what a splice
-    /// of a leaf it reads must move. `None` for a name that is no such
-    /// function.
-    fn drawn_by(function: &str, r: &ResolvedTheme) -> Option<String> {
-        let theme = native_theme_iced::to_theme(r, "splice");
-        let statuses = [
-            button::Status::Active,
-            button::Status::Hovered,
-            button::Status::Pressed,
-            button::Status::Disabled,
-        ];
-        let buttons = |style: &dyn Fn(&Theme, button::Status) -> button::Style| {
-            statuses
-                .iter()
-                .map(|&s| format!("{:?}", style(&theme, s)))
-                .collect::<Vec<_>>()
-                .join(";")
-        };
-        Some(match function {
-            "styles::toolbar_button" => [false, true]
-                .map(|checked| buttons(&styles::toolbar_button(r, checked)))
-                .join("|"),
-            // The colour it gives a bundled set's icon on a tool button; its
-            // label is `styles::toolbar_button`'s, which the route names as
-            // well.
-            "icon_button" => format!("{:?}", [false, true].map(|s| tool_icon_colour(r, s))),
-            _ => return None,
-        })
     }
 
     /// Decision 12 of issue #4's step 1
@@ -39514,27 +39629,18 @@ mod tests {
     }
 
     /// M9-084: a colour the showcase draws itself is routed by hand, and each
-    /// such route names the function that draws it; splicing the leaf in a
-    /// bundled theme moves what that function draws, in at least one
-    /// combination (a soft option's fallback moves it only where the option
-    /// is unstated). `ghost_button(resolved, false)(&theme, Hovered)` moves
-    /// on `button.hover_text_color`, `menu_row` on `menu.hover_background`.
-    /// A function on the 0.8.0 model ([`next_drawn_by`]) is held to the homes
-    /// its route names instead ([`next_hand_route_faults`]). The routes are
-    /// those of each of [`route_states`].
+    /// such route names the function that draws it, a function on the 0.8.0
+    /// model ([`next_drawn_by`]), and the homes it draws, each of which moves
+    /// what the function draws in at least one combination
+    /// ([`next_hand_route_faults`]): `ghost_button` on
+    /// `button.label(HOVER;variant=Flat).color`, `menu_row` on
+    /// `menu.item(HOVER).fill`. The routes are those of each of
+    /// [`route_states`].
     #[test]
     fn every_hand_colour_route_names_a_function_that_reads_it() {
-        let Some(export) = contract_leaves() else {
-            panic!("contract-leaves.toml does not parse");
+        let Some(export) = contract_homes() else {
+            panic!("contract-homes.toml does not parse");
         };
-        let combinations = bundled_combinations();
-        let jsons: Vec<serde_json::Value> = combinations
-            .iter()
-            .map(|(label, r)| match serde_json::to_value(r) {
-                Ok(json) => json,
-                Err(error) => panic!("{label}: {error}"),
-            })
-            .collect();
         let next_combinations = next_combinations();
         let mut checked: BTreeSet<(String, String)> = BTreeSet::new();
         let mut failures = Vec::new();
@@ -39548,9 +39654,7 @@ mod tests {
             })
         });
         for (state, element, leaf) in routes {
-            if !export.leaves.contains_key(leaf)
-                || drawing(element, leaf, Shown::of(state)).is_some()
-            {
+            if !export.has_leaf(leaf) || drawing(element, leaf, Shown::of(state)).is_some() {
                 continue;
             }
             let route = iced_route(state, element, leaf);
@@ -39583,34 +39687,10 @@ mod tests {
                     ));
                     continue;
                 }
-                let pointer = format!("/{}", leaf.replace('.', "/"));
-                let moved = combinations.iter().zip(&jsons).any(|((_, r), json)| {
-                    let Some(before) = drawn_by(function, r) else {
-                        return false;
-                    };
-                    ["#13579b", "#2468ac80"].iter().any(|hex| {
-                        let mut spliced = json.clone();
-                        let Some(value) = spliced.pointer_mut(&pointer) else {
-                            return false;
-                        };
-                        *value = serde_json::Value::String((*hex).to_owned());
-                        serde_json::from_value::<ResolvedTheme>(spliced)
-                            .ok()
-                            .and_then(|s| drawn_by(function, &s))
-                            .is_some_and(|after| after != before)
-                    })
-                });
-                if drawn_by(function, &State::default().current_resolved).is_none() {
-                    failures.push(format!(
-                        "{}: {leaf}: \"{route}\" names {function}, which this test cannot draw",
-                        element.id
-                    ));
-                } else if !moved {
-                    failures.push(format!(
-                        "{}: {leaf}: {function} draws nothing it moves",
-                        element.id
-                    ));
-                }
+                failures.push(format!(
+                    "{}: {leaf}: \"{route}\" names {function}, which this test cannot draw",
+                    element.id
+                ));
             }
         }
         failures.sort();

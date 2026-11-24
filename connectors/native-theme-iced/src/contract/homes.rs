@@ -2,9 +2,10 @@
 //! [`native_theme::next::ResolvedTheme`], the rows of the 0.8.0 path
 //! ([`crate::next`], its `styles::*` outputs, its palette and its colour
 //! accessors) a colour stated there moves, under which statuses, and the
-//! platform presets in which it does not. Exported as `contract-homes.toml`
-//! at the crate root, beside the 0.7.2 export `contract-leaves.toml`, and
-//! held to the walk by `every_colour_home_moves_a_row_or_is_named`.
+//! platform presets in which it does not, and the 0.7.2 colour leaves the
+//! table of homes places there. Exported as `contract-homes.toml` at the
+//! crate root and held to the walk by
+//! `every_colour_home_moves_a_row_or_is_named`.
 //!
 //! The rows are named as the 0.7.2 walk names them ([`Reached`]): a palette
 //! slot of [`ROWS`], `styles::<fn>.<field>` for a field of
@@ -1172,16 +1173,17 @@ struct HomeReach {
     unpatched: BTreeMap<String, String>,
 }
 
-/// The colour homes: per 0.7.2 colour leaf (a `[leaves]` key of
-/// `contract-leaves.toml`, which its own test holds to the 0.7.2 walk) the
-/// homes its row of the table of homes names, `homes_by_preset`'s too, and
-/// [`QUERIED_HOMES`].
+/// The colour homes: per 0.7.2 colour leaf (a colour leaf of a bundled
+/// combination's serialised `ResolvedTheme`, as the 0.7.2 walk splices
+/// them) the homes its row of the table of homes names, `homes_by_preset`'s
+/// too, and [`QUERIED_HOMES`].
 fn colour_homes() -> Result<BTreeMap<String, Vec<String>>, String> {
-    let leaves: toml::Table = CONTRACT_LEAVES.parse().map_err(|e| format!("{e}"))?;
-    let leaves = leaves
-        .get("leaves")
-        .and_then(toml::Value::as_table)
-        .ok_or("contract-leaves.toml has no [leaves]")?;
+    let mut leaves: BTreeSet<String> = BTreeSet::new();
+    for c in combinations().map_err(|e| format!("{e}"))? {
+        let json = serde_json::to_value(&c.resolved)
+            .map_err(|e| format!("{} does not serialise: {e}", c.label()))?;
+        leaves.extend(colour_leaves(&json));
+    }
     let table: toml::Table = HOMES_TABLE.parse().map_err(|e| format!("{e}"))?;
     let rows = table
         .get("row")
@@ -1204,7 +1206,7 @@ fn colour_homes() -> Result<BTreeMap<String, Vec<String>>, String> {
         let Some(key) = row.get("key").and_then(toml::Value::as_str) else {
             return Err("a row of next_homes.toml has no key".to_owned());
         };
-        if !leaves.contains_key(key) {
+        if !leaves.contains(key) {
             continue;
         }
         let mut named = strings(row.get("homes"));
@@ -1351,15 +1353,16 @@ fn render_contract_homes(reach: &HomeReach) -> String {
 # by `every_colour_home_moves_a_row_or_is_named`, which fails while the two differ. That test
 # exists only with `--features iced_aw` (check_release's and CI's `iced_aw,watch,native`
 # run); a default `cargo test` does not compare the file.
-# The iced showcase reads it for the colour rows of its Widget Info. It is the 0.8.0 model's
-# counterpart of contract-leaves.toml, keyed by home rather than by 0.7.2 leaf.
+# The iced showcase reads it for the colour rows of its Widget Info.
 #
 # Every colour home of the 0.8.0 model -- the homes native-theme/tests/next_homes.toml names
-# for the colour leaves of contract-leaves.toml, and the state queries the 0.8.0 style
-# functions ask that it names for none -- stated in each of the {} platform preset/scheme
-# combinations in two opaque colours and a translucent one in turn (a patch as the iced
-# showcase's `home_patch_toml` writes it; the focus ring's and a text style's colour written
-# into the resolved theme), is a [homes.\"<home>\"] table:
+# for the 0.7.2 model's colour leaves (those of a bundled preset's serialised ResolvedTheme),
+# and the state queries the 0.8.0 style functions ask that it names for none -- stated in
+# each of the {} platform preset/scheme combinations in two opaque colours and a translucent
+# one in turn (a patch as the iced showcase's `home_patch_toml` writes it; the focus ring's
+# and a text style's colour written into the resolved theme), is a [homes.\"<home>\"] table:
+#   leaves: the 0.7.2 colour leaves next_homes.toml places at the home; absent for a state
+#           query it names for none;
 #   moves: each row of the 0.8.0 path (`native_theme_iced::next`) the colours tell apart, as
 #          {{ row, statuses, except }}:
 #     row       a palette slot (`palette.*`, `extended.*`), a colour accessor or the
@@ -1391,6 +1394,13 @@ combinations = {}
     );
     for (home, keys) in &reach.homes {
         let _ = write!(out, "\n[homes.{}]\n", toml_string(home));
+        if !keys.is_empty() {
+            let _ = writeln!(
+                out,
+                "leaves = {}",
+                toml_strings(keys.iter().map(String::as_str))
+            );
+        }
         match reach.moves.get(home) {
             Some(rows) => render_moves(&mut out, rows, &reach.labels),
             None => {

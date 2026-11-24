@@ -132,7 +132,7 @@ not look for one.
       :36-37), collapsed under the selected tab (:337).
       Modelling the separator needs a colour, a width, an inset and when it
       hides, in the three connectors (a gpui `TabLook` field, an iced contract
-      row with its `contract-leaves.toml` entries, an egui mapping row); the
+      row with its `contract-homes.toml` entries, an egui mapping row); the
       rule needs no new field, since its brush is `tab.border.color`'s, but it
       gives `tab.border`, the selected tab's outline, a second meaning (a rule
       under the whole bar) and meets the showcases' own `separator.*` rule under
@@ -4163,12 +4163,14 @@ the gap — closing it is a change, and each wants its own decision.
       §10.4), which is the question this entry leaves to decide: whether an
       iced info can be generated the same way from the iced contract's rows.
       M9b T3 (2026-10-21, 9f8f89e2, b3d5a8ca): the generation question is
-      answered, yes: the iced contract's colour-leaf walk is exported as
-      `connectors/native-theme-iced/contract-leaves.toml` (per colour leaf the
-      rows it moves, under which statuses and in which bundled combinations),
-      and the showcase's Widget Info reads a listed element's colour routes
+      answered, yes: the iced contract's colour-leaf walk was exported as
+      `contract-leaves.toml`, and on the 0.8.0 model its colour-home walk is
+      exported as `connectors/native-theme-iced/contract-homes.toml` (per
+      colour home the rows it moves, under which statuses and in which
+      platform combinations, and the 0.7.2 leaves it holds), which replaced
+      it; the showcase's Widget Info reads a listed element's colour routes
       from it; the colours the showcase draws itself keep routes by hand, each
-      naming the function a test splices. The innermost-instance half stays
+      naming the function and the homes a test states. The innermost-instance half stays
       open: iced's widget tree offers no hover walk (`iced_selector` sees only
       `operate` implementors), so the half an iced showcase can give is the
       hovered element's identity (M9b T7), not the innermost instance under

@@ -4,15 +4,16 @@
 # by `every_colour_home_moves_a_row_or_is_named`, which fails while the two differ. That test
 # exists only with `--features iced_aw` (check_release's and CI's `iced_aw,watch,native`
 # run); a default `cargo test` does not compare the file.
-# The iced showcase reads it for the colour rows of its Widget Info. It is the 0.8.0 model's
-# counterpart of contract-leaves.toml, keyed by home rather than by 0.7.2 leaf.
+# The iced showcase reads it for the colour rows of its Widget Info.
 #
 # Every colour home of the 0.8.0 model -- the homes native-theme/tests/next_homes.toml names
-# for the colour leaves of contract-leaves.toml, and the state queries the 0.8.0 style
-# functions ask that it names for none -- stated in each of the 14 platform preset/scheme
-# combinations in two opaque colours and a translucent one in turn (a patch as the iced
-# showcase's `home_patch_toml` writes it; the focus ring's and a text style's colour written
-# into the resolved theme), is a [homes."<home>"] table:
+# for the 0.7.2 model's colour leaves (those of a bundled preset's serialised ResolvedTheme),
+# and the state queries the 0.8.0 style functions ask that it names for none -- stated in
+# each of the 14 platform preset/scheme combinations in two opaque colours and a translucent
+# one in turn (a patch as the iced showcase's `home_patch_toml` writes it; the focus ring's
+# and a text style's colour written into the resolved theme), is a [homes."<home>"] table:
+#   leaves: the 0.7.2 colour leaves next_homes.toml places at the home; absent for a state
+#           query it names for none;
 #   moves: each row of the 0.8.0 path (`native_theme_iced::next`) the colours tell apart, as
 #          { row, statuses, except }:
 #     row       a palette slot (`palette.*`, `extended.*`), a colour accessor or the
@@ -38,6 +39,7 @@
 combinations = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"]
 
 [homes."button.body(CHECKED).fill"]
+leaves = ["button.checked_background"]
 moves = [
   { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
   { row = "styles::button_toggle.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -45,17 +47,20 @@ moves = [
 ]
 
 [homes."button.body(DEFAULT).fill"]
+leaves = ["button.default_button_background"]
 moves = [
   { row = "styles::button_default.background", statuses = ["Active", "Hovered"] },
   { row = "styles::button_default.border", statuses = ["Active", "Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."button.body(DEFAULT).stroke.color"]
+leaves = ["button.default_button_border_color"]
 moves = [
   { row = "styles::button_default.border", statuses = ["Active"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."button.body(DISABLED).fill"]
+leaves = ["button.disabled_background"]
 moves = [
   { row = "styles::button.background", statuses = ["Disabled"] },
   { row = "styles::button.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -74,12 +79,14 @@ moves = [
 ]
 
 [homes."button.body(FOCUS_VISIBLE).stroke.color"]
+leaves = ["button.focus_border_color"]
 named = "UNREAD_COLOURS"
 entry = "button.focus_border_color"
 kind = "no receiver"
 why = "an iced button takes no keyboard focus: it implements no `operate` for `Focusable`, and its status has no focused variant (`iced_widget-0.14.2/src/button.rs:257-273`, `:471-498`)"
 
 [homes."button.body(HOVER).fill"]
+leaves = ["button.hover_background"]
 moves = [
   { row = "styles::button.background", statuses = ["Hovered"] },
   { row = "styles::button.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -88,6 +95,7 @@ moves = [
 ]
 
 [homes."button.body(HOVER).stroke.color"]
+leaves = ["button.hover_border_color"]
 moves = [
   { row = "styles::button.border", statuses = ["Hovered"] },
   { row = "styles::button_danger.border", statuses = ["Hovered"] },
@@ -105,6 +113,7 @@ moves = [
 ]
 
 [homes."button.body(NONE).fill"]
+leaves = ["button.background_color"]
 moves = [
   { row = "styles::button.background", statuses = ["Active"] },
   { row = "styles::button.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -123,6 +132,7 @@ moves = [
 ]
 
 [homes."button.body(NONE).stroke.color"]
+leaves = ["button.border.color"]
 moves = [
   { row = "styles::button.border", statuses = ["Active", "Disabled"] },
   { row = "styles::button_danger.border", statuses = ["Active", "Disabled"] },
@@ -137,6 +147,7 @@ moves = [
 ]
 
 [homes."button.body(NONE; variant=Primary).fill"]
+leaves = ["button.primary_background"]
 moves = [
   { row = "styles::button_default.background", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::button_default.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -158,6 +169,7 @@ moves = [
 ]
 
 [homes."button.body(PRESSED).fill"]
+leaves = ["button.active_background"]
 moves = [
   { row = "styles::button.background", statuses = ["Pressed"] },
   { row = "styles::button.border", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -167,6 +179,7 @@ moves = [
 ]
 
 [homes."button.body(PRESSED).stroke.color"]
+leaves = ["button.hover_border_color"]
 moves = [
   { row = "styles::button.border", statuses = ["Pressed"] },
   { row = "styles::button_danger.border", statuses = ["Pressed"] },
@@ -184,6 +197,7 @@ moves = [
 ]
 
 [homes."button.label(CHECKED).color"]
+leaves = ["button.checked_text_color"]
 moves = [
   { row = "styles::button_toggle.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
   { row = "styles::button_toggle.text_color", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -191,11 +205,13 @@ moves = [
 ]
 
 [homes."button.label(DEFAULT).color"]
+leaves = ["button.default_button_text_color"]
 moves = [
   { row = "styles::button_default.text_color", statuses = ["Active", "Hovered"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."button.label(DISABLED).color"]
+leaves = ["button.disabled_text_color"]
 moves = [
   { row = "styles::button.text_color", statuses = ["Disabled"] },
   { row = "styles::button_danger.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark"] },
@@ -209,6 +225,7 @@ moves = [
 ]
 
 [homes."button.label(HOVER).color"]
+leaves = ["button.hover_text_color"]
 moves = [
   { row = "styles::button.text_color", statuses = ["Hovered"] },
   { row = "styles::button_toggle.text_color", statuses = ["(false, Hovered)"] },
@@ -216,6 +233,7 @@ moves = [
 ]
 
 [homes."button.label(NONE).color"]
+leaves = ["button.font.color"]
 moves = [
   { row = "styles::button.text_color", statuses = ["Active"] },
   { row = "styles::button_default.text_color", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
@@ -229,6 +247,7 @@ moves = [
 ]
 
 [homes."button.label(NONE; variant=Primary).color"]
+leaves = ["button.primary_text_color"]
 moves = [
   { row = "styles::button_default.text_color", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::button_default.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -239,6 +258,7 @@ moves = [
 ]
 
 [homes."button.label(PRESSED).color"]
+leaves = ["button.active_text_color"]
 moves = [
   { row = "styles::button.text_color", statuses = ["Pressed"] },
   { row = "styles::button_default.text_color", statuses = ["Pressed"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -247,6 +267,7 @@ moves = [
 ]
 
 [homes."card.container(NONE).fill"]
+leaves = ["card.background_color"]
 moves = [
   { row = "styles::aw::card.background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::aw::card.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -255,12 +276,14 @@ moves = [
 ]
 
 [homes."card.container(NONE).stroke.color"]
+leaves = ["card.border.color"]
 moves = [
   { row = "styles::aw::card.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::container_card.border" },
 ]
 
 [homes."checkbox.checkmark(CHECKED).color"]
+leaves = ["checkbox.indicator_color"]
 moves = [
   { row = "styles::checkbox.icon_color", statuses = ["Active { is_checked: false }", "Active { is_checked: true }", "Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
   { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -268,6 +291,7 @@ moves = [
 ]
 
 [homes."checkbox.indicator(CHECKED).fill"]
+leaves = ["checkbox.checked_background"]
 moves = [
   { row = "styles::checkbox.background", statuses = ["Active { is_checked: true }", "Disabled { is_checked: true }"] },
   { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: true }"], except = ["macos-tahoe/light", "macos-tahoe/dark"] },
@@ -276,11 +300,13 @@ moves = [
 ]
 
 [homes."checkbox.indicator(CHECKED).stroke.color"]
+leaves = ["checkbox.border.color"]
 moves = [
   { row = "styles::checkbox.border", statuses = ["Active { is_checked: true }", "Hovered { is_checked: true }"] },
 ]
 
 [homes."checkbox.indicator(DISABLED).fill"]
+leaves = ["checkbox.disabled_background"]
 moves = [
   { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"] },
 ]
@@ -291,6 +317,7 @@ moves = [
 ]
 
 [homes."checkbox.indicator(DISABLED|CHECKED).fill"]
+leaves = ["checkbox.disabled_background"]
 moves = [
   { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
 ]
@@ -302,6 +329,7 @@ kind = "ruled"
 why = "read only where a rule for the first flag alone states the property (`flagged`, src/next/borders.rs; spec §2, `from_state`), which no platform preset does; a rule for both flags alone stays unseen by that query, the two-flag gap SQ1 settles"
 
 [homes."checkbox.indicator(HOVER).fill"]
+leaves = ["checkbox.hover_background"]
 moves = [
   { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
   { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "material-3/light", "material-3/dark"] },
@@ -309,16 +337,19 @@ moves = [
 ]
 
 [homes."checkbox.indicator(HOVER).stroke.color"]
+leaves = ["checkbox.hover_border_color"]
 moves = [
   { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
 ]
 
 [homes."checkbox.indicator(HOVER|CHECKED).stroke.color"]
+leaves = ["checkbox.hover_border_color"]
 moves = [
   { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: true }"] },
 ]
 
 [homes."checkbox.indicator(NONE).fill"]
+leaves = ["checkbox.background_color", "checkbox.unchecked_background"]
 moves = [
   { row = "styles::checkbox.background", statuses = ["Active { is_checked: false }"] },
   { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -328,11 +359,13 @@ moves = [
 ]
 
 [homes."checkbox.indicator(NONE).stroke.color"]
+leaves = ["checkbox.unchecked_border_color"]
 moves = [
   { row = "styles::checkbox.border", statuses = ["Active { is_checked: false }"] },
 ]
 
 [homes."checkbox.label(DISABLED).color"]
+leaves = ["checkbox.disabled_text_color"]
 moves = [
   { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
   { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
@@ -340,11 +373,13 @@ moves = [
 ]
 
 [homes."checkbox.label(NONE).color"]
+leaves = ["checkbox.font.color"]
 moves = [
   { row = "styles::checkbox.text_color", statuses = ["Active { is_checked: false }", "Active { is_checked: true }", "Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
 ]
 
 [homes."colors.accent.fill"]
+leaves = ["defaults.accent_color"]
 moves = [
   { row = "palette.primary" },
   { row = "styles::aw::selection_list.background", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -374,6 +409,7 @@ moves = [
 ]
 
 [homes."colors.accent.foreground"]
+leaves = ["defaults.accent_text_color"]
 moves = [
   { row = "extended.primary.base.text" },
   { row = "styles::aw::selection_list.text_color", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -381,17 +417,20 @@ moves = [
 ]
 
 [homes."colors.caret"]
+leaves = ["input.caret_color"]
 named = "UNREAD_COLOURS"
 entry = "input.caret_color"
 kind = "no receiver"
 why = "iced draws the caret in the value colour: a 1 px quad filled with `style.value` (`iced_widget-0.14.2/src/text_input.rs:520-533`, `text_editor.rs:1040-1046`), and neither `Style` has a caret field"
 
 [homes."colors.disabled_text"]
+leaves = ["defaults.disabled_text_color"]
 moves = [
   { row = "crate::disabled_text_color" },
 ]
 
 [homes."colors.error.fill"]
+leaves = ["defaults.danger_color"]
 moves = [
   { row = "palette.danger" },
   { row = "styles::button_danger.background", statuses = ["Active", "Hovered", "Pressed"] },
@@ -400,6 +439,7 @@ moves = [
 ]
 
 [homes."colors.error.foreground"]
+leaves = ["defaults.danger_text_color"]
 moves = [
   { row = "extended.danger.base.text" },
   { row = "styles::button_danger.text_color", statuses = ["Active", "Hovered", "Pressed"] },
@@ -407,55 +447,65 @@ moves = [
 ]
 
 [homes."colors.focus_ring"]
+leaves = ["defaults.focus_ring_color"]
 moves = [
   { row = "crate::focus_ring_color" },
 ]
 
 [homes."colors.info.fill"]
+leaves = ["defaults.info_color"]
 moves = [
   { row = "crate::info_color" },
 ]
 
 [homes."colors.info.foreground"]
+leaves = ["defaults.info_text_color"]
 moves = [
   { row = "crate::info_text_color" },
 ]
 
 [homes."colors.link"]
+leaves = ["defaults.link_color"]
 moves = [
   { row = "crate::link_color" },
 ]
 
 [homes."colors.selection.background"]
+leaves = ["defaults.selection_background"]
 moves = [
   { row = "crate::selection_background" },
 ]
 
 [homes."colors.selection.foreground"]
+leaves = ["defaults.selection_text_color"]
 named = "UNREAD_COLOURS"
 entry = "defaults.selection_text_color"
 kind = "inherited"
 why = "the selected-item labels that rows read inherit it: `menu.hover_text_color`, `sidebar.selection_text_color` and `list.selection_text_color` (`docs/inheritance-rules.toml:198`, `:227`, `:243`)"
 
 [homes."colors.selection.unfocused_background"]
+leaves = ["defaults.selection_inactive_background"]
 named = "UNREAD_COLOURS"
 entry = "defaults.selection_inactive_background"
 kind = "no receiver"
 why = "iced draws a text field's selection only while the field is focused (`iced_widget-0.14.2/src/text_input.rs:500-503`, `text_editor.rs:1021`), so an unfocused selection has no look to give"
 
 [homes."colors.selection.unfocused_foreground"]
+leaves = ["defaults.selection_inactive_text_color"]
 named = "UNREAD_COLOURS"
 entry = "defaults.selection_inactive_text_color"
 kind = "no receiver"
 why = "iced draws a text field's selection only while the field is focused (`iced_widget-0.14.2/src/text_input.rs:500-503`, `text_editor.rs:1021`), so an unfocused selection has no look to give"
 
 [homes."colors.shadow"]
+leaves = ["defaults.shadow_color"]
 named = "UNREAD_COLOURS"
 entry = "defaults.shadow_color"
 kind = "no receiver"
 why = "an iced `Shadow` is a colour, an offset and a blur radius (`iced_core-0.14.0/src/shadow.rs:5-14`), and the model states the colour alone, so every `shadow` field stays iced's default (the `.shadow` entries of `DERIVED`)"
 
 [homes."colors.success.fill"]
+leaves = ["defaults.success_color"]
 moves = [
   { row = "palette.success" },
   { row = "styles::button_success.background", statuses = ["Active", "Hovered", "Pressed"] },
@@ -464,6 +514,7 @@ moves = [
 ]
 
 [homes."colors.success.foreground"]
+leaves = ["defaults.success_text_color"]
 moves = [
   { row = "extended.success.base.text" },
   { row = "styles::button_success.text_color", statuses = ["Active", "Hovered", "Pressed"] },
@@ -471,18 +522,21 @@ moves = [
 ]
 
 [homes."colors.text_selection.background"]
+leaves = ["defaults.text_selection_background", "input.selection_background"]
 moves = [
   { row = "styles::text_editor.selection", statuses = ["Active", "Disabled", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
   { row = "styles::text_input.selection", statuses = ["Active", "Disabled", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
 ]
 
 [homes."colors.text_selection.foreground"]
+leaves = ["defaults.text_selection_color", "input.selection_text_color"]
 named = "UNREAD_COLOURS"
 entry = "defaults.text_selection_color"
 kind = "no receiver"
 why = "`text_input::Style.selection` and `text_editor::Style.selection` are the fill of a quad drawn behind the text (`iced_widget-0.14.2/src/text_input.rs:561-571`, `text_editor.rs:1049-1059`), and the text over it is drawn whole in `value` (`text_input.rs:615-627`, `text_editor.rs:1010-1015`): no colour for the selected run"
 
 [homes."colors.view.background"]
+leaves = ["defaults.surface_color"]
 moves = [
   { row = "extended.background.weak.color" },
   { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -492,6 +546,7 @@ moves = [
 ]
 
 [homes."colors.warning.fill"]
+leaves = ["defaults.warning_color"]
 moves = [
   { row = "palette.warning" },
   { row = "styles::button_warning.background", statuses = ["Active", "Hovered", "Pressed"] },
@@ -500,6 +555,7 @@ moves = [
 ]
 
 [homes."colors.warning.foreground"]
+leaves = ["defaults.warning_text_color"]
 moves = [
   { row = "crate::warning_text_color" },
   { row = "extended.warning.base.text" },
@@ -508,6 +564,7 @@ moves = [
 ]
 
 [homes."colors.window.background"]
+leaves = ["defaults.background_color"]
 moves = [
   { row = "palette.background" },
   { row = "styles::aw::selection_list.background", statuses = ["Focused", "Pressed"] },
@@ -534,11 +591,13 @@ moves = [
 ]
 
 [homes."colors.window.border"]
+leaves = ["defaults.border.color"]
 moves = [
   { row = "crate::border_color" },
 ]
 
 [homes."colors.window.foreground"]
+leaves = ["defaults.text_color"]
 moves = [
   { row = "crate::Spinner (freedesktop currentColor)" },
   { row = "extended.background.base.text" },
@@ -560,18 +619,21 @@ moves = [
 ]
 
 [homes."colors.window.foreground_muted"]
+leaves = ["defaults.muted_color"]
 named = "UNREAD_COLOURS"
 entry = "defaults.muted_color"
 kind = "ruled"
 why = "iced's secondary text, `text::secondary`, paints `extended.secondary.base.color` (`iced_core-0.14.0/src/widget/text.rs:452-456`), and the connector fills that slot from `input.placeholder_color` (`src/extended.rs:99-100`) on purpose: the slot is also `button::secondary`'s fill, and the contract counts the labels `readable()` substitutes on it (`SECONDARY_LABEL_SUBSTITUTED`). The muted colour reaches iced through the leaves that inherit it, `input.placeholder_color` among them (`docs/inheritance-rules.toml:174`, `:205`, `:206`, `:210`, `:216`). Ruling T12a C3"
 
 [homes."combo_box.field(DISABLED).fill"]
+leaves = ["combo_box.disabled_background"]
 named = "UNREAD_COLOURS"
 entry = "combo_box.disabled_background"
 kind = "no receiver"
 why = "`pick_list::Status` is Active, Hovered and Opened, with no disabled state (`iced_widget-0.14.2/src/pick_list.rs:838-848`)"
 
 [homes."combo_box.field(HOVER).fill"]
+leaves = ["combo_box.hover_background"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Hovered"] },
   { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
@@ -579,12 +641,14 @@ moves = [
 ]
 
 [homes."combo_box.field(HOVER).stroke.color"]
+leaves = ["combo_box.hover_border_color"]
 moves = [
   { row = "styles::pick_list.border", statuses = ["Hovered"] },
   { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
 ]
 
 [homes."combo_box.field(NONE).fill"]
+leaves = ["combo_box.background_color"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Active"] },
   { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: false }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
@@ -592,76 +656,90 @@ moves = [
 ]
 
 [homes."combo_box.field(NONE).stroke.color"]
+leaves = ["combo_box.border.color"]
 moves = [
   { row = "styles::pick_list.border", statuses = ["Active"] },
 ]
 
 [homes."combo_box.field(OPEN).fill"]
+leaves = ["combo_box.open_background"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
   { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."combo_box.field(OPEN).stroke.color"]
+leaves = ["combo_box.open_border_color"]
 moves = [
   { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
 ]
 
 [homes."combo_box.field(OPEN|HOVER).fill"]
+leaves = ["combo_box.open_background"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."combo_box.field(OPEN|HOVER).stroke.color"]
+leaves = ["combo_box.open_border_color"]
 moves = [
   { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
 ]
 
 [homes."combo_box.label(DISABLED).color"]
+leaves = ["combo_box.disabled_text_color"]
 named = "UNREAD_COLOURS"
 entry = "combo_box.disabled_text_color"
 kind = "no receiver"
 why = "the same: no disabled pick list (`iced_widget-0.14.2/src/pick_list.rs:838-848`)"
 
 [homes."combo_box.label(NONE).color"]
+leaves = ["combo_box.font.color"]
 moves = [
   { row = "styles::pick_list.text_color", statuses = ["Active", "Hovered", "Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
 ]
 
 [homes."dialog.body.color"]
+leaves = ["dialog.body_font.color"]
 moves = [
   { row = "styles::dialog.text_color" },
 ]
 
 [homes."dialog.panel.fill"]
+leaves = ["dialog.background_color"]
 moves = [
   { row = "styles::dialog.background" },
   { row = "styles::dialog.border", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."dialog.panel.stroke.color"]
+leaves = ["dialog.border.color"]
 moves = [
   { row = "styles::dialog.border" },
 ]
 
 [homes."dialog.title.color"]
+leaves = ["dialog.title_font.color"]
 moves = [
   { row = "crate::dialog_title_font_color" },
 ]
 
 [homes."expander.arrow(NONE).color"]
+leaves = ["expander.arrow_color"]
 moves = [
   { row = "crate::expander_arrow_color" },
 ]
 
 [homes."expander.container(NONE).stroke.color"]
+leaves = ["expander.border.color"]
 moves = [
   { row = "styles::expander.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
   { row = "styles::expander_frame.border" },
 ]
 
 [homes."expander.header(HOVER).fill"]
+leaves = ["expander.hover_background"]
 moves = [
   { row = "styles::expander.background", statuses = ["Hovered"] },
 ]
@@ -672,33 +750,39 @@ moves = [
 ]
 
 [homes."expander.header_label(NONE).color"]
+leaves = ["expander.font.color"]
 moves = [
   { row = "crate::expander_arrow_color", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::expander.text_color", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
 ]
 
 [homes."focus_ring.stroke.color"]
+leaves = ["defaults.focus_ring_color"]
 moves = [
   { row = "crate::focus_ring_with" },
 ]
 
 [homes."input.field(DISABLED).fill"]
+leaves = ["input.disabled_background"]
 moves = [
   { row = "styles::text_input.background", statuses = ["Disabled"] },
   { row = "styles::text_input.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."input.field(FOCUSED).stroke.color"]
+leaves = ["input.focus_border_color"]
 moves = [
   { row = "styles::text_input.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"] },
 ]
 
 [homes."input.field(HOVER).stroke.color"]
+leaves = ["input.hover_border_color"]
 moves = [
   { row = "styles::text_input.border", statuses = ["Hovered"] },
 ]
 
 [homes."input.field(NONE).fill"]
+leaves = ["input.background_color"]
 moves = [
   { row = "styles::text_input.background", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
   { row = "styles::text_input.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark"] },
@@ -708,11 +792,13 @@ moves = [
 ]
 
 [homes."input.field(NONE).stroke.color"]
+leaves = ["input.border.color"]
 moves = [
   { row = "styles::text_input.border", statuses = ["Active", "Disabled"] },
 ]
 
 [homes."input.placeholder(NONE).color"]
+leaves = ["input.placeholder_color"]
 moves = [
   { row = "extended.secondary.base.color" },
   { row = "extended.secondary.strong.color" },
@@ -721,21 +807,25 @@ moves = [
 ]
 
 [homes."input.text(DISABLED).color"]
+leaves = ["input.disabled_text_color"]
 moves = [
   { row = "styles::text_input.value", statuses = ["Disabled"] },
 ]
 
 [homes."input.text(NONE).color"]
+leaves = ["input.font.color"]
 moves = [
   { row = "styles::text_input.value", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
 ]
 
 [homes."link.container(HOVER).fill"]
+leaves = ["link.hover_background"]
 moves = [
   { row = "styles::button_link.background", statuses = ["Hovered"] },
 ]
 
 [homes."link.container(NONE).fill"]
+leaves = ["link.background_color"]
 moves = [
   { row = "styles::button_link.background", statuses = ["Active", "Disabled", "Pressed"] },
 ]
@@ -746,165 +836,195 @@ moves = [
 ]
 
 [homes."link.label(DISABLED).color"]
+leaves = ["link.disabled_text_color"]
 moves = [
   { row = "styles::button_link.text_color", statuses = ["Disabled"] },
 ]
 
 [homes."link.label(HOVER).color"]
+leaves = ["link.hover_text_color"]
 moves = [
   { row = "styles::button_link.text_color", statuses = ["Hovered"] },
 ]
 
 [homes."link.label(NONE).color"]
+leaves = ["link.font.color"]
 moves = [
   { row = "styles::button_link.text_color", statuses = ["Active"] },
   { row = "styles::button_link.text_color", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."link.label(PRESSED).color"]
+leaves = ["link.active_text_color"]
 moves = [
   { row = "styles::button_link.text_color", statuses = ["Pressed"] },
 ]
 
 [homes."link.label(VISITED).color"]
+leaves = ["link.visited_text_color"]
 named = "UNREAD_COLOURS"
 entry = "link.visited_text_color"
 kind = "no receiver"
 why = "`button::Status` is Active, Hovered, Pressed and Disabled, with no visited state (`iced_widget-0.14.2/src/button.rs:471-480`)"
 
 [homes."list.container(NONE).fill"]
+leaves = ["list.background_color"]
 moves = [
   { row = "styles::aw::selection_list.background", statuses = ["Active", "Disabled"] },
   { row = "styles::aw::selection_list.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."list.container(NONE).stroke.color"]
+leaves = ["list.border.color"]
 moves = [
   { row = "styles::aw::selection_list.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
 [homes."list.grid_color"]
+leaves = ["list.grid_color"]
 named = "UNREACHABLE"
 entry = "list.grid_color"
 kind = "no receiver"
 why = "a `SelectionList` draws no line between its rows or columns (`selection_list/list.rs:215-275`), and its `Style` has no color for one (`style/selection_list.rs:10-19`)"
 
 [homes."list.header(HOVER).fill"]
+leaves = ["list.header_hover_background"]
 moves = [
   { row = "crate::list_header_hover_background" },
 ]
 
 [homes."list.header(NONE).fill"]
+leaves = ["list.header_background"]
 named = "UNREACHABLE"
 entry = "list.header_background"
 kind = "no receiver"
 why = "a `SelectionList` draws rows and nothing above them (`selection_list/list.rs:215-275`): it has no column header, and its `Style` no field for one (`style/selection_list.rs:10-19`)"
 
 [homes."list.header(PRESSED).fill"]
+leaves = ["list.header_active_background"]
 moves = [
   { row = "crate::list_header_active_background" },
 ]
 
 [homes."list.header_label(NONE).color"]
+leaves = ["list.header_font.color"]
 named = "UNREACHABLE"
 entry = "list.header_font"
 kind = "no receiver"
 why = "the same: a `SelectionList` has no column header to set in it (`selection_list/list.rs:215-275`)"
 
 [homes."list.header_separator(NONE).fill"]
+leaves = ["list.header_separator_color"]
 named = "UNREACHABLE"
 entry = "list.header_separator_color"
 kind = "no receiver"
 why = "the same: a `SelectionList` has no column header, so no section line to draw (`selection_list/list.rs:215-275`), and its `Style` no color for one (`style/selection_list.rs:10-19`)"
 
 [homes."list.highlight(HOVER).fill"]
+leaves = ["list.hover_background"]
 moves = [
   { row = "styles::aw::selection_list.background", statuses = ["Hovered"] },
 ]
 
 [homes."list.highlight(HOVER).stroke.color"]
+leaves = ["list.hover_border_color"]
 named = "UNREACHABLE"
 entry = "list.hover_border_color"
 kind = "no receiver"
 why = "a `SelectionList` fills a hovered row with a quad whose border is hardcoded 0 wide (`selection_list/list.rs:226-249`)"
 
 [homes."list.highlight(SELECTED).fill"]
+leaves = ["list.selection_background"]
 moves = [
   { row = "styles::aw::selection_list.background", statuses = ["Selected"] },
 ]
 
 [homes."list.item_label(DISABLED).color"]
+leaves = ["list.disabled_text_color"]
 moves = [
   { row = "styles::aw::selection_list.text_color", statuses = ["Disabled"] },
 ]
 
 [homes."list.item_label(HOVER).color"]
+leaves = ["list.hover_text_color"]
 moves = [
   { row = "styles::aw::selection_list.text_color", statuses = ["Hovered"] },
 ]
 
 [homes."list.item_label(NONE).color"]
+leaves = ["list.item_font.color"]
 moves = [
   { row = "styles::aw::selection_list.text_color", statuses = ["Active"] },
 ]
 
 [homes."list.item_label(SELECTED).color"]
+leaves = ["list.selection_text_color"]
 moves = [
   { row = "styles::aw::selection_list.text_color", statuses = ["Selected"] },
 ]
 
 [homes."list.row(NONE; alternate=true).fill"]
+leaves = ["list.alternate_row_background"]
 named = "UNREACHABLE"
 entry = "list.alternate_row_background"
 kind = "no receiver"
 why = "`selection_list::Style` is four fields -- text_color, background, border_width, border_color (`style/selection_list.rs:10-19`) -- and a row is filled only while selected or hovered (`selection_list/list.rs:226-248`); every other row shows the list's one background (`selection_list.rs:302-315`), so there is no striping"
 
 [homes."menu.item(HOVER).fill"]
+leaves = ["menu.hover_background"]
 moves = [
   { row = "styles::aw::menu.path", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::menu.selected_background" },
 ]
 
 [homes."menu.item(HOVER).stroke.color"]
+leaves = ["menu.hover_border_color"]
 moves = [
   { row = "styles::aw::menu.path.border", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
 [homes."menu.item(HOVER|PRESSED).fill"]
+leaves = ["menu.active_background"]
 named = "UNREAD_COLOURS"
 entry = "menu.active_background"
 kind = "no receiver"
 why = "`iced_aw` paints its menus' `path` from one `Style` asked for `Active` alone, with no pressed status (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`); iced's drop-down menu `Style` has a selected look only (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`); and an `iced_aw` menu's items are the consumer's own widgets (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`)"
 
 [homes."menu.item(NONE).stroke.color"]
+leaves = ["menu.border.color"]
 named = "UNREAD_COLOURS"
 entry = "menu.border.color"
 kind = "ruled"
 why = "both menu styles frame their panel in `popover.border`, the popup's frame (`src/styles.rs` and `src/styles/aw.rs`, `menu`), into iced's `menu::Style::border` (`iced_widget-0.14.2/src/overlay/menu.rs:602`) and `iced_aw`'s `menu_border` (`iced_aw-0.14.1/src/style/menu_bar.rs:18`): `MenuTheme`'s border has no kind of its own and states no line (`MenuTheme` in `native-theme/src/model/widgets/mod.rs`), and the facts give a menu's frame to the popover (docs/platform-facts.md §2.6); docs/issues/0004_kde-open-items-rationale.md D3"
 
 [homes."menu.item_label(DISABLED).color"]
+leaves = ["menu.disabled_text_color"]
 named = "UNREAD_COLOURS"
 entry = "menu.disabled_text_color"
 kind = "no receiver"
 why = "iced's menu `Style` has a text colour and a selected one and no disabled one (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`), and an `iced_aw` menu's items are the consumer's own widgets (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`), its `menu_bar::Style` backgrounds, borders and shadows only (`style/menu_bar.rs:7-26`)"
 
 [homes."menu.item_label(HOVER).color"]
+leaves = ["menu.hover_text_color"]
 moves = [
   { row = "styles::menu.selected_text_color" },
 ]
 
 [homes."menu.item_label(HOVER|PRESSED).color"]
+leaves = ["menu.active_text_color"]
 named = "UNREAD_COLOURS"
 entry = "menu.active_text_color"
 kind = "no receiver"
 why = "`iced_aw` paints its menus' `path` from one `Style` asked for `Active` alone, with no pressed status (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`); iced's drop-down menu `Style` has a selected look only (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`); and an `iced_aw` menu's items are the consumer's own widgets (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`)"
 
 [homes."menu.item_label(NONE).color"]
+leaves = ["menu.font.color"]
 moves = [
   { row = "styles::menu.text_color" },
 ]
 
 [homes."menu.panel(NONE).fill"]
+leaves = ["menu.background_color"]
 moves = [
   { row = "styles::aw::menu.menu.border", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"], except = ["kde-breeze/light", "kde-breeze/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::aw::menu.menu_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
@@ -919,81 +1039,95 @@ moves = [
 ]
 
 [homes."menu.separator(NONE).fill"]
+leaves = ["menu.separator_color"]
 named = "UNREAD_COLOURS"
 entry = "menu.separator_color"
 kind = "no receiver"
 why = "neither menu style has a separator: iced's menu `Style` (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`) nor `iced_aw`'s `menu_bar::Style` (`iced_aw-0.14.1/src/style/menu_bar.rs:7-26`); a separator in an `iced_aw` menu is an item the consumer builds"
 
 [homes."menu_bar.bar(NONE).fill"]
+leaves = ["toolbar.background_color"]
 moves = [
   { row = "styles::aw::menu.bar_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
 [homes."menu_bar.item(HOVER).fill"]
+leaves = ["menu.bar_hover_background"]
 named = "UNREAD_COLOURS"
 entry = "menu.bar_hover_background"
 kind = "no receiver"
 why = "iced_aw paints an open bar title's highlight with the menus' `path`, one `Style` asked for `Active` alone (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget"
 
 [homes."menu_bar.item(OPEN).fill"]
+leaves = ["menu.bar_open_background"]
 named = "UNREAD_COLOURS"
 entry = "menu.bar_open_background"
 kind = "no receiver"
 why = "iced_aw paints an open bar title's highlight with the menus' `path`, one `Style` asked for `Active` alone (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget"
 
 [homes."menu_bar.item_label(HOVER).color"]
+leaves = ["menu.bar_hover_text_color"]
 named = "UNREAD_COLOURS"
 entry = "menu.bar_hover_text_color"
 kind = "no receiver"
 why = "iced_aw paints an open bar title's highlight with the menus' `path`, one `Style` asked for `Active` alone (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget"
 
 [homes."menu_bar.item_label(OPEN).color"]
+leaves = ["menu.bar_hover_text_color"]
 named = "UNREAD_COLOURS"
 entry = "menu.bar_hover_text_color"
 kind = "no receiver"
 why = "iced_aw paints an open bar title's highlight with the menus' `path`, one `Style` asked for `Active` alone (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget"
 
 [homes."popover.panel.fill"]
+leaves = ["popover.background_color"]
 named = "UNREAD_COLOURS"
 entry = "popover.background_color"
 kind = "ruled"
 why = "a drop-down, the one surface the popover's fill could reach, is filled from `menu.background_color` (`src/styles.rs`, `menu`), the background iced fills its list with (`iced_widget-0.14.2/src/overlay/menu.rs:316-324`): its rows' highlight and text are the menu's, stated against the menu's fill (docs/issues/0004_kde-open-items-rationale.md D3 (i))"
 
 [homes."popover.panel.stroke.color"]
+leaves = ["popover.border.color"]
 moves = [
   { row = "styles::aw::menu.menu.border", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::menu.border" },
 ]
 
 [homes."popover.text.color"]
+leaves = ["popover.font.color"]
 named = "UNREAD_COLOURS"
 entry = "popover.font.color"
 kind = "no receiver"
 why = "iced 0.14 has no popover, nor has `iced_aw` 0.14.1 (its `context_menu::Style.background` is the backdrop of a modal, `style/context_menu.rs:8-14`); a drop-down, which takes only the popover's line, is a menu's list lettered in the menu's text (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`)"
 
 [homes."progress_bar.fill(NONE).fill"]
+leaves = ["progress_bar.fill_color"]
 moves = [
   { row = "styles::progress_bar.bar" },
 ]
 
 [homes."progress_bar.track(NONE).fill"]
+leaves = ["progress_bar.track_color"]
 moves = [
   { row = "styles::progress_bar.background" },
   { row = "styles::progress_bar.border", except = ["adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."progress_bar.track(NONE).stroke.color"]
+leaves = ["progress_bar.border.color"]
 moves = [
   { row = "styles::progress_bar.border" },
 ]
 
 [homes."radio.dot(CHECKED).fill"]
+leaves = ["checkbox.indicator_color"]
 moves = [
   { row = "crate::radio (dot)", except = ["ios-13/light", "ios-13/dark"] },
   { row = "styles::radio.dot_color", statuses = ["Active { is_selected: false }", "Active { is_selected: true }", "Hovered { is_selected: false }", "Hovered { is_selected: true }"] },
 ]
 
 [homes."radio.indicator(CHECKED).fill"]
+leaves = ["checkbox.checked_background"]
 moves = [
   { row = "styles::radio.background", statuses = ["Active { is_selected: true }"] },
   { row = "styles::radio.background", statuses = ["Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
@@ -1002,23 +1136,27 @@ moves = [
 ]
 
 [homes."radio.indicator(CHECKED).stroke.color"]
+leaves = ["checkbox.border.color"]
 moves = [
   { row = "styles::radio.border_color", statuses = ["Active { is_selected: true }", "Hovered { is_selected: true }"] },
 ]
 
 [homes."radio.indicator(DISABLED).fill"]
+leaves = ["checkbox.disabled_background"]
 named = "UNREAD_HOMES"
 entry = "radio.indicator(DISABLED).fill"
 kind = "no receiver"
 why = "iced 0.14's radio has no disabled status (iced_widget 0.14.2 src/radio.rs, `Status`: Active and Hovered), so `next::styles::radio` draws none"
 
 [homes."radio.indicator(DISABLED|CHECKED).fill"]
+leaves = ["checkbox.disabled_background"]
 named = "UNREAD_HOMES"
 entry = "radio.indicator(DISABLED|CHECKED).fill"
 kind = "no receiver"
 why = "iced 0.14's radio has no disabled status (iced_widget 0.14.2 src/radio.rs, `Status`: Active and Hovered), so `next::styles::radio` draws none"
 
 [homes."radio.indicator(HOVER).fill"]
+leaves = ["checkbox.hover_background"]
 moves = [
   { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"] },
   { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "material-3/light", "material-3/dark"] },
@@ -1026,39 +1164,46 @@ moves = [
 ]
 
 [homes."radio.indicator(HOVER).stroke.color"]
+leaves = ["checkbox.hover_border_color"]
 moves = [
   { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"] },
 ]
 
 [homes."radio.indicator(HOVER|CHECKED).stroke.color"]
+leaves = ["checkbox.hover_border_color"]
 moves = [
   { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"], except = ["windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [homes."radio.indicator(NONE).fill"]
+leaves = ["checkbox.background_color", "checkbox.unchecked_background"]
 moves = [
   { row = "styles::radio.background", statuses = ["Active { is_selected: false }"] },
   { row = "styles::radio.border_color", statuses = ["Active { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "material-3/light", "material-3/dark"] },
 ]
 
 [homes."radio.indicator(NONE).stroke.color"]
+leaves = ["checkbox.unchecked_border_color"]
 moves = [
   { row = "styles::radio.border_color", statuses = ["Active { is_selected: false }"] },
   { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."radio.label(DISABLED).color"]
+leaves = ["checkbox.disabled_text_color"]
 named = "UNREAD_HOMES"
 entry = "radio.label(DISABLED).color"
 kind = "no receiver"
 why = "iced 0.14's radio has no disabled status (iced_widget 0.14.2 src/radio.rs, `Status`: Active and Hovered), so `next::styles::radio` draws none"
 
 [homes."radio.label(NONE).color"]
+leaves = ["checkbox.font.color"]
 moves = [
   { row = "styles::radio.text_color", statuses = ["Active { is_selected: false }", "Active { is_selected: true }", "Hovered { is_selected: false }", "Hovered { is_selected: true }"] },
 ]
 
 [homes."scrollbar.thumb(HOVER).fill"]
+leaves = ["scrollbar.thumb_hover_color"]
 moves = [
   { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
   { row = "styles::scrollable.horizontal_rail.scroller.border", statuses = ["Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -1073,12 +1218,14 @@ moves = [
 ]
 
 [homes."scrollbar.thumb(NONE).fill"]
+leaves = ["scrollbar.thumb_color"]
 named = "UNREAD_HOMES"
 entry = "scrollbar.thumb(NONE).fill"
 kind = "read at another query"
 why = "`next::styles::scrollable` reads the thumb at rest as `scrollbar.thumb(UNFOCUSED_VIEW)` (src/next/styles.rs, `scrollable`), which a rule for no state does not answer"
 
 [homes."scrollbar.thumb(PRESSED).fill"]
+leaves = ["scrollbar.thumb_active_color"]
 moves = [
   { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
   { row = "styles::scrollable.horizontal_rail.scroller.border", statuses = ["Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -1093,6 +1240,7 @@ moves = [
 ]
 
 [homes."scrollbar.thumb(UNFOCUSED_VIEW).fill"]
+leaves = ["scrollbar.thumb_color"]
 moves = [
   { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
@@ -1111,6 +1259,7 @@ moves = [
 ]
 
 [homes."scrollbar.track(NONE).fill"]
+leaves = ["scrollbar.track_color"]
 moves = [
   { row = "styles::scrollable.horizontal_rail.background", statuses = ["Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::scrollable.horizontal_rail.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
@@ -1119,17 +1268,20 @@ moves = [
 ]
 
 [homes."segmented_control.label(NONE).color"]
+leaves = ["segmented_control.font.color"]
 moves = [
   { row = "styles::segment.text_color", statuses = ["(false, Active)", "(false, Disabled)", "(false, Hovered)", "(false, Pressed)"] },
   { row = "styles::segmented_control.text_color", statuses = ["false", "true"] },
 ]
 
 [homes."segmented_control.label(SELECTED).color"]
+leaves = ["segmented_control.active_text_color"]
 moves = [
   { row = "styles::segment.text_color", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."segmented_control.segment(HOVER).fill"]
+leaves = ["segmented_control.hover_background"]
 moves = [
   { row = "styles::segment.background", statuses = ["(false, Hovered)"] },
 ]
@@ -1140,6 +1292,7 @@ moves = [
 ]
 
 [homes."segmented_control.segment(SELECTED).fill"]
+leaves = ["segmented_control.active_background"]
 moves = [
   { row = "styles::segment.background", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
   { row = "styles::segment.text_color", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -1151,6 +1304,7 @@ moves = [
 ]
 
 [homes."segmented_control.track(NONE).fill"]
+leaves = ["segmented_control.background_color"]
 moves = [
   { row = "styles::segment.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::segment.text_color", statuses = ["(false, Disabled)", "(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -1161,17 +1315,20 @@ moves = [
 ]
 
 [homes."segmented_control.track(NONE).stroke.color"]
+leaves = ["segmented_control.border.color"]
 moves = [
   { row = "styles::segment_separator.background", statuses = ["false", "true"] },
   { row = "styles::segmented_control.border", statuses = ["false", "true"] },
 ]
 
 [homes."separator.color"]
+leaves = ["separator.line_color"]
 moves = [
   { row = "styles::rule.color" },
 ]
 
 [homes."sidebar.container(NONE).fill"]
+leaves = ["sidebar.background_color"]
 moves = [
   { row = "styles::aw::sidebar.background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::aw::sidebar.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -1179,33 +1336,39 @@ moves = [
 ]
 
 [homes."sidebar.container(NONE).stroke.color"]
+leaves = ["sidebar.border.color"]
 moves = [
   { row = "styles::aw::sidebar.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
 [homes."sidebar.item(HOVER).fill"]
+leaves = ["sidebar.hover_background"]
 moves = [
   { row = "styles::aw::sidebar.tab_label_background", statuses = ["Hovered"] },
 ]
 
 [homes."sidebar.item(SELECTED).fill"]
+leaves = ["sidebar.selection_background"]
 moves = [
   { row = "styles::aw::sidebar.tab_label_background", statuses = ["Active"] },
 ]
 
 [homes."sidebar.item_label(NONE).color"]
+leaves = ["sidebar.font.color"]
 moves = [
   { row = "styles::aw::sidebar.icon_color", statuses = ["Disabled", "Hovered"] },
   { row = "styles::aw::sidebar.text_color", statuses = ["Disabled", "Hovered"] },
 ]
 
 [homes."sidebar.item_label(SELECTED).color"]
+leaves = ["sidebar.selection_text_color"]
 moves = [
   { row = "styles::aw::sidebar.icon_color", statuses = ["Active"] },
   { row = "styles::aw::sidebar.text_color", statuses = ["Active"] },
 ]
 
 [homes."slider.active_track(DISABLED).fill"]
+leaves = ["slider.disabled_fill_color"]
 named = "UNREAD_COLOURS"
 entry = "slider.disabled_fill_color"
 kind = "no receiver"
@@ -1218,6 +1381,7 @@ moves = [
 ]
 
 [homes."slider.active_track(NONE).fill"]
+leaves = ["slider.fill_color"]
 moves = [
   { row = "styles::slider.rail.backgrounds.0", statuses = ["Active"] },
   { row = "styles::vertical_slider.rail.backgrounds.0", statuses = ["Active"] },
@@ -1230,42 +1394,49 @@ moves = [
 ]
 
 [homes."slider.thumb(DISABLED).fill"]
+leaves = ["slider.disabled_thumb_color"]
 named = "UNREAD_COLOURS"
 entry = "slider.disabled_thumb_color"
 kind = "no receiver"
 why = "the same: no disabled slider (`iced_widget-0.14.2/src/slider.rs:578-585`)"
 
 [homes."slider.thumb(FOCUSED).stroke.color"]
+leaves = ["slider.thumb_focus_border_color"]
 named = "UNREAD_COLOURS"
 entry = "slider.thumb_focus_border_color"
 kind = "no receiver"
 why = "`slider::Status` is Active, Hovered and Dragged, with no focused state (`iced_widget-0.14.2/src/slider.rs:578-585`)"
 
 [homes."slider.thumb(HOVER).fill"]
+leaves = ["slider.thumb_hover_color"]
 moves = [
   { row = "styles::slider.handle.background", statuses = ["Hovered"] },
   { row = "styles::vertical_slider.handle.background", statuses = ["Hovered"] },
 ]
 
 [homes."slider.thumb(HOVER).stroke.color"]
+leaves = ["slider.thumb_hover_border_color"]
 moves = [
   { row = "styles::slider.handle.border_color", statuses = ["Hovered"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::vertical_slider.handle.border_color", statuses = ["Hovered"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."slider.thumb(HOVER|FOCUSED).stroke.color"]
+leaves = ["slider.thumb_hover_border_color"]
 named = "UNREAD_HOMES"
 entry = "slider.thumb(HOVER|FOCUSED).stroke.color"
 kind = "no receiver"
 why = "iced 0.14's slider has no focused status (iced_widget 0.14.2 src/slider.rs, `Status`: Active, Hovered and Dragged)"
 
 [homes."slider.thumb(NONE).fill"]
+leaves = ["slider.thumb_color"]
 moves = [
   { row = "styles::slider.handle.background", statuses = ["Active"] },
   { row = "styles::vertical_slider.handle.background", statuses = ["Active"] },
 ]
 
 [homes."slider.thumb(NONE).stroke.color"]
+leaves = ["slider.thumb_border_color"]
 moves = [
   { row = "styles::slider.handle.border_color", statuses = ["Active"] },
   { row = "styles::slider.handle.border_color", statuses = ["Dragged", "Hovered"], except = ["kde-breeze/light", "kde-breeze/dark"] },
@@ -1280,76 +1451,89 @@ moves = [
 ]
 
 [homes."slider.thumb(PRESSED).stroke.color"]
+leaves = ["slider.thumb_hover_border_color"]
 moves = [
   { row = "styles::slider.handle.border_color", statuses = ["Dragged"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::vertical_slider.handle.border_color", statuses = ["Dragged"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."slider.track(DISABLED).fill"]
+leaves = ["slider.disabled_track_color"]
 named = "UNREAD_COLOURS"
 entry = "slider.disabled_track_color"
 kind = "no receiver"
 why = "the same: no disabled slider (`iced_widget-0.14.2/src/slider.rs:578-585`)"
 
 [homes."slider.track(NONE).fill"]
+leaves = ["slider.track_color"]
 moves = [
   { row = "styles::slider.rail.backgrounds.1", statuses = ["Active", "Dragged", "Hovered"] },
   { row = "styles::vertical_slider.rail.backgrounds.1", statuses = ["Active", "Dragged", "Hovered"] },
 ]
 
 [homes."spinner.color"]
+leaves = ["spinner.fill_color"]
 moves = [
   { row = "crate::Spinner (arc, bundled tint)" },
   { row = "styles::aw::spinner.text_color" },
 ]
 
 [homes."splitter.handle(HOVER).fill"]
+leaves = ["splitter.hover_color"]
 moves = [
   { row = "styles::pane_grid.hovered_split.color" },
   { row = "styles::pane_grid.picked_split.color" },
 ]
 
 [homes."splitter.handle(NONE).fill"]
+leaves = ["splitter.divider_color"]
 named = "UNREAD_COLOURS"
 entry = "splitter.divider_color"
 kind = "no receiver"
 why = "iced draws a split line only while it is hovered or picked (`iced_widget-0.14.2/src/pane_grid.rs:949-956`), never at rest, so a resting divider has no colour to take; `styles::pane_grid` draws the hovered and the picked line in `splitter.hover_color`"
 
 [homes."status_bar.bar.fill"]
+leaves = ["status_bar.background_color"]
 named = "UNREAD_COLOURS"
 entry = "status_bar"
 kind = "no widget"
 why = "iced 0.14 and `iced_aw` 0.14.1 have no status bar"
 
 [homes."status_bar.bar.stroke.color"]
+leaves = ["status_bar.border.color"]
 named = "UNREAD_COLOURS"
 entry = "status_bar"
 kind = "no widget"
 why = "iced 0.14 and `iced_aw` 0.14.1 have no status bar"
 
 [homes."status_bar.label.color"]
+leaves = ["status_bar.font.color"]
 named = "UNREAD_COLOURS"
 entry = "status_bar"
 kind = "no widget"
 why = "iced 0.14 and `iced_aw` 0.14.1 have no status bar"
 
 [homes."switch.thumb(CHECKED).fill"]
+leaves = ["switch.thumb_background"]
 moves = [
   { row = "styles::toggler.foreground", statuses = ["Active { is_toggled: true }", "Disabled { is_toggled: true }"] },
 ]
 
 [homes."switch.thumb(CHECKED).stroke.color"]
+leaves = ["switch.thumb_border_color"]
 named = "UNREAD_HOMES"
 entry = "switch.thumb(CHECKED).stroke.color"
 kind = "not read"
 why = "`next::styles::toggler` draws the thumb's outline in every status from `switch.thumb(NONE).stroke` (src/next/styles.rs, `switch_source`, `thumb_border`)"
 
 [homes."switch.thumb(DISABLED).fill"]
+leaves = ["switch.disabled_thumb_color"]
 moves = [
   { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"] },
 ]
 
 [homes."switch.thumb(DISABLED|CHECKED).fill"]
+leaves = ["switch.disabled_thumb_color"]
 moves = [
   { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-tahoe/light"] },
 ]
@@ -1366,6 +1550,7 @@ kind = "ruled"
 why = "read only where a rule for the first flag alone states the property (`flagged`, src/next/borders.rs; spec §2, `from_state`), which no platform preset does; a rule for both flags alone stays unseen by that query, the two-flag gap SQ1 settles"
 
 [homes."switch.thumb(NONE).fill"]
+leaves = ["switch.unchecked_thumb_background"]
 moves = [
   { row = "styles::toggler.foreground", statuses = ["Active { is_toggled: false }"] },
   { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -1373,53 +1558,63 @@ moves = [
 ]
 
 [homes."switch.thumb(NONE).stroke.color"]
+leaves = ["switch.thumb_border_color"]
 moves = [
   { row = "styles::toggler.foreground_border_color", statuses = ["Active { is_toggled: false }", "Active { is_toggled: true }", "Disabled { is_toggled: false }", "Disabled { is_toggled: true }", "Hovered { is_toggled: false }", "Hovered { is_toggled: true }"] },
 ]
 
 [homes."switch.track(CHECKED).fill"]
+leaves = ["switch.checked_background"]
 moves = [
   { row = "styles::toggler.background", statuses = ["Active { is_toggled: true }", "Disabled { is_toggled: true }", "Hovered { is_toggled: true }"] },
 ]
 
 [homes."switch.track(CHECKED).stroke.color"]
+leaves = ["switch.checked_track_border_color"]
 moves = [
   { row = "styles::toggler.background_border_color", statuses = ["Active { is_toggled: true }", "Disabled { is_toggled: true }", "Hovered { is_toggled: true }"] },
 ]
 
 [homes."switch.track(DISABLED).fill"]
+leaves = ["switch.disabled_unchecked_background"]
 moves = [
   { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"] },
   { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."switch.track(DISABLED).stroke.color"]
+leaves = ["switch.disabled_unchecked_track_border_color"]
 moves = [
   { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"] },
 ]
 
 [homes."switch.track(DISABLED|CHECKED).fill"]
+leaves = ["switch.disabled_checked_background"]
 moves = [
   { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark"] },
 ]
 
 [homes."switch.track(DISABLED|CHECKED).stroke.color"]
+leaves = ["switch.disabled_checked_track_border_color"]
 moves = [
   { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."switch.track(HOVER).fill"]
+leaves = ["switch.hover_unchecked_background"]
 moves = [
   { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: false }", "Hovered { is_toggled: true }"] },
   { row = "styles::toggler.background_border_color", statuses = ["Hovered { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."switch.track(HOVER|CHECKED).fill"]
+leaves = ["switch.hover_checked_background"]
 moves = [
   { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: true }"], except = ["macos-tahoe/light", "macos-tahoe/dark"] },
 ]
 
 [homes."switch.track(NONE).fill"]
+leaves = ["switch.unchecked_background"]
 moves = [
   { row = "styles::toggler.background", statuses = ["Active { is_toggled: false }"] },
   { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
@@ -1428,45 +1623,53 @@ moves = [
 ]
 
 [homes."switch.track(NONE).stroke.color"]
+leaves = ["switch.unchecked_track_border_color"]
 moves = [
   { row = "styles::toggler.background_border_color", statuses = ["Active { is_toggled: false }", "Hovered { is_toggled: false }"] },
   { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [homes."tab.bar(NONE).fill"]
+leaves = ["tab.bar_background"]
 moves = [
   { row = "styles::aw::tab_bar.background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
 [homes."tab.indicator(SELECTED).fill"]
+leaves = ["tab.active_indicator_color"]
 moves = [
   { row = "crate::tab_indicator_line", except = ["windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."tab.label(HOVER).color"]
+leaves = ["tab.hover_text_color"]
 moves = [
   { row = "styles::aw::tab_bar.icon_color", statuses = ["Hovered"] },
   { row = "styles::aw::tab_bar.text_color", statuses = ["Hovered"] },
 ]
 
 [homes."tab.label(NONE).color"]
+leaves = ["tab.font.color"]
 moves = [
   { row = "styles::aw::tab_bar.icon_color", statuses = ["Disabled"] },
   { row = "styles::aw::tab_bar.text_color", statuses = ["Disabled"] },
 ]
 
 [homes."tab.label(SELECTED).color"]
+leaves = ["tab.active_text_color"]
 moves = [
   { row = "styles::aw::tab_bar.icon_color", statuses = ["Active"] },
   { row = "styles::aw::tab_bar.text_color", statuses = ["Active"] },
 ]
 
 [homes."tab.tab(HOVER).fill"]
+leaves = ["tab.hover_background"]
 moves = [
   { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Hovered"] },
 ]
 
 [homes."tab.tab(NONE).fill"]
+leaves = ["tab.background_color"]
 moves = [
   { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Disabled"] },
 ]
@@ -1477,6 +1680,7 @@ moves = [
 ]
 
 [homes."tab.tab(SELECTED).fill"]
+leaves = ["tab.active_background"]
 moves = [
   { row = "crate::tab_flares (fill)", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Active"] },
@@ -1484,6 +1688,7 @@ moves = [
 ]
 
 [homes."tab.tab(SELECTED).stroke.color"]
+leaves = ["tab.border.color"]
 moves = [
   { row = "crate::tab_flares (outline)", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
   { row = "styles::aw::tab_bar.tab_label_border_color", statuses = ["Active"] },
@@ -1491,22 +1696,26 @@ moves = [
 ]
 
 [homes."text_area.field(DISABLED).fill"]
+leaves = ["input.disabled_background"]
 moves = [
   { row = "styles::text_editor.background", statuses = ["Disabled"] },
   { row = "styles::text_editor.border", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."text_area.field(FOCUSED).stroke.color"]
+leaves = ["input.focus_border_color"]
 moves = [
   { row = "styles::text_editor.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"] },
 ]
 
 [homes."text_area.field(HOVER).stroke.color"]
+leaves = ["input.hover_border_color"]
 moves = [
   { row = "styles::text_editor.border", statuses = ["Hovered"] },
 ]
 
 [homes."text_area.field(NONE).fill"]
+leaves = ["input.background_color"]
 moves = [
   { row = "styles::text_editor.background", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
   { row = "styles::text_editor.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark"] },
@@ -1516,66 +1725,79 @@ moves = [
 ]
 
 [homes."text_area.field(NONE).stroke.color"]
+leaves = ["text_area.border.color"]
 moves = [
   { row = "styles::text_editor.border", statuses = ["Active", "Disabled"] },
 ]
 
 [homes."text_area.placeholder(NONE).color"]
+leaves = ["input.placeholder_color"]
 moves = [
   { row = "styles::text_editor.placeholder", statuses = ["Active", "Disabled", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
 ]
 
 [homes."text_area.text(DISABLED).color"]
+leaves = ["input.disabled_text_color"]
 moves = [
   { row = "styles::text_editor.value", statuses = ["Disabled"] },
 ]
 
 [homes."text_area.text(NONE).color"]
+leaves = ["input.font.color"]
 moves = [
   { row = "styles::text_editor.value", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
 ]
 
 [homes."toolbar.bar(NONE).fill"]
+leaves = ["toolbar.background_color"]
 moves = [
   { row = "styles::toolbar.background" },
 ]
 
 [homes."toolbar.bar(NONE).stroke.color"]
+leaves = ["toolbar.border.color"]
 moves = [
   { row = "styles::toolbar_rule.color" },
 ]
 
 [homes."toolbar.button(CHECKED).fill"]
+leaves = ["toolbar.button_checked_background"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."toolbar.button(CHECKED).stroke.color"]
+leaves = ["toolbar.button_checked_border_color"]
 moves = [
   { row = "styles::toolbar_button.border", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."toolbar.button(HOVER).fill"]
+leaves = ["toolbar.button_hover_background"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(false, Hovered)"] },
 ]
 
 [homes."toolbar.button(HOVER).stroke.color"]
+leaves = ["toolbar.button_hover_border_color"]
 moves = [
   { row = "styles::toolbar_button.border", statuses = ["(false, Hovered)", "(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."toolbar.button(HOVER|CHECKED).stroke.color"]
+leaves = ["toolbar.button_hover_border_color"]
 moves = [
   { row = "styles::toolbar_button.border", statuses = ["(true, Hovered)", "(true, Pressed)"] },
 ]
 
 [homes."toolbar.button(PRESSED).fill"]
+leaves = ["toolbar.button_active_background"]
 moves = [
   { row = "styles::toolbar_button.background", statuses = ["(false, Pressed)"] },
 ]
 
 [homes."toolbar.button(PRESSED).stroke.color"]
+leaves = ["toolbar.button_hover_border_color"]
 moves = [
   { row = "styles::toolbar_button.border", statuses = ["(false, Pressed)", "(true, Pressed)"] },
 ]
@@ -1586,57 +1808,67 @@ moves = [
 ]
 
 [homes."toolbar.button_label(NONE).color"]
+leaves = ["toolbar.font.color"]
 moves = [
   { row = "styles::toolbar.text_color" },
 ]
 
 [homes."tooltip.panel.fill"]
+leaves = ["tooltip.background_color"]
 moves = [
   { row = "styles::tooltip.background" },
   { row = "styles::tooltip.border", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },
 ]
 
 [homes."tooltip.panel.stroke.color"]
+leaves = ["tooltip.border.color"]
 moves = [
   { row = "styles::tooltip.border" },
 ]
 
 [homes."tooltip.text.color"]
+leaves = ["tooltip.font.color"]
 moves = [
   { row = "styles::tooltip.text_color" },
 ]
 
 [homes."typography.body.color"]
+leaves = ["defaults.font.color"]
 named = "UNREAD_COLOURS"
 entry = "defaults.font.color"
 kind = "no receiver"
 why = "an iced `Font` is a family, a weight, a stretch and a style (`iced_core-0.14.0/src/font.rs:6-15`), with no colour: a text is drawn in its widget's style colour or the window's `palette.text`, which is `defaults.text_color`, and each widget's own `font.color` reaches its row"
 
 [homes."typography.monospace.color"]
+leaves = ["defaults.mono_font.color"]
 named = "UNREAD_COLOURS"
 entry = "defaults.mono_font.color"
 kind = "no receiver"
 why = "the same: an iced `Font` has no colour (`iced_core-0.14.0/src/font.rs:6-15`), and iced has no monospace text class to colour apart"
 
 [homes."window.frame(normal).fill"]
+leaves = ["window.background_color"]
 named = "UNREAD_HOMES"
 entry = "window.frame(normal).fill"
 kind = "no patch"
 why = "`ThemePatch::from_toml` takes no `widgets.window` table (the walk's patch for it does not parse) and `WindowChrome`'s parts are private, so the walk states no colour there; `next::styles::application` reads it (src/next/styles.rs, `application`)"
 
 [homes."window.frame(normal).stroke.color"]
+leaves = ["window.border.color"]
 named = "UNREAD_COLOURS"
 entry = "window.border.color"
 kind = "no receiver"
 why = "iced's window takes `decorations: bool` -- whether the OS draws a border and a title bar at all -- and nothing to colour them with (`iced_core-0.14.0/src/window/settings.rs:65-66`)"
 
 [homes."window.title(normal).color"]
+leaves = ["window.inactive_title_bar_text_color", "window.title_bar_font.color"]
 named = "UNREAD_COLOURS"
 entry = "window.inactive_title_bar_text_color"
 kind = "no receiver"
 why = "iced's window takes `decorations: bool` -- whether the OS draws a border and a title bar at all -- and nothing to colour them with (`iced_core-0.14.0/src/window/settings.rs:65-66`)"
 
 [homes."window.title_bar(normal).fill"]
+leaves = ["window.title_bar_background", "window.inactive_title_bar_background"]
 named = "UNREAD_COLOURS"
 entry = "window.title_bar_background"
 kind = "no receiver"
