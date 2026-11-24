@@ -819,7 +819,8 @@ const DIALOG_BUTTON_ORDER: DialogButtonOrder = DialogButtonOrder::PrimaryRight;
 const EXPANDER_HEADER_HEIGHT: f32 = 44.0;
 
 // `card.container.corners`: the `.insetGrouped` cell's layer, 10 pt (measured, ios-host run
-// 45230061151, iOS 18.6, `run1/index.toml` the card render, view `0.1` `corner_radius_pt`)
+// 45230061151, iOS 18.6, `run1/index.toml` the card render, view `0.1` `corner_radius_pt`,
+// `corner_curve` "continuous")
 const CARD_CORNER_RADIUS: f32 = 10.0;
 // `expander.arrow_icon_size`: 0.7.2 ios-13.toml (uncited)
 const EXPANDER_ARROW_SIZE: f32 = 12.0;
@@ -2637,13 +2638,13 @@ fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
     // No outline and corners of 10 on all four: the `.insetGrouped` section's only cell, border
     // width 0 on every layer, corner radius 10 pt, `masked_corners` 15 (measured, ios-host run
     // 45230061151, iOS 18.6, `run1/index.toml` the card render, view `0.1`; `changed_parts.toml`
-    // `run1."<a>".card.normal.edges`). Its `corner_curve` is continuous; the corners are stated
-    // circular, as no connector draws a continuous curve yet (each maps it to `Unmapped`).
+    // `run1."<a>".card.normal.edges`), on the continuous curve the same view reads
+    // (`corner_curve` "continuous").
     let container = RuleBuilder::new(PartStyle::default())
         .base([
             fill(roles.card.background.unwrap_or(c.surface)),
             PartProp::Stroke(Stroke::None),
-            corners(CARD_CORNER_RADIUS),
+            PartProp::Corners(Corners::continuous(CARD_CORNER_RADIUS)),
         ])
         .build();
     CardWidget::new(WidgetOrigin::Native, container)

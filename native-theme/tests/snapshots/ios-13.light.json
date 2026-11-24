@@ -2020,7 +2020,10 @@
       "base": {
         "fill": "#f2f2f7",
         "stroke": "none",
-        "corners": 10.0
+        "corners": {
+          "radius": 10.0,
+          "curve": "continuous"
+        }
       }
     }
   },

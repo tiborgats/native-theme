@@ -583,3 +583,16 @@ fn a_checked_button_has_the_selected_toggle_s_colours() {
         }
     }
 }
+
+/// The card's corners are the `.insetGrouped` cell's: 10 pt on the
+/// continuous curve the measured view reads (ios-host run 45230061151,
+/// `run1/index.toml` the card render, view `0.1`).
+#[test]
+fn the_card_s_corners_are_continuous() {
+    for theme in both_schemes() {
+        assert_eq!(
+            theme.card.container(WidgetState::NONE).corners,
+            Corners::continuous(CARD_CORNER_RADIUS)
+        );
+    }
+}
