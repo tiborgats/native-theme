@@ -3477,7 +3477,9 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
 /// The disabled Basic checkbox under adwaita, which fades a disabled control
 /// by `checkbox.disabled_opacity`, paints the fill its info claims
 /// (M9-053): the swatch is the faded fill `CheckboxLook::faded_over` gives,
-/// not the stated colour.
+/// not the stated colour (adwaita states no fill for `DISABLED`, so the
+/// checked box's is gpui-component's own, the checked fill at half alpha,
+/// under a role that says so).
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_disabled_basic_checkbox_paints_the_fill_it_claims(cx: &mut TestAppContext) {
@@ -3492,8 +3494,8 @@ fn the_disabled_basic_checkbox_paints_the_fill_it_claims(cx: &mut TestAppContext
     let info = settle_on(&mut cx, &showcase, "basic-checkbox-disabled");
     let claimed = info
         .as_ref()
-        .and_then(|info| claim_as(info, "fill"))
-        .map(|(_, colour)| colour);
+        .and_then(|info| claim_by_role(info, "fill"))
+        .map(|c| c.value);
     assert!(
         claimed.is_some(),
         "the disabled checkbox's info claims no fill: {info:?}"
@@ -21264,7 +21266,8 @@ type Leaf = (&'static str, &'static str);
 /// them, with the line of widgets/checkbox.rs that names it: the fill at
 /// `indicator(DISABLED)` (at the checked state too where checked) where a
 /// rule states a disabled fill (:272-275), else `indicator(CHECKED)` checked
-/// (:330-331), else `indicator(NONE)` (:323-324); the hover
+/// (:330-331), else `indicator(NONE)` (:323-324), at half alpha where
+/// disabled, checked or a radio's; the hover
 /// `indicator(HOVER).fill` where a rule states it (:338-339), else the fill
 /// at rest; the hover edge `indicator(HOVER)`'s (:288-291), at the checked
 /// state where checked; the border disabled `indicator(DISABLED)`'s (at the
@@ -26736,6 +26739,49 @@ fn a_disabled_checkboxs_info_claims_the_border_it_draws() {
                 .map(|look| look.border),
             Some(next_stated(sentinel)),
             "patched, checked {checked}"
+        );
+    }
+}
+
+/// A disabled Checkbox's info claims the fill the widget draws: under
+/// adwaita light, which states no fill for `DISABLED`, gpui-component's own
+/// disabled fill (gpui-component 0.10.0 checkbox.rs:286-290, :359-362): a
+/// checked box's the enabled home at half alpha, under a role that says so,
+/// an unchecked box's the enabled home under "fill". The showcase shows no
+/// disabled radio.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_disabled_checkboxs_info_claims_the_fill_it_draws() {
+    use crate::info::{inputs, next_stated};
+    use native_theme::next::{PartStated, Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    use native_theme_gpui::widgets::CheckboxLook;
+    let r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    let ground = r.colors.window.background.map(next_stated);
+    assert!(
+        ground.is_some()
+            && !r
+                .checkbox
+                .indicator(WidgetState::DISABLED)
+                .from_state
+                .contains(PartStated::FILL),
+        "adwaita light states no colors.window.background, or a disabled checkbox fill this test needs unstated"
+    );
+    let Some(ground) = ground else { return };
+    for (checked, role, home) in [
+        (false, "fill", "checkbox.indicator(NONE).fill"),
+        (
+            true,
+            "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
+            "checkbox.indicator(CHECKED).fill",
+        ),
+    ] {
+        let info = inputs::native_checkbox(&r, "label", checked, true);
+        let look = CheckboxLook::next_of(&r, checked, true);
+        assert_eq!(
+            claim_by_role(&info, "fill").map(|c| (c.role, c.field, as_rgba(c.value))),
+            look.ok()
+                .map(|look| (role, home, as_rgba(look.faded_over(ground).fill))),
+            "checked {checked}"
         );
     }
 }

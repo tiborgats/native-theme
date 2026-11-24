@@ -1281,12 +1281,33 @@ fn native_indicator(
         }
     };
     // A disabled fill a rule states replaces the box and its mark's colour;
-    // with none the box is its enabled self (CheckboxLook::next_of).
+    // with none the fill is gpui-component's own disabled one, a checked
+    // box's and a radio's the enabled fill at half alpha, an unchecked box's
+    // the enabled fill (CheckboxLook::next_of).
     let stated_disabled = disabled
         && indicator(WidgetState::DISABLED)
             .from_state
             .contains(PartStated::FILL);
+    let dimmed = disabled && !stated_disabled && (checked || radio);
     let info = info.color(match (radio, stated_disabled, checked) {
+        (false, false, true) if dimmed => claim(
+            "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
+            "checkbox.indicator(CHECKED).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:330",
+        ),
+        (true, false, true) if dimmed => claim(
+            "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
+            "radio.indicator(CHECKED).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:331",
+        ),
+        (true, false, false) if dimmed => claim(
+            "fill, disabled, none stated: the enabled fill at half alpha, gpui-component's own",
+            "radio.indicator(NONE).fill",
+            look.fill,
+            "native-theme-gpui/widgets/checkbox.rs:324",
+        ),
         (false, true, false) => claim(
             "fill",
             "checkbox.indicator(DISABLED).fill",

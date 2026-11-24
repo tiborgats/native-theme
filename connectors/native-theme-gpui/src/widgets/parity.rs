@@ -24,12 +24,12 @@ use gpui::px;
 use gpui_component::Size;
 use native_theme::next::{Preset, ThemeContext, WidgetState};
 
-use super::checkbox::DISABLED_BORDER_ALPHA;
+use super::checkbox::DISABLED_INDICATOR_ALPHA;
 use super::{
     CheckboxLook, FocusRing, LabelFont, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook,
     SwitchLabelFont, SwitchLook, TabLook, ThemeSource, ThumbOutline, rgba,
 };
-use crate::next::{Mapped, Unmapped, stroke_color};
+use crate::next::{Mapped, Unmapped, fill, stroke_color};
 use crate::{ColorMode, Native, ResolvedTheme};
 
 /// The presets compared: the 0.7.2 key and the 0.8.0 preset.
@@ -271,6 +271,25 @@ const DIFFERENCES: &[Difference] = &[
                  border_color, radio.indicator(CHECKED).stroke.color checked and \
                  radio.indicator(NONE).stroke.color unchecked, to half alpha \
                  (gpui-component 0.10.0 radio.rs:193-200)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of fill disabled",
+        presets: &["adwaita", "macos-monterey", "macos-tahoe"],
+        reason: "these 0.8.0 presets state no checkbox.indicator(DISABLED).fill, so a disabled \
+                 box keeps gpui-component's own treatment (spec §10, rule 0): a checked (filled) \
+                 box's fill, checkbox.indicator(CHECKED).fill, at half alpha \
+                 (disabled_indicator_color under .when(filled, ..), gpui-component 0.10.0 \
+                 checkbox.rs:286-290, :359-362), an unchecked box's unchanged, where the 0.7.2 \
+                 look kept the enabled fill; the 0.8.0 look is compared to that home at half \
+                 alpha (Report::moved)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio fill disabled",
+        presets: &["adwaita", "macos-monterey", "macos-tahoe"],
+        reason: "as the check box's (CheckboxLook::of fill disabled): these presets state no \
+                 radio.indicator(DISABLED).fill, and gpui-component dims a disabled radio's bg, \
+                 radio.indicator(CHECKED).fill checked and radio.indicator(NONE).fill \
+                 unchecked, to half alpha (gpui-component 0.10.0 radio.rs:193-200)",
     },
     Difference {
         leaf: "CheckboxLook::radio",
@@ -547,8 +566,8 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             // The label apart too, so a listed difference of the disabled label leaves the rest
             // of the look compared; disabled with it the mark, which the look draws in the
             // label's disabled colour where a disabled fill is stated (`CheckboxLook::next_of`).
-            // Disabled, the border apart too, which the 0.8.0 look dims as gpui-component does
-            // where no rule states the disabled stroke.
+            // Disabled, the border and the fill apart too, which the 0.8.0 look dims as
+            // gpui-component does where no rule states the disabled stroke or fill.
             let unframed = |look: CheckboxLook| CheckboxLook {
                 hover_border: None,
                 hover_fill: None,
@@ -562,6 +581,11 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                     gpui::transparent_black()
                 } else {
                     look.border
+                },
+                fill: if disabled {
+                    gpui::transparent_black()
+                } else {
+                    look.fill
                 },
                 ..look
             };
@@ -646,8 +670,51 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                     WidgetState::NONE
                 };
                 let dimmed = |stroke: Mapped<gpui::Hsla>| {
-                    stroke.map(|colour| colour.opacity(DISABLED_BORDER_ALPHA))
+                    stroke.map(|colour| colour.opacity(DISABLED_INDICATOR_ALPHA))
                 };
+                // The fill disabled: the one a rule states for `DISABLED` (at the checked
+                // state), else the enabled one, dimmed where gpui-component dims it (a checked
+                // box, a radio checked or not).
+                let disabled_fill =
+                    |indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
+                     radio: bool,
+                     home: &'static str,
+                     stated_home: &'static str| {
+                        if indicator(WidgetState::DISABLED)
+                            .from_state
+                            .contains(native_theme::next::PartStated::FILL)
+                        {
+                            fill(&indicator(WidgetState::DISABLED | shown), stated_home)
+                        } else if checked || radio {
+                            dimmed(fill(&indicator(shown), home))
+                        } else {
+                            fill(&indicator(shown), home)
+                        }
+                    };
+                r.moved(
+                    "CheckboxLook::of fill disabled",
+                    &state,
+                    old_box.map(|look| look.fill),
+                    new_box.map(|look| look.fill),
+                    disabled_fill(
+                        &|s| new.checkbox.indicator(s),
+                        false,
+                        "checkbox.indicator(shown).fill",
+                        "checkbox.indicator(DISABLED|shown).fill",
+                    ),
+                );
+                r.moved(
+                    "CheckboxLook::radio fill disabled",
+                    &state,
+                    old_radio.map(|look| look.fill),
+                    new_radio.map(|look| look.fill),
+                    disabled_fill(
+                        &|s| new.radio.indicator(s),
+                        true,
+                        "radio.indicator(shown).fill",
+                        "radio.indicator(DISABLED|shown).fill",
+                    ),
+                );
                 r.moved(
                     "CheckboxLook::of border disabled",
                     &state,

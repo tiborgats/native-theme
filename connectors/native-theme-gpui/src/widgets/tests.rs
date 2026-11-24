@@ -6184,3 +6184,83 @@ fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crat
     }
     Ok(())
 }
+
+/// A disabled check box and radio, checked or not, are filled with the fill
+/// a rule states for `DISABLED` (spec §2, `from_state`), read at the
+/// control's checked state, and where no rule does with gpui-component's
+/// own disabled fill (spec §10, rule 0): a checked box's and a radio's,
+/// checked or not, the enabled fill at half alpha, an unchecked box's its
+/// enabled fill (gpui-component 0.10.0 checkbox.rs:286-290, :359-362;
+/// radio.rs:193-200). Adwaita states none; patched to state a sentinel fill
+/// for each control's `DISABLED`, that fill.
+#[test]
+fn a_disabled_indicator_takes_the_fill_stated_for_the_disabled_state() -> crate::next::Mapped<()> {
+    use native_theme::next::{
+        CheckboxRule, Color, Paint, PartPatch, PartStated, Preset, RadioRule, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let look = |r: &native_theme::next::ResolvedTheme, radio: bool, checked, disabled| {
+        if radio {
+            CheckboxLook::next_radio(r, checked, disabled)
+        } else {
+            CheckboxLook::next_of(r, checked, disabled)
+        }
+    };
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    assert!(
+        !r.checkbox
+            .indicator(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::FILL)
+            && !r
+                .radio
+                .indicator(WidgetState::DISABLED)
+                .from_state
+                .contains(PartStated::FILL),
+        "adwaita light now states a disabled indicator fill, which this test needs unstated"
+    );
+    for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        let enabled = look(&r, radio, checked, false)?.fill;
+        let expected = if radio || checked {
+            gpui::Hsla {
+                a: enabled.a * 0.5,
+                ..enabled
+            }
+        } else {
+            enabled
+        };
+        assert_eq!(
+            look(&r, radio, checked, true)?.fill,
+            expected,
+            "unpatched, radio {radio}, checked {checked}"
+        );
+        assert!(enabled.a > 0., "radio {radio}, checked {checked}");
+    }
+    let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    r.apply_patch(
+        &ThemePatch::new()
+            .checkbox(
+                CheckboxRule::new()
+                    .states(WidgetState::DISABLED)
+                    .indicator(PartPatch::new().fill(Paint::Solid(sentinel))),
+            )
+            .radio(
+                RadioRule::new()
+                    .states(WidgetState::DISABLED)
+                    .indicator(PartPatch::new().fill(Paint::Solid(sentinel))),
+            ),
+    );
+    for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        assert_eq!(
+            look(&r, radio, checked, true)?.fill,
+            crate::next::hsla(sentinel),
+            "patched, disabled, radio {radio}, checked {checked}"
+        );
+        assert_ne!(
+            look(&r, radio, checked, false)?.fill,
+            crate::next::hsla(sentinel),
+            "patched, enabled, radio {radio}, checked {checked}"
+        );
+    }
+    Ok(())
+}
