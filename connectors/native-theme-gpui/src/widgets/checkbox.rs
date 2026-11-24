@@ -678,14 +678,14 @@ impl Parts {
             .clone();
         let focused = focus_handle.is_focused(window);
         let seen = super::focus_seen((self.id.clone(), "focus-visible"), focused, window, cx);
-        // The indicator's own ring where the theme states one, round the
-        // indicator; else the global ring, round the row.
+        // The indicator's own ring where stated, round it; else the global ring, round the row.
         let at = super::checked_disabled(checked, disabled);
         let part = move |r: &native_theme::next::ResolvedTheme, focus| {
             if round {
                 r.radio.indicator(focus | at)
             } else {
-                r.checkbox.indicator(focus | at)
+                r.checkbox
+                    .indicator(focus | mixed_state(r, at, self.indeterminate))
             }
         };
         let homes = if round {
@@ -835,6 +835,30 @@ fn hovered_fill(
         },
     )?;
     Ok(hover.filter(|hover| *hover != rest))
+}
+
+/// The state a check box whose checked and disabled flags are `at` queries
+/// its indicator at for its focus ring: while `mixed`, `INDETERMINATE` in
+/// place of `CHECKED` where a rule for `INDETERMINATE` states the ring, as
+/// [`CheckboxLook::next_mixed`] reads the look; else `at`, the checked box's,
+/// as gpui-component draws a mixed box as a checked one (gpui-component
+/// 0.10.0 checkbox.rs:354-358; spec §10, rule 0).
+fn mixed_state(
+    r: &native_theme::next::ResolvedTheme,
+    at: native_theme::next::WidgetState,
+    mixed: bool,
+) -> native_theme::next::WidgetState {
+    use native_theme::next::{PartStated, WidgetState};
+    let ruled = r
+        .checkbox
+        .indicator(WidgetState::INDETERMINATE)
+        .from_state
+        .contains(PartStated::FOCUS);
+    if mixed && ruled {
+        at.difference(WidgetState::CHECKED) | WidgetState::INDETERMINATE
+    } else {
+        at
+    }
 }
 
 fn stroked_check(

@@ -6443,6 +6443,66 @@ fn a_part_that_states_its_own_ring_draws_it(cx: &mut TestAppContext) {
     );
 }
 
+/// A mixed check box reads its indicator's focus ring at `INDETERMINATE` where
+/// a rule for `INDETERMINATE` states one: adwaita patched to state the
+/// indicator's own ring for `INDETERMINATE` alone, the focused mixed box draws
+/// it round the indicator, and a focused checked box keeps the global ring
+/// round its row.
+#[gpui::test]
+fn a_mixed_box_draws_the_ring_stated_for_the_indeterminate_state(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        CheckboxRule, PartPatch, Preset, Theme as NextTheme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    r.apply_patch(
+        &ThemePatch::new().checkbox(
+            CheckboxRule::new()
+                .states(WidgetState::INDETERMINATE)
+                .indicator(PartPatch::new().focus(Some(own_ring()))),
+        ),
+    );
+    let global = FocusRing::next_of(&r).ok().flatten();
+    assert!(global.is_some(), "adwaita states a global ring");
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| {
+            Checkbox::new("c")
+                .label("C")
+                .indeterminate(true)
+                .into_any_element()
+        }),
+    );
+    focus_next(cx);
+    redraw(cx);
+    let edge = bounds(cx, "native-checkbox-indicator");
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR),
+        Some(edge.dilate(px(3.0))),
+        "mixed: the ring 1 px out plus its 2 px width round the indicator"
+    );
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| {
+            Checkbox::new("c")
+                .label("C")
+                .checked(true)
+                .into_any_element()
+        }),
+    );
+    focus_next(cx);
+    redraw(cx);
+    let row = cx.debug_bounds("native-checkbox-row");
+    assert!(row.is_some(), "the check box's row");
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR),
+        row.zip(global)
+            .map(|(row, ring)| row.dilate(px(ring.offset + ring.width))),
+        "checked: the global ring round the row"
+    );
+}
+
 /// FR4: a part whose rule states `focus` with no indicator draws none where
 /// it has the focus; one stated in a form gpui cannot draw is [`Unmapped`]
 /// at the part's own home, and none is drawn.
