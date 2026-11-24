@@ -9622,6 +9622,27 @@ fn ghost_route(
     let pressed = drawn_state_fill(&b.body(flat(WidgetState::PRESSED))).is_some();
     let pressed_label =
         iced_next::state_text_color_of(&b.label(flat(WidgetState::PRESSED))).is_some();
+    if let Some(line) = unmapped_fill_route(
+        leaf,
+        &[
+            (
+                "button.hover_background",
+                iced_next::state_fill_of(
+                    &b.body(flat(WidgetState::HOVER)),
+                    "button.body(HOVER;variant=Flat).fill",
+                ),
+            ),
+            (
+                "button.active_background",
+                iced_next::state_fill_of(
+                    &b.body(flat(WidgetState::PRESSED)),
+                    "button.body(PRESSED;variant=Flat).fill",
+                ),
+            ),
+        ],
+    ) {
+        return line;
+    }
     let route = match leaf {
         "button.font.color" => match (icon, selected) {
             (true, _) if os_icon => OS_ICON_COLOURS,
@@ -9748,6 +9769,24 @@ fn copy_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> String {
     }
 }
 
+/// The route of `leaf` where a fill it decides on is stated in a form iced
+/// cannot paint, layers that are all gradients (the connector's fill
+/// readers' `Unmapped`, spec §10 rule 4): not drawn, naming the home, with
+/// iced's own drawn there ([`drawn_fill`]). `fills` pairs each leaf with
+/// the fill it decides on, read at its home; `None` where every fill of
+/// `leaf` is mapped.
+fn unmapped_fill_route(
+    leaf: &str,
+    fills: &[(&str, iced_next::Mapped<Option<Color>>)],
+) -> Option<String> {
+    fills.iter().find_map(|(at, fill)| match fill {
+        Err(unmapped) if *at == leaf => {
+            Some(format!("not drawn: {unmapped}; iced's own is drawn there"))
+        }
+        _ => None,
+    })
+}
+
 /// The route of a colour leaf `leaf` of a tab [`tab_style`] draws under
 /// `r`: what it draws of the leaf's 0.8.0 home, naming it, or that the home
 /// is unstated and what is drawn in its place. `None` for a leaf it does
@@ -9756,6 +9795,26 @@ fn copy_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> String {
 fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String> {
     let t = &r.tab;
     let open = t.tab(WidgetState::SELECTED);
+    let unmapped = unmapped_fill_route(
+        leaf,
+        &[
+            (
+                "tab.active_background",
+                iced_next::fill_of(&open, "tab.tab(SELECTED).fill"),
+            ),
+            (
+                "tab.background_color",
+                iced_next::fill_of(&t.tab(WidgetState::NONE), "tab.tab(NONE).fill"),
+            ),
+            (
+                "tab.hover_background",
+                iced_next::state_fill_of(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill"),
+            ),
+        ],
+    );
+    if unmapped.is_some() {
+        return unmapped;
+    }
     let route = match leaf {
         "tab.active_background" if drawn_fill(&open).is_none() => {
             "not drawn: tab.tab(SELECTED).fill is unstated, so tab_style fills the open tab as \
@@ -9829,6 +9888,26 @@ fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) ->
     let (hover, selected) = (WidgetState::HOVER, WidgetState::SELECTED);
     let container = l.container(WidgetState::NONE);
     let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
+    let unmapped = unmapped_fill_route(
+        leaf,
+        &[
+            (
+                "list.background_color",
+                iced_next::fill_of(&container, "list.container(NONE).fill"),
+            ),
+            (
+                "list.selection_background",
+                iced_next::state_fill_of(&l.highlight(selected), "list.highlight(SELECTED).fill"),
+            ),
+            (
+                "list.hover_background",
+                iced_next::state_fill_of(&l.highlight(hover), "list.highlight(HOVER).fill"),
+            ),
+        ],
+    );
+    if unmapped.is_some() {
+        return unmapped;
+    }
     let route = match leaf {
         "list.background_color" if drawn_fill(&container).is_none() => {
             "not drawn: list.container(NONE).fill is unstated, so the frame is iced's own \
@@ -9925,6 +10004,33 @@ fn table_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -
     let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
     let hovered = iced_next::list_header_hover_background(r).ok().flatten();
     let pressed = iced_next::list_header_active_background(r).ok().flatten();
+    let unmapped = unmapped_fill_route(
+        leaf,
+        &[
+            (
+                "list.header_background",
+                iced_next::fill_of(&l.header(none), "list.header(NONE).fill"),
+            ),
+            (
+                "list.header_separator_color",
+                iced_next::fill_of(
+                    &l.header_separator(none),
+                    "list.header_separator(NONE).fill",
+                ),
+            ),
+            (
+                "list.header_hover_background",
+                iced_next::list_header_hover_background(r),
+            ),
+            (
+                "list.header_active_background",
+                iced_next::list_header_active_background(r),
+            ),
+        ],
+    );
+    if unmapped.is_some() {
+        return unmapped;
+    }
     let route = match leaf {
         "list.background_color" | "list.border.color" => {
             return list_route(r, leaf, frame);
@@ -10278,6 +10384,33 @@ fn menu_route(r: &native_theme::next::ResolvedTheme, leaf: &str, title: bool) ->
     let stroke = |part: PartStyle| part.from_state.contains(PartStated::STROKE);
     let hover = WidgetState::HOVER;
     let pressed = WidgetState::PRESSED;
+    let item = iced_next::state_fill_of;
+    let bar_hover = item(&b.item(hover), "menu_bar.item(HOVER).fill");
+    let mut fills = vec![
+        (
+            "menu.background_color",
+            iced_next::fill_of(&m.panel(WidgetState::NONE), "menu.panel(NONE).fill"),
+        ),
+        (
+            "menu.hover_background",
+            item(&m.item(hover), "menu.item(HOVER).fill"),
+        ),
+        ("menu.bar_hover_background", bar_hover),
+        (
+            "menu.bar_open_background",
+            item(&b.item(WidgetState::OPEN), "menu_bar.item(OPEN).fill"),
+        ),
+        (
+            "menu.active_background",
+            item(&m.item(pressed), "menu.item(PRESSED).fill"),
+        ),
+    ];
+    if title {
+        fills.push(("menu.hover_background", bar_hover));
+    }
+    if let Some(line) = unmapped_fill_route(leaf, &fills) {
+        return Some(line);
+    }
     let route = match leaf {
         "menu.background_color" if drawn_fill(&m.panel(WidgetState::NONE)).is_some() => {
             "menu_bar_style: menu_background, menu.panel(NONE).fill"
@@ -32986,6 +33119,89 @@ mod tests {
             ["table_row_style", "header_section_style"],
             "basic.table.header list.border.corner_radius_px: {line:?}"
         );
+    }
+
+    /// A fill stated as layers that are all gradients, which iced cannot
+    /// paint (`iced_next::fill_of`'s `Unmapped`), is routed as not drawn,
+    /// naming its home, where Widget Info's arm decides on that fill; the
+    /// page draws iced's own there.
+    #[test]
+    fn an_unmapped_fill_is_routed_as_not_drawn_at_its_home() -> Result<(), String> {
+        use native_theme::next::{
+            GradientStop, ListRule, MenuBarRule, MenuRule, Paint, PaintLayer, PartPatch, TabRule,
+            ThemePatch,
+        };
+        let gradient = PartPatch::new().fill(Paint::layers(vec![PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: std::sync::Arc::from(vec![
+                GradientStop {
+                    offset: 0.0,
+                    color: native_theme::next::Color::rgb(1.0, 0.0, 0.0),
+                },
+                GradientStop {
+                    offset: 1.0,
+                    color: native_theme::next::Color::rgb(0.0, 0.0, 1.0),
+                },
+            ]),
+            blend: Default::default(),
+        }]));
+        let patch = ThemePatch::new()
+            .tab(
+                TabRule::new()
+                    .states(WidgetState::SELECTED)
+                    .tab(gradient.clone()),
+            )
+            .list(
+                ListRule::new()
+                    .states(WidgetState::HOVER)
+                    .highlight(gradient.clone()),
+            )
+            .list(ListRule::new().header(gradient.clone()))
+            .menu(MenuRule::new().panel(gradient.clone()))
+            .menu_bar(MenuBarRule::new().states(WidgetState::HOVER).item(gradient));
+        let mut state = route_states().swap_remove(0);
+        let mut patched = state.next_resolved.clone();
+        patched.apply_patch(&patch);
+        let line = |home: &str| {
+            format!(
+                "not drawn: the theme states no value iced can take at {home}; iced's own is drawn there"
+            )
+        };
+        for (route, home) in [
+            (
+                tab_route(&patched, "tab.active_background"),
+                "tab.tab(SELECTED).fill",
+            ),
+            (
+                list_route(&patched, "list.hover_background", false),
+                "list.highlight(HOVER).fill",
+            ),
+            (
+                table_route(&patched, "list.header_background", false),
+                "list.header(NONE).fill",
+            ),
+            (
+                menu_route(&patched, "menu.background_color", false),
+                "menu.panel(NONE).fill",
+            ),
+            (
+                menu_route(&patched, "menu.bar_hover_background", true),
+                "menu_bar.item(HOVER).fill",
+            ),
+            (
+                menu_route(&patched, "menu.hover_background", true),
+                "menu_bar.item(HOVER).fill",
+            ),
+        ] {
+            assert_eq!(route, Some(line(home)));
+        }
+        state.next_resolved = patched;
+        let element = elements::element("basic.list.row_1").ok_or("basic.list.row_1")?;
+        assert_eq!(
+            iced_route(&state, element, "list.hover_background"),
+            line("list.highlight(HOVER).fill")
+        );
+        Ok(())
     }
 
     /// The Basic page's slider handle and expander frame are routed by the
