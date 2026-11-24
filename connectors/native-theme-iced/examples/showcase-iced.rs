@@ -2094,8 +2094,12 @@ struct State {
     /// indicator and the Basic page's spinner show the frame this long ago
     /// gives.
     animation_start: Instant,
-    /// The Basic page's spinner: the icon set's indicator, or the arc.
-    basic_spinner: native_theme_iced::Spinner,
+    /// The Basic page's spinner, the installed 0.8.0 theme's of the active
+    /// window (`native_theme_iced::next::spinner`): the icon set's
+    /// indicator, or the arc; `None` where the connector cannot draw it, the
+    /// theme stating no `colors.window.foreground` or a `spinner.period_ms`
+    /// of 0.
+    basic_spinner: Option<native_theme_iced::Spinner>,
 
     // Screenshot mode
     screenshot_path: Option<String>,
@@ -2256,11 +2260,6 @@ impl State {
         let loaded_icons = load_all_icons(&icon_set_choice, &resolved, init_icon_set);
 
         let anim_set = icon_set_choice.effective_icon_set(init_icon_set);
-        let basic_spinner = native_theme_iced::Spinner::new(
-            &resolved,
-            anim_set,
-            icon_set_choice.freedesktop_theme(),
-        );
 
         // Two panes to start with, so the vertical split between them is
         // there to be dragged before anything is clicked.
@@ -2312,6 +2311,12 @@ impl State {
             icon_set_choice.freedesktop_theme(),
             &start_next.resolved,
         );
+        let basic_spinner = iced_next::spinner(
+            &start_next.resolved,
+            anim_set,
+            icon_set_choice.freedesktop_theme(),
+        )
+        .ok();
 
         let mut state = Self {
             current_choice: start_choice.clone(),
@@ -2651,8 +2656,8 @@ impl State {
         // and every bundled preset states another `defaults.text_color` in
         // each mode. A theme switch between two presets of one icon set and
         // text colour (catppuccin-frappe and catppuccin-latte light) needs it
-        // too: the Basic page's Spinner takes `spinner.fill_color`, from the
-        // accent, which differs there.
+        // too: the Basic page's Spinner takes the installed 0.8.0 theme's
+        // `spinner.color`, which a switch of the same text colour can change.
         self.reload_icons();
         true
     }
@@ -2915,8 +2920,9 @@ impl State {
     }
 
     /// Load the icons and the spinner of the chosen icon set, recoloured for
-    /// the installed theme: the chrome's icons and the Icons page's
-    /// indicator for the installed 0.8.0 theme of the active window.
+    /// the installed theme: the chrome's icons, the Icons page's indicator
+    /// and the Basic page's spinner for the installed 0.8.0 theme of the
+    /// active window.
     fn reload_icons(&mut self) {
         self.loaded_icons = load_all_icons(
             &self.icon_set_choice,
@@ -2937,11 +2943,12 @@ impl State {
             &self.next_resolved,
         );
         self.animation_start = Instant::now();
-        self.basic_spinner = native_theme_iced::Spinner::new(
-            &self.current_resolved,
+        self.basic_spinner = iced_next::spinner(
+            &self.next_resolved,
             anim_set,
             self.icon_set_choice.freedesktop_theme(),
-        );
+        )
+        .ok();
     }
 
     /// Choose `choice`, the user's pick of an icon theme: only its
@@ -10414,12 +10421,27 @@ fn shown_tab_route(id: &str, leaf: &str, open: bool) -> Option<&'static str> {
 /// [`State::reload_icons`] builds it from is freedesktop, and that theme has
 /// an indicator.
 fn spinner_keeps_its_colours(state: &State) -> bool {
-    state.basic_spinner.is_indicator()
+    basic_indicator(state)
         && state
             .icon_set_choice
             .effective_icon_set(state.current_icon_set)
             == IconSet::Freedesktop
 }
+
+/// Whether the Basic page draws its spinner as the icon set's indicator, not
+/// the arc: false where it draws none ([`State::basic_spinner`]).
+fn basic_indicator(state: &State) -> bool {
+    state
+        .basic_spinner
+        .as_ref()
+        .is_some_and(native_theme_iced::Spinner::is_indicator)
+}
+
+/// The Widget Info line of a Basic spinner leaf where the page draws no
+/// spinner ([`State::basic_spinner`]).
+const SPINNER_NOT_DRAWN: &str = "not drawn: native_theme_iced::next::spinner draws no spinner \
+                                 where colors.window.foreground is unstated or \
+                                 spinner.period_ms is 0";
 
 /// Whether `native_theme_iced::focus_ring` draws the theme's ring round a
 /// focused field under `resolved`: a ring is stated and is not inset at the
@@ -10457,10 +10479,16 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     if let Some(line) = tab_open(state, id).and_then(|open| shown_tab_route(id, leaf, open)) {
         return line.to_owned();
     }
+    if id == "basic.spinner.indicator"
+        && leaf.starts_with("spinner.")
+        && state.basic_spinner.is_none()
+    {
+        return SPINNER_NOT_DRAWN.to_owned();
+    }
     if leaf == "spinner.fill_color" && spinner_keeps_its_colours(state) {
         return "not drawn: the icon theme's indicator keeps its own colours, its \
-                currentColor, where it sets none, in defaults.text_color \
-                (native_theme_iced::Spinner)"
+                currentColor, where it sets none, in colors.window.foreground \
+                (native_theme_iced::next::spinner)"
             .to_owned();
     }
     if leaf == "defaults.focus_ring_color" && ring_round_the_field(resolved) {
@@ -11363,15 +11391,19 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("progress_bar", "border.corner_radius_px") => "styles::progress_bar: border.radius".into(),
         ("progress_bar", "border.line_width_px") => "styles::progress_bar: border.width".into(),
-        ("spinner", "diameter_px") => "native_theme_iced::Spinner: its width and height".into(),
+        ("spinner", "diameter_px") => {
+            "native_theme_iced::next::spinner: its width and height, spinner.diameter".into()
+        }
         ("spinner", "min_diameter_px") => {
             "not reachable: the spinner is drawn at spinner.diameter".into()
         }
-        ("spinner", "stroke_width_px") if state.basic_spinner.is_indicator() => {
+        ("spinner", "stroke_width_px") if basic_indicator(state) => {
             "not drawn: the icon set's indicator is drawn, not the arc".into()
         }
         ("spinner", "stroke_width_px") => {
-            "native_theme_iced::Spinner: the arc's stroke, the icon set having no indicator".into()
+            "native_theme_iced::next::spinner: the arc's stroke, spinner.stroke_width, the icon \
+             set having no indicator"
+                .into()
         }
         // ---- segmented control ----
         ("segmented_control", "font") if under("basic.segmented.") => {
@@ -11914,12 +11946,15 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
         "Spinner" if spinner_keeps_its_colours(state) => {
             vec!["the indicator's frames, own colours and pace: the icon theme's".into()]
         }
-        "Spinner" if state.basic_spinner.is_indicator() => {
+        "Spinner" if basic_indicator(state) => {
             vec!["the indicator's frames and their pace: the icon set's".into()]
         }
-        "Spinner" => {
-            vec!["sweep and speed of the arc: egui's Spinner's, 240° a turn a second".into()]
-        }
+        "Spinner" if state.basic_spinner.is_none() => Vec::new(),
+        "Spinner" => vec![
+            "sweep of the arc: egui's Spinner's, 240°; its speed a turn a second where \
+             spinner.period_ms is unstated"
+                .into(),
+        ],
         "Expander" => vec!["arrow shape: a filled triangle on a canvas".into()],
         // The model has no thumb shadow (docs/todo.md, *Slider: the thumb's
         // outline or shadow*); its outline at rest is stated by some themes
@@ -14600,15 +14635,19 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         ),
     );
 
+    // The spinner of the installed 0.8.0 theme, none where the connector
+    // cannot draw it ([`State::basic_spinner`]).
     let spinner = probe(
         probes::BASIC_SPINNER,
         Length::Shrink,
-        tagged(
-            "basic.spinner.indicator",
-            state
-                .basic_spinner
-                .view(state.animation_start.elapsed(), state.motion_reduced()),
-        ),
+        match &state.basic_spinner {
+            Some(spinner) => tagged(
+                "basic.spinner.indicator",
+                spinner.view(state.animation_start.elapsed(), state.motion_reduced()),
+            )
+            .into(),
+            None => Element::from(space()),
+        },
     );
     let spinner_group = group("basic.spinner.heading", "Spinner", spinner);
 
@@ -24317,7 +24356,7 @@ mod tests {
                 "{name}: the page draws a spinner {name} does not have, or none where it has one"
             );
             assert_eq!(
-                state.basic_spinner.is_indicator(),
+                basic_indicator(&state),
                 expected.is_some(),
                 "{name}: the Basic page's spinner is not {name}'s indicator"
             );
@@ -30223,8 +30262,11 @@ mod tests {
             assert!(
                 state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light)
             );
-            let r = state.current_resolved.clone();
-            state.basic_spinner = native_theme_iced::Spinner::new(&r, IconSet::Material, None);
+            state.basic_spinner = Some(
+                iced_next::spinner(&state.next_resolved, IconSet::Material, None)
+                    .map_err(|error| format!("{preset}: the spinner: {error:?}"))?,
+            );
+            let diameter = state.next_resolved.spinner.diameter;
             let mut ui = interface(&state);
 
             let area = probe_bounds(&mut ui, probes::BASIC_TEXT_AREA);
@@ -30279,13 +30321,10 @@ mod tests {
                 list.height
             );
 
-            let s = &r.spinner;
             let spinner = probe_bounds(&mut ui, probes::BASIC_SPINNER);
             assert!(
-                (spinner.width - s.diameter).abs() < 0.01
-                    && (spinner.height - s.diameter).abs() < 0.01,
-                "{preset}: the spinner is {spinner:?}, expected {} across",
-                s.diameter
+                (spinner.width - diameter).abs() < 0.01 && (spinner.height - diameter).abs() < 0.01,
+                "{preset}: the spinner is {spinner:?}, expected {diameter} across"
             );
 
             // The switch is its track, or as tall as its thumb where that
@@ -30338,6 +30377,89 @@ mod tests {
             );
         }
         Ok(())
+    }
+
+    /// The Basic spinner follows the installed 0.8.0 theme alone
+    /// ([`State::basic_spinner`]): kde-breeze with, on the 0.8.0 theme only,
+    /// a `spinner.diameter` of 37 px draws it 37 px across; with no
+    /// `colors.window.foreground` the connector cannot draw it
+    /// (`native_theme_iced::next::spinner`), so the page draws none and
+    /// Widget Info routes each of its spinner leaves "not drawn".
+    #[test]
+    fn the_basic_spinner_takes_the_0_8_0_theme() -> Result<(), String> {
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        state.icon_set_choice = IconSetChoice::Material;
+        splice_next(&mut state, |r| r.spinner.diameter = 37.0);
+        if state.current_resolved.spinner.diameter == 37.0 {
+            return Err("the splice states 0.7.2's diameter".into());
+        }
+        state.reload_icons();
+        let spinner = probe_bounds(&mut interface(&state), probes::BASIC_SPINNER);
+        if (spinner.width - 37.0).abs() > 0.01 || (spinner.height - 37.0).abs() > 0.01 {
+            return Err(format!("the spinner is {spinner:?}, not 37 across"));
+        }
+
+        splice_next(&mut state, |r| r.colors.window.foreground = None);
+        state.reload_icons();
+        if state.basic_spinner.is_some() {
+            return Err("a spinner was built with no window text colour".into());
+        }
+        let laid = recording(|| {
+            let mut ui = interface(&state);
+            let _ = texts(&mut ui);
+            surveyed_layout()
+        });
+        if laid.contains_key("basic.spinner.indicator") {
+            return Err("the page draws a spinner the connector cannot draw".into());
+        }
+        let element = elements::element("basic.spinner.indicator")
+            .ok_or("basic.spinner.indicator is not listed")?;
+        let drawn: Vec<String> = element
+            .leaves
+            .iter()
+            .filter(|leaf| leaf.starts_with("spinner."))
+            .map(|leaf| iced_route(&state, element, leaf))
+            .filter(|route| route != SPINNER_NOT_DRAWN)
+            .collect();
+        if drawn.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("routes of a spinner not drawn: {drawn:#?}"))
+        }
+    }
+
+    /// The Basic page's folder icons, a bundled set's, are drawn in the
+    /// installed 0.8.0 theme's `colors.window.foreground` alone: kde-breeze
+    /// in the Material set with, on the 0.8.0 theme only, a window text
+    /// colour of `#13579b` draws the large folder icon in it.
+    #[test]
+    fn the_basic_folder_icons_take_the_0_8_0_text_colour() -> Result<(), String> {
+        let mark = native_theme::color::Rgba::rgb(0x13, 0x57, 0x9b);
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        state.icon_set_choice = IconSetChoice::Material;
+        splice_next(&mut state, |r| {
+            r.colors.window.foreground = Some(native_theme::next::Color::from_srgb8(
+                0x13, 0x57, 0x9b, 0xff,
+            ));
+        });
+        if state.current_resolved.defaults.text_color == mark {
+            return Err("the splice states 0.7.2's text colour".into());
+        }
+        state.reload_icons();
+        let (image, rects, scale) =
+            frame_of(&state, view(&state), Size::new(WINDOW_SIZE.0, 2000.0));
+        let icon = rects
+            .get("basic.icons.large")
+            .copied()
+            .ok_or("the large folder icon is not drawn")?;
+        let (inked, of) = inked_in(&image, icon, scale, mark);
+        if inked * 10 >= of {
+            Ok(())
+        } else {
+            Err(format!(
+                "{inked} of the large folder icon's {of} pixels are #13579b, not a tenth"
+            ))
+        }
     }
 
     /// The page and inspector tab rows frame the open tab only, with
@@ -32080,7 +32202,14 @@ mod tests {
                 fault(&format!("the Basic table: {what}"));
             }
         }
-        if element.name == "Spinner" && state.basic_spinner.is_indicator() {
+        if element.name == "Spinner"
+            && leaf.starts_with("spinner.")
+            && state.basic_spinner.is_none()
+            && !not_drawn
+        {
+            fault("the page draws no spinner");
+        }
+        if element.name == "Spinner" && basic_indicator(state) {
             let own_colours = state
                 .icon_set_choice
                 .effective_icon_set(state.current_icon_set)
@@ -32135,7 +32264,7 @@ mod tests {
                     seen.insert(("stroke", next_check_stroke(state.next_shown()).is_some()));
                     seen.insert(("pressed fill", r.button.active_background.is_some()));
                     seen.insert(("tab hover fill", r.tab.hover_background.is_some()));
-                    seen.insert(("indicator", state.basic_spinner.is_indicator()));
+                    seen.insert(("indicator", basic_indicator(&state)));
                     // The side panel shown and hidden, and each tab of the
                     // three rows open: the Basic page's, the page tabs' and the
                     // inspector's.
@@ -32205,12 +32334,16 @@ mod tests {
                                     let arc = iced_not_themeable(&state, element)
                                         .iter()
                                         .any(|line| line.contains("arc"));
-                                    if arc == state.basic_spinner.is_indicator() {
+                                    let drawn_arc = state
+                                        .basic_spinner
+                                        .as_ref()
+                                        .is_some_and(|spinner| !spinner.is_indicator());
+                                    if arc != drawn_arc {
                                         failures.push(format!(
-                                            "{} ({mode:?}): {}: an arc line {} the set's indicator",
+                                            "{} ({mode:?}): {}: an arc line {} the arc",
                                             preset.key,
                                             element.id,
-                                            if arc { "beside" } else { "missing without" }
+                                            if arc { "without" } else { "missing beside" }
                                         ));
                                     }
                                 }
@@ -32396,10 +32529,7 @@ mod tests {
                 &mut state,
                 Message::IconSetSelected(IconSetChoice::Freedesktop("styled".to_owned())),
             );
-            assert!(
-                state.basic_spinner.is_indicator(),
-                "the fixture's indicator is drawn"
-            );
+            assert!(basic_indicator(&state), "the fixture's indicator is drawn");
             let route = iced_route(&state, element, "spinner.fill_color");
             assert!(
                 route.starts_with("not drawn: ") && !route.contains("bundled tint"),
