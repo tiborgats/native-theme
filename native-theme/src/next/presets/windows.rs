@@ -1008,6 +1008,11 @@ const DARK: SchemeColors = SchemeColors {
 // `scrollbar.track_color`: platform-facts.md (§2.8): ScrollBarBackground = SubtleFillColorTransparent
 // #00FFFFFF
 const SCROLLBAR_TRACK: Color = srgb8(0xffff_ff00);
+// The subtle (flat) button's fill at rest and disabled: SubtleButtonBackground and
+// SubtleButtonBackgroundDisabled = SubtleFillColorTransparentBrush, #00FFFFFF
+// (Button_themeresources.xaml:17, :20; Common_themeresources_any.xaml:229 at microsoft-ui-xaml
+// 2.5.1; `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021)
+const SUBTLE_FILL_TRANSPARENT: Color = srgb8(0xffff_ff00);
 // `link.background_color`: 0.7.2 windows-11.toml (uncited)
 // `link.hover_background`: platform-facts.md (§2.28): an inline Hyperlink has no background and
 // changes only its foreground
@@ -2316,6 +2321,12 @@ fn button(
             shape: None,
         })
     };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
+            shape: None,
+        })
+    };
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
@@ -2374,6 +2385,57 @@ fn button(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.control_fill_disabled)],
         )
+        // The flat button, WinUI's subtle button (SubtleButtonStyle), after the push button's
+        // rules so that its own win, each from its resources (Button_themeresources.xaml:17-28,
+        // high contrast :66-69 and :74-77 at microsoft-ui-xaml 2.5.1; `docs/facts/windows/
+        // button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021). At rest, SubtleFillColor-
+        // Transparent in a transparent outline; under high contrast SystemControlBackground-
+        // BaseLowBrush, the button face (generic.xaml:2010), in SystemControlForeground-
+        // TransparentBrush, which high contrast makes the button text (generic.xaml:2054).
+        .rule(
+            flat(WidgetState::NONE),
+            [
+                fill(hc.button_face.unwrap_or(SUBTLE_FILL_TRANSPARENT)),
+                hc.button_text
+                    .map_or(PartProp::Stroke(Stroke::None), |color| {
+                        outside_stroke(layout.border_width, color)
+                    }),
+            ],
+        )
+        // Hovered, SubtleFillColorSecondary filling it and its outline; under high contrast
+        // SystemColorHighlightTextColor in SystemColorHighlightColor.
+        .rule(
+            flat(WidgetState::HOVER),
+            [
+                fill(hc.highlight_text.unwrap_or(c.subtle_fill)),
+                outside_stroke(layout.border_width, hc.highlight.unwrap_or(c.subtle_fill)),
+            ],
+        )
+        // Pressed, SubtleFillColorTertiary filling it and its outline; under high contrast
+        // SystemColorHighlightTextColor in both.
+        .rule(
+            flat(WidgetState::PRESSED),
+            [
+                fill(hc.highlight_text.unwrap_or(c.subtle_fill_pressed)),
+                outside_stroke(
+                    layout.border_width,
+                    hc.highlight_text.unwrap_or(c.subtle_fill_pressed),
+                ),
+            ],
+        )
+        // Disabled, as at rest; under high contrast the button face in
+        // SystemControlDisabledTransparentBrush, which high contrast makes the grey text
+        // (generic.xaml:2032).
+        .rule(
+            flat(WidgetState::DISABLED),
+            [
+                fill(hc.button_face.unwrap_or(SUBTLE_FILL_TRANSPARENT)),
+                hc.gray_text
+                    .map_or(PartProp::Stroke(Stroke::None), |color| {
+                        outside_stroke(layout.border_width, color)
+                    }),
+            ],
+        )
         .build();
     // `button.hover_text_color`: ButtonForegroundPointerOver = TextFillColorPrimary
     // (Button_themeresources.xaml:133 at microsoft-ui-xaml 8463f45), the window's text, which high
@@ -2398,6 +2460,27 @@ fn button(
     .rule(
         RuleSelector::on(WidgetState::DISABLED),
         [TextProp::Color(c.disabled_text)],
+    )
+    // The flat (subtle) button's label: SubtleButtonForeground… = TextFillColorPrimary at rest and
+    // hovered, TextFillColorSecondary pressed, TextFillColorDisabled disabled, the push button's;
+    // under high contrast SystemColorHighlightColor hovered and pressed
+    // (SystemControlHighlightBaseHighBrush, generic.xaml:2069) and SystemColorGrayTextColor
+    // disabled (SystemControlDisabledBaseMediumLowBrush, generic.xaml:2026)
+    // (Button_themeresources.xaml:21-24, :70-73 at microsoft-ui-xaml 2.5.1;
+    // `docs/facts/windows/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row W1-021).
+    .rule(
+        flat(WidgetState::HOVER),
+        [TextProp::Color(hc.highlight.unwrap_or(c.window_foreground))],
+    )
+    .rule(
+        flat(WidgetState::PRESSED),
+        [TextProp::Color(
+            hc.highlight.unwrap_or(c.window_foreground_muted),
+        )],
+    )
+    .rule(
+        flat(WidgetState::DISABLED),
+        [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
     )
     .build();
     ButtonWidget::new(

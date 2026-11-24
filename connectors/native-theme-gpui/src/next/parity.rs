@@ -591,6 +591,43 @@ const DIFFERENCES: &[Difference] = &[
                  the theme is equal",
     },
     Difference {
+        leaf: "variants::ghost_button",
+        presets: &["windows-11"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 \
+                 windows-11 states as WinUI's subtle button draws it, hovered \
+                 SubtleFillColorSecondary and pressed SubtleFillColorTertiary \
+                 (Button_themeresources.xaml:18-19 at microsoft-ui-xaml 2.5.1; \
+                 docs/facts/windows/button.toml on v0.8.0-rc1 at 78ee0efd, row W1-021), where \
+                 0.7.2 gives the push button's hovered and pressed fills to every variant; \
+                 secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["windows-11"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 windows-11 states the flat button's \
+                 own, SubtleButtonBackgroundPointerOver = SubtleFillColorSecondary \
+                 (Button_themeresources.xaml:18 at microsoft-ui-xaml 2.5.1; \
+                 docs/facts/windows/button.toml on v0.8.0-rc1 at 78ee0efd, row W1-021), so the \
+                 secondary_hover slot, its token and its stored config string are \
+                 button.body(HOVER; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["windows-11"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 windows-11 states the flat button's \
+                 own, SubtleButtonBackgroundPressed = SubtleFillColorTertiary \
+                 (Button_themeresources.xaml:19 at microsoft-ui-xaml 2.5.1; \
+                 docs/facts/windows/button.toml on v0.8.0-rc1 at 78ee0efd, row W1-021), so the \
+                 secondary_active slot, its token and its stored config string are \
+                 button.body(PRESSED; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
         leaf: "geometry::button_checked",
         presets: &["macos-monterey"],
         reason: "neither model states a checked toggle on macos-monterey (a checked toggle in \
