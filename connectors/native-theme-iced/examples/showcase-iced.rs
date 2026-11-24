@@ -7737,6 +7737,33 @@ fn next_field_radius(field: &native_theme::next::PartStyle) -> f32 {
 /// 0.14.2 `src/text_input.rs` and `src/text_editor.rs`, `default`).
 const ICED_FIELD_RADIUS: f32 = 2.0;
 
+/// `field` with the installed 0.8.0 theme's focus ring round it while it
+/// holds the keyboard focus (`iced_next::focus_ring`), the ring's curves
+/// `corner_radius`; the field alone, as iced draws it with no ring, where
+/// the connector maps no ring for the theme (`native_theme_iced::next::Unmapped`:
+/// the indicator is not a ring, a stroke is per side or the corners
+/// concentric). `focus_ring` keeps the field it is given, so the mapping is
+/// asked round an empty space first; both asks read the theme's ring alone,
+/// so the second gives what the first did.
+fn next_focus_ring<'a>(
+    r: &native_theme::next::ResolvedTheme,
+    corner_radius: f32,
+    field: impl Into<Element<'a, Message>>,
+) -> Element<'a, Message> {
+    let probe = iced_next::focus_ring::<Message, iced::Renderer>(
+        r,
+        corner_radius,
+        iced::widget::Space::new(),
+    );
+    match probe {
+        Ok(_) => match iced_next::focus_ring(r, corner_radius, field) {
+            Ok(ringed) => ringed,
+            Err(_) => iced::widget::Space::new().into(),
+        },
+        Err(_) => field.into(),
+    }
+}
+
 /// The drop-down arrow's size as [`next_arrow_handle`] has it drawn:
 /// `combo_box.chevron(NONE).size` where the installed 0.8.0 theme states
 /// it; else iced's own, the renderer's default text size (iced_widget
@@ -10876,11 +10903,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("checkbox", "font") => "Checkbox/Radio text_size and font (theme_font)".into(),
         ("checkbox", "indicator_color") => {
-            "CheckMark: the mark's stroke colour, styles::checkbox's icon_color over its fill"
+            "CheckMark: the mark's stroke colour, iced_next::styles::checkbox's icon_color, \
+             checkbox.checkmark(CHECKED).color, over its fill"
                 .into()
         }
         ("checkbox", "disabled_text_color") => {
-            "CheckMark: the disabled mark, styles::checkbox's Disabled icon_color, faded with its box"
+            "CheckMark: the disabled mark, iced_next::styles::checkbox's Disabled icon_color, \
+             checkbox.checkmark(DISABLED).color where a rule states it for the disabled state, \
+             faded with its box"
                 .into()
         }
         ("checkbox", "indicator_width_px") => "Checkbox/Radio::size".into(),
@@ -11834,7 +11864,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "info_inks: the muted text's colour, colors.window.foreground_muted".into()
         }
         ("defaults", "disabled_text_color") => {
-            "disabled_switch_label: the label's colour, times switch.disabled_opacity".into()
+            "disabled_switch_label: the label's colour, colors.disabled_text, times \
+             switch.disabled_opacity where stated"
+                .into()
         }
         ("defaults", "focus_ring_width_px") if ring_round_the_field(resolved) => {
             "native_theme_iced::focus_ring: the ring's width round the focused field".into()
@@ -13469,27 +13501,39 @@ struct CheckIds {
     mark: Option<&'static str>,
 }
 
-/// The step buttons of the Basic page's number input: no fill of their own,
-/// their arrows in the field's text colour, `input.font.color`, and in
-/// `input.disabled_text_color` faded by `input.disabled_opacity` disabled.
-/// The model states no number input (docs/property-registry.toml), so its
-/// buttons take the field's own colours, where iced_aw's default class paints
-/// them in the palette's primary (iced_aw 0.14.1
-/// `src/style/number_input.rs`, `primary`).
+/// The step buttons of the Basic page's number input on the installed 0.8.0
+/// theme: no fill of their own, their arrows in the field's text colour,
+/// `input.text(NONE).color`, and disabled in `input.text(DISABLED).color`
+/// faded by `input.disabled_opacity` where the theme states one. The model
+/// states no number input (docs/property-registry.toml), so its buttons take
+/// the field's own colours, where iced_aw's default class paints them in the
+/// palette's primary (iced_aw 0.14.1 `src/style/number_input.rs`,
+/// `primary`); in a status whose text colour the theme leaves unstated, that
+/// class's buttons stay (spec §10, rule 0).
 #[cfg(feature = "iced_aw")]
 fn number_steps(
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
 ) -> impl Fn(&Theme, iced_aw::style::Status) -> iced_aw::style::number_input::Style + use<> {
-    let i = &resolved.input;
-    let ink = to_color(i.font.color);
-    let mut disabled = to_color(i.disabled_text_color);
-    disabled.a *= i.disabled_opacity;
-    move |_theme, status| iced_aw::style::number_input::Style {
-        button_background: None,
-        icon_color: match status {
+    let i = &r.input;
+    let ink = iced_next::text_color_of(&i.text(WidgetState::NONE));
+    let disabled = iced_next::text_color_of(&i.text(WidgetState::DISABLED)).map(|mut c| {
+        if let Some(opacity) = i.disabled_opacity {
+            c.a *= opacity;
+        }
+        c
+    });
+    move |theme, status| {
+        let arrows = match status {
             iced_aw::style::Status::Disabled => disabled,
             _ => ink,
-        },
+        };
+        match arrows {
+            Some(icon_color) => iced_aw::style::number_input::Style {
+                button_background: None,
+                icon_color,
+            },
+            None => iced_aw::style::number_input::primary(theme, status),
+        }
     }
 }
 
@@ -13893,7 +13937,6 @@ fn next_expander_arrow_size(r: &native_theme::next::ResolvedTheme) -> f32 {
 /// leaves. The tab bar is `iced_aw`'s; without the `iced_aw` feature it is
 /// the page tab strip's tabs ([`next_tab_button`]).
 fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     // A group: its heading, tagged `<group>.heading`, in the section title
@@ -13921,25 +13964,27 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 tagged(label_id, text(label).next_text(&button_label, typography)),
                 btn_min,
             ))
-            .style(styles::button(resolved))
+            .next_style(iced_next::styles::button(next), |b, s| b.style(s))
             .padding(btn_pad),
             Push::Primary => button(at_least(
                 tagged(label_id, text(label).next_text(&button_label, typography)),
                 btn_min,
             ))
-            .style(styles::button_primary(resolved))
+            .next_style(iced_next::styles::button_primary(next), |b, s| b.style(s))
             .padding(btn_pad),
             Push::On => button(at_least(
                 tagged(label_id, text(label).next_text(&button_label, typography)),
                 btn_min,
             ))
-            .style(styles::button_toggle(resolved, true))
+            .next_style(iced_next::styles::button_toggle(next, true), |b, s| {
+                b.style(s)
+            })
             .padding(btn_pad),
             Push::DialogDefault => button(at_least(
                 tagged(label_id, text(label).next_text(&button_label, typography)),
                 btn_min,
             ))
-            .style(styles::button_default(resolved))
+            .next_style(iced_next::styles::button_default(next), |b, s| b.style(s))
             .padding(btn_pad),
         };
         // At its own width even where its row runs past the column, as the
@@ -14045,6 +14090,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     let check_box = c.indicator(WidgetState::NONE);
     let check_label = c.label(WidgetState::NONE);
     let stated = next_check_stroke(next);
+    let page = next.colors.window.background.map(next_colour);
     let box_width = next_check_box_size(next);
     let [box_top, _, _, box_left] = iced_next::padding_of(&check_box);
     let check =
@@ -14056,12 +14102,18 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 .text_size(check_label.size_px)
                 .text_line_height(iced::Pixels(next_line_box(&next.typography, &check_label)))
                 .next_font(&check_label, |boxed, font| boxed.font(font))
-                // Drawn on the page, the window's background, which a
-                // disabled box is faded over as one widget.
-                .style(glyphless_when_stated(
-                    styles::checkbox_over(resolved, to_color(resolved.defaults.background_color)),
-                    stated,
-                ));
+                // Drawn on the page, the window's background
+                // (`colors.window.background`), which a disabled box is
+                // faded over as one widget; iced's own box where the theme
+                // states no page or the connector maps no box.
+                .next_style(
+                    page.map(|page| iced_next::styles::checkbox_over(next, page))
+                        .transpose(),
+                    |boxed, style| match style {
+                        Some(style) => boxed.style(glyphless_when_stated(style, stated)),
+                        None => boxed,
+                    },
+                );
             // A box with no `on_toggle` is a disabled one (checkbox.rs:154).
             let boxed = if enabled {
                 boxed.on_toggle(|_| Message::BasicHeld)
@@ -14102,7 +14154,8 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                         None => tagged,
                     }
                 };
-            let Some(stroke) = stated else {
+            let Some((stroke, color)) = stated.zip(check_mark_colour(next, checked, enabled))
+            else {
                 return tag(boxed.into(), &[0], &[1]).into();
             };
             // The mark the theme states a line for, over iced's glyph made
@@ -14110,7 +14163,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             // place in the widget tree as it toggles.
             let mark = canvas(CheckMark {
                 checked,
-                color: check_mark_colour(resolved, checked, enabled),
+                color,
                 stroke,
                 inset: (inset_x, inset_y),
             })
@@ -14265,7 +14318,9 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             .size(input_size)
             .line_height(input_line)
             .next_font(&input_label, |field, font| field.font(font))
-            .style(styles::text_input(resolved))
+            .next_style(iced_next::styles::text_input(next), |field, style| {
+                field.style(style)
+            })
             .padding(inp_pad)
             .width(Length::Fixed(BASIC_WIDTH))
     };
@@ -14285,7 +14340,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // the line inside its padding (iced_widget 0.14.2 `src/text_input.rs`,
     // `layout`).
     // Each field with the theme's focus ring round it while it is focused
-    // (`native_theme_iced::focus_ring`).
+    // ([`next_focus_ring`]).
     let fielded = |id: &'static str, field: text_input::TextInput<'a, Message>, shown: &str| {
         let field = tagged(id, field);
         let field = match listed_part(id, "text") {
@@ -14294,7 +14349,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             }),
             None => field,
         };
-        native_theme_iced::focus_ring(resolved, input_radius, field)
+        next_focus_ring(next, input_radius, field)
     };
     // A field with no `on_input` is a disabled one (text_input.rs:170).
     let inputs = group(
@@ -14352,8 +14407,10 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             .line_height(input_line)
             .next_font(&input_label, |field, font| field.font(font))
             .padding(inp_pad)
-            .input_style(styles::text_input(resolved))
-            .style(number_steps(resolved))
+            .next_style(iced_next::styles::text_input(next), |field, style| {
+                field.input_style(style)
+            })
+            .style(number_steps(next))
             .width(Length::Fixed(BASIC_WIDTH)),
     )
     .text_part(
@@ -14365,7 +14422,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // NumberInput hands an operation to its field (iced_aw 0.14.1
     // `src/widget/number_input.rs:587-602`).
     #[cfg(feature = "iced_aw")]
-    let number = native_theme_iced::focus_ring(resolved, input_radius, number);
+    let number = next_focus_ring(next, input_radius, number);
     // Without iced_aw, the value in a plain field.
     #[cfg(not(feature = "iced_aw"))]
     let number = fielded(
@@ -14409,8 +14466,12 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 ))
                 .text_size(combo_size)
                 .next_font(&combo_label, |list, font| list.font(font))
-                .style(styles::pick_list(resolved))
-                .menu_style(styles::menu(resolved))
+                .next_style(iced_next::styles::pick_list(next), |list, style| {
+                    list.style(style)
+                })
+                .next_style(iced_next::styles::menu(next), |list, style| {
+                    list.menu_style(style)
+                })
                 // `BASIC_WIDTH`, and at least `combo_box.field(NONE).min_size[0]`,
                 // which `PickList` has no setter for: the width is the
                 // application's, as the gpui page's select's refinement and
@@ -14519,7 +14580,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // toggler leaves where unstated. A disabled switch's label is the disabled text
     // colour, faded with the switch by `switch.disabled_opacity`, as the gpui
     // and egui switches draw it (docs/platform-facts.md §2.1.6).
-    let disabled_label = disabled_switch_label(resolved);
+    let disabled_label = disabled_switch_label(next);
     let switch_gap = next.switch.label_gap.unwrap_or(TOGGLER_LABEL_GAP);
     let switch = |id: &'static str,
                   probe_id: &'static str,
@@ -14620,7 +14681,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // The field with the theme's focus ring round it while it is focused,
     // its curves the field's own corners.
     let area_radius = next_field_radius(&area_field);
-    let ringed = |field: Tagged<'a>| native_theme_iced::focus_ring(resolved, area_radius, field);
+    let ringed = |field: Tagged<'a>| next_focus_ring(next, area_radius, field);
     let text_area = group(
         "basic.text_area.heading",
         "Text area",
@@ -14635,7 +14696,9 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                         .size(area_size)
                         .line_height(iced::Pixels(area_line))
                         .next_font(&area_label, |area, font| area.font(font))
-                        .style(styles::text_editor(resolved))
+                        .next_style(iced_next::styles::text_editor(next), |area, style| {
+                            area.style(style)
+                        })
                         .padding(area_pad)
                         .width(BASIC_WIDE)
                         .height(Length::Fixed(
@@ -14994,7 +15057,9 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 ))
                 .padding(next_card_padding(next))
                 .width(Length::Fixed(BASIC_WIDE))
-                .style(styles::container_card(resolved)),
+                .next_style(iced_next::styles::container_card(next), |card, style| {
+                    card.style(style)
+                }),
             ),
         ),
     );
@@ -15104,7 +15169,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                         .next_font(&link, |label, font| label.font(font))
                 )
                 .on_press(Message::ButtonPressed)
-                .style(styles::button_link(resolved))
+                .next_style(iced_next::styles::button_link(next), |b, s| b.style(s))
                 .padding(LINK_PADDING)
             ),
             tagged(
@@ -15364,18 +15429,25 @@ fn basic_table(state: &State) -> Element<'_, Message> {
     .into()
 }
 
-/// The colour [`CheckMark`] draws a box's mark in: the style's mark colour,
-/// `styles::checkbox`'s `icon_color`, over the box's fill over the page, one
-/// opaque colour: a translucent one comes out of iced's mesh pipeline darker
-/// than the same colour on a quad, where the box's fill blends as the
-/// connector composites (`styles::composite_over`). A disabled check fades as
-/// a whole, its mark over its fill and the pair at
-/// `checkbox.disabled_opacity` over the page (docs/platform-facts.md §2.1.6:
-/// GNOME's `filter: Opacity` on the whole widget, which keeps its normal
-/// colours), where the style fades each colour on its own: each is taken back
-/// to its unfaded self first.
-fn check_mark_colour(resolved: &ResolvedTheme, checked: bool, enabled: bool) -> Color {
-    let c = &resolved.checkbox;
+/// The colour [`CheckMark`] draws a box's mark in on the installed 0.8.0
+/// theme: the style's mark colour, `iced_next::styles::checkbox`'s
+/// `icon_color`, over the box's fill over the page the style fades the box
+/// over, `colors.window.background`, one opaque colour: a translucent one
+/// comes out of iced's mesh pipeline darker than the same colour on a quad,
+/// where the box's fill blends as the connector composites
+/// (`styles::composite_over`). A disabled check fades as a whole, its mark
+/// over its fill and the pair at `checkbox.disabled_opacity` over the page
+/// (docs/platform-facts.md §2.1.6: GNOME's `filter: Opacity` on the whole
+/// widget, which keeps its normal colours), where the style fades each
+/// colour on its own: each is taken back to its unfaded self first; a box
+/// the theme states no opacity for is not faded, as the style draws it.
+/// `None` where the connector gives the box no style, and iced draws its own
+/// glyph.
+fn check_mark_colour(
+    r: &native_theme::next::ResolvedTheme,
+    checked: bool,
+    enabled: bool,
+) -> Option<Color> {
     let status = if enabled {
         checkbox::Status::Active {
             is_checked: checked,
@@ -15385,12 +15457,11 @@ fn check_mark_colour(resolved: &ResolvedTheme, checked: bool, enabled: bool) -> 
             is_checked: checked,
         }
     };
-    let style = styles::checkbox(resolved)(&Theme::Light, status);
-    let page = to_color(resolved.window.background_color);
-    let opacity = if enabled || !c.disabled_opacity.is_finite() {
-        1.0
-    } else {
-        c.disabled_opacity.clamp(0.0, 1.0)
+    let style = iced_next::styles::checkbox(r).ok()?(&Theme::Light, status);
+    let page = next_colour(r.colors.window.background?);
+    let opacity = match r.checkbox.disabled_opacity {
+        Some(opacity) if !enabled && opacity.is_finite() => opacity.clamp(0.0, 1.0),
+        _ => 1.0,
     };
     let unfaded = |colour: Color| Color {
         a: if opacity > 0.0 {
@@ -15400,7 +15471,7 @@ fn check_mark_colour(resolved: &ResolvedTheme, checked: bool, enabled: bool) -> 
         },
         ..colour
     };
-    match style.background {
+    Some(match style.background {
         iced::Background::Color(fill) => {
             let whole = styles::composite_over(
                 unfaded(style.icon_color),
@@ -15415,15 +15486,17 @@ fn check_mark_colour(resolved: &ResolvedTheme, checked: bool, enabled: bool) -> 
             )
         }
         _ => style.icon_color,
-    }
+    })
 }
 
-/// A disabled switch's label: the disabled text colour,
-/// `defaults.disabled_text_color`, faded with the switch by
-/// `switch.disabled_opacity`.
-fn disabled_switch_label(resolved: &ResolvedTheme) -> Color {
-    let mut c = to_color(resolved.defaults.disabled_text_color);
-    c.a *= resolved.switch.disabled_opacity;
+/// A disabled switch's label on the installed 0.8.0 theme: the disabled
+/// text colour, `colors.disabled_text`, faded with the switch by
+/// `switch.disabled_opacity` where the theme states one, unfaded where not.
+fn disabled_switch_label(r: &native_theme::next::ResolvedTheme) -> Color {
+    let mut c = next_colour(r.colors.disabled_text);
+    if let Some(opacity) = r.switch.disabled_opacity {
+        c.a *= opacity;
+    }
     c
 }
 
@@ -15742,9 +15815,14 @@ fn next_progress_girth(r: &native_theme::next::ResolvedTheme) -> f32 {
 
 /// The check mark's line on the installed 0.8.0 theme,
 /// `checkbox.checkmark(NONE).stroke_width`, which the showcase paints
-/// ([`CheckMark`]); `None` where unstated, and iced draws its own glyph.
+/// ([`CheckMark`]); `None` where unstated, or where the connector gives the
+/// box no style (`iced_next::styles::checkbox` unmapped), and iced draws its
+/// own glyph in its own style.
 fn next_check_stroke(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
-    r.checkbox.checkmark(WidgetState::NONE).stroke_width
+    r.checkbox
+        .checkmark(WidgetState::NONE)
+        .stroke_width
+        .filter(|_| iced_next::styles::checkbox(r).is_ok())
 }
 
 /// A check box's side on the installed 0.8.0 theme,
@@ -32721,7 +32799,7 @@ mod tests {
     /// model: `<widget>.<part>(<STATES>).<property>`, a static widget's
     /// `<widget>.<part>.<property>` ([`STATIC_WIDGETS`]), a colour of a
     /// widget's own ([`WIDGET_COLOURS`]), or a colour role,
-    /// `colors.<surface>.<slot>`.
+    /// `colors.<surface>.<slot>` or `colors.<role>`.
     fn is_home(word: &str) -> bool {
         word.contains('(')
             || word.starts_with("colors.")
@@ -32790,8 +32868,10 @@ mod tests {
     /// stated in the widget's table. `None` for any other home.
     fn home_patch_toml(home: &str, colour: &str) -> Option<String> {
         if let Some(role) = home.strip_prefix("colors.") {
-            let (surface, slot) = role.split_once('.')?;
-            return Some(format!("[colors.{surface}]\n{slot} = \"{colour}\"\n"));
+            return Some(match role.split_once('.') {
+                Some((surface, slot)) => format!("[colors.{surface}]\n{slot} = \"{colour}\"\n"),
+                None => format!("[colors]\n{role} = \"{colour}\"\n"),
+            });
         }
         if WIDGET_COLOURS.contains(&home) {
             let (widget, field) = home.split_once('.')?;
@@ -32959,6 +33039,12 @@ mod tests {
                 .map(|first| next_buttons(&theme, &header_section_style(r, first)))
                 .join("|"),
             "menu_bar_row" => format!("{:?}", menu_bar_row(r)),
+            "CheckMark" => format!(
+                "{:?}",
+                [(true, true), (true, false), (false, true), (false, false)]
+                    .map(|(checked, enabled)| check_mark_colour(r, checked, enabled))
+            ),
+            "disabled_switch_label" => format!("{:?}", disabled_switch_label(r)),
             "menu_bar_style" => {
                 let style = menu_bar_style(r);
                 AW_STATUSES
@@ -34068,16 +34154,16 @@ mod tests {
     }
 
     /// M9x CI item I4 (M9-172): the Basic page's focused field is drawn with
-    /// the theme's focus ring round it, where the ring is not inset at its
-    /// edge: `defaults.focus_ring_width` wide, `defaults.focus_ring_offset`
-    /// out from the field's edge, in `defaults.focus_ring_color`
-    /// (`native_theme_iced::focus_ring`). Under macos-tahoe (3 at -1) and
+    /// the installed 0.8.0 theme's focus ring round it, where the ring is not
+    /// inset at its edge: `focus_ring.stroke`'s width wide, from
+    /// `focus_ring.offset` out from the field's edge, in its colour
+    /// ([`next_focus_ring`]). Under macos-tahoe (3 at -1) and
     /// windows-11 (2 at +1), in both modes, with the field clicked into, a
     /// pixel left of the field on its middle row that lies wholly in the
     /// ring's band outside the field is the ring's colour over the ground,
     /// the ground read past the ring, to 3 per channel. windows-11 says its
     /// ring shows for keyboard focus only, and a click is no key, so it runs
-    /// twice: with `defaults.focus_ring_keyboard_only` set to `None`, the
+    /// twice: with `focus_ring.trigger` set to `None`, the
     /// ring's geometry at +1 as above, and as the preset states it, where
     /// the pixel in the band is the ground's, to the same 3 per channel. The
     /// Simulator runs no operation that gives a widget the focus, so the key
@@ -34101,14 +34187,26 @@ mod tests {
                     "{preset} does not install"
                 );
                 if rule_off {
-                    state.current_resolved.defaults.focus_ring_keyboard_only = None;
+                    state.next_resolved.focus_ring.trigger = None;
+                    state.next_inactive.focus_ring.trigger = None;
                 }
+                let ring = state.next_shown().focus_ring.clone();
                 assert_eq!(
-                    state.current_resolved.defaults.focus_ring_keyboard_only != Some(true),
+                    ring.trigger != Some(native_theme::next::FocusTrigger::KeyboardOnly),
                     ringed,
                     "{preset} {mode:?}: the keyboard rule is not as the run expects"
                 );
-                let d = state.current_resolved.defaults.clone();
+                let native_theme::next::Stroke::Uniform {
+                    width: ring_width,
+                    color: ring_color,
+                    ..
+                } = ring.stroke
+                else {
+                    faults.push(format!(
+                        "{preset} {mode:?}: the ring's stroke is not uniform"
+                    ));
+                    continue;
+                };
                 let (image, rects, scale) = frame_after(
                     &state,
                     view(&state),
@@ -34123,8 +34221,8 @@ mod tests {
                 // The band outside the field, in physical pixels: from the
                 // ring's outer edge in to the field's edge, or to the ring's
                 // inner edge where that lies outside the field.
-                let outer = (field.x - (d.focus_ring_offset + d.focus_ring_width)) * scale;
-                let inner = (field.x - d.focus_ring_offset.max(0.0)) * scale;
+                let outer = (field.x - (ring.offset + ring_width)) * scale;
+                let inner = (field.x - ring.offset.max(0.0)) * scale;
                 let x = outer.ceil();
                 if x + 1.0 > inner {
                     faults.push(format!(
@@ -34140,7 +34238,7 @@ mod tests {
                 };
                 let ground = Color::from_rgba8(ground[0], ground[1], ground[2], 1.0);
                 let want = if ringed {
-                    styles::composite_over(to_color(d.focus_ring_color), ground).into_rgba8()
+                    styles::composite_over(next_colour(ring_color), ground).into_rgba8()
                 } else {
                     ground.into_rgba8()
                 };
@@ -36733,17 +36831,36 @@ mod tests {
 
     /// The style functions one of [`NEXT_PAGES`] draws with on the
     /// installed 0.8.0 theme alone, beside [`NEXT_PAGE_STYLES`].
-    const NEXT_PAGE_OWN_STYLES: &[(&str, &[&str])] = &[(
-        "view_buttons",
-        &[
-            "button",
-            "button_primary",
-            "button_success",
-            "button_warning",
-            "button_danger",
-            "button_link",
-        ],
-    )];
+    const NEXT_PAGE_OWN_STYLES: &[(&str, &[&str])] = &[
+        (
+            "view_basic",
+            &[
+                "button",
+                "button_primary",
+                "button_toggle",
+                "button_default",
+                "button_link",
+                "checkbox",
+                "checkbox_over",
+                "text_input",
+                "text_editor",
+                "pick_list",
+                "menu",
+                "container_card",
+            ],
+        ),
+        (
+            "view_buttons",
+            &[
+                "button",
+                "button_primary",
+                "button_success",
+                "button_warning",
+                "button_danger",
+                "button_link",
+            ],
+        ),
+    ];
 
     /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`], nor of its
     /// own [`NEXT_PAGE_OWN_STYLES`], on the 0.7.2 model (`styles::<fn>(` not
@@ -37818,12 +37935,6 @@ mod tests {
             // label is `styles::toolbar_button`'s, which the route names as
             // well.
             "icon_button" => format!("{:?}", [false, true].map(|s| tool_icon_colour(r, s))),
-            "CheckMark" => format!(
-                "{:?}",
-                [(true, true), (true, false), (false, true), (false, false)]
-                    .map(|(checked, enabled)| check_mark_colour(r, checked, enabled))
-            ),
-            "disabled_switch_label" => format!("{:?}", disabled_switch_label(r)),
             _ => return None,
         })
     }
