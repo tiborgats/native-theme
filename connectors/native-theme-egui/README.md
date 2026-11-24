@@ -756,7 +756,9 @@ listed here, and a value the theme leaves unstated is egui's own
   Every other role, and a scope `native_set_style_with_ring` styled, takes
   the global ring. egui has no radio role: a `RadioButton` in a
   `Role::Checkbox` scope takes `checkbox.indicator`'s ring, and
-  `radio.indicator`'s own is not drawn. A part's ring egui cannot draw (a
+  `radio.indicator`'s own is not drawn, reported as a `Note::Unmapped` at
+  `radio.indicator(FOCUSED).focus` or `radio.indicator(FOCUS_VISIBLE).focus`
+  where the theme states one. A part's ring egui cannot draw (a
   fill, an underline, a stroke stated per side, concentric corners) is
   none, reported as a `Note::Unmapped` at its home in `ThemeAtlas::notes`
   (`button.body(FOCUSED).focus.kind`, ...).

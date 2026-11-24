@@ -4679,7 +4679,7 @@ fn egui_s_own_row_height_stands_on_all_but_macos_monterey() {
 /// The 0.8.0 kde-breeze with `patch` laid over it, its atlas installed with a probe after it.
 fn next_ring_harness(
     patch: native_theme::next::ThemePatch,
-) -> (egui::Context, ThemeAtlas, LayerProbe) {
+) -> Result<(egui::Context, ThemeAtlas, LayerProbe), Box<dyn std::error::Error>> {
     use native_theme::next::{Preset, ThemeContext};
     let theme = native_theme::next::Theme::preset(Preset::KdeBreeze).with_patch(patch);
     let [light, light_inactive, dark, dark_inactive] = [
@@ -4689,13 +4689,12 @@ fn next_ring_harness(
         ThemeContext::dark().with_window_active(false),
     ]
     .map(|ctx| theme.resolve(&ctx));
-    let atlas = crate::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)
-        .expect("the patched kde-breeze maps");
+    let atlas = crate::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
     let ctx = bare_context();
     atlas.install(&ctx);
     let probe = LayerProbe::default();
     ctx.add_plugin(probe.clone());
-    (ctx, atlas, probe)
+    Ok((ctx, atlas, probe))
 }
 
 /// A ring of `width` in magenta at `offset`, of `kind`.
@@ -4704,6 +4703,16 @@ fn magenta_ring(
     width: f32,
     offset: f32,
 ) -> Option<Arc<native_theme::next::FocusIndicator>> {
+    triggered_ring(kind, width, offset, None)
+}
+
+/// [`magenta_ring`] shown as `trigger` says.
+fn triggered_ring(
+    kind: native_theme::next::FocusKind,
+    width: f32,
+    offset: f32,
+    trigger: Option<native_theme::next::FocusTrigger>,
+) -> Option<Arc<native_theme::next::FocusIndicator>> {
     use native_theme::next::{Color, FocusIndicator, Stroke};
     Some(Arc::new(FocusIndicator::new(
         kind,
@@ -4711,7 +4720,7 @@ fn magenta_ring(
         Stroke::None,
         offset,
         None,
-        None,
+        trigger,
     )))
 }
 
@@ -4720,7 +4729,8 @@ fn magenta_ring(
 /// same geometry (the widget's rect grown by the ring's offset); a role whose part states none
 /// paints none; another role keeps the global ring.
 #[test]
-fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() {
+fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() -> Result<(), Box<dyn std::error::Error>>
+{
     use crate::plugin::PartRing;
     use native_theme::next::{
         ButtonRule, CheckboxRule, FocusKind, PartPatch, ThemePatch, WidgetState,
@@ -4739,17 +4749,17 @@ fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() {
             )
     };
     for role in [Role::Button, Role::Tab, Role::Checkbox] {
-        let (ctx, atlas, probe) = next_ring_harness(patch());
+        let (ctx, atlas, probe) = next_ring_harness(patch())?;
         let theme = ctx.theme();
         let global = *atlas
             .focus_ring(theme)
-            .expect("kde-breeze states a focus ring");
+            .ok_or("kde-breeze states no focus ring")?;
         let PartRing::Own(Some(own)) = atlas
             .scheme(theme)
             .part_rings(Role::Button, RoleVariant::Normal)
             .keyboard
         else {
-            panic!("the button's body states its own ring");
+            return Err("the button's body states no ring of its own".into());
         };
         assert_eq!((own.stroke.width, own.offset), (3.0, 1.0));
         assert_ne!(
@@ -4791,13 +4801,14 @@ fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() {
             ),
         }
     }
+    Ok(())
 }
 
 /// FR4: a part's own ring is asked at `FOCUS_VISIBLE` for a focus that followed a key press
 /// and at `FOCUSED` for another (which `FOCUS_VISIBLE` holds too), a checked check box's with
 /// `CHECKED`; one egui cannot draw (a fill) is none, noted unmapped at its home.
 #[test]
-fn a_parts_own_ring_is_read_at_the_focus_s_state() {
+fn a_parts_own_ring_is_read_at_the_focus_s_state() -> Result<(), Box<dyn std::error::Error>> {
     use crate::plugin::PartRing;
     use native_theme::next::{
         ButtonRule, CheckboxRule, FocusKind, PartPatch, ThemePatch, WidgetState,
@@ -4819,7 +4830,7 @@ fn a_parts_own_ring_is_read_at_the_focus_s_state() {
                 .states(WidgetState::FOCUSED)
                 .tab(ring(FocusKind::Fill)),
         );
-    let (ctx, atlas, _) = next_ring_harness(patch);
+    let (ctx, atlas, _) = next_ring_harness(patch)?;
     let rings = |role, variant| atlas.scheme(ctx.theme()).part_rings(role, variant);
     let own = |ring: PartRing| matches!(ring, PartRing::Own(Some(_)));
     let button = rings(Role::Button, RoleVariant::Normal);
@@ -4857,4 +4868,105 @@ fn a_parts_own_ring_is_read_at_the_focus_s_state() {
             "{path} noted unmapped"
         );
     }
+    Ok(())
+}
+
+/// FR4: egui has no radio role, so a ring `radio.indicator` states of its own is not drawn and
+/// is noted unmapped at its home, at the state it is stated for: a rule for `FOCUS_VISIBLE`
+/// notes `radio.indicator(FOCUS_VISIBLE).focus` and not the `FOCUSED` one, which the unpatched
+/// kde-breeze notes neither of.
+#[test]
+fn a_radios_own_ring_is_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{FocusKind, PartPatch, RadioRule, ThemePatch, WidgetState};
+    let noted = |atlas: &ThemeAtlas, path: &str| {
+        atlas
+            .notes()
+            .iter()
+            .any(|note| matches!(note, crate::Note::Unmapped { path: p } if *p == path))
+    };
+    let [pointer, keyboard] = [
+        "radio.indicator(FOCUSED).focus",
+        "radio.indicator(FOCUS_VISIBLE).focus",
+    ];
+    let (_, bare, _) = next_ring_harness(ThemePatch::new())?;
+    assert!(
+        !noted(&bare, pointer) && !noted(&bare, keyboard),
+        "the unpatched kde-breeze states no radio ring"
+    );
+    let patch = ThemePatch::new().radio(
+        RadioRule::new()
+            .states(WidgetState::FOCUS_VISIBLE)
+            .indicator(PartPatch::new().focus(magenta_ring(FocusKind::Ring, 2.0, 0.0))),
+    );
+    let (_, atlas, _) = next_ring_harness(patch)?;
+    assert!(noted(&atlas, keyboard), "{keyboard} noted unmapped");
+    assert!(!noted(&atlas, pointer), "{pointer} is not stated");
+    Ok(())
+}
+
+/// The pass that clicks into a single-line text edit in a `Role::Input` scope of `ctx`, a focus
+/// that follows no key, with the layer it is drawn on watched by `probe`.
+fn click_into_input(ctx: &egui::Context, probe: &LayerProbe) -> egui::Response {
+    let mut text = String::new();
+    let mut show = |ui: &mut egui::Ui| {
+        in_window(ui, |ui| {
+            ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
+                ui.text_edit_singleline(&mut text)
+            })
+            .inner
+        })
+    };
+    let field = pass_ui(ctx, egui::RawInput::default(), &mut show);
+    watch(probe, &[field.layer_id]);
+    let field = pass_ui(ctx, egui::RawInput::default(), &mut show);
+    let centre = field.rect.center();
+    let _ = pass_ui(ctx, primary(centre, true), &mut show);
+    pass_ui(ctx, primary(centre, false), &mut show)
+}
+
+/// FR4: a part's own ring is shown as its own trigger says, not as the global ring's: stated
+/// `KeyboardOnly`, a text field a click focuses draws none; stated `Always`, under kde-breeze's
+/// keyboard-only global ring, the same click draws the field's own ring.
+#[test]
+fn a_parts_own_ring_is_shown_as_its_trigger_says() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{
+        FocusKind, FocusTrigger, InputRule, PartPatch, ThemePatch, WidgetState,
+    };
+    for (trigger, drawn) in [(FocusTrigger::KeyboardOnly, 0), (FocusTrigger::Always, 1)] {
+        let patch = ThemePatch::new().input(InputRule::new().states(WidgetState::FOCUSED).field(
+            PartPatch::new().focus(triggered_ring(FocusKind::Ring, 3.0, 1.0, Some(trigger))),
+        ));
+        let (ctx, atlas, probe) = next_ring_harness(patch)?;
+        let theme = ctx.theme();
+        let global = atlas
+            .focus_ring(theme)
+            .ok_or("kde-breeze states no focus ring")?;
+        if !global.keyboard_only {
+            return Err(
+                "kde-breeze's global ring is not keyboard only: the test proves nothing".into(),
+            );
+        }
+        let crate::plugin::PartRing::Own(Some(own)) = atlas
+            .scheme(theme)
+            .part_rings(Role::Input, RoleVariant::Normal)
+            .pointer
+        else {
+            return Err(format!("{trigger:?}: the field states no ring of its own").into());
+        };
+        let field = click_into_input(&ctx, &probe);
+        if !field.has_focus() {
+            return Err("the click does not focus the field".into());
+        }
+        let seen = seen(&probe);
+        assert_eq!(
+            rings_on(&seen, field.layer_id, own.stroke).len(),
+            drawn,
+            "{trigger:?}: the field's own ring after a click"
+        );
+        assert!(
+            rings_on(&seen, field.layer_id, global.stroke).is_empty(),
+            "{trigger:?}: the global ring is not drawn"
+        );
+    }
+    Ok(())
 }

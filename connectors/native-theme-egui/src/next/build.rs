@@ -1503,6 +1503,19 @@ fn part_ring_sources(r: &ResolvedTheme, notes: &mut Vec<Note>) -> crate::style::
             }
         }
     }
+    // egui has no radio role: a `RadioButton` takes its scope's ring (README, the focus ring),
+    // so a ring the radio's indicator states is not drawn
+    for (focus, path) in [
+        (WidgetState::FOCUSED, "radio.indicator(FOCUSED).focus"),
+        (
+            WidgetState::FOCUS_VISIBLE,
+            "radio.indicator(FOCUS_VISIBLE).focus",
+        ),
+    ] {
+        if r.radio.indicator(focus).stated.contains(PartStated::FOCUS) {
+            push_note(notes, Note::Unmapped { path });
+        }
+    }
     rings
 }
 
