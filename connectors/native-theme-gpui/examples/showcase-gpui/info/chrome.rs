@@ -553,7 +553,7 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
     let [panel_top, _, panel_bottom, _] = next::padding_of(&panel);
     info.colors(stated_claim("menu bg", "menu.panel(NONE).fill", fill_of(&r.menu.panel(WidgetState::NONE)), "showcase"))
         .colors(stated_claim("menu separator", "menu.separator(NONE).fill", fill_of(&r.menu.separator(WidgetState::NONE)), "showcase"))
-        .config("font", format!("menu.item_label(NONE): {}, on the titles and the items, as next::geometry::menu_item sets it", super::next_drawn_font(&m.item_label(WidgetState::NONE))))
+        .config("font", format!("menu.item_label(NONE): {}, on the titles and the items, as next::geometry::menu_item sets it", super::next_drawn_font(&m.item_label(WidgetState::NONE), super::LINE_AT_THE_MULTIPLIER)))
         .config("highlight", match radius_of(&rest) {
             Some(radius) => format!("rounded by menu.item(NONE).corners, {}px (platform-facts §2.6: the items are rectangular where it is 0)", px_text(radius)),
             None => "square: the theme states no menu.item(NONE).corners gpui can take (platform-facts §2.6: the items are rectangular)".to_string(),
@@ -897,7 +897,7 @@ pub fn sidebar_label_font(
     match native_theme_gpui::next::label_font_unmapped(label, "sidebar.item_label(NONE)") {
         None => format!(
             "sidebar.item_label(NONE): {}: plain text, not a Label, whose render paints foreground over the side panel's colour (gpui-component/label.rs, Label::render)",
-            super::typography::text_style_font(typography, label)
+            super::next_drawn_font(label, &super::typography::line_box_text(typography, label))
         ),
         Some(unstated) => format!(
             "text_sm, a rem step, gpui's own: the theme states no value gpui can take at {} (spec §10, rule 0)",

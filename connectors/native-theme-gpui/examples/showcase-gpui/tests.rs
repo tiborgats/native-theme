@@ -13752,7 +13752,7 @@ fn text_ins_style_is_the_connectors_on_every_font_style() -> Result<(), String> 
 }
 
 /// The font lines of the showcase's own Widget Info name a family the
-/// system lacks as `info::typography::text_style_font` does, with the
+/// system lacks as `info::next_drawn_font` does, with the
 /// substitute gpui is
 /// asked for, where the chrome menus' line named no family and the
 /// theme-drawn Checkbox's and TabBar's named the stated family alone.

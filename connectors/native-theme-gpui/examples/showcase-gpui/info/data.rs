@@ -6,7 +6,7 @@ use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_color_of};
 
 use super::{
-    ColorClaim, WidgetInfo,
+    ColorClaim, LINE_AT_THE_MULTIPLIER, WidgetInfo,
     chrome::{GhostContent, ghost_colours, input_background},
     claim, edge_claim, next_drawn_font, next_stated, px_text, radius_of, state_stroke_color_of,
     stated_claim, stroke_color_of, stroke_width_of,
@@ -451,7 +451,10 @@ pub fn native_table_header(r: &NextTheme, columns: &str) -> WidgetInfo {
         "font",
         format!(
             "list.header_label(NONE): {}",
-            next_drawn_font(&r.list.header_label(WidgetState::NONE))
+            next_drawn_font(
+                &r.list.header_label(WidgetState::NONE),
+                LINE_AT_THE_MULTIPLIER
+            )
         ),
     )
     .instance("columns", columns.to_string())
@@ -595,7 +598,10 @@ pub fn native_table_row(r: &NextTheme, t: &Theme, selected: bool, cells: &str) -
             "font",
             format!(
                 "list.item_label(NONE): {}",
-                next_drawn_font(&r.list.item_label(WidgetState::NONE))
+                next_drawn_font(
+                    &r.list.item_label(WidgetState::NONE),
+                    LINE_AT_THE_MULTIPLIER
+                )
             ),
         )
         .instance("cells", cells.to_string())

@@ -559,13 +559,18 @@ pub fn icon_color_of(icon: &native_theme::next::IconStyle) -> Option<Hsla> {
         .then(|| next_stated(icon.color))
 }
 
-/// A font of the installed 0.8.0 theme as a theme-drawn widget's label draws
-/// it (native-theme-gpui/widgets/mod.rs, `LabelFont::next`) and a 0.8.0
-/// builder sets it, for its info's font line: the family as
-/// `status::family_label` names what gpui is asked for, the size the
+/// The line box of a font line where a theme-drawn widget's label draws the
+/// font (native-theme-gpui/widgets/mod.rs, `LabelFont::next`) or a 0.8.0
+/// builder sets it; text the showcase letters itself takes
+/// [`typography::line_box_text`].
+pub const LINE_AT_THE_MULTIPLIER: &str = "at typography.line_height_multiplier";
+
+/// A font of the installed 0.8.0 theme for its info's font line: the family
+/// as `status::family_label` names what gpui is asked for, the size the
 /// theme's text scale has already scaled, the weight, the slant where it is
-/// not upright, and the line box.
-pub fn next_drawn_font(text: &native_theme::next::TextStyle) -> String {
+/// not upright, then `line`, how its line box is set
+/// ([`LINE_AT_THE_MULTIPLIER`] or [`typography::line_box_text`]).
+pub fn next_drawn_font(text: &native_theme::next::TextStyle, line: &str) -> String {
     let drawn = native_theme_gpui::font_family(&text.family);
     let style = match text.style {
         native_theme::next::FontStyle::Italic => ", italic",
@@ -573,7 +578,7 @@ pub fn next_drawn_font(text: &native_theme::next::TextStyle) -> String {
         _ => "",
     };
     format!(
-        "{}, {}px, weight {}{style}, at typography.line_height_multiplier",
+        "{}, {}px, weight {}{style}, {line}",
         native_theme_showcase_support::status::family_label(&text.family, Some(&drawn)),
         px_text(text.size_px),
         text.weight

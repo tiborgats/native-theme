@@ -154,7 +154,10 @@ pub fn mono_text(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) 
                 "mono font",
                 format!(
                     "typography.monospace: {}",
-                    text_style_font(&r.typography, &r.typography.monospace)
+                    super::next_drawn_font(
+                        &r.typography.monospace,
+                        &line_box_text(&r.typography, &r.typography.monospace)
+                    )
                 ),
             )
             .config(
@@ -175,21 +178,14 @@ pub fn mono_text(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) 
     }
 }
 
-/// A text style of the installed 0.8.0 theme as the showcase letters plain
-/// text in it (`demo::next_text_in`), for its info's font line: the family
-/// as `status::family_label` names what gpui is asked for, the size the
-/// theme's text scale has already scaled, the weight, the slant where it is
-/// not upright, and the line box (`demo::line_box`).
-pub fn text_style_font(
+/// The line box of a text style of the installed 0.8.0 theme as the
+/// showcase letters plain text in it (`demo::next_text_in`,
+/// `demo::line_box`), the `line` of its info's font line
+/// (`super::next_drawn_font`).
+pub fn line_box_text(
     typography: &native_theme::next::Typography,
     style: &native_theme::next::TextStyle,
 ) -> String {
-    let drawn = native_theme_gpui::font_family(&style.family);
-    let slant = match style.style {
-        native_theme::next::FontStyle::Italic => ", italic",
-        native_theme::next::FontStyle::Oblique => ", oblique",
-        _ => "",
-    };
     let line = if style
         .stated
         .contains(native_theme::next::TextStated::LINE_HEIGHT)
@@ -199,10 +195,7 @@ pub fn text_style_font(
         "its size by typography.line_height_multiplier, as it states no line_height (spec §4)"
     };
     format!(
-        "{}, {}px, weight {}{slant}, a line box of {}px, {line}",
-        native_theme_showcase_support::status::family_label(&style.family, Some(&drawn)),
-        px_text(style.size_px),
-        style.weight,
+        "a line box of {}px, {line}",
         px_text(crate::demo::line_box(typography, style))
     )
 }

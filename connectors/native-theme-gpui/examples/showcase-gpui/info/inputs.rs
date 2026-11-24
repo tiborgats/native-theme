@@ -12,12 +12,12 @@ use native_theme_gpui::widgets::{
     CheckboxLook, SliderLook, SwitchLabelFont, SwitchLabelHome, SwitchLook, ThumbOutline,
 };
 
+#[cfg(feature = "widgets")]
+use super::{LINE_AT_THE_MULTIPLIER, next_drawn_font, next_stated, percent_text};
 use super::{
     WidgetInfo, chrome::input_background, claim, edge_claim, px_text, state_stroke_color_of,
     stated_claim, stroke_color_of, stroke_width_of,
 };
-#[cfg(feature = "widgets")]
-use super::{next_drawn_font, next_stated, percent_text};
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
 use crate::support::SampleIcon;
 
@@ -1109,7 +1109,10 @@ fn drawn_checkbox(
         )
         .config(
             "label font",
-            format!("checkbox.label(NONE): {}", next_drawn_font(&text)),
+            format!(
+                "checkbox.label(NONE): {}",
+                next_drawn_font(&text, LINE_AT_THE_MULTIPLIER)
+            ),
         );
     let inside = if look.mark_padded {
         "checkbox.indicator(NONE).padding, and inside its stroke on a side the theme leaves unstated"

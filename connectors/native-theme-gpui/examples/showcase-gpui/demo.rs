@@ -6433,7 +6433,7 @@ impl RenderOnce for ListRow {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = format!("{}-{}", self.prefix, self.ix);
         let state = ListRowState::of(self.selected, self.right_clicked);
-        let styled = matches!(next_geometry(cx, next::geometry::list_item), Some(Ok(_)));
+        let styled = next_applies(cx, next::geometry::list_item);
         let mut row_info =
             info::data::list_row(cx.theme(), &self.label, state, styled, list_gutter(cx));
         // A selected row's text in `list.item_label(SELECTED).color`, over
@@ -6555,7 +6555,7 @@ fn tree_row(
     selected: bool,
 ) -> ListItem {
     let id = format!("data-tree-row-{ix}");
-    let styled = matches!(next_geometry(cx, next::geometry::list_item), Some(Ok(_)));
+    let styled = next_applies(cx, next::geometry::list_item);
     let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled, list_gutter(cx));
     // As a List row's: a selected row's text in
     // `list.item_label(SELECTED).color`, a hovered one's in
@@ -7465,7 +7465,7 @@ pub(crate) fn built_tooltip_button(
     kind: ButtonKind,
 ) -> Stateful<Div> {
     let kind = kind.built(cx);
-    let styled = matches!(next_geometry(cx, next::geometry::tooltip), Some(Ok(_)));
+    let styled = next_applies(cx, next::geometry::tooltip);
     let delay = next_tooltip_delay(cx);
     let mut tooltip_info = info::feedback::tooltip(
         cx.theme(),
@@ -8320,7 +8320,7 @@ pub(crate) fn group_box(
     container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
     // The theme the builder refines the content from, where it does.
-    let native = next_resolved(cx).filter(|r| next::geometry::group_box_content(r).is_ok());
+    let native = next_resolved(cx).filter(|_| next_applies(cx, next::geometry::group_box_content));
     let mut box_info =
         info::layout::next_group_box(cx.theme(), kind, native, container_margin, title)
             .instance("content", about);
@@ -8370,7 +8370,7 @@ pub(crate) fn card(
     width: Pixels,
     container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
-    let native = next_resolved(cx).filter(|r| next::geometry::group_box_content(r).is_ok());
+    let native = next_resolved(cx).filter(|_| next_applies(cx, next::geometry::group_box_content));
     let mut card_info = info::layout::card(cx.theme(), native, container_margin);
     let content_style = next_native_info(
         StyleRefinement::default(),
@@ -8420,8 +8420,7 @@ pub(crate) fn scroll_area(
 ) -> Stateful<Div> {
     // Whether the connector wrote the installed 0.8.0 theme's scroll bar onto
     // gpui-base (`next::base_layer::scrollbar_geometry`).
-    let styled =
-        next_value(cx, |r| next::base_layer::scrollbar_geometry(r).is_ok()).unwrap_or(false);
+    let styled = next_applies(cx, next::base_layer::scrollbar_geometry);
     let mut area_info = info::layout::scroll_area(cx.theme(), styled, items);
     let viewport = next_native_info(
         div()
@@ -9648,7 +9647,7 @@ pub(crate) fn sheet(
 /// HoverCard's info is given as the theme that refines it; under any other
 /// theme the surface keeps upstream's (spec §10, rule 0).
 fn popover_theme(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
-    next_resolved(cx).filter(|r| next::geometry::popover(r).is_ok())
+    next_resolved(cx).filter(|_| next_applies(cx, next::geometry::popover))
 }
 
 /// The width the Overlays page's Popover content takes: the showcase's own,

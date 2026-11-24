@@ -692,7 +692,7 @@ pub fn folder_tab_font(
     match native_theme_gpui::next::label_font_unmapped(label, "tab.label(NONE)") {
         None => format!(
             "tab.label(NONE): {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)",
-            super::typography::text_style_font(typography, label)
+            super::next_drawn_font(label, &super::typography::line_box_text(typography, label))
         ),
         Some(unstated) => format!(
             "text_sm, the Tab's own: the theme states no value gpui can take at {}, so each label is upstream's (tab/tab.rs, RenderOnce for Tab; spec §10, rule 0)",
@@ -918,7 +918,10 @@ pub(crate) fn expander_title_row(
     ) {
         None => format!(
             "the title in expander.header_label(NONE): {}",
-            super::typography::text_style_font(typography, &e.font)
+            super::next_drawn_font(
+                &e.font,
+                &super::typography::line_box_text(typography, &e.font)
+            )
         ),
         Some(unstated) => format!(
             "the title upstream's, font_medium at {}: the theme states no value gpui can take at {} (gpui-component/accordion.rs, AccordionItem::render; spec §10, rule 0)",
@@ -1162,7 +1165,10 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
             "font",
             format!(
                 "tab.label(NONE): {}",
-                super::typography::text_style_font(&r.typography, &label)
+                super::next_drawn_font(
+                    &label,
+                    &super::typography::line_box_text(&r.typography, &label)
+                )
             ),
         )
         .config(
@@ -1285,7 +1291,10 @@ pub(crate) fn segmented_lines(
     ) {
         None => format!(
             "segmented_control.label(NONE): {}",
-            super::typography::text_style_font(typography, &s.font)
+            super::next_drawn_font(
+                &s.font,
+                &super::typography::line_box_text(typography, &s.font)
+            )
         ),
         Some(unstated) => format!(
             "upstream's text_sm, {}: the theme states no value gpui can take at {} (tab/tab.rs, RenderOnce for Tab; spec §10, rule 0)",
