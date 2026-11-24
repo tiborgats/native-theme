@@ -2411,7 +2411,8 @@ fn paint_cell_text(
 /// and paints a cell's stripe and selection across the cell grown by half that spacing each
 /// way, so no gap shows between neighbouring cells (`src/layout.rs:125-127`, `gapless_rect`).
 pub(crate) fn table_cell_inset(ui: &egui::Ui) -> egui::Vec2 {
-    0.5 * ui.spacing().item_spacing
+    let spacing = ui.spacing().item_spacing;
+    egui::vec2(0.5 * spacing.x, 0.5 * spacing.y)
 }
 
 /// A table cell's sides across, the Basic, Data and Theme Map tables' alike, of the installed

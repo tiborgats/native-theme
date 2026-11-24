@@ -778,8 +778,8 @@ fn the_segmented_control_keeps_its_segments_on_one_row() {
     );
 }
 
-/// M9x CI item E1 (M9-173): under a theme that states no `tab.border.padding` across
-/// (macos-tahoe), a page tab keeps egui's own button padding from each of its edges to its
+/// M9x CI item E1 (M9-173): under a theme that states no `tab.tab(NONE).padding` across
+/// (macos-tahoe's 0.8.0 theme), a page tab keeps egui's own button padding from each of its edges to its
 /// label, as the connector's pair rule gives a side the theme leaves unstated
 /// (native-theme-egui `src/convert.rs`, `to_button_padding`; `egui-0.37.0/src/style.rs:1568`), where
 /// the showcase set the padding to the tab's line width and "Containers", about as wide as
@@ -787,16 +787,16 @@ fn the_segmented_control_keeps_its_segments_on_one_row() {
 /// inside the tab on both sides.
 #[test]
 fn a_page_tab_keeps_eguis_padding_where_the_theme_states_none() {
+    use native_theme::next::{PartStated, WidgetState};
     let harness = open_scaled("macos-tahoe", "basic", 1.0);
-    let t = harness
+    let stated = harness
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
-    let padding = &t.tab.border.padding;
+        .next_resolved(egui::Theme::Light)
+        .map(|r| r.tab.tab(WidgetState::NONE).stated);
     assert!(
-        padding.left.is_none() && padding.right.is_none(),
-        "macos-tahoe states a tab padding across ({padding:?}), so this test proves nothing"
+        stated.is_some_and(|s| !s.intersects(PartStated::PADDING_LEFT | PartStated::PADDING_RIGHT)),
+        "macos-tahoe states a tab padding across ({stated:?}), so this test proves nothing"
     );
     let own = egui::Style::default().spacing.button_padding.x;
     let label = "Containers";
@@ -3562,31 +3562,19 @@ fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
     Ok(())
 }
 
-/// The macos-tahoe atlas, built as `from_preset` builds it, with its layout's `widget_gap`
-/// unstated, as no bundled preset leaves it: the case where the chrome's own constants for that
-/// role stand.
-fn tahoe_without_widget_gap() -> Result<native_theme_egui::ThemeAtlas, &'static str> {
-    let prefs = AccessibilityPreferences::default();
-    let (preset, _) = from_preset("macos-tahoe", false, &prefs).expect("macos-tahoe loads");
-    let preset = crate::app::OldAtlas::of(preset).ok_or("macos-tahoe's 0.7.2 themes")?;
-    let [light, dark] =
-        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.old_resolved(theme).clone());
-    let mut layout = preset.layout().clone();
-    layout.widget_gap = None;
-    let mut builder = native_theme_egui::ThemeAtlas::builder(preset.name(), &light, &dark)
-        .layout(&layout)
-        .accessibility(preset.accessibility())
-        .icon_set(preset.icon_set());
-    for theme in [egui::Theme::Light, egui::Theme::Dark] {
-        if let Some(name) = preset.icon_theme(theme) {
-            builder = builder.icon_theme(theme, name);
-        }
-    }
-    #[cfg(feature = "system-fonts")]
-    {
-        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
-    }
-    Ok(builder.build())
+/// The macos-tahoe atlas the showcase installs, with its 0.8.0 themes' `layout.widget_gap` and
+/// `toolbar.item_gap` unstated, as no bundled preset leaves both (`OldAtlas::edited`), installed
+/// into `harness`: the case where the chrome's own constants for that role stand.
+fn install_tahoe_without_widget_gap(harness: &mut Harness<'static, App>) -> Result<(), String> {
+    install_under(harness, egui::Theme::Light, "macos-tahoe");
+    let atlas = harness.state().atlas.edited(|r| {
+        r.layout.widget_gap = None;
+        r.toolbar.item_gap = None;
+    })?;
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt_pair(&ctx, atlas);
+    harness.run_steps(4);
+    Ok(())
 }
 
 /// F rows 4 and 5 (pass 6 m2): where the theme states no `layout.widget_gap` and no
@@ -3595,17 +3583,20 @@ fn tahoe_without_widget_gap() -> Result<native_theme_egui::ThemeAtlas, &'static 
 /// constants, which the settings' and the toolbar's Widget Info name.
 #[test]
 fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gaps()
--> Result<(), &'static str> {
+-> Result<(), String> {
     use crate::chrome::{THEME_SETTINGS_GAP, TOOLBAR_GAP};
     let mut harness = open(
         egui::Theme::Light,
         cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
     );
     harness.run_steps(4);
-    let ctx = harness.ctx.clone();
-    harness.state_mut().adopt(&ctx, tahoe_without_widget_gap()?);
-    harness.run_steps(4);
-    assert_eq!(harness.state().atlas.layout().widget_gap, None);
+    install_tahoe_without_widget_gap(&mut harness)?;
+    let gaps = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .map(|r| (r.layout.widget_gap, r.toolbar.item_gap));
+    assert_eq!(gaps, Some((None, None)));
     // The Palette row, between Theme and Mode, is no element of the list: its label and its
     // drop-down are found by their records.
     let records = harness.state().registry.records();
@@ -4280,18 +4271,22 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
 /// model states no row height for either (kde-breeze: a 20 indicator under a 32 button,
 /// material-3 18 under 40).
 #[test]
-fn basic_checkbox_and_radio_rows_fit_the_indicator() {
+fn basic_checkbox_and_radio_rows_fit_the_indicator() -> Result<(), String> {
+    use native_theme::next::WidgetState;
     for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
         );
         harness.run_steps(4);
-        let t = harness
+        let r = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
+            .next_resolved(egui::Theme::Light)
+            .cloned()
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+        let indicator = r.checkbox.indicator(WidgetState::NONE).min_size[0]
+            .ok_or_else(|| format!("{preset} states no checkbox.indicator(NONE).min_size[0]"))?;
         let records = harness.state().registry.records();
         let rects = |kind: &str| -> Vec<egui::Rect> {
             records
@@ -4306,14 +4301,16 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
             "{preset}: the controls were not recorded"
         );
         let button = rects("button (enabled)");
-        let tallest_label = t.checkbox.font.size * t.defaults.line_height + 1.0;
+        let tallest_label = r.checkbox.label(WidgetState::NONE).size_px
+            * native_theme_egui::next::line_height(&r)
+            + 1.0;
         for rect in checkboxes.iter().chain(&radios) {
             assert!(
-                rect.height() >= t.checkbox.indicator_width - 0.01,
+                rect.height() >= indicator - 0.01,
                 "{preset}: {rect:?} is shorter than the indicator"
             );
             assert!(
-                rect.height() <= t.checkbox.indicator_width.max(tallest_label),
+                rect.height() <= indicator.max(tallest_label),
                 "{preset}: {rect:?} is taller than the indicator and its label"
             );
             assert!(
@@ -4323,9 +4320,10 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
         }
         // One control per row, each row `layout.widget_gap` below the one above: a row as tall as
         // a push button would leave more room between the controls than the gap.
-        let stated = harness.state().atlas.layout().widget_gap;
-        assert!(stated.is_some(), "{preset} states layout.widget_gap");
-        let gap = stated.unwrap_or_default();
+        let gap = r
+            .layout
+            .widget_gap
+            .ok_or_else(|| format!("{preset} states no layout.widget_gap"))?;
         let mut rows: Vec<egui::Rect> = [
             "checkbox (unchecked)",
             "checkbox (checked)",
@@ -4344,17 +4342,20 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
             );
         }
     }
+    Ok(())
 }
 
 /// The Basic page applies the leaves egui never reads from the style, per call, as the connector
-/// spec asks of the application (§5.3, §5.4): each push button is at least `button.min_width`
-/// wide and `button.min_height` tall, each text field `input.min_height` tall; the disabled
-/// field is filled with `input.disabled_background` at `input.disabled_opacity`, its frame
-/// built in the disabled cell; and
-/// the link's text is underlined, at rest, exactly where `link.underline_enabled` says so
-/// (kde-breeze states it, material-3 does not).
+/// spec asks of the application (§5.3, §5.4), of the installed 0.8.0 theme: each push button is
+/// at least `button.body(NONE).min_size` where stated, each text field
+/// `input.field(NONE).min_size[1]` tall where stated; the disabled field is filled with
+/// `input.field(DISABLED).fill` where a rule states it, else its fill at rest, at
+/// `input.disabled_opacity`, its frame built in the disabled cell; and the link's text is
+/// underlined, at rest, exactly where `link.label(NONE)` states an underline decoration.
 #[test]
-fn the_basic_page_applies_the_per_call_leaves() {
+fn the_basic_page_applies_the_per_call_leaves() -> Result<(), String> {
+    use native_theme::next::{DecorationKind, TextStated, WidgetState};
+    use native_theme_egui::next::{fill_of, state_fill_of};
     for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
@@ -4363,11 +4364,14 @@ fn the_basic_page_applies_the_per_call_leaves() {
         harness.run_steps(4);
         harness.remove_cursor();
         harness.run_steps(2);
-        let t = harness
+        let r = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
+            .next_resolved(egui::Theme::Light)
+            .cloned()
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+        let [min_width, min_height] = r.button.body(WidgetState::NONE).min_size;
+        let field_height = r.input.field(WidgetState::NONE).min_size[1];
         let rect_of = |kind: &str| {
             harness
                 .state()
@@ -4386,9 +4390,10 @@ fn the_basic_page_applies_the_per_call_leaves() {
         ] {
             let rect = rect_of(kind);
             assert!(
-                rect.width() >= t.button.min_width - 0.01
-                    && rect.height() >= t.button.min_height - 0.01,
-                "{preset}: {kind} is {rect:?}, under button.min_width x min_height"
+                min_width.is_none_or(|w| rect.width() >= w - 0.01)
+                    && min_height.is_none_or(|h| rect.height() >= h - 0.01),
+                "{preset}: {kind} is {rect:?}, under button.body(NONE).min_size \
+                 {min_width:?} x {min_height:?}"
             );
         }
         for kind in [
@@ -4398,23 +4403,21 @@ fn the_basic_page_applies_the_per_call_leaves() {
         ] {
             let rect = rect_of(kind);
             assert!(
-                rect.height() >= t.input.min_height - 0.01,
-                "{preset}: {kind} is {rect:?}, under input.min_height"
+                field_height.is_none_or(|h| rect.height() >= h - 0.01),
+                "{preset}: {kind} is {rect:?}, under input.field(NONE).min_size[1] {field_height:?}"
             );
         }
         let disabled = rect_of("TextEdit (disabled)");
-        // kde-breeze states it; material-3's outlined field has no disabled container
-        // (docs/platform-facts.md §2.4), so it keeps its enabled fill (`None`, the enabled
-        // background). egui fades the disabled field by `input.disabled_opacity` on top
-        // (docs/platform-facts.md §2.1.6): 1.0 on both.
-        let fill = Some(
-            native_theme_egui::convert::to_color32(
-                t.input
-                    .disabled_background
-                    .unwrap_or(t.input.background_color),
-            )
-            .gamma_multiply(t.input.disabled_opacity),
-        );
+        // material-3's outlined field has no disabled container (docs/platform-facts.md §2.4),
+        // so it keeps its fill at rest. egui fades the disabled field by
+        // `input.disabled_opacity` on top (docs/platform-facts.md §2.1.6).
+        let opacity = r
+            .input
+            .disabled_opacity
+            .ok_or_else(|| format!("{preset} states no input.disabled_opacity"))?;
+        let fill = state_fill_of(&r.input.field(WidgetState::DISABLED))
+            .or_else(|| fill_of(&r.input.field(WidgetState::NONE)))
+            .map(|fill| fill.gamma_multiply(opacity));
         let shapes = harness.output().shapes.clone();
         let filled = shapes.iter().any(|clipped| match &clipped.shape {
             egui::Shape::Rect(r) => {
@@ -4423,9 +4426,12 @@ fn the_basic_page_applies_the_per_call_leaves() {
             _ => false,
         });
         assert!(
-            filled,
-            "{preset}: the disabled field is not filled with input.disabled_background"
+            fill.is_some() && filled,
+            "{preset}: the disabled field is not filled with {fill:?}"
         );
+        let rest = r.link.label(WidgetState::NONE);
+        let underline = rest.stated.contains(TextStated::DECORATION)
+            && rest.decoration.kind == DecorationKind::Underline;
         let underlined: Vec<bool> = shapes
             .iter()
             .filter_map(|clipped| match &clipped.shape {
@@ -4441,10 +4447,11 @@ fn the_basic_page_applies_the_per_call_leaves() {
             .collect();
         assert_eq!(
             underlined,
-            vec![t.link.underline_enabled],
-            "{preset}: the link's underline at rest is not link.underline_enabled"
+            vec![underline],
+            "{preset}: the link's underline at rest is not link.label(NONE)'s decoration"
         );
     }
+    Ok(())
 }
 
 /// M9-106 and M9-108: the per-call leaves the connector leaves to the application
@@ -4534,17 +4541,13 @@ fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
         }
     }
 
-    // windows-11's `dialog.panel` widths patched past the 0.7.2 `dialog.max_width`, so a modal
-    // sized by the 0.7.2 extents is too narrow
-    let old = open_page_under(Page::Overlays, egui::Theme::Light, "windows-11")
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .dialog
-        .clone();
+    // windows-11's `dialog.panel` widths patched past the unpatched preset's
+    // `dialog.panel.max_size[0]`, so a modal sized by the unpatched extents is too narrow
+    let mut plain_max_w = None;
     let (mut harness, r) = open_patched(Page::Overlays, egui::Theme::Light, "windows-11", |r| {
         use native_theme::next::{DialogPatch, PartPatch, ThemePatch, WidgetPatchMap};
         let [max_w, _] = r.dialog.panel.max_size;
+        plain_max_w = max_w;
         let min_w = max_w? + 50.0;
         Some(
             ThemePatch::new().widget_rules(
@@ -4564,9 +4567,9 @@ fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
         return Err("windows-11 states not every dialog.panel extent".to_owned());
     };
     assert!(
-        min_w > old.max_width,
-        "the patched dialog.panel.min_size[0] {min_w} is not past the 0.7.2 dialog.max_width {}",
-        old.max_width
+        plain_max_w.is_some_and(|plain| min_w > plain),
+        "the patched dialog.panel.min_size[0] {min_w} is not past the unpatched \
+         dialog.panel.max_size[0] {plain_max_w:?}"
     );
     wide_enough(
         &harness,
@@ -4956,10 +4959,10 @@ fn the_inputs_page_frames_its_fields_in_their_own_border() -> Result<(), String>
     Ok(())
 }
 
-/// The showcase on `tab` with `preset`'s atlas installed in place of the one it opened with, as
-/// `from_preset` builds it under a text-scaling factor of `factor` and the app installs one, at
-/// rest: a preset of another platform, which `--theme` does not take here, at the scale an OS
-/// setting or the Preferences dialog's override installs.
+/// The showcase on `tab` with `preset` installed in place of the one it opened with, through the
+/// Theme row's path under the Preferences dialog's text-scaling override `factor`
+/// ([`install_under`]), at rest: a preset of another platform, which `--theme` does not take
+/// here, at the scale an OS setting or that override installs.
 fn open_scaled(preset: &str, tab: &str, factor: f32) -> Harness<'static, App> {
     open_scaled_in(egui::Theme::Light, preset, tab, factor)
 }
@@ -4973,13 +4976,10 @@ fn open_scaled_in(
 ) -> Harness<'static, App> {
     let mut harness = open(theme, cli(&[("--theme", TEST_PRESET), ("--tab", tab)]));
     harness.run_steps(4);
-    let mut prefs = AccessibilityPreferences::default();
+    let mut prefs = harness.state().atlas.asked().clone();
     prefs.text_scaling_factor = factor;
-    let (atlas, _) =
-        from_preset(preset, false, &prefs).unwrap_or_else(|error| panic!("{preset}: {error}"));
-    let ctx = harness.ctx.clone();
-    harness.state_mut().adopt(&ctx, atlas);
-    harness.run_steps(4);
+    harness.state_mut().settings.prefs = Some(prefs);
+    install_under(&mut harness, theme, preset);
     harness
 }
 
@@ -5146,11 +5146,11 @@ fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() -> Result<
     Ok(())
 }
 
-/// The Data and Theme Map tables' headers read the installed 0.8.0 theme, not the 0.7.2 one
-/// beside it: under kde-breeze with `list.header_label(NONE)` patched to twice the preset's
-/// size and to `colors.window.border`, a colour of the same theme ([`open_patched`]), neither
-/// of which the 0.7.2 `list.header_font` states, "Theme" and "Leaf" are drawn at the patched
-/// size in the patched colour.
+/// The Data and Theme Map tables' headers read the installed 0.8.0 theme: under kde-breeze with
+/// `list.header_label(NONE)` patched to twice the preset's size and to `colors.window.border`, a
+/// colour of the same theme ([`open_patched`]), neither of which the unpatched preset's
+/// `list.header_label(NONE)` states, "Theme" and "Leaf" are drawn at the patched size in the
+/// patched colour.
 #[test]
 fn the_tables_headers_take_the_patched_08_header_label() -> Result<(), String> {
     use native_theme::next::{ListRule, TextPatch, ThemePatch, WidgetState};
@@ -5158,7 +5158,9 @@ fn the_tables_headers_take_the_patched_08_header_label() -> Result<(), String> {
         (Page::Data, "table header", "Theme"),
         (Page::ThemeMap, "theme map header", "Leaf"),
     ] {
+        let mut plain = None;
         let (harness, r) = open_patched(page, egui::Theme::Light, "kde-breeze", |r| {
+            plain = Some(r.list.header_label(WidgetState::NONE));
             let size = r.list.header_label(WidgetState::NONE).size_px;
             Some(
                 ThemePatch::new().list(
@@ -5170,20 +5172,14 @@ fn the_tables_headers_take_the_patched_08_header_label() -> Result<(), String> {
                 ),
             )
         })?;
-        let old = harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .list
-            .header_font
-            .clone();
+        let plain = plain.ok_or("the patch read no unpatched header label")?;
         let label = r.list.header_label(WidgetState::NONE);
         let colour = native_theme_egui::next::text_color_of(&label)
             .ok_or("the patch states no list.header_label(NONE).color")?;
         assert!(
-            colour != native_theme_egui::convert::to_color32(old.color)
-                && label.size_px != old.size,
-            "the patched header is the 0.7.2 header's, so the test could not tell them apart"
+            Some(colour) != native_theme_egui::next::text_color_of(&plain)
+                && label.size_px != plain.size_px,
+            "the patched header is the unpatched preset's, so the test could not tell them apart"
         );
         let cells: Vec<egui::Rect> = harness
             .state()
@@ -5218,8 +5214,8 @@ fn the_tables_headers_take_the_patched_08_header_label() -> Result<(), String> {
 
 /// M9-107: the Text page's text-role labels are drawn at the weight they name, of the installed
 /// 0.8.0 theme (`demo::next_role_text`): under windows-11, whose display weight is not its
-/// body's, each role's label names the 0.8.0 weight, which for some role the 0.7.2 theme beside
-/// it does not, and is drawn in the face registered at it, at its role's size. The faces at the
+/// body's, each role's label names the 0.8.0 weight and is drawn in the face registered at it,
+/// at its role's size. The faces at the
 /// roles' weights are held on every host ([`hold_weights`]), so a label drawn at the body's
 /// weight fails here whatever faces the OS has.
 #[test]
@@ -5233,11 +5229,6 @@ fn the_text_role_labels_are_drawn_at_their_weight() -> Result<(), String> {
         (TextRole::Display, "Display"),
     ];
     let mut harness = open_page_scaled(Page::Text, "windows-11", 1.0);
-    let t = harness
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
     let r = harness
         .state()
         .atlas
@@ -5255,24 +5246,6 @@ fn the_text_role_labels_are_drawn_at_their_weight() -> Result<(), String> {
         body,
         "windows-11's display weight is not the body's"
     );
-    // the bundled presets' weights are the same in both models, so the 0.7.2 atlas alone
-    // installed (`open_scaled`, no 0.8.0 themes) tells them apart: the labels name no weight
-    let old_only = open_scaled("windows-11", "text", 1.0);
-    let old_labels: Vec<egui::Rect> = old_only
-        .state()
-        .registry
-        .records()
-        .iter()
-        .filter(|r| r.info.kind == "text role label")
-        .map(|r| r.rect)
-        .collect();
-    assert_eq!(
-        native_theme_egui::text_role_weight(&t, TextRole::Display),
-        next::text_role_weight(&r, TextRole::Display)
-    );
-    for (_, name) in ROLES {
-        galley_font(&old_only, name, &old_labels);
-    }
     let labels: Vec<egui::Rect> = harness
         .state()
         .registry
@@ -6306,28 +6279,15 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
 /// `list.highlight(HOVER).stroke` where a rule states it, kde-breeze light's 1 px line, else in
 /// egui's own hovered row's, the List scope's `widgets.hovered.bg_stroke` (spec §10, rule 0:
 /// adwaita states none), the one `Shape::Rect` so stroked inside its place, with its fill's
-/// corners. The command palette's second row, the first highlighted, still of the 0.7.2 theme:
-/// in `list.hover_border_color` at `defaults.border.line_width` where the theme states the
-/// colour, kde-breeze light Breeze's `Highlight` at alpha 0.8 (docs/platform-facts.md §2.15),
-/// round it on the frame egui fills it in, at that frame's place and radius.
+/// corners. The command palette's second row, the first highlighted: in the colour of
+/// `list.highlight(HOVER).stroke` where a rule states one, as wide as it states, else
+/// `layout.border_width`, round it on the frame egui fills it in, at that frame's place and
+/// radius.
 #[test]
 fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
     for preset in ["kde-breeze", "adwaita"] {
         use native_theme::next::{PartStated, WidgetState};
         let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
-        let t = harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
-        let l = &t.list;
-        let outline = l.hover_border_color.map(|edge| {
-            native_theme_egui::convert::to_stroke(
-                egui::Stroke::NONE,
-                edge,
-                t.defaults.border.line_width,
-            )
-        });
         // The list on the 0.8.0 model: the hovered row's outline where a rule states it, else
         // egui's own hovered row's, the List scope's `widgets.hovered.bg_stroke`.
         let r = harness
@@ -6354,6 +6314,16 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
         );
         let hover_fill = native_theme_egui::next::state_fill_of(&hover);
         let stroked = |r: &egui::epaint::RectShape| r.stroke.width > 0.0 && r.stroke.color.a() > 0;
+        let outline = native_theme_egui::next::state_stroke_color_of(&hover).map(|colour| {
+            let width =
+                native_theme_egui::next::stroke_width_of(&hover).unwrap_or(r.layout.border_width);
+            egui::Stroke::new(width, colour)
+        });
+        assert_eq!(
+            outline.is_some(),
+            preset == "kde-breeze",
+            "{preset}: which preset states the palette row's outline"
+        );
 
         harness.state_mut().demo_state.basic_list = 1;
         harness.run_steps(SETTLE);
@@ -7634,12 +7604,14 @@ fn the_side_panel_keeps_its_width_under(preset: &str, theme: egui::Theme) -> Res
             .map(|r| r.rect.width())
             .ok_or("the side panel is shown")
     };
-    // The panel's record holds its splitter's line, in room its frame reserves after it.
+    // The panel's record holds its splitter's line, in room its frame reserves after it: the
+    // installed 0.8.0 theme's `splitter.divider_width`.
     let opened = crate::LEFT_PANEL_WIDTH
         + harness
             .state()
             .atlas
-            .old_resolved(theme)
+            .next_resolved(theme)
+            .ok_or("no 0.8.0 theme installed")?
             .splitter
             .divider_width;
     assert_eq!(width_of(&harness)?, opened);
@@ -8179,11 +8151,18 @@ fn the_basic_page_has_every_group_in_its_column() {
         if harness.state().page_scrolls {
             continue;
         }
-        let t = harness
+        // The list's frame line: `list.container(NONE)`'s stroke where the installed 0.8.0
+        // theme states its width and colour, else egui's own frame's, none (`list_frame`).
+        let line = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
+            .next_resolved(egui::Theme::Light)
+            .and_then(|r| {
+                let part = r.list.container(native_theme::next::WidgetState::NONE);
+                native_theme_egui::next::stroke_width_of(&part)
+                    .filter(|_| native_theme_egui::next::stroke_color_of(&part).is_some())
+            })
+            .unwrap_or(egui::Frame::NONE.stroke.width);
         let list = records
             .iter()
             .find(|r| r.info.kind == "List")
@@ -8200,7 +8179,6 @@ fn the_basic_page_has_every_group_in_its_column() {
         let shown = rows.iter().filter(|r| r.is_positive()).count();
         assert_eq!(shown, 3, "{preset}: the rows the list shows");
         let row = rows[0].height();
-        let line = t.list.border.line_width;
         assert!(
             (list.height() - (3.0 * row + 2.0 * line)).abs() < 0.5,
             "{preset}: the list is {} tall, three {row} rows and a {line} border",
@@ -8848,23 +8826,29 @@ fn without_an_outline_the_fill_begins_at_the_radius() -> Result<(), String> {
 }
 
 /// With the radius unstated on the installed 0.8.0 theme, or stated as one no tab bar draws (0,
-/// not finite), no circle is drawn and no strip: the selected tab keeps its bottom edge, the
-/// 0.7.2 theme beside it stating 4 as windows-11 does, which no bar reads.
+/// not finite), no circle is drawn and no strip: the selected tab keeps its bottom edge, where
+/// the unpatched windows-11 0.8.0 theme states 4.
 #[test]
 fn without_the_radius_the_tab_bars_draw_no_flares() -> Result<(), String> {
+    let mut plain = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    install_under(&mut plain, egui::Theme::Light, "windows-11");
+    let unpatched = plain
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?
+        .tab
+        .active_outward_corner_radius;
+    assert_eq!(
+        unpatched,
+        Some(4.0),
+        "the unpatched windows-11 states no radius of 4, so the case proves nothing"
+    );
     for radius in [None, Some(0.0), Some(f32::NAN)] {
         let harness = open_curving_out(egui::Theme::Light, radius, |_| {})?;
-        let old = harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .tab
-            .active_outward_corner_radius;
-        assert_eq!(
-            old,
-            Some(4.0),
-            "the 0.7.2 windows-11 states no radius of 4, so the case proves nothing"
-        );
         let shapes = &harness.output().shapes;
         let circles: Vec<_> = shapes
             .iter()
@@ -9333,13 +9317,15 @@ fn the_basic_tabs_stand_the_tab_scopes_gap_apart() -> Result<(), String> {
     Ok(())
 }
 
-/// A page's section headings are set in the theme's section-heading role
-/// (`text_scale.section_heading`), as the iced showcase's section titles are: its size and line
-/// height, and at the body's weight in the proportional family (kde-breeze states 400 for both);
-/// at another weight (adwaita's 700 over a 400 body) in the face registered at that weight,
-/// where the fonts hold one, and the proportional family where they do not.
+/// A page's section headings are set in the installed 0.8.0 theme's section-heading role
+/// (`next::text_role_font`, `text_role_line_height`, `text_role_weight`), as the iced
+/// showcase's section titles are: its size and line height, and at the body's weight
+/// (`next::font_weight`) in the proportional family; at another weight (adwaita's) in the face
+/// registered at that weight, where the fonts hold one, and the proportional family where they
+/// do not.
 #[test]
-fn section_headings_take_the_section_heading_role() {
+fn section_headings_take_the_section_heading_role() -> Result<(), String> {
+    use native_theme_egui::next;
     let mut other_weight = Vec::new();
     for preset in ["kde-breeze", TEST_PRESET, "adwaita"] {
         let mut harness = open(
@@ -9347,15 +9333,15 @@ fn section_headings_take_the_section_heading_role() {
             cli(&[("--theme", preset), ("--tab", "basic")]),
         );
         harness.run_steps(4);
-        let t = harness
+        let r = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
-        let prefs = harness.state().atlas.accessibility().clone();
+            .next_resolved(egui::Theme::Light)
+            .cloned()
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
         let role = native_theme_egui::TextRole::SectionHeading;
-        let size = native_theme_egui::text_role_font(&t, role, &prefs).size;
-        let line_height = native_theme_egui::text_role_line_height(&t, role, &prefs);
+        let size = next::text_role_font(&r, role).size;
+        let line_height = next::text_role_line_height(&r, role);
         // The page's own "Buttons" heading, not the page tab of that name.
         let headings: Vec<egui::Rect> = harness
             .state()
@@ -9384,7 +9370,8 @@ fn section_headings_take_the_section_heading_role() {
             Some(line_height),
             "{preset}: heading line height"
         );
-        let (weight, body) = (t.text_scale.section_heading.weight, t.defaults.font.weight);
+        let weight = next::text_role_weight(&r, role);
+        let body = next::font_weight(&r).map_err(|e| format!("{preset}: {e}"))?;
         if weight == body {
             assert_eq!(
                 format.font_id.family,
@@ -9412,6 +9399,7 @@ fn section_headings_take_the_section_heading_role() {
         other_weight.contains(&"adwaita"),
         "adwaita's heading is not at the body's weight: {other_weight:?}"
     );
+    Ok(())
 }
 
 /// `--pointer X,Y` is two whole logical pixels; anything else holds no pointer and is kept for
@@ -9434,10 +9422,11 @@ fn the_pointer_flag_is_a_point() {
 
 /// `--pointer` holds the pointer over a control and `--press` holds the primary button down
 /// there (`App::raw_input_hook`), for captures where nothing can drive the pointer: the Basic
-/// page's first button is filled with `button.hover_background`, and pressed with
-/// `button.active_background`.
+/// page's first button is filled with the installed 0.8.0 theme's `button.body(HOVER).fill`,
+/// and pressed with `button.body(PRESSED).fill`, each stated under kde-breeze light.
 #[test]
-fn a_held_pointer_hovers_and_presses_the_control_under_it() {
+fn a_held_pointer_hovers_and_presses_the_control_under_it() -> Result<(), String> {
+    use native_theme::next::WidgetState;
     let args = [("--theme", "kde-breeze"), ("--tab", "basic")];
     let mut probe = open(egui::Theme::Light, cli(&args));
     probe.run_steps(4);
@@ -9451,13 +9440,18 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() {
     else {
         panic!("no button (enabled) record");
     };
-    let t = probe.state().atlas.old_resolved(egui::Theme::Light).clone();
-    let hovered = native_theme_egui::convert::to_color32(t.button.hover_background);
-    let pressed = t
-        .button
-        .active_background
-        .map(native_theme_egui::convert::to_color32);
-    for (press, fill) in [(false, Some(hovered)), (true, pressed)] {
+    let r = probe
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .cloned()
+        .ok_or("no 0.8.0 theme installed")?;
+    let fill = |state| {
+        native_theme_egui::next::state_fill_of(&r.button.body(state))
+            .ok_or_else(|| format!("kde-breeze states no button fill for {state:?}"))
+    };
+    let (hovered, pressed) = (fill(WidgetState::HOVER)?, fill(WidgetState::PRESSED)?);
+    for (press, fill) in [(false, Some(hovered)), (true, Some(pressed))] {
         let mut args = cli(&args);
         args.pointer = Some((rect.center().x as u16, rect.center().y as u16));
         args.press = press;
@@ -9480,6 +9474,7 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() {
             });
         assert_eq!(drawn, fill, "press {press}: the button's fill");
     }
+    Ok(())
 }
 
 /// The Basic page's dialog default button is drawn in the state of its previous response
@@ -10940,6 +10935,11 @@ const CONSTRUCTORS: &[&str] = &[
 /// own sample source, is not scanned, so it needs no entry.
 const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[
     (
+        "table_cell_inset",
+        "the 0.5 halves the scope's own item_spacing, egui_extras' cell inset \
+         (egui_extras-0.37.0 src/layout.rs, StripLayout::set_pos), no style value",
+    ),
+    (
         "demo_colour",
         "the colour a Colour-page editor starts from is the datum on display",
     ),
@@ -11768,7 +11768,7 @@ fn inspector_fonts(harness: &Harness<'_, App>, text: &str) -> Vec<egui::FontId> 
 /// style; the font is read from the Widget tab's painted "Theme" section name, and the
 /// section-heading role the names were drawn in is a size apart under the preset.
 #[test]
-fn the_theme_tabs_section_names_are_the_widget_tabs_semibold() {
+fn the_theme_tabs_section_names_are_the_widget_tabs_semibold() -> Result<(), String> {
     let mut harness = open_page(Page::Basic, egui::Theme::Light);
     let pos = centre_of(&harness, "toggle button (on)");
     hover_and_settle(&mut harness, pos);
@@ -11776,12 +11776,13 @@ fn the_theme_tabs_section_names_are_the_widget_tabs_semibold() {
     let [want] = shown.as_slice() else {
         panic!("the Widget tab paints one \"Theme\" section name: {shown:?}");
     };
-    let atlas = &harness.state().atlas;
-    let t = atlas.old_resolved(egui::Theme::Light);
-    let heading = native_theme_egui::text_role_font(
-        t,
+    let heading = native_theme_egui::next::text_role_font(
+        harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or("no 0.8.0 theme installed")?,
         native_theme_egui::TextRole::SectionHeading,
-        atlas.accessibility(),
     );
     assert_ne!(
         heading.size, want.size,
@@ -11802,6 +11803,7 @@ fn the_theme_tabs_section_names_are_the_widget_tabs_semibold() {
             "the Theme tab's {name:?} section name"
         );
     }
+    Ok(())
 }
 
 /// The label of the theme's `stated` family the showcase must show, read from what the
@@ -11959,40 +11961,41 @@ fn every_font_label_names_the_drawn_family() -> Result<(), String> {
 }
 
 /// What egui draws a font whose stated family is not the one the font plan loaded for its kind
-/// in, as the showcase must name it: the face of the light variant's `defaults.font` (or
-/// `defaults.mono_font` for the monospace font), that family labelled by [`drawn_label`]
+/// in, as the showcase must name it: the face of the installed 0.8.0 light theme's
+/// `typography.body` (or `typography.monospace` for the monospace font), that family labelled by [`drawn_label`]
 /// (connector `fonts.rs`: the plan registers the light variant's two default families, and
 /// every `FontId` the connector hands out names `Proportional` or `Monospace`).
-fn other_font_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
-    // The plan loads the installed 0.8.0 light theme's families; an atlas of the 0.7.2 model
-    // alone, its light variant's.
-    let atlas = &harness.state().atlas;
-    let old = &atlas.old_resolved(egui::Theme::Light).defaults;
-    let (font, planned) = match (atlas.next_resolved(egui::Theme::Light), mono) {
-        (Some(light), true) => (
+fn other_font_label(
+    harness: &Harness<'_, App>,
+    stated: &str,
+    mono: bool,
+) -> Result<String, String> {
+    // The plan loads the installed 0.8.0 light theme's families.
+    let light = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 light theme installed")?;
+    let (font, planned) = if mono {
+        (
             "the light variant's typography.monospace",
             light.typography.monospace.family.to_string(),
-        ),
-        (Some(light), false) => (
+        )
+    } else {
+        (
             "the light variant's typography.body",
             light.typography.body.family.to_string(),
-        ),
-        (None, true) => (
-            "the light variant's typography.monospace",
-            old.mono_font.family.to_string(),
-        ),
-        (None, false) => (
-            "the light variant's typography.body",
-            old.font.family.to_string(),
-        ),
+        )
     };
     let family = drawn_label(harness, &planned, mono);
-    native_theme_showcase_support::status::DrawnFamily::OtherFont {
-        toolkit: "egui",
-        font,
-        family: &family,
-    }
-    .label(stated)
+    Ok(
+        native_theme_showcase_support::status::DrawnFamily::OtherFont {
+            toolkit: "egui",
+            font,
+            family: &family,
+        }
+        .label(stated),
+    )
 }
 
 /// A widget font whose stated family is not the body's is named by the face egui draws it in,
@@ -12009,7 +12012,7 @@ fn a_widget_font_of_another_family_is_named_by_the_face_egui_draws() -> Result<(
                 .button(ButtonRule::new().label(TextPatch::new().family("Noto Serif".into()))),
         )
     })?;
-    let label = other_font_label(&harness, "Noto Serif", false);
+    let label = other_font_label(&harness, "Noto Serif", false)?;
     let pos = centre_of(&harness, "button (enabled)");
     hover_and_settle(&mut harness, pos);
     let font = info_row_value(&harness, "button.label(NONE)");
@@ -12036,7 +12039,7 @@ fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() -> Result<(), Stri
     harness.state_mut().adopt_pair(&ctx, edited);
     harness.run_steps(4);
     assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
-    let label = other_font_label(&harness, "Noto Serif", false);
+    let label = other_font_label(&harness, "Noto Serif", false)?;
     let body = harness
         .state()
         .atlas
@@ -12721,8 +12724,10 @@ fn a_chrome_tool_buttons_outline_is_the_toolbar_scopes() -> Result<(), String> {
         let press = painted(harness, pressed);
         [hover, press]
     }
+    let mut old = None;
     let (mut harness, r) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |r| {
-        let width = 2.0 * stroke_width_of(&r.toolbar.button(WidgetState::HOVER))?;
+        old = stroke_width_of(&r.toolbar.button(WidgetState::HOVER));
+        let width = 2.0 * old?;
         let pen = PartPatch::new().stroke(Stroke::uniform(width, r.colors.window.border?));
         Some(
             ThemePatch::new()
@@ -12734,13 +12739,7 @@ fn a_chrome_tool_buttons_outline_is_the_toolbar_scopes() -> Result<(), String> {
                 .toolbar(ToolbarRule::new().states(WidgetState::PRESSED).button(pen)),
         )
     })?;
-    let old = harness
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .button
-        .border
-        .line_width;
+    let old = old.ok_or("the unpatched kde-breeze states no toolbar.button(HOVER) width")?;
     let pens = [WidgetState::HOVER, WidgetState::PRESSED].map(|state| {
         let part = r.toolbar.button(state);
         stroke_width_of(&part)
@@ -12754,8 +12753,8 @@ fn a_chrome_tool_buttons_outline_is_the_toolbar_scopes() -> Result<(), String> {
     };
     assert!(
         !near(hovered.width, old) && !near(pressed.width, old),
-        "the patched width {} is the 0.7.2 button.border.line_width {old}, so the patch proves \
-         nothing",
+        "the patched width {} is the unpatched toolbar.button(HOVER) width {old}, so the patch \
+         proves nothing",
         hovered.width
     );
     assert_eq!(
