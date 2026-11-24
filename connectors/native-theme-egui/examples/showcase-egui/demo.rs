@@ -1773,8 +1773,119 @@ fn indicator_line(
     (width.is_finite() && width > 0.0).then_some((color, width, side))
 }
 
-/// The selected tab's line, where the theme states `tab.active_indicator_color`,
-/// `tab.active_indicator_width` and `tab.active_indicator_side` (docs/platform-facts.md
+/// The selected tab's line: its colour, its thickness, and the edge it lies along, the tab's
+/// top one or else its bottom one.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct TabLine {
+    pub colour: egui::Color32,
+    pub width: f32,
+    pub top: bool,
+}
+
+/// What a row of tabs ([`tab_bar`]) draws beyond what its `Role::Tab` scope carries, read from
+/// one model's theme: [`TabLook::old`] from the 0.7.2 theme (the chrome's rows, until they move
+/// to the 0.8.0 model), [`TabLook::next`] from the installed 0.8.0 one (the Basic page's).
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct TabLook {
+    /// The least tab width, which egui's `Button` never reads from the style.
+    pub min_width: f32,
+    /// The gap between neighbouring tabs where the row sets one; `None` leaves the scope's own
+    /// `item_spacing.x`, which the connector writes from `tab.item_gap` where stated.
+    pub gap: Option<f32>,
+    /// What the row's Widget Info names for the gap where the theme states none.
+    pub gap_unstated: Option<&'static str>,
+    /// The selected tab's line, where the theme states one ([`tab_indicator`]).
+    pub line: Option<TabLine>,
+    /// The radius the selected tab's bottom corners curve out by into the bar, where the theme
+    /// states a positive, finite one ([`tab_flares`]).
+    pub flare: Option<f32>,
+    /// The flares' fill and outline; `None` takes the scope's selected tab's own,
+    /// `Visuals::selection.bg_fill` and the resting entry's `bg_stroke`, as egui draws a
+    /// selected button (egui-0.37.0 `src/theme/default_style.rs:41-52`).
+    pub flare_paint: Option<(egui::Color32, egui::Stroke)>,
+    /// A tab's label, one line box tall.
+    pub label: fn(&egui::Ui, &'static str) -> egui::RichText,
+}
+
+impl TabLook {
+    /// The look the 0.7.2 theme `t` states: `tab.min_width`, the tabs `tab.item_gap` apart and
+    /// side by side where unstated, the line of [`indicator_line`], the flares of
+    /// [`outward_radius`] in `tab.active_background` lined `tab.border.line_width` wide in
+    /// `tab.border.color`, the labels [`lined`].
+    pub(crate) fn old(t: &native_theme::theme::ResolvedTheme) -> Self {
+        let width = t.tab.border.line_width;
+        let width = if width.is_finite() {
+            width.max(0.0)
+        } else {
+            0.0
+        };
+        Self {
+            min_width: t.tab.min_width,
+            gap: Some(t.tab.item_gap.unwrap_or_default()),
+            gap_unstated: t
+                .tab
+                .item_gap
+                .is_none()
+                .then_some("not stated by the theme: none, the tabs side by side"),
+            line: indicator_line(t).map(|(colour, width, side)| TabLine {
+                colour: native_theme_egui::convert::to_color32(colour),
+                width,
+                top: side == native_theme::theme::TabIndicatorSide::Top,
+            }),
+            flare: outward_radius(t),
+            flare_paint: Some((
+                native_theme_egui::convert::to_color32(t.tab.active_background),
+                egui::Stroke::new(
+                    width,
+                    native_theme_egui::convert::to_color32(t.tab.border.color),
+                ),
+            )),
+            label: |ui, text| lined(ui, text, egui::TextStyle::Button),
+        }
+    }
+
+    /// The look the installed 0.8.0 theme `r` states, each unstated part egui's own (spec §10
+    /// rule 0): at least `tab.tab(NONE).min_size[0]` wide, else no least width, as egui's
+    /// `Button` has none (egui-0.37.0 `src/widgets/button.rs:67`); the tabs the scope's
+    /// `item_spacing.x` apart, `tab.item_gap` where stated, else the layout's own; the line of
+    /// [`next_indicator_line`]; the flares of [`next_outward_radius`] in the scope's selected
+    /// tab's fill and outline, the ones the connector writes from `tab.tab(SELECTED)`; the
+    /// labels [`next_lined`]. Without a 0.8.0 theme, egui's own tabs.
+    pub(crate) fn next(r: Option<&native_theme::next::ResolvedTheme>) -> Self {
+        Self {
+            min_width: r
+                .and_then(|r| r.tab.tab(native_theme::next::WidgetState::NONE).min_size[0])
+                .unwrap_or_default(),
+            gap: None,
+            gap_unstated: r.is_none_or(|r| r.tab.item_gap.is_none()).then_some(
+                "not stated by the theme (tab.item_gap): egui's own, the gap between the \
+                 widgets of a row (item_spacing.x)",
+            ),
+            line: r.and_then(next_indicator_line),
+            flare: r.and_then(next_outward_radius),
+            flare_paint: None,
+            label: |ui, text| next_lined(ui, text, egui::TextStyle::Button),
+        }
+    }
+}
+
+/// [`indicator_line`] on the 0.8.0 theme `r`: the selected tab's indicator,
+/// `tab.indicator(SELECTED)`, its `fill` the line's colour and its exact height (`min_size[1]`)
+/// its thickness, a positive one, along `tab.indicator_side` (spec §5, notes to the table), where
+/// the theme states all three; else no line, as egui's `Button` draws none.
+pub(crate) fn next_indicator_line(r: &native_theme::next::ResolvedTheme) -> Option<TabLine> {
+    let indicator = r.tab.indicator(native_theme::next::WidgetState::SELECTED);
+    let colour = native_theme_egui::next::fill_of(&indicator)?;
+    let width = indicator.min_size[1].filter(|w| w.is_finite() && *w > 0.0)?;
+    let side = r.tab.indicator_side?;
+    Some(TabLine {
+        colour,
+        width,
+        top: side == native_theme::next::TabIndicatorSide::Top,
+    })
+}
+
+/// The selected tab's line, where the theme states one ([`TabLook::line`]; docs/platform-facts.md
 /// §2.11): a strip that thick across the tab's outer edge on that side, over its outline, as
 /// Breeze fills its strip from the tab's frame; on top, rounded as the tab's top corners are.
 /// egui's `Button` draws no such line, so the showcase paints it over the tab.
@@ -1782,25 +1893,23 @@ fn tab_indicator(
     ui: &egui::Ui,
     tab: egui::Rect,
     top_corners: egui::CornerRadius,
-    t: &native_theme::theme::ResolvedTheme,
+    line: Option<TabLine>,
 ) {
-    use native_theme::theme::TabIndicatorSide;
-
-    let Some((color, width, side)) = indicator_line(t) else {
+    let Some(TabLine { colour, width, top }) = line else {
         return;
     };
-    let (rect, radius) = match side {
-        TabIndicatorSide::Top => (
+    let (rect, radius) = if top {
+        (
             egui::Rect::from_min_max(tab.min, egui::pos2(tab.max.x, tab.min.y + width)),
             top_corners,
-        ),
-        TabIndicatorSide::Bottom => (
+        )
+    } else {
+        (
             egui::Rect::from_min_max(egui::pos2(tab.min.x, tab.max.y - width), tab.max),
             egui::CornerRadius::ZERO,
-        ),
+        )
     };
-    ui.painter()
-        .rect_filled(rect, radius, native_theme_egui::convert::to_color32(color));
+    ui.painter().rect_filled(rect, radius, colour);
 }
 
 /// `tab.active_outward_corner_radius`, the radius the selected tab's bottom corners curve out
@@ -1822,16 +1931,18 @@ pub(crate) fn next_outward_radius(r: &native_theme::next::ResolvedTheme) -> Opti
 }
 
 /// The selected tab's outward corners, about its outer bounds `tab`, painted with `painter`
-/// after every tab of the row, so over a neighbour's fill, and within the row's clip. With `r`
-/// the radius and `w` `tab.border.line_width`: first a strip `tab.active_background` over the
+/// after every tab of the row, so over a neighbour's fill, and within the row's clip; `fill` and
+/// `outline` the selected tab's ([`TabLook::flare_paint`]), `bottom_line` whether its line
+/// ([`TabLook::line`]) lies along its bottom edge. With `r` the radius and `w` the outline's
+/// width (`tab.border.line_width` on the 0.7.2 model): first a strip in `fill` over the
 /// tab's bottom edge between its side edges, `[x0 + w, x1 - w] x [y1 - w, y1]`, since egui's
 /// `Button` strokes all four sides alike, unless a bottom-side indicator covers that edge
 /// already; then a flare at each foot, in an `r` by `r` square at the tab's bottom set `w` in
 /// from its outer edge, as WinUI's outline lies just outside its fill: the left one's right edge
 /// at `x0 + w`, the right one's left edge at `x1 - w`. Clipped to the square, about its upper
 /// outer corner: an annulus from `max(r - w, 0)` out to `r * sqrt(2) + 1`, past the square's
-/// far corner, in `tab.active_background`, and, where `w` is positive, over it one from
-/// `max(r - w, 0)` to `r` in `tab.border.color`, the outline continued down the curve on the
+/// far corner, in `fill`, and, where `w` is positive, over it one from
+/// `max(r - w, 0)` to `r` in the outline's colour, the outline continued down the curve on the
 /// disc's side to the bar's bottom edge. So the square less the quarter disc of radius `r`
 /// shows in the fill and the band in the outline; at the square's top the band covers the side
 /// edge's own column, so the two are one line, and below it the fill covers the side edge's
@@ -1849,20 +1960,17 @@ fn tab_flares(
     painter: &egui::Painter,
     tab: egui::Rect,
     r: f32,
-    t: &native_theme::theme::ResolvedTheme,
+    (fill, outline): (egui::Color32, egui::Stroke),
+    bottom_line: bool,
 ) {
     use egui::emath::GuiRounding as _;
     let tab = tab.round_to_pixels(painter.pixels_per_point());
-    let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
-    let outline = native_theme_egui::convert::to_color32(t.tab.border.color);
-    let width = t.tab.border.line_width;
-    let w = if width.is_finite() {
-        width.max(0.0)
+    let w = if outline.width.is_finite() {
+        outline.width.max(0.0)
     } else {
         0.0
     };
-    let bottom_line = indicator_line(t)
-        .is_some_and(|(_, _, side)| side == native_theme::theme::TabIndicatorSide::Bottom);
+    let outline = outline.color;
     if w > 0.0 && !bottom_line {
         let strip = egui::Rect::from_min_max(
             egui::pos2(tab.min.x + w, tab.max.y - w),
@@ -1936,9 +2044,11 @@ fn reveal_selected_tab(
 /// `Button::new(label).selected(..)`, whose own flag picks the selected tab's colours (§6.2) —
 /// the cell's `tab.background_color`, `tab.active_background` and `tab.active_text_color`,
 /// `tab.hover_background` (in place of the idle fill, over the strip) and `tab.hover_text_color`,
-/// `tab.min_height`, the tab's padding and font — at least `tab.min_width` wide, which egui's
-/// `Button` never reads from the style (connector spec §5.3, T18(a)), on a strip in
-/// `tab.bar_background`. `tab.border` is the selected tab's (docs/platform-facts.md §2.11: KDE
+/// `tab.min_height`, the tab's padding and font (on the 0.8.0 model `tab.tab(<state>)`,
+/// `tab.label(<state>)`, `tab.bar(NONE)`) — at least `look`'s least width wide
+/// ([`TabLook::min_width`]), which egui's `Button` never reads from the style (connector spec
+/// §5.3, T18(a)), on a strip in `tab.bar_background`, the tabs `look`'s gap apart
+/// ([`TabLook::gap`]). `tab.border` is the selected tab's (docs/platform-facts.md §2.11: KDE
 /// strokes the selected tab only, an unselected one with no pen; WinUI's selected tab alone has
 /// a border), so an unselected tab's stroke is set per call to the scope's width in no colour,
 /// which keeps every tab the size its padding gives; and a tab is rounded on its two top corners
@@ -1946,7 +2056,7 @@ fn reveal_selected_tab(
 /// `TopCornerRadiusFilterConverter`, §2.11), the model's one `tab.border.corner_radius` on
 /// each. The selected tab carries the line the theme states for it ([`tab_indicator`]); the
 /// theme states no line under the row, so none is drawn there. Where the theme states
-/// `tab.active_outward_corner_radius` ([`outward_radius`]), the selected tab's bottom corners
+/// `tab.active_outward_corner_radius` ([`TabLook::flare`]), the selected tab's bottom corners
 /// curve out into the bar, WinUI 3's folder tabs ([`tab_flares`]): its bottom edge is covered and
 /// a flare spreads its fill from each foot into the bar's bottom edge, its outline running on
 /// down the curve, painted after every tab with the tabs' own painter, so within the scroll
@@ -1956,12 +2066,12 @@ fn reveal_selected_tab(
 pub(crate) fn tab_bar<T: Copy + PartialEq>(
     reg: &mut Registry,
     ui: &mut egui::Ui,
-    t: &native_theme::theme::ResolvedTheme,
+    look: &TabLook,
     bar: TabBar<'_, T>,
     trailing: impl FnOnce(&mut egui::Ui, Applied, &mut Registry),
 ) -> Option<T> {
-    let min_width = t.tab.min_width;
-    let flare = outward_radius(t);
+    let min_width = look.min_width;
+    let flare = look.flare;
     let mut picked = None;
     let strip = scoped_container(
         reg,
@@ -1992,10 +2102,15 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     };
                     let no_pen =
                         egui::Stroke::new(idle.bg_stroke.width, egui::Color32::TRANSPARENT);
-                    // The tabs `tab.item_gap` apart, and side by side where the theme states no
-                    // gap, as the other two showcases' tabs are.
-                    let gap = t.tab.item_gap.unwrap_or_default();
-                    ui.spacing_mut().item_spacing.x = gap;
+                    // The flares in the selected tab's own fill and outline where `look` gives
+                    // none.
+                    let flare_paint = look
+                        .flare_paint
+                        .unwrap_or((ui.visuals().selection.bg_fill, idle.bg_stroke));
+                    if let Some(gap) = look.gap {
+                        ui.spacing_mut().item_spacing.x = gap;
+                    }
+                    let gap = ui.spacing().item_spacing.x;
                     // Room for the end tabs' flares, inside the row's clip.
                     if let Some(r) = flare {
                         ui.add_space(r);
@@ -2003,20 +2118,19 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     let mut selected_tab = None;
                     for (index, (value, label)) in bar.tabs.iter().enumerate() {
                         let selected = *value == bar.current;
-                        let mut button =
-                            egui::Button::new(lined(ui, *label, egui::TextStyle::Button))
-                                .selected(selected)
-                                .min_size(egui::Vec2 {
-                                    x: min_width,
-                                    ..egui::Vec2::ZERO
-                                })
-                                .corner_radius(top);
+                        let mut button = egui::Button::new((look.label)(ui, label))
+                            .selected(selected)
+                            .min_size(egui::Vec2 {
+                                x: min_width,
+                                ..egui::Vec2::ZERO
+                            })
+                            .corner_radius(top);
                         if !selected {
                             button = button.stroke(no_pen);
                         }
                         let r = tab.add(reg, ui, bar.tab_kind, |ui| ui.add(button));
                         if selected {
-                            tab_indicator(ui, r.rect, top, t);
+                            tab_indicator(ui, r.rect, top, look.line);
                             selected_tab = Some(r.rect);
                             if bar.scroll {
                                 reveal_selected_tab(ui, bar.kind, index, r.rect, flare);
@@ -2033,7 +2147,8 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                         // `r` after the last tab, whose spacing has moved the cursor `gap` on.
                         ui.add_space(r - gap);
                         if let Some(rect) = selected_tab {
-                            tab_flares(ui.painter(), rect, r, t);
+                            let bottom_line = look.line.is_some_and(|line| !line.top);
+                            tab_flares(ui.painter(), rect, r, flare_paint, bottom_line);
                         }
                     }
                 };
@@ -2082,12 +2197,10 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
             out.response
         },
     );
-    if t.tab.item_gap.is_none() {
+    if let Some(note) = look.gap_unstated {
         reg.amend_last(|i| {
-            i.not_themeable.push((
-                "the gap between tabs",
-                "not stated by the theme: none, the tabs side by side".to_string(),
-            ));
+            i.not_themeable
+                .push(("the gap between tabs", note.to_string()));
         });
     }
     reg.tag(bar.element, &strip);

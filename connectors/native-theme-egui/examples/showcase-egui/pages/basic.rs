@@ -170,7 +170,8 @@ pub(crate) struct ColumnRule {
     /// `ScrollStyle::bar_width` where the theme states none.
     pub(crate) groove: f32,
     /// The widest fixed-width control the theme states on the page: `combo_box.field(NONE)
-    /// .min_size[0]`, the two tabs at `tab.tab(NONE).min_size[0]` `tab.item_gap` apart with room
+    /// .min_size[0]`, the two tabs at `tab.tab(NONE).min_size[0]` `tab.item_gap` apart (where
+    /// unstated, the page style's `item_spacing.x`, which the tab scope keeps) with room
     /// for both of the selected tab's flares, `2 * tab.active_outward_corner_radius` where the
     /// tab bar draws them (`demo::next_outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH`.
     pub(crate) widest: f32,
@@ -189,7 +190,10 @@ impl ColumnRule {
         let tab_min = r
             .and_then(|r| r.tab.tab(NextState::NONE).min_size[0])
             .unwrap_or_default();
-        let item_gap = r.and_then(|r| r.tab.item_gap).unwrap_or_default();
+        // As the tab bar lays its tabs out (`demo::TabLook::next`): the tab scope's
+        // `item_spacing.x`, `tab.item_gap` where stated, else the page style's, which the scope
+        // keeps.
+        let item_gap = r.and_then(|r| r.tab.item_gap).unwrap_or(rows.x);
         let flare = r.and_then(demo::next_outward_radius).unwrap_or_default();
         let tabs = tab_min + tab_min + item_gap + flare + flare;
         Self {
@@ -262,7 +266,6 @@ fn group(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.old_resolved(ui.ctx().theme());
     match ix {
         0 => buttons(reg, atlas, ui),
         1 => checkboxes(reg, atlas, ui),
@@ -283,7 +286,7 @@ fn group(
         14 => progress_bar(reg, ui),
         15 => list_group(reg, state, atlas, ui),
         16 => icons_group(reg, state, atlas, ui, chosen),
-        17 => tabs(reg, state, t, ui),
+        17 => tabs(reg, state, atlas, ui),
         18 => expander(reg, ui),
         _ => table_group(reg, atlas, ui),
     }
@@ -499,7 +502,7 @@ fn place_parts(
 }
 
 /// A text-only button in the button role's `variant`, the element `id`, its label placed as
-/// `<id>.label`: `make` builds it from its label `text`, one line box tall (`demo::lined`), at
+/// `<id>.label`: `make` builds it from its label `text`, one line box tall (`demo::next_lined`), at
 /// least `min` large.
 fn text_button(
     reg: &mut Registry,
@@ -1236,19 +1239,15 @@ fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     }
 }
 
-/// The Tabs group: a tab bar of two tabs, the first selected.
-fn tabs(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    t: &native_theme_egui::ResolvedTheme,
-    ui: &mut egui::Ui,
-) {
+/// The Tabs group: a tab bar of two tabs, the first selected, on the installed 0.8.0 theme
+/// (`demo::TabLook::next`).
+fn tabs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
     heading(reg, ui, "basic.tabs.heading", "Tabs");
     let tabs: Vec<(usize, &'static str)> = TABS.into_iter().enumerate().collect();
     let picked = demo::tab_bar(
         reg,
         ui,
-        t,
+        &demo::TabLook::next(atlas.next_shown(ui.ctx())),
         demo::TabBar {
             kind: "TabBar · Basic",
             tab_kind: "Tab · Basic",

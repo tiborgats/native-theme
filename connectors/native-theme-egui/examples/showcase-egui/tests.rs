@@ -8041,50 +8041,22 @@ fn set_content_width(harness: &mut Harness<'_, App>, width: f32) {
 // The selected tab's outward corners: tab.active_outward_corner_radius
 // ---------------------------------------------------------------------------
 
-/// windows-11's atlas, built as `from_preset` builds it, from its two resolved variants with
-/// `tab.active_outward_corner_radius` set on each to `radius` and `edit` applied: the preset
-/// states 4 (G3 T15), and the tests set the radius on the resolved themes, whose fields are
-/// public, to try it unstated and at other values too.
-fn windows_11_atlas(
-    radius: Option<f32>,
-    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
-) -> native_theme_egui::ThemeAtlas {
-    let prefs = AccessibilityPreferences::default();
-    let (preset, _) = from_preset("windows-11", false, &prefs).expect("windows-11 loads");
-    let old = crate::app::OldAtlas::of(preset.clone());
-    assert!(old.is_some(), "windows-11's atlas holds its 0.7.2 themes");
-    let Some(preset) = old else { return preset };
-    let [mut light, mut dark] =
-        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.old_resolved(theme).clone());
-    for resolved in [&mut light, &mut dark] {
-        resolved.tab.active_outward_corner_radius = radius;
-        edit(resolved);
-    }
-    let mut builder = native_theme_egui::ThemeAtlas::builder(preset.name(), &light, &dark)
-        .layout(preset.layout())
-        .accessibility(preset.accessibility())
-        .icon_set(preset.icon_set());
-    for theme in [egui::Theme::Light, egui::Theme::Dark] {
-        if let Some(name) = preset.icon_theme(theme) {
-            builder = builder.icon_theme(theme, name);
-        }
-    }
-    #[cfg(feature = "system-fonts")]
-    {
-        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
-    }
-    builder.build()
-}
-
-/// The showcase on its Basic page in `theme`, with [`windows_11_atlas`]'s atlas installed in
-/// place of the one it opened with, as the app installs one, at rest: windows-11 is a preset of
-/// another platform, which `--theme` does not take here.
+/// The showcase on its Basic page in `theme`, windows-11 installed through the Theme row's path
+/// (`install_under`: a preset of another platform, which `--theme` does not take here), then
+/// both models' themes changed alike and installed as an install keeps them
+/// (`OldAtlas::edited`, `OldAtlas::with_old`, `App::adopt_pair`), at rest: each 0.8.0 theme,
+/// which the Basic bar reads (`demo::TabLook::next`), with `tab.active_outward_corner_radius`
+/// set to `radius` and `edit_next` made of it; each 0.7.2 one, which the chrome's bars read
+/// until they move (`demo::TabLook::old`), with the radius set too and `edit` made of it. The
+/// preset states 4 on both (G3 T15); the tests set the radius on the resolved themes, whose
+/// fields are public, to try it unstated and at other values too.
 fn open_curving_out(
     theme: egui::Theme,
     radius: Option<f32>,
     edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
-) -> Harness<'static, App> {
-    open_curving_out_at(theme, radius, 1.0, edit)
+    edit_next: impl Fn(&mut native_theme::next::ResolvedTheme),
+) -> Result<Harness<'static, App>, String> {
+    open_curving_out_at(theme, radius, 1.0, edit, edit_next)
 }
 
 /// [`open_curving_out`] at `pixels_per_point` physical pixels per point.
@@ -8093,20 +8065,71 @@ fn open_curving_out_at(
     radius: Option<f32>,
     pixels_per_point: f32,
     edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
-) -> Harness<'static, App> {
+    edit_next: impl Fn(&mut native_theme::next::ResolvedTheme),
+) -> Result<Harness<'static, App>, String> {
     let mut harness = open_at(
         theme,
         cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
         pixels_per_point,
     );
     harness.run_steps(4);
+    install_under(&mut harness, theme, "windows-11");
+    let atlas = harness
+        .state()
+        .atlas
+        .edited(|r| {
+            r.tab.active_outward_corner_radius = radius;
+            edit_next(r);
+        })?
+        .with_old(|t| {
+            t.tab.active_outward_corner_radius = radius;
+            edit(t);
+        });
     let ctx = harness.ctx.clone();
-    let app = harness.state_mut();
-    app.adopt(&ctx, windows_11_atlas(radius, edit));
+    harness.state_mut().adopt_pair(&ctx, atlas);
     harness.run_steps(4);
     harness.remove_cursor();
     harness.run_steps(2);
-    harness
+    Ok(harness)
+}
+
+/// The fill and the outline the selected tab `one_id` of the bar `bar_id` of [`TAB_BARS`] has
+/// its flares painted in: the Basic bar's the ones egui draws that tab's frame in, its tab
+/// scope's selected button's, which the connector writes from the installed 0.8.0 theme's
+/// `tab.tab(SELECTED)` (`demo::TabLook::next`); a chrome bar's the 0.7.2 theme's
+/// `tab.active_background` and `tab.border` (`demo::TabLook::old`).
+fn flare_paint(
+    harness: &Harness<'_, App>,
+    theme: egui::Theme,
+    [bar_id, one_id]: [&str; 2],
+) -> Result<(egui::Color32, egui::Stroke), String> {
+    let state = harness.state();
+    if bar_id.starts_with("basic.") {
+        let one = state
+            .registry
+            .places()
+            .get(one_id)
+            .copied()
+            .ok_or_else(|| format!("{one_id} is not placed"))?;
+        harness
+            .output()
+            .shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(s) if near_rect(s.rect, one) => Some((s.fill, s.stroke)),
+                _ => None,
+            })
+            .ok_or_else(|| format!("{one_id}: no frame is painted on the tab"))
+    } else {
+        let t = state.atlas.old_resolved(theme);
+        Ok((
+            native_theme_egui::convert::to_color32(t.tab.active_background),
+            egui::Stroke::new(
+                t.tab.border.line_width,
+                native_theme_egui::convert::to_color32(t.tab.border.color),
+            ),
+        ))
+    }
 }
 
 /// The three tab bars `demo::tab_bar` draws: each bar's element, its first tab's, which is the
@@ -8287,24 +8310,35 @@ fn the_page_tabs_scroll_the_open_tab_into_view() {
 /// with the numbers every connector's test shares (spec §12.2) -- the left about
 /// `(x0 - 3, y1 - 4)`, clipped to `[x0 - 3, x0 + 1] x [y1 - 4, y1]`, the right about
 /// `(x1 + 3, y1 - 4)`, clipped to `[x1 - 1, x1 + 3] x [y1 - 4, y1]`; in each, the fill an
-/// annulus from 3 to `4 * sqrt(2) + 1` in `tab.active_background`, then the outline one from 3
-/// to 4 in `tab.border.color`. epaint strokes a circle outside its radius
-/// (`epaint-0.36.2` `src/tessellator.rs:1531`), so each annulus is a circle of its inner radius
-/// stroked as wide as the annulus, and tessellated it reaches from 3 to `4 * sqrt(2) + 1`. Under
-/// them, after every tab, the strip `tab.active_background` lays over the selected tab's bottom
-/// edge, `[x0 + 1, x1 - 1] x [y1 - 1, y1]`. The first tab starts 4 further in than with the radius
-/// unstated, and the Basic bar, as wide as its tabs, ends 4 after its last.
+/// annulus from 3 to `4 * sqrt(2) + 1` in the selected tab's fill, then the outline one from 3
+/// to 4 in its outline's colour ([`flare_paint`]: the Basic bar's from the 0.8.0 tab scope, the
+/// chrome's `tab.active_background` and `tab.border.color`). epaint strokes a circle outside its
+/// radius (`epaint-0.36.2` `src/tessellator.rs:1531`), so each annulus is a circle of its inner
+/// radius stroked as wide as the annulus, and tessellated it reaches from 3 to
+/// `4 * sqrt(2) + 1`. Under them, after every tab, a strip in the fill lays over the selected
+/// tab's bottom edge, `[x0 + 1, x1 - 1] x [y1 - 1, y1]`. The first tab starts 4 further in than
+/// with the radius unstated, and the Basic bar, as wide as its tabs, ends 4 after its last.
 #[test]
-fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
+fn the_tab_bars_draw_the_selected_tabs_outward_corners() -> Result<(), String> {
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
-        let square_feet = open_curving_out(theme, None, |_| {});
-        let harness = open_curving_out(theme, Some(4.0), |_| {});
+        let square_feet = open_curving_out(theme, None, |_| {}, |_| {})?;
+        let harness = open_curving_out(theme, Some(4.0), |_| {}, |_| {})?;
         let state = harness.state();
-        let t = state.atlas.old_resolved(theme).clone();
-        assert_eq!(t.tab.border.line_width, 1.0, "windows-11's outline");
-        assert_eq!(t.tab.active_outward_corner_radius, Some(4.0));
-        let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
-        let outline = native_theme_egui::convert::to_color32(t.tab.border.color);
+        assert_eq!(
+            state
+                .atlas
+                .old_resolved(theme)
+                .tab
+                .active_outward_corner_radius,
+            Some(4.0)
+        );
+        assert_eq!(
+            state
+                .atlas
+                .next_resolved(theme)
+                .map(|r| r.tab.active_outward_corner_radius),
+            Some(Some(4.0))
+        );
         let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
         let shapes = &harness.output().shapes;
         let places = state.registry.places();
@@ -8320,6 +8354,12 @@ fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
                 place(places, one_id),
                 place(places, two_id),
             );
+            let (fill, outline) = flare_paint(&harness, theme, [bar_id, one_id])?;
+            assert_eq!(
+                outline.width, 1.0,
+                "{theme:?} {bar_id}: windows-11's outline"
+            );
+            let outline = outline.color;
             let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
             // (the square's left edge, the centre's x)
             let feet = [(x0 - 3.0, x0 - 3.0), (x1 - 1.0, x1 + 3.0)];
@@ -8421,6 +8461,7 @@ fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
             bar.max.x - two.max.x
         );
     }
+    Ok(())
 }
 
 /// At a fractional scale, 1.25 physical pixels per point, each flare is placed from the selected
@@ -8429,10 +8470,10 @@ fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
 /// about `(x0 - 3, y1 - 4)` and `(x1 + 3, y1 - 4)` of the rounded rectangle, clipped to their
 /// squares about it; and some selected tab lies off the pixel grid, so the rounding shows.
 #[test]
-fn at_a_fractional_scale_the_flares_sit_on_the_tabs_pixel_grid() {
+fn at_a_fractional_scale_the_flares_sit_on_the_tabs_pixel_grid() -> Result<(), String> {
     use egui::emath::GuiRounding as _;
     let ppp = 1.25;
-    let harness = open_curving_out_at(egui::Theme::Light, Some(4.0), ppp, |_| {});
+    let harness = open_curving_out_at(egui::Theme::Light, Some(4.0), ppp, |_| {}, |_| {})?;
     assert!(near(harness.ctx.pixels_per_point(), ppp));
     let shapes = &harness.output().shapes;
     let places = harness.state().registry.places();
@@ -8466,26 +8507,42 @@ fn at_a_fractional_scale_the_flares_sit_on_the_tabs_pixel_grid() {
         !off_grid.is_empty(),
         "no selected tab lies off the pixel grid at {ppp}, so the rounding is not seen"
     );
+    Ok(())
 }
 
-/// Without an outline (`tab.border.line_width` 0), each flare is the fill alone, an annulus from
-/// the radius, 4, to `4 * sqrt(2) + 1`, in a square at the tab's outer edge, and no strip covers
-/// a bottom edge the tab does not have.
+/// Without an outline (`tab.border.line_width` 0 on the 0.7.2 model, `tab.tab(SELECTED)`'s
+/// stroke none on the 0.8.0 one), each flare is the fill alone, an annulus from the radius, 4, to
+/// `4 * sqrt(2) + 1`, in a square at the tab's outer edge, and no strip covers a bottom edge the
+/// tab does not have.
 #[test]
-fn without_an_outline_the_fill_begins_at_the_radius() {
-    let harness = open_curving_out(egui::Theme::Light, Some(4.0), |r| {
-        r.tab.border.line_width = 0.0;
-    });
-    let t = harness
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
-    let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+fn without_an_outline_the_fill_begins_at_the_radius() -> Result<(), String> {
+    use native_theme::next::{PartPatch, Stroke, TabRule, ThemePatch, WidgetState};
+    let harness = open_curving_out(
+        egui::Theme::Light,
+        Some(4.0),
+        |t| t.tab.border.line_width = 0.0,
+        |r| {
+            r.apply_patch(
+                &ThemePatch::new().tab(
+                    TabRule::new()
+                        .states(WidgetState::SELECTED)
+                        .tab(PartPatch::new().stroke(Stroke::None)),
+                ),
+            );
+        },
+    )?;
     let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
     let shapes = &harness.output().shapes;
-    for [_, one_id, _] in TAB_BARS {
-        let one = harness.state().registry.places()[one_id];
+    for [bar_id, one_id, _] in TAB_BARS {
+        let (fill, outline) = flare_paint(&harness, egui::Theme::Light, [bar_id, one_id])?;
+        assert_eq!(outline.width, 0.0, "{bar_id}: the outline is still drawn");
+        let one = harness
+            .state()
+            .registry
+            .places()
+            .get(one_id)
+            .copied()
+            .ok_or_else(|| format!("{one_id} is not placed"))?;
         let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
         for (left, cx) in [(x0 - 4.0, x0 - 4.0), (x1, x1 + 4.0)] {
             let square =
@@ -8507,20 +8564,15 @@ fn without_an_outline_the_fill_begins_at_the_radius() {
             "{one_id}: a strip over a bottom edge of no width"
         );
     }
+    Ok(())
 }
 
 /// With the radius unstated, or stated as one no tab bar draws (0, not finite), no circle is
 /// drawn and no strip: the selected tab keeps its bottom edge.
 #[test]
-fn without_the_radius_the_tab_bars_draw_no_flares() {
+fn without_the_radius_the_tab_bars_draw_no_flares() -> Result<(), String> {
     for radius in [None, Some(0.0), Some(f32::NAN)] {
-        let harness = open_curving_out(egui::Theme::Light, radius, |_| {});
-        let t = harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
-        let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+        let harness = open_curving_out(egui::Theme::Light, radius, |_| {}, |_| {})?;
         let shapes = &harness.output().shapes;
         let circles: Vec<_> = shapes
             .iter()
@@ -8537,8 +8589,15 @@ fn without_the_radius_the_tab_bars_draw_no_flares() {
             })
             .collect();
         assert!(circles.is_empty(), "{radius:?}: circles drawn: {circles:?}");
-        for [_, one_id, _] in TAB_BARS {
-            let one = harness.state().registry.places()[one_id];
+        for [bar_id, one_id, _] in TAB_BARS {
+            let (fill, _) = flare_paint(&harness, egui::Theme::Light, [bar_id, one_id])?;
+            let one = harness
+                .state()
+                .registry
+                .places()
+                .get(one_id)
+                .copied()
+                .ok_or_else(|| format!("{one_id} is not placed"))?;
             let strip = egui::Rect::from_min_max(
                 egui::pos2(one.min.x + 1.0, one.max.y - 1.0),
                 egui::pos2(one.max.x - 1.0, one.max.y),
@@ -8550,27 +8609,64 @@ fn without_the_radius_the_tab_bars_draw_no_flares() {
             );
         }
     }
+    Ok(())
 }
 
 /// With a bottom indicator and the radius both stated, no strip is painted, since the line
-/// covers the bottom edge, and the flares are painted over the line as without it.
+/// covers the bottom edge, and the flares are painted over the line as without it: on the
+/// 0.7.2 model `tab.active_indicator_color`, `active_indicator_width` and `active_indicator_side`,
+/// on the 0.8.0 one `tab.indicator(SELECTED)`'s fill and exact height and `tab.indicator_side`.
 #[test]
-fn a_bottom_indicator_lies_under_the_flares() {
-    let harness = open_curving_out(egui::Theme::Light, Some(4.0), |r| {
-        r.tab.active_indicator_color = Some(r.defaults.accent_color);
-        r.tab.active_indicator_width = Some(2.0);
-        r.tab.active_indicator_side = Some(native_theme::theme::TabIndicatorSide::Bottom);
-    });
-    let t = harness
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
-    let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
-    let accent = native_theme_egui::convert::to_color32(t.defaults.accent_color);
+fn a_bottom_indicator_lies_under_the_flares() -> Result<(), String> {
+    use native_theme::next::{
+        Color, Paint, PartPatch, TabIndicatorSide, TabRule, ThemePatch, WidgetState,
+    };
+    let magenta = Color::from_srgb8(255, 0, 255, 255);
+    let harness = open_curving_out(
+        egui::Theme::Light,
+        Some(4.0),
+        |t| {
+            t.tab.active_indicator_color = Some(t.defaults.accent_color);
+            t.tab.active_indicator_width = Some(2.0);
+            t.tab.active_indicator_side = Some(native_theme::theme::TabIndicatorSide::Bottom);
+        },
+        |r| {
+            r.apply_patch(
+                &ThemePatch::new().tab(
+                    TabRule::new().states(WidgetState::SELECTED).indicator(
+                        PartPatch::new()
+                            .fill(Paint::Solid(magenta))
+                            .min_size([None, Some(2.0)])
+                            .max_size([None, Some(2.0)]),
+                    ),
+                ),
+            );
+            r.tab.indicator_side = Some(TabIndicatorSide::Bottom);
+        },
+    )?;
+    let old_accent = native_theme_egui::convert::to_color32(
+        harness
+            .state()
+            .atlas
+            .old_resolved(egui::Theme::Light)
+            .defaults
+            .accent_color,
+    );
     let shapes = &harness.output().shapes;
-    for [_, one_id, _] in TAB_BARS {
-        let one = harness.state().registry.places()[one_id];
+    for [bar_id, one_id, _] in TAB_BARS {
+        let (fill, _) = flare_paint(&harness, egui::Theme::Light, [bar_id, one_id])?;
+        let accent = if bar_id.starts_with("basic.") {
+            egui::Color32::from_rgb(255, 0, 255)
+        } else {
+            old_accent
+        };
+        let one = harness
+            .state()
+            .registry
+            .places()
+            .get(one_id)
+            .copied()
+            .ok_or_else(|| format!("{one_id} is not placed"))?;
         let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
         let strip =
             egui::Rect::from_min_max(egui::pos2(x0 + 1.0, y1 - 1.0), egui::pos2(x1 - 1.0, y1));
@@ -8589,7 +8685,7 @@ fn a_bottom_indicator_lies_under_the_flares() {
             })
             .collect();
         let [line_ix] = lines[..] else {
-            panic!("{one_id}: the bottom line is {lines:?}");
+            return Err(format!("{one_id}: the bottom line is {lines:?}"));
         };
         for left in [x0 - 3.0, x1 - 1.0] {
             let square =
@@ -8606,6 +8702,7 @@ fn a_bottom_indicator_lies_under_the_flares() {
             );
         }
     }
+    Ok(())
 }
 
 /// The Basic page's column rule makes room for both of the selected tab's flares, as the gpui
@@ -8742,6 +8839,146 @@ fn the_column_rule_takes_an_unstated_layout_length_as_egui_s_own() -> Result<(),
         .window_margin
         .ok_or("kde-breeze states no window margin")?;
     assert_ne!(margin, 8.0, "kde-breeze's margin is not egui's own");
+    Ok(())
+}
+
+/// Spec §10 rule 0 for `tab.item_gap` (ES-G2d question 3): the column rule counts the two tabs
+/// the gap the tab bar lays them out apart, `tab.item_gap` where stated and else the page
+/// style's `item_spacing.x`, which the tab scope keeps (`demo::TabLook::next`), never 0: under
+/// windows-11's 0.8.0 theme, whose widest fixed-width control is the two tabs, with its tab gap
+/// unstated, the widest control grows with the page style's `item_spacing.x`, set to two
+/// different values; with the gap stated, it is the theme's whatever the style's.
+#[test]
+fn the_column_rule_counts_an_unstated_tab_gap_as_the_rows_own() -> Result<(), String> {
+    use crate::pages::basic::ColumnRule;
+    use native_theme::next::{Preset, Theme, ThemeContext, WidgetState};
+    let stated = Theme::preset(Preset::Windows11).resolve(&ThemeContext::light());
+    let mut unstated = stated.clone();
+    unstated.tab.item_gap = None;
+    let tab_min = stated.tab.tab(WidgetState::NONE).min_size[0]
+        .ok_or("windows-11 states no tab.tab(NONE).min_size[0]")?;
+    let flare = crate::demo::next_outward_radius(&stated).unwrap_or_default();
+    let item_gap = stated
+        .tab
+        .item_gap
+        .ok_or("windows-11 states no tab.item_gap")?;
+    let mut widest = Vec::new();
+    for x in [5.0, 13.0] {
+        let mut own = egui::Style::default();
+        own.spacing.item_spacing.x = x;
+        let tabs = 2.0 * tab_min + 2.0 * flare;
+        let rule = ColumnRule::of(Some(&unstated), &own);
+        assert_eq!(
+            rule.widest,
+            tabs + x,
+            "item_spacing.x {x}: windows-11's two tabs with the gap unstated are not the widest \
+             control, or not that gap apart"
+        );
+        assert_eq!(
+            ColumnRule::of(Some(&stated), &own).widest,
+            tabs + item_gap,
+            "item_spacing.x {x}: a stated tab gap is not the theme's"
+        );
+        widest.push(rule.widest);
+    }
+    assert_ne!(
+        widest.first(),
+        widest.last(),
+        "the rule reads no item spacing"
+    );
+    Ok(())
+}
+
+/// The Basic page's tabs on the 0.8.0 model (`demo::TabLook::next`): under each bundled preset
+/// that leaves `tab.item_gap` unstated (ios-13, macos-monterey, macos-tahoe, material-3), the two
+/// tabs stand the tab scope's own `item_spacing.x` apart (spec §10 rule 0), the gap egui lays a
+/// row's widgets out by and where stated the connector's `layout.widget_gap`, not side by side
+/// as 0.7.2 drew them, and the bar's Widget Info names it; under one stating it (kde-breeze),
+/// the stated gap. A patched `tab.tab(NONE).min_size[0]` widens the tabs, so the page reads the
+/// 0.8.0 theme.
+#[test]
+fn the_basic_tabs_stand_the_tab_scopes_gap_apart() -> Result<(), String> {
+    use native_theme::next::{PartPatch, Preset, TabRule, ThemePatch};
+    let mut unstated = Vec::new();
+    for preset in Preset::ALL.iter().map(|p| p.as_str()) {
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        let state = harness.state();
+        let r = state
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+        // The tab scope's `item_spacing.x`: `tab.item_gap`, else the base style's, which the
+        // connector writes from `layout.widget_gap`, else egui's own (egui-0.37.0
+        // `src/style.rs:1565`).
+        let gap = match r.tab.item_gap {
+            Some(gap) => gap,
+            None => {
+                unstated.push(preset);
+                r.layout
+                    .widget_gap
+                    .unwrap_or(egui::Style::default().spacing.item_spacing.x)
+            }
+        };
+        let places = state.registry.places();
+        let [one, two] = ["basic.tabs.one", "basic.tabs.two"].map(|id| places.get(id).copied());
+        let (Some(one), Some(two)) = (one, two) else {
+            return Err(format!("{preset}: a Basic tab is not placed"));
+        };
+        assert!(
+            near(two.left() - one.right(), gap),
+            "{preset}: the Basic tabs stand {} apart, the tab scope's gap is {gap}",
+            two.left() - one.right()
+        );
+        if r.tab.item_gap.is_none() {
+            assert!(gap > 0.0, "{preset}: the tab scope's own gap is {gap}");
+            let named = state.registry.records().iter().any(|record| {
+                record.info.kind == "TabBar · Basic"
+                    && record.info.not_themeable.iter().any(|(what, why)| {
+                        *what == "the gap between tabs" && why.contains("tab.item_gap")
+                    })
+            });
+            assert!(
+                named,
+                "{preset}: the Basic bar's Widget Info names no unstated tab gap"
+            );
+        }
+    }
+    assert_eq!(
+        unstated,
+        ["macos-monterey", "macos-tahoe", "material-3", "ios-13"],
+        "the presets leaving tab.item_gap unstated"
+    );
+    let stock = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    let one = stock
+        .state()
+        .registry
+        .places()
+        .get("basic.tabs.one")
+        .copied()
+        .ok_or("kde-breeze: the first Basic tab is not placed")?;
+    let wide = 2.0 * one.width();
+    let (patched, r) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |_| {
+        Some(
+            ThemePatch::new()
+                .tab(TabRule::new().tab(PartPatch::new().min_size([Some(wide), None]))),
+        )
+    })?;
+    assert_eq!(
+        r.tab.tab(native_theme::next::WidgetState::NONE).min_size[0],
+        Some(wide)
+    );
+    let one = patched
+        .state()
+        .registry
+        .places()
+        .get("basic.tabs.one")
+        .copied()
+        .ok_or("kde-breeze patched: the first Basic tab is not placed")?;
+    assert!(
+        near(one.width(), wide),
+        "kde-breeze: the first Basic tab is {} wide under a least width of {wide}",
+        one.width()
+    );
     Ok(())
 }
 
@@ -11830,13 +12067,17 @@ fn the_basic_edit_button_starts_checked_and_switches() -> Result<(), String> {
 /// The Basic page's icon buttons on the 0.8.0 model, under every bundled preset in light: Copy,
 /// Paste and Delete stand the toolbar scope's item gap apart, `toolbar.item_gap` where the theme
 /// states it, else `layout.widget_gap`, which the connector's base style carries, and so no
-/// gap of the showcase's own is needed (the 0.7.2 `demo::toolbar_gap`). Under kde-breeze, which
-/// states
-/// `toolbar.button(HOVER)`'s outline, a hovered Copy is lined in it.
+/// gap of the showcase's own is needed (the 0.7.2 `demo::toolbar_gap`). Copy's label, in place
+/// of an icon the chosen set lacks, sits each stated side of `button.body(NONE).padding` in from
+/// the frame's edge as egui draws that padding ([`egui_button_inset`]): under macos-monterey and
+/// macos-tahoe, whose toolbar buttons keep a half-point border at rest, half a point short of it,
+/// egui's own whole-point margin, not a padding the showcase reads wrongly. Under kde-breeze,
+/// which states `toolbar.button(HOVER)`'s outline, a hovered Copy is lined in it.
 #[test]
 fn the_basic_icon_buttons_are_the_toolbars_gap_apart_and_outlined_on_hover() -> Result<(), String> {
     use native_theme::next::{Preset, WidgetState};
     use native_theme_egui::next::{state_stroke_color_of, stroke_width_of};
+    let mut rounded_away = false;
     for preset in Preset::ALL.iter().map(|p| p.as_str()) {
         let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
         harness.state_mut().settings.icon = IconSetChoice::Freedesktop("no-such-icon-theme".into());
@@ -11851,6 +12092,23 @@ fn the_basic_icon_buttons_are_the_toolbars_gap_apart_and_outlined_on_hover() -> 
             r.toolbar.item_gap.or(r.layout.widget_gap).ok_or_else(|| {
                 format!("{preset} states neither toolbar.item_gap nor widget_gap")
             })?;
+        // Copy in view where the page lays it out below the fold (material-3's): egui paints
+        // only what the window shows (`egui-0.37.0/src/widgets/button.rs:369-374`).
+        let copy_node = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.element.as_deref() == Some("basic.icons.copy"))
+            .map(|r| r.id.accesskit_id())
+            .ok_or_else(|| format!("{preset}: Copy is not recorded"))?;
+        harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == copy_node))
+            .next()
+            .ok_or_else(|| format!("{preset}: Copy has no AccessKit node"))?
+            .scroll_to_me();
+        // The scroll lands on the third pass after the request (as the page scroll tests).
+        harness.run_steps(3);
         let places = harness.state().registry.places();
         let [copy, paste, delete] = ["copy", "paste", "delete"].map(|id| {
             places
@@ -11868,6 +12126,41 @@ fn the_basic_icon_buttons_are_the_toolbars_gap_apart_and_outlined_on_hover() -> 
                 "{preset}: Copy and Paste {} apart, the toolbar's gap is {gap}",
                 paste.left() - copy.right()
             );
+        }
+        let [top, _, _, left] =
+            native_theme_egui::next::padding_of(&r.button.body(WidgetState::NONE));
+        let shapes = &harness.output().shapes;
+        let frame = shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(s) if near_rect(s.rect, copy) => Some(s.stroke.width),
+                _ => None,
+            })
+            .ok_or_else(|| {
+                format!("{preset}: Copy's frame is not painted on its place {copy:?}")
+            })?;
+        let label = shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Text(s) if s.galley.job.text == "Copy" && copy.contains(s.pos) => {
+                    Some(s.pos)
+                }
+                _ => None,
+            })
+            .ok_or_else(|| format!("{preset}: Copy's label is not painted in its place"))?;
+        for (side, stated, inset) in [
+            ("left", left, label.x - copy.left()),
+            ("top", top, label.y - copy.top()),
+        ] {
+            if let Some(padding) = stated {
+                let drawn = egui_button_inset(padding, frame);
+                rounded_away |= !near(drawn, padding);
+                assert!(
+                    near(inset, drawn),
+                    "{preset}: Copy's label sits {inset} in from its {side} edge, egui draws a \
+                     padding of {padding} inside a {frame} pt frame {drawn} in"
+                );
+            }
         }
         let hovered = r.toolbar.button(WidgetState::HOVER);
         if preset == "kde-breeze" {
@@ -11890,7 +12183,25 @@ fn the_basic_icon_buttons_are_the_toolbars_gap_apart_and_outlined_on_hover() -> 
             assert!(lined, "kde-breeze: a hovered Copy is not lined in {pen:?}");
         }
     }
+    assert!(
+        rounded_away,
+        "no preset's icon button has a border egui's whole-point margin rounds away from its \
+         padding (macos-monterey's half point), so the inset's rule is not shown"
+    );
     Ok(())
+}
+
+/// How far egui 0.37.0 puts a framed button's content in from the frame's edge, for a
+/// `Spacing::button_padding` side of `padding` and a resting border `stroke` wide: the frame's
+/// inner margin is whole points (`Margin`'s sides are `i8`, `From<Vec2>` rounds,
+/// `epaint-0.37.0/src/margin.rs:108-120`), the padding rounded, less the border's width rounded
+/// (`Frame::apply_stroke_and_expansion_without_layout_shift`,
+/// `egui-0.37.0/src/containers/frame.rs:313-323`, called by the button's style,
+/// `src/theme/default_style.rs:54-72`; Rust rounds half away from zero), and the border's own
+/// width outside it (`Frame::total_margin`, `frame.rs:362-366`): a half-point border so takes a
+/// whole point from the padding and gives half of it back.
+fn egui_button_inset(padding: f32, stroke: f32) -> f32 {
+    padding.round() + (-stroke).round() + stroke
 }
 
 /// The colour the label `text` is painted in inside the place `id` (the first such galley's first

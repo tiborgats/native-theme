@@ -1331,11 +1331,11 @@ fn setting<T: Clone + PartialEq>(
 /// `container_margin`, their rule from edge to edge: the gpui showcase's inspector `TabBar`
 /// (`showcase-gpui/inspector.rs:958-973`).
 fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
-    let t = app.atlas.old_resolved(ui.ctx().theme());
+    let look = demo::TabLook::old(app.atlas.old_resolved(ui.ctx().theme()));
     let picked = demo::tab_bar(
         &mut app.registry,
         ui,
-        t,
+        &look,
         demo::TabBar {
             kind: "TabBar · Inspector",
             tab_kind: "Tab · Inspector",
@@ -1422,7 +1422,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
     let picked = demo::tab_bar(
         registry,
         ui,
-        t,
+        &demo::TabLook::old(t),
         demo::TabBar {
             kind: "TabBar · Pages",
             tab_kind: "Tab · Page",

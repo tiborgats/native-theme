@@ -625,6 +625,16 @@ impl OldAtlas {
     /// contrasts stay as they are, so a test can make the two models' values differ.
     #[cfg(test)]
     pub(crate) fn patched(&self, patch: &native_theme::next::ThemePatch) -> Result<Self, String> {
+        self.edited(|r| r.apply_patch(patch))
+    }
+
+    /// [`OldAtlas::patched`] for any change `edit` makes of each of the four 0.8.0 themes, a
+    /// patch's or a public field's.
+    #[cfg(test)]
+    pub(crate) fn edited(
+        &self,
+        edit: impl Fn(&mut native_theme::next::ResolvedTheme),
+    ) -> Result<Self, String> {
         let next = self
             .next
             .as_deref()
@@ -635,7 +645,7 @@ impl OldAtlas {
             .ok_or("the atlas holds no OS colour mode")?;
         let patched = |r: &native_theme::next::ResolvedTheme| {
             let mut r = r.clone();
-            r.apply_patch(patch);
+            edit(&mut r);
             r
         };
         let active = |theme| {
@@ -657,6 +667,19 @@ impl OldAtlas {
                 contrast_held: next.contrast_held.clone(),
             })),
         })
+    }
+
+    /// This atlas with `edit` made of its two 0.7.2 themes, which the pages not yet ported read;
+    /// the installed atlas and its 0.8.0 themes stay as they are.
+    #[cfg(test)]
+    pub(crate) fn with_old(self, edit: impl Fn(&mut native_theme_egui::ResolvedTheme)) -> Self {
+        let [mut light, mut dark] = (*self.old).clone();
+        edit(&mut light);
+        edit(&mut dark);
+        Self {
+            old: std::sync::Arc::new([light, dark]),
+            ..self
+        }
     }
 }
 
