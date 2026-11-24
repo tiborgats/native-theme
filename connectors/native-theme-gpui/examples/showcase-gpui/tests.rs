@@ -6094,24 +6094,51 @@ fn a_section_heading_reports_itself(cx: &mut TestAppContext) {
     );
 }
 
-/// The Basic page's body text is laid out in the theme's line box,
-/// `defaults.line_height` times the text size, where a Label's own is
-/// `rems(1.25)`.
+/// The Basic page's body text is laid out in the installed 0.8.0 theme's
+/// line box for `typography.body`, its size by
+/// `typography.line_height_multiplier` where it states no line height, where
+/// a Label's own is `rems(1.25)`; and in its `line_height` where stated.
 #[gpui::test]
 fn basic_body_text_takes_the_themes_line_height(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "kde-breeze");
+    use native_theme::next::TextStated;
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let expected = read(&mut cx, &showcase, |_this, cx| {
-        crate::support::old_native(cx)
-            .map(|n| n.resolved.defaults.font.size * n.resolved.defaults.line_height)
-    });
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else { return };
+    assert!(
+        r.typography.body.stated.contains(TextStated::SIZE_PX),
+        "kde-breeze light states no typography.body.size_px, so the body keeps the Label's own line box"
+    );
+    let expected = crate::demo::line_box(&r.typography, &r.typography.body);
     let body = bounds_of(&mut cx, "basic-type-body").size.height.as_f32();
     // gpui lays a text line out on whole pixels; upstream's own would be
     // 16.67px, a pixel less.
     assert!(
-        expected.is_some_and(|e| (body - e).abs() < 0.5),
-        "body text is {body}px tall, the theme's line box is {expected:?}"
+        (body - expected).abs() < 0.5,
+        "body text is {body}px tall, the theme's line box is {expected}px"
+    );
+    // A line height of the theme's own, its headline's line box, stated on
+    // the body: the line follows it.
+    let headline = r
+        .typography
+        .headline
+        .as_ref()
+        .map(|h| crate::demo::line_box(&r.typography, h));
+    assert!(
+        headline.is_some_and(|h| (h - expected).abs() > 1.0),
+        "kde-breeze light's headline line box {headline:?} is the body's, {expected}px, so the test could not tell the two apart"
+    );
+    let Some(headline) = headline else { return };
+    r.typography.body.line_height = headline;
+    r.typography.body.stated |= TextStated::LINE_HEIGHT;
+    install_next(&mut cx, &r);
+    show(&mut cx, &showcase, Page::Basic);
+    let body = bounds_of(&mut cx, "basic-type-body").size.height.as_f32();
+    assert!(
+        (body - headline).abs() < 0.5,
+        "body text is {body}px tall under a stated typography.body.line_height of {headline}px"
     );
 }
 

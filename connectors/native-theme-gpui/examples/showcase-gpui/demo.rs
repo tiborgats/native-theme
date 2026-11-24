@@ -101,7 +101,7 @@ use gpui_component::{
     v_flex,
 };
 use native_theme::next::WidgetState;
-use native_theme::theme::{IconSet, ResolvedFontSpec, ResolvedPadding};
+use native_theme::theme::{IconSet, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
@@ -11261,12 +11261,75 @@ pub(crate) enum TypeRole {
     Monospace,
 }
 
-/// `text` in `role`'s type: a `text_scale` entry's size, weight and line
-/// height in `defaults.font`'s family and colour; `defaults.font` itself at
-/// `defaults.line_height`; or `defaults.mono_font` at `defaults.line_height`
-/// -- each size and line height scaled by the text-scaling factor, as the
-/// section headings are (`heading`). Without a native theme, the Label's own
-/// type.
+/// The text style `role` is set in, of `typography`, and its home:
+/// `typography.caption`, `body`, `headline` (the platform's section heading,
+/// as [`heading_role`] reads it), `title1` (0.7.2's
+/// `text_scale.dialog_title`) or `monospace`; `body` where the theme states
+/// no caption, headline or first-level title (spec §4, `Typography`: a
+/// caller falls back to `body`).
+pub(crate) fn type_style(
+    typography: &native_theme::next::Typography,
+    role: TypeRole,
+) -> (&native_theme::next::TextStyle, &'static str) {
+    let (style, home) = match role {
+        TypeRole::Caption => (typography.caption.as_ref(), "typography.caption"),
+        TypeRole::Body => (Some(&typography.body), "typography.body"),
+        TypeRole::SectionHeading => (typography.headline.as_ref(), "typography.headline"),
+        TypeRole::DialogTitle => (typography.title1.as_ref(), "typography.title1"),
+        TypeRole::Monospace => (Some(&typography.monospace), "typography.monospace"),
+    };
+    match style {
+        Some(style) => (style, home),
+        None => (&typography.body, "typography.body"),
+    }
+}
+
+/// What a type line is lettered in ([`type_look`]): each property `None`
+/// where the style states none, which leaves the Label's own (spec §10,
+/// rule 0).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct TypeLook {
+    pub(crate) home: &'static str,
+    pub(crate) family: Option<SharedString>,
+    /// `size_px`, which the theme's text scale has already scaled.
+    pub(crate) size: Option<Pixels>,
+    /// The line box ([`line_box`]), where the style states a line height or
+    /// a size.
+    pub(crate) line_height: Option<Pixels>,
+    pub(crate) weight: Option<FontWeight>,
+    pub(crate) slant: Option<gpui::FontStyle>,
+    pub(crate) colour: Option<Hsla>,
+}
+
+/// The look of `role`'s style in `typography` ([`type_style`]), each
+/// property where the style states it.
+pub(crate) fn type_look(typography: &native_theme::next::Typography, role: TypeRole) -> TypeLook {
+    use native_theme::next::{FontStyle as NextFontStyle, TextStated};
+    let (style, home) = type_style(typography, role);
+    let has = |bit| style.stated.contains(bit);
+    TypeLook {
+        home,
+        family: has(TextStated::FAMILY).then(|| native_theme_gpui::font_family(&style.family)),
+        size: has(TextStated::SIZE_PX).then(|| px(style.size_px)),
+        line_height: (has(TextStated::LINE_HEIGHT) || has(TextStated::SIZE_PX))
+            .then(|| px(line_box(typography, style))),
+        weight: has(TextStated::WEIGHT).then(|| FontWeight(f32::from(style.weight))),
+        slant: has(TextStated::STYLE)
+            .then_some(style.style)
+            .and_then(|slant| match slant {
+                NextFontStyle::Normal => Some(gpui::FontStyle::Normal),
+                NextFontStyle::Italic => Some(gpui::FontStyle::Italic),
+                NextFontStyle::Oblique => Some(gpui::FontStyle::Oblique),
+                _ => None,
+            }),
+        colour: next::text_color_of(style),
+    }
+}
+
+/// `text` in `role`'s type, the installed 0.8.0 theme's text style for it
+/// ([`type_look`]): its family, size, line box, weight, slant and colour,
+/// each the Label's own where the style states none, as without an installed
+/// theme.
 pub(crate) fn type_line(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -11274,55 +11337,29 @@ pub(crate) fn type_line(
     role: TypeRole,
     text: &'static str,
 ) -> Stateful<Div> {
-    let look = native_value(cx, |n| {
-        let r = n.resolved;
-        let scaled = |v: f32| px(native_theme_gpui::scaled_text_size(v, n.accessibility));
-        let entry = |e: &native_theme::theme::ResolvedTextScaleEntry| {
-            (scaled(e.size), scaled(e.line_height), e.weight)
-        };
-        let font = &r.defaults.font;
-        let lined = |f: &ResolvedFontSpec| {
-            (
-                scaled(f.size),
-                scaled(f.size * r.defaults.line_height),
-                f.weight,
-            )
-        };
-        let ((size, line_height, weight), family, colour) = match role {
-            TypeRole::Caption => (entry(&r.text_scale.caption), &font.family, font.color),
-            TypeRole::Body => (lined(font), &font.family, font.color),
-            TypeRole::SectionHeading => (
-                entry(&r.text_scale.section_heading),
-                &font.family,
-                font.color,
+    let look = next_value(cx, |r| type_look(&r.typography, role));
+    let mut label_info = info::text::label(cx.theme()).variant(text);
+    let mut label = Label::new(text);
+    if let Some(look) = look {
+        label_info = label_info.config(
+            "type",
+            format!(
+                "{}: its family, size_px (which the theme's text scale has already scaled), line box (its line_height where stated, else its size by typography.line_height_multiplier, spec §4), weight, slant and colour, each where stated, else the Label's own (spec §10, rule 0)",
+                look.home
             ),
-            TypeRole::DialogTitle => (entry(&r.text_scale.dialog_title), &font.family, font.color),
-            TypeRole::Monospace => (
-                lined(&r.defaults.mono_font),
-                &r.defaults.mono_font.family,
-                r.defaults.mono_font.color,
-            ),
-        };
-        (
-            size,
-            line_height,
-            FontWeight(f32::from(weight)),
-            native_theme_gpui::font_family(family),
-            info::stated(colour),
-        )
-    });
-    let label = Label::new(text);
-    let label = match look {
-        Some((size, line_height, weight, family, colour)) => label
-            .text_size(size)
-            .line_height(line_height)
-            .font_weight(weight)
-            .font_family(family)
-            .text_color(colour),
-        None => label,
-    };
+        );
+        label = label
+            .when_some(look.size, |l, size| l.text_size(size))
+            .when_some(look.line_height, |l, line| l.line_height(line))
+            .when_some(look.weight, |l, weight| l.font_weight(weight))
+            .when_some(look.family, |l, family| l.font_family(family))
+            .when_some(look.colour, |l, colour| l.text_color(colour));
+        if let Some(slant) = look.slant {
+            label.text_style().font_style = Some(slant);
+        }
+    }
     label
-        .info(ui, id, info::text::label(cx.theme()).variant(text))
+        .info(ui, id, label_info)
         .self_start()
         .debug_selector(move || id.into())
 }
