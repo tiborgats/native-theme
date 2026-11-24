@@ -5172,14 +5172,16 @@ fn the_text_role_labels_are_drawn_at_their_weight() -> Result<(), String> {
 /// ([`UNSTATED_PRESET`]): on the Basic page's painted table (its `basic.table.header` place) a row
 /// of the header font, `list.header(NONE)`'s padding above and below its line box, a side the
 /// theme leaves unstated egui_extras' own, half the List scope's `item_spacing.y`
-/// (`pages/basic.rs`, `row_metrics`, `table_cell_inset`); on the Data and Theme Map pages' `TableBuilder`s, all of
-/// the installed 0.8.0 theme, its `list.header(NONE).min_size[1]`, else `list.row(NONE).min_size[1]`, else
-/// egui's own `interact_size.y`, or the header font's line box rounded up, where that is taller
-/// ([`next_table_row`]). There
-/// the header pushes the first body row down by exactly its height: its cells are one line in
-/// that line box, each centred in its row (`pages/data.rs`, `centred_cells`), and the rows lie
-/// with no spacing between them, so a first-row cell's centre lies half the header and half a
-/// row below a header cell's, on egui's layout grid ([`CENTRE_SLACK`]). At a text-scaling
+/// (`pages/basic.rs`, `row_metrics`, `table_cell_inset`); on the Data and Theme Map pages'
+/// `TableBuilder`s, all of the installed 0.8.0 theme, the same rows (`TableRows::of` through
+/// `row_metrics`): its `list.header(NONE).min_size[1]`, else `list.row(NONE).min_size[1]`, else
+/// the header font's line box and the header's padding above and below it, an unstated side
+/// egui_extras' own ([`next_table_row`]). There
+/// the header pushes the first body row down by exactly its height, the body's top the header's
+/// bottom rounded to whole pixels as egui's scroll area lays its content: its cells are one line
+/// in that line box, each centred in its row (`pages/data.rs`, `centred_cells`), and the rows lie
+/// with no spacing between them, so a first-row cell's centre lies half a row below that top, on
+/// egui's layout grid ([`CENTRE_SLACK`]). At a text-scaling
 /// factor of 1.5 a stated height grows to hold its label, as gpui's table rows grow
 /// ([`next_rule`]), and an unstated Basic header is a row of the header font at its scaled size.
 #[test]
@@ -5246,22 +5248,18 @@ fn the_tables_headers_take_the_themes_header_height() -> Result<(), String> {
                 .ok_or("no 0.8.0 theme installed")?
                 .clone();
             let l = &r.list;
-            let [_, stated_row] = l.row(WidgetState::NONE).min_size;
             let stated = native_theme_egui::next::list_header_height(&r);
             assert_eq!(
                 stated.is_some(),
                 preset != UNSTATED_PRESET,
                 "{preset}: the 0.8.0 preset's header height"
             );
-            let (label, item) = (
-                l.header_label(WidgetState::NONE),
-                l.item_label(WidgetState::NONE),
-            );
+            let item = l.item_label(WidgetState::NONE);
             let size = native_theme_egui::next::list_header_font(&r)
                 .map_err(|e| format!("{preset}: {e}"))?
                 .size;
-            let header = next_table_row(&r, stated.or(stated_row), &label, size);
-            let row = next_table_row(&r, stated_row, &item, item.size_px);
+            let header = next_table_row(&page, &r, true, size)?;
+            let row = next_table_row(&page, &r, false, item.size_px)?;
             let records = page.state().registry.records();
             let centre = |kind: &str| {
                 records
@@ -5270,8 +5268,13 @@ fn the_tables_headers_take_the_themes_header_height() -> Result<(), String> {
                     .map(|r| r.rect.center().y)
                     .fold(f32::INFINITY, f32::min)
             };
-            let pushed = centre(cell_kind) - centre(header_kind);
-            let want = 0.5 * (header + row);
+            let header_centre = centre(header_kind);
+            let pushed = centre(cell_kind) - header_centre;
+            // the body's scroll area lays its content from the header's bottom rounded to
+            // whole pixels (egui 0.37.0 `src/containers/scroll_area.rs:880-883`)
+            let px = page.ctx.pixels_per_point();
+            let body_top = ((header_centre + 0.5 * header) * px).round() / px;
+            let want = body_top - header_centre + 0.5 * row;
             assert!(
                 (pushed - want).abs() <= CENTRE_SLACK,
                 "{preset} at {factor} {tab}: the first row's centre lies {pushed} below the \
@@ -5344,13 +5347,11 @@ fn the_tables_centre_their_text_in_its_row() -> Result<(), String> {
                 .ok_or("no 0.8.0 theme installed")?
                 .clone();
             let l = &r.list;
-            let [_, stated_row] = l.row(WidgetState::NONE).min_size;
-            let stated = native_theme_egui::next::list_header_height(&r).or(stated_row);
             let (label, item) = (
                 l.header_label(WidgetState::NONE),
                 l.item_label(WidgetState::NONE),
             );
-            let header_height = next_table_row(&r, stated, &label, label.size_px);
+            let header_height = next_table_row(&page, &r, true, label.size_px)?;
             let records = page.state().registry.records();
             let top = records
                 .iter()
@@ -5378,7 +5379,7 @@ fn the_tables_centre_their_text_in_its_row() -> Result<(), String> {
                     let [leaf, ..] = crate::info::row_cells(row, (&json, preset));
                     leaf
                 };
-                let row_height = next_table_row(&r, stated_row, &item, item.size_px);
+                let row_height = next_table_row(&page, &r, false, item.size_px)?;
                 let row = egui::Rect::from_x_y_ranges(
                     0.0..=crate::WINDOW_SIZE.x,
                     header.bottom()..=header.bottom() + row_height,
@@ -5752,39 +5753,59 @@ fn a_narrow_colour_cell_is_cut_short_and_whole_on_hover() {
     );
 }
 
-/// The height of a row of the Data and Theme Map pages' `TableBuilder`s (`pages/data.rs`,
-/// `TableRows::of`), of the installed 0.8.0 theme `r`: `stated` verbatim at a text scale of 1 or
-/// less, above it at least the line box of `style` at its size, which the resolve has scaled
-/// already, rounded up, as gpui's table rows grow (no padding or rule: the cells draw none);
-/// where the theme states none, egui's own `interact_size.y` for the scheme
-/// (src/style/roles.rs, `row_height`), or the line box of `style` drawn at `drawn` rounded up,
-/// where that is taller, as egui's own rows are at least `interact_size.y` and as tall as their
-/// line. A line box is the style's stated `line_height`, else its size times
-/// `typography.line_height_multiplier`.
+/// The query of a table's part at rest (`ListVariant::Table`), as the showcase's tables ask it.
+fn table_query() -> native_theme::next::ListQuery {
+    use native_theme::next::{ListKind, ListQuery, ListVariant, WidgetState};
+    ListQuery::new(WidgetState::NONE).variant(ListKind {
+        variant: ListVariant::Table,
+        alternate: false,
+    })
+}
+
+/// The height of a body row, or `header`, the header, of the Data and Theme Map pages'
+/// `TableBuilder`s (`pages/data.rs`, `TableRows::of`), of the installed 0.8.0 theme `r` in
+/// `harness`, a table's ([`table_query`]): the stated height, `list.row(NONE).min_size[1]` (the
+/// header's `list.header(NONE).min_size[1]`, else the row's), as [`next_rule`] grows it with the
+/// part's padding above and below; where the theme states none, the line box of the label
+/// (`list.item_label(NONE)`, `list.header_label(NONE)`) drawn at `drawn` and that padding, on
+/// egui's layout grid. A side of the padding the theme leaves unstated is egui_extras' own, half
+/// the List scope's `item_spacing.y`. A line box is the style's stated `line_height`, else its
+/// size times `typography.line_height_multiplier`.
 fn next_table_row(
+    harness: &Harness<'_, App>,
     r: &native_theme::next::ResolvedTheme,
-    stated: Option<f32>,
-    style: &native_theme::next::TextStyle,
+    header: bool,
     drawn: f32,
-) -> f32 {
-    let line_box = |size: f32| {
-        if style
-            .stated
-            .contains(native_theme::next::TextStated::LINE_HEIGHT)
-        {
-            style.line_height
-        } else {
-            size * r.typography.line_height_multiplier
-        }
+) -> Result<f32, String> {
+    let q = table_query();
+    let l = &r.list;
+    let [_, stated_row] = l.row(q).min_size;
+    let (part, style, stated) = if header {
+        let part = l.header(q);
+        let stated = part.min_size[1].or(stated_row);
+        (part, l.header_label(q), stated)
+    } else {
+        (l.row(q), l.item_label(q), stated_row)
     };
-    match stated {
-        Some(h) if r.context.text_scale <= 1.0 => h,
-        Some(h) => h.max(line_box(style.size_px).ceil()),
-        None => {
-            let own = egui::Theme::Light.default_style().spacing.interact_size.y;
-            own.max(line_box(drawn).ceil())
-        }
-    }
+    let own = 0.5
+        * scope_style(harness, native_theme_egui::Role::List)?
+            .spacing
+            .item_spacing
+            .y;
+    let [top, _, bottom, _] = native_theme_egui::next::padding_of(&part);
+    let padding = top.unwrap_or(own) + bottom.unwrap_or(own);
+    let line_box = if style
+        .stated
+        .contains(native_theme::next::TextStated::LINE_HEIGHT)
+    {
+        style.line_height
+    } else {
+        drawn * r.typography.line_height_multiplier
+    };
+    Ok(match stated {
+        Some(h) => next_rule(r, h, &style, padding),
+        None => egui::emath::GuiRounding::round_ui(line_box + padding),
+    })
 }
 
 /// docs/todo.md's G1/G2 item for M9c ("the egui showcase's body rows grow past
@@ -5820,9 +5841,9 @@ fn the_data_and_theme_map_rows_are_the_themes_row_height() -> Result<(), String>
                 .clone();
             assert_eq!(r.context.text_scale, factor, "{preset}: the text scale");
             let item = r.list.item_label(native_theme::next::WidgetState::NONE);
-            let [_, stated] = r.list.row(native_theme::next::WidgetState::NONE).min_size;
+            let [_, stated] = r.list.row(table_query()).min_size;
             covered.insert(stated.is_some());
-            let want = next_table_row(&r, stated, &item, item.size_px);
+            let want = next_table_row(&page, &r, false, item.size_px)?;
             let cells: Vec<egui::Rect> = page
                 .state()
                 .registry

@@ -2,8 +2,8 @@
 //! and `StripBuilder` in the base style.
 
 use egui_extras::{Column, Size, StripBuilder, TableBuilder};
-use native_theme::next::{ResolvedTheme, TextStated, WidgetState};
-use native_theme_egui::next::{self, list_header_height};
+use native_theme::next::{ListVariant, ResolvedTheme, TextStated, WidgetState};
+use native_theme_egui::next;
 use native_theme_egui::{Role, RoleVariant};
 
 use super::{DemoState, caption};
@@ -172,19 +172,20 @@ impl TableHeader {
 }
 
 /// An egui_extras table's body row and header heights, the Data and Theme Map tables' alike,
-/// with the line box each row's text is drawn in, of the installed 0.8.0 theme:
+/// with the line box each row's text is drawn in, of the installed 0.8.0 theme, as the Basic
+/// table's (`super::basic::row_metrics`, of a table, `ListVariant::Table`):
 /// `list.row(NONE).min_size[1]` and `list.header(NONE).min_size[1]` (else the row's, as a header
-/// the theme gives no height is a row), each grown above a text scale of 1 to hold its line, in
-/// `list.item_label(NONE)` and `list.header_label(NONE)` (`demo::next_line_box`), as gpui's
-/// table rows grow (`demo::next_grown`); where the theme states neither, egui's own
-/// `interact_size.y`, or the line box rounded up, as that rule rounds it, where that is taller,
-/// as egui's own rows are at least `interact_size.y` (`egui/src/widgets/button.rs:306-309`) and
-/// as tall as their line. The cells draw no padding and no line inside the row, and each is one
-/// line in its line box, of its font's drawn size ([`one_line_cells`]), so a row is these
-/// heights tall, except a stated one shorter than its line box at a text scale of 1 or less,
-/// which grows to hold its line (egui_extras `layout.rs:160-168`); in a row taller than its line
-/// the text is centred ([`centred_cells`]). Without an installed 0.8.0 theme, egui's own rows
-/// and the text's own line.
+/// the theme gives no height is a row), each grown above a text scale of 1 to hold its line and
+/// its padding, as gpui's table rows grow (`demo::next_grown`); where the theme states neither,
+/// one line box of the font as drawn, in `list.item_label(NONE)` and `list.header_label(NONE)`
+/// (`demo::next_line_box`), and the part's padding above and below it, a side the theme leaves
+/// unstated egui_extras' own cell inset (`super::basic::table_cell_inset`, half the scope's
+/// `item_spacing.y`, taken before [`one_line_cells`] zeroes it). Each cell is one line in its
+/// line box, of its font's drawn size ([`one_line_cells`]), so a row is these heights tall,
+/// except a stated one shorter than its line box at a text scale of 1 or less, which grows to
+/// hold its line (egui_extras `layout.rs:160-168`); in a row taller than its line the text is
+/// centred ([`centred_cells`]), its padding the room above and below it. Without an installed
+/// 0.8.0 theme, egui's own rows and the text's own line.
 pub(crate) struct TableRows {
     pub(crate) body: f32,
     pub(crate) header: f32,
@@ -193,12 +194,13 @@ pub(crate) struct TableRows {
 }
 
 impl TableRows {
-    /// The heights in `ui`, the table's `Role::List` scope, whose `TextStyle::Body` is the cells'
-    /// font and whose `interact_size.y` egui's own where the theme states no
-    /// `list.row(NONE).min_size[1]`; the header drawn in `header_font`.
+    /// The heights in `ui`, the table's `Role::List` scope before [`one_line_cells`], whose
+    /// `TextStyle::Body` is the cells' font, whose `item_spacing` egui_extras' own cell inset is
+    /// half of, and whose `interact_size.y` egui's own row without an installed 0.8.0 theme; the
+    /// header drawn in `header_font`.
     pub(crate) fn of(ui: &egui::Ui, r: Option<&ResolvedTheme>, header_font: &egui::FontId) -> Self {
-        let own = ui.spacing().interact_size.y;
         let Some(r) = r else {
+            let own = ui.spacing().interact_size.y;
             return Self {
                 body: own,
                 header: own,
@@ -206,27 +208,24 @@ impl TableRows {
                 header_line: None,
             };
         };
-        let l = &r.list;
-        let (item, label) = (
-            l.item_label(WidgetState::NONE),
-            l.header_label(WidgetState::NONE),
-        );
-        let body_line =
-            demo::next_line_box(r, &item, egui::TextStyle::Body.resolve(ui.style()).size);
-        let header_line = demo::next_line_box(r, &label, header_font.size);
-        // a stated row shorter than one line box still grows to its line, as the connector's
-        // List rows do (mapping.toml, `list.row_height`): no bundled preset states one
-        let height =
-            |stated: Option<f32>, style: &native_theme::next::TextStyle, line: f32| match stated {
-                Some(h) => {
-                    demo::next_grown(r, h, demo::next_line_box(r, style, style.size_px), 0.0, 0.0)
-                }
-                None => own.max(line.ceil()),
-            };
-        let [_, row] = l.row(WidgetState::NONE).min_size;
+        let own = super::basic::table_cell_inset(ui);
+        let body_font = egui::TextStyle::Body.resolve(ui.style());
+        let metrics = |header: bool, font: &egui::FontId| {
+            let (height, _, line) = super::basic::row_metrics(
+                ui,
+                Some(r),
+                (ListVariant::Table, header),
+                font,
+                own,
+                0.0,
+            );
+            (height, line)
+        };
+        let (body, body_line) = metrics(false, &body_font);
+        let (header, header_line) = metrics(true, header_font);
         Self {
-            body: height(row, &item, body_line),
-            header: height(list_header_height(r).or(row), &label, header_line),
+            body,
+            header,
             body_line: Some(body_line),
             header_line: Some(header_line),
         }

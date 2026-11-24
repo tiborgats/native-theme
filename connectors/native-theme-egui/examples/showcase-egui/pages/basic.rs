@@ -1879,7 +1879,7 @@ fn inner_corners(inner: f32, [nw, ne, sw, se]: [bool; 4]) -> egui::CornerRadius 
 /// scope's `button_padding` (`egui/src/widgets/button.rs:333-337`); for the table egui_extras'
 /// own cell inset ([`table_cell_inset`]). Without an installed 0.8.0 theme, egui's own line,
 /// the font's row height, padded by `own`.
-fn row_metrics(
+pub(crate) fn row_metrics(
     ui: &egui::Ui,
     r: Option<&ResolvedTheme>,
     (variant, header): (ListVariant, bool),
