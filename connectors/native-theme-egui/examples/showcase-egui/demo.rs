@@ -1338,9 +1338,9 @@ impl<'a> DrawnFamilies<'a> {
 /// The OS's faces of the theme's family at the weights the showcase draws besides the body's:
 /// its semibold face, for the inspector's headings gpui draws `font_semibold()` (parity decision
 /// 3), and the face at each weight of each installed 0.8.0 theme's text roles
-/// (`next::text_role_weight`) and table header (`list.header_label(NONE).weight`), for the
-/// page's section headings, its
-/// Typography group and its table. Each is `native_theme::fonts::system_face` at its weight, added with
+/// (`next::text_role_weight`), table header (`list.header_label(NONE).weight`) and tab label
+/// (`tab.label(NONE).weight`), for the page's section headings, its
+/// Typography group, its table and its tabs. Each is `native_theme::fonts::system_face` at its weight, added with
 /// `Context::add_font` after every `ThemeAtlas::install`, whose `set_fonts` replaces the
 /// definitions: the semibold one under `SEMIBOLD_FAMILY`, the others under [`weight_family`].
 /// `add_font` skips a name the loaded fonts already hold (`egui/src/context.rs:2133-2143`), and
@@ -1393,7 +1393,8 @@ impl Semibold {
             )];
             // The weights the pages draw text at besides the body's (`weighted_family`): each
             // text role's (`next::text_role_weight`, the section headings and the Typography
-            // group) and the table header's where stated (`pages::data::TableHeader`), of each
+            // group), the table header's where stated (`pages::data::TableHeader`) and the tab
+            // label's where stated (`next_tab_label`), of each
             // scheme's installed theme whose body weight is stated (`next::font_weight`).
             for scheme in [egui::Theme::Light, egui::Theme::Dark] {
                 let Some(t) = atlas.next_resolved(scheme) else {
@@ -1414,7 +1415,8 @@ impl Semibold {
                     .stated
                     .contains(TextStated::WEIGHT)
                     .then_some(header.weight);
-                for weight in roles.into_iter().chain(header) {
+                let tab = next::role_font_weight(t, native_theme_egui::Role::Tab).ok();
+                for weight in roles.into_iter().chain(header).chain(tab) {
                     let family = weight_family(weight);
                     if weight != body_weight && !families.iter().any(|(_, f)| *f == family) {
                         families.push((weight, family));
@@ -1576,6 +1578,22 @@ pub(crate) fn next_lined(
     match next_value(ui, native_theme_egui::next::line_height) {
         Some(line_height) => text.line_height(Some(size * line_height)),
         None => text,
+    }
+}
+
+/// A tab's label, one line box tall ([`next_lined`]), at the weight the installed 0.8.0 theme
+/// states for it (`next::role_font_weight(Role::Tab)`, `tab.label(NONE).weight`) where it also
+/// states the body's (`next::font_weight`): in the face [`Semibold`] registers at that weight
+/// where the fonts hold one, else in the body's ([`weighted_family`]). Where the theme states
+/// no tab weight, egui's own: the scope's proportional face, the body's.
+pub(crate) fn next_tab_label(ui: &egui::Ui, text: &'static str) -> egui::RichText {
+    use native_theme_egui::next;
+    let lined = next_lined(ui, text, egui::TextStyle::Button);
+    match next_value(ui, |r| {
+        (next::role_font_weight(r, Role::Tab), next::font_weight(r))
+    }) {
+        Some((Ok(weight), Ok(body))) => lined.family(weighted_family(ui, weight, body)),
+        _ => lined,
     }
 }
 
@@ -1780,7 +1798,7 @@ pub(crate) struct TabLook {
     /// The radius the selected tab's bottom corners curve out by into the bar, where the theme
     /// states a positive, finite one ([`tab_flares`]).
     pub flare: Option<f32>,
-    /// A tab's label, one line box tall.
+    /// A tab's label, one line box tall, at the tab's weight ([`next_tab_label`]).
     pub label: fn(&egui::Ui, &'static str) -> egui::RichText,
 }
 
@@ -1791,7 +1809,7 @@ impl TabLook {
     /// `item_spacing.x` apart, `tab.item_gap` where stated, else the layout's own; the line of
     /// [`next_indicator_line`]; the flares of [`next_outward_radius`], which [`tab_bar`] paints in
     /// the scope's selected tab's fill and outline, the ones the connector writes from
-    /// `tab.tab(SELECTED)`; the labels [`next_lined`]. Without a 0.8.0 theme, egui's own tabs.
+    /// `tab.tab(SELECTED)`; the labels [`next_tab_label`]. Without a 0.8.0 theme, egui's own tabs.
     pub(crate) fn next(r: Option<&native_theme::next::ResolvedTheme>) -> Self {
         Self {
             min_width: r
@@ -1811,7 +1829,7 @@ impl TabLook {
             },
             line: r.and_then(next_indicator_line),
             flare: r.and_then(next_outward_radius),
-            label: |ui, text| next_lined(ui, text, egui::TextStyle::Button),
+            label: next_tab_label,
         }
     }
 }

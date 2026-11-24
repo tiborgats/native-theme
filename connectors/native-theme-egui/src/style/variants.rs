@@ -15,7 +15,7 @@
 
 use egui::style::WidgetVisuals;
 
-use super::base::Read;
+use super::base::{Read, stroke};
 use super::line::{Line, LineAlign};
 use super::roles::CellInput;
 use super::states::{FillField, StateLine, Unstated, state_borders};
@@ -30,6 +30,9 @@ pub(crate) struct Disabled {
     pub fill: Read<Rgba>,
     pub outline: Option<Rgba>,
     pub align: LineAlign,
+    /// The outline a rule states for the disabled state, and where it lies: the check box's;
+    /// `None` where none does, and the resting outline stays.
+    pub border: Option<(StateLine, LineAlign)>,
 }
 
 /// The checked box.
@@ -45,6 +48,8 @@ pub(crate) struct CheckedBox {
     pub disabled_fill: Read<Rgba>,
     /// The checked box's mark where the theme states a disabled mark.
     pub disabled_mark: Option<Rgba>,
+    /// The checked box's outline, and where it lies, where the theme states a disabled outline.
+    pub disabled_border: Option<(StateLine, LineAlign)>,
 }
 
 /// The primary button's disabled look: its fill where the theme states one, and the label
@@ -80,6 +85,7 @@ impl VariantSource {
             fill: Some(fill),
             outline: None,
             align: LineAlign::Outside,
+            border: None,
         };
         let k = &t.checkbox;
         Self {
@@ -123,6 +129,7 @@ impl VariantSource {
                     .disabled_background
                     .map(|c| (c, "checkbox.disabled_background")),
                 disabled_mark: None,
+                disabled_border: None,
             },
             input: disabled(
                 t.input.disabled_text_color,
@@ -175,6 +182,26 @@ fn outline_over(
             align,
         }
         .over(Some(fill));
+    }
+}
+
+/// `entry`'s outline where a rule states one for the disabled state (`line`, lying at `align`):
+/// its width over the entry's ([`stroke`]) and its colour drawn over the fill the entry paints
+/// (`bg_fill`, [`Line::over`]), each where stated.
+fn stated_outline(
+    entry: &mut WidgetVisuals,
+    (line, align): (StateLine, LineAlign),
+    notes: &mut Vec<Note>,
+) {
+    if let Some((width, path)) = line.width {
+        entry.bg_stroke = stroke(path, entry.bg_stroke, entry.bg_stroke.color, width, notes);
+    }
+    if let Some(color) = line.color {
+        entry.bg_stroke.color = Line {
+            color: to_color32(color),
+            align,
+        }
+        .over(Some(entry.bg_fill));
     }
 }
 
@@ -286,7 +313,9 @@ pub(crate) fn selected_disabled_cell(
     // box does; where it states none the platform dims by opacity alone, and the box is its
     // checked self, `checked_background` and the `indicator_color` mark, which
     // `disabled_alpha` fades. The outline stays the checked box's, `checkbox.border.color`,
-    // drawn over the disabled fill where it lies over it.
+    // drawn over the disabled fill where it lies over it, unless the theme states an outline
+    // for the disabled state, which the box then takes; with none, egui dims the checked
+    // outline by `disabled_alpha` alone (egui 0.37.0 `src/ui.rs:523-529`, `Ui::disable`).
     if let Some((fill, path)) = k.disabled_fill {
         let fill = to_color32(fill);
         note_transparent_fill(fill, path, notes);
@@ -295,6 +324,9 @@ pub(crate) fn selected_disabled_cell(
             v.widgets.inactive.fg_stroke.color = text;
         }
         outline_over(&mut v.widgets.inactive, k.outline, k.align, FillField::Bg);
+    }
+    if let Some(border) = k.disabled_border {
+        stated_outline(&mut v.widgets.inactive, border, notes);
     }
     // A disabled mark the theme states is drawn in its own colour. egui 0.37.0 letters the
     // label in the mark's `fg_stroke` where `override_text_color` is unset
@@ -350,6 +382,9 @@ pub(crate) fn disabled_cell(
         }
         // The box fills from `bg_fill` (`egui/src/widget_style.rs:182`); the label reads
         // `override_text_color` (`:133-136`) and the mark strokes `inactive.fg_stroke` (`:188`).
+        // The box outlines from `bg_stroke` (egui 0.37.0 `src/theme/default_style.rs:198`): the
+        // outline a rule states for the disabled state where one does, else the resting one,
+        // which egui dims by `disabled_alpha` alone (`src/ui.rs:523-529`, `Ui::disable`).
         Role::Checkbox => {
             let d = &src.checkbox;
             if let Some((fill, path)) = d.fill {
@@ -357,6 +392,9 @@ pub(crate) fn disabled_cell(
                 note_transparent_fill(fill, path, notes);
                 v.widgets.inactive.bg_fill = fill;
                 outline_over(&mut v.widgets.inactive, d.outline, d.align, FillField::Bg);
+            }
+            if let Some(border) = d.border {
+                stated_outline(&mut v.widgets.inactive, border, notes);
             }
             if let Some(text) = d.text.map(to_color32) {
                 v.override_text_color = Some(text);

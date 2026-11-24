@@ -543,6 +543,18 @@ impl Route {
 /// whole by its size's route, then the fields whose route differs; the icon homes, which no
 /// `Style` field carries, by the showcase's loader.
 pub(crate) fn how_line(manifest: &Manifest, home: &str, seams: &[Seam]) -> String {
+    how_line_with(manifest, home, seams, &[])
+}
+
+/// [`how_line`], where a text style named whole has fields the showcase applies per call
+/// (`per_call`: the field's home, and its route after "per call, "), each such field by that
+/// route in place of its `mapping.toml` row's.
+fn how_line_with(
+    manifest: &Manifest,
+    home: &str,
+    seams: &[Seam],
+    per_call: &[(&str, &str)],
+) -> String {
     if matches!(home, "icons.set" | "icons.theme") {
         return "egui: the showcase loads its icons from it (demo::role_image)".to_string();
     }
@@ -551,22 +563,23 @@ pub(crate) fn how_line(manifest: &Manifest, home: &str, seams: &[Seam]) -> Strin
     }
     let part = |name: &'static str| {
         let field = format!("{home}.{name}");
-        manifest
-            .rows
-            .iter()
-            .find(|r| r.holds(&field))
-            .map(|row| (name, Route::of(row, seams)))
+        if let Some((_, how)) = per_call.iter().find(|(h, _)| *h == field) {
+            let short = format!("per call, {how}");
+            return Some((name, format!("egui: {short}"), short));
+        }
+        manifest.rows.iter().find(|r| r.holds(&field)).map(|row| {
+            let route = Route::of(row, seams);
+            (name, route.line(), route.short())
+        })
     };
     let mut parts = ["size_px", "family", "weight", "style", "line_height"]
         .into_iter()
         .filter_map(part);
-    let Some((_, main)) = parts.next() else {
+    let Some((_, main, main_short)) = parts.next() else {
         return "not reachable: no mapping.toml row holds it".to_string();
     };
-    let main_short = main.short();
     let mut rest: Vec<(String, Vec<&str>)> = Vec::new();
-    for (name, route) in parts {
-        let short = route.short();
+    for (name, _, short) in parts {
         if short == main_short {
             continue;
         }
@@ -575,7 +588,7 @@ pub(crate) fn how_line(manifest: &Manifest, home: &str, seams: &[Seam]) -> Strin
             None => rest.push((short, vec![name])),
         }
     }
-    let mut line = main.line();
+    let mut line = main;
     for (short, names) in rest {
         line.push_str(&format!("; {}: {short}", names.join(", ")));
     }
@@ -764,10 +777,19 @@ pub(crate) const TAB_PER_CALL_ROUTES: [(&str, &str); 6] = [
     ),
 ];
 
+/// The fields of a tab's label a row of tabs applies per call (`demo::next_tab_label`), each with
+/// its route after "per call, ": its weight, which no `TextStyle` carries.
+pub(crate) const TAB_LABEL_PER_CALL: [(&str, &str); 1] = [(
+    "tab.label(NONE).weight",
+    "the face the showcase registers at the stated weight where the fonts hold one, else the \
+     body's (demo::next_tab_label)",
+)];
+
 /// The line under a listed element's row: the call that applies it where a page or the chrome
 /// paints it per call ([`PER_CALL_ROUTES`], whose `row_` ids name every row by prefix and whose
 /// other ids name one element each; [`TAB_PER_CALL_ROUTES`] on [`TAB_ELEMENTS`]), else
-/// [`how_line`]'s, from the `mapping.toml` row that holds the home.
+/// [`how_line`]'s, from the `mapping.toml` row that holds the home, a tab's label with its
+/// fields [`TAB_LABEL_PER_CALL`] names by their call.
 pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: &[Seam]) -> String {
     let names = |id: &str| {
         if id.ends_with("row_") {
@@ -776,8 +798,8 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
             element == id
         }
     };
-    let tab_route = TAB_ELEMENTS
-        .contains(&element)
+    let tab = TAB_ELEMENTS.contains(&element);
+    let tab_route = tab
         .then(|| TAB_PER_CALL_ROUTES.iter().find(|(h, _)| *h == home))
         .flatten()
         .map(|(_, line)| *line);
@@ -786,7 +808,16 @@ pub(crate) fn listed_how(manifest: &Manifest, element: &str, home: &str, seams: 
         .find(|(id, h, _)| names(id) && *h == home)
         .map(|(_, _, line)| *line)
         .or(tab_route)
-        .map_or_else(|| how_line(manifest, home, seams), str::to_string)
+        .map_or_else(
+            || {
+                if tab {
+                    how_line_with(manifest, home, seams, &TAB_LABEL_PER_CALL)
+                } else {
+                    how_line(manifest, home, seams)
+                }
+            },
+            str::to_string,
+        )
 }
 
 /// The rows of a `mapping.toml` row for an instance drawn with `seams` under `preset`: one per

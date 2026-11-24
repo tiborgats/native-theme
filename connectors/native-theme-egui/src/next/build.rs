@@ -871,14 +871,21 @@ fn disabled(label: &TextStyle, part: &PartStyle, home: &'static str, rest: &Part
         fill: state_fill_at(part, home),
         outline: outline.color,
         align,
+        border: None,
     }
+}
+
+/// The border a rule states for the queried state ([`state_line`]), and where it lies.
+fn state_edge(part: &PartStyle, home: &'static str) -> Option<(StateLine, LineAlign)> {
+    state_line(part, home).map(|line| (line, edge(part).1))
 }
 
 /// [`VariantSource`] of the 0.8.0 model. A disabled or checked value is the one a rule states
 /// for that state. The checked box's fill and outline under the pointer or pressed keep egui's
 /// own treatment of the hover or the press, each property apart, unless the theme states one
 /// for it (spec §2, `from_state`: the state asked alone), and are then the combined state's
-/// value; a checked box's disabled fill likewise.
+/// value; a checked box's disabled fill, mark and outline likewise. The disabled box takes the
+/// outline a rule states for the disabled state, else keeps its resting one.
 pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
     use WidgetState as S;
     let b = &r.button;
@@ -920,12 +927,18 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
             "combo_box.field(DISABLED).fill",
             &cb.field(S::NONE),
         ),
-        checkbox: disabled(
-            &k.label(S::DISABLED),
-            &k.indicator(S::DISABLED),
-            "checkbox.indicator(DISABLED).fill",
-            &k.indicator(S::NONE),
-        ),
+        checkbox: Disabled {
+            border: state_edge(
+                &k.indicator(S::DISABLED),
+                "checkbox.indicator(DISABLED).stroke.width",
+            ),
+            ..disabled(
+                &k.label(S::DISABLED),
+                &k.indicator(S::DISABLED),
+                "checkbox.indicator(DISABLED).fill",
+                &k.indicator(S::NONE),
+            )
+        },
         checked: CheckedBox {
             fill: state_fill_at(&checked, "checkbox.indicator(CHECKED).fill"),
             outline: checked_outline.color,
@@ -949,12 +962,24 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
             }),
             disabled_mark: state_icon_color(&k.checkmark(S::DISABLED))
                 .and_then(|_| icon_color(&k.checkmark(S::DISABLED | S::CHECKED))),
+            disabled_border: k
+                .indicator(S::DISABLED)
+                .from_state
+                .contains(PartStated::STROKE)
+                .then(|| {
+                    let part = k.indicator(S::DISABLED | S::CHECKED);
+                    (
+                        line_of(&part, "checkbox.indicator(DISABLED|CHECKED).stroke.width"),
+                        edge(&part).1,
+                    )
+                }),
         },
         input: Disabled {
             text: state_text_color(&i.text(S::DISABLED)),
             fill: state_fill_at(&i.field(S::DISABLED), "input.field(DISABLED).fill"),
             outline: None,
             align: LineAlign::Outside,
+            border: None,
         },
         slider_track: state_fill_at(&r.slider.track(S::DISABLED), "slider.track(DISABLED).fill"),
         slider_fill: state_fill(&r.slider.active_track(S::DISABLED)),

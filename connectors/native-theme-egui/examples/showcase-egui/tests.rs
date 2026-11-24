@@ -2309,9 +2309,63 @@ fn the_toggle_takes_the_checked_colours_alone() -> Result<(), String> {
     Ok(())
 }
 
+/// The mixed check box reads the mixed state from the 0.8.0 model (`pages::selection::MixedLook`,
+/// spec §2 `from_state`): on kde-breeze with a rule for `INDETERMINATE` stating the box's fill
+/// and outline and the mark's colour, the box is painted in that fill and outline and its dash
+/// in that colour, and its label keeps the unchecked box's colour.
+#[test]
+fn the_mixed_box_reads_the_mixed_state() -> Result<(), String> {
+    let rule = "[[widgets.checkbox.rules]]\nstates = [\"indeterminate\"]\n\
+                indicator.fill = \"#ff00ff\"\n\
+                indicator.stroke = { width = 3.0, color = \"#00ff00\" }\n\
+                checkmark.color = \"#0000ff\"\n";
+    let (harness, r) = open_patched(Page::Selection, egui::Theme::Light, "kde-breeze", |_| {
+        native_theme::next::ThemePatch::from_toml(rule).ok()
+    })?;
+    let [magenta, green, blue] = [[0xff, 0, 0xff], [0, 0xff, 0], [0, 0, 0xff]]
+        .map(|[r, g, b]| egui::Color32::from_rgb(r, g, b));
+    let rest = crate::pages::selection::MixedLook::of(&r).entries[0];
+    assert_eq!(
+        (rest.fill, rest.stroke_width, rest.stroke_color, rest.mark),
+        (Some(magenta), Some(3.0), Some(green), Some(blue)),
+        "the mixed state's stated values"
+    );
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == "checkbox (indeterminate)")
+        .map(|r| r.rect)
+        .ok_or("no mixed box recorded")?;
+    let shapes = &harness.output().shapes;
+    let boxed = shapes.iter().any(|c| {
+        matches!(&c.shape, egui::Shape::Rect(s)
+            if rect.intersects(s.rect) && s.fill == magenta
+                && s.stroke == egui::Stroke::new(3.0, green))
+    });
+    let dash = shapes.iter().any(|c| {
+        matches!(&c.shape, egui::Shape::LineSegment { points, stroke }
+            if rect.contains(points[0]) && stroke.color == blue)
+    });
+    assert!(boxed, "the mixed box is not in the stated fill and outline");
+    assert!(
+        dash,
+        "the mixed box's dash is not in the stated mark colour"
+    );
+    let label = shapes.iter().find_map(|c| match &c.shape {
+        egui::Shape::Text(s) if s.galley.job.text == "Indeterminate" => {
+            s.galley.job.sections.first().map(|s| s.format.color)
+        }
+        _ => None,
+    });
+    assert_ne!(label, Some(blue), "the label takes the mark's colour");
+    Ok(())
+}
+
 /// A radio button and a check box take no selected flag of their own: the checked look is
-/// `RoleVariant::Selected` (§4.4), picked per instance from its state; the mixed box is painted
-/// as a checked one.
+/// `RoleVariant::Selected` (§4.4), picked per instance from its state; the mixed box is the
+/// unchecked one with what the theme states for the mixed state (`pages::selection::MixedLook`).
 #[test]
 fn a_checked_radio_or_box_is_drawn_selected() {
     let variant_of = |harness: &Harness<'_, App>, kind: &str| {
@@ -2331,7 +2385,7 @@ fn a_checked_radio_or_box_is_drawn_selected() {
     let mut harness = open_page(Page::Selection, egui::Theme::Light);
     assert_eq!(
         variant_of(&harness, "checkbox (indeterminate)"),
-        RoleVariant::Selected
+        RoleVariant::Normal
     );
     for (kind, variant) in [
         ("RadioButton", RoleVariant::Selected),
@@ -11127,6 +11181,65 @@ fn the_tab_routes_name_the_call_that_draws_them() -> Result<(), String> {
         crate::info::how_line(&manifest, home, &seams),
         "the Basic page's layout box takes a tab's route"
     );
+    Ok(())
+}
+
+/// A tab's label is drawn at the weight the theme states for it, so the tabs' Widget Info names
+/// the call that applies it (`demo::next_tab_label`) for the label's weight, its other fields
+/// by their `mapping.toml` rows: on material-3, whose `tab.label(NONE).weight` is stated apart
+/// from the body's, each page tab and inspector tab is in the face registered at that weight
+/// (`demo::weighted_family`), the faces held on every host ([`hold_weights`]).
+#[test]
+fn a_tab_label_is_drawn_at_its_stated_weight() -> Result<(), String> {
+    use crate::info::{TAB_ELEMENTS, TAB_LABEL_PER_CALL};
+    let manifest = Manifest::parse(MANIFEST)?;
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::Tab,
+        RoleVariant::Normal,
+    )];
+    let home = "tab.label(NONE)";
+    let plain = crate::info::how_line(&manifest, home, &seams);
+    for id in TAB_ELEMENTS {
+        let how = crate::info::listed_how(&manifest, id, home, &seams);
+        for (_, route) in TAB_LABEL_PER_CALL {
+            assert!(how.contains(route), "{id}: {how:?}");
+        }
+        assert_ne!(
+            how, plain,
+            "{id}: the label's weight keeps the manifest's route"
+        );
+    }
+    assert!(
+        !plain.contains("demo::next_tab_label"),
+        "an element that is no tab keeps the manifest's routes: {plain:?}"
+    );
+
+    let preset = "material-3";
+    let mut basic = open_page_under(Page::Basic, egui::Theme::Light, preset);
+    let r = basic
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?
+        .clone();
+    let weight = native_theme_egui::next::role_font_weight(&r, native_theme_egui::Role::Tab)
+        .map_err(|e| e.to_string())?;
+    let body = native_theme_egui::next::font_weight(&r).map_err(|e| e.to_string())?;
+    assert_ne!(weight, body, "{preset}: the tab's weight is not the body's");
+    hold_weights(&mut basic, &[weight]);
+    for (id, label) in [
+        ("chrome.page_tabs.basic", "Basic"),
+        ("chrome.page_tabs.buttons", "Buttons"),
+        ("chrome.side_panel.inspector_tabs.widget", "Widget"),
+        ("chrome.side_panel.inspector_tabs.theme", "Theme"),
+    ] {
+        let tab = basic.state().registry.places()[id];
+        assert_eq!(
+            galley_font(&basic, label, &[tab]).family,
+            weighted(weight, body),
+            "{preset}: {id} is not at tab.label(NONE).weight"
+        );
+    }
     Ok(())
 }
 

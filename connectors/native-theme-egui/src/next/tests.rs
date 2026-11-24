@@ -433,6 +433,56 @@ fn a_checked_boxs_hovered_outline_stated_as_none_is_no_line()
     Ok(())
 }
 
+/// A disabled check box, checked or not, draws the outline a rule states for the disabled
+/// state (`indicator(DISABLED).stroke`), its width and colour; where none does, it keeps its
+/// resting outline, which egui dims by `disabled_alpha` alone (spec §2, `from_state`; §10,
+/// rule 0).
+#[test]
+fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::PartStated;
+
+    let rule = "[[widgets.checkbox.rules]]\nstates = [\"disabled\"]\n\
+                indicator.stroke = { width = 3.0, color = \"#ff00ff\" }\n";
+    let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
+    for &(key, preset) in PRESETS {
+        let cells = |atlas: &crate::ThemeAtlas| {
+            let styles = atlas.scheme(egui::Theme::Light);
+            [
+                crate::RoleVariant::Normal,
+                crate::RoleVariant::Selected,
+                crate::RoleVariant::Disabled,
+                crate::RoleVariant::SelectedDisabled,
+            ]
+            .map(|variant| {
+                styles
+                    .cell(crate::Role::Checkbox, variant)
+                    .visuals
+                    .widgets
+                    .inactive
+            })
+        };
+        let [_, _, disabled, checked] = cells(&patched_light(preset, rule)?);
+        for (name, entry) in [("unchecked", disabled), ("checked", checked)] {
+            assert_eq!(
+                entry.bg_stroke,
+                egui::Stroke::new(3.0, magenta),
+                "{key}: the {name} disabled box"
+            );
+        }
+        let r = Theme::preset(preset).resolve(&ThemeContext::light());
+        let stated = r.checkbox.indicator(WidgetState::DISABLED);
+        if !stated
+            .from_state
+            .intersects(PartStated::STROKE | PartStated::FILL)
+        {
+            let [normal, selected, disabled, checked] = cells(&patched_light(preset, "")?);
+            assert_eq!(disabled.bg_stroke, normal.bg_stroke, "{key}: unchecked");
+            assert_eq!(checked.bg_stroke, selected.bg_stroke, "{key}: checked");
+        }
+    }
+    Ok(())
+}
+
 /// A tool button's and a menu item's hovered and pressed outline widths are the ones a rule
 /// states for the state.
 #[test]
