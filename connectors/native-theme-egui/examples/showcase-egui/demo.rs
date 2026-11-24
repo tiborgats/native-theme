@@ -1934,6 +1934,38 @@ fn reveal_selected_tab(
     }
 }
 
+/// `show`, a scroll area nested in the page's, and the area brought into the page's view where a
+/// widget inside it took an AccessKit `ScrollIntoView` request this pass: egui hands such a
+/// request's scroll target to the innermost scroll area alone, which takes it and gives the
+/// areas around it only a target set before it began (`ScrollArea::show`'s
+/// `scroll_target[d].take()` and its restore of `saved_scroll_target`,
+/// `egui-0.37.0/src/containers/scroll_area.rs`; the request's target, `Context::create_widget`,
+/// `egui-0.37.0/src/context.rs`), so a widget the inner area scrolls to would stay where the page
+/// shows nothing, under the status bar. The page's area takes the inner area's rect as its own
+/// target here, after the inner one has ended.
+pub(crate) fn nested_scroll<R>(
+    ui: &mut egui::Ui,
+    show: impl FnOnce(&mut egui::Ui) -> egui::scroll_area::ScrollAreaOutput<R>,
+) -> egui::scroll_area::ScrollAreaOutput<R> {
+    let requests = |ui: &egui::Ui| {
+        ui.input(|i| {
+            i.events
+                .iter()
+                .filter(|event| {
+                    matches!(event, egui::Event::AccessKitActionRequest(request)
+                        if request.action == egui::accesskit::Action::ScrollIntoView)
+                })
+                .count()
+        })
+    };
+    let before = requests(ui);
+    let out = show(ui);
+    if requests(ui) < before {
+        ui.scroll_to_rect(out.inner_rect, None);
+    }
+    out
+}
+
 /// A row of tabs as the theme states them, in one `Role::Tab` scope (§10.4): each tab a
 /// `Button::new(label).selected(..)`, whose own flag picks the selected tab's colours (§6.2) —
 /// the cell's `tab.background_color`, `tab.active_background` and `tab.active_text_color`,

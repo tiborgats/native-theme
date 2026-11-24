@@ -99,15 +99,17 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
             egui::Resize::default()
                 .id_salt("containers/scroll-vertical")
                 .show(ui, |ui| {
-                    egui::ScrollArea::vertical()
-                        .id_salt("containers/vertical")
-                        .show(ui, |ui| {
-                            for row in 0..SCROLL_ROWS {
-                                demo::base(reg, ui, "scrolled label", |ui| {
-                                    ui.label(format!("Vertical row {row}"))
-                                });
-                            }
-                        });
+                    demo::nested_scroll(ui, |ui| {
+                        egui::ScrollArea::vertical()
+                            .id_salt("containers/vertical")
+                            .show(ui, |ui| {
+                                for row in 0..SCROLL_ROWS {
+                                    demo::base(reg, ui, "scrolled label", |ui| {
+                                        ui.label(format!("Vertical row {row}"))
+                                    });
+                                }
+                            })
+                    });
                     ui.response()
                 })
         });
@@ -115,20 +117,23 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
             egui::Resize::default()
                 .id_salt("containers/scroll-both")
                 .show(ui, |ui| {
-                    egui::ScrollArea::both()
-                        .id_salt("containers/both")
-                        .show(ui, |ui| {
-                            for row in 0..SCROLL_ROWS {
-                                demo::base(reg, ui, "scrolled label", |ui| {
-                                    ui.add(
-                                        egui::Label::new(format!(
-                                            "Row {row}, a line wider than the area it scrolls in"
-                                        ))
-                                        .extend(),
-                                    )
-                                });
-                            }
-                        });
+                    demo::nested_scroll(ui, |ui| {
+                        egui::ScrollArea::both()
+                            .id_salt("containers/both")
+                            .show(ui, |ui| {
+                                for row in 0..SCROLL_ROWS {
+                                    demo::base(reg, ui, "scrolled label", |ui| {
+                                        ui.add(
+                                            egui::Label::new(format!(
+                                                "Row {row}, a line wider than the area it \
+                                                 scrolls in"
+                                            ))
+                                            .extend(),
+                                        )
+                                    });
+                                }
+                            })
+                    });
                     ui.response()
                 })
         });
@@ -143,15 +148,17 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
                     .id_salt("containers/scroll-rows")
                     .show(ui, |ui| {
                         let row_height = ui.text_style_height(&egui::TextStyle::Body);
-                        egui::ScrollArea::vertical()
-                            .id_salt("containers/rows")
-                            .show_rows(ui, row_height, SCROLL_ROWS, |ui, rows| {
-                                for row in rows {
-                                    scrollbar.add(reg, ui, "show_rows label", |ui| {
-                                        ui.label(format!("show_rows row {row}"))
-                                    });
-                                }
-                            });
+                        demo::nested_scroll(ui, |ui| {
+                            egui::ScrollArea::vertical()
+                                .id_salt("containers/rows")
+                                .show_rows(ui, row_height, SCROLL_ROWS, |ui, rows| {
+                                    for row in rows {
+                                        scrollbar.add(reg, ui, "show_rows label", |ui| {
+                                            ui.label(format!("show_rows row {row}"))
+                                        });
+                                    }
+                                })
+                        });
                         ui.response()
                     })
             },

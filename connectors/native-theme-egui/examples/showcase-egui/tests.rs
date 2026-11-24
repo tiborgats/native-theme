@@ -1699,10 +1699,7 @@ const WIDGET_ROLES: &[Role] = &[
 fn every_widget_reports_itself() {
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
         for page in Page::ALL {
-            // Under kde-breeze, installed on any platform: under TEST_PRESET a node of the
-            // Containers page stays under the status bar after `scroll_to_me`, with the 0.7.2
-            // atlas installed as with the 0.8.0 one.
-            let mut harness = open_page_under(page, theme, "kde-breeze");
+            let mut harness = open_page_under(page, theme, TEST_PRESET);
             let hold = harness
                 .state()
                 .hold_zone
@@ -12890,5 +12887,103 @@ fn the_next_helpers_read_the_installed_08_theme() -> Result<(), String> {
         ))
     );
     assert_eq!(gap, active.layout.widget_gap);
+    Ok(())
+}
+
+/// Each widget of the Containers page, scrolled to through AccessKit's `ScrollIntoView`
+/// (`Node::scroll_to_me`), ends above the status bar, the widgets of its nested scroll areas
+/// too (`demo::nested_scroll`): under [`TEST_PRESET`] light the 1280 × 720 window leaves the
+/// "ScrollArea (both)" area reaching under the status bar once its rows are scrolled to, and
+/// egui scrolls only that inner area to a row (measured: a row at y 679-695, the bar's top
+/// 677). The status bar's own widgets are not the page's and are left out.
+#[test]
+fn a_containers_widget_scrolled_to_ends_above_the_status_bar() -> Result<(), String> {
+    let mut harness = open_page_under(Page::Containers, egui::Theme::Light, TEST_PRESET);
+    let status = place_of(&harness, "chrome.status_bar");
+    let ids: Vec<egui::accesskit::NodeId> = harness
+        .query_all(By::new().predicate(|n| WIDGET_ROLES.contains(&n.role())))
+        .filter(|n| !status.contains_rect(n.rect()))
+        .map(|n| n.accesskit_node().locate().0)
+        .collect();
+    let mut nested = 0;
+    for id in ids {
+        let Some(node) = harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == id))
+            .next()
+        else {
+            continue;
+        };
+        node.scroll_to_me();
+        // The scroll lands on the third pass after the request (as the page scroll tests).
+        harness.run_steps(3);
+        let rect = harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == id))
+            .next()
+            .map(|n| n.rect())
+            .ok_or_else(|| format!("node {id:?} is gone after its scroll"))?;
+        let inner = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .any(|r| r.id.accesskit_id() == id && r.info.kind == "scrolled label");
+        nested += usize::from(inner);
+        assert!(
+            rect.bottom() <= status.top() + 0.5,
+            "node {id:?} at {rect:?} after its scroll, the status bar's top {}",
+            status.top()
+        );
+    }
+    assert!(
+        nested > 0,
+        "no widget of a nested scroll area was scrolled to, so the test proves nothing"
+    );
+    Ok(())
+}
+
+/// The page tabs hide no tab behind the Pages menu button: under [`TEST_PRESET`] light, whose
+/// twelve tabs are wider than the 1280 × 720 window's row (measured: 1172 pt of tabs in a view
+/// 894 wide), the row scrolls, its view ending left of the button, so no tab's shown part
+/// reaches the button, and the open tab is scrolled wholly into view (`demo::tab_bar`'s
+/// `reveal_selected_tab`): the Icons tab, out of view with Basic open, shown whole once open,
+/// and the last tab, Theme Map, as well.
+#[test]
+fn the_page_tabs_hide_no_tab_behind_the_page_menu() -> Result<(), String> {
+    let mut hidden = false;
+    for page in [Page::Basic, Page::Icons, Page::ThemeMap] {
+        let harness = open_page_under(page, egui::Theme::Light, TEST_PRESET);
+        let menu = place_of(&harness, "chrome.page_tabs.menu");
+        let tabs: Vec<(egui::Rect, egui::Rect)> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == "Tab · Page")
+            .map(|r| (r.rect, r.whole))
+            .collect();
+        assert_eq!(tabs.len(), Page::ALL.len(), "{page:?}: one tab per page");
+        for (shown, whole) in &tabs {
+            assert!(
+                !shown.is_positive() || shown.right() <= menu.left(),
+                "{page:?}: a tab shown at {shown:?} reaches the Pages button at {menu:?}"
+            );
+            hidden |= whole.right() > menu.left();
+        }
+        let open = Page::ALL
+            .iter()
+            .position(|p| *p == page)
+            .and_then(|i| tabs.get(i))
+            .ok_or_else(|| format!("{page:?}: no tab of its own"))?;
+        assert!(
+            near_rect(open.0, open.1),
+            "{page:?}: the open tab shows {:?} of {:?}",
+            open.0,
+            open.1
+        );
+    }
+    assert!(
+        hidden,
+        "no tab lies past the Pages button, so the row does not overflow and this proves nothing"
+    );
     Ok(())
 }
