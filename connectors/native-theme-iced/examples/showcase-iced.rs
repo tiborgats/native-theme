@@ -9112,8 +9112,12 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         _ if under("basic.radios.option_b") => {
             Drawing::only(&["styles::radio."], &["is_selected: false"], &[])
         }
-        // A disabled switch's label is the showcase's own colour.
-        _ if under("basic.switches.disabled") && leaf == "defaults.disabled_text_color" => {
+        // A switch's label is the showcase's own colour ([`switch_label_colour`]).
+        _ if (under("basic.switches.off")
+            || under("basic.switches.on")
+            || under("basic.switches.disabled"))
+            && (leaf == "defaults.disabled_text_color" || leaf == "defaults.font.color") =>
+        {
             return None;
         }
         _ if under("basic.switches.off") => {
@@ -10842,7 +10846,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("switch", "disabled_opacity") => {
-            "styles::toggler: the Disabled colours' alpha times it; the label faded alike".into()
+            "styles::toggler: the Disabled colours' alpha times it; switch_label_colour: the \
+             label faded alike where no rule states switch.label(DISABLED).color"
+                .into()
         }
         // ---- combo box (drop-down) ----
         // The side panel's Theme row is a `combo_box` (`theme_picker`).
@@ -11701,17 +11707,27 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("defaults", "line_height") if under("basic.switches.") => {
-            "next_body: the label's line box, typography.body's size by \
-             typography.line_height_multiplier where it states no line height (next_line_box)"
+            "next_switch_label: the label's line box, switch.label(state)'s line height, else \
+             its size by typography.line_height_multiplier where it states a size \
+             (next_line_box), else iced's own"
                 .into()
         }
         ("defaults", "line_height") => {
             "the text's LineHeight::Relative (native_theme_iced::line_height)".into()
         }
         ("defaults", "font") if under("basic.switches.") => {
-            "next_body: the label's size and font, typography.body; switch.label_gap past the \
-             switch, iced's own toggler gap (TOGGLER_LABEL_GAP) where unstated"
+            "next_switch_label: the label's size and font, switch.label(state)'s where stated, \
+             iced's own where not; next_switch_row: on switch.label_side's side (after the \
+             switch where unstated), switch.label_gap from it, iced's own toggler gap \
+             (TOGGLER_LABEL_GAP) where unstated, the two at the ends of BASIC_WIDTH where \
+             switch.label_gap_stretches is true"
                 .into()
+        }
+        ("defaults", "font.color") if under("basic.switches.on") => {
+            "switch_label_colour: the label's colour, switch.label(CHECKED).color".into()
+        }
+        ("defaults", "font.color") if under("basic.switches.off") => {
+            "switch_label_colour: the label's colour, switch.label(NONE).color".into()
         }
         ("defaults", "font") => "the text's size and theme_font".into(),
         ("defaults", "font.family") => "theme_font: the role's family".into(),
@@ -11720,8 +11736,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "info_inks: the muted text's colour, colors.window.foreground_muted".into()
         }
         ("defaults", "disabled_text_color") => {
-            "disabled_switch_label: the label's colour, colors.disabled_text, times \
-             switch.disabled_opacity where stated"
+            "switch_label_colour: the label's colour, switch.label(DISABLED|CHECKED).color \
+             where a rule states switch.label(DISABLED).color, else switch.label(CHECKED).color \
+             times switch.disabled_opacity where stated"
                 .into()
         }
         ("defaults", "focus_ring_width_px") if ring_round_the_field(resolved) => {
@@ -14457,40 +14474,32 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
 
     // The connector's switch on the installed 0.8.0 theme ([`next_switch`]),
     // whose track takes `switch.track(NONE).min_size[0]`: iced's toggler
-    // draws every track twice its height. The label is body text,
-    // `typography.body`, `switch.label_gap` past the switch, the gap iced's
-    // toggler leaves where unstated. A disabled switch's label is the disabled text
-    // colour, faded with the switch by `switch.disabled_opacity`, as the gpui
-    // and egui switches draw it (docs/platform-facts.md §2.1.6).
-    let disabled_label = disabled_switch_label(next);
-    let switch_gap = next.switch.label_gap.unwrap_or(TOGGLER_LABEL_GAP);
+    // draws every track twice its height. The label is the switch's,
+    // `switch.label(state)` in its state's colour ([`next_switch_label`]),
+    // laid out by [`next_switch_row`]: on `switch.label_side`'s side,
+    // `switch.label_gap` from the switch, the two at the ends of the page's
+    // `BASIC_WIDTH` where `switch.label_gap_stretches` is true.
     let switch = |id: &'static str,
                   probe_id: &'static str,
                   on: bool,
                   label: &'a str,
                   enabled: bool|
      -> Element<'a, Message> {
-        let label = text(label).next_body(next);
+        let label = next_switch_label(next, label, on, enabled);
         let parts = |name: &str| listed_part(id, name);
         let (drawn, seat) = next_switch(next, on, enabled.then_some(Message::BasicHeld));
-        let mut control = tagged(
-            id,
-            row![
-                probe(probe_id, Length::Shrink, drawn),
-                if enabled {
-                    label
-                } else {
-                    label.color(disabled_label)
-                },
-            ]
-            .spacing(switch_gap)
-            .align_y(iced::Alignment::Center),
+        let (laid, switch_at, label_at) = next_switch_row(
+            next,
+            probe(probe_id, Length::Shrink, drawn),
+            label,
+            Length::Fixed(BASIC_WIDTH),
         );
+        let mut control = tagged(id, laid);
         if let Some((track, seat)) = parts("track").zip(seat) {
             // The track, centred in the switch on its axis.
             let height = seat.track_height;
             control = control.part(track, move |layout| {
-                node_at(layout, &[0]).map(|switch| {
+                node_at(layout, switch_at).map(|switch| {
                     let b = switch.bounds();
                     iced::Rectangle::new(
                         iced::Point::new(b.x, b.center_y() - height / 2.0),
@@ -14500,12 +14509,12 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             });
         }
         if let Some(label) = parts("label") {
-            control = control.node(label, &[1]);
+            control = control.node(label, label_at);
         }
         if let Some((thumb_id, seat)) = parts("thumb").zip(seat) {
             let (thumb, thumb_inset) = seat.thumb(on);
             control = control.part(thumb_id, move |layout| {
-                node_at(layout, &[0]).map(|switch| {
+                node_at(layout, switch_at).map(|switch| {
                     let t = switch.bounds();
                     let x = if on {
                         t.x + t.width - thumb_inset - thumb
@@ -15371,15 +15380,177 @@ fn check_mark_colour(
     })
 }
 
-/// A disabled switch's label on the installed 0.8.0 theme: the disabled
-/// text colour, `colors.disabled_text`, faded with the switch by
-/// `switch.disabled_opacity` where the theme states one, unfaded where not.
-fn disabled_switch_label(r: &native_theme::next::ResolvedTheme) -> Color {
-    let mut c = next_colour(r.colors.disabled_text);
-    if let Some(opacity) = r.switch.disabled_opacity {
-        c.a *= opacity;
+/// The colour a switch's label is drawn in ([`switch_label_colour`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum LabelInk {
+    /// The theme's colour.
+    Stated(Color),
+    /// iced's own text colour, which the theme leaves.
+    Own,
+    /// iced's own text colour at this opacity, `switch.disabled_opacity`.
+    OwnFaded(f32),
+}
+
+impl LabelInk {
+    /// The colour iced draws on `theme`, `None` where iced's own stays.
+    fn on(self, theme: &Theme) -> Option<Color> {
+        match self {
+            Self::Stated(colour) => Some(colour),
+            Self::Own => None,
+            Self::OwnFaded(opacity) => {
+                let own = theme.palette().text;
+                Some(Color {
+                    a: own.a * opacity,
+                    ..own
+                })
+            }
+        }
     }
-    c
+}
+
+/// The query of a switch, `on` (`CHECKED`) and `enabled` (else
+/// `DISABLED`), on the 0.8.0 model.
+fn switch_query(on: bool, enabled: bool) -> WidgetState {
+    let mut state = WidgetState::NONE;
+    if on {
+        state = state.union(WidgetState::CHECKED);
+    }
+    if !enabled {
+        state = state.union(WidgetState::DISABLED);
+    }
+    state
+}
+
+/// The colour of the label of a switch in `state` on the installed 0.8.0
+/// theme: `switch.label(state).color`. Disabled where no rule states
+/// `switch.label(DISABLED).color` (asked with that flag alone, spec §10
+/// rule 0a), the enabled label's colour faded with the switch by
+/// `switch.disabled_opacity` where stated, which iced's toggler, whose
+/// label keeps its colour disabled (iced_widget 0.14.2 `src/toggler.rs`,
+/// `default`: `text_color: None`), does not fade by itself; iced's own text
+/// colour where the theme states none.
+fn switch_label_colour(r: &native_theme::next::ResolvedTheme, state: WidgetState) -> LabelInk {
+    let s = &r.switch;
+    let disabled = state.contains(WidgetState::DISABLED);
+    let ruled = s
+        .label(WidgetState::DISABLED)
+        .from_state
+        .contains(TextStated::COLOR);
+    if disabled && !ruled {
+        let enabled = state.difference(WidgetState::DISABLED);
+        return match (
+            iced_next::text_color_of(&s.label(enabled)),
+            s.disabled_opacity,
+        ) {
+            (Some(colour), Some(opacity)) => LabelInk::Stated(Color {
+                a: colour.a * opacity,
+                ..colour
+            }),
+            (Some(colour), None) => LabelInk::Stated(colour),
+            (None, Some(opacity)) => LabelInk::OwnFaded(opacity),
+            (None, None) => LabelInk::Own,
+        };
+    }
+    iced_next::text_color_of(&s.label(state)).map_or(LabelInk::Own, LabelInk::Stated)
+}
+
+/// The label colour of iced's own toggler in `status` on the installed
+/// 0.8.0 theme: [`switch_label_colour`] of the switch's state, hovered
+/// under the pointer.
+fn toggler_label_ink(r: &native_theme::next::ResolvedTheme, status: toggler::Status) -> LabelInk {
+    let state = match status {
+        toggler::Status::Active { is_toggled } => switch_query(is_toggled, true),
+        toggler::Status::Hovered { is_toggled } => {
+            switch_query(is_toggled, true).union(WidgetState::HOVER)
+        }
+        toggler::Status::Disabled { is_toggled } => switch_query(is_toggled, false),
+    };
+    switch_label_colour(r, state)
+}
+
+/// The size and line box of text in `style`, one of the 0.8.0 theme's text
+/// styles, as far as it states them: its size on its line box
+/// ([`next_line_box`]) where it states a size; else iced's own size, the
+/// renderer's default text size, which the showcase leaves at
+/// `Settings::default().default_text_size`, on the style's line height
+/// where it states one, else on iced's own, `LineHeight::default()`
+/// (spec §10, rule 0).
+fn next_stated_text_box(
+    style: &TextStyle,
+    typography: &Typography,
+) -> (f32, iced::widget::text::LineHeight) {
+    if style.stated.contains(TextStated::SIZE_PX) {
+        return (
+            style.size_px,
+            iced::Pixels(next_line_box(typography, style)).into(),
+        );
+    }
+    let size = iced::Settings::default().default_text_size.0;
+    if style.stated.contains(TextStated::LINE_HEIGHT) {
+        (size, iced::Pixels(style.line_height).into())
+    } else {
+        (size, iced::widget::text::LineHeight::default())
+    }
+}
+
+/// The label of a switch, `on` and `enabled`, on the installed 0.8.0
+/// theme: `switch.label(state)` ([`Typeset::next_stated`]) in
+/// [`switch_label_colour`].
+fn next_switch_label<'a>(
+    r: &native_theme::next::ResolvedTheme,
+    label: &'a str,
+    on: bool,
+    enabled: bool,
+) -> iced::widget::Text<'a> {
+    let state = switch_query(on, enabled);
+    let ink = switch_label_colour(r, state);
+    text(label)
+        .next_stated(&r.switch.label(state), &r.typography)
+        .style(move |theme: &Theme| text::Style {
+            color: ink.on(theme),
+        })
+}
+
+/// A switch laid out with its label on the installed 0.8.0 theme, and the
+/// layout paths of the switch and of the label in it: the label on
+/// `switch.label_side`'s side, after the switch where unstated as iced's
+/// toggler draws it (iced_widget 0.14.2 `src/toggler.rs`, `layout`), and
+/// `switch.label_gap` from it ([`TOGGLER_LABEL_GAP`] where unstated). Where
+/// `switch.label_gap_stretches` is true the two lie at the ends of `width`,
+/// the application's layout width (spec §5, the switch's label), the gap
+/// the least space between them; elsewhere the row is no wider than its
+/// content.
+fn next_switch_row<'a>(
+    r: &native_theme::next::ResolvedTheme,
+    switch: Element<'a, Message>,
+    label: iced::widget::Text<'a>,
+    width: Length,
+) -> (Element<'a, Message>, &'static [usize], &'static [usize]) {
+    let s = &r.switch;
+    let leading = s.label_side == Some(native_theme::next::LabelSide::Leading);
+    let gap = s.label_gap.unwrap_or(TOGGLER_LABEL_GAP);
+    let row = if s.label_gap_stretches == Some(true) {
+        let label = container(label).width(Fill);
+        if leading {
+            (row![label, switch].width(width), &[1][..], &[0, 0][..])
+        } else {
+            (
+                row![switch, label.align_right(Fill)].width(width),
+                &[0][..],
+                &[1, 0][..],
+            )
+        }
+    } else if leading {
+        (row![label, switch], &[1][..], &[0][..])
+    } else {
+        (row![switch, label], &[0][..], &[1][..])
+    };
+    let (laid, switch_at, label_at) = row;
+    (
+        laid.spacing(gap).align_y(iced::Alignment::Center).into(),
+        switch_at,
+        label_at,
+    )
 }
 
 /// A row of the Basic table: its header, or its body row of that index in
@@ -16021,6 +16192,97 @@ fn next_switch_rows(r: &native_theme::next::ResolvedTheme) -> [(&'static str, St
     }
 }
 
+/// The Widget Info rows of a switch's label on `r`, the installed 0.8.0
+/// theme, each with its home: its font ([`next_stated_text`]), its colour
+/// ([`switch_label_colour`]), its side and its gap's stretch
+/// ([`next_switch_row`]) and the state glyphs. Of iced's own toggler where
+/// `toggler`, which draws its label after the track and no wider than its
+/// content whatever the theme states (iced_widget 0.14.2 `src/toggler.rs`,
+/// `layout`); neither it nor the connector's switch draws a glyph on the
+/// track. What iced cannot draw is reported not mapped at its home.
+fn next_switch_label_rows(
+    r: &native_theme::next::ResolvedTheme,
+    toggler: bool,
+) -> [(&'static str, String); 5] {
+    let s = &r.switch;
+    let style = s.label(WidgetState::NONE);
+    let font = if style.stated.is_empty() {
+        "iced's own text: switch.label(NONE) states nothing".to_owned()
+    } else {
+        next_font_row("switch.label(NONE)", &style)
+    };
+    let enabled = if style.stated.contains(TextStated::COLOR) {
+        "switch.label(state).color"
+    } else {
+        "iced's own text colour: switch.label(NONE).color unstated"
+    };
+    let disabled = if s
+        .label(WidgetState::DISABLED)
+        .from_state
+        .contains(TextStated::COLOR)
+    {
+        "switch.label(DISABLED).color".to_owned()
+    } else {
+        match s.disabled_opacity {
+            Some(opacity) => format!(
+                "the enabled colour at {opacity} opacity, switch.disabled_opacity: no rule \
+                 states switch.label(DISABLED).color"
+            ),
+            None => "the enabled colour: no rule states switch.label(DISABLED).color, and \
+                     switch.disabled_opacity is unstated"
+                .to_owned(),
+        }
+    };
+    let side = match (s.label_side, toggler) {
+        (Some(native_theme::next::LabelSide::Leading), false) => {
+            "before the switch, switch.label_side Leading".to_owned()
+        }
+        (Some(native_theme::next::LabelSide::Leading), true) => {
+            "not mapped: switch.label_side is Leading; iced's Toggler draws its label after \
+             the track alone"
+                .to_owned()
+        }
+        (Some(native_theme::next::LabelSide::Trailing), _) => {
+            "after the switch, switch.label_side Trailing".to_owned()
+        }
+        (None, _) => {
+            "after the switch, iced's toggler's own: switch.label_side unstated".to_owned()
+        }
+    };
+    let stretch = match (s.label_gap_stretches, toggler) {
+        (Some(true), false) => {
+            "the label and the switch at the ends of the row, switch.label_gap_stretches \
+             true"
+                .to_owned()
+        }
+        (Some(true), true) => {
+            "not mapped: switch.label_gap_stretches is true; iced's Toggler lays its label \
+             out next to the track"
+                .to_owned()
+        }
+        (Some(false), _) => {
+            "kept together at the label gap, switch.label_gap_stretches false".to_owned()
+        }
+        (None, _) => "kept together at the label gap, iced's own: \
+                      switch.label_gap_stretches unstated"
+            .to_owned(),
+    };
+    let glyphs = match s.show_state_glyphs {
+        Some(true) => "not mapped: switch.show_state_glyphs is true; neither iced's toggler \
+                       nor native_theme_iced::next::switch draws a glyph on the track"
+            .to_owned(),
+        Some(false) => "none, switch.show_state_glyphs false".to_owned(),
+        None => "none, iced's own: switch.show_state_glyphs unstated".to_owned(),
+    };
+    [
+        ("label", font),
+        ("label colour", format!("{enabled}; disabled, {disabled}")),
+        ("label side", side),
+        ("label gap stretch", stretch),
+        ("state glyphs", glyphs),
+    ]
+}
+
 /// The Widget Info of the Selection page's switch, the connector's
 /// ([`next_switch`]).
 fn switch_info(state: &State) -> String {
@@ -16030,11 +16292,9 @@ fn switch_info(state: &State) -> String {
         .iter()
         .map(|(what, value)| (*what, value.as_str()))
         .collect();
-    let label = format!(
-        "{} -- the model states no font for a switch",
-        next_font_row("typography.body", &next.typography.body)
-    );
-    config.extend([("track radius", "switch.track_radius"), ("label", &label)]);
+    config.push(("track radius", "switch.track_radius"));
+    let label = next_switch_label_rows(next, false);
+    config.extend(label.iter().map(|(what, value)| (*what, value.as_str())));
     widget_tooltip(
         "Switch (native_theme_iced::next::switch)",
         &toggler_paints(state),
@@ -16958,23 +17218,18 @@ fn next_toggler_rows(r: &native_theme::next::ResolvedTheme) -> [(&'static str, S
 /// The Widget Info of the Selection page's iced Toggler.
 fn iced_toggler_info(state: &State) -> String {
     let [radius, height, on, off] = next_toggler_rows(state.next_shown());
+    let label = next_switch_label_rows(state.next_shown(), true);
+    let mut config: Vec<(&str, &str)> = vec![
+        (radius.0, &radius.1),
+        (height.0, &height.1),
+        (on.0, &on.1),
+        (off.0, &off.1),
+    ];
+    config.extend(label.iter().map(|(what, value)| (*what, value.as_str())));
     widget_tooltip(
         "iced's Toggler",
         &toggler_paints(state),
-        &[
-            (radius.0, &radius.1),
-            (height.0, &height.1),
-            (on.0, &on.1),
-            (off.0, &off.1),
-            (
-                "label",
-                format!(
-                    "{} — the model states no font for a switch",
-                    next_font_row("typography.body", &state.next_shown().typography.body)
-                )
-                .as_str(),
-            ),
-        ],
+        &config,
         &[
             ("track width", "iced lays the track out as 2 x its height"),
             (
@@ -17149,46 +17404,56 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 
     // The page's switch is the connector's on the installed 0.8.0 theme, as
     // the Basic page's ([`next_switch`]): its track
-    // `switch.track(NONE).min_size`, its label `switch.label_gap` past it,
-    // the gap iced's toggler leaves where unstated. iced's own toggler stays
-    // shown below it, so the widget iced offers is on show under the theme
-    // too, its track twice its height. Their labels in `typography.body`
-    // (the model states no font for a switch); the toggler
-    // [`next_toggler_size`] tall, its thumb inset by
+    // `switch.track(NONE).min_size`, its label the switch's
+    // ([`next_switch_label`]) laid out by [`next_switch_row`], the two at the
+    // ends of the column where `switch.label_gap_stretches` is true. iced's
+    // own toggler stays shown below it, so the widget iced offers is on show
+    // under the theme too, its track twice its height, its label in
+    // `switch.label(NONE)` where stated, coloured per status
+    // ([`toggler_label_ink`]), after the track and no wider than its content
+    // whatever the theme states (iced_widget 0.14.2 `src/toggler.rs`,
+    // `layout`); the toggler [`next_toggler_size`] tall, its thumb inset by
     // `iced_next::styles::toggler`'s padding ratio.
-    let switch = hoverable(
-        UnlistedKey::Switch,
-        row![
-            probe(
-                probes::TOGGLER,
-                Length::Shrink,
-                next_switch(
-                    next,
-                    state.toggler_enabled,
-                    Some(Message::TogglerToggled(!state.toggler_enabled)),
-                )
-                .0,
-            ),
-            text("Feature flag enabled").next_body(next),
-        ]
-        .spacing(next.switch.label_gap.unwrap_or(TOGGLER_LABEL_GAP))
-        .align_y(iced::Alignment::Center)
-        .into(),
-    );
-    let body = &typography.body;
+    let switch_row = next_switch_row(
+        next,
+        probe(
+            probes::TOGGLER,
+            Length::Shrink,
+            next_switch(
+                next,
+                state.toggler_enabled,
+                Some(Message::TogglerToggled(!state.toggler_enabled)),
+            )
+            .0,
+        ),
+        next_switch_label(next, "Feature flag enabled", state.toggler_enabled, true),
+        Fill,
+    )
+    .0;
+    let switch = hoverable(UnlistedKey::Switch, switch_row);
+    let label_style = next.switch.label(WidgetState::NONE);
+    let (label_size, label_line) = next_stated_text_box(&label_style, typography);
+    let own_toggler = toggler(state.toggler_enabled)
+        .label("iced's Toggler")
+        .size(next_toggler_size(next))
+        .text_size(label_size)
+        .text_line_height(label_line)
+        .next_font(&label_style, |toggler, font| toggler.font(font));
+    // In `iced_next::styles::toggler`'s colours, iced's own where it cannot
+    // map them, the label coloured over either.
+    let inked_toggler = own_toggler.style(move |theme: &Theme, status| {
+        let dressed = match iced_next::styles::toggler(next) {
+            Ok(style) => style(theme, status),
+            Err(_) => toggler::default(theme, status),
+        };
+        toggler::Style {
+            text_color: toggler_label_ink(next, status).on(theme),
+            ..dressed
+        }
+    });
     let iced_toggler = hoverable(
         UnlistedKey::IcedToggler,
-        toggler(state.toggler_enabled)
-            .label("iced's Toggler")
-            .size(next_toggler_size(next))
-            .text_size(body.size_px)
-            .text_line_height(iced::Pixels(next_line_box(typography, body)))
-            .next_font(body, |toggler, font| toggler.font(font))
-            .next_style(iced_next::styles::toggler(next), |toggler, style| {
-                toggler.style(style)
-            })
-            .on_toggle(Message::TogglerToggled)
-            .into(),
+        inked_toggler.on_toggle(Message::TogglerToggled).into(),
     );
     let togglers: Element<'_, Message> = column![
         title("Switch"),
@@ -21277,6 +21542,11 @@ trait Typeset {
     /// Body text on the 0.8.0 model: [`next_text`](Typeset::next_text) in
     /// `typography.body`.
     fn next_body(self, r: &native_theme::next::ResolvedTheme) -> Self;
+    /// [`next_text`](Typeset::next_text) as far as `style` states it: its
+    /// size and line box ([`next_stated_text_box`]), iced's own where it
+    /// states none, in its font where it gives one iced can draw, else in
+    /// iced's own (spec §10, rule 0).
+    fn next_stated(self, style: &TextStyle, typography: &Typography) -> Self;
 }
 
 impl Typeset for iced::widget::Text<'_> {
@@ -21321,6 +21591,15 @@ impl Typeset for iced::widget::Text<'_> {
 
     fn next_body(self, r: &native_theme::next::ResolvedTheme) -> Self {
         self.next_text(&r.typography.body, &r.typography)
+    }
+
+    fn next_stated(self, style: &TextStyle, typography: &Typography) -> Self {
+        let (size, line_height) = next_stated_text_box(style, typography);
+        let text = self.size(size).line_height(line_height);
+        match next_font_from_database(style, false) {
+            Some(drawn) => text.font(drawn.font),
+            None => text,
+        }
     }
 }
 
@@ -30249,7 +30528,8 @@ mod tests {
     /// the radio's row 33 tall ([`next_radio`]), and 20 px wider with a 43 px
     /// circle 21 px from it; with a 50 x 26 switch track, 20 px thumbs and a
     /// 15 px label gap, the switch 50 x 26 ([`next_switch`]) and its label
-    /// 15 px past it; the switch's label 23 tall; the drop-down and the combo box
+    /// 15 px past it; the switch's label on a 25 px line, its own
+    /// (`switch.label(state)`, not the body's 23), 25 tall; the drop-down and the combo box
     /// `max(20 × line_height_multiplier, 50 − padding) + padding` tall
     /// ([`next_drop_down_padding`], [`next_combo_field_padding`]); a
     /// caption 29 tall; and the first group's title 13 + 4 + 19 px under the
@@ -30264,7 +30544,7 @@ mod tests {
              indicator.min_size = [33.0, 33.0]\n\
              [[widgets.combo_box.rules]]\nfield.min_size = [\"none\", 50.0]\nlabel.size_px = 20.0\n\
              [[widgets.switch.rules]]\ntrack.min_size = [50.0, 26.0]\n\
-             thumb.min_size = [20.0, 20.0]\n",
+             thumb.min_size = [20.0, 20.0]\nlabel.line_height = 25.0\n",
         )
         .map_err(|error| format!("the patch: {error:?}"))?;
         let widened = native_theme::next::ThemePatch::from_toml(
@@ -30389,7 +30669,7 @@ mod tests {
                 "the radio at 33 + 11, {apple:?}, and at 43 + 21, {wide_apple:?}"
             ));
         }
-        for (label, want) in [("Feature flag enabled", 23.0), ("Checked: ", 29.0)] {
+        for (label, want) in [("Feature flag enabled", 25.0), ("Checked: ", 29.0)] {
             match at(label) {
                 Some(bounds) if near(bounds.height, want) => {}
                 bounds => faults.push(format!("{label:?}: {bounds:?}, not {want} tall")),
@@ -30405,6 +30685,188 @@ mod tests {
                     13.0 + 4.0 + 19.0,
                 ) => {}
             pair => faults.push(format!("the description and the first title: {pair:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// The switch's label takes each of its fields from the installed 0.8.0
+    /// theme ([`next_switch_row`], [`switch_label_colour`],
+    /// [`next_switch_label_rows`]), on kde-breeze patched one field at a
+    /// time: `switch.label_side` Leading puts the Selection page's label a
+    /// label gap before the switch, and the Basic page's before its track;
+    /// `switch.label_gap_stretches` true puts the label and the switch at
+    /// the two ends of the row, the label first where it leads, the switch
+    /// first where it trails; `switch.show_state_glyphs` true is reported
+    /// not mapped, and iced's own Toggler reports a leading or stretching
+    /// label not mapped. The label's colour is the rule's where a rule
+    /// states `switch.label(DISABLED).color` (kde-breeze's, not faded again
+    /// by `switch.disabled_opacity`), else the enabled colour faded by
+    /// `switch.disabled_opacity`, or iced's own faded where the theme states
+    /// no colour; a patch stating the disabled colour is drawn as stated.
+    #[test]
+    fn the_switch_label_takes_its_side_stretch_glyphs_and_colour() -> Result<(), String> {
+        use native_theme::next::LabelSide;
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let measure = |state: &State| {
+            let mut ui = interface(state);
+            let switch = probe_bounds(&mut ui, probes::TOGGLER);
+            let label = texts(&mut ui)
+                .into_iter()
+                .find(|(content, _)| content == "Feature flag enabled")
+                .map(|(_, bounds)| bounds);
+            (switch, label)
+        };
+        let base = page_state("kde-breeze", Tab::Selection);
+        let gap = base
+            .next_shown()
+            .switch
+            .label_gap
+            .ok_or("kde-breeze states no switch label gap")?;
+        if base.next_shown().switch.label_side != Some(LabelSide::Trailing)
+            || base.next_shown().switch.label_gap_stretches != Some(false)
+        {
+            return Err("kde-breeze's switch label is not trailing and kept together".into());
+        }
+        let (start, label) = measure(&base);
+        let label = label.ok_or("no switch label on the Selection page")?;
+        if !near(label.x, start.x + start.width + gap) {
+            faults.push(format!(
+                "trailing: the label {label:?}, not {gap} past {start:?}"
+            ));
+        }
+        let patched = |side: LabelSide, stretches: bool| {
+            let mut state = page_state("kde-breeze", Tab::Selection);
+            splice_next(&mut state, |r| {
+                r.switch.label_side = Some(side);
+                r.switch.label_gap_stretches = Some(stretches);
+            });
+            state
+        };
+        match measure(&patched(LabelSide::Leading, false)) {
+            (switch, Some(label)) if near(label.x + label.width + gap, switch.x) => {}
+            pair => faults.push(format!("leading: the switch and its label {pair:?}")),
+        }
+        match measure(&patched(LabelSide::Leading, true)) {
+            (switch, Some(label))
+                if near(label.x, start.x) && switch.x - (label.x + label.width) > gap + 1.0 => {}
+            pair => faults.push(format!(
+                "leading, stretched: {pair:?}, the row at {start:?}"
+            )),
+        }
+        match measure(&patched(LabelSide::Trailing, true)) {
+            (switch, Some(label))
+                if near(switch.x, start.x) && label.x - (switch.x + switch.width) > gap + 1.0 => {}
+            pair => faults.push(format!(
+                "trailing, stretched: {pair:?}, the row at {start:?}"
+            )),
+        }
+        let leading = patched(LabelSide::Leading, true);
+        let toggler_info = unlisted_info(&leading, UnlistedKey::IcedToggler);
+        for row in [
+            "label side: not mapped: switch.label_side is Leading",
+            "label gap stretch: not mapped: switch.label_gap_stretches is true",
+        ] {
+            if !toggler_info.contains(row) {
+                faults.push(format!(
+                    "iced's Toggler's info has no {row:?}:\n{toggler_info}"
+                ));
+            }
+        }
+        let mut glyphs = page_state("kde-breeze", Tab::Selection);
+        splice_next(&mut glyphs, |r| r.switch.show_state_glyphs = Some(true));
+        let info = unlisted_info(&glyphs, UnlistedKey::Switch);
+        if !info.contains("state glyphs: not mapped: switch.show_state_glyphs is true") {
+            faults.push(format!(
+                "the switch's info reports no unmapped glyphs:\n{info}"
+            ));
+        }
+
+        // The Basic page's parts follow the label to the leading side.
+        let mut basic = page_state("kde-breeze", Tab::Basic);
+        splice_next(&mut basic, |r| {
+            r.switch.label_side = Some(LabelSide::Leading)
+        });
+        let laid = recording(|| {
+            let mut ui = interface(&basic);
+            let _ = texts(&mut ui);
+            surveyed_layout()
+        });
+        match (
+            laid.get("basic.switches.on.label"),
+            laid.get("basic.switches.on.track"),
+        ) {
+            (Some(label), Some(track)) if near(label.x + label.width + gap, track.x) => {}
+            pair => faults.push(format!("the Basic leading label and track: {pair:?}")),
+        }
+
+        // The colour: kde-breeze's rule, not faded again.
+        let kde = base.next_shown();
+        let disabled = WidgetState::DISABLED.union(WidgetState::CHECKED);
+        let ruled = iced_next::text_color_of(&kde.switch.label(disabled))
+            .ok_or("kde-breeze states no disabled switch label colour")?;
+        let mut faded = kde.clone();
+        faded.switch.disabled_opacity = Some(0.5);
+        for r in [kde, &faded] {
+            let ink = switch_label_colour(r, switch_query(true, false));
+            if ink != LabelInk::Stated(ruled) {
+                faults.push(format!(
+                    "kde-breeze's disabled label {ink:?}, not {ruled:?}"
+                ));
+            }
+        }
+        // A theme with no disabled rule: the enabled colour, or iced's own,
+        // faded by the switch's opacity; a patch stating the colour wins.
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.switch.rules]]\nstates = [\"disabled\"]\nlabel.color = \"#13579b\"\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let (mut stated, mut own) = (0, 0);
+        for (label, mut r) in next_combinations() {
+            if r.switch
+                .label(WidgetState::DISABLED)
+                .from_state
+                .contains(TextStated::COLOR)
+            {
+                continue;
+            }
+            r.switch.disabled_opacity = Some(0.5);
+            let ink = switch_label_colour(&r, switch_query(true, false));
+            match iced_next::text_color_of(&r.switch.label(WidgetState::CHECKED)) {
+                Some(colour) => {
+                    stated += 1;
+                    let want = LabelInk::Stated(Color {
+                        a: colour.a * 0.5,
+                        ..colour
+                    });
+                    if ink != want {
+                        faults.push(format!("{label}: the disabled label {ink:?}, not {want:?}"));
+                    }
+                }
+                None => {
+                    own += 1;
+                    if ink != LabelInk::OwnFaded(0.5) {
+                        faults.push(format!(
+                            "{label}: the disabled label {ink:?}, not iced's own faded"
+                        ));
+                    }
+                }
+            }
+            r.apply_patch(&patch);
+            let ink = switch_label_colour(&r, switch_query(true, false));
+            if ink != LabelInk::Stated(Color::from_rgb8(0x13, 0x57, 0x9b)) {
+                faults.push(format!("{label}: the patched disabled label {ink:?}"));
+            }
+        }
+        if stated == 0 || own == 0 {
+            faults.push(format!(
+                "no preset without a disabled label rule states (or leaves) the colour: \
+                 {stated} stated, {own} iced's own"
+            ));
         }
         if faults.is_empty() {
             Ok(())
@@ -31007,17 +31469,11 @@ mod tests {
             ),
             (
                 UnlistedKey::Switch,
-                format!(
-                    "{} -- the model states no font for a switch",
-                    next_font_row("typography.body", &next.typography.body)
-                ),
+                next_font_row("switch.label(NONE)", &next.switch.label(WidgetState::NONE)),
             ),
             (
                 UnlistedKey::IcedToggler,
-                format!(
-                    "{} — the model states no font for a switch",
-                    next_font_row("typography.body", &next.typography.body)
-                ),
+                next_font_row("switch.label(NONE)", &next.switch.label(WidgetState::NONE)),
             ),
         ] {
             let info = unlisted_info(&state, key);
@@ -31642,12 +32098,13 @@ mod tests {
     /// The Basic page's slider, progress bar and switches follow the
     /// installed 0.8.0 theme alone: kde-breeze with a patch that states, on
     /// the 0.8.0 theme only, a 9 px rail and a 22 px thumb for the slider, a
-    /// 13 px track for the progress bar, a 50 × 26 px track, a 20 px thumb
-    /// and a 15 px label gap for the switch, and a 20 px body text spliced
-    /// in, lays them out at those sizes: the slider as tall as its thumb,
-    /// its parts the rail and the thumb; the bar 13 tall; the switch its
-    /// track, the thumb inset by 3, the label 15 past the switch and the
-    /// body's line box tall.
+    /// 13 px track for the progress bar, a 50 × 26 px track, a 20 px thumb,
+    /// a 15 px label gap and a 20 px label on a 27 px line for the switch,
+    /// and a 20 px body text on a 26 px line spliced in, lays them out at
+    /// those sizes: the slider as tall as its thumb, its parts the rail and
+    /// the thumb; the bar 13 tall; the switch its track, the thumb inset by
+    /// 3, the label 15 past the switch and its own line box tall, not the
+    /// body's.
     #[test]
     fn the_basic_range_and_switches_take_the_0_8_0_geometry() -> Result<(), String> {
         let patch = native_theme::next::ThemePatch::from_toml(
@@ -31656,7 +32113,7 @@ mod tests {
              [[widgets.progress_bar.rules]]\ntrack.min_size = [\"none\", 13.0]\n\
              [widgets.switch]\nlabel_gap = 15.0\n\
              [[widgets.switch.rules]]\ntrack.min_size = [50.0, 26.0]\n\
-             thumb.min_size = [20.0, 20.0]\n",
+             thumb.min_size = [20.0, 20.0]\nlabel.size_px = 20.0\nlabel.line_height = 27.0\n",
         )
         .map_err(|error| format!("the patch: {error:?}"))?;
         let mut state = State {
@@ -31684,8 +32141,13 @@ mod tests {
         {
             return Err("the patch states 0.7.2's sizes".into());
         }
-        let line = next_line_box(&r.typography, &r.typography.body);
-        if line == next_line_box(&old_typography, &old_typography.body) {
+        let line = next_line_box(&r.typography, &r.switch.label(WidgetState::CHECKED));
+        if line != 27.0 || next_line_box(&r.typography, &r.typography.body) == line {
+            return Err("the switch label's line box is unpatched".into());
+        }
+        if next_line_box(&r.typography, &r.typography.body)
+            == next_line_box(&old_typography, &old_typography.body)
+        {
             return Err("the body's line box is unpatched".into());
         }
         let (switch, laid) = recording(|| {
@@ -33384,7 +33846,12 @@ mod tests {
                 [(true, true), (true, false), (false, true), (false, false)]
                     .map(|(checked, enabled)| check_mark_colour(r, checked, enabled))
             ),
-            "disabled_switch_label" => format!("{:?}", disabled_switch_label(r)),
+            "switch_label_colour" => format!(
+                "{:?}",
+                [(false, true), (true, true), (false, false), (true, false)].map(
+                    |(on, enabled)| switch_label_colour(r, switch_query(on, enabled)).on(&theme)
+                )
+            ),
             "menu_bar_style" => {
                 let style = menu_bar_style(r);
                 AW_STATUSES
@@ -43513,6 +43980,7 @@ mod tests {
                     "themed",
                     "next_text",
                     "next_body",
+                    "next_stated",
                 ]
                 .contains(name)
                     || (*name == "size" && *args == "(icon_px)")
