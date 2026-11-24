@@ -206,8 +206,8 @@ use crate::next::rules::{
     ButtonMatcher, IconProp, ListMatcher, PartProp, Patched, RuleBuilder, RuleSelector, TextProp,
 };
 use crate::next::style::{
-    DecorationKind, FocusIndicator, FocusKind, FontSize, FontStyle, IconStyle, PartStyle,
-    TextDecoration, TextStated, TextStyle,
+    DecorationKind, FocusIndicator, FocusKind, FocusTrigger, FontSize, FontStyle, IconStyle,
+    PartStyle, TextDecoration, TextStated, TextStyle,
 };
 use crate::next::typography::{TextRendering, Typography};
 use crate::next::widgets::{
@@ -1368,6 +1368,8 @@ struct Generation {
     checkbox_label_gap: f32,
     radio_dot_diameter: f32,
     input_corner_radius: Option<f32>,
+    input_focus_ring_width: f32,
+    input_focus_ring_offset: f32,
     input_padding_vertical: f32,
     input_padding_horizontal: f32,
     input_shadow_enabled: bool,
@@ -1507,9 +1509,10 @@ const MONTEREY: Generation = Generation {
     // `defaults.disabled_opacity`: platform-facts.md (§2.1.6): 1.0, macOS dims a disabled control
     // by colour (disabled_text_color)
     disabled_opacity: 1.0,
-    // `defaults.focus_ring_width`: 0.7.2 macos-monterey.toml (uncited)
+    // `defaults.focus_ring_width`: platform-facts.md (§2.1.5): focus_ring_width: 3px (measured)
     focus_ring_width: 3.0,
-    // `defaults.focus_ring_offset`: 0.7.2 macos-monterey.toml (uncited)
+    // `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): focus_ring_offset: -1px (measured),
+    // inset
     focus_ring_offset: -1.0,
     // `layout.widget_gap`: 0.7.2 macos-monterey.toml (uncited)
     widget_gap: 8.0,
@@ -1565,6 +1568,11 @@ const MONTEREY: Generation = Generation {
     // in a window that is not key)
     radio_dot_diameter: 6.0,
     input_corner_radius: None,
+    // The text field's own focus ring, which its mouse-down brings: 4 px wide, from 2 px inside
+    // the field's frame to 2 px outside it (offsets -2 … 1), on every side (measured, os-probe run
+    // 45231684209, macOS 15, `*.pressed.text_field` `around_*`)
+    input_focus_ring_width: 4.0,
+    input_focus_ring_offset: -2.0,
     // `input.border.padding.top`, `input.border.padding.bottom`: 0.7.2 macos-monterey.toml
     // (uncited)
     input_padding_vertical: 2.0,
@@ -1887,6 +1895,11 @@ const TAHOE: Generation = Generation {
     // `input.border.corner_radius`: platform-facts.md (§1.1.3): the text field's radius, 5
     // (WebKit's vector drawing)
     input_corner_radius: Some(5.0),
+    // The text field's own focus ring, which its mouse-down brings: 4 px wide, from 1 px inside
+    // the field's frame to 3 px outside it (offsets -1 … 2), on every side (measured, os-probe runs
+    // 45231684209 and 45252258079, macOS 26, `*.pressed.text_field` `around_*`)
+    input_focus_ring_width: 4.0,
+    input_focus_ring_offset: -1.0,
     // `input.border.padding.top`, `input.border.padding.bottom`: 0.7.2 macos-tahoe.toml (uncited)
     input_padding_vertical: 4.0,
     // `input.border.padding.left`, `input.border.padding.right`: platform-facts.md (§2.4): the
@@ -2285,19 +2298,8 @@ fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Re
             &layout,
             ctx,
         ),
-        input: input(
-            c,
-            g,
-            &colors,
-            &typography,
-            &layout,
-            Some(Edges::symmetric(
-                g.input_padding_vertical,
-                g.input_padding_horizontal,
-            )),
-            Some(g.input_min_height),
-        ),
-        text_area: input(c, g, &colors, &typography, &layout, None, None),
+        input: input(c, g, &colors, &typography, &layout, true),
+        text_area: input(c, g, &colors, &typography, &layout, false),
         link: link(c, g, &colors, &typography),
         slider: slider(c, g, &colors),
         progress_bar: progress_bar(g, &colors, &layout),
@@ -3337,24 +3339,42 @@ fn window(
     )
 }
 
-/// A text field, single-line (`input`) or multi-line (`text_area`), with its
-/// own `padding` and least height `min_height` where given: the field's
-/// fill in the default line (0.7.2: `input.border` is `defaults.border`
-/// where unstated, and `text_area.border`'s colour, radius, width and shadow
-/// are `input.border`'s) at `macos-tahoe`'s own radius, else the default
-/// one, with no shadow; its text in its colour, the placeholder in its own;
-/// disabled, `macos-monterey`'s disabled fill and the disabled text (0.7.2:
-/// `input.disabled_text_color` is `defaults.disabled_text_color` and
-/// `disabled_opacity` `defaults.disabled_opacity` where unstated).
+/// A text field, single-line (`input`, `single_line`) or multi-line
+/// (`text_area`): the field's fill in the default line (0.7.2: `input.border`
+/// is `defaults.border` where unstated, and `text_area.border`'s colour,
+/// radius, width and shadow are `input.border`'s) at `macos-tahoe`'s own
+/// radius, else the default one, with no shadow; its text in its colour, the
+/// placeholder in its own; disabled, `macos-monterey`'s disabled fill and the
+/// disabled text (0.7.2: `input.disabled_text_color` is
+/// `defaults.disabled_text_color` and `disabled_opacity`
+/// `defaults.disabled_opacity` where unstated). The single-line field has
+/// its own padding, least height and focus ring, the ring the measured
+/// NSTextField draws once it is focused, by the pointer too
+/// ([`FocusTrigger::Always`]); the text area keeps the global ring.
 fn input(
     c: &SchemeColors,
     g: &Generation,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
-    padding: Option<Edges>,
-    min_height: Option<f32>,
+    single_line: bool,
 ) -> InputWidget {
+    let padding =
+        single_line.then(|| Edges::symmetric(g.input_padding_vertical, g.input_padding_horizontal));
+    let min_height = single_line.then_some(g.input_min_height);
+    // The ring of the field's mouse-down, in the focus ring's colour: measured L #0066f57f,
+    // D #1aabff7f on both generations, within 2 levels of keyboardFocusIndicatorColor (os-probe
+    // run 45231684209, macOS 15 and 26, `*.pressed.text_field` `around_*`).
+    let focus_ring = single_line.then(|| {
+        FocusIndicator::new(
+            FocusKind::Ring,
+            Stroke::uniform(g.input_focus_ring_width, roles.focus_ring),
+            Stroke::None,
+            g.input_focus_ring_offset,
+            None,
+            Some(FocusTrigger::Always),
+        )
+    });
     let radius = g.input_corner_radius.unwrap_or(layout.corner_radius);
     let field = RuleBuilder::new(PartStyle::default())
         .base([
@@ -3365,6 +3385,7 @@ fn input(
         .base(no_shadow(g.input_shadow_enabled))
         .base(padding.map(PartProp::Padding))
         .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])))
+        .base(focus_ring.map(|ring| PartProp::Focus(Some(Arc::new(ring)))))
         // Hovered, the edge as at rest: the hovered text field differs from its normal capture
         // in 0 pixels (os-probe run 45198750893, macOS 15 and 26, `*.hovered.text_field`).
         .rule(

@@ -238,6 +238,7 @@ struct SchemeColors {
     accent_fill_disabled: Color,
     selection_foreground: Color,
     focus_ring: Color,
+    focus_ring_inner: Color,
     link: Color,
     link_hover: Color,
     link_disabled: Color,
@@ -438,6 +439,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): SystemControlFocusVisualPrimaryBrush
     // = FocusStrokeColorOuter #E4000000
     focus_ring: srgb8(0x0000_00e4),
+    // platform-facts.md (§2.1.5): focus_ring_color: the 1px inner ring FocusStrokeColorInner
+    // #B3FFFFFF
+    focus_ring_inner: srgb8(0xffff_ffb3),
     // `defaults.link_color`: platform-facts.md: HyperlinkForeground = SystemAccentColorDark2,
     // UISettings AccentDark2 for the accent above (OS probe, Windows 11 25H2)
     link: srgb8(0x003e_92ff),
@@ -792,6 +796,9 @@ const DARK: SchemeColors = SchemeColors {
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): SystemControlFocusVisualPrimaryBrush
     // = FocusStrokeColorOuter #FFFFFF
     focus_ring: srgb8(0xffff_ffff),
+    // platform-facts.md (§2.1.5): focus_ring_color: the 1px inner ring FocusStrokeColorInner
+    // #B3000000
+    focus_ring_inner: srgb8(0x0000_00b3),
     // `defaults.link_color`: platform-facts.md: HyperlinkForeground = SystemAccentColorLight3,
     // UISettings AccentLight3 for the accent above (OS probe, Windows 11 25H2)
     link: srgb8(0x99eb_ffff),
@@ -1070,8 +1077,18 @@ const ACCENT_FILL_SECONDARY_OPACITY: f32 = 0.9;
 // AccentFillColorTertiaryBrush's opacity over the same colour (Common_themeresources_any.xaml:331,
 // :127 at microsoft-ui-xaml 8463f45)
 const ACCENT_FILL_TERTIARY_OPACITY: f32 = 0.8;
-// `defaults.focus_ring_width`: 0.7.2 windows-11.toml (uncited)
+// `defaults.focus_ring_width`: platform-facts.md (§2.1.5): focus_ring_width: the Fluent focus
+// visual's 2px outer (primary) ring
 const FOCUS_RING_WIDTH: f32 = 2.0;
+// platform-facts.md (§2.1.5): focus_ring_offset: the 1px inner (secondary) ring inside the outer
+// one; ListViewItem's FocusVisualSecondaryThickness 1 (ListViewItem_themeresources.xaml:252 at
+// microsoft-ui-xaml 8463f45)
+const FOCUS_RING_INNER_WIDTH: f32 = 1.0;
+// The list row's ring: ListViewItem's FocusVisualMargin 1 (platform-facts.md (§2.1.5):
+// focus_ring_offset; ListViewItem_themeresources.xaml:248 at microsoft-ui-xaml 8463f45) puts the
+// outer ring's outer edge 1 px inside the row, and its FocusVisualPrimaryThickness 2 (:250) its
+// inner edge 3 px inside
+const LIST_ROW_FOCUS_RING_OFFSET: f32 = -3.0;
 // `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): Button FocusVisualMargin -3 around a
 // 2px outer and a 1px inner ring
 const FOCUS_RING_OFFSET: f32 = 1.0;
@@ -1582,20 +1599,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
             },
             motion,
         ),
-        // 0.7.2's `defaults.focus_ring_*`: a ring; its inner ring (platform-facts.md (§2.1.5),
-        // `focus_ring_offset`) has no colour in the TOML.
-        focus_ring: FocusIndicator::new(
-            FocusKind::Ring,
-            Stroke::uniform(FOCUS_RING_WIDTH, colors.focus_ring),
-            Stroke::None,
-            FOCUS_RING_OFFSET,
-            None,
-            Some(if FOCUS_RING_KEYBOARD_ONLY {
-                FocusTrigger::KeyboardOnly
-            } else {
-                FocusTrigger::Always
-            }),
-        ),
+        // 0.7.2's `defaults.focus_ring_*`: a ring, the Button's; 0.7.2 has no colour for its inner
+        // ring (platform-facts.md (§2.1.5), `focus_ring_offset`), 0.8.0 states it.
+        focus_ring: focus_ring(c, &colors, FOCUS_RING_OFFSET),
         caret: CaretSpec {
             width: None,
             blink_on_ms: system
@@ -1774,8 +1780,10 @@ impl HighContrast {
     }
 
     /// Lay the colours over each of `c`'s fields whose every key takes the
-    /// same system colour: the view's background and the menu's
-    /// (`COLOR_WINDOW`); the accent, the accent's fill and the segmented
+    /// same system colour: the view's background, the menu's and the focus
+    /// visual's inner ring (`COLOR_WINDOW`: `FocusStrokeColorInnerBrush` =
+    /// `SystemColorWindowColor`, Common_themeresources_any.xaml:473 at
+    /// microsoft-ui-xaml 8463f45); the accent, the accent's fill and the segmented
     /// control's outline (`COLOR_HIGHLIGHT`); the selection's text and the
     /// hovered unchecked box and circle (`COLOR_HIGHLIGHTTEXT`:
     /// `CheckBoxCheckBackgroundFillUncheckedPointerOver`,
@@ -1795,6 +1803,7 @@ impl HighContrast {
         };
         lay(&mut c.view_background, self.window);
         lay(&mut c.menu_background, self.window);
+        lay(&mut c.focus_ring_inner, self.window);
         lay(&mut c.accent, self.highlight);
         lay(&mut c.accent_fill, self.highlight);
         lay(&mut c.control_stroke, self.highlight);
@@ -2778,6 +2787,25 @@ fn radio(
     )
 }
 
+/// The focus visual at `offset`: the 2px outer ring in the focus ring's
+/// colour around the 1px inner one in `FocusStrokeColorInner`, under high
+/// contrast `COLOR_WINDOWTEXT` around `COLOR_WINDOW` ([`HighContrast`]),
+/// shown on keyboard focus only.
+fn focus_ring(c: &SchemeColors, roles: &ColorRoles, offset: f32) -> FocusIndicator {
+    FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(FOCUS_RING_WIDTH, roles.focus_ring),
+        Stroke::uniform(FOCUS_RING_INNER_WIDTH, c.focus_ring_inner),
+        offset,
+        None,
+        Some(if FOCUS_RING_KEYBOARD_ONLY {
+            FocusTrigger::KeyboardOnly
+        } else {
+            FocusTrigger::Always
+        }),
+    )
+}
+
 /// The list or table view: the window's background (0.7.2's
 /// `list.background_color` where unstated, `resolve_safety_nets`) in the
 /// default border, its colour, radius and width (`resolve_border_inheritance`;
@@ -2789,7 +2817,8 @@ fn radio(
 /// the disabled text's colour on a disabled row; headers in the window's
 /// background; the grid in the default border colour (0.7.2:
 /// `list.grid_color` is `defaults.border.color` where unstated). 0.7.2
-/// states no header height and no header separator.
+/// states no header height and no header separator. A row's focus ring is
+/// `ListViewItem`'s, inside the row ([`focus_ring`]).
 fn list(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -2819,6 +2848,15 @@ fn list(
                 direction,
             )),
             PartProp::MinSize([None, Some(LIST_ROW_HEIGHT)]),
+            // ListViewItem's focus visual: FocusVisualPrimaryBrush = FocusStrokeColorOuterBrush,
+            // FocusVisualSecondaryBrush = FocusStrokeColorInnerBrush (ListViewItem_themeresources.xaml:181,
+            // :182; :29, :30 at microsoft-ui-xaml 8463f45), under high contrast
+            // SystemColorWindowTextColor and SystemColorWindowColor (:94, :95), the global ring's.
+            PartProp::Focus(Some(Arc::new(focus_ring(
+                c,
+                roles,
+                LIST_ROW_FOCUS_RING_OFFSET,
+            )))),
         ])
         .rule(alternate, [fill(c.list_alternate_row)])
         .build();

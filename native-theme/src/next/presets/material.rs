@@ -757,7 +757,8 @@ const DISABLED_OPACITY: f32 = 1.0;
 // `defaults.focus_ring_width`: platform-facts.md (§2.1.5): md-focus-ring width 3, outward-offset 2
 // (tokens/_md-comp-focus-ring.scss:50, :52)
 const FOCUS_RING_WIDTH: f32 = 3.0;
-// `defaults.focus_ring_offset`: 0.7.2 material-3.toml (uncited)
+// `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): focus_ring_offset: material-web
+// outward-offset 2 (tokens/_md-comp-focus-ring.scss:50 at material-web cbd34a8)
 const FOCUS_RING_OFFSET: f32 = 2.0;
 // `defaults.focus_ring_keyboard_only`: platform-facts.md (§2.1.5): focus_ring_keyboard_only:
 // Compose shows focus indication in keyboard input mode only (AndroidComposeView.android.kt:3807-3809,

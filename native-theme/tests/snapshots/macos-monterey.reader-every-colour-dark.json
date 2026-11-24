@@ -438,7 +438,18 @@
         "min_size": [
           "none",
           21.0
-        ]
+        ],
+        "focus": {
+          "kind": "ring",
+          "stroke": {
+            "width": 4.0,
+            "color": "#11d922"
+          },
+          "inner_stroke": "none",
+          "offset": -2.0,
+          "corners": null,
+          "trigger": "always"
+        }
       },
       "rules": [
         {

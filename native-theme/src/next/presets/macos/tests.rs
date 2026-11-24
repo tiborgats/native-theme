@@ -1230,3 +1230,38 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
         }
     }
 }
+
+/// The single-line text field states its own focus ring, 4 px wide from
+/// 2 px (monterey) or 1 px (tahoe) inside its frame, shown on any focus (the
+/// mouse-down brings it; os-probe run 45231684209, `*.pressed.text_field`);
+/// the text area keeps the global ring, which states none.
+#[test]
+fn the_text_field_states_its_own_focus_ring() -> TestResult {
+    for (preset, theme) in every_theme() {
+        let field = theme.input.field(WidgetState::NONE);
+        let Some(ring) = field.focus.as_deref() else {
+            return Err(format!("{preset:?}: the text field states no focus ring").into());
+        };
+        let offset = if preset == Preset::MacosMonterey {
+            -2.0
+        } else {
+            -1.0
+        };
+        assert_eq!(ring.kind, FocusKind::Ring, "{preset:?}");
+        assert_eq!(
+            ring.stroke,
+            Stroke::uniform(4.0, theme.colors.focus_ring),
+            "{preset:?}"
+        );
+        assert_eq!(ring.inner_stroke, Stroke::None, "{preset:?}");
+        assert_eq!(ring.offset, offset, "{preset:?}");
+        assert_eq!(ring.trigger, Some(FocusTrigger::Always), "{preset:?}");
+        assert_eq!(
+            theme.text_area.field(WidgetState::NONE).focus,
+            None,
+            "{preset:?}"
+        );
+        assert_eq!(theme.focus_ring.offset, -1.0, "{preset:?}");
+    }
+    Ok(())
+}

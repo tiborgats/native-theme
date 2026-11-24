@@ -528,7 +528,14 @@ fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn st
         super::to_theme(light, &light_inactive, &dark, &dark_inactive)
             .map(|atlas| atlas.focus_ring(egui::Theme::Light).copied())
     };
-    let plain = ring(&light)?.ok_or("windows-11 states a ring")?;
+    let stated = ring(&light)?.ok_or("windows-11 states a ring")?;
+    assert_eq!(
+        (stated.inner.map(|inner| inner.width), stated.corners),
+        (Some(1.0), None),
+        "windows-11 states the inner ring, FocusStrokeColorInner"
+    );
+    light.focus_ring.inner_stroke = Stroke::None;
+    let plain = ring(&light)?.ok_or("the ring")?;
     assert_eq!((plain.inner, plain.corners), (None, None));
     light.focus_ring.inner_stroke = Stroke::uniform(1.0, Color::new(1.0, 1.0, 1.0, 1.0));
     light.focus_ring.corners = Some(Corners::uniform(4.0));

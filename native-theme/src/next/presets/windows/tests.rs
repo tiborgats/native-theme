@@ -758,6 +758,62 @@ fn a_high_contrast_box_hovered_and_pressed_takes_the_system_colours() {
     assert_eq!(dot(checked | pressed), Paint::Solid(button_text));
 }
 
+/// The focus visual is the 2px outer ring around the 1px inner one in
+/// `FocusStrokeColorInner` (#B3FFFFFF / #B3000000), 1 px outside the part
+/// (Button's `FocusVisualMargin` -3); a list row's lies inside it, its outer
+/// ring's inner edge 3 px inside (`ListViewItem`'s `FocusVisualMargin` 1,
+/// ListViewItem_themeresources.xaml:248-252); under high contrast the rings
+/// are the window text around the window (Common_themeresources_any.xaml:472,
+/// :473; ListViewItem_themeresources.xaml:94, :95).
+#[test]
+fn the_focus_visual_is_two_rings_and_a_list_row_s_lies_inside_it() -> TestResult {
+    use crate::next::reader::{OsColors, OsSurfaceOverrides};
+    for (theme, inner) in both_schemes().into_iter().zip([0xffff_ffb3, 0x0000_00b3]) {
+        let ring = &theme.focus_ring;
+        assert_eq!(ring.kind, FocusKind::Ring);
+        assert_eq!(ring.stroke, Stroke::uniform(2.0, theme.colors.focus_ring));
+        assert_eq!(ring.inner_stroke, Stroke::uniform(1.0, srgb8(inner)));
+        assert_eq!(ring.offset, 1.0);
+        assert_eq!(ring.trigger, Some(FocusTrigger::KeyboardOnly));
+        let row = theme.list.row(ListQuery::new(WidgetState::NONE));
+        let Some(row_ring) = row.focus.as_deref() else {
+            return Err("the list row states no focus ring".into());
+        };
+        assert_eq!(row_ring.offset, -3.0);
+        assert_eq!(
+            (&row_ring.stroke, &row_ring.inner_stroke, row_ring.trigger),
+            (&ring.stroke, &ring.inner_stroke, ring.trigger)
+        );
+    }
+    let [window_text, window] = [1, 2].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            window: Some(SurfaceColors {
+                background: Some(window),
+                foreground: Some(window_text),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    assert_eq!(high.focus_ring.stroke, Stroke::uniform(2.0, window_text));
+    assert_eq!(high.focus_ring.inner_stroke, Stroke::uniform(1.0, window));
+    let row = high.list.row(ListQuery::new(WidgetState::NONE));
+    let Some(row_ring) = row.focus.as_deref() else {
+        return Err("the high-contrast list row states no focus ring".into());
+    };
+    assert_eq!(row_ring.inner_stroke, Stroke::uniform(1.0, window));
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // The palette and the explicit accent
 // ---------------------------------------------------------------------------

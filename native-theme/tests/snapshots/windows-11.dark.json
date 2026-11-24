@@ -250,7 +250,10 @@
       "width": 2.0,
       "color": "#ffffff"
     },
-    "inner_stroke": "none",
+    "inner_stroke": {
+      "width": 1.0,
+      "color": "#000000b3"
+    },
     "offset": 1.0,
     "corners": null,
     "trigger": "keyboard_only"
@@ -1760,7 +1763,21 @@
         "min_size": [
           "none",
           40.0
-        ]
+        ],
+        "focus": {
+          "kind": "ring",
+          "stroke": {
+            "width": 2.0,
+            "color": "#ffffff"
+          },
+          "inner_stroke": {
+            "width": 1.0,
+            "color": "#000000b3"
+          },
+          "offset": -3.0,
+          "corners": null,
+          "trigger": "keyboard_only"
+        }
       },
       "rules": [
         {

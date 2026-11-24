@@ -1381,7 +1381,9 @@ const DISABLED_OPACITY: f32 = 1.0;
 const FOCUS_RING_WIDTH: f32 = 2.0;
 
 /// The focus ring's offset from the part's edge.
-// `defaults.focus_ring_offset`: 0.7.2 kde-breeze.toml (uncited)
+// `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): focus_ring_offset: −1, the band from 1
+// px inside the widget's rectangle to 1 px outside it (breezestyle.cpp:6642-6651 at breeze
+// f0b1d75)
 const FOCUS_RING_OFFSET: f32 = -1.0;
 
 /// Whether the focus ring is shown only for keyboard focus.

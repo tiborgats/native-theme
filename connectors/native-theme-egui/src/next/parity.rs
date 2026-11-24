@@ -243,6 +243,17 @@ const CARD_OUTLINE: &str = "the 0.8.0 theme states no stroke or corners for the 
      (card.container(NONE)) where 0.7.2 gives a transparent zero-width outline and square \
      corners: the frame keeps egui's `Frame::group` over the 0.8.0 base style";
 
+/// The presets whose 0.8.0 focus ring states a second ring inside the first, which 0.7.2 states
+/// nowhere, and why: the atlas test checks the plugin's `FocusRing.inner` against its home,
+/// `focus_ring.inner_stroke`.
+const INNER_RING_STATED: &[(&str, &str)] = &[(
+    "windows-11",
+    "windows-11 states the focus visual's 1px inner ring in FocusStrokeColorInner, #B3FFFFFF / \
+     #B3000000 (docs/platform-facts.md §2.1.5 focus_ring_color and focus_ring_offset; \
+     Common_themeresources_any.xaml:259, :55 at microsoft-ui-xaml 8463f45), where 0.7.2 has no \
+     colour for it and states no inner ring",
+)];
+
 const DIFFERENCES: &[Difference] = &[
     d(
         "base",
@@ -1977,6 +1988,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
         ));
     }
     let prefs = AccessibilityPreferences::default();
+    let mut inner_seen = Vec::new();
     for &(key, preset) in PRESETS {
         let spec = native_theme::theme::Theme::preset(key)?;
         let layout = spec.layout.clone();
@@ -2370,10 +2382,43 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                 label: &label,
                 bases: None,
             };
+            // the second ring, which 0.7.2 states nowhere: on a preset [`INNER_RING_STATED`]
+            // names, the one its home gives (`focus_ring.inner_stroke`, one width and colour), the
+            // rest of the ring compared as 0.7.2's
+            let mut new_ring = new_styles.focus_ring;
+            if let Some(ring) = new_ring.as_mut() {
+                let old_inner = old_styles.focus_ring.and_then(|old| old.inner);
+                if ring.inner != old_inner {
+                    let home = match new.focus_ring.inner_stroke {
+                        native_theme::next::Stroke::Uniform { width, color, .. } => {
+                            Some(egui::Stroke::new(width, super::to_color32(color)))
+                        }
+                        _ => None,
+                    };
+                    if !INNER_RING_STATED
+                        .iter()
+                        .any(|(p, reason)| *p == key && !reason.is_empty())
+                    {
+                        tally.failures.push(format!(
+                            "{label}: FocusRing: .inner: 0.7.2 {old_inner:?}, 0.8.0 {:?}; not \
+                             listed in INNER_RING_STATED",
+                            ring.inner
+                        ));
+                    } else if home.is_none() || ring.inner != home {
+                        tally.failures.push(format!(
+                            "{label}: FocusRing: .inner: 0.8.0 {:?}, its home gives {home:?}",
+                            ring.inner
+                        ));
+                    } else {
+                        inner_seen.push(key);
+                    }
+                    ring.inner = old_inner;
+                }
+            }
             compare(
                 &side("FocusRing"),
                 &old_styles.focus_ring,
-                &new_styles.focus_ring,
+                &new_ring,
                 &|_, _| None,
                 &mut tally,
             );
@@ -2392,6 +2437,13 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
         claimed,
         gaps,
     } = tally;
+    for (key, _) in INNER_RING_STATED {
+        if !inner_seen.contains(key) {
+            failures.push(format!(
+                "FocusRing .inner on {key}: listed in INNER_RING_STATED, but differs nowhere"
+            ));
+        }
+    }
     for preset in Preset::ALL {
         if !PRESETS.iter().any(|(_, p)| p == preset) {
             failures.push(format!("{preset:?}: not compared"));

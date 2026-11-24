@@ -735,11 +735,13 @@ const DISABLED_OPACITY: f32 = 0.5;
 const DISABLED_OPACITY_HIGH: f32 = 0.4;
 
 /// The focus ring's width.
-// `defaults.focus_ring_width`: 0.7.2 adwaita.toml (uncited)
+// `defaults.focus_ring_width`: platform-facts.md (§2.1.5): focus_ring_width: libadwaita CSS 2px
+// (`focus-ring($width: 2px)`, _drawing.scss at libadwaita 1.10.0)
 const FOCUS_RING_WIDTH: f32 = 2.0;
 
 /// The focus ring's offset from the control's edge.
-// `defaults.focus_ring_offset`: 0.7.2 adwaita.toml (uncited)
+// `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): focus_ring_offset: libadwaita CSS -2px,
+// inset (`$offset: -$width`, _drawing.scss at libadwaita 1.10.0)
 const FOCUS_RING_OFFSET: f32 = -2.0;
 
 /// The focus ring's alpha: libadwaita's `$focus_border_color`, the

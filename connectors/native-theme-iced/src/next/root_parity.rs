@@ -168,6 +168,72 @@ fn stated_radio_dot(_: &native_theme::next::ResolvedTheme) -> Option<String> {
     None
 }
 
+/// The focus ring round a field whose radius is `radius`, from the homes the
+/// 0.8.0 preset states: `focus_ring.stroke`'s colour and width, its
+/// `offset`, keyboard only where its `trigger` says, and the second ring
+/// from `focus_ring.inner_stroke`; `None` where either stroke is not one
+/// width and colour.
+#[cfg(feature = "widgets")]
+fn stated_ring(new: &native_theme::next::ResolvedTheme, radius: f32) -> Option<String> {
+    use native_theme::next::{FocusTrigger, Stroke};
+
+    let f = &new.focus_ring;
+    let (
+        Stroke::Uniform { width, color, .. },
+        Stroke::Uniform {
+            width: inner_width,
+            color: inner_color,
+            ..
+        },
+    ) = (&f.stroke, &f.inner_stroke)
+    else {
+        return None;
+    };
+    Some(format!(
+        "{:?}",
+        ok(Some(crate::focus_ring::RingLook {
+            color: super::to_color(*color),
+            width: *width,
+            offset: f.offset,
+            radius,
+            keyboard_only: f.trigger == Some(FocusTrigger::KeyboardOnly),
+            inner: Some((super::to_color(*inner_color), *inner_width)),
+            corners: None,
+        }))
+    ))
+}
+
+/// [`stated_ring`] round a square field.
+#[cfg(feature = "widgets")]
+fn stated_square_ring(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    stated_ring(new, 0.0)
+}
+
+/// [`stated_ring`] round a field of the default radius.
+#[cfg(feature = "widgets")]
+fn stated_rounded_ring(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    stated_ring(new, new.layout.corner_radius)
+}
+
+/// The focus ring is compared with the `widgets` feature only, which builds
+/// it: no value to assert without it.
+#[cfg(not(feature = "widgets"))]
+fn stated_square_ring(_: &native_theme::next::ResolvedTheme) -> Option<String> {
+    None
+}
+
+/// As [`stated_square_ring`] without the `widgets` feature.
+#[cfg(not(feature = "widgets"))]
+fn stated_rounded_ring(_: &native_theme::next::ResolvedTheme) -> Option<String> {
+    None
+}
+
+/// The reason of windows-11's focus ring.
+const W11_INNER_RING: &str = "windows-11 states the focus visual's 1px inner ring in \
+     FocusStrokeColorInner, #B3FFFFFF / #B3000000 (docs/platform-facts.md §2.1.5 \
+     focus_ring_color and focus_ring_offset; Common_themeresources_any.xaml:259, :55 at \
+     microsoft-ui-xaml 8463f45), where 0.7.2 has no colour for it and states no inner ring";
+
 /// The reason of material-3's radio dot.
 const M3_RADIO_DOT: &str = "material-3 states the checked radio's dot in primary, \
      selected-icon-color (radio/internal/_radio.scss:126-127, \
@@ -252,6 +318,18 @@ const DIFFERENCES: &[Difference] = &[
         preset: "material-3",
         new: New::Computed(stated_radio_dot),
         reason: M3_RADIO_DOT,
+    },
+    Difference {
+        name: "focus_ring",
+        preset: "windows-11",
+        new: New::Computed(stated_square_ring),
+        reason: W11_INNER_RING,
+    },
+    Difference {
+        name: "focus_ring",
+        preset: "windows-11",
+        new: New::Computed(stated_rounded_ring),
+        reason: W11_INNER_RING,
     },
 ];
 
@@ -657,11 +735,15 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
         }
     }
     for d in DIFFERENCES {
-        // The button's, the combo box's and the radio's helpers are compared
-        // with the `widgets` feature only.
+        // The button's, the combo box's, the radio's helpers and the focus
+        // ring are compared with the `widgets` feature only.
         if matches!(
             d.name,
-            "button_content_min_size" | "button_padding" | "combo_box_padding" | "radio"
+            "button_content_min_size"
+                | "button_padding"
+                | "combo_box_padding"
+                | "radio"
+                | "focus_ring"
         ) && !cfg!(feature = "widgets")
         {
             continue;
