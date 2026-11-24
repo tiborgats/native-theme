@@ -1,7 +1,7 @@
 //! What the Buttons page's widgets report about themselves (spec §3.4).
 
 use gpui_component::{Colorize as _, Size, theme::Theme};
-use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
+use native_theme::next::{PartStyle, ResolvedTheme as NextTheme, WidgetState};
 use native_theme_gpui::next::geometry::button_disabled;
 use native_theme_gpui::next::{
     self, padding_of, state_fill_of, state_text_color_of, text_color_of,
@@ -903,28 +903,71 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
-/// `info` with what a checked tool Button paints, in place of what
-/// [`native_toolbar`] claims for an unchecked one:
-/// `next::geometry::toolbar_button_checked`'s fill and text where a rule of
-/// `native` states the toolbar's checked fill, `toolbar.button(CHECKED).fill`;
-/// else the selected fill that builder sets, `toolbar.button(PRESSED).fill`,
-/// else `button.body(PRESSED).fill`, or, as [`native_ghost_selected`] says,
-/// the variant's active colour, under the variant's one foreground; and its
-/// pen, `toolbar.button(CHECKED).stroke.color`, where a rule states it, at
-/// [`rest_border`]'s width. Where the builder lacks a home it reads, it is
-/// not applied, and the variant's selected style stands. Upstream draws no
-/// hover or press style on a selected Button, so it claims no hover or
-/// pressed fill, and the edge stays the rest one under the pointer.
-fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
-    let applied = native.filter(|r| next::geometry::toolbar_button_checked(r).is_ok());
-    let checked_fill = stated_claim(
-        "checked fill",
-        "toolbar.button(CHECKED).fill",
-        applied.and_then(|r| state_fill_of(&r.toolbar.button(WidgetState::CHECKED))),
-        "native-theme-gpui/next/builders.rs:679",
-    );
-    let info = match (checked_fill, applied) {
-        (Some(fill), Some(r)) => {
+/// Where a checked tool Button's fill comes from, as [`toolbar_checked`]
+/// claims it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum CheckedFill {
+    /// `toolbar.button(CHECKED).fill`, under the checked text.
+    Checked,
+    /// `toolbar.button(PRESSED).fill`, under the variant's text.
+    Pressed,
+    /// `button.body(PRESSED).fill`, under the variant's text.
+    BodyPressed,
+    /// The custom variant's selected fill, `secondary_active`, under its
+    /// text.
+    Variant,
+}
+
+/// The fill [`toolbar_checked`] claims for a checked tool Button from the
+/// parts it reads -- `checked`, `toolbar.button(CHECKED)`; `pressed`,
+/// `toolbar.button(PRESSED)`; `body_pressed`, `button.body(PRESSED)` --
+/// `applied` being whether `next::geometry::toolbar_button_checked` applies:
+/// the checked fill where the builder applies and a rule states it; else
+/// the toolbar's pressed fill where a rule states it; else the pressed
+/// body's where the builder applies and a rule states it; else the
+/// variant's.
+pub(crate) fn checked_fill(
+    checked: &PartStyle,
+    pressed: &PartStyle,
+    body_pressed: &PartStyle,
+    applied: bool,
+) -> CheckedFill {
+    if applied && state_fill_of(checked).is_some() {
+        CheckedFill::Checked
+    } else if state_fill_of(pressed).is_some() {
+        CheckedFill::Pressed
+    } else if applied && state_fill_of(body_pressed).is_some() {
+        CheckedFill::BodyPressed
+    } else {
+        CheckedFill::Variant
+    }
+}
+
+/// The fill and text a checked tool Button claims under `native`, as
+/// [`toolbar_checked`] says, `applied` being whether
+/// `next::geometry::toolbar_button_checked` applies under it.
+fn toolbar_checked_colors(
+    info: WidgetInfo,
+    t: &Theme,
+    native: Option<&NextTheme>,
+    applied: bool,
+) -> WidgetInfo {
+    let source = native.map_or(CheckedFill::Variant, |r| {
+        checked_fill(
+            &r.toolbar.button(WidgetState::CHECKED),
+            &r.toolbar.button(WidgetState::PRESSED),
+            &r.button.body(WidgetState::PRESSED),
+            applied,
+        )
+    });
+    match (source, native) {
+        (CheckedFill::Checked, Some(r)) => {
+            let fill = stated_claim(
+                "checked fill",
+                "toolbar.button(CHECKED).fill",
+                state_fill_of(&r.toolbar.button(WidgetState::CHECKED)),
+                "native-theme-gpui/next/builders.rs:679",
+            );
             // The builder applies, so it states the pressed text it falls
             // back to.
             let text = stated_claim(
@@ -941,22 +984,25 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&NextTheme>) -> W
                     "native-theme-gpui/next/builders.rs:694",
                 )
             });
-            info.color(fill).colors(text)
+            info.colors(fill).colors(text)
         }
-        _ => {
-            let pressed = stated_claim(
-                "selected bg",
-                "toolbar.button(PRESSED).fill",
-                native.and_then(|r| state_fill_of(&r.toolbar.button(WidgetState::PRESSED))),
-                "native-theme-gpui/next/builders.rs:716",
-            );
-            let body = stated_claim(
-                "selected bg",
-                "button.body(PRESSED).fill",
-                applied.and_then(|r| state_fill_of(&r.button.body(WidgetState::PRESSED))),
-                "native-theme-gpui/next/builders.rs:698",
-            );
-            let info = match pressed.or(body) {
+        (source, native) => {
+            let active = match (source, native) {
+                (CheckedFill::Pressed, Some(r)) => stated_claim(
+                    "selected bg",
+                    "toolbar.button(PRESSED).fill",
+                    state_fill_of(&r.toolbar.button(WidgetState::PRESSED)),
+                    "native-theme-gpui/next/builders.rs:716",
+                ),
+                (CheckedFill::BodyPressed, Some(r)) => stated_claim(
+                    "selected bg",
+                    "button.body(PRESSED).fill",
+                    state_fill_of(&r.button.body(WidgetState::PRESSED)),
+                    "native-theme-gpui/next/builders.rs:698",
+                ),
+                _ => None,
+            };
+            let info = match active {
                 Some(active) => info.color(active),
                 None => info.color(claim(
                     "selected bg",
@@ -972,7 +1018,24 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&NextTheme>) -> W
                 "native-theme-gpui/variants.rs:62",
             ))
         }
-    };
+    }
+}
+
+/// `info` with what a checked tool Button paints, in place of what
+/// [`native_toolbar`] claims for an unchecked one:
+/// `next::geometry::toolbar_button_checked`'s fill and text where a rule of
+/// `native` states the toolbar's checked fill, `toolbar.button(CHECKED).fill`;
+/// else the selected fill that builder sets, `toolbar.button(PRESSED).fill`,
+/// else `button.body(PRESSED).fill`, or, as [`native_ghost_selected`] says,
+/// the variant's active colour, under the variant's one foreground; and its
+/// pen, `toolbar.button(CHECKED).stroke.color`, where a rule states it, at
+/// [`rest_border`]'s width. Where the builder lacks a home it reads, it is
+/// not applied, and the variant's selected style stands. Upstream draws no
+/// hover or press style on a selected Button, so it claims no hover or
+/// pressed fill, and the edge stays the rest one under the pointer.
+fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
+    let applied = native.filter(|r| next::geometry::toolbar_button_checked(r).is_ok());
+    let info = toolbar_checked_colors(info, t, native, applied.is_some());
     // The pen's width is toolbar_button_rest's, which sets one only where the
     // toolbar's hover outline is stated.
     let info = info.colors(edge_claim(

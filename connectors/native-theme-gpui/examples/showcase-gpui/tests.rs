@@ -22386,6 +22386,43 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
     }
 }
 
+/// A checked tool Button under a theme that states none of the fills
+/// `next::geometry::toolbar_button_checked` reads --
+/// `toolbar.button(CHECKED).fill`, `toolbar.button(PRESSED).fill`,
+/// `button.body(PRESSED).fill` -- keeps the custom variant's selected fill,
+/// `secondary_active`, under the variant's text, whether the builder
+/// applies or not; and a bundled preset that states the checked fill takes
+/// it. No bundled preset leaves all three unstated, so the parts are built
+/// stating nothing.
+#[test]
+fn a_checked_tool_button_with_no_stated_fill_takes_the_variants_selected_fill() -> Result<(), String>
+{
+    use crate::info::buttons::{CheckedFill, checked_fill};
+    use native_theme::next::{PartStyle, WidgetState};
+    let none = PartStyle::default();
+    for applied in [true, false] {
+        assert_eq!(
+            checked_fill(&none, &none, &none, applied),
+            CheckedFill::Variant,
+            "applied {applied}: a checked tool Button whose theme states no fill does not keep \
+             the variant's selected fill"
+        );
+    }
+    let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let checked = r.toolbar.button(WidgetState::CHECKED);
+    assert!(
+        native_theme_gpui::next::state_fill_of(&checked).is_some(),
+        "kde-breeze no longer states toolbar.button(CHECKED).fill, so this part proves nothing"
+    );
+    assert_eq!(
+        checked_fill(&checked, &none, &none, true),
+        CheckedFill::Checked,
+        "kde-breeze's stated checked fill is not taken"
+    );
+    Ok(())
+}
+
 /// A disabled refined field's edge swatch is the colour painted: the
 /// surface's `input.field(NONE).stroke.color` faded with the field by the
 /// opacity `geometry::input_fill` gives it (`input.disabled_opacity`) --
