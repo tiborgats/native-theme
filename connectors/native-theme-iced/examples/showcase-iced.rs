@@ -17811,17 +17811,23 @@ fn tooltip_info(state: &State) -> String {
 }
 
 fn view_display(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let typography = &next.typography;
     let gap = Gaps::from_next(&next.layout);
     let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
     let caption = |content: String| next_caption_text(state, content, None);
-    let card_radius = resolved.card.border.corner_radius;
+    // The corners the caption names: the card's own where the theme states
+    // them, iced's own container's, square, where not
+    // (`container::Style::default()`).
+    let card_radius = match iced_next::radius_of(&next.card.container(WidgetState::NONE)) {
+        Some(radius) => format!("card.container(NONE).corners: {radius:.0}px"),
+        None => "corners: iced's own, square".to_owned(),
+    };
     // The cards, the Spacing & Layout boxes among them, are padded as every
     // card is, as the Basic card on the installed 0.8.0 theme
-    // ([`next_card_padding`]); their colours and corners still
-    // `styles::container_card`'s.
+    // ([`next_card_padding`]); their colours and corners
+    // `iced_next::styles::container_card`'s, iced's own container where the
+    // theme states no card fill.
     let card_pad = next_card_padding(next);
     let thickness = next.separator.thickness;
     let divider = || rule::horizontal(thickness).style(iced_next::styles::rule(next));
@@ -17843,14 +17849,15 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     column![
                         text("Container (card fill)").next_body(next),
                         caption(format!(
-                            "This container uses styles::container_card. \
-                             card.border.corner_radius: {card_radius:.0}px."
+                            "This container uses styles::container_card. {card_radius}."
                         )),
                     ]
                     .spacing(gap.widget),
                 )
                 .padding(card_pad)
-                .style(styles::container_card(resolved))
+                .next_style(iced_next::styles::container_card(next), |card, style| {
+                    card.style(style)
+                })
                 .width(Fill),
             ),
             probe(
@@ -17862,7 +17869,9 @@ fn view_display(state: &State) -> Element<'_, Message> {
                         .to_owned()
                 ))
                 .padding(card_pad)
-                .style(styles::container_card(resolved))
+                .next_style(iced_next::styles::container_card(next), |card, style| {
+                    card.style(style)
+                })
                 .width(Fill),
             ),
         ]
@@ -17906,7 +17915,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 btn_min,
             ))
             .on_press(Message::ButtonPressed)
-            .style(styles::button_primary(resolved))
+            .next_style(iced_next::styles::button_primary(next), |b, s| b.style(s))
             .padding(btn_pad),
             tooltip::Position::Top,
             "Tooltip on top!",
@@ -17918,7 +17927,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 btn_min,
             ))
             .on_press(Message::ButtonPressed)
-            .style(styles::button(resolved))
+            .next_style(iced_next::styles::button(next), |b, s| b.style(s))
             .padding(btn_pad),
             tooltip::Position::Bottom,
             "Tooltip on bottom!",
@@ -17930,7 +17939,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 btn_min,
             ))
             .on_press(Message::ButtonPressed)
-            .style(styles::button_success(resolved))
+            .next_style(iced_next::styles::button_success(next), |b, s| b.style(s))
             .padding(btn_pad),
             tooltip::Position::Left,
             "Tooltip on left!",
@@ -17942,7 +17951,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 btn_min,
             ))
             .on_press(Message::ButtonPressed)
-            .style(styles::button_danger(resolved))
+            .next_style(iced_next::styles::button_danger(next), |b, s| b.style(s))
             .padding(btn_pad),
             tooltip::Position::Right,
             "Tooltip on right!",
@@ -18016,7 +18025,9 @@ fn view_display(state: &State) -> Element<'_, Message> {
         .spacing(gap.widget),
     )
     .padding(card_pad)
-    .style(styles::container_card(resolved))
+    .next_style(iced_next::styles::container_card(next), |card, style| {
+        card.style(style)
+    })
     .width(Fill);
 
     let spacing_demo = column![
@@ -18024,17 +18035,23 @@ fn view_display(state: &State) -> Element<'_, Message> {
         row![
             container(text("A").next_body(next))
                 .padding(card_pad)
-                .style(styles::container_card(resolved))
+                .next_style(iced_next::styles::container_card(next), |card, style| {
+                    card.style(style)
+                })
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             container(text("B").next_body(next))
                 .padding(card_pad)
-                .style(styles::container_card(resolved))
+                .next_style(iced_next::styles::container_card(next), |card, style| {
+                    card.style(style)
+                })
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             container(text("C").next_body(next))
                 .padding(card_pad)
-                .style(styles::container_card(resolved))
+                .next_style(iced_next::styles::container_card(next), |card, style| {
+                    card.style(style)
+                })
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             space().width(Fill),
@@ -18043,7 +18060,9 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 Length::Shrink,
                 container(caption("Right-aligned".to_owned()))
                     .padding(card_pad)
-                    .style(styles::container_card(resolved)),
+                    .next_style(iced_next::styles::container_card(next), |card, style| {
+                        card.style(style)
+                    }),
             ),
         ]
         .spacing(gap.widget)
@@ -36872,6 +36891,16 @@ mod tests {
             ],
         ),
         ("view_inputs", &["text_input", "text_editor"]),
+        (
+            "view_display",
+            &[
+                "button",
+                "button_primary",
+                "button_success",
+                "button_danger",
+                "container_card",
+            ],
+        ),
         (
             "view_selection",
             &["checkbox", "pick_list", "text_input", "menu"],
