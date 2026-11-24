@@ -13168,8 +13168,7 @@ fn basic_segmented_in_last_column(columns: usize) -> bool {
 fn basic_tabs_width(state: &State) -> f32 {
     #[cfg(feature = "iced_aw")]
     {
-        let padding =
-            next_aw_tab_padding(state.next_shown()).unwrap_or(Padding::new(AW_TAB_PADDING));
+        let padding = next_aw_tab_padding(state.next_shown());
         next_aw_tab_width(state, &BASIC_TABS, padding) * BASIC_TABS.len() as f32
     }
     #[cfg(not(feature = "iced_aw"))]
@@ -13431,11 +13430,10 @@ fn number_steps(
 /// `src/widget/selection_list.rs:77`), which it keeps in no constant.
 const AW_LIST_PADDING: f32 = 5.0;
 
-/// The gap between a Basic page switch and its label: the model states none
-/// (`SwitchTheme` has no label gap), and this is the one iced's `Toggler`
-/// leaves, `Self::DEFAULT_SIZE / 2.0` (iced_widget 0.14.2 `src/toggler.rs`,
-/// `Toggler::new`), which the page's switches drew before they took the
-/// connector's `switch`.
+/// The gap between a switch and its label where the theme states no
+/// `switch.label_gap`: the one iced's `Toggler` leaves,
+/// `Self::DEFAULT_SIZE / 2.0` (iced_widget 0.14.2 `src/toggler.rs`,
+/// `Toggler::new`), the toolkit's own (spec §10, rule 0).
 const TOGGLER_LABEL_GAP: f32 = iced::widget::Toggler::<'static, Message>::DEFAULT_SIZE / 2.0;
 
 /// The tooltip's padding on the installed 0.8.0 theme, where iced can carry
@@ -13534,13 +13532,12 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
     let tab_row: Element<'_, Message> = {
         let r = state.next_shown();
         let [one, two] = BASIC_TABS;
-        // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
-        // and takes a padding whole ([`next_aw_tab_padding`]).
-        let tab_padding = next_aw_tab_padding(r);
+        // iced_aw takes a padding whole: the stated sides, iced_aw's own on
+        // the rest ([`next_aw_tab_padding`]).
+        let drawn_padding = next_aw_tab_padding(r);
         // Every tab one width that fits the wider label, never below
         // `tab.tab(NONE).min_size[0]` where stated, as the Extra page's bar
         // ([`next_aw_tab_width`]), so no label wraps.
-        let drawn_padding = tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING));
         let tab_width = next_aw_tab_width(state, &BASIC_TABS, drawn_padding);
         // And one height that holds the label's line, never below
         // `tab.tab(NONE).min_size[1]` where stated ([`next_aw_tab_height`]),
@@ -13572,10 +13569,7 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
                 Some(gap) => bar.spacing(gap),
                 None => bar,
             };
-            let bar: Element<'_, Message> = match tab_padding {
-                Some(padding) => bar.padding(padding).into(),
-                None => bar.into(),
-            };
+            let bar: Element<'_, Message> = bar.padding(drawn_padding).into();
             // The tabs are the bar's row's nodes, one per label
             // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
             let bar: Element<'_, Message> = tagged("basic.tabs.bar", bar)
@@ -15641,6 +15635,19 @@ fn next_slider_sizes(r: &native_theme::next::ResolvedTheme) -> (f32, f32) {
     )
 }
 
+/// How thick a slider along `orientation` is laid out on the installed
+/// 0.8.0 theme, as the Basic page's is: as thick as what it paints, the
+/// handle or the rail where that is thicker ([`next_stated_slider_sizes`],
+/// iced's own where unstated); iced's own thickness (16,
+/// `Slider::DEFAULT_HEIGHT`, `VerticalSlider::DEFAULT_WIDTH`) would leave a
+/// larger handle outside the control.
+fn next_slider_girth(r: &native_theme::next::ResolvedTheme, orientation: Orientation) -> f32 {
+    let (rail, handle) = next_stated_slider_sizes(r, orientation);
+    handle
+        .unwrap_or(ICED_SLIDER_HANDLE)
+        .max(rail.unwrap_or(ICED_SLIDER_RAIL))
+}
+
 /// The rail's thickness and the handle's diameter the 0.8.0 style of a
 /// slider along `orientation` gives iced on the installed 0.8.0 theme
 /// (`iced_next::styles::slider` horizontal, `::vertical_slider` vertical):
@@ -16182,7 +16189,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
     // [`next_button_floor`], `button.body(NONE).min_size` less the padding,
     // as every Buttons-page button of the gpui showcase is
     // (`geometry::button`), padded by [`next_button_padding`]; its class's
-    // colours still the 0.7.2 style's.
+    // colours its `iced_next::styles` function's.
     let button_label = next.button.label(WidgetState::NONE);
     let btn_min = next_button_floor(next);
     let btn_pad = next_button_padding(next);
@@ -17465,7 +17472,10 @@ fn view_range(state: &State) -> Element<'_, Message> {
     // The sliders' rails and handles are `iced_next::styles::slider`'s,
     // which sizes them (iced's own where the theme leaves them unstated);
     // their values in `typography.body`, `layout.widget_gap` from the
-    // slider, on the installed 0.8.0 theme.
+    // slider, on the installed 0.8.0 theme. Each slider as thick as what it
+    // paints ([`next_slider_girth`]).
+    let across = next_slider_girth(next, Orientation::Horizontal);
+    let upright = next_slider_girth(next, Orientation::Vertical);
     let horiz_slider = hoverable(
         UnlistedKey::Slider,
         column![
@@ -17476,6 +17486,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                     Fill,
                     slider(0.0..=100.0, state.slider_value, Message::SliderChanged)
                         .next_style(iced_next::styles::slider(next), |s, style| s.style(style))
+                        .height(across)
                         .width(Fill)
                 ),
                 text(format!("{:.1}", state.slider_value))
@@ -17498,6 +17509,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                 slider(0.0..=100.0, state.slider_step, Message::StepSliderChanged)
                     .step(5.0_f32)
                     .next_style(iced_next::styles::slider(next), |s, style| s.style(style))
+                    .height(across)
                     .width(Fill),
                 text(format!("{:.0}", state.slider_step))
                     .next_body(next)
@@ -17523,6 +17535,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                             .next_style(iced_next::styles::vertical_slider(next), |s, style| {
                                 s.style(style)
                             })
+                            .width(upright)
                             .height(Length::Fixed(200.0))
                     )
                     .center_x(Length::Fixed(60.0))
@@ -17555,6 +17568,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             row![
                 slider(0.0..=100.0, state.progress_value, Message::ProgressChanged)
                     .next_style(iced_next::styles::slider(next), |s, style| s.style(style))
+                    .height(across)
                     .width(Fill),
                 text(format!("{:.0}%", state.progress_value))
                     .next_body(next)
@@ -17797,7 +17811,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
         .next_body(next),
         divider(),
         caption(
-            "Its colour is separator.line_color; its radius and its fill mode have \
+            "Its colour is separator.color; its radius and its fill mode have \
              no native source and are iced's own."
                 .to_owned()
         ),
@@ -17808,7 +17822,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
     // Each button laid out as the Buttons page's push buttons, on the
     // installed 0.8.0 theme: its label `button.label(NONE)`, at least
     // [`next_button_floor`], padded by [`next_button_padding`]; their colours
-    // still the 0.7.2 styles'. The tips' text in `tooltip.text`, as the
+    // their `iced_next::styles` functions'. The tips' text in `tooltip.text`, as the
     // Basic page's tooltip's.
     let button_label = next.button.label(WidgetState::NONE);
     let btn_min = next_button_floor(next);
@@ -18323,7 +18337,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
             title("Grid (cells in columns)"),
             text(
                 "iced_widget::grid distributes its children over a fixed number of \
-                 columns. Here: eight of the colours ResolvedDefaults names."
+                 columns. Here: eight of the theme's colours."
             )
             .next_body(next),
             probe(
@@ -19365,12 +19379,11 @@ fn next_aw_card_padding(r: &native_theme::next::ResolvedTheme) -> (Padding, Padd
 }
 
 /// The padding of an `iced_aw` `TabBar`'s tab on the installed 0.8.0 theme:
-/// where `tab.tab(NONE).padding` states every side, each side plus the
-/// width of the open tab's outline, as the page tabs' padding
-/// ([`next_tab_padding`]) holds it (the padding starts at the stroke's
-/// inner edge, spec §2, and every tab keeps that room); `None` where it
-/// leaves a side unstated, as iced_aw takes a padding whole and keeps its
-/// own private (widget/tab_bar.rs:41), which then stands. iced_aw pads a
+/// each side `tab.tab(NONE).padding` states plus the width of the open
+/// tab's outline, as the page tabs' padding ([`next_tab_padding`]) holds it
+/// (the padding starts at the stroke's inner edge, spec §2, and every tab
+/// keeps that room); iced_aw's own side, [`AW_TAB_PADDING`], on a side it
+/// leaves unstated, as iced_aw takes a padding whole. iced_aw pads a
 /// tab's label row by the padding (iced_aw 0.14.1 `src/widget/tab_bar.rs:494`)
 /// and paints the tab's outline on that row's bounds, over the padding
 /// (`:853-873`); the outline is `tab.tab(SELECTED).stroke.width` where
@@ -19378,20 +19391,21 @@ fn next_aw_card_padding(r: &native_theme::next::ResolvedTheme) -> (Padding, Padd
 /// `tab_label_border_width` 1 (`src/style/tab_bar.rs:58`, which
 /// `tab_bar::primary` keeps, `:92-111`).
 #[cfg(feature = "iced_aw")]
-fn next_aw_tab_padding(r: &native_theme::next::ResolvedTheme) -> Option<Padding> {
+fn next_aw_tab_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
     let own = iced_aw::style::tab_bar::Style::default().tab_label_border_width;
     let line = match iced_next::styles::aw::tab_bar(r) {
         Ok(_) => iced_next::stroke_width_of(&r.tab.tab(WidgetState::SELECTED)).unwrap_or(own),
         Err(_) => own,
     };
-    match iced_next::padding_of(&r.tab.tab(WidgetState::NONE)) {
-        [Some(top), Some(right), Some(bottom), Some(left)] => Some(Padding {
-            top: top + line,
-            right: right + line,
-            bottom: bottom + line,
-            left: left + line,
-        }),
-        _ => None,
+    let tab = r.tab.tab(WidgetState::NONE);
+    let sides = stated_sides(&tab, Padding::new(AW_TAB_PADDING));
+    let [top, right, bottom, left] = iced_next::padding_of(&tab);
+    let side = |stated: Option<f32>, drawn: f32| stated.map_or(drawn, |_| drawn + line);
+    Padding {
+        top: side(top, sides.top),
+        right: side(right, sides.right),
+        bottom: side(bottom, sides.bottom),
+        left: side(left, sides.left),
     }
 }
 
@@ -19748,9 +19762,9 @@ fn aw_tab_bar_info(state: &State) -> String {
             ),
             (
                 "tab padding",
-                "tab.tab(NONE).padding, each side plus tab.tab(SELECTED).stroke.width, \
-                 where the theme states every side (next_aw_tab_padding); otherwise \
-                 iced_aw's own, which it keeps private (widget/tab_bar.rs:41)",
+                "tab.tab(NONE).padding, each stated side plus tab.tab(SELECTED).stroke.width \
+                 (next_aw_tab_padding); iced_aw's own 5 on a side it leaves unstated \
+                 (widget/tab_bar.rs:41)",
             ),
             ("outward corners", outward.as_str()),
         ],
@@ -20156,15 +20170,13 @@ fn view_extra<'a>(state: &'a State) -> Element<'a, Message> {
 
     // ---- TabBar and Tabs ----
 
-    // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41) and
-    // takes a padding whole, so only a theme that states every side replaces
-    // it ([`next_aw_tab_padding`]).
+    // iced_aw takes a padding whole: the stated sides, iced_aw's own on the
+    // rest ([`next_aw_tab_padding`]).
     let tab_padding = next_aw_tab_padding(next);
-    let drawn_padding = tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING));
     // Both bars one height that holds the label's line, never below
     // `tab.tab(NONE).min_size[1]` where stated ([`next_aw_tab_height`]), so
     // no label is cut.
-    let tab_height = next_aw_tab_height(next, drawn_padding);
+    let tab_height = next_aw_tab_height(next, tab_padding);
     let tab_label = next.tab.label(WidgetState::NONE);
     let tab_font = next_measured_font(&tab_label);
     // Built where it is drawn, and again where the connector cannot map the
@@ -20180,7 +20192,7 @@ fn view_extra<'a>(state: &'a State) -> Element<'a, Message> {
             .tab_width(Length::Fixed(next_aw_tab_width(
                 state,
                 &AW_TAB_BAR_LABELS,
-                drawn_padding,
+                tab_padding,
             )))
             .height(Length::Fixed(tab_height));
         // tab.item_gap between the tabs, where stated; iced_aw's own none
@@ -20190,10 +20202,7 @@ fn view_extra<'a>(state: &'a State) -> Element<'a, Message> {
             Some(gap) => tab_bar.spacing(gap),
             None => tab_bar,
         };
-        let tab_bar = match tab_padding {
-            Some(padding) => tab_bar.padding(padding),
-            None => tab_bar,
-        };
+        let tab_bar = tab_bar.padding(tab_padding);
         aw_tab_bar_probe(
             tab_bar.next_style(iced_next::styles::aw::tab_bar(next), |bar, style| {
                 bar.style(style)
@@ -20241,10 +20250,7 @@ fn view_extra<'a>(state: &'a State) -> Element<'a, Message> {
             .next_style(iced_next::styles::aw::tab_bar(next), |tabs, style| {
                 tabs.tab_bar_style(style)
             });
-        let tabs = match tab_padding {
-            Some(padding) => tabs.tab_label_padding(padding),
-            None => tabs,
-        };
+        let tabs = tabs.tab_label_padding(tab_padding);
         let tabs = match next.tab.item_gap {
             Some(gap) => tabs.tab_label_spacing(gap),
             None => tabs,
@@ -26108,7 +26114,7 @@ mod tests {
         for call in [
             "next_aw_card_padding(next)",
             "let tab_padding = next_aw_tab_padding(next);",
-            "match iced_next::padding_of(&r.tab.tab(WidgetState::NONE))",
+            "let sides = stated_sides(&tab, Padding::new(AW_TAB_PADDING));",
             "let sides = stated_sides(&container, margin);",
             "let inside = stated_sides(&r.card.container(WidgetState::NONE), margin);",
             ".padding(next_card_padding(next))",
@@ -29946,7 +29952,7 @@ mod tests {
         assert!(
             texts(&mut ui)
                 .iter()
-                .any(|(content, _)| content.contains("eight of the colours ResolvedDefaults names")),
+                .any(|(content, _)| content.contains("eight of the theme's colours")),
             "the Grid's caption does not say \"eight of the colours\""
         );
     }
@@ -30409,16 +30415,18 @@ mod tests {
 
     /// The Range page lays itself out on the installed 0.8.0 theme alone
     /// ([`view_range`]): kde-breeze with, on the 0.8.0 theme only, a 13 px
-    /// progress bar girth, a body on a 23 px line, a 19 px caption on a
-    /// 29 px line, a 15 px widget gap, a 21 px section gap and a 4 px
-    /// separator lays the body texts out 23 tall, the caption 29 tall, the
+    /// progress bar girth, a 30 px slider handle, a body on a 23 px line, a
+    /// 19 px caption on a 29 px line, a 15 px widget gap, a 21 px section gap
+    /// and a 4 px separator lays the slider out 30 tall ([`next_slider_girth`],
+    /// 30 across upright too), the body texts 23 tall, the caption 29 tall, the
     /// first progress bar 13 tall between its two labels (each a widget gap
     /// from it), the slider's value a widget gap past the slider, and the
     /// first group's title 15 + 4 + 21 px under the header's description.
     #[test]
     fn the_range_page_lays_out_on_the_0_8_0_theme() -> Result<(), String> {
         let patch = native_theme::next::ThemePatch::from_toml(
-            "[[widgets.progress_bar.rules]]\ntrack.min_size = [\"none\", 13.0]\n",
+            "[[widgets.progress_bar.rules]]\ntrack.min_size = [\"none\", 13.0]\n\
+             [[widgets.slider.rules]]\nthumb.min_size = [30.0, 30.0]\n",
         )
         .map_err(|error| format!("the patch: {error:?}"))?;
         let mut state = page_state("kde-breeze", Tab::Range);
@@ -30442,6 +30450,8 @@ mod tests {
             .line_height
             != 29.0
             || next_progress_girth(next) != 13.0
+            || next_slider_girth(next, Orientation::Horizontal) != 30.0
+            || next_slider_girth(next, Orientation::Vertical) != 30.0
             || old.progress_bar.track_height == 13.0
             || old.defaults.font.size * old.defaults.line_height == 23.0
             || state.layout.widget_gap == Some(15.0)
@@ -30456,6 +30466,11 @@ mod tests {
         let slider = probe_bounds(&mut ui, probes::SLIDER);
         let found = texts(&mut ui);
         drop(ui);
+        if !near(slider.height, 30.0) {
+            faults.push(format!(
+                "the slider is {slider:?}, not as tall as its 30 px handle"
+            ));
+        }
         let at = |label: &str| {
             found
                 .iter()
@@ -36393,7 +36408,7 @@ mod tests {
                         ));
                     }
                     let size = style.size_px + 1.0;
-                    let padding = next_aw_tab_padding(r).unwrap_or(Padding::new(AW_TAB_PADDING));
+                    let padding = next_aw_tab_padding(r);
                     let (drawn, _) = drawn_frame(&state);
                     for (label, tab_id) in BASIC_TABS
                         .into_iter()
@@ -36438,7 +36453,7 @@ mod tests {
     #[cfg(feature = "iced_aw")]
     fn aw_bar_height(state: &State) -> f32 {
         let r = state.next_shown();
-        let padding = next_aw_tab_padding(r).unwrap_or(Padding::new(AW_TAB_PADDING));
+        let padding = next_aw_tab_padding(r);
         next_aw_tab_height(r, padding)
     }
 
@@ -36745,7 +36760,7 @@ mod tests {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let state = extra_state(preset, mode);
                 let r = state.next_shown();
-                let padding = next_aw_tab_padding(r).unwrap_or(Padding::new(AW_TAB_PADDING));
+                let padding = next_aw_tab_padding(r);
                 let width = next_aw_tab_width(&state, &AW_TAB_BAR_LABELS, padding);
                 let want = width + next_tab_gap(r);
                 let [overview, details] = centres(&state);
@@ -36830,13 +36845,14 @@ mod tests {
     /// [`next_aw_tab_padding`] pads an `iced_aw` tab by its stated sides
     /// plus the open tab's outline as iced_aw draws it, over the padding
     /// (iced_aw 0.14.1 `src/widget/tab_bar.rs:494`, `:853-873`): on every
-    /// preset where `tab.tab(NONE).padding` states every side, each side
-    /// plus `tab.tab(SELECTED).stroke.width` where the connector maps the
-    /// bar and the theme states it, else iced_aw's own 1
-    /// (`tab_label_border_width`, `src/style/tab_bar.rs:58`); `None` where a
-    /// side is unstated. A patch stating the four sides (3, 5, 7, 9) and the
-    /// open tab's stroke 2 wide gives 5, 7, 9, 11; with that stroke stated
-    /// as none, 3, 5, 7, 9.
+    /// preset, each side `tab.tab(NONE).padding` states plus
+    /// `tab.tab(SELECTED).stroke.width` where the connector maps the bar and
+    /// the theme states it, else iced_aw's own 1 (`tab_label_border_width`,
+    /// `src/style/tab_bar.rs:58`); iced_aw's own 5 ([`AW_TAB_PADDING`]) on
+    /// a side it leaves unstated, which some preset does (a patch states a
+    /// padding's four sides together). A patch stating the four sides (3, 5,
+    /// 7, 9) and the open tab's stroke 2 wide gives 5, 7, 9, 11; with that
+    /// stroke stated as none, 3, 5, 7, 9.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_aw_tab_padding_holds_the_open_tabs_outline() -> Result<(), String> {
@@ -36851,17 +36867,23 @@ mod tests {
             };
         let mut failures = Vec::new();
         let mut patched_checked = 0;
+        let mut own_sides_checked = 0;
         for (label, r) in next_combinations() {
             let line = outline(&r);
-            let want = match iced_next::padding_of(&r.tab.tab(WidgetState::NONE)) {
-                [Some(top), Some(right), Some(bottom), Some(left)] => {
-                    Some((top + line, right + line, bottom + line, left + line))
-                }
-                _ => None,
-            };
-            let drawn = next_aw_tab_padding(&r).map(sides);
+            let side = |stated: Option<f32>, line: f32| stated.map_or(AW_TAB_PADDING, |v| v + line);
+            let [top, right, bottom, left] = iced_next::padding_of(&r.tab.tab(WidgetState::NONE));
+            let want = (
+                side(top, line),
+                side(right, line),
+                side(bottom, line),
+                side(left, line),
+            );
+            let drawn = sides(next_aw_tab_padding(&r));
             if drawn != want {
                 failures.push(format!("{label}: {drawn:?}, want {want:?}"));
+            }
+            if [top, right, bottom, left].contains(&None) {
+                own_sides_checked += 1;
             }
             for (stroke, width) in [
                 ("{ width = 2.0, color = \"#ff0000\" }", 2.0),
@@ -36879,8 +36901,8 @@ mod tests {
                     continue;
                 }
                 patched_checked += 1;
-                let want = Some((3.0 + width, 5.0 + width, 7.0 + width, 9.0 + width));
-                let drawn = next_aw_tab_padding(&patched).map(sides);
+                let want = (3.0 + width, 5.0 + width, 7.0 + width, 9.0 + width);
+                let drawn = sides(next_aw_tab_padding(&patched));
                 if drawn != want {
                     failures.push(format!(
                         "{label}, the open tab's stroke {stroke}: {drawn:?}, want {want:?}"
@@ -36890,6 +36912,9 @@ mod tests {
         }
         if patched_checked == 0 {
             failures.push("no preset's tab bar maps under the patch".to_owned());
+        }
+        if own_sides_checked == 0 {
+            failures.push("no preset leaves a tab padding side unstated".to_owned());
         }
         if failures.is_empty() {
             Ok(())
