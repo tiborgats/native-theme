@@ -79,17 +79,13 @@ use native_theme::next::{
     ThemeContext, Typography, WidgetState,
 };
 use native_theme::theme::{
-    FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedTextScale, ResolvedTextScaleEntry,
-    ResolvedTheme,
+    FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedTextScaleEntry, ResolvedTheme,
 };
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::next as iced_next;
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
-use native_theme_iced::{
-    AccessibilityPreferences, SystemThemeExt, at_least, combo_box_padding, control_line_height,
-    scaled_text_size,
-};
+use native_theme_iced::{AccessibilityPreferences, SystemThemeExt, at_least, scaled_text_size};
 // The colour-mode picker's rows: its `Display` is the Mode drop-down's and
 // the Theme menu's name of a mode, its `label` the command palette's.
 use native_theme_showcase_support::cli::ColorModeChoice as AppColorMode;
@@ -8389,22 +8385,10 @@ fn shown_title(state: &State) -> Option<String> {
     }
 }
 
-/// Text in `text_scale.caption`, the inspector's size (the gpui showcase's
-/// `text_sm` and `text_xs`, parity rule R1), in `color`.
-fn caption_text<'a>(
-    state: &State,
-    content: impl text::IntoFragment<'a>,
-    color: Color,
-) -> text::Text<'a> {
-    let resolved = &state.current_resolved;
-    text(content)
-        .role(&resolved.text_scale.caption, resolved, &state.accessibility)
-        .color(color)
-}
-
-/// [`caption_text`] on the 0.8.0 model: text in the caption,
-/// `typography.caption`, in `color`; in the colour around it where `color`
-/// is `None`.
+/// Text in the caption, the inspector's size (the gpui showcase's `text_sm`
+/// and `text_xs`, parity rule R1), on the installed 0.8.0 theme:
+/// `typography.caption` laid over the body style, in `color`; in the colour
+/// around it where `color` is `None`.
 fn next_caption_text<'a>(
     state: &State,
     content: impl text::IntoFragment<'a>,
@@ -8433,7 +8417,7 @@ fn inspector_heading<'a>(state: &State, content: impl text::IntoFragment<'a>) ->
 
 /// A name over its value, the gpui showcase's inspector row: the name in
 /// Widget Info's muted colour, the value in its ink ([`info_inks`]), both in
-/// the caption ([`caption_text`]).
+/// the caption ([`next_caption_text`]).
 fn inspector_row<'a>(state: &State, name: String, value: String) -> Element<'a, Message> {
     let (ink, muted) = info_inks(state.next_shown());
     column![
@@ -12141,10 +12125,8 @@ fn palette_groups(state: &State) -> Vec<(&'static str, Vec<PaletteEntry>)> {
 /// [`dialog_padding`], `dialog.max_width` wide and at least
 /// `dialog.min_width` wide and `dialog.min_height` tall.
 fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let d = &resolved.dialog;
+    let r = state.next_shown();
+    let gap = Gaps::from_next(&r.layout);
     let (title, body) = match overlay {
         Overlay::CommandPalette => ("Command Palette", command_palette(state)),
         Overlay::Preferences => ("Preferences", preferences(state)),
@@ -12167,94 +12149,115 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
             tip: tooltip::Position::Bottom,
         },
     );
+    // The title in `dialog.title`, in its colour where the theme states
+    // one (`iced_next::dialog_title_font_color`), else in the colour iced
+    // gives text in the dialog's container.
     let head = row![
         text(title)
-            .themed(&d.title_font, resolved, a11y)
-            .color(native_theme_iced::dialog_title_font_color(resolved)),
+            .next_text(&r.dialog.title, &r.typography)
+            .color_maybe(iced_next::dialog_title_font_color(r).ok()),
         space().width(Fill),
         close,
     ]
     .align_y(iced::Center);
     let padding = dialog_padding(state);
-    let min_height = (native_theme_iced::dialog_min_height(resolved) - padding.y()).max(0.0);
-    let min_width = (native_theme_iced::dialog_min_width(resolved) - padding.x()).max(0.0);
+    let floor = |least: Option<f32>, across: f32| {
+        least.map_or(Length::Shrink, |least| {
+            Length::Fixed((least - across).max(0.0))
+        })
+    };
+    let min_height = floor(iced_next::dialog_min_height(r), padding.y());
+    let min_width = floor(iced_next::dialog_min_width(r), padding.x());
     // A row is as tall as its tallest child, and keeps the content at its
-    // top: the space beside the content is the dialog's minimum height. The
-    // space below the row, no height, is the minimum width's floor; the
-    // content is `Fill`, so the column is too (iced_widget 0.14.2
-    // `src/column.rs:148`) and the dialog is as wide as `dialog.max_width`
-    // and the window let it be, which the floor does not change.
-    container(column![
+    // top: the space beside the content is the dialog's minimum height,
+    // `dialog.panel.min_size[1]`. The space below the row, no height, is the
+    // minimum width's floor, `dialog.panel.min_size[0]`; the content is
+    // `Fill`, so the column is too (iced_widget 0.14.2 `src/column.rs:148`)
+    // and the dialog is as wide as `dialog.panel.max_size[0]` and the window
+    // let it be, which the floor does not change. A size the theme leaves
+    // unstated sets no floor and no limit: iced's container's own.
+    let panel = container(column![
         row![
             column![head, body].spacing(gap.widget).width(Fill),
-            space().height(Length::Fixed(min_height)),
+            space().height(min_height),
         ],
-        space().width(Length::Fixed(min_width)),
+        space().width(min_width),
     ])
     .id(DIALOG_ID)
     .padding(padding)
-    .width(Fill)
-    .max_width(native_theme_iced::dialog_max_width(resolved))
-    .max_height(native_theme_iced::dialog_max_height(resolved))
-    .style(styles::dialog(resolved))
-    .into()
+    .width(Fill);
+    let panel = match iced_next::dialog_max_width(r) {
+        Some(max) => panel.max_width(max),
+        None => panel,
+    };
+    let panel = match iced_next::dialog_max_height(r) {
+        Some(max) => panel.max_height(max),
+        None => panel,
+    };
+    panel
+        .next_style(iced_next::styles::dialog(r), |panel, style| {
+            panel.style(style)
+        })
+        .into()
 }
 
-/// The dialog's padding, as the gpui showcase's `Dialog` is padded: each side
-/// `dialog.border.padding` states, else gpui-component's
-/// [`DIALOG_PADDING_PX`], inside the border line; iced measures a padding
-/// from the bounds, so each side is the line width more
-/// (`native_theme_iced::dialog_padding`).
+/// The dialog's padding on the installed 0.8.0 theme, as the gpui
+/// showcase's `Dialog` is padded: each side `dialog.panel`'s padding
+/// states, else gpui-component's [`DIALOG_PADDING_PX`], inside the panel's
+/// stroke; iced measures a padding from the bounds, so each side is the
+/// stroke width more (`native_theme_iced::next::dialog_padding`), none where
+/// the theme states no stroke (iced's own border, `Border::default`). Where
+/// the stroke is per side, which iced cannot draw, the dialog is padded
+/// [`DIALOG_PADDING_PX`] on every side.
 fn dialog_padding(state: &State) -> Padding {
-    let resolved = &state.current_resolved;
-    native_theme_iced::dialog_padding(
-        resolved,
-        Padding::from(DIALOG_PADDING_PX + resolved.dialog.border.line_width),
-    )
+    let panel = &state.next_shown().dialog.panel;
+    let line = iced_next::stroke_width_of(panel).unwrap_or(iced::Border::default().width);
+    let own = Padding::from(DIALOG_PADDING_PX + line);
+    iced_next::dialog_padding(state.next_shown(), own).unwrap_or(own)
 }
 
-/// The command palette: a query, in the model's text input, over the
-/// entries it matches in their groups, each group headed in
-/// `text_scale.caption` and `defaults.muted_color`, each entry a list row
-/// ([`list_row`]) in `list.item_font`, padded by `list.border.padding`.
-/// Enter runs the first entry; running one closes the palette.
+/// The command palette on the installed 0.8.0 theme: a query, a text field
+/// as the Basic page's (`input.text(NONE)`, [`next_input_padding`], at
+/// least `input.field(NONE).min_size[1]` tall, `iced_next::styles::text_input`),
+/// over the entries it matches in their groups, each group headed in the
+/// caption ([`next_caption_text`]) and `colors.window.foreground_muted`,
+/// each entry a list row ([`list_row`]) in `list.item_label(NONE)`, padded
+/// by [`next_list_row_padding`]. Enter runs the first entry; running one
+/// closes the palette.
 fn command_palette(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let size = scaled_text_size(resolved.input.font.size, a11y);
-    let inp_pad = native_theme_iced::input_padding(resolved);
+    let r = state.next_shown();
+    let gap = Gaps::from_next(&r.layout);
+    let field = r.input.field(WidgetState::NONE);
+    let label = r.input.text(WidgetState::NONE);
+    let inp_pad = next_input_padding(r);
     let query = text_input("A page, a preset or a colour mode…", &state.palette_query)
         .id(PALETTE_QUERY_ID)
         .on_input(Message::PaletteQueryChanged)
         .on_submit(Message::PaletteSubmitted)
-        .size(size)
-        .line_height(control_line_height(
-            resolved,
-            size,
-            resolved.input.min_height,
-            inp_pad,
-        ))
-        .font(theme_font(&resolved.input.font))
-        .style(styles::text_input(resolved))
+        .size(label.size_px)
+        .line_height(next_control_line(r, &label, field.min_size[1], inp_pad))
+        .next_font(&label, |query, font| query.font(font))
+        .next_style(iced_next::styles::text_input(r), |query, style| {
+            query.style(style)
+        })
         .padding(inp_pad);
     // The theme's focus ring round it while it is focused, as it is from
     // the palette's opening (`Overlay::CommandPalette` focuses it).
-    let query = native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, query);
-    let l = &resolved.list;
-    let row_pad = native_theme_iced::padding_or(&l.border.padding, Padding::from(AW_LIST_PADDING));
-    let muted = to_color(resolved.defaults.muted_color);
+    let query = next_focus_ring(r, next_field_radius(&field), query);
+    let item = r.list.item_label(WidgetState::NONE);
+    let row_pad = next_list_row_padding(r);
+    let (_, muted) = info_inks(r);
     let mut groups = column![].spacing(gap.widget);
     for (group, entries) in palette_groups(state) {
         if entries.is_empty() {
             continue;
         }
-        groups = groups.push(caption_text(state, group, muted));
+        groups = groups.push(next_caption_text(state, group, muted));
         groups = groups.push(column(entries.into_iter().map(|entry| {
-            button(text(entry.label).themed(&l.item_font, resolved, a11y))
+            button(text(entry.label).next_text(&item, &r.typography))
                 .padding(row_pad)
                 .width(Fill)
-                .style(list_row(state.next_shown(), false, state.window_active))
+                .style(list_row(r, false, state.window_active))
                 .on_press(Message::PaletteRun(Box::new(entry.action)))
                 .into()
         })));
@@ -12262,8 +12265,12 @@ fn command_palette(state: &State) -> Element<'_, Message> {
     column![
         query,
         scrollable(groups)
-            .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-            .style(styles::scrollable(resolved))
+            .direction(scrollable::Direction::Vertical(
+                iced_next::styles::scrollbar(r)
+            ))
+            .next_style(iced_next::styles::scrollable(r), |bar, style| {
+                bar.style(style)
+            })
             .height(Length::Shrink),
     ]
     .spacing(gap.widget)
@@ -12283,21 +12290,22 @@ fn high_contrast_text(state: &State) -> String {
     }
 }
 
-/// One row of the Preferences dialog: `title` in the dialog's body font and
-/// `description` in `text_scale.caption` and `defaults.muted_color` on the
-/// left, `control` on the right.
+/// One row of the Preferences dialog on the installed 0.8.0 theme: `title`
+/// in the dialog's body text, `dialog.body`, and `description` in the
+/// caption ([`next_caption_text`]) and `colors.window.foreground_muted` on
+/// the left, `control` on the right, `layout.section_gap` apart.
 fn preference<'a>(
     state: &'a State,
     title: &'static str,
     description: impl text::IntoFragment<'a>,
     control: Element<'a, Message>,
 ) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
-    let gap = Gaps::from_layout(&state.layout);
+    let r = state.next_shown();
+    let gap = Gaps::from_next(&r.layout);
     row![
         column![
-            text(title).themed(&resolved.dialog.body_font, resolved, &state.accessibility),
-            caption_text(state, description, to_color(resolved.defaults.muted_color)),
+            text(title).next_text(&r.dialog.body, &r.typography),
+            next_caption_text(state, description, info_inks(r).1),
         ]
         .width(Fill),
         control,
@@ -12309,39 +12317,44 @@ fn preference<'a>(
 
 /// The Preferences dialog: the accessibility preferences the showcase
 /// applies, as the gpui showcase's Settings page lists them. Each row says
-/// what this showcase does with its preference, and no more.
+/// what this showcase does with its preference, and no more. On the
+/// installed 0.8.0 theme: the heading [`next_section_title`], the switches
+/// [`next_switch`], the text scale a drop-down as the Basic page's
+/// (`combo_box.label(NONE)`, [`next_drop_down_padding`], at least
+/// `combo_box.field(NONE).min_size[1]` tall, [`next_arrow_handle`],
+/// `iced_next::styles::pick_list` and `menu`).
 fn preferences(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
+    let r = state.next_shown();
     let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
+    let gap = Gaps::from_next(&r.layout);
     let switch = |on: bool, message: fn(bool) -> Message| -> Element<'_, Message> {
-        native_theme_iced::switch(resolved, on, Some(message(!on)))
+        next_switch(r, on, Some(message(!on))).0
     };
-    let size = scaled_text_size(resolved.combo_box.font.size, a11y);
-    let pad = combo_box_padding(resolved);
+    let label = r.combo_box.label(WidgetState::NONE);
+    let pad = next_drop_down_padding(r);
+    let min_height = r.combo_box.field(WidgetState::NONE).min_size[1];
     let scale = pick_list(
         TEXT_SCALES,
         Some(TextScale(a11y.text_scaling_factor)),
         Message::TextScaleSelected,
     )
-    .handle(arrow_handle(resolved))
+    .handle(next_arrow_handle(r))
     .padding(pad)
-    .text_line_height(control_line_height(
-        resolved,
-        size,
-        resolved.combo_box.min_height,
-        pad,
-    ))
-    .text_size(size)
-    .font(theme_font(&resolved.combo_box.font))
-    .style(styles::pick_list(resolved))
-    .menu_style(styles::menu(resolved));
+    .text_line_height(next_control_line(r, &label, min_height, pad))
+    .text_size(label.size_px)
+    .next_font(&label, |list, font| list.font(font))
+    .next_style(iced_next::styles::pick_list(r), |list, style| {
+        list.style(style)
+    })
+    .next_style(iced_next::styles::menu(r), |list, style| {
+        list.menu_style(style)
+    });
     column![
-        text("Accessibility").role(section_title(&resolved.text_scale), resolved, a11y),
-        caption_text(
+        text("Accessibility").next_text(&next_section_title(r), &r.typography),
+        next_caption_text(
             state,
             "Read from the OS with its theme; one you set here stays over the OS's across theme and mode switches; the showcase applies each one itself",
-            to_color(resolved.defaults.muted_color),
+            info_inks(r).1,
         ),
         preference(
             state,
@@ -12373,34 +12386,38 @@ fn preferences(state: &State) -> Element<'_, Message> {
 }
 
 /// The About dialog: this crate's name and version, and where the upstream
-/// versions it requires are, in `dialog.body_font`; the link, in the
-/// platform's link (`styles::button_link`, `link.font`), copies the README's
-/// address, since iced opens no browser.
+/// versions it requires are, in `dialog.body`; the link, in the platform's
+/// link as the Basic page draws it (`iced_next::styles::button_link`,
+/// `link.label(NONE)`, underlined where its decoration is an underline),
+/// copies the README's address, since iced opens no browser. On the
+/// installed 0.8.0 theme.
 fn about(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let body = &resolved.dialog.body_font;
-    let link = &resolved.link;
+    let r = state.next_shown();
+    let gap = Gaps::from_next(&r.layout);
+    let body = &r.dialog.body;
+    let t = &r.typography;
+    let link = r.link.label(WidgetState::NONE);
+    let underlined = link.decoration.kind == native_theme::next::DecorationKind::Underline;
     let label = format!(
         "the README's Compatibility table at v{}",
         env!("CARGO_PKG_VERSION")
     );
     let link_button = button(
-        rich_text([span::<(), _>(label).underline(link.underline_enabled)])
-            .size(scaled_text_size(link.font.size, a11y))
-            .font(theme_font(&link.font)),
+        rich_text([span::<(), _>(label).underline(underlined)])
+            .size(link.size_px)
+            .line_height(iced::Pixels(next_line_box(t, &link)))
+            .next_font(&link, |label, font| label.font(font)),
     )
     .on_press(Message::Copy(COMPATIBILITY_URL.to_string()))
-    .style(styles::button_link(resolved))
+    .next_style(iced_next::styles::button_link(r), |b, s| b.style(s))
     .padding(LINK_PADDING);
     column![
-        text(ABOUT_NAME_VERSION).themed(body, resolved, a11y),
+        text(ABOUT_NAME_VERSION).next_text(body, t),
         text(
             "The iced and iced_aw versions it requires, and those it was verified \
              against, are in"
         )
-        .themed(body, resolved, a11y),
+        .next_text(body, t),
         showcase_tooltip(
             state,
             link_button,
@@ -21199,23 +21216,6 @@ fn hoverable_ext_section<'a>(
     hoverable(UnlistedKey::ThemeMapPalette(section), content)
 }
 
-/// The drop-down arrow: the connector's open chevron at the platform's own
-/// icon size (`native_theme_iced::pick_list_handle`).
-///
-/// `combo_box.arrow_icon_size` is not a `pick_list::Style` field: iced carries
-/// the arrow in the `Handle` the widget is built with
-/// (`pick_list.rs:794-801`), so it is set here rather than in
-/// `styles::pick_list`.
-fn arrow_handle(resolved: &ResolvedTheme) -> pick_list::Handle<iced::Font> {
-    native_theme_iced::pick_list_handle::<iced::Renderer>(resolved)
-}
-
-/// The role a section title within a page is set in: `section_heading`, the
-/// section divider (`docs/platform-facts.md` §2.19).
-fn section_title(ts: &ResolvedTextScale) -> &ResolvedTextScaleEntry {
-    &ts.section_heading
-}
-
 /// Sets text in a `text_scale` role, in a widget's font, or in the theme's
 /// body font: the size, scaled by the user's text-scaling factor, and the
 /// font that comes with it, [`theme_font`].
@@ -21321,8 +21321,10 @@ fn next_page_title(r: &native_theme::next::ResolvedTheme) -> TextStyle {
     native_theme_iced::next::text_scale(r).dialog_title
 }
 
-/// [`section_title`] on the 0.8.0 model: `typography.headline` laid over the
-/// body style, property by property (`Typography::over_body`;
+/// The role a section title within a page is set in, `section_heading`,
+/// the section divider (`docs/platform-facts.md` §2.19), on the 0.8.0
+/// model: `typography.headline` laid over the body style, property by
+/// property (`Typography::over_body`;
 /// `native_theme_iced::next::text_scale`, the table of homes'
 /// `text_scale.section_heading`).
 fn next_section_title(r: &native_theme::next::ResolvedTheme) -> TextStyle {
@@ -21345,8 +21347,11 @@ fn next_gpui_rems(rems: f32, r: &native_theme::next::ResolvedTheme) -> f32 {
     r.typography.body.size_px * rems
 }
 
-/// [`arrow_handle`] on the 0.8.0 model: the drop-down's chevron at the size
-/// `native_theme_iced::next::pick_list_handle` reads.
+/// The drop-down arrow on the 0.8.0 model: the connector's open chevron at
+/// the size `native_theme_iced::next::pick_list_handle` reads. The chevron's
+/// size is not a `pick_list::Style` field: iced carries the arrow in the
+/// `Handle` the widget is built with (`pick_list.rs:794-801`), so it is set
+/// here rather than in `iced_next::styles::pick_list`.
 fn next_arrow_handle(r: &native_theme::next::ResolvedTheme) -> pick_list::Handle<iced::Font> {
     native_theme_iced::next::pick_list_handle::<iced::Renderer>(r)
 }
@@ -23302,11 +23307,14 @@ mod tests {
             Some(index) => index,
             None => panic!("{wanted} is not offered by the colour mode picker"),
         };
-        let size = scaled_text_size(
-            state.current_resolved.combo_box.font.size,
-            &state.accessibility,
-        );
-        let pad = combo_box_padding(&state.current_resolved);
+        // The drop-down as `setting_picker` draws it on the installed 0.8.0
+        // theme: its label's size and its padding.
+        let size = state
+            .next_shown()
+            .combo_box
+            .label(WidgetState::NONE)
+            .size_px;
+        let pad = next_drop_down_padding(state.next_shown());
         let messages = drive(state, |ui| {
             pick_option(ui, probes::COLOR_MODE, nth, size, pad)
         });
@@ -23349,11 +23357,12 @@ mod tests {
             None => panic!("no preset of this platform resolves to another background"),
         };
 
-        let size = scaled_text_size(
-            state.current_resolved.combo_box.font.size,
-            &state.accessibility,
-        );
-        let pad = combo_box_padding(&state.current_resolved);
+        let size = state
+            .next_shown()
+            .combo_box
+            .label(WidgetState::NONE)
+            .size_px;
+        let pad = next_drop_down_padding(state.next_shown());
         let messages = drive(state, |ui| pick_option(ui, probes::THEME, nth, size, pad));
         assert!(
             matches!(messages.as_slice(), [Message::ThemeSelected(ThemeChoice::Preset(name))] if *name == preset),
@@ -25807,14 +25816,12 @@ mod tests {
     /// `(constructor, the style it applies, the function)`:
     /// [`next_radio`]`(next, || radio(..), ..)` hands the radio its closure
     /// builds to `iced_next::radio`, which applies the 0.8.0
-    /// `styles::radio` with the platform's geometry and dot.
+    /// `styles::radio` with the platform's geometry and dot; [`next_switch`]
+    /// draws `iced_next::switch`, which applies the 0.8.0
+    /// `styles::toggler_over` (`next/mod.rs`, `switch_over`).
     const CONNECTOR_DRESSED: &[(&str, &str, &str)] = &[
         ("radio", "styles::radio", "next_radio"),
-        (
-            "toggler",
-            "styles::toggler_over",
-            "native_theme_iced::switch",
-        ),
+        ("toggler", "styles::toggler_over", "next_switch"),
     ];
 
     /// Is the constructor at `site` the widget argument of the connector
@@ -25945,7 +25952,8 @@ mod tests {
     /// sides are the theme's.
     const PADDING_HELPERS: &[&str] = &["button_padding(", "padding_or(", "stated_padding("];
 
-    /// Every button dressed in a `styles::button*` class takes the theme's
+    /// Every button dressed in a `styles::button*` class, or its 0.8.0 class
+    /// (`iced_next::styles::button*`), takes the theme's
     /// padding through one of the connector's padding helpers, rather than a
     /// spacing of the showcase's own or iced's default -- the push buttons
     /// `button.border.padding`, and the buttons that stand in for a menu item
@@ -25955,7 +25963,7 @@ mod tests {
     #[test]
     fn themed_buttons_take_the_themes_padding() {
         let source = strip_comments_and_strings(SHOWCASE);
-        let classes = [
+        let old = [
             "styles::button",
             "styles::button_primary",
             "styles::button_danger",
@@ -25964,6 +25972,14 @@ mod tests {
             "styles::button_link",
             "styles::button_default",
         ];
+        // A button on the 0.8.0 model wears the connector's 0.8.0 class of
+        // the same name (`iced_next::styles`).
+        let next: Vec<String> = old.iter().map(|c| format!("iced_next::{c}")).collect();
+        let classes: Vec<&str> = old
+            .iter()
+            .copied()
+            .chain(next.iter().map(String::as_str))
+            .collect();
         let derived = theme_padding_bindings(&source);
         let from_theme = |args: &str| {
             PADDING_HELPERS.iter().any(|helper| args.contains(helper))
@@ -25989,12 +26005,15 @@ mod tests {
             }
             // A link has no padding: docs/property-registry.toml `[link]`
             // states none, and `LINK_PADDING` is that none.
-            let unpadded_link = is_dressed(&source, site, &["styles::button_link"])
-                && close_of_call(&source, site).is_some_and(|end| {
-                    method_calls(&source, end)
-                        .iter()
-                        .any(|(name, args)| *name == "padding" && args.trim() == "(LINK_PADDING)")
-                });
+            let unpadded_link = is_dressed(
+                &source,
+                site,
+                &["styles::button_link", "iced_next::styles::button_link"],
+            ) && close_of_call(&source, site).is_some_and(|end| {
+                method_calls(&source, end)
+                    .iter()
+                    .any(|(name, args)| *name == "padding" && args.trim() == "(LINK_PADDING)")
+            });
             if unpadded_link {
                 links += 1;
                 continue;
@@ -37057,16 +37076,14 @@ mod tests {
     ];
 
     /// The widget functions a page draws a widget through, and the style
-    /// function each draws it with: the connector's switch with
+    /// function each draws it with: the connector's switch, on the 0.8.0
+    /// model through [`next_switch`] (`next/mod.rs` `switch`, the 0.8.0
     /// `styles::toggler_over` over the window background, `styles::toggler`'s
-    /// colours there (lib.rs `switch`), on the 0.8.0 model through
-    /// [`next_switch`] (`next/mod.rs` `switch`, the 0.8.0
-    /// `styles::toggler_over`); its radio, on the 0.8.0 model, through
+    /// colours there); its radio, on the 0.8.0 model, through
     /// [`next_radio`] (`next/mod.rs` `radio`, the 0.8.0 `styles::radio`);
     /// the showcase's tooltips, all built by [`showcase_tooltip`], with
     /// `styles::tooltip`.
     const DRAWN_THROUGH: &[(&str, &str)] = &[
-        ("native_theme_iced::switch", "styles::toggler"),
         ("next_switch", "styles::toggler"),
         ("next_radio", "styles::radio"),
         ("showcase_tooltip", "styles::tooltip"),
@@ -41293,31 +41310,59 @@ mod tests {
     }
 
     /// Addendum G, H m2 and I m2: a dialog is padded as gpui's `Dialog` is,
-    /// under every bundled preset in both modes: each side
-    /// `dialog.border.padding` states, else [`DIALOG_PADDING_PX`], inside the
-    /// border line, which iced measures from the bounds.
+    /// under every bundled preset in both modes, on the installed 0.8.0
+    /// theme: each side `dialog.panel`'s padding states, else
+    /// [`DIALOG_PADDING_PX`], inside the panel's stroke, which iced measures
+    /// from the bounds; and on a theme that states a padding on one side
+    /// alone, that side's value there and gpui's on the others.
     #[test]
-    fn a_dialog_is_padded_as_gpuis() {
-        for (preset, dark) in every_preset_in_both_modes() {
-            let state = loaded(preset, dark);
-            let d = &state.current_resolved.dialog;
-            let line = d.border.line_width;
-            let stated = d.border.padding;
-            let drawn = dialog_padding(&state);
+    fn a_dialog_is_padded_as_gpuis() -> Result<(), String> {
+        let mut states: Vec<(String, State)> = every_preset_in_both_modes()
+            .map(|(preset, dark)| (format!("{preset} (dark: {dark})"), loaded(preset, dark)))
+            .collect();
+        // A theme that states the top side alone, 31 (no preset's), and no
+        // stroke: the other sides are gpui's, none of them the line wider.
+        let mut one_side = loaded("kde-breeze", false);
+        for r in [&mut one_side.next_resolved, &mut one_side.next_inactive] {
+            let panel = &mut r.dialog.panel;
+            panel.padding.top = 31.0;
+            panel.stated = (panel.stated
+                & !(PartStated::PADDING_RIGHT
+                    | PartStated::PADDING_BOTTOM
+                    | PartStated::PADDING_LEFT
+                    | PartStated::STROKE))
+                | PartStated::PADDING_TOP;
+        }
+        states.push(("kde-breeze, the top side alone".to_owned(), one_side));
+        for (at_theme, state) in &states {
+            let panel = &state.next_shown().dialog.panel;
+            let line = match iced_next::stroke_width_of(panel) {
+                Some(width) => width,
+                None if !panel.stated.contains(PartStated::STROKE) => iced::Border::default().width,
+                None => return Err(format!("{at_theme}: dialog.panel's stroke is per side")),
+            };
+            let stated = iced_next::padding_of(panel);
+            let drawn = dialog_padding(state);
             for (side, at, stated) in [
-                ("top", drawn.top, stated.top),
-                ("right", drawn.right, stated.right),
-                ("bottom", drawn.bottom, stated.bottom),
-                ("left", drawn.left, stated.left),
+                ("top", drawn.top, stated[0]),
+                ("right", drawn.right, stated[1]),
+                ("bottom", drawn.bottom, stated[2]),
+                ("left", drawn.left, stated[3]),
             ] {
                 let expected = stated.unwrap_or(DIALOG_PADDING_PX) + line;
                 assert!(
                     near(at, expected),
-                    "{preset} (dark: {dark}): the dialog's {side} padding is {at}px from its \
-                     bounds, expected {expected}px"
+                    "{at_theme}: the dialog's {side} padding is {at}px from its bounds, \
+                     expected {expected}px"
                 );
             }
         }
+        let top = states
+            .last()
+            .map(|(_, state)| dialog_padding(state).top)
+            .ok_or("no theme")?;
+        assert!(near(top, 31.0), "the stated top side is drawn {top}px");
+        Ok(())
     }
 
     /// M9-082: the inspector's "frame" row names the platform's frame, the
