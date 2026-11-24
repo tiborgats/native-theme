@@ -450,11 +450,13 @@ impl CheckboxLook {
         } else {
             c.unchecked_border
         };
-        // Disabled, the stroke a rule states for `DISABLED`; else the
-        // border at the control's checked state, as 0.7.2 draws it.
+        // Disabled, the stroke a rule states for `DISABLED`; else
+        // gpui-component's own disabled border, the enabled one at
+        // `DISABLED_BORDER_ALPHA` (spec §10, rule 0).
         let border = match (disabled, c.disabled_border) {
             (true, Some(border)) => border,
-            _ => enabled_border,
+            (true, None) => enabled_border.opacity(DISABLED_BORDER_ALPHA),
+            (false, _) => enabled_border,
         };
         // Disabled, the mark where a rule states it for `DISABLED`; else, where
         // the platform's disabled look is a fill of its own, the label's
@@ -523,6 +525,14 @@ impl CheckboxLook {
         }
     }
 }
+
+/// The alpha factor gpui-component dims a disabled indicator's border by,
+/// checked or not, which a 0.8.0 theme takes where no rule states the
+/// stroke for `DISABLED`: the check box's `disabled_indicator_color`, the
+/// enabled border's colour at `opacity(0.5)` (gpui-component 0.10.0
+/// checkbox.rs:286-290, :359-361), and the radio's `border_color.opacity(0.5)`
+/// (gpui-component 0.10.0 radio.rs:198-199).
+pub(super) const DISABLED_BORDER_ALPHA: f32 = 0.5;
 
 /// The values a 0.8.0 constructor of [`CheckboxLook`] builds the look from: the
 /// indicator's fills (the disabled one at the control's checked state, where

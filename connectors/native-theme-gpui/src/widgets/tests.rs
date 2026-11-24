@@ -6118,10 +6118,12 @@ fn a_checked_disabled_mark_is_read_only_where_stated() {
 
 /// A disabled check box and radio, checked or not, are edged in the stroke a
 /// rule states for `DISABLED` (spec §2, `from_state`), read at the control's
-/// checked state, and in their enabled border where no rule does: kde-breeze,
-/// which states none, and the same theme patched to state one for each
-/// control, a sentinel colour at the rest stroke's width, so the patch states
-/// no value the theme lacks but the colour under test.
+/// checked state, and where no rule does in gpui-component's own disabled
+/// border, the enabled one at half alpha (spec §10, rule 0; gpui-component
+/// 0.10.0 checkbox.rs:286-290, radio.rs:198-199): kde-breeze, which states
+/// none, and the same theme patched to state one for each control, a
+/// sentinel colour at the rest stroke's width, so the patch states no value
+/// the theme lacks but the colour under test.
 #[test]
 fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crate::next::Mapped<()>
 {
@@ -6138,11 +6140,16 @@ fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crat
     };
     let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
     for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        let enabled = look(&r, radio, checked, false)?.border;
         assert_eq!(
             look(&r, radio, checked, true)?.border,
-            look(&r, radio, checked, false)?.border,
+            gpui::Hsla {
+                a: enabled.a * 0.5,
+                ..enabled
+            },
             "unpatched, radio {radio}, checked {checked}"
         );
+        assert!(enabled.a > 0., "radio {radio}, checked {checked}");
     }
     let width = crate::next::stroke_width_of(&r.checkbox.indicator(WidgetState::NONE));
     let radio_width = crate::next::stroke_width_of(&r.radio.indicator(WidgetState::NONE));

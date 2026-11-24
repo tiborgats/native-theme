@@ -1397,29 +1397,92 @@ fn native_indicator(
             "native-theme-gpui/widgets/checkbox.rs:291",
         ),
     });
-    let info = info.colors(match (radio, checked) {
-        (false, true) => edge_claim(
+    // Disabled, the stroke a rule states for `DISABLED`; with none
+    // gpui-component's own disabled border, the enabled one at half alpha
+    // (CheckboxLook::next_of).
+    let stroked_disabled = disabled
+        && indicator(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::STROKE);
+    let info = info.colors(match (radio, checked, disabled, stroked_disabled) {
+        (false, false, _, true) => edge_claim(
+            "border",
+            "checkbox.indicator(DISABLED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:422",
+        ),
+        (false, true, _, true) => edge_claim(
+            "border",
+            "checkbox.indicator(DISABLED|CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:424",
+        ),
+        (true, false, _, true) => edge_claim(
+            "border",
+            "radio.indicator(DISABLED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:426",
+        ),
+        (true, true, _, true) => edge_claim(
+            "border",
+            "radio.indicator(DISABLED|CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:427",
+        ),
+        (false, true, true, false) => edge_claim(
+            "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+            "checkbox.indicator(CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:345",
+        ),
+        (true, true, true, false) => edge_claim(
+            "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+            "radio.indicator(CHECKED).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:346",
+        ),
+        (false, false, true, false) => edge_claim(
+            "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+            "checkbox.indicator(NONE).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:352",
+        ),
+        (true, false, true, false) => edge_claim(
+            "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+            "radio.indicator(NONE).stroke.color",
+            Some(look.border),
+            width,
+            "native-theme-gpui/widgets/checkbox.rs:353",
+        ),
+        (false, true, false, _) => edge_claim(
             "border",
             "checkbox.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
             "native-theme-gpui/widgets/checkbox.rs:345",
         ),
-        (true, true) => edge_claim(
+        (true, true, false, _) => edge_claim(
             "border",
             "radio.indicator(CHECKED).stroke.color",
             Some(look.border),
             width,
             "native-theme-gpui/widgets/checkbox.rs:346",
         ),
-        (false, false) => edge_claim(
+        (false, false, false, _) => edge_claim(
             "border",
             "checkbox.indicator(NONE).stroke.color",
             Some(look.border),
             width,
             "native-theme-gpui/widgets/checkbox.rs:352",
         ),
-        (true, false) => edge_claim(
+        (true, false, false, _) => edge_claim(
             "border",
             "radio.indicator(NONE).stroke.color",
             Some(look.border),

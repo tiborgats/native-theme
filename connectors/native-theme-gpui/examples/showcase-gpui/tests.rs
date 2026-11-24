@@ -21250,8 +21250,10 @@ type Leaf = (&'static str, &'static str);
 /// (:330-331), else `indicator(NONE)` (:323-324); the hover
 /// `indicator(HOVER).fill` where a rule states it (:338-339), else the fill
 /// at rest; the hover edge `indicator(HOVER)`'s (:288-291), at the checked
-/// state where checked; the border `indicator(CHECKED)`'s checked
-/// (:345-346), else `indicator(NONE)`'s (:352-353); the mark
+/// state where checked; the border disabled `indicator(DISABLED)`'s (at the
+/// checked state too where checked) where a rule states a disabled stroke
+/// (:422-427), else `indicator(CHECKED)`'s checked (:345-346), else
+/// `indicator(NONE)`'s (:352-353), at half alpha where disabled; the mark
 /// `label(DISABLED).color` over a stated disabled fill (:365-366), else
 /// `checkbox.checkmark(CHECKED).color` (:305) or `radio.dot(CHECKED).fill`
 /// (:300); the label `label(DISABLED).color` disabled (:365-366), else
@@ -21358,7 +21360,33 @@ fn checkbox_homes(
             ),
         )
     };
-    let border = if checked {
+    let stroked_disabled = disabled
+        && indicator(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::STROKE);
+    let border = if stroked_disabled && checked {
+        at(
+            (
+                "checkbox.indicator(DISABLED|CHECKED).stroke.color",
+                "native-theme-gpui/widgets/checkbox.rs:424",
+            ),
+            (
+                "radio.indicator(DISABLED|CHECKED).stroke.color",
+                "native-theme-gpui/widgets/checkbox.rs:427",
+            ),
+        )
+    } else if stroked_disabled {
+        at(
+            (
+                "checkbox.indicator(DISABLED).stroke.color",
+                "native-theme-gpui/widgets/checkbox.rs:422",
+            ),
+            (
+                "radio.indicator(DISABLED).stroke.color",
+                "native-theme-gpui/widgets/checkbox.rs:426",
+            ),
+        )
+    } else if checked {
         at(
             (
                 "checkbox.indicator(CHECKED).stroke.color",
@@ -26599,5 +26627,96 @@ fn a_preference_resolves_the_08_theme_again(cx: &mut TestAppContext) {
     );
     if let Some(Ok(refined)) = refined {
         assert_eq!(styled.padding, refined.padding);
+    }
+}
+
+/// A disabled Checkbox's info claims the border the widget draws: under
+/// kde-breeze light, which states no stroke for `DISABLED`, gpui-component's
+/// own disabled border, the enabled home at half alpha (gpui-component
+/// 0.10.0 checkbox.rs:286-290), under a role that says so; patched to state
+/// a sentinel stroke at the rest width for `DISABLED`, that stroke under
+/// `checkbox.indicator(DISABLED).stroke.color` (`DISABLED|CHECKED` checked).
+#[cfg(feature = "widgets")]
+#[test]
+fn a_disabled_checkboxs_info_claims_the_border_it_draws() {
+    use crate::info::{inputs, next_stated};
+    use native_theme::next::{
+        CheckboxRule, Color, PartPatch, Preset, Stroke, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    use native_theme_gpui::widgets::CheckboxLook;
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let ground = r.colors.window.background.map(next_stated);
+    let width = native_theme_gpui::next::stroke_width_of(&r.checkbox.indicator(WidgetState::NONE));
+    assert!(
+        ground.is_some() && width.is_some(),
+        "kde-breeze states no colors.window.background or checkbox.indicator(NONE).stroke.width"
+    );
+    let (Some(ground), Some(width)) = (ground, width) else {
+        return;
+    };
+    let claimed = |r: &native_theme::next::ResolvedTheme, checked| {
+        let info = inputs::native_checkbox(r, "label", checked, true);
+        claim_by_role(&info, "border").map(|c| (c.role, c.field, as_rgba(c.value)))
+    };
+    let drawn = |r: &native_theme::next::ResolvedTheme, checked| {
+        CheckboxLook::next_of(r, checked, true)
+            .ok()
+            .map(|look| as_rgba(look.faded_over(ground).border))
+    };
+    for (checked, home) in [
+        (false, "checkbox.indicator(NONE).stroke.color"),
+        (true, "checkbox.indicator(CHECKED).stroke.color"),
+    ] {
+        let enabled = CheckboxLook::next_of(&r, checked, false)
+            .ok()
+            .map(|look| look.border);
+        assert!(
+            enabled.is_some_and(|e| e.a > 0.),
+            "kde-breeze gives no look, or an unedged one, checked {checked}"
+        );
+        assert_eq!(
+            CheckboxLook::next_of(&r, checked, true)
+                .ok()
+                .map(|look| look.border),
+            enabled.map(|e| gpui::Hsla { a: e.a * 0.5, ..e }),
+            "checked {checked}"
+        );
+        assert_eq!(
+            claimed(&r, checked),
+            drawn(&r, checked).map(|value| {
+                (
+                    "border, disabled, none stated: the enabled border at half alpha, gpui-component's own",
+                    home,
+                    value,
+                )
+            }),
+            "unpatched, checked {checked}"
+        );
+    }
+    let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    r.apply_patch(
+        &ThemePatch::new().checkbox(
+            CheckboxRule::new()
+                .states(WidgetState::DISABLED)
+                .indicator(PartPatch::new().stroke(Stroke::uniform(width, sentinel))),
+        ),
+    );
+    for (checked, home) in [
+        (false, "checkbox.indicator(DISABLED).stroke.color"),
+        (true, "checkbox.indicator(DISABLED|CHECKED).stroke.color"),
+    ] {
+        assert_eq!(
+            claimed(&r, checked),
+            drawn(&r, checked).map(|value| ("border", home, value)),
+            "patched, checked {checked}"
+        );
+        assert_eq!(
+            CheckboxLook::next_of(&r, checked, true)
+                .ok()
+                .map(|look| look.border),
+            Some(next_stated(sentinel)),
+            "patched, checked {checked}"
+        );
     }
 }
