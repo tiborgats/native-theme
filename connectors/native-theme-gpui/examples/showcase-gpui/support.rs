@@ -363,13 +363,6 @@ pub(crate) fn old_native(cx: &App) -> Option<Native<'_>> {
     })
 }
 
-/// The 0.7.2 resolved theme of [`old_native`], which only the tests still
-/// read.
-#[cfg(test)]
-pub(crate) fn old_resolved(cx: &App) -> Option<&native_theme::theme::ResolvedTheme> {
-    old_native(cx).map(|n| n.resolved)
-}
-
 /// The installed 0.8.0 theme for the styled theme's mode, or `None` before
 /// `native_theme_gpui::next::apply` ran.
 pub(crate) fn next_resolved(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {

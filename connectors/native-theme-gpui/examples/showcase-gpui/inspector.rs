@@ -18,15 +18,15 @@ use gpui_component::{
 };
 use native_theme_gpui::{ActiveNativeTheme as _, next, variants};
 use native_theme_showcase_support::info::ListedInfo;
+use native_theme_showcase_support::next::{info as next_info, values as next_values};
 use native_theme_showcase_support::status::{DrawnFamily, defined_size};
-use native_theme_showcase_support::values;
 use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::app::Showcase;
 use crate::demo::TabBarKind;
 use crate::elements;
-use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, stated};
+use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, next_stated};
 use crate::support::{NativeStyled, frame_drawer, next_metric, with_gap, with_padding};
 use crate::{
     INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
@@ -604,7 +604,7 @@ pub(crate) fn shown_title(info: &WidgetInfo) -> String {
         .map_or_else(|| info.title(), elements::ShowcaseElement::title)
 }
 
-/// The route line of a leaf `info::leaves` has none for:
+/// The route line of a home `info::leaves` has none for:
 /// `every_listed_leaf_has_a_route` keeps it off screen.
 const NO_ROUTE: &str = "gpui: no route recorded";
 
@@ -641,9 +641,8 @@ const COPY_PADDING_X: gpui::Rems = gpui::rems(0.625);
 /// upstream's default `Button`'s `button_hover`, `button_active` and
 /// `button_foreground` (button/button.rs, `ButtonVariant::hovered`, `active`
 /// and `text_color`).
-/// With it, what the rows' values are read from: the resolved theme's JSON,
-/// and the layout, icon set and icon theme the showcase installed, which the
-/// JSON does not hold (`values::leaf_value`).
+/// With it, what the rows' values are read from: the installed 0.8.0
+/// resolved theme and its serialised form (`next::values::home_value`).
 #[cfg_attr(test, derive(Clone, Debug, PartialEq))]
 pub(crate) struct PanelLook {
     family: SharedString,
@@ -661,28 +660,25 @@ pub(crate) struct PanelLook {
     copy_hover: (gpui::Hsla, gpui::Hsla),
     /// The Copy box's fill and text colour while pressed.
     copy_active: (gpui::Hsla, gpui::Hsla),
-    resolved: serde_json::Value,
-    layout: native_theme::theme::LayoutTheme,
-    icon_set: native_theme::icons::IconSet,
-    icon_theme: Option<String>,
-    /// What gpui draws each family of `resolved` in, and `Theme::font_family`
+    /// The installed 0.8.0 resolved theme.
+    theme: native_theme::next::ResolvedTheme,
+    /// `theme`'s serialised form ([`theme_json`]).
+    json: serde_json::Value,
+    /// What gpui draws each family of `json` in, and `Theme::font_family`
     /// and `mono_font_family`.
     families: DrawnFamilies,
 }
 
 impl PanelLook {
-    /// The look under the installed native theme, with the layout, icon set
-    /// and icon theme `showcase` installed; `None` before `apply` ran. The
-    /// showcase keeps it from one install to the next
-    /// (`Showcase::panel_look`).
-    pub(crate) fn of(showcase: &Showcase, cx: &gpui::App) -> Option<Self> {
+    /// The look under the installed 0.8.0 theme; `None` before
+    /// `native_theme_gpui::next::apply` ran. The showcase keeps it from one
+    /// install to the next (`Showcase::panel_look`).
+    pub(crate) fn of(cx: &gpui::App) -> Option<Self> {
         use native_theme::next::{TextStated, WidgetState};
         let r = crate::support::next_resolved(cx)?;
-        let n = crate::support::old_native(cx)?;
-        let layout = showcase.layout.clone();
-        let resolved = theme_json(n.resolved);
+        let json = theme_json(r);
         let mut named = Vec::new();
-        stated_families(&resolved, &mut named);
+        stated_families(&json, &mut named);
         let theme = cx.theme();
         let asked = named
             .iter()
@@ -754,10 +750,8 @@ impl PanelLook {
                     .unwrap_or(theme.button_active),
                 colour(&r.button.label(WidgetState::PRESSED)).unwrap_or(theme.button_foreground),
             ),
-            resolved,
-            layout,
-            icon_set: showcase.current_icon_set,
-            icon_theme: showcase.current_icon_theme.clone(),
+            theme: r.clone(),
+            json,
             families,
         })
     }
@@ -770,7 +764,7 @@ impl PanelLook {
     /// the panel's type padded by the Copy box's top and bottom, and never
     /// shorter than the title's line; `layout.section_gap` and the "Theme"
     /// section's name, one line; then `layout.widget_gap` and the first row's
-    /// two lines, its leaf and value, and how gpui applies it. A margin,
+    /// two lines, its home and value, and how gpui applies it. A margin,
     /// padding or gap the theme leaves unstated is none, and adds nothing.
     /// gpui lays each box out with its edges at whole device pixels of
     /// `scale`, the window's scale factor, so each part is counted taken up
@@ -806,13 +800,13 @@ impl PanelLook {
     }
 }
 
-/// The resolved theme `r` as JSON (`values::theme_json`), which the panel's
-/// rows read their values from. Counted in the self-tests
-/// (`THEME_SERIALISATIONS`).
-fn theme_json(r: &native_theme::theme::ResolvedTheme) -> serde_json::Value {
+/// The 0.8.0 resolved theme `r` in its serialised form
+/// (`next::values::theme_json`), which the panel's rows read their values
+/// from beside `r`. Counted in the self-tests (`THEME_SERIALISATIONS`).
+fn theme_json(r: &native_theme::next::ResolvedTheme) -> serde_json::Value {
     #[cfg(test)]
     THEME_SERIALISATIONS.with(|count| count.set(count.get().saturating_add(1)));
-    values::theme_json(r).unwrap_or_default()
+    next_values::theme_json(r).unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -824,28 +818,28 @@ thread_local! {
 }
 
 /// The panel's text for `element` of docs/showcase-elements.toml, whose
-/// widget reported `info`, under `look`: a row per leaf the list names, with
-/// its value and how gpui applies it (`info::leaves`), each font's family by
-/// the family gpui draws ([`DrawnFamilies::label`] of the stated family and
-/// the connector's `font_family` of it, as the Theme tab's [`font_rows`]),
-/// and the widget's "Not themeable" notes.
+/// widget reported `info`, under `look`: a row per home the list names, with
+/// its value and how gpui applies it (`info::leaves`), each text style's
+/// family by the family gpui draws ([`DrawnFamilies::label`] of the stated
+/// family and the connector's `font_family` of it, as the Theme tab's
+/// [`font_rows`]), and the widget's "Not themeable" notes.
 pub(crate) fn listed(
     look: &PanelLook,
     element: &elements::ShowcaseElement,
     info: &WidgetInfo,
-) -> ListedInfo {
-    ListedInfo::new(
+) -> ListedInfo<native_theme::next::Color> {
+    next_info::listed_info(
         element,
-        &look.resolved,
-        &look.layout,
-        Some(look.icon_set),
-        look.icon_theme.as_deref(),
+        &look.theme,
+        &look.json,
         |_, font| {
-            look.families
-                .label(&font.family, &native_theme_gpui::font_family(&font.family))
+            look.families.label(
+                &font.family,
+                &native_theme_gpui::font_family(&Arc::from(font.family.as_str())),
+            )
         },
-        |leaf| {
-            leaves::how(&element.id, leaf)
+        |home| {
+            leaves::how(&element.id, home)
                 .unwrap_or(NO_ROUTE)
                 .to_string()
         },
@@ -859,8 +853,8 @@ pub(crate) fn listed(
 /// Widget Info for `element` of docs/showcase-elements.toml, whose widget
 /// reported `info`, in the list's form (the shared crate's `ListedInfo`): the
 /// title row -- its name and state, Copy at the end -- then the "Theme"
-/// section, a row per leaf the list names: a swatch where the value is a
-/// colour, `<leaf> <value>`, and under it how gpui applies the leaf
+/// section, a row per home the list names: a swatch where the value is a
+/// colour, `<home> <value>`, and under it how gpui applies the home
 /// (`info::leaves`); then "Not themeable", where the widget's info says what
 /// the theme states nothing for. The title, the Copy button, the section
 /// name and the first row record where they were laid out. Copy copies the
@@ -906,7 +900,7 @@ fn listed_info(
                     .relative()
                     .flex_none()
                     .size(look.line)
-                    .bg(stated(colour))
+                    .bg(next_stated(colour))
                     .border(width)
                     .border_color(frame)
                     .rounded(radius)

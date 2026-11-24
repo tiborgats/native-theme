@@ -4280,7 +4280,12 @@ fn every_prose_citation_still_exists() {
         .map(|h| line_citations(h.text).len() + prose_citations(h.text).len())
         .sum();
     for h in &how {
-        prose.push((HOW_FILE, h.line, h.leaf, h.text));
+        prose.push((
+            HOW_FILE,
+            h.line,
+            h.homes.first().copied().unwrap_or(h.prefix),
+            h.text,
+        ));
     }
 
     let unreadable: Vec<String> = SHOWCASE_FILES
@@ -4351,9 +4356,9 @@ fn every_prose_citation_still_exists() {
 // The route lines: info::leaves::HOW
 // ---------------------------------------------------------------------------
 //
-// Under each `<leaf> <value>` row of a listed element, Widget Info shows how
-// gpui applies the leaf: the first `HOW` entry whose prefix the element's id
-// starts with and whose leaf matches (`info::leaves::how`). The table is a
+// Under each `<home> <value>` row of a listed element, Widget Info shows how
+// gpui applies the home: the first `HOW` entry whose prefix the element's id
+// starts with and whose homes hold it (`info::leaves::how`). The table is a
 // `const` of string tuples, so no note call carries its texts and the prose
 // gates would not read them; it is read here, from the file as written.
 
@@ -4361,13 +4366,13 @@ fn every_prose_citation_still_exists() {
 const HOW_FILE: &str = "info/leaves.rs";
 
 /// The line that opens `HOW`.
-const HOW_OPEN: &str = "pub const HOW: &[(&str, &str, &str)] = &[";
+const HOW_OPEN: &str = "pub const HOW: &[(&str, &[&str], &str)] = &[";
 
 /// One entry of `HOW`, and the line its first string is written on.
 struct HowLine<'a> {
     line: usize,
     prefix: &'a str,
-    leaf: &'a str,
+    homes: Vec<&'a str>,
     text: &'a str,
 }
 
@@ -4379,9 +4384,10 @@ fn how_source() -> &'static str {
         .map_or("", |(_, text)| *text)
 }
 
-/// Every entry of the `HOW` table in `raw`, in order: its strings read three
-/// at a time, comments skipped. An error where the table is missing, does
-/// not close, or holds a string count that is no multiple of three.
+/// Every entry of the `HOW` table in `raw`, in order: each tuple's prefix,
+/// the strings of its `&[...]` list as its homes and its line, comments
+/// skipped. An error where the table is missing or does not close, or where
+/// an entry is not a prefix, a list of one home or more, and a line.
 fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
     let open = raw
         .find(HOW_OPEN)
@@ -4393,7 +4399,10 @@ fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
         .map(|ix| open + ix)
         .ok_or_else(|| format!("{HOW_FILE}'s HOW does not close"))?;
     let starts = line_offsets(raw);
-    let mut strings = Vec::new();
+    // Each entry's strings, each with its line and whether the list holds it.
+    let mut entries: Vec<Vec<(usize, &str, bool)>> = Vec::new();
+    let mut entry = Vec::new();
+    let mut in_list = false;
     let mut at = open;
     while let Some(rest) = raw.get(at..close).filter(|rest| !rest.is_empty()) {
         if let Some(after) = rest.strip_prefix("//") {
@@ -4401,43 +4410,67 @@ fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
         } else if let Some(body) = rest.strip_prefix('"') {
             let len = end_of_string(body, "\"");
             let text = body.get(..len.saturating_sub(1)).unwrap_or("");
-            strings.push((line_at(&starts, at), text));
+            entry.push((line_at(&starts, at), text, in_list));
             at += 1 + len;
         } else {
+            if rest.starts_with("&[") {
+                in_list = true;
+            } else if rest.starts_with(']') {
+                in_list = false;
+            } else if rest.starts_with(')') && !in_list {
+                entries.push(std::mem::take(&mut entry));
+            }
             at += char_len(rest);
         }
     }
-    if strings.len() % 3 != 0 {
+    if !entry.is_empty() {
         return Err(format!(
-            "{HOW_FILE}'s HOW holds {} strings, not three to an entry",
-            strings.len()
+            "{HOW_FILE}'s HOW holds strings after its last entry: {entry:?}"
         ));
     }
-    Ok(strings
-        .as_chunks::<3>()
-        .0
+    entries
         .iter()
-        .map(|&[(line, prefix), (_, leaf), (_, text)]| HowLine {
-            line,
-            prefix,
-            leaf,
-            text,
+        .map(|strings| {
+            how_entry(strings).ok_or_else(|| {
+                format!(
+                    "{HOW_FILE}'s HOW holds an entry that is not (prefix, &[home, ...], line): \
+                     {strings:?}"
+                )
+            })
         })
-        .collect())
+        .collect()
 }
 
-/// The index in `lines` of the entry `info::leaves::how` picks for `leaf` of
-/// the element `element`: the first whose leaf matches and whose prefix the
-/// id starts with.
-fn chosen_how(lines: &[HowLine<'_>], element: &str, leaf: &str) -> Option<usize> {
+/// The `HOW` entry of `strings`, one tuple's strings as [`how_lines`] reads
+/// them: a prefix outside the list, one home or more in it, and a line
+/// outside it; `None` for any other shape.
+fn how_entry<'a>(strings: &[(usize, &'a str, bool)]) -> Option<HowLine<'a>> {
+    let (&(line, prefix, prefix_listed), rest) = strings.split_first()?;
+    let (&(_, text, text_listed), homes) = rest.split_last()?;
+    let shaped = !prefix_listed
+        && !text_listed
+        && !homes.is_empty()
+        && homes.iter().all(|&(_, _, listed)| listed);
+    shaped.then(|| HowLine {
+        line,
+        prefix,
+        homes: homes.iter().map(|&(_, home, _)| home).collect(),
+        text,
+    })
+}
+
+/// The index in `lines` of the entry `info::leaves::how` picks for `home`
+/// of the element `element`: the first whose homes hold it and whose prefix
+/// the id starts with.
+fn chosen_how(lines: &[HowLine<'_>], element: &str, home: &str) -> Option<usize> {
     lines
         .iter()
-        .position(|h| h.leaf == leaf && element.starts_with(h.prefix))
+        .position(|h| h.homes.contains(&home) && element.starts_with(h.prefix))
 }
 
-/// Every `HOW` entry is the line Widget Info shows for at least one leaf of
+/// Every `HOW` entry is the line Widget Info shows for at least one home of
 /// one element of docs/showcase-elements.toml. An entry every lister of its
-/// leaf reaches a more specific entry before is a line no reader ever sees,
+/// homes reaches a more specific entry before is a line no reader ever sees,
 /// and one nobody reads either, so it drifts unnoticed.
 #[test]
 fn every_how_entry_is_shown() {
@@ -4463,65 +4496,86 @@ fn every_how_entry_is_shown() {
     );
     let shown: BTreeSet<usize> = elements
         .iter()
-        .flat_map(|e| e.leaves.iter().map(move |leaf| (e.id.as_str(), leaf)))
-        .filter_map(|(id, leaf)| chosen_how(&lines, id, leaf))
+        .flat_map(|e| e.homes.iter().map(move |home| (e.id.as_str(), home)))
+        .filter_map(|(id, home)| chosen_how(&lines, id, home))
         .collect();
     let unseen: Vec<String> = lines
         .iter()
         .enumerate()
         .filter(|(ix, _)| !shown.contains(ix))
-        .map(|(_, h)| format!("{HOW_FILE}:{}: (\"{}\", \"{}\")", h.line, h.prefix, h.leaf))
+        .map(|(_, h)| format!("{HOW_FILE}:{}: (\"{}\", {:?})", h.line, h.prefix, h.homes))
         .collect();
     assert!(
         unseen.is_empty(),
-        "{} of {} HOW entries are the shown line for no listed element's leaf -- every \
-         element that lists the leaf takes an earlier entry:\n  {}",
+        "{} of {} HOW entries are the shown line for no listed element's home -- every \
+         element that lists its homes takes an earlier entry:\n  {}",
         unseen.len(),
         lines.len(),
         unseen.join("\n  ")
     );
 }
 
-/// The `HOW` reader reads each entry, written on three lines or one, and
-/// skips a comment between them; a stray string is an error.
+/// The `HOW` reader reads each entry, written on several lines or one, its
+/// list of one home or more, the parentheses and brackets inside a string
+/// left to the string, and skips a comment between them; an entry of
+/// another shape is an error.
 #[test]
 fn the_how_reader_does_its_job() {
-    let source = "x\npub const HOW: &[(&str, &str, &str)] = &[\n    // --- a \"b\" ---\n    (\n        \"basic.a\",\n        \"a.b\",\n        \"gpui: c (demo::d)\",\n    ),\n    (\"\", \"a.b\", \"gpui: e\"),\n];\n";
+    let source = "x\npub const HOW: &[(&str, &[&str], &str)] = &[\n    // --- a \"b\" ---\n    (\n        \"basic.a\",\n        &[\"a.b(NONE).fill\", \"c.d(NONE).min_size[1]\"],\n        \"gpui: c (demo::d)\",\n    ),\n    (\"\", &[\"a.b(NONE).fill\"], \"gpui: e\"),\n];\n";
     let lines = how_lines(source).unwrap_or_default();
-    let read: Vec<(usize, &str, &str, &str)> = lines
+    let read: Vec<(usize, &str, Vec<&str>, &str)> = lines
         .iter()
-        .map(|h| (h.line, h.prefix, h.leaf, h.text))
+        .map(|h| (h.line, h.prefix, h.homes.clone(), h.text))
         .collect();
     assert_eq!(
         read,
         [
-            (5, "basic.a", "a.b", "gpui: c (demo::d)"),
-            (9, "", "a.b", "gpui: e")
+            (
+                5,
+                "basic.a",
+                vec!["a.b(NONE).fill", "c.d(NONE).min_size[1]"],
+                "gpui: c (demo::d)"
+            ),
+            (9, "", vec!["a.b(NONE).fill"], "gpui: e")
         ]
     );
-    assert_eq!(chosen_how(&lines, "basic.a.x", "a.b"), Some(0));
-    assert_eq!(chosen_how(&lines, "chrome.y", "a.b"), Some(1));
-    assert_eq!(chosen_how(&lines, "chrome.y", "a.c"), None);
-    assert!(
-        how_lines("pub const HOW: &[(&str, &str, &str)] = &[\n    (\"a\", \"b\"),\n];\n").is_err()
+    assert_eq!(chosen_how(&lines, "basic.a.x", "a.b(NONE).fill"), Some(0));
+    assert_eq!(
+        chosen_how(&lines, "basic.a.x", "c.d(NONE).min_size[1]"),
+        Some(0)
     );
+    assert_eq!(chosen_how(&lines, "chrome.y", "a.b(NONE).fill"), Some(1));
+    assert_eq!(
+        chosen_how(&lines, "chrome.y", "c.d(NONE).min_size[1]"),
+        None
+    );
+    let open = "pub const HOW: &[(&str, &[&str], &str)] = &[\n";
+    for entry in [
+        "    (\"a\", \"b\"),\n",
+        "    (\"a\", \"b\", \"c\"),\n",
+        "    (\"a\", &[], \"c\"),\n",
+        "    (&[\"a\"], \"b\", \"c\"),\n",
+    ] {
+        assert!(
+            how_lines(&format!("{open}{entry}];\n")).is_err(),
+            "{entry:?} is read as an entry"
+        );
+    }
     assert!(how_lines("const NOT: u8 = 1;").is_err());
 }
 
-/// The field a leaf names, as code reads it: its last segment without the
-/// unit suffix, and `padding` for a padding side (`border.padding_top_px`
-/// is read as `padding.top`).
-fn leaf_field(leaf: &str) -> &str {
-    let last = leaf.rsplit('.').next().unwrap_or(leaf);
-    let bare = last
-        .strip_suffix("_px")
-        .or_else(|| last.strip_suffix("_ms"))
-        .unwrap_or(last);
-    if bare.starts_with("padding_") {
-        "padding"
-    } else {
-        bare
+/// The field a home names, as code reads it: its last segment without an
+/// index (`min_size[1]` is read as `min_size`), `padding` for a padding side
+/// (`padding.top`), and a whole text style's part (`button.label(NONE)`) by
+/// the part's name.
+fn home_field(home: &str) -> &str {
+    let mut segments = home.rsplit('.');
+    let last = segments.next().unwrap_or(home);
+    if segments.next() == Some("padding") {
+        return "padding";
     }
+    let bare = last.split('[').next().unwrap_or(last);
+    bare.split('(').next().unwrap_or(bare)
 }
 
 /// The identifiers that follow `module::` in `text`, in order.
@@ -4655,19 +4709,21 @@ fn every_how_route_reads_its_leaf() {
     let mut unread = Vec::new();
     let mut exempt = Vec::new();
     for h in &lines {
-        let at = format!("{HOW_FILE}:{} (\"{}\", {})", h.line, h.prefix, h.leaf);
+        let at = format!("{HOW_FILE}:{} (\"{}\", {:?})", h.line, h.prefix, h.homes);
         if h.text.contains("not applied") || h.text.contains("not reachable") {
             exempt.push(format!("{at}: {}", h.text));
             continue;
         }
-        let field = leaf_field(h.leaf);
-        for (route, code) in how_routes(h.text, &widgets) {
-            match code {
-                Some(code) if mentions(&code, field) => {
-                    read.push(format!("{at}: {route} reads `{field}`"));
+        let routes = how_routes(h.text, &widgets);
+        for field in h.homes.iter().map(|home| home_field(home)) {
+            for (route, code) in &routes {
+                match code {
+                    Some(code) if mentions(code, field) => {
+                        read.push(format!("{at}: {route} reads `{field}`"));
+                    }
+                    Some(_) => unread.push(format!("{at}: {route} does not read `{field}`")),
+                    None => unread.push(format!("{at}: {route} not found")),
                 }
-                Some(_) => unread.push(format!("{at}: {route} does not read `{field}`")),
-                None => unread.push(format!("{at}: {route} not found")),
             }
         }
     }

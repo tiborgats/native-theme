@@ -457,11 +457,6 @@ pub(crate) struct Showcase {
     /// the icon theme installed now, not the one they opened under.
     pub(crate) dialog_icons: SharedDialogIcons,
 
-    /// Layout spacing of the installed theme. It lives on the model, not on
-    /// `ResolvedTheme`, so the geometry accessors take it from here rather
-    /// than from `cx.native_theme()`.
-    pub(crate) layout: native_theme::theme::LayoutTheme,
-
     /// Whether a box over the whole window takes the pointer, so what is
     /// drawn does not depend on where the pointer happens to be: set for a
     /// capture (`--capture`, `--screenshot`) and a layout dump
@@ -1953,9 +1948,6 @@ impl Showcase {
             focus_handle,
             _refocus,
             dialog_icons: SharedDialogIcons::default(),
-            // Nothing was read yet, so nothing is claimed: every key stays
-            // `None` and the layout accessors report it as such.
-            layout: native_theme::theme::LayoutTheme::default(),
             pointer_shield: false,
             keyboard_shield: None,
             basic_hint_state,
@@ -2387,7 +2379,6 @@ impl Showcase {
         // the mode the OS is in.
         self.current_icon_theme = system.icon_theme_for(mode).map(str::to_owned);
         self.current_icon_set = system.icon_set;
-        self.layout = system.layout.clone();
         // Platform presets always specify icon_theme
         self.has_toml_icon_theme = true;
         // The other mode's, from its own variant, which the system theme
@@ -2416,10 +2407,10 @@ impl Showcase {
     /// installed as `r`, its variant of the mode shown, which is returned.
     fn keep_preset(
         &mut self,
+        #[cfg_attr(not(feature = "svg-rasterize"), allow(unused_variables))]
         nt: &native_theme::theme::Theme,
         r: native_theme::Resolved,
     ) -> native_theme::theme::ResolvedTheme {
-        self.layout = nt.layout.clone();
         self.has_toml_icon_theme = r.icon_theme_explicit;
         self.current_icon_set = r.icon_set;
         self.current_icon_theme = r.icon_theme.map(Cow::into_owned);
@@ -2769,7 +2760,7 @@ impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // Before the inspector, a child view, renders and borrows it.
         if self.panel_look.is_none() {
-            self.panel_look = PanelLook::of(self, cx);
+            self.panel_look = PanelLook::of(cx);
         }
         self.dialog_icons.set(DialogIcons {
             dialog: self.sample_icon(IconName::CircleX),

@@ -4482,7 +4482,7 @@ fn the_kept_panel_look_follows_every_install(cx: &mut TestAppContext) {
         cx.run_until_parked();
         draw(cx);
         let (kept, fresh) = read(cx, &showcase, |this, cx| {
-            (this.panel_look.clone(), PanelLook::of(this, cx))
+            (this.panel_look.clone(), PanelLook::of(cx))
         });
         assert!(kept.is_some(), "{what}: the showcase keeps no panel look");
         assert_eq!(
@@ -4595,10 +4595,10 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
         copied.starts_with(&format!("{title}\n\nTheme\n")),
         "the Copy button did not put the shown info on the clipboard: {copied:?}"
     );
-    for leaf in element.iter().flat_map(|e| e.leaves.iter()) {
+    for home in element.iter().flat_map(|e| e.homes.iter()) {
         assert!(
-            copied.contains(&format!("\n{leaf} ")),
-            "the copied info has no row for {leaf}: {copied:?}"
+            copied.contains(&format!("\n{home} ")),
+            "the copied info has no row for {home}: {copied:?}"
         );
     }
 }
@@ -4697,27 +4697,27 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     });
     assert!(panel.is_some(), "no panel text for chrome.info.copy");
     let Some(panel) = panel else { return };
-    for (leaf, says) in [
+    for (home, says) in [
         (
-            "button.hover_text_color",
+            "button.label(HOVER).color",
             "the Copy box's text under the pointer",
         ),
         (
-            "button.active_text_color",
+            "button.label(PRESSED).color",
             "the Copy box's text while pressed",
         ),
     ] {
-        let row = panel.rows.iter().find(|row| row.leaf == leaf);
+        let row = panel.rows.iter().find(|row| row.leaf == home);
         assert!(
             row.is_some_and(|row| row.how.contains(says)),
-            "the panel's {leaf} row does not say {says:?}: {row:?}"
+            "the panel's {home} row does not say {says:?}: {row:?}"
         );
     }
 }
 
 /// A toolbar button's Widget Info names the installed theme's icon theme
-/// under `defaults.icon_theme`: under kde-breeze the variant's own, as the
-/// iced and egui panels name it, where the resolved theme's JSON holds none.
+/// under `icons.theme`: under kde-breeze the installed 0.8.0 theme's, as the
+/// iced and egui panels name it.
 #[gpui::test]
 fn a_tool_buttons_info_names_its_icon_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -4726,17 +4726,15 @@ fn a_tool_buttons_info_names_its_icon_theme(cx: &mut TestAppContext) {
     hover(&mut cx, at);
     settle(&mut cx);
     draw(&mut cx);
-    let (is_dark, loaded) = read(&mut cx, &showcase, |this, _| {
-        (this.is_dark, this.current_icon_theme.clone())
+    let loaded = read(&mut cx, &showcase, |this, _| {
+        this.current_icon_theme.clone()
     });
-    let stated = native_theme::theme::Theme::preset("kde-breeze")
-        .ok()
-        .and_then(|theme| if is_dark { theme.dark } else { theme.light })
-        .and_then(|variant| variant.defaults.icon_theme)
+    let stated = next_theme(&mut cx, &showcase)
+        .and_then(|r| r.icons.theme)
         .map(|name| name.to_string());
     assert!(
         stated.is_some(),
-        "kde-breeze's variant states no icon theme"
+        "kde-breeze's 0.8.0 theme states no icon theme"
     );
     assert_eq!(
         loaded, stated,
@@ -4749,7 +4747,7 @@ fn a_tool_buttons_info_names_its_icon_theme(cx: &mut TestAppContext) {
         .and_then(|item| item.text())
         .unwrap_or_default();
     assert!(
-        copied.contains(&format!("\ndefaults.icon_theme {stated}\n")),
+        copied.contains(&format!("\nicons.theme {stated}\n")),
         "the tool button's info does not name the icon theme {stated}: {copied:?}"
     );
 }
@@ -11880,17 +11878,6 @@ fn claim_of(info: &WidgetInfo, field: &str) -> Option<gpui::Hsla> {
         .map(|c| c.value)
 }
 
-/// The installed native theme, which the test installed.
-fn resolved_theme(
-    cx: &mut VisualTestContext,
-    showcase: &Entity<Showcase>,
-) -> native_theme_gpui::ResolvedTheme {
-    read(cx, showcase, |_, cx| {
-        native_value(cx, |n| n.resolved.clone())
-    })
-    .expect("a native theme is installed")
-}
-
 /// The top and bottom padding of a Basic table cell under `r`, as
 /// `demo::files_table` pads it: the side `next::geometry::list_item` sets,
 /// else gpui-component's own table cell padding; `None` where the builder
@@ -11983,24 +11970,24 @@ fn install_next(cx: &mut VisualTestContext, r: &native_theme::next::ResolvedThem
 }
 
 /// The Basic page's text area lists the routes its surface takes (M9-005):
-/// its edge `text_area.border.color`, its hovered edge
-/// `input.hover_border_color` and its fill `input.background_color` are
-/// drawn by `demo::input_surface`, not left to upstream's `input` token or
-/// the field's own fill.
+/// its edge `text_area.field(NONE).stroke.color`, its hovered edge
+/// `text_area.field(HOVER).stroke.color` and its fill
+/// `text_area.field(NONE).fill` are drawn by `demo::input_surface`, not left
+/// to upstream's `input` token or the field's own fill.
 #[test]
 fn the_text_areas_routes_name_its_surface() {
     let field = "basic.text_area.field";
-    for leaf in [
-        "text_area.border.color",
-        "input.hover_border_color",
-        "input.background_color",
+    for home in [
+        "text_area.field(NONE).stroke.color",
+        "text_area.field(HOVER).stroke.color",
+        "text_area.field(NONE).fill",
     ] {
-        let how = crate::info::leaves::how(field, leaf);
+        let how = crate::info::leaves::how(field, home);
         assert!(
             how.is_some_and(
                 |line| line.contains("demo::input_surface") && !line.contains("not applied")
             ),
-            "{field}'s route for {leaf} does not name the surface that draws it: {how:?}"
+            "{field}'s route for {home} does not name the surface that draws it: {how:?}"
         );
     }
 }
@@ -13474,9 +13461,10 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
 }
 
 /// Widget Info's listed font rows name the family gpui draws, as the
-/// inspector's Theme tab does: `defaults.font.family` and the family part
-/// of `defaults.font` and of `defaults.mono_font` are `status::family_label`
-/// of the stated family and `font_family`'s, under windows-11 set directly.
+/// inspector's Theme tab does: `typography.body.family` and the family part
+/// of `typography.body` and of `typography.monospace` are
+/// `status::family_label` of the 0.8.0 theme's stated family and
+/// `font_family`'s, under windows-11 set directly.
 /// Conditioned on the host: where the system lacks "Segoe UI" or "Cascadia
 /// Mono" and the platform names a substitute (fontconfig, feature
 /// `system-fonts`), the rows name it; elsewhere the label is the stated name
@@ -13486,7 +13474,11 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
     use crate::inspector::PanelLook;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_light_preset(&mut cx, &showcase, "windows-11");
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else {
+        return;
+    };
     let label = |family: &std::sync::Arc<str>| {
         let drawn = native_theme_gpui::font_family(family);
         let label = native_theme_showcase_support::status::family_label(family, Some(&drawn));
@@ -13494,30 +13486,34 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
         label
     };
     let (body, mono) = (
-        label(&r.defaults.font.family),
-        label(&r.defaults.mono_font.family),
+        label(&r.typography.body.family),
+        label(&r.typography.monospace.family),
     );
-    let mut value = |id: &str, leaf: &str| {
-        let row = read(&mut cx, &showcase, |this, cx| {
-            let look = PanelLook::of(this, cx)?;
+    let mut value = |id: &str, home: &str| {
+        let row = read(&mut cx, &showcase, |_, cx| {
+            let look = PanelLook::of(cx)?;
             let element = crate::elements::element(id)?;
             let info = crate::inspector::listed(&look, element, &WidgetInfo::default());
             info.rows
                 .into_iter()
-                .find(|row| row.leaf == leaf)
+                .find(|row| row.leaf == home)
                 .map(|row| row.value)
         });
-        row.unwrap_or_else(|| panic!("no Widget Info row {leaf} for {id}"))
+        assert!(row.is_some(), "no Widget Info row {home} for {id}");
+        row.unwrap_or_default()
     };
-    assert_eq!(value("basic.buttons.heading", "defaults.font.family"), body);
-    for (id, leaf, label) in [
-        ("basic.switches.off", "defaults.font", &body),
-        ("basic.typography.monospace", "defaults.mono_font", &mono),
+    assert_eq!(
+        value("basic.buttons.heading", "typography.body.family"),
+        body
+    );
+    for (id, home, label) in [
+        ("basic.switches.off", "typography.body", &body),
+        ("basic.typography.monospace", "typography.monospace", &mono),
     ] {
-        let font = value(id, leaf);
+        let font = value(id, home);
         assert!(
             font.starts_with(&format!("{label} ")),
-            "the {leaf} row does not name the drawn family {label:?}: {font}"
+            "the {home} row does not name the drawn family {label:?}: {font}"
         );
     }
 }
@@ -13664,8 +13660,8 @@ fn with_held_families(
 
 /// The installed theme's font labels, as the three sites show them: the status bar's font item,
 /// the Theme tab's `font_family` and `mono_font_family` rows, and Widget Info's listed
-/// `defaults.font.family` row of the Basic page's heading button and the family part of its
-/// `defaults.mono_font` row of the monospace text, each with the frame drawn that keeps the
+/// `typography.body.family` row of the Basic page's heading button and the family part of its
+/// `typography.monospace` row of the monospace text, each with the frame drawn that keeps the
 /// install's look.
 fn font_labels(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [(String, String); 5] {
     use crate::inspector::PanelLook;
@@ -13680,25 +13676,29 @@ fn font_labels(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [(Str
                 .unwrap_or_default()
         };
         let size = native_theme_showcase_support::status::defined_size(&this.original_font);
-        let listed = |id: &str, leaf: &str| {
-            PanelLook::of(this, cx)
+        let listed = |id: &str, home: &str| {
+            PanelLook::of(cx)
                 .and_then(|look| {
                     let element = crate::elements::element(id)?;
                     crate::inspector::listed(&look, element, &WidgetInfo::default())
                         .rows
                         .into_iter()
-                        .find(|row| row.leaf == leaf)
+                        .find(|row| row.leaf == home)
                         .map(|row| row.value)
                 })
                 .unwrap_or_default()
         };
         // "<family> <size> <unit> <weight>": the monospace font's style is normal.
-        let mono = listed("basic.typography.monospace", "defaults.mono_font");
+        let mono = listed("basic.typography.monospace", "typography.monospace");
         let mono_family = mono.rsplitn(4, ' ').nth(3).unwrap_or_default().to_string();
-        let (body, mono_stated) = (
-            this.original_font.family.to_string(),
-            this.original_mono_font.family.to_string(),
-        );
+        let (body, mono_stated) = crate::support::next_resolved(cx)
+            .map(|r| {
+                (
+                    r.typography.body.family.to_string(),
+                    r.typography.monospace.family.to_string(),
+                )
+            })
+            .unwrap_or_default();
         [
             (
                 "the status bar's font item".to_string(),
@@ -13717,11 +13717,11 @@ fn font_labels(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [(Str
                 row("mono_font_family"),
             ),
             (
-                format!("Widget Info's defaults.font.family row ({body})"),
-                listed("basic.buttons.heading", "defaults.font.family"),
+                format!("Widget Info's typography.body.family row ({body})"),
+                listed("basic.buttons.heading", "typography.body.family"),
             ),
             (
-                format!("Widget Info's defaults.mono_font row ({mono_stated})"),
+                format!("Widget Info's typography.monospace row ({mono_stated})"),
                 mono_family,
             ),
         ]
@@ -15552,9 +15552,8 @@ fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     set_preset(&mut cx, &showcase, "material-3");
     lay_palette(&mut cx, &showcase, "nord");
-    let installed_layout = native_theme::theme::Theme::preset("material-3")
-        .map(|t| t.layout)
-        .ok();
+    let installed_layout = next_theme(&mut cx, &showcase).map(|r| r.layout);
+    assert!(installed_layout.is_some(), "no 0.8.0 theme is installed");
     let named = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |this, cx| {
             (
@@ -15567,7 +15566,7 @@ fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
                     .get(1)
                     .cloned()
                     .unwrap_or_default(),
-                Some(this.layout.clone()),
+                crate::support::next_resolved(cx).map(|r| r.layout.clone()),
             )
         })
     };
@@ -15615,7 +15614,7 @@ fn drawn_state(
             this.color_mode,
             this.is_dark,
             this.current_theme_name.clone(),
-            format!("{:?}", this.layout),
+            format!("{:?}", crate::support::next_resolved(cx).map(|r| &r.layout)),
         )
     })
 }
@@ -18949,12 +18948,12 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
     );
 }
 
-/// The side panel's Widget Info routes each `sidebar.border.padding_*` leaf
-/// as `demo::side_panel` draws it (Addendum I S2): under windows-11, which
-/// states the sidebar's left and right padding alone
+/// The side panel's Widget Info routes each `sidebar.container(NONE).padding`
+/// side as `demo::side_panel` draws it (Addendum I S2): under windows-11,
+/// which states the sidebar's left and right padding alone
 /// (`sidebar.container(NONE)`), the panel's top is padded by
 /// `layout.container_margin`, and the route the inspector shows and copies
-/// for `sidebar.border.padding_top_px` says that a side the padding leaves
+/// for `sidebar.container(NONE).padding.top` says that a side the padding leaves
 /// unstated takes the margin, not that the margin pads the content, which
 /// the panel then leaves unpadded.
 #[gpui::test]
@@ -18982,17 +18981,17 @@ fn the_side_panels_padding_routes_name_the_margin_on_an_unstated_side(cx: &mut T
         .unwrap_or_default();
     let route = copied
         .lines()
-        .skip_while(|line| !line.starts_with("sidebar.border.padding_top_px "))
+        .skip_while(|line| !line.starts_with("sidebar.container(NONE).padding.top "))
         .nth(1)
         .unwrap_or_default();
     assert!(
         route.contains("a side it leaves unstated by layout.container_margin"),
-        "windows-11: the side panel's sidebar.border.padding_top_px route {route:?} does not \
+        "windows-11: the side panel's sidebar.container(NONE).padding.top route {route:?} does not \
          say the margin pads the unstated top: {copied:?}"
     );
 }
 
-/// The side panel's and the page tabs' `layout.container_margin_px` routes
+/// The side panel's and the page tabs' `layout.container_margin` routes
 /// say that the margin pads nothing where the theme states none, as under
 /// macos-tahoe, whose layout states no `container_margin`: each names a
 /// padding the margin gives only where it is stated.
@@ -19005,10 +19004,10 @@ fn the_container_margin_routes_say_none_where_it_is_unstated() {
         "chrome.side_panel.inspector",
         "chrome.page_tabs",
     ] {
-        let route = crate::info::leaves::how(element, "layout.container_margin_px");
+        let route = crate::info::leaves::how(element, "layout.container_margin");
         assert!(
             route.is_some_and(|r| r.contains("(none where that is unstated)")),
-            "{element}: its layout.container_margin_px route {route:?} does not say the margin \
+            "{element}: its layout.container_margin route {route:?} does not say the margin \
              pads nothing where the theme states none"
         );
     }
@@ -19280,17 +19279,17 @@ fn the_open_theme_menu_is_dumped_with_its_rows(cx: &mut TestAppContext) {
     );
 }
 
-/// Every leaf of every element of the list has the line saying how gpui
+/// Every home of every element of the list has the line saying how gpui
 /// applies it (`info::leaves`), so Widget Info never shows the fallback.
 #[test]
 fn every_listed_leaf_has_a_route() {
     let missing: Vec<String> = crate::elements::elements()
         .iter()
         .flat_map(|e| {
-            e.leaves
+            e.homes
                 .iter()
-                .filter(|leaf| crate::info::leaves::how(&e.id, leaf).is_none())
-                .map(move |leaf| format!("{} {leaf}", e.id))
+                .filter(|home| crate::info::leaves::how(&e.id, home).is_none())
+                .map(move |home| format!("{} {home}", e.id))
         })
         .collect();
     assert!(missing.is_empty(), "no route: {missing:?}");
@@ -19303,8 +19302,9 @@ fn every_listed_leaf_has_a_route() {
 /// src/window.rs:2453-2461, ContentMask), GPUI Fast to its curved inner edge
 /// (gpui-fast 0.1.15 src/fast/rounded_clip.rs:68-104), and a fill rounded
 /// inside that edge is drawn alike under both. So their
-/// `list.border.corner_radius_px` and `list.border.line_width_px` routes name
-/// the inner radius, where the frames' own routes name the frame's.
+/// `list.container(NONE).corners` and `list.container(NONE).stroke.width`
+/// routes name the inner radius, where the frames' own routes name the
+/// frame's.
 #[test]
 fn the_row_fill_corner_routes_say_the_fills_are_rounded() {
     let mut checked = 0usize;
@@ -19312,15 +19312,18 @@ fn the_row_fill_corner_routes_say_the_fills_are_rounded() {
         let row = ["basic.table.header", "basic.table.row_", "basic.list.row_"]
             .iter()
             .any(|prefix| element.id.starts_with(prefix));
-        for leaf in ["list.border.corner_radius_px", "list.border.line_width_px"] {
-            if !row || !element.leaves.iter().any(|l| l == leaf) {
+        for home in [
+            "list.container(NONE).corners",
+            "list.container(NONE).stroke.width",
+        ] {
+            if !row || !element.homes.iter().any(|h| h == home) {
                 continue;
             }
             checked += 1;
-            let how = crate::info::leaves::how(&element.id, leaf).unwrap_or_default();
+            let how = crate::info::leaves::how(&element.id, home).unwrap_or_default();
             assert!(
                 how.contains("inner radius") && !how.contains("square"),
-                "{} {leaf}: {how:?}",
+                "{} {home}: {how:?}",
                 element.id
             );
         }
@@ -19542,69 +19545,43 @@ fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAp
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
 
-/// The labels the showcase lays out one `defaults.line_height` line tall
-/// name the route that does it (M9-031): widgets::Switch's label, the side
-/// panel's labels in demo::next_text_in's line box (the installed 0.8.0
-/// theme's), the segments in demo::next_text_in's, the tab
-/// rows' labels in widgets::TabBar's, the expander's title and body, and
-/// the status bar's text in geometry::status_bar's; none says "not applied"
-/// or names gpui's own line height. The status bar's toggle and environment
-/// are `layout.widget_gap` apart, and its row says so (M9-032).
+/// The labels the showcase lays out one line of
+/// `typography.line_height_multiplier` tall name the route that does it
+/// (M9-031): widgets::Switch's label, the side panel's labels in
+/// demo::next_text_in's line box (the installed 0.8.0 theme's), the segments
+/// in demo::next_text_in's, the tab rows' labels in widgets::TabBar's, the
+/// expander's title and body, and the status bar's text in
+/// geometry::status_bar's; none says "not applied" or names gpui's own line
+/// height. The status bar's toggle and environment are `layout.widget_gap`
+/// apart, and its row says so (M9-032).
 #[test]
 fn the_line_height_and_status_gap_routes_name_what_applies_them() {
+    let line = "typography.line_height_multiplier";
     let routes = [
-        ("basic.switches.", "defaults.line_height", "widgets::Switch"),
-        (
-            "chrome.side_panel.settings.",
-            "defaults.line_height",
-            "demo::next_text_in",
-        ),
-        (
-            "chrome.side_panel.inspector_tabs.",
-            "defaults.line_height",
-            "widgets::TabBar",
-        ),
-        (
-            "chrome.page_tabs.",
-            "defaults.line_height",
-            "widgets::TabBar",
-        ),
-        ("basic.tabs.", "defaults.line_height", "widgets::TabBar"),
-        (
-            "basic.segmented.",
-            "defaults.line_height",
-            "demo::next_text_in",
-        ),
-        (
-            "basic.expander.",
-            "defaults.line_height",
-            "demo::next_text_in",
-        ),
-        (
-            "chrome.status_bar",
-            "defaults.line_height",
-            "geometry::status_bar",
-        ),
-        (
-            "chrome.status_bar",
-            "layout.widget_gap_px",
-            "demo::status_bar",
-        ),
+        ("basic.switches.", line, "widgets::Switch"),
+        ("chrome.side_panel.settings.", line, "demo::next_text_in"),
+        ("chrome.side_panel.inspector_tabs.", line, "widgets::TabBar"),
+        ("chrome.page_tabs.", line, "widgets::TabBar"),
+        ("basic.tabs.", line, "widgets::TabBar"),
+        ("basic.segmented.", line, "demo::next_text_in"),
+        ("basic.expander.", line, "demo::next_text_in"),
+        ("chrome.status_bar", line, "geometry::status_bar"),
+        ("chrome.status_bar", "layout.widget_gap", "demo::status_bar"),
     ];
     let mut checked = 0usize;
     let mut wrong = Vec::new();
     for element in crate::elements::elements() {
-        for (prefix, leaf, names) in routes {
+        for (prefix, home, names) in routes {
             if !element.id.starts_with(prefix)
-                || !element.leaves.iter().any(|l| l == leaf)
+                || !element.homes.iter().any(|h| h == home)
                 || (prefix == "chrome.side_panel.settings." && !element.id.ends_with("_label"))
             {
                 continue;
             }
             checked += 1;
-            let how = crate::info::leaves::how(&element.id, leaf).unwrap_or_default();
+            let how = crate::info::leaves::how(&element.id, home).unwrap_or_default();
             if how.contains("not applied") || how.contains("phi") || !how.contains(names) {
-                wrong.push(format!("{} {leaf}: {how:?}, not {names}", element.id));
+                wrong.push(format!("{} {home}: {how:?}, not {names}", element.id));
             }
         }
     }
@@ -19620,35 +19597,39 @@ fn the_line_height_and_status_gap_routes_name_what_applies_them() {
 }
 
 /// The page row's rule is drawn by demo::native_tab_bar, a box under the
-/// strip in `separator.line_color`, `separator.line_width` tall; the strip
-/// itself, demo::native_tab_strip, is a bare widgets::TabBar.
+/// strip in `separator.color`, `separator.thickness` tall; the strip itself,
+/// demo::native_tab_strip, is a bare widgets::TabBar.
 #[test]
 fn the_page_rows_rule_routes_name_what_draws_it() {
-    for leaf in ["separator.line_color", "separator.line_width_px"] {
-        let how = crate::info::leaves::how("chrome.page_tabs.rule", leaf).unwrap_or_default();
+    for home in ["separator.color", "separator.thickness"] {
+        let how = crate::info::leaves::how("chrome.page_tabs.rule", home).unwrap_or_default();
         assert!(
             how.contains("demo::native_tab_bar") && !how.contains("native_tab_strip"),
-            "chrome.page_tabs.rule's {leaf} route: {how:?}"
+            "chrome.page_tabs.rule's {home} route: {how:?}"
         );
     }
 }
 
 /// The number field pads its value's Input left of the step buttons, which
 /// stack at its right (demo::number_input), and a disabled text field's edge
-/// is `input.border.color` itself, on the faded surface the showcase draws
-/// under it (demo::faded_surface), not upstream's `input` token.
+/// is `input.field(NONE).stroke.color` itself, on the faded surface the
+/// showcase draws under it (demo::faded_surface), not upstream's `input`
+/// token.
 #[test]
 fn the_number_and_disabled_field_routes_name_what_draws_them() {
     for side in ["top", "right", "bottom", "left"] {
-        let leaf = format!("input.border.padding_{side}_px");
-        let how = crate::info::leaves::how("basic.number_input.field", &leaf).unwrap_or_default();
+        let home = format!("input.field(NONE).padding.{side}");
+        let how = crate::info::leaves::how("basic.number_input.field", &home).unwrap_or_default();
         assert!(
             how.contains("left of the step buttons") && !how.contains("between"),
-            "{leaf}: {how:?}"
+            "{home}: {how:?}"
         );
     }
-    let how = crate::info::leaves::how("basic.text_inputs.disabled", "input.border.color")
-        .unwrap_or_default();
+    let how = crate::info::leaves::how(
+        "basic.text_inputs.disabled",
+        "input.field(NONE).stroke.color",
+    )
+    .unwrap_or_default();
     assert!(
         how.contains("demo::faded_surface") && !how.contains("ThemeColor input"),
         "the disabled field's edge route: {how:?}"
@@ -23583,13 +23564,13 @@ fn the_native_tab_rows_info_gives_its_outward_corners() -> Result<(), String> {
     Ok(())
 }
 
-/// `tab.active_outward_corner_radius_px` has its route on each element the
+/// `tab.active_outward_corner_radius` has its route on each element the
 /// shared list gives it: the three selected tabs draw the outward
 /// corners, the three bars inset their tabs by it, and the Basic page's
 /// column rule makes room for both flares.
 #[test]
 fn the_outward_corner_routes_name_what_draws_them() {
-    let leaf = "tab.active_outward_corner_radius_px";
+    let home = "tab.active_outward_corner_radius";
     for (element, says) in [
         ("basic.tabs.one", "painted after the tabs"),
         ("chrome.page_tabs.basic", "painted after the tabs"),
@@ -23605,7 +23586,7 @@ fn the_outward_corner_routes_name_what_draws_them() {
         ),
         ("basic.page", "column rule (basic_column_count)"),
     ] {
-        let line = crate::info::leaves::how(element, leaf).unwrap_or_default();
+        let line = crate::info::leaves::how(element, home).unwrap_or_default();
         assert!(
             line.contains(says) && line.starts_with("gpui: "),
             "{element}: {line:?}"
@@ -25500,31 +25481,49 @@ fn the_picker_offers_the_platform_presets_and_the_palettes() {
     assert_eq!(rows, wanted);
 }
 
-/// The 0.8.0 theme the showcase installed, its inactive-window resolve,
-/// and the 0.7.2 theme the pages not yet ported read, each as the helpers
-/// the pages call give them.
+/// The 0.8.0 theme the showcase installed and its inactive-window resolve,
+/// each as the helpers the pages call give them.
 fn installed_models(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
 ) -> (
     Option<native_theme::next::ResolvedTheme>,
     Option<native_theme::next::ResolvedTheme>,
-    Option<native_theme::theme::ResolvedTheme>,
 ) {
     read(cx, showcase, |_this, cx| {
         (
             crate::support::next_resolved(cx).cloned(),
             crate::support::next_inactive(cx).cloned(),
-            crate::support::old_resolved(cx).cloned(),
         )
     })
 }
 
+/// The Widget Info row of `home` for the element `id` under the installed
+/// 0.8.0 theme, as the panel lists it: its text and its swatch's colour;
+/// `None` where no theme is installed or the element lists no such home.
+fn listed_row(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    id: &str,
+    home: &str,
+) -> Option<(String, Option<native_theme::next::Color>)> {
+    read(cx, showcase, |_this, cx| {
+        let look = crate::inspector::PanelLook::of(cx)?;
+        let element = crate::elements::element(id)?;
+        crate::inspector::listed(&look, element, &WidgetInfo::default())
+            .rows
+            .into_iter()
+            .find(|row| row.leaf == home)
+            .map(|row| (row.value, row.colour))
+    })
+}
+
 /// A preset installs as a 0.8.0 theme, with its inactive-window resolve
-/// and its 0.7.2 theme beside it; a palette laid over it renames and
-/// recolours the 0.8.0 theme and locks the mode to the palette's scheme,
-/// while the 0.7.2 theme is the preset alone in that scheme; `none` puts
-/// the preset's own colours and the mode chosen back.
+/// beside it; a palette laid over it renames and recolours the 0.8.0 theme
+/// and locks the mode to the palette's scheme, and Widget Info's
+/// `window.frame(normal).fill` row of the window (`chrome.window`) shows the
+/// palette's window colour, not the preset's; `none` puts the preset's own
+/// colours and the mode chosen back.
 #[gpui::test]
 fn a_palette_is_laid_over_the_preset_in_the_08_model_only(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -25532,30 +25531,49 @@ fn a_palette_is_laid_over_the_preset_in_the_08_model_only(cx: &mut TestAppContex
     cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(AppColorMode::Light)), cx));
     cx.run_until_parked();
     draw(&mut cx);
-    let (next, inactive, old) = installed_models(&mut cx, &showcase);
-    let next = next.expect("kde-breeze installed no 0.8.0 theme");
-    let inactive = inactive.expect("kde-breeze kept no inactive-window resolve");
+    let (next, inactive) = installed_models(&mut cx, &showcase);
     assert!(
-        old.is_some(),
-        "kde-breeze kept no 0.7.2 theme for the pages"
+        next.is_some() && inactive.is_some(),
+        "kde-breeze installed no 0.8.0 theme or kept no inactive-window resolve"
     );
+    let (Some(next), Some(inactive)) = (next, inactive) else {
+        return;
+    };
     assert_eq!(next.name.as_ref(), "KDE Breeze");
     assert!(!next.is_dark(), "kde-breeze in Light resolved dark");
     assert!(next.context.window_active && !inactive.context.window_active);
     assert_eq!(inactive.name, next.name);
+    let frame = "window.frame(normal).fill";
+    let preset_row = listed_row(&mut cx, &showcase, "chrome.window", frame);
 
-    let dracula = native_theme::next::Palette::from_name("dracula").expect("dracula is bundled");
+    let dracula = native_theme::next::Palette::from_name("dracula");
+    assert!(dracula.is_some(), "dracula is not bundled");
+    let Some(dracula) = dracula else {
+        return;
+    };
     assert!(
         dracula.scheme == native_theme::next::Scheme::Dark,
         "dracula is not dark, so locking Light to it proves nothing"
+    );
+    assert!(
+        preset_row
+            .as_ref()
+            .is_some_and(|(_, colour)| *colour != Some(dracula.window_bg)),
+        "kde-breeze light's {frame} row already shows dracula's window colour: {preset_row:?}"
     );
     cx.update(|window, cx| {
         showcase.update(cx, |this, cx| this.choose_palette("dracula", window, cx))
     });
     cx.run_until_parked();
     draw(&mut cx);
-    let (next, _, old) = installed_models(&mut cx, &showcase);
-    let next = next.expect("kde-breeze with dracula installed no 0.8.0 theme");
+    let (next, _) = installed_models(&mut cx, &showcase);
+    assert!(
+        next.is_some(),
+        "kde-breeze with dracula installed no 0.8.0 theme"
+    );
+    let Some(next) = next else {
+        return;
+    };
     assert_eq!(next.name, dracula.name);
     assert!(next.is_dark(), "dracula did not lock the scheme to its own");
     let window_bg = read(&mut cx, &showcase, |_this, cx| {
@@ -25566,13 +25584,12 @@ fn a_palette_is_laid_over_the_preset_in_the_08_model_only(cx: &mut TestAppContex
         Some(Some(dracula.window_bg)),
         "the installed 0.8.0 theme's window background is not dracula's"
     );
-    let preset_dark = native_theme::theme::Theme::preset("kde-breeze")
-        .and_then(|nt| nt.resolve(native_theme_gpui::ColorMode::Dark))
-        .expect("kde-breeze resolves dark")
-        .variant;
+    let palette_row = listed_row(&mut cx, &showcase, "chrome.window", frame);
     assert!(
-        old.as_ref() == Some(&preset_dark),
-        "under a palette the 0.7.2 theme is not the preset alone in the palette's scheme"
+        palette_row
+            .as_ref()
+            .is_some_and(|(_, colour)| *colour == Some(dracula.window_bg)),
+        "under dracula the {frame} row does not show dracula's window colour: {palette_row:?}"
     );
     let (is_dark, status) = read(&mut cx, &showcase, |this, cx| {
         (
@@ -25600,10 +25617,17 @@ fn a_palette_is_laid_over_the_preset_in_the_08_model_only(cx: &mut TestAppContex
     });
     cx.run_until_parked();
     draw(&mut cx);
-    let (next, _, _) = installed_models(&mut cx, &showcase);
-    let next = next.expect("kde-breeze without a palette installed no 0.8.0 theme");
-    assert_eq!(next.name.as_ref(), "KDE Breeze");
-    assert!(!next.is_dark(), "`none` did not put the mode chosen back");
+    let (next, _) = installed_models(&mut cx, &showcase);
+    assert!(
+        next.as_ref()
+            .is_some_and(|next| next.name.as_ref() == "KDE Breeze"),
+        "kde-breeze without a palette installed no 0.8.0 theme named KDE Breeze: {:?}",
+        next.as_ref().map(|next| &next.name)
+    );
+    assert!(
+        next.is_some_and(|next| !next.is_dark()),
+        "`none` did not put the mode chosen back"
+    );
 }
 
 /// A preference changed in the Preferences sheet resolves the 0.8.0 theme
@@ -25612,9 +25636,11 @@ fn a_palette_is_laid_over_the_preset_in_the_08_model_only(cx: &mut TestAppContex
 fn a_preference_resolves_the_08_theme_again(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     set_preset(&mut cx, &showcase, "kde-breeze");
-    let before = installed_models(&mut cx, &showcase)
-        .0
-        .expect("kde-breeze installed no 0.8.0 theme");
+    let before = installed_models(&mut cx, &showcase).0;
+    assert!(before.is_some(), "kde-breeze installed no 0.8.0 theme");
+    let Some(before) = before else {
+        return;
+    };
     assert!(
         (before.context.text_scale - 1.5).abs() > f32::EPSILON,
         "the text scale is 1.5 already, so setting it proves nothing"
@@ -25627,7 +25653,7 @@ fn a_preference_resolves_the_08_theme_again(cx: &mut TestAppContext) {
     });
     cx.run_until_parked();
     draw(&mut cx);
-    let (next, inactive, _) = installed_models(&mut cx, &showcase);
+    let (next, inactive) = installed_models(&mut cx, &showcase);
     assert_eq!(next.map(|r| r.context.text_scale), Some(1.5));
     assert_eq!(inactive.map(|r| r.context.text_scale), Some(1.5));
     assert_eq!(
