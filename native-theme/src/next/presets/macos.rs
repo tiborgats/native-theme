@@ -243,6 +243,12 @@ struct SchemeColors {
     selection_inactive_foreground: Color,
     text_selection_background: Color,
     text_selection_foreground: Color,
+    /// `unemphasizedSelectedTextBackgroundColor`: the text selection where
+    /// the view lacks the focus.
+    text_selection_inactive_background: Color,
+    /// `unemphasizedSelectedTextColor`: the selected text where the view
+    /// lacks the focus.
+    text_selection_inactive_foreground: Color,
     disabled_text: Color,
     focus_ring: Color,
     error: Color,
@@ -383,6 +389,11 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     text_selection_background: srgb8(0xb3d7_ffff),
     // `defaults.text_selection_color`: 0.7.2 macos-monterey.toml (uncited)
     text_selection_foreground: srgb8(0x0000_00ff),
+    // `text_selection.unfocused_background` and `unfocused_foreground`: the named system colours
+    // unemphasizedSelectedTextBackgroundColor and unemphasizedSelectedTextColor, probe (os-probe
+    // run 42215651196, macOS 15, `[macos.colors.aqua]`; 0.7.2 states neither)
+    text_selection_inactive_background: srgb8(0xdcdc_dcff),
+    text_selection_inactive_foreground: srgb8(0x0000_00ff),
     // `defaults.disabled_text_color`: platform-facts.md: disabledControlTextColor, probe; over
     // background_color #b2b2b2
     disabled_text: srgb8(0x0000_003f),
@@ -628,6 +639,11 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     text_selection_background: srgb8(0x3f63_8bff),
     // `defaults.text_selection_color`: 0.7.2 macos-monterey.toml (uncited)
     text_selection_foreground: srgb8(0xffff_ffff),
+    // `text_selection.unfocused_background` and `unfocused_foreground`: the named system colours
+    // unemphasizedSelectedTextBackgroundColor and unemphasizedSelectedTextColor, probe (os-probe
+    // run 42215651196, macOS 15, `[macos.colors.darkAqua]`; 0.7.2 states neither)
+    text_selection_inactive_background: srgb8(0x4646_46ff),
+    text_selection_inactive_foreground: srgb8(0xffff_ffff),
     // `defaults.disabled_text_color`: platform-facts.md: disabledControlTextColor, probe; over
     // background_color #656565
     disabled_text: srgb8(0xffff_ff3f),
@@ -875,6 +891,11 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     text_selection_background: srgb8(0xb3d7_ffff),
     // `defaults.text_selection_color`: 0.7.2 macos-tahoe.toml (uncited)
     text_selection_foreground: srgb8(0x0000_00ff),
+    // `text_selection.unfocused_background` and `unfocused_foreground`: the named system colours
+    // unemphasizedSelectedTextBackgroundColor and unemphasizedSelectedTextColor, probe (os-probe
+    // run 41195846264, macOS 26, `[macos.colors.aqua]`; 0.7.2 states neither)
+    text_selection_inactive_background: srgb8(0xdcdc_dcff),
+    text_selection_inactive_foreground: srgb8(0x0000_00ff),
     // `defaults.disabled_text_color`: platform-facts.md: disabledControlTextColor, probe; over
     // background_color #c0c0c0
     disabled_text: srgb8(0x0000_003f),
@@ -1112,6 +1133,11 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     text_selection_background: srgb8(0x3f63_8bff),
     // `defaults.text_selection_color`: 0.7.2 macos-tahoe.toml (uncited)
     text_selection_foreground: srgb8(0xffff_ffff),
+    // `text_selection.unfocused_background` and `unfocused_foreground`: the named system colours
+    // unemphasizedSelectedTextBackgroundColor and unemphasizedSelectedTextColor, probe (os-probe
+    // run 41195846264, macOS 26, `[macos.colors.darkAqua]`; 0.7.2 states neither)
+    text_selection_inactive_background: srgb8(0x4646_46ff),
+    text_selection_inactive_foreground: srgb8(0xffff_ffff),
     // `defaults.disabled_text_color`: platform-facts.md: disabledControlTextColor, probe; over
     // background_color #565656
     disabled_text: srgb8(0xffff_ff3f),
@@ -2391,8 +2417,8 @@ fn roles(c: &SchemeColors, g: &Generation, palette: Option<&Palette>) -> ColorRo
         text_selection: SelectionColors::new(
             c.text_selection_background,
             c.text_selection_foreground,
-            None,
-            None,
+            Some(c.text_selection_inactive_background),
+            Some(c.text_selection_inactive_foreground),
         ),
         find_highlight: None,
         scrim: None,

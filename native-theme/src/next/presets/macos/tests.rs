@@ -631,8 +631,12 @@ fn an_explicit_accent_is_written_as_given() {
         let mut want = plain.colors.clone();
         want.accent.fill = accent;
         want.selection.background = accent;
-        want.text_selection =
-            SelectionColors::new(accent, plain.colors.selection.foreground, None, None);
+        want.text_selection = SelectionColors::new(
+            accent,
+            plain.colors.selection.foreground,
+            plain.colors.text_selection.unfocused_background,
+            plain.colors.text_selection.unfocused_foreground,
+        );
         want.focus_ring = ring(accent);
         want.caret = accent;
         assert_eq!(theme.colors, want, "{preset:?} {scheme:?}");
@@ -797,7 +801,12 @@ fn a_palette_states_its_roles() {
         );
         assert_eq!(
             colors.text_selection,
-            SelectionColors::new(p.selection_bg, p.selection_fg, None, None)
+            SelectionColors::new(
+                p.selection_bg,
+                p.selection_fg,
+                Some(c.text_selection_inactive_background),
+                Some(c.text_selection_inactive_foreground)
+            )
         );
         assert_eq!(colors.focus_ring, ring(p.accent), "{preset:?} {scheme:?}");
         assert_eq!(colors.caret, p.caret);
@@ -1011,7 +1020,12 @@ fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
         );
         assert_eq!(
             colors.text_selection,
-            SelectionColors::new(accent, c.selection_foreground, None, None)
+            SelectionColors::new(
+                accent,
+                c.selection_foreground,
+                Some(c.text_selection_inactive_background),
+                Some(c.text_selection_inactive_foreground)
+            )
         );
         assert_eq!(colors.focus_ring, ring(accent), "{preset:?} {scheme:?}");
         assert_eq!(colors.caret, p.caret);

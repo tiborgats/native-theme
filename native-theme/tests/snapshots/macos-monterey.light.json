@@ -86,8 +86,8 @@
     "text_selection": {
       "background": "#b3d7ff",
       "foreground": "#000000",
-      "unfocused_background": null,
-      "unfocused_foreground": null
+      "unfocused_background": "#dcdcdc",
+      "unfocused_foreground": "#000000"
     },
     "find_highlight": null,
     "scrim": null,
