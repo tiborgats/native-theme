@@ -426,11 +426,37 @@ struct Gaps {
 
 impl Gaps {
     fn from_layout(layout: &LayoutTheme) -> Self {
+        Self::stated(
+            layout.widget_gap,
+            layout.container_margin,
+            layout.window_margin,
+            layout.section_gap,
+        )
+    }
+
+    /// [`Gaps::from_layout`] of the installed 0.8.0 theme's
+    /// `layout`, the same four distances (`LayoutMetrics`).
+    fn from_next(layout: &native_theme::next::LayoutMetrics) -> Self {
+        Self::stated(
+            layout.widget_gap,
+            layout.container_margin,
+            layout.window_margin,
+            layout.section_gap,
+        )
+    }
+
+    /// The four distances, none drawn for one the theme leaves unstated.
+    fn stated(
+        widget: Option<f32>,
+        container: Option<f32>,
+        window: Option<f32>,
+        section: Option<f32>,
+    ) -> Self {
         Self {
-            widget: layout.widget_gap.unwrap_or(0.0),
-            container: layout.container_margin.unwrap_or(0.0),
-            window: layout.window_margin.unwrap_or_default(),
-            section: layout.section_gap.unwrap_or(0.0),
+            widget: widget.unwrap_or_default(),
+            container: container.unwrap_or_default(),
+            window: window.unwrap_or_default(),
+            section: section.unwrap_or_default(),
         }
     }
 }
@@ -3689,11 +3715,12 @@ fn view(state: &State) -> Element<'_, Message> {
 
 /// The content panel (spec S3): the page tab row at its top, under it the
 /// theme-error banner where a theme failed to load, then the page, which
-/// scrolls, inside `layout.window_margin` of the 0.7.2 theme the pages still
-/// read (none where that is unstated).
+/// scrolls, inside the installed 0.8.0 theme's `layout.window_margin`
+/// (a container's own padding, none, where that is unstated), its scroll bar
+/// `iced_next::styles::scrollbar` in `iced_next::styles::scrollable`.
 fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'_, Message> {
     let r = state.next_shown();
-    let window = Padding::from(Gaps::from_layout(&state.layout).window);
+    let window = r.layout.window_margin.map_or(Padding::ZERO, Padding::from);
     let tab_content: Element<'_, Message> = match state.active_tab {
         Tab::Basic => view_basic(state),
         Tab::Buttons => view_buttons(state, btn_pad),
@@ -3729,14 +3756,17 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
             .width(Fill),
         );
     }
-    // The page's margin and scroll bar are the 0.7.2 theme's, which the
-    // pages still on it lay their columns out against (`basic_column_count`).
-    let resolved = &state.current_resolved;
+    // The Basic page lays its columns out against this margin and bar
+    // (`basic_column_count`).
     panel
         .push(
             scrollable(container(tab_content).padding(window).width(Fill))
-                .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-                .style(styles::scrollable(resolved))
+                .direction(scrollable::Direction::Vertical(
+                    iced_next::styles::scrollbar(r),
+                ))
+                .next_style(iced_next::styles::scrollable(r), |bar, style| {
+                    bar.style(style)
+                })
                 .height(Fill),
         )
         .into()
@@ -6043,6 +6073,26 @@ fn bar_width_route(stated: bool, home: &str, setter: &str) -> String {
     } else {
         format!(
             "not drawn: {home} is unstated; the bar keeps iced's own {setter}, \
+             {ICED_SCROLLBAR_WIDTH} px (next_bar_widths)"
+        )
+    }
+}
+
+/// The route of the page's scrollbar's groove width under `r`, the
+/// installed 0.8.0 theme ([`content_panel`]): the home
+/// `iced_next::styles::scrollbar` reads and the room [`basic_column_count`]
+/// keeps for it, or that it is unstated and iced's own width is drawn.
+fn page_bar_width_route(r: &native_theme::next::ResolvedTheme) -> String {
+    let home = "scrollbar.track(NONE; orientation=Vertical).min_size[0]";
+    let vertical = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Vertical);
+    if r.scrollbar.track(vertical).min_size[0].is_some() {
+        format!(
+            "iced_next::styles::scrollbar: Scrollbar::width, {home}; basic_column_count: the \
+             room a bar beside the page takes"
+        )
+    } else {
+        format!(
+            "not drawn: {home} is unstated; the bar keeps iced's own Scrollbar::width, \
              {ICED_SCROLLBAR_WIDTH} px (next_bar_widths)"
         )
     }
@@ -10948,6 +10998,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("combo_box", "min_height_px") => {
             "control_line_height: the line box that fills it inside combo_box_padding".into()
         }
+        ("combo_box", "min_width_px") if id == "basic.page" => {
+            "basic_widest: a column at least as wide as the drop-down, next_drop_down_width \
+             (combo_box.field(NONE).min_size[0] where stated)"
+                .into()
+        }
         ("combo_box", "min_width_px") => {
             "not reachable: PickList takes a width, not a minimum; the page's own width".into()
         }
@@ -11485,8 +11540,10 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("scrollbar", f @ ("groove_width_px" | "thumb_width_px")) if under("basic.list.") => {
             list_bar_width_route(state.next_shown(), f == "thumb_width_px").into()
         }
-        ("scrollbar", "groove_width_px") => "styles::scrollbar: Scrollbar::width".into(),
-        ("scrollbar", "thumb_width_px") => "styles::scrollbar: Scrollbar::scroller_width".into(),
+        ("scrollbar", "groove_width_px") => page_bar_width_route(state.next_shown()).into(),
+        ("scrollbar", "thumb_width_px") => {
+            "iced_next::styles::scrollbar: Scrollbar::scroller_width".into()
+        }
         ("scrollbar", "min_thumb_length_px") => {
             "not reachable: iced's scroller has no minimum length setter".into()
         }
@@ -11499,8 +11556,10 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("scrollbar", "overlay_mode") => {
-            "styles::scrollbar: no spacing beside the content; styles::scrollable: a floating \
-             bar transparent at rest and shown under the pointer, iced having no reveal on scroll"
+            "iced_next::styles::scrollbar: no spacing beside the content, \
+             scrollbar.overlay_mode; iced_next::styles::scrollable: a floating bar transparent \
+             at rest and shown under the pointer, iced having no reveal on scroll; \
+             basic_column_count: the room a bar beside the page takes"
                 .into()
         }
         // ---- expander ----
@@ -13228,65 +13287,61 @@ fn basic_segmented_width(state: &State) -> f32 {
     }
 }
 
-/// The widest fixed-width control the theme states on the Basic page:
-/// `combo_box.min_width`, the two tabs, `tabs` wide together
-/// ([`basic_tabs_width`], their labels fitted, never below
-/// `tab.min_width`), `tab.item_gap` apart with the room for the open tab's
-/// flares at both ends (`2 * tab.active_outward_corner_radius`,
-/// [`flare_room`]), `BASIC_WIDE` and `BASIC_WIDTH`.
-fn basic_widest(resolved: &ResolvedTheme, tabs: f32) -> f32 {
-    let t = &resolved.tab;
-    let room = flare_room(resolved);
-    let tabs = tabs + t.item_gap.unwrap_or_default() + room + room;
-    resolved
-        .combo_box
-        .min_width
+/// The widest fixed-width control the installed 0.8.0 theme `r` states on
+/// the Basic page: the drop-down ([`next_drop_down_width`]), the two tabs,
+/// `tabs` wide together ([`basic_tabs_width`], their labels fitted, never
+/// below their least width), `tab.item_gap` apart ([`next_tab_gap`]) with
+/// the room for the open tab's flares at both ends
+/// (`2 * tab.active_outward_corner_radius`, [`next_flare_room`]),
+/// `BASIC_WIDE` and `BASIC_WIDTH`.
+fn basic_widest(r: &native_theme::next::ResolvedTheme, tabs: f32) -> f32 {
+    let room = next_flare_room(r);
+    let tabs = tabs + next_tab_gap(r) + room + room;
+    next_drop_down_width(r)
         .max(tabs)
         .max(BASIC_WIDE)
         .max(BASIC_WIDTH)
 }
 
-/// How many columns the Basic page lays its groups out in, from the theme
-/// alone, as the gpui and egui pages count them: the most, of five down to
-/// one, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds
-/// [`basic_widest`] -- where `page` is `content_width`
-/// less `layout.window_margin` on both sides and, where
-/// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
-/// scrolling page keeps free. The column also holds `segmented`, the
-/// Segmented control's own width ([`basic_segmented_width`]), whose segments
-/// stay on one row: the control may reach into the section gap after its
-/// column, but keeps `layout.widget_gap`, the gap the page's rows keep
-/// between neighbouring widgets (Button and Primary), from the next column's
-/// left edge (M9-166); in the last column it may reach into the page's right
-/// margin, `layout.window_margin`, keeping `layout.widget_gap` from the
-/// scroll area's edge or its scroll bar: where `scrollbar.overlay_mode` is
-/// true the bar floats over that margin, its `scrollbar.groove_width` taken
-/// off the room. One where not even one does: the
-/// page is then wider than its area.
+/// How many columns the Basic page lays its groups out in, from the
+/// installed 0.8.0 theme `r` alone, as the gpui and egui pages count them:
+/// the most, of five down to one, whose width,
+/// `(page - (n - 1) * layout.section_gap) / n`, holds [`basic_widest`] --
+/// where `page` is `content_width` less `layout.window_margin` on both sides
+/// ([`Gaps::from_next`], as [`content_panel`] and [`view_basic`] lay them
+/// out) and, where `scrollbar.overlay_mode` is false, the groove a scrolling
+/// page keeps free, `scrollbar.track(NONE; orientation=Vertical).min_size[0]`
+/// ([`next_bar_widths`], iced's own where unstated, as
+/// `iced_next::styles::scrollbar` leaves it). The column also holds
+/// `segmented`, the Segmented control's own width ([`basic_segmented_width`]),
+/// whose segments stay on one row: the control may reach into the section
+/// gap after its column, but keeps `layout.widget_gap`, the gap the page's
+/// rows keep between neighbouring widgets (Button and Primary), from the
+/// next column's left edge (M9-166); in the last column it may reach into
+/// the page's right margin, `layout.window_margin`, keeping
+/// `layout.widget_gap` from the scroll area's edge or its scroll bar: where
+/// `scrollbar.overlay_mode` is true the bar floats over that margin, its
+/// groove taken off the room. One where not even one does: the page is then
+/// wider than its area.
 fn basic_column_count(
-    resolved: &ResolvedTheme,
-    layout: &LayoutTheme,
+    r: &native_theme::next::ResolvedTheme,
     tabs: f32,
     segmented: f32,
     content_width: f32,
 ) -> usize {
-    let margin = layout.window_margin.unwrap_or_default();
-    let gap = layout.section_gap.unwrap_or_default();
-    let bar = &resolved.scrollbar;
-    let gutter = if bar.overlay_mode {
-        0.0
-    } else {
-        bar.groove_width
-    };
+    let Gaps {
+        widget: widget_gap,
+        window: margin,
+        section: gap,
+        ..
+    } = Gaps::from_next(&r.layout);
+    let (groove, _) = next_bar_widths(r);
+    let floats = r.scrollbar.overlay_mode;
+    let gutter = if floats { 0.0 } else { groove };
     // a floating bar takes no width of the page, and is drawn over its right margin
-    let overlay = if bar.overlay_mode {
-        bar.groove_width
-    } else {
-        0.0
-    };
+    let overlay = if floats { groove } else { 0.0 };
     let page = content_width - margin - margin - gutter;
-    let widest = basic_widest(resolved, tabs);
-    let widget_gap = layout.widget_gap.unwrap_or_default();
+    let widest = basic_widest(r, tabs);
     (BASIC_MIN_COLUMNS..=BASIC_MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -13775,9 +13830,9 @@ fn next_expander_arrow_size(r: &native_theme::next::ResolvedTheme) -> f32 {
 /// leaves. The tab bar is `iced_aw`'s; without the `iced_aw` feature it is
 /// the page tab strip's tabs ([`tab_button`]).
 fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
-    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
     // A group: its heading, tagged `<group>.heading`, in the section title
     // of the installed 0.8.0 theme ([`next_section_title`]), over its
     // controls, each of which carries its own tags.
@@ -15061,8 +15116,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     .map(Some)
     .collect();
     let count = basic_column_count(
-        resolved,
-        &state.layout,
+        next,
         basic_tabs_width(state),
         basic_segmented_width(state),
         content_width(state),
@@ -29842,8 +29896,7 @@ mod tests {
             assert!(loaded.is_ok(), "{preset}: {loaded:?}");
             assert_eq!(
                 basic_column_count(
-                    &state.current_resolved,
-                    &state.layout,
+                    state.next_shown(),
                     basic_tabs_width(&state),
                     basic_segmented_width(&state),
                     content
@@ -29884,8 +29937,7 @@ mod tests {
     fn the_basic_page_has_every_group_in_its_column() {
         let state = State::default();
         let count = basic_column_count(
-            &state.current_resolved,
-            &state.layout,
+            state.next_shown(),
             basic_tabs_width(&state),
             basic_segmented_width(&state),
             content_width(&state),
@@ -32462,8 +32514,8 @@ mod tests {
                 let mut state = loaded(preset, false);
                 state.active_tab = Tab::Basic;
                 let _ = update(&mut state, Message::TextScaleSelected(TextScale(scale)));
-                let gap = state.layout.widget_gap.unwrap_or_default();
-                let margin = state.layout.window_margin.unwrap_or_default();
+                let gap = state.next_shown().layout.widget_gap.unwrap_or_default();
+                let margin = state.next_shown().layout.window_margin.unwrap_or_default();
                 // The window at its size, surveyed as the layout dump surveys
                 // it (`Tagged::operate`), so a group scrolled out of view is
                 // found where the page lays it out, and the page's scroll bar
@@ -32511,11 +32563,10 @@ mod tests {
                          layout.widget_gap {gap} of the next column at {next}"
                     ));
                 }
-                // A floating bar is drawn over the right margin, its stated
-                // groove wide.
-                let bar = &state.current_resolved.scrollbar;
-                let floating = if bar.overlay_mode {
-                    bar.groove_width
+                // A floating bar is drawn over the right margin, its groove
+                // wide.
+                let floating = if state.next_shown().scrollbar.overlay_mode {
+                    next_bar_widths(state.next_shown()).0
                 } else {
                     0.0
                 };
@@ -33105,17 +33156,17 @@ mod tests {
     #[test]
     fn the_basic_page_makes_room_for_both_flares() {
         let state = curving_out(None);
-        let layout = &state.layout;
+        let next = state.next_shown();
+        let layout = &next.layout;
         let margin = layout.window_margin.unwrap_or_default();
         let gap = layout.section_gap.unwrap_or_default();
-        let bar = &state.current_resolved.scrollbar;
-        let gutter = if bar.overlay_mode {
+        let gutter = if next.scrollbar.overlay_mode {
             0.0
         } else {
-            bar.groove_width
+            next_bar_widths(next).0
         };
         let tabs = basic_tabs_width(&state);
-        assert_eq!(basic_widest(&state.current_resolved, tabs), 200.0);
+        assert_eq!(basic_widest(next, tabs), 200.0);
         let content = 5.0 * 204.0 + 4.0 * gap + margin + margin + gutter;
         for (radius, columns) in [
             (None, 5),
@@ -33124,13 +33175,95 @@ mod tests {
             (Some(-1.0), 5),
             (Some(f32::NAN), 5),
         ] {
-            let mut r = state.current_resolved.clone();
+            let mut r = next.clone();
             r.tab.active_outward_corner_radius = radius;
             assert_eq!(
-                basic_column_count(&r, layout, tabs, 0.0, content),
+                basic_column_count(&r, tabs, 0.0, content),
                 columns,
                 "radius {radius:?}"
             );
+        }
+    }
+
+    /// The Basic page's margin, its columns' gap and count and the room its
+    /// scroll bar takes follow the installed 0.8.0 theme alone
+    /// ([`content_panel`], [`basic_column_count`], [`basic_widest`]):
+    /// kde-breeze with, on the 0.8.0 theme only, a 31 px window margin, a
+    /// 17 px section gap, a 14 px groove beside the page and a drop-down at
+    /// least 300 wide lays out the three columns the rule counts from them
+    /// (kde-breeze's own five fit no more), the page 31 px in from the
+    /// content panel's left edge and `2 * 31 + 14` narrower than it, its
+    /// columns 17 px apart.
+    #[test]
+    fn the_basic_page_lays_its_columns_out_on_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.scrollbar.rules]]\ntrack.min_size = [14.0, \"none\"]\n\
+             [[widgets.combo_box.rules]]\nfield.min_size = [300.0, \"none\"]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.scrollbar.overlay_mode = false;
+            r.layout.window_margin = Some(31.0);
+            r.layout.section_gap = Some(17.0);
+        });
+        let old = &state.current_resolved;
+        if state.layout.window_margin == Some(31.0)
+            || state.layout.section_gap == Some(17.0)
+            || old.scrollbar.groove_width == 14.0
+            || old.combo_box.min_width >= 300.0
+        {
+            return Err("the splice states 0.7.2's distances".into());
+        }
+        let count = basic_column_count(
+            state.next_shown(),
+            basic_tabs_width(&state),
+            basic_segmented_width(&state),
+            content_width(&state),
+        );
+        if count != 3 {
+            return Err(format!("the rule counts {count} columns, not 3"));
+        }
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let laid = recording(|| {
+            let iced_theme = super::theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    faults.push(format!("the interface did not draw: {error}"));
+                }
+            }
+            drawn_layout()
+        });
+        let columns: Vec<Rectangle> = BASIC_COLUMN_IDS
+            .iter()
+            .filter_map(|id| laid.get(id).copied())
+            .collect();
+        if columns.len() != count {
+            faults.push(format!("{} columns laid out, not {count}", columns.len()));
+        }
+        for pair in columns.windows(2) {
+            if let [left, right] = pair
+                && !near(right.x - (left.x + left.width), 17.0)
+            {
+                faults.push(format!(
+                    "columns {left:?} and {right:?} are not 17 px apart"
+                ));
+            }
+        }
+        match (laid.get("chrome.content"), laid.get("basic.page")) {
+            (Some(content), Some(page))
+                if near(page.x - content.x, 31.0)
+                    && near(content.width - page.width, 2.0 * 31.0 + 14.0) => {}
+            pair => faults.push(format!("the content panel and the page: {pair:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
         }
     }
 
@@ -34198,20 +34331,16 @@ mod tests {
             panic!("the Basic tabs are not drawn");
         };
         let row = (two.x + two.width) - one.x;
-        let others = state
-            .current_resolved
-            .combo_box
-            .min_width
-            .max(BASIC_WIDE)
-            .max(BASIC_WIDTH);
+        let next = state.next_shown();
+        let others = next_drop_down_width(next).max(BASIC_WIDE).max(BASIC_WIDTH);
         assert!(
             row > (2.0 * t.min_width + t.item_gap.unwrap_or_default()).max(others) + 0.01,
             "the tab row is {row}px, no wider than two tab.min_width ({}) or the page's other \
              widest control ({others}): the case is not met",
             t.min_width
         );
-        let room = flare_room(&state.current_resolved);
-        let widest = basic_widest(&state.current_resolved, basic_tabs_width(&state));
+        let room = next_flare_room(next);
+        let widest = basic_widest(next, basic_tabs_width(&state));
         assert!(
             widest + 0.01 >= row + room + room,
             "the column rule counts {widest}px, the tab row is {row}px and its flares' room {}px",
@@ -37748,8 +37877,7 @@ mod tests {
                             .filter(|id| id.starts_with("basic.column_"))
                             .count();
                         let count = basic_column_count(
-                            &state.current_resolved,
-                            &state.layout,
+                            state.next_shown(),
                             basic_tabs_width(&state),
                             basic_segmented_width(&state),
                             content_width(&state),
@@ -37807,8 +37935,7 @@ mod tests {
                         }
                         // The columns the count chose hold the widest control it
                         // counted with: a column narrower squeezes that control.
-                        let widest =
-                            basic_widest(&state.current_resolved, basic_tabs_width(&state));
+                        let widest = basic_widest(state.next_shown(), basic_tabs_width(&state));
                         for (id, r) in laid
                             .iter()
                             .filter(|(id, _)| id.starts_with("basic.column_"))
