@@ -2692,3 +2692,243 @@ fn a_scrollable_keeps_iceds_own_per_property() -> TestResult {
     }
     Ok(())
 }
+
+/// The segmented control keeps iced's own look per property (spec §10,
+/// rule 0), the group iced's own container's and a segment iced's own
+/// button's (`button::Style::default()`): with the group fill unstated, no
+/// fill and the theme's label; with the outline unstated, iced's own border
+/// and the theme's fill; with an unselected segment's label unstated,
+/// iced's own and the selected one's as stated; with the selected
+/// segment's fill or label unstated, iced's own and the other as stated.
+#[test]
+fn a_segmented_control_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{
+        PartOutline, SegmentPosition, SegmentedSource, segment_from, segmented_control_from,
+    };
+    use iced_widget::button::Status;
+    let group = iced_container();
+    let own = iced_widget::button::Style::default();
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let source = super::segmented_source(&r)?;
+        let control = |s: &SegmentedSource| segmented_control_from(s, false)(&theme);
+        let segment = |s: &SegmentedSource, selected: bool| {
+            segment_from(s, selected, SegmentPosition::Middle)(&theme, Status::Active)
+        };
+        let stated = control(&source);
+        let (stated_off, stated_on) = (segment(&source, false), segment(&source, true));
+
+        let s = SegmentedSource {
+            background: None,
+            ..source
+        };
+        assert_eq!(control(&s).background, group.background, "{preset:?} fill");
+        assert_eq!(
+            control(&s).text_color,
+            stated.text_color,
+            "{preset:?} label"
+        );
+
+        let s = SegmentedSource {
+            border: PartOutline {
+                stroke: None,
+                radius: None,
+            },
+            ..source
+        };
+        assert_eq!(control(&s).border, group.border, "{preset:?} border");
+        assert_eq!(control(&s).background, stated.background, "{preset:?} fill");
+
+        let s = SegmentedSource {
+            label: None,
+            ..source
+        };
+        assert_eq!(control(&s).text_color, group.text_color, "{preset:?} label");
+        assert_eq!(
+            segment(&s, false).text_color,
+            own.text_color,
+            "{preset:?} segment label"
+        );
+        assert_eq!(
+            segment(&s, true).text_color,
+            stated_on.text_color,
+            "{preset:?} selected label"
+        );
+
+        let s = SegmentedSource {
+            active_background: None,
+            ..source
+        };
+        assert_eq!(
+            segment(&s, true).background,
+            own.background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            segment(&s, true).text_color,
+            stated_on.text_color,
+            "{preset:?} selected label"
+        );
+
+        let s = SegmentedSource {
+            active_text_color: None,
+            ..source
+        };
+        assert_eq!(
+            segment(&s, true).text_color,
+            own.text_color,
+            "{preset:?} selected label"
+        );
+        assert_eq!(
+            segment(&s, true).background,
+            stated_on.background,
+            "{preset:?} selected fill"
+        );
+        assert_eq!(
+            segment(&s, false).text_color,
+            stated_off.text_color,
+            "{preset:?} segment label"
+        );
+    }
+    Ok(())
+}
+
+/// The expander keeps iced's own look per property (spec §10, rule 0):
+/// with the header's label unstated, iced's own header's
+/// (`button::Style::default()`), at rest and disabled, and the frame's
+/// outline as stated; with the frame's stroke and corners unstated, iced's
+/// own container's border and the header's label as stated.
+#[test]
+fn an_expander_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{ExpanderSource, PartOutline, expander_frame_from, expander_from};
+    use iced_widget::button::Status;
+    let own = iced_widget::button::Style::default();
+    let unlined = PartOutline {
+        stroke: None,
+        radius: None,
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let x = ExpanderSource {
+            frame_enabled: Some(true),
+            ..super::expander_source(&r)?
+        };
+        let stated_frame = expander_frame_from(&x)(&theme);
+
+        let s = ExpanderSource { label: None, ..x };
+        for status in [Status::Active, Status::Disabled] {
+            assert_eq!(
+                expander_from(&s)(&theme, status).text_color,
+                own.text_color,
+                "{preset:?} {status:?} label"
+            );
+        }
+        assert_eq!(
+            expander_frame_from(&s)(&theme).border,
+            stated_frame.border,
+            "{preset:?} frame"
+        );
+
+        let s = ExpanderSource {
+            border: unlined,
+            ..x
+        };
+        assert_eq!(
+            expander_frame_from(&s)(&theme).border,
+            iced_container().border,
+            "{preset:?} frame"
+        );
+        assert_eq!(
+            expander_from(&s)(&theme, Status::Active).text_color,
+            expander_from(&x)(&theme, Status::Active).text_color,
+            "{preset:?} label"
+        );
+    }
+    Ok(())
+}
+
+/// The pane grid keeps iced's own split per property (spec §10, rule 0):
+/// with the hovered handle's fill unstated, iced's own hovered and picked
+/// split colours at the theme's divider width; with it stated, that fill
+/// at the same width; the drop region iced's own either way.
+#[test]
+fn a_pane_grid_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::pane_grid_from;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let own = iced_widget::pane_grid::default(&theme);
+        let width = r.splitter.divider_width;
+        let handle = r.splitter.handle(WidgetState::HOVER);
+        let grid = super::pane_grid(&r)?(&theme);
+        let expected = super::fill_of(&handle);
+        assert_eq!(
+            grid.hovered_split.color,
+            expected.unwrap_or(own.hovered_split.color),
+            "{preset:?}"
+        );
+
+        let s = pane_grid_from(None, width)(&theme);
+        assert_eq!(s.hovered_split.color, own.hovered_split.color, "{preset:?}");
+        assert_eq!(s.picked_split.color, own.picked_split.color, "{preset:?}");
+        assert_eq!(s.hovered_split.width, width, "{preset:?}");
+        assert_eq!(s.picked_split.width, width, "{preset:?}");
+        assert_eq!(s.hovered_region, own.hovered_region, "{preset:?}");
+
+        let s = pane_grid_from(Some(to_color(DISTINCT)), width)(&theme);
+        assert_eq!(s.picked_split.color, to_color(DISTINCT), "{preset:?}");
+        assert_eq!(s.hovered_split.width, width, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// The application's style keeps the theme's base style per property
+/// (spec §10, rule 0): with the window frame's fill unstated, the base
+/// style's background; the text colour the base style's either way.
+#[test]
+fn an_application_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::application_from;
+    use iced_core::theme::Base;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let base = theme.base();
+        let frame = r.window.frame(native_theme::next::WindowState::default());
+        let stated = super::application(&r)?(&theme);
+        assert_eq!(
+            stated.background_color,
+            super::fill_of(&frame).unwrap_or(base.background_color),
+            "{preset:?}"
+        );
+        assert_eq!(stated.text_color, base.text_color, "{preset:?}");
+
+        let s = application_from(None)(&theme);
+        assert_eq!(s.background_color, base.background_color, "{preset:?}");
+        assert_eq!(s.text_color, base.text_color, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// The toolbar's rule keeps iced's own rule per property (spec §10, rule
+/// 0): the bar's stroke colour where stated, else iced's own rule's colour;
+/// the corners, the fill mode and the snapping iced's own either way.
+#[test]
+fn a_toolbar_rule_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::rule_from;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let own = iced_widget::rule::default(&theme);
+        let bar = r.toolbar.bar(WidgetState::NONE);
+        let stated = super::toolbar_rule(&r)?(&theme);
+        assert_eq!(
+            stated.color,
+            super::super::stroke_color_of(&bar).unwrap_or(own.color),
+            "{preset:?}"
+        );
+
+        let s = rule_from(None)(&theme);
+        assert_eq!(s.color, own.color, "{preset:?}");
+        assert_eq!(s.radius, own.radius, "{preset:?}");
+        assert_eq!(s.fill_mode, own.fill_mode, "{preset:?}");
+        assert_eq!(s.snap, own.snap, "{preset:?}");
+    }
+    Ok(())
+}

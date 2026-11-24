@@ -3631,19 +3631,20 @@ pub(crate) fn progress_bar_from(
 pub fn rule(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
-    rule_from(to_color(resolved.separator.line_color))
+    rule_from(Some(to_color(resolved.separator.line_color)))
 }
 
-/// [`rule`] and [`toolbar_rule`] of the line's colour.
+/// [`rule`] and [`toolbar_rule`] of the line's colour; `None` where the
+/// theme leaves it unstated, iced's own rule's (spec §10, rule 0).
 pub(crate) fn rule_from(
-    line: Color,
+    line: Option<Color>,
 ) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
     use iced_widget::rule::Style;
 
     move |theme| {
         let iced = iced_widget::rule::default(theme);
         Style {
-            color: line,
+            color: line.unwrap_or(iced.color),
             radius: iced.radius,
             fill_mode: iced.fill_mode,
             snap: iced.snap,
@@ -3673,22 +3674,29 @@ pub fn pane_grid(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<> {
     let s = &resolved.splitter;
-    pane_grid_from(to_color(s.hover_color), s.divider_width)
+    pane_grid_from(Some(to_color(s.hover_color)), s.divider_width)
 }
 
-/// [`pane_grid`] of the split's colour and width.
+/// [`pane_grid`] of the split's colour and width; a colour `None` where the
+/// theme leaves it unstated, iced's own hovered and picked split's then
+/// (spec §10, rule 0).
 pub(crate) fn pane_grid_from(
-    color: Color,
+    color: Option<Color>,
     width: f32,
 ) -> impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<> {
     use iced_widget::pane_grid::{Line, Style};
 
-    let split = Line { color, width };
-
-    move |theme| Style {
-        hovered_region: iced_widget::pane_grid::default(theme).hovered_region,
-        picked_split: split,
-        hovered_split: split,
+    move |theme| {
+        let iced = iced_widget::pane_grid::default(theme);
+        let split = |own: Line| Line {
+            color: color.unwrap_or(own.color),
+            width,
+        };
+        Style {
+            hovered_region: iced.hovered_region,
+            picked_split: split(iced.picked_split),
+            hovered_split: split(iced.hovered_split),
+        }
     }
 }
 
@@ -3873,15 +3881,21 @@ pub fn segmented_control(
 pub(crate) struct SegmentedSource {
     /// The window under the control.
     pub window_background: Color,
-    pub background: Color,
-    pub label: Color,
-    /// The control's outline, its stroke laid over the group fill.
-    pub border: Outline,
+    /// The group fill and an unselected segment's label: each `None` where
+    /// the theme leaves it unstated, iced's own container's and segment's
+    /// (spec §10, rule 0); the 0.7.2 model states each.
+    pub background: Option<Color>,
+    pub label: Option<Color>,
+    /// The control's outline, its stroke laid over the group fill; each
+    /// property the theme leaves unstated iced's own container's.
+    pub border: PartOutline,
     /// The line between two segments, as stated; `None` where the theme
     /// states no line, which is then drawn as none.
     pub separator: Option<Color>,
-    pub active_background: Color,
-    pub active_text_color: Color,
+    /// The selected segment's fill and label: each `None` where the theme
+    /// leaves it unstated, iced's own segment's (spec §10, rule 0).
+    pub active_background: Option<Color>,
+    pub active_text_color: Option<Color>,
     /// An unselected segment's fill under the pointer, painted as given over
     /// the group; `None` where the theme states none, no fill then.
     pub hover_background: Option<Color>,
@@ -3903,12 +3917,12 @@ impl SegmentedSource {
         let s = &resolved.segmented_control;
         Self {
             window_background: to_color(resolved.defaults.background_color),
-            background: to_color(s.background_color),
-            label: to_color(s.font.color),
-            border: Outline::of(&s.border),
+            background: Some(to_color(s.background_color)),
+            label: Some(to_color(s.font.color)),
+            border: Outline::of(&s.border).into(),
             separator: Some(to_color(s.border.color)),
-            active_background: to_color(s.active_background),
-            active_text_color: to_color(s.active_text_color),
+            active_background: Some(to_color(s.active_background)),
+            active_text_color: Some(to_color(s.active_text_color)),
             hover_background: s.hover_background.map(to_color),
             pressed_background: s.hover_background.map(to_color),
             disabled_opacity: Some(s.disabled_opacity),
@@ -3939,13 +3953,19 @@ pub(crate) fn segmented_control_from(
 
     let fade = SegmentedFade::of(s, disabled);
 
-    let group = fade.over_ground(s.background);
-    let label = fade.over_group(s.label);
+    let group = s.background.map(|fill| fade.over_ground(fill));
+    let label = s.label.map(|label| fade.over_group(label));
 
     // The stroke over the group fill where the theme lays it there
-    // ([`Line::over`]), the pair on the window, faded with the control.
-    let mut border = s.border.over(s.background);
-    border.color = fade.over_ground(border.color);
+    // ([`Line::over`]), the pair on the window, faded with the control; a
+    // stroke the theme leaves unstated is iced's own container's.
+    let mut border = s
+        .border
+        .or(Style::default().border)
+        .over(s.background.unwrap_or(Color::TRANSPARENT));
+    if s.border.stroke.is_some() {
+        border.color = fade.over_ground(border.color);
+    }
     // The shadow where the theme states one, faded with the control: a
     // widget's opacity scales its shadow's alpha.
     let shadow = s.shadow.map(|shadow| Shadow {
@@ -3956,8 +3976,8 @@ pub(crate) fn segmented_control_from(
     move |_theme| {
         let iced = Style::default();
         Style {
-            text_color: Some(label),
-            background: Some(Background::Color(group)),
+            text_color: label.or(iced.text_color),
+            background: group.map(Background::Color).or(iced.background),
             border,
             shadow: shadow.unwrap_or(iced.shadow),
             snap: iced.snap,
@@ -3985,7 +4005,9 @@ impl SegmentedFade {
         let ground = s.window_background;
         Self {
             ground,
-            group: composite_over(s.background, ground),
+            group: s
+                .background
+                .map_or(ground, |fill| composite_over(fill, ground)),
             opacity: match s.disabled_opacity {
                 Some(opacity) if disabled => opacity,
                 _ => 1.0,
@@ -4094,8 +4116,10 @@ pub(crate) fn segment_from(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
+    // A fill or a label the theme leaves unstated is iced's own segment's,
+    // `button::Style::default()`'s in every status (spec §10, rule 0).
     let (idle, hovered, pressed, label) = if selected {
-        let fill = Some(s.active_background);
+        let fill = s.active_background;
         (fill, fill, None, s.active_text_color)
     } else {
         (
@@ -4107,12 +4131,13 @@ pub(crate) fn segment_from(
     };
     let fade = SegmentedFade::of(s, true);
     let disabled = idle.map(|fill| fade.over_group(fill));
-    let disabled_label = match idle {
+    let disabled_label = label.map(|label| match idle {
         Some(fill) => fade.over(composite_over(fill, fade.group), label),
         None => fade.over_group(label),
-    };
+    });
 
-    let inner_radius = (s.border.radius.top_left - s.border.width).max(0.0);
+    let outline = s.border.or(iced_widget::container::Style::default().border);
+    let inner_radius = (outline.radius.top_left - outline.width).max(0.0);
     let radius = match position {
         SegmentPosition::First => Radius::new(0.0).left(inner_radius),
         SegmentPosition::Middle => Radius::new(0.0),
@@ -4141,7 +4166,7 @@ pub(crate) fn segment_from(
         };
         Style {
             background,
-            text_color,
+            text_color: text_color.unwrap_or(iced.text_color),
             border: Border {
                 radius,
                 ..iced.border
@@ -4201,12 +4226,15 @@ pub(crate) struct ExpanderSource {
     /// theme states none, as [`in_state`] gives it then. 0.7.2's pressed
     /// header is the hovered one, and its reads state that.
     pub pressed_background: Option<Color>,
-    pub label: Color,
+    /// The header's label: `None` where the theme leaves it unstated, iced's
+    /// own header's (spec §10, rule 0); the 0.7.2 model states it.
+    pub label: Option<Color>,
     /// The opacity a disabled header is faded by: the expander states none
     /// of its own, so the theme's.
     pub disabled_opacity: f32,
-    /// The frame's stroke, width and corners.
-    pub border: Outline,
+    /// The frame's stroke, width and corners; each property the theme
+    /// leaves unstated iced's own container's.
+    pub border: PartOutline,
     pub frame_enabled: Option<bool>,
     /// The frame's shadow as iced draws one; `None`, iced's own, where the
     /// theme states none (0.7.2 has no shadow geometry).
@@ -4220,10 +4248,10 @@ impl ExpanderSource {
         Self {
             hover_background: x.hover_background.map(to_color),
             pressed_background: x.hover_background.map(to_color),
-            label: to_color(x.font.color),
+            label: Some(to_color(x.font.color)),
             // `ExpanderTheme` states no `disabled_opacity`: the defaults' fades it.
             disabled_opacity: resolved.defaults.disabled_opacity,
-            border: Outline::of(&x.border),
+            border: Outline::of(&x.border).into(),
             frame_enabled: x.frame_enabled,
             shadow: None,
         }
@@ -4260,11 +4288,17 @@ pub(crate) fn expander_from(
     // the frame's.
     let border = Border {
         width: 0.0,
-        ..x.border.over(Color::TRANSPARENT)
+        ..x.border
+            .or(iced_widget::container::Style::default().border)
+            .over(Color::TRANSPARENT)
     };
 
     move |_theme, status| {
         let iced = Style::default();
+        // A label the theme leaves unstated is iced's own header's,
+        // `button::Style::default()`'s in every status (spec §10, rule 0).
+        let disabled_label = label.map_or(iced.text_color, |label| faded(label, opacity));
+        let label = label.unwrap_or(iced.text_color);
         let (background, text_color, border) = match status {
             Status::Active => (None, label, border),
             Status::Hovered => (hovered.map(Background::Color), label, border),
@@ -4280,7 +4314,7 @@ pub(crate) fn expander_from(
                 label,
                 border,
             ),
-            Status::Disabled => (None, faded(label, opacity), faded_border(border, opacity)),
+            Status::Disabled => (None, disabled_label, faded_border(border, opacity)),
         };
         Style {
             background,
@@ -4342,9 +4376,11 @@ pub(crate) fn expander_frame_from(
     // The frame paints no fill: its stroke lies over nothing. Its shadow,
     // where the theme states one, is drawn with the frame alone.
     let framed = matches!(x.frame_enabled, Some(true));
+    // Each property the theme leaves unstated is iced's own container's.
+    let outline = x.border.or(Style::default().border);
     let border = Border {
-        width: if framed { x.border.width } else { 0.0 },
-        ..x.border.over(Color::TRANSPARENT)
+        width: if framed { outline.width } else { 0.0 },
+        ..outline.over(Color::TRANSPARENT)
     };
     let shadow = x.shadow.filter(|_| framed);
 
@@ -4425,7 +4461,7 @@ pub fn toolbar(
 pub fn toolbar_rule(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
-    rule_from(to_color(resolved.toolbar.border.color))
+    rule_from(Some(to_color(resolved.toolbar.border.color)))
 }
 
 /// The application's own background and default text, for
@@ -4469,17 +4505,21 @@ pub fn toolbar_rule(
 pub fn application(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<> {
-    application_from(to_color(resolved.window.background_color))
+    application_from(Some(to_color(resolved.window.background_color)))
 }
 
-/// [`application`] of the window's background.
+/// [`application`] of the window's background; `None` where the theme
+/// leaves it unstated, the base style's then (spec §10, rule 0).
 pub(crate) fn application_from(
-    background: Color,
+    background: Option<Color>,
 ) -> impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<> {
     use iced_core::theme::{Base, Style};
 
-    move |theme| Style {
-        background_color: background,
-        text_color: theme.base().text_color,
+    move |theme| {
+        let base = theme.base();
+        Style {
+            background_color: background.unwrap_or(base.background_color),
+            text_color: base.text_color,
+        }
     }
 }

@@ -14,12 +14,10 @@ use native_theme::next::{
 };
 
 use super::borders::{
-    flagged, line, line_or_none, outline, outline_or_iced, part_outline, radius, state_line,
-    stroke_width,
+    flagged, line, line_or_none, outline_or_iced, part_outline, radius, state_line, stroke_width,
 };
 use super::{
-    Mapped, Unmapped, fill, fill_of, state_fill, state_text_color, stated, text_color,
-    text_color_of, to_color,
+    Mapped, Unmapped, fill, fill_of, state_fill, state_text_color, stated, text_color_of, to_color,
 };
 use crate::styles::{
     self as old, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource, Layer,
@@ -1063,7 +1061,10 @@ pub fn scrollbar(r: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar {
 /// part is the line itself), and where the theme states none, the
 /// outline's colour, the one line colour 0.7.2 states for the control (the
 /// table of homes, `segmented_control.border.color`); no line where the
-/// outline is stated as none.
+/// outline is stated as none, or left unstated, iced's own container's,
+/// which draws none. The group fill, the labels, the outline and the
+/// selected segment's fill at rest are each iced's own where the theme
+/// leaves them unstated (spec §10, rule 0).
 fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
     let s = &r.segmented_control;
     let track = s.track(WidgetState::NONE);
@@ -1073,28 +1074,19 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
             r.colors.window.background,
             "colors.window.background",
         )?),
-        background: fill(&track, "segmented_control.track(NONE).fill")?,
-        label: text_color(
-            &s.label(WidgetState::NONE),
-            "segmented_control.label(NONE).color",
-        )?,
-        border: outline!(track, "segmented_control.track(NONE)")?,
+        background: fill_of(&track),
+        label: text_color_of(&s.label(WidgetState::NONE)),
+        border: part_outline!(track, "segmented_control.track(NONE)")?,
         separator: if separator.stated.contains(PartStated::FILL) {
             Some(fill(&separator, "segmented_control.separator(NONE).fill")?)
-        } else if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None)
+        } else if !track.stated.contains(PartStated::STROKE) || matches!(track.stroke, Stroke::None)
         {
             None
         } else {
             Some(line(&track, "segmented_control.track(NONE).stroke.color")?.color)
         },
-        active_background: fill(
-            &s.segment(WidgetState::SELECTED),
-            "segmented_control.segment(SELECTED).fill",
-        )?,
-        active_text_color: text_color(
-            &s.label(WidgetState::SELECTED),
-            "segmented_control.label(SELECTED).color",
-        )?,
+        active_background: fill_of(&s.segment(WidgetState::SELECTED)),
+        active_text_color: text_color_of(&s.label(WidgetState::SELECTED)),
         hover_background: state_layer(
             &s.segment(WidgetState::HOVER),
             "segmented_control.segment(HOVER).fill",
@@ -1116,7 +1108,10 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the control needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius); a value at
+/// rest it leaves unstated is iced's own container's (spec §10, rule 0).
 pub fn segmented_control(
     r: &ResolvedTheme,
     disabled: bool,
@@ -1128,7 +1123,9 @@ pub fn segmented_control(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the control needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius).
 pub fn segment_separator(
     r: &ResolvedTheme,
     disabled: bool,
@@ -1142,7 +1139,11 @@ pub fn segment_separator(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the control needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius); a fill or a
+/// label at rest it leaves unstated is iced's own segment's (spec §10, rule
+/// 0).
 pub fn segment(
     r: &ResolvedTheme,
     selected: bool,
@@ -1168,12 +1169,9 @@ fn expander_source(r: &ResolvedTheme) -> Mapped<ExpanderSource> {
             "expander.header(PRESSED).fill",
         )?
         .map(Layer::as_given),
-        label: text_color(
-            &x.header_label(WidgetState::NONE),
-            "expander.header_label(NONE).color",
-        )?,
+        label: text_color_of(&x.header_label(WidgetState::NONE)),
         disabled_opacity: r.colors.disabled_opacity,
-        border: outline!(frame, "expander.container(NONE)")?,
+        border: part_outline!(frame, "expander.container(NONE)")?,
         frame_enabled: x.frame_enabled,
         shadow: shadow(&frame),
     })
@@ -1184,7 +1182,10 @@ fn expander_source(r: &ResolvedTheme) -> Mapped<ExpanderSource> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the header needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// concentric radius); a label or a frame property it leaves unstated is
+/// iced's own (spec §10, rule 0).
 pub fn expander(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -1198,7 +1199,10 @@ pub fn expander(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the frame needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// concentric radius); a frame property it leaves unstated is iced's own
+/// container's (spec §10, rule 0).
 pub fn expander_frame(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
@@ -1241,42 +1245,49 @@ fn progress_bar_source(r: &ResolvedTheme) -> Mapped<ProgressBarSource> {
 /// [`crate::styles::rule`]: the separator's colour.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn rule(r: &ResolvedTheme) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
-    old::rule_from(to_color(r.separator.color))
+    old::rule_from(Some(to_color(r.separator.color)))
 }
 
-/// [`crate::styles::toolbar_rule`]: the toolbar's stroke colour as stated.
+/// [`crate::styles::toolbar_rule`]: the toolbar's stroke colour as stated,
+/// iced's own rule's where the theme leaves it unstated (spec §10, rule 0).
 /// The rule is a line of its own under the bar, not a border over the bar's
 /// fill, so no fill is composited under it.
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no toolbar stroke of one
-/// colour.
+/// [`super::Unmapped`] where the theme states a toolbar stroke that is not
+/// one stroke of one colour.
 pub fn toolbar_rule(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<>> {
     let bar = r.toolbar.bar(WidgetState::NONE);
     let line = match &bar.stroke {
-        Stroke::Uniform { color, .. } if bar.stated.contains(PartStated::STROKE) => *color,
+        _ if !bar.stated.contains(PartStated::STROKE) => None,
+        Stroke::Uniform { color, .. } => Some(to_color(*color)),
         _ => return Err(Unmapped("toolbar.bar(NONE).stroke.color")),
     };
-    Ok(old::rule_from(to_color(line)))
+    Ok(old::rule_from(line))
 }
 
 /// [`crate::styles::pane_grid`]: the splitter's handle under the pointer
-/// and its divider width.
+/// and its divider width; a handle fill the theme leaves unstated is iced's
+/// own split's (spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no hovered handle fill.
+/// [`super::Unmapped`] where the theme states the hovered handle's fill in
+/// a form iced cannot paint (a layered fill with no fallback colour).
 pub fn pane_grid(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<>> {
     let s = &r.splitter;
-    Ok(old::pane_grid_from(
-        fill(&s.handle(WidgetState::HOVER), "splitter.handle(HOVER).fill")?,
-        s.divider_width,
-    ))
+    let handle = s.handle(WidgetState::HOVER);
+    let color = if handle.stated.contains(PartStated::FILL) {
+        Some(fill(&handle, "splitter.handle(HOVER).fill")?)
+    } else {
+        None
+    };
+    Ok(old::pane_grid_from(color, s.divider_width))
 }
 
 /// [`crate::styles::tooltip`]: the panel's fill, the text colour and the
@@ -1352,18 +1363,24 @@ pub fn toolbar(
     )
 }
 
-/// [`crate::styles::application`]: the fill of a normal window's frame.
+/// [`crate::styles::application`]: the fill of a normal window's frame,
+/// the theme's base style's where the theme leaves it unstated (spec §10,
+/// rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no frame fill.
+/// [`super::Unmapped`] where the theme states the frame's fill in a form
+/// iced cannot paint (a layered fill with no fallback colour).
 pub fn application(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<>> {
-    Ok(old::application_from(fill(
-        &r.window.frame(WindowState::default()),
-        "window.frame(normal).fill",
-    )?))
+    let frame = r.window.frame(WindowState::default());
+    let background = if frame.stated.contains(PartStated::FILL) {
+        Some(fill(&frame, "window.frame(normal).fill")?)
+    } else {
+        None
+    };
+    Ok(old::application_from(background))
 }
 
 #[cfg(feature = "iced_aw")]
