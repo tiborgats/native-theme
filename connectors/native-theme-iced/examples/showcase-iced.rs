@@ -416,7 +416,9 @@ const INSPECTOR_TABS_ID: &str = "showcase-inspector-tabs";
 struct Gaps {
     /// Space between adjacent widgets, `layout.widget_gap`.
     widget: f32,
-    /// Padding inside a container, `layout.container_margin`.
+    /// Padding inside a container, `layout.container_margin`: the Extra
+    /// page's (`iced_aw`) alone reads it.
+    #[cfg_attr(not(feature = "iced_aw"), allow(dead_code))]
     container: f32,
     /// Padding inside the main window, `layout.window_margin`.
     window: f32,
@@ -473,35 +475,16 @@ fn layout_value(stated: Option<f32>) -> String {
 
 /// The padding of every surface a page draws as a card
 /// (`styles::container_card`, and the Extra page's `iced_aw` `Card` through
-/// [`aw_card_padding`]), by one rule: each side is `card.border.padding`'s,
-/// or where it leaves the side unstated -- every side on the thirteen
-/// presets that state no card padding, all but kde-breeze, windows-11 and
-/// the two macOS presets -- `layout.container_margin`, the theme's padding
-/// inside a container, none where that is unstated too; plus
-/// `card.border.line_width`, as the padding lies inside the card's border,
-/// which iced paints over the padded box. So the content sits where the
-/// gpui showcase's card and GroupBox put it, inside their border by the
-/// stated side or the margin (`demo::card`, `demo::group_box`, through
-/// `padded`).
-fn card_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> Padding {
-    let border = &resolved.card.border;
-    let margin = Gaps::from_layout(layout).container;
-    let side = |stated: Option<f32>| stated.unwrap_or(margin) + border.line_width;
-    Padding {
-        top: side(border.padding.top),
-        right: side(border.padding.right),
-        bottom: side(border.padding.bottom),
-        left: side(border.padding.left),
-    }
-}
-
-/// [`card_padding`] on the installed 0.8.0 theme: each side
-/// `card.container(NONE).padding` states, `layout.container_margin` on a
-/// side it leaves unstated, iced's own, a container's `Padding::ZERO`,
+/// [`next_aw_card_padding`]), by one rule, on the installed 0.8.0 theme:
+/// each side `card.container(NONE).padding` states, `layout.container_margin`
+/// on a side it leaves unstated, iced's own, a container's `Padding::ZERO`,
 /// where that is unstated too; plus `card.container(NONE).stroke.width`, as
 /// the padding lies inside the card's border, which iced paints over the
 /// padded box (iced's own border, `Border::default`, no line, where the
-/// theme states no stroke iced can draw).
+/// theme states no stroke iced can draw). So the content sits where the
+/// gpui showcase's card and GroupBox put it, inside their border by the
+/// stated side or the margin (`demo::card`, `demo::group_box`, through
+/// `padded`).
 fn next_card_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
     let container = r.card.container(WidgetState::NONE);
     let line = iced_next::stroke_width_of(&container).unwrap_or(iced::Border::default().width);
@@ -5491,103 +5474,6 @@ fn menu_title(
     }
 }
 
-/// The Extra page's menu row on the 0.7.2 theme, until that page moves to
-/// the 0.8.0 model: as the model's menu item (platform-facts §2.6): no fill at
-/// rest, its label `menu.font.color`; `menu.hover_background` and
-/// `.hover_text_color` under the pointer, outlined in
-/// `menu.hover_border_color` where the theme states it,
-/// `defaults.border.line_width` wide; while pressed `menu.active_background`
-/// with no outline, Breeze's opaque focus fill, where the theme states it,
-/// and the hovered look, outline included, where it does not, lettered
-/// `menu.active_text_color`, else `.hover_text_color`, in both;
-/// `menu.disabled_text_color` disabled;
-/// rounded by `menu.border.corner_radius`, 0 where the items are
-/// rectangular. iced draws a button's border on its bounds, over the padding
-/// (iced_widget 0.14.2 `src/button.rs:379-385`), so the outline moves
-/// nothing; and it paints the border in place of the fill under it, so the
-/// outline's colour is composited over the hover fill, as Breeze lays the
-/// line over it.
-#[cfg(feature = "iced_aw")]
-fn aw_menu_row(
-    resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
-    let m = &resolved.menu;
-    let label = to_color(m.font.color);
-    let hover = to_color(m.hover_background);
-    let hover_label = to_color(m.hover_text_color);
-    let disabled_label = to_color(m.disabled_text_color);
-    let radius = m.border.corner_radius;
-    let plain = iced::Border::default().rounded(radius);
-    let edge = m.hover_border_color.map(|c| iced::Border {
-        color: styles::composite_over(to_color(c), hover),
-        width: resolved.defaults.border.line_width,
-        ..plain
-    });
-    let hovered = (Some(hover), hover_label, edge.unwrap_or(plain));
-    let pressed_label = to_color(m.active_text_color.unwrap_or(m.hover_text_color));
-    let pressed = match m.active_background {
-        Some(fill) => (Some(to_color(fill)), pressed_label, plain),
-        None => (Some(hover), pressed_label, edge.unwrap_or(plain)),
-    };
-    move |_theme, status| {
-        let (background, text_color, border) = match status {
-            button::Status::Active => (None, label, plain),
-            button::Status::Hovered => hovered,
-            button::Status::Pressed => pressed,
-            button::Status::Disabled => (None, disabled_label, plain),
-        };
-        button::Style {
-            background: background.map(iced::Background::Color),
-            text_color,
-            border,
-            ..button::Style::default()
-        }
-    }
-}
-
-/// The Extra page's menu-bar title on the 0.7.2 theme, until that page
-/// moves to the 0.8.0 model (platform-facts §2.6): no fill at rest, its label
-/// `menu.font.color`; under the pointer `menu.bar_hover_background`, else
-/// `menu.hover_background`; while its menu is `open` or the title is pressed
-/// `menu.bar_open_background`, else the hover fill; lettered
-/// `menu.bar_hover_text_color`, else `menu.hover_text_color`, in both;
-/// `menu.disabled_text_color` disabled; rounded by
-/// `menu.border.corner_radius`, with no outline. With the three bar fields
-/// unstated it is a hovered [`aw_menu_row`] in every lit status, without the
-/// row's outline. On the Extra page (`menu_root` passes `open: false`) an
-/// open title is known only by `iced_aw`'s fake pointer ([`menu_title`])
-/// and shows `menu.bar_hover_background`, equal to the open fill in
-/// Breeze's schemes.
-#[cfg(feature = "iced_aw")]
-fn aw_menu_title(
-    resolved: &ResolvedTheme,
-    open: bool,
-) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
-    let m = &resolved.menu;
-    let label = to_color(m.font.color);
-    let hover = m.bar_hover_background.unwrap_or(m.hover_background);
-    let open_fill = to_color(m.bar_open_background.unwrap_or(hover));
-    let hover = to_color(hover);
-    let lit = to_color(m.bar_hover_text_color.unwrap_or(m.hover_text_color));
-    let disabled_label = to_color(m.disabled_text_color);
-    let plain = iced::Border::default().rounded(m.border.corner_radius);
-    move |_theme, status| {
-        let (background, text_color) = match status {
-            button::Status::Disabled => (None, disabled_label),
-            _ if open => (Some(open_fill), lit),
-            button::Status::Pressed => (Some(open_fill), lit),
-            button::Status::Hovered => (Some(hover), lit),
-            button::Status::Active => (None, label),
-        };
-        button::Style {
-            background: background.map(iced::Background::Color),
-            text_color,
-            border: plain,
-            ..button::Style::default()
-        }
-    }
-}
-
 /// The padding sides `part` states, `own`'s side on a side it leaves
 /// unstated.
 fn stated_sides(part: &PartStyle, own: Padding) -> Padding {
@@ -5607,15 +5493,15 @@ fn next_menu_row_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
     stated_sides(&r.menu.item(WidgetState::NONE), button::DEFAULT_PADDING)
 }
 
-/// [`title_padding`] on the installed 0.8.0 theme: the sides
+/// A menu bar title's padding on the installed 0.8.0 theme: the sides
 /// `menu_bar.item(NONE).padding` states, `rows`' side (the menu rows'
 /// padding, [`next_menu_row_padding`]) on a side it leaves unstated.
 fn next_title_padding(r: &native_theme::next::ResolvedTheme, rows: Padding) -> Padding {
     stated_sides(&r.menu_bar.item(WidgetState::NONE), rows)
 }
 
-/// [`menu_row_height`] on the installed 0.8.0 theme, whose text styles hold
-/// the text scale already: `menu.item(NONE).max_size[1]`, the row's height,
+/// A menu row's height on the installed 0.8.0 theme, whose text styles
+/// hold the text scale already: `menu.item(NONE).max_size[1]`, the row's height,
 /// exact at a text scale of 1 or less (`context.text_scale`), grown above
 /// it to hold the row's line, `menu.item_label(NONE)`'s line box
 /// ([`next_line_box`]) to the next whole pixel, and its padding `pad`, as
@@ -5684,27 +5570,6 @@ fn sized_menu<'a>(
     match width {
         Some(width) => menu.width(width),
         None => menu,
-    }
-}
-
-/// A menu bar title's padding: left and right `menu.bar_padding_horizontal`,
-/// top and bottom `menu.bar_padding_vertical`, each pair `rows`' sides where
-/// the theme leaves it unstated (`rows`, the menu rows' padding). The Extra
-/// page's menu bar, on the 0.7.2 theme until that page moves; the window's
-/// menu bar takes [`next_title_padding`].
-#[cfg(feature = "iced_aw")]
-fn title_padding(m: &native_theme::theme::ResolvedMenuTheme, rows: Padding) -> Padding {
-    let (left, right) = m
-        .bar_padding_horizontal
-        .map_or((rows.left, rows.right), |h| (h, h));
-    let (top, bottom) = m
-        .bar_padding_vertical
-        .map_or((rows.top, rows.bottom), |v| (v, v));
-    Padding {
-        top,
-        right,
-        bottom,
-        left,
     }
 }
 
@@ -7591,18 +7456,6 @@ struct TabSpec {
     tag: Option<&'static str>,
 }
 
-/// The room a row of tabs keeps free at both ends, inside its clip, for the
-/// selected tab's outward corners ([`native_theme_iced::tab_flares`]):
-/// `tab.active_outward_corner_radius` where it is a positive, finite length,
-/// the one `tab_flares` draws; none otherwise.
-fn flare_room(resolved: &ResolvedTheme) -> f32 {
-    resolved
-        .tab
-        .active_outward_corner_radius
-        .filter(|r| r.is_finite() && *r > 0.0)
-        .unwrap_or(0.0)
-}
-
 /// A tab of the page tabs and the inspector's, on the installed 0.8.0
 /// theme: a button in [`tab_style`], `label` in `tab.label(NONE)`
 /// ([`Typeset::next_text`]), padded by [`next_tab_padding`], its label at
@@ -7782,7 +7635,8 @@ fn next_drop_down_width(r: &native_theme::next::ResolvedTheme) -> f32 {
     }
 }
 
-/// [`flare_room`] on the installed 0.8.0 theme:
+/// The room a row of tabs keeps free at both ends, inside its clip, for the
+/// selected tab's outward corners, on the installed 0.8.0 theme:
 /// `tab.active_outward_corner_radius` where it is a positive, finite
 /// length, the one `iced_next::tab_flares` draws; none otherwise.
 fn next_flare_room(r: &native_theme::next::ResolvedTheme) -> f32 {
@@ -7819,7 +7673,7 @@ thread_local! {
 }
 
 /// The widths of the texts the tab rows and the menus are sized by
-/// ([`next_tab_width`], [`aw_tab_width`], [`menu_width`]), each as iced shapes it
+/// ([`next_tab_width`], [`next_aw_tab_width`], [`menu_width`]), each as iced shapes it
 /// ([`MeasuredText`]) in a font at a size, shaped the first time a view asks
 /// for it and kept: the view is rebuilt on every message, twenty times a
 /// second while the Basic page's spinner turns, and a text's width changes
@@ -8208,6 +8062,15 @@ fn menu_frame(r: &native_theme::next::ResolvedTheme) -> PartStyle {
     } else {
         r.popover.panel.clone()
     }
+}
+
+/// The width of the line [`menu_frame`] frames a menu's panel by: its
+/// stroke's, `iced_aw`'s own frame's
+/// (`menu_bar::Style::default().menu_border.width`) where the theme states
+/// no stroke iced can draw.
+fn menu_frame_width(r: &native_theme::next::ResolvedTheme) -> f32 {
+    iced_next::stroke_width_of(&menu_frame(r))
+        .unwrap_or(iced_aw::style::menu_bar::Style::default().menu_border.width)
 }
 
 /// The colour of a fill iced paints in one colour, transparent for a
@@ -11315,7 +11178,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("tab", "min_width_px") if id == "basic.page" => {
             if cfg!(feature = "iced_aw") {
-                "basic_tabs_width: the two tabs a column holds, each aw_tab_width wide".into()
+                "basic_tabs_width: the two tabs a column holds, each next_aw_tab_width wide, \
+                 at least tab.tab(NONE).min_size[0]"
+                    .into()
             } else {
                 "basic_tabs_width: the two tabs a column holds, each next_tab_width wide, at \
                  least tab.tab(NONE).min_size[0]"
@@ -11325,18 +11190,13 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "item_gap_px") => "the tabs' spacing, where stated".into(),
         #[cfg(feature = "iced_aw")]
         ("tab", "active_indicator_width_px" | "active_indicator_side") if under("basic.tabs.") => {
-            "native_theme_iced::tab_indicator_line over the open tab's place in iced_aw's bar"
-                .into()
+            "iced_next::tab_indicator_line over the open tab's place in iced_aw's bar".into()
         }
         ("tab", "active_indicator_width_px" | "active_indicator_side") => {
             "native_theme_iced::tab_indicator: the line stacked over the open tab".into()
         }
         ("tab", "active_outward_corner_radius_px")
-            if (if under("basic.tabs.") {
-                flare_room(resolved)
-            } else {
-                next_flare_room(state.next_shown())
-            }) == 0.0 =>
+            if next_flare_room(state.next_shown()) == 0.0 =>
         {
             "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
              and the row keeps no room for them"
@@ -13265,15 +13125,16 @@ fn basic_segmented_in_last_column(columns: usize) -> bool {
 }
 
 /// The two Basic tabs' widths together, as the Basic page's tab row lays
-/// them out: with `iced_aw` one width each, [`aw_tab_width`], which fits the
-/// wider label and is never below `tab.min_width`; without it each tab's
+/// them out: with `iced_aw` one width each, [`next_aw_tab_width`], which
+/// fits the wider label and is never below `tab.tab(NONE).min_size[0]`
+/// where stated; without it each tab's
 /// own on the installed 0.8.0 theme, [`next_tab_width`].
 fn basic_tabs_width(state: &State) -> f32 {
     #[cfg(feature = "iced_aw")]
     {
-        let padding = native_theme_iced::stated_padding(&state.current_resolved.tab.border.padding)
-            .unwrap_or(Padding::new(AW_TAB_PADDING));
-        aw_tab_width(state, &BASIC_TABS, padding) * BASIC_TABS.len() as f32
+        let padding =
+            next_aw_tab_padding(state.next_shown()).unwrap_or(Padding::new(AW_TAB_PADDING));
+        next_aw_tab_width(state, &BASIC_TABS, padding) * BASIC_TABS.len() as f32
     }
     #[cfg(not(feature = "iced_aw"))]
     {
@@ -13600,15 +13461,6 @@ fn next_tooltip_gap(r: &native_theme::next::ResolvedTheme) -> f32 {
     next_gpui_rems(TOOLTIP_GAP_REMS, r)
 }
 
-/// `rems` of gpui-component's rem, its `Theme::font_size` (gpui-component
-/// 0.9.1 `src/root.rs:714`), which the gpui connector fills with the scaled
-/// `defaults.font.size` (`native-theme-gpui/src/lib.rs`, `to_theme`): the
-/// size a gpui showcase constant of `rems(..)` stands for under the
-/// installed theme (Addendum F's rem rule).
-fn gpui_rems(rems: f32, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32 {
-    a11y.scaled(resolved.defaults.font.size) * rems
-}
-
 /// What Widget Info says of a tooltip's gap to its control, which the theme
 /// does not state: [`next_tooltip_gap`]'s value under the installed 0.8.0
 /// theme, and its rule.
@@ -13633,10 +13485,10 @@ fn px_text(px: f32) -> String {
 }
 
 /// The Basic page's tab row: `iced_aw`'s `TabBar` in the `iced_aw` build,
-/// on the 0.7.2 theme with the Extra page's bar ([`aw_tab_width`]), with its
-/// outward corners where that theme states them
-/// ([`native_theme_iced::tab_flares`]) and the room for them at both ends
-/// ([`flare_room`]) outside the bar, which takes no padding of its own;
+/// on the installed 0.8.0 theme with the Extra page's bar
+/// ([`next_aw_tab_width`]), with its outward corners where the theme states
+/// them (`iced_next::tab_flares`) and the room for them at both ends
+/// ([`next_flare_room`]) outside the bar, which takes no padding of its own;
 /// otherwise the page tab strip's tabs on the installed 0.8.0 theme
 /// ([`next_tab_button`]), with their flares (`iced_next::tab_flares`) and
 /// the room for them ([`next_flare_room`]) inside the strip; `basic_tab`
@@ -13644,86 +13496,95 @@ fn px_text(px: f32) -> String {
 fn basic_tab_row(state: &State) -> Element<'_, Message> {
     #[cfg(feature = "iced_aw")]
     let tab_row: Element<'_, Message> = {
-        let resolved = &state.current_resolved;
-        let tab_t = &resolved.tab;
+        let r = state.next_shown();
         let [one, two] = BASIC_TABS;
         // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
-        // and takes a padding whole.
-        let tab_padding = native_theme_iced::stated_padding(&tab_t.border.padding);
+        // and takes a padding whole ([`next_aw_tab_padding`]).
+        let tab_padding = next_aw_tab_padding(r);
         // Every tab one width that fits the wider label, never below
-        // tab.min_width, as the Extra page's bar ([`aw_tab_width`]), so no
-        // label wraps.
+        // `tab.tab(NONE).min_size[0]` where stated, as the Extra page's bar
+        // ([`next_aw_tab_width`]), so no label wraps.
         let drawn_padding = tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING));
-        let tab_width = aw_tab_width(state, &BASIC_TABS, drawn_padding);
+        let tab_width = next_aw_tab_width(state, &BASIC_TABS, drawn_padding);
         // And one height that holds the label's line, never below
-        // tab.min_height ([`aw_tab_height`]), so no label is cut.
-        let tab_height = aw_tab_height(state, drawn_padding);
-        let bar = TabBar::new(Message::BasicTabSelected)
-            .push(0, TabLabel::Text(one.to_string()))
-            .push(1, TabLabel::Text(two.to_string()))
-            .set_active_tab(&state.basic_tab)
-            .text_size(scaled_text_size(tab_t.font.size, &state.accessibility))
-            .text_font(theme_font(&tab_t.font))
-            .tab_width(Length::Fixed(tab_width))
-            .height(Length::Fixed(tab_height))
-            .width(Length::Shrink)
-            .style(styles::aw::tab_bar(resolved));
-        // tab.item_gap between the tabs, where stated; iced_aw's own none
-        // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`). iced_aw lays
-        // its tabs out in one `Row` it builds itself (`src/widget/tab_bar.rs`,
-        // `layout`), so the bar cannot wrap as the page's other rows do; the
-        // page's column rule leaves every column room for the two tabs at
-        // this width, `tab.item_gap` apart ([`basic_tabs_width`]).
-        let bar = match tab_t.item_gap {
-            Some(gap) => bar.spacing(gap),
-            None => bar,
+        // `tab.tab(NONE).min_size[1]` where stated ([`next_aw_tab_height`]),
+        // so no label is cut.
+        let tab_height = next_aw_tab_height(r, drawn_padding);
+        let label = r.tab.label(WidgetState::NONE);
+        // Built where it is drawn, and again where the connector cannot map
+        // the open tab's flares, as `iced_next::tab_flares` takes the stack.
+        let stack = || {
+            let bar = TabBar::new(Message::BasicTabSelected)
+                .push(0, TabLabel::Text(one.to_string()))
+                .push(1, TabLabel::Text(two.to_string()))
+                .set_active_tab(&state.basic_tab)
+                .text_size(label.size_px)
+                .text_font(next_measured_font(&label))
+                .tab_width(Length::Fixed(tab_width))
+                .height(Length::Fixed(tab_height))
+                .width(Length::Shrink)
+                .next_style(iced_next::styles::aw::tab_bar(r), |bar, style| {
+                    bar.style(style)
+                });
+            // tab.item_gap between the tabs, where stated; iced_aw's own none
+            // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`). iced_aw lays
+            // its tabs out in one `Row` it builds itself (`src/widget/tab_bar.rs`,
+            // `layout`), so the bar cannot wrap as the page's other rows do; the
+            // page's column rule leaves every column room for the two tabs at
+            // this width, `tab.item_gap` apart ([`basic_tabs_width`]).
+            let bar = match r.tab.item_gap {
+                Some(gap) => bar.spacing(gap),
+                None => bar,
+            };
+            let bar: Element<'_, Message> = match tab_padding {
+                Some(padding) => bar.padding(padding).into(),
+                None => bar.into(),
+            };
+            // The tabs are the bar's row's nodes, one per label
+            // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
+            let bar: Element<'_, Message> = tagged("basic.tabs.bar", bar)
+                .loose()
+                .node("basic.tabs.one", &[0])
+                .node("basic.tabs.two", &[1])
+                .into();
+            // The active tab's line, where the theme states one
+            // (`iced_next::tab_indicator_line`, `tab.indicator(SELECTED)`), over
+            // that tab's place: iced_aw's tabs are `tab_width` wide, `spacing`
+            // apart (`src/widget/tab_bar.rs:490-510`), and its style has no line.
+            // No line where the connector cannot map it.
+            let slots = (0..BASIC_TABS.len()).map(|i| {
+                let line = (i == state.basic_tab)
+                    .then(|| iced_next::tab_indicator_line(r).ok().flatten())
+                    .flatten();
+                container(line.unwrap_or_else(|| iced::widget::Space::new().into()))
+                    .width(Length::Fixed(tab_width))
+                    .height(Fill)
+                    .into()
+            });
+            // tab.item_gap apart, as the bar's tabs are; a row's own none, as
+            // iced_aw's `DEFAULT_SPACING` is, where unstated.
+            let slots = match r.tab.item_gap {
+                Some(gap) => row(slots).spacing(gap),
+                None => row(slots),
+            };
+            iced::widget::Stack::new()
+                .push(bar)
+                .push(slots.height(Fill))
         };
-        let bar: Element<'_, Message> = match tab_padding {
-            Some(padding) => bar.padding(padding).into(),
-            None => bar.into(),
-        };
-        // The tabs are the bar's row's nodes, one per label
-        // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
-        let bar: Element<'_, Message> = tagged("basic.tabs.bar", bar)
-            .loose()
-            .node("basic.tabs.one", &[0])
-            .node("basic.tabs.two", &[1])
-            .into();
-        // The active tab's line, where the theme states one, over that tab's
-        // place: iced_aw's tabs are `tab_width` wide, `spacing` apart
-        // (`src/widget/tab_bar.rs:490-510`), and its style has no line.
-        let slots = (0..BASIC_TABS.len()).map(|i| {
-            let line = (i == state.basic_tab)
-                .then(|| native_theme_iced::tab_indicator_line(resolved))
-                .flatten();
-            container(line.unwrap_or_else(|| iced::widget::Space::new().into()))
-                .width(Length::Fixed(tab_width))
-                .height(Fill)
-                .into()
-        });
-        // tab.item_gap apart, as the bar's tabs are; a row's own none, as
-        // iced_aw's `DEFAULT_SPACING` is, where unstated.
-        let slots = match tab_t.item_gap {
-            Some(gap) => row(slots).spacing(gap),
-            None => row(slots),
-        };
-        let stack = iced::widget::Stack::new()
-            .push(bar)
-            .push(slots.height(Fill));
         // The open tab's flares over the bar and the slots, its node the
         // bar's (the stack's layer 0, which `tagged` passes through); iced_aw
         // takes no padding around its bar, so the room for the end tabs'
-        // flares is a container's, outside it, filled tab.bar_background as
-        // the bar is, so the end flares lie over the bar's colour.
-        let room = flare_room(resolved);
-        container(native_theme_iced::tab_flares(
-            resolved,
-            stack,
-            &[0, state.basic_tab],
-        ))
-        .padding(Padding::ZERO.left(room).right(room))
-        .style(surface(state.next_shown(), Surface::TabStrip))
-        .into()
+        // flares is a container's, outside it, filled `tab.bar(NONE).fill`
+        // as the bar is, so the end flares lie over the bar's colour
+        // ([`next_flare_room`]). The stack alone where the connector cannot
+        // map the flares.
+        let room = next_flare_room(r);
+        let flared = iced_next::tab_flares(r, stack(), &[0, state.basic_tab])
+            .unwrap_or_else(|_| stack().into());
+        container(flared)
+            .padding(Padding::ZERO.left(room).right(room))
+            .style(surface(r, Surface::TabStrip))
+            .into()
     };
     // Without iced_aw, the page tab strip's tabs on the installed 0.8.0
     // theme ([`next_tab_button`]), the chosen one open, tab.item_gap apart
@@ -16153,20 +16014,10 @@ fn line_zero(table: &str) -> String {
     format!("{table}.border.line_width 0")
 }
 
-/// The minimum size a push button on the 0.7.2 theme is laid out at, and
-/// the leaves and helpers it comes from: the Extra page's card buttons'.
-#[cfg(feature = "iced_aw")]
-fn button_min_size_row(resolved: &native_theme::theme::ResolvedTheme) -> String {
-    format!(
-        "{:.0} x {:.0}px, button.min_width x button.min_height: \
-         at_least(label, button_content_min_size), the minimum less button_padding",
-        resolved.button.min_width, resolved.button.min_height
-    )
-}
-
-/// [`button_min_size_row`] on the installed 0.8.0 theme, the Buttons page's:
-/// `button.body(NONE).min_size`, each axis "unstated" where the theme states
-/// no least size on it.
+/// The minimum size a push button on the installed 0.8.0 theme is laid out
+/// at, and the homes and helpers it comes from, the Buttons page's and the
+/// Extra page's card buttons': `button.body(NONE).min_size`, each axis
+/// "unstated" where the theme states no least size on it.
 fn next_button_min_size_row(r: &native_theme::next::ResolvedTheme) -> String {
     let axis = |v: Option<f32>| v.map_or_else(|| "unstated".to_owned(), |v| format!("{v:.0}px"));
     let [width, height] = r.button.body(WidgetState::NONE).min_size;
@@ -18800,17 +18651,40 @@ const QR_PAYLOAD: &str = "https://github.com/tiborgats/native-theme";
 ///
 /// `canvas` has no `Catalog` and no `Style` of its own: a [`canvas::Program`]
 /// is handed the theme and paints whatever it likes (`canvas/program.rs:49`).
-/// So the values are captured from the resolved theme when the program is
-/// built, which `view` does once per frame.
+/// So the values are captured from the installed 0.8.0 theme when the
+/// program is built, which `view` does once per frame. `canvas` has no value
+/// of its own for any of them, so a part whose value the theme leaves
+/// unstated is not drawn ([`ThemeSketch::from_next`]).
 struct ThemeSketch {
-    surface: Color,
+    surface: Option<Color>,
     outline: Color,
     outline_width: f32,
-    corner_radius: f32,
+    corner_radius: Option<f32>,
     accent: Color,
-    ink: Color,
+    ink: Option<Color>,
     ink_width: f32,
-    dot_radius: f32,
+    dot_diameter: Option<f32>,
+}
+
+impl ThemeSketch {
+    /// The sketch of `r`: the panel `card.container(NONE)`'s fill and
+    /// corners (square where the theme states none), outlined in
+    /// `separator.color` `separator.thickness` wide; the baseline
+    /// `colors.window.foreground` as wide; the dot `colors.accent.fill`,
+    /// `icons.sizes.large` across.
+    fn from_next(r: &native_theme::next::ResolvedTheme) -> Self {
+        let card = r.card.container(WidgetState::NONE);
+        Self {
+            surface: iced_next::fill_of(&card),
+            outline: next_colour(r.separator.color),
+            outline_width: r.separator.thickness,
+            corner_radius: iced_next::radius_of(&card),
+            accent: next_colour(r.colors.accent.fill),
+            ink: r.colors.window.foreground.map(next_colour),
+            ink_width: r.separator.thickness,
+            dot_diameter: r.icons.sizes.large,
+        }
+    }
 }
 
 impl<Message> canvas::Program<Message> for ThemeSketch {
@@ -18826,12 +18700,15 @@ impl<Message> canvas::Program<Message> for ThemeSketch {
     ) -> Vec<canvas::Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
 
-        let panel = canvas::Path::rounded_rectangle(
-            iced::Point::ORIGIN,
-            frame.size(),
-            self.corner_radius.into(),
-        );
-        frame.fill(&panel, self.surface);
+        let panel = match self.corner_radius {
+            Some(radius) => {
+                canvas::Path::rounded_rectangle(iced::Point::ORIGIN, frame.size(), radius.into())
+            }
+            None => canvas::Path::rectangle(iced::Point::ORIGIN, frame.size()),
+        };
+        if let Some(surface) = self.surface {
+            frame.fill(&panel, surface);
+        }
         frame.stroke(
             &panel,
             canvas::Stroke::default()
@@ -18840,65 +18717,109 @@ impl<Message> canvas::Program<Message> for ThemeSketch {
         );
 
         let center = frame.center();
-        let baseline = canvas::Path::line(
-            iced::Point::new(0.0, center.y),
-            iced::Point::new(frame.width(), center.y),
-        );
-        frame.stroke(
-            &baseline,
-            canvas::Stroke::default()
-                .with_color(self.ink)
-                .with_width(self.ink_width),
-        );
+        if let Some(ink) = self.ink {
+            let baseline = canvas::Path::line(
+                iced::Point::new(0.0, center.y),
+                iced::Point::new(frame.width(), center.y),
+            );
+            frame.stroke(
+                &baseline,
+                canvas::Stroke::default()
+                    .with_color(ink)
+                    .with_width(self.ink_width),
+            );
+        }
 
-        frame.fill(&canvas::Path::circle(center, self.dot_radius), self.accent);
+        // iced states a circle by its radius, the model by its diameter.
+        if let Some(diameter) = self.dot_diameter {
+            frame.fill(&canvas::Path::circle(center, diameter / 2.0), self.accent);
+        }
 
         vec![frame.into_geometry()]
     }
 }
 
-/// The Widget Info of the Graphics page's canvas.
+/// The Widget Info of the Graphics page's canvas, on the installed 0.8.0
+/// theme ([`ThemeSketch::from_next`]).
 fn canvas_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let sep = &resolved.separator;
-    let d = &resolved.defaults;
-    let line_width_s = format!("{:.0}px", sep.line_width);
-    let dot_s = format!("{:.0}px", d.icon_sizes.large);
-    widget_tooltip(
-        "Canvas",
-        &[
-            Paint::leaf(
-                "panel fill",
-                "card.background_color",
-                to_color(resolved.card.background_color),
-            ),
-            Paint::leaf("outline", "separator.line_color", to_color(sep.line_color)),
-            Paint::leaf("baseline", "defaults.text_color", to_color(d.text_color)),
-            Paint::leaf("dot", "defaults.accent_color", to_color(d.accent_color)),
-        ],
-        &[
-            ("stroke width", &line_width_s),
-            ("panel radius", "card.border.corner_radius"),
-            ("dot diameter", &dot_s),
-        ],
-        &[(
-            "Style",
-            "canvas has no Catalog and no Style: a Program paints with \
-             whatever it is given (canvas/program.rs:49-56)",
-        )],
+    let sketch = ThemeSketch::from_next(state.next_shown());
+    let mut paints = Vec::new();
+    let mut unstated = Vec::new();
+    match sketch.surface {
+        Some(surface) => paints.push(Paint::leaf(
+            "panel fill",
+            "card.container(NONE).fill",
+            surface,
+        )),
+        None => unstated.push((
+            "panel fill",
+            "card.container(NONE).fill unstated: not drawn",
+        )),
+    }
+    paints.push(Paint::leaf("outline", "separator.color", sketch.outline));
+    match sketch.ink {
+        Some(ink) => paints.push(Paint::leaf("baseline", "colors.window.foreground", ink)),
+        None => unstated.push(("baseline", "colors.window.foreground unstated: not drawn")),
+    }
+    paints.push(Paint::leaf("dot", "colors.accent.fill", sketch.accent));
+    let line_width_s = format!("separator.thickness, {}", px_text(sketch.outline_width));
+    let radius_s = match sketch.corner_radius {
+        Some(radius) => format!("card.container(NONE).corners, {}", px_text(radius)),
+        None => "card.container(NONE).corners unstated: square".to_owned(),
+    };
+    let dot_s = sketch
+        .dot_diameter
+        .map(|diameter| format!("icons.sizes.large, {}", px_text(diameter)));
+    let mut config = vec![
+        ("stroke width", line_width_s.as_str()),
+        ("panel radius", radius_s.as_str()),
+    ];
+    match &dot_s {
+        Some(dot) => config.push(("dot diameter", dot)),
+        None => unstated.push(("dot", "icons.sizes.large unstated: not drawn")),
+    }
+    unstated.push((
+        "Style",
+        "canvas has no Catalog and no Style: a Program paints with \
+         whatever it is given (canvas/program.rs:49-56), so a part the \
+         theme states no value for is not drawn",
+    ));
+    widget_tooltip("Canvas", &paints, &config, &unstated)
+}
+
+/// The QR code's cell and background colours on the installed 0.8.0 theme:
+/// `colors.window.foreground` on `colors.window.background`, each where the
+/// theme states it; `None` for iced's own ([`qr_code::default`]).
+fn next_qr_colours(r: &native_theme::next::ResolvedTheme) -> (Option<Color>, Option<Color>) {
+    let window = &r.colors.window;
+    (
+        window.foreground.map(next_colour),
+        window.background.map(next_colour),
     )
 }
 
 /// The Widget Info of the Graphics page's QR code.
 fn qr_code_info(state: &State) -> String {
-    let d = &state.current_resolved.defaults;
-    let qr_cell = to_color(d.text_color);
-    let qr_background = to_color(d.background_color);
+    let (cell, background) = next_qr_colours(state.next_shown());
+    let own = qr_code::default(&state.current_theme);
+    let paint = |role, home: &str, colour: Option<Color>, own: Color| match colour {
+        Some(colour) => Paint::leaf(role, home, colour),
+        None => Paint::leaf(
+            role,
+            format!("{home} unstated: iced's own (qr_code::default, the palette's)"),
+            own,
+        ),
+    };
     widget_tooltip(
         "QRCode",
         &[
-            Paint::leaf("cell", "defaults.text_color", qr_cell),
-            Paint::leaf("background", "defaults.background_color", qr_background),
+            paint("cell", "colors.window.foreground", cell, own.cell),
+            paint(
+                "background",
+                "colors.window.background",
+                background,
+                own.background,
+            ),
         ],
         &[("payload", QR_PAYLOAD)],
         &[(
@@ -18908,60 +18829,49 @@ fn qr_code_info(state: &State) -> String {
     )
 }
 
-/// The Widget Info of the Graphics page's Markdown.
+/// The Widget Info of the Graphics page's Markdown, on the installed 0.8.0
+/// theme ([`next_markdown_settings`]).
 fn markdown_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
+    let next = state.next_shown();
+    let link = match iced_next::text_color_of(&next.link.label(WidgetState::NONE)) {
+        Some(link) => Paint::leaf("link", "link.label(NONE).color", link),
+        None => Paint::leaf(
+            "link",
+            "link.label(NONE).color unstated: iced's own (markdown::Style::from)",
+            markdown::Style::from(&state.current_theme).link_color,
+        ),
+    };
+    let headings = format!(
+        "{} / {}",
+        next_font_row("text_scale.dialog_title", next_page_title(next)),
+        next_font_row("text_scale.section_heading", next_section_title(next)),
+    );
+    let body = next_font_row("typography.body", &next.typography.body);
+    let code = next_font_row("typography.monospace", &next.typography.monospace);
     widget_tooltip(
         "Markdown",
         &[
-            Paint::leaf(
-                "link",
-                "link.font.color",
-                to_color(resolved.link.font.color),
-            ),
+            link,
             // Markdown states no colour of its own, so iced paints it with
             // the slot `Base::base` hands every inheriting widget
             // (`iced_core` theme.rs:334); the connector sets that slot from
-            // `defaults.text_color`, so reading it live shows what is on
-            // screen rather than the palette input behind it.
+            // `colors.window.foreground`, so reading it live shows what is
+            // on screen rather than the palette input behind it.
             Paint::leaf(
                 "text",
-                "extended.background.base.text, from defaults.text_color",
+                "extended.background.base.text, from colors.window.foreground",
                 state.current_theme.extended_palette().background.base.text,
             ),
         ],
         &[
-            (
-                "base size",
-                "defaults.font.size, times the text-scaling factor",
-            ),
-            (
-                "h1 / h2",
-                format!(
-                    "text_scale dialog_title / section_heading, size (times the \
-                     text-scaling factor); defaults.font's family, {}; weight {} / {}",
-                    family_label(
-                        &resolved.defaults.font.family,
-                        &role_drawn(section_title(ts), resolved)
-                    ),
-                    weight_label(page_title(ts).weight, &role_drawn(page_title(ts), resolved)),
-                    weight_label(
-                        section_title(ts).weight,
-                        &role_drawn(section_title(ts), resolved)
-                    ),
-                )
-                .as_str(),
-            ),
+            ("text", &body),
+            ("h1 / h2", &headings),
             (
                 "h3 – h6",
-                "defaults.font: the model names no role between section_heading \
+                "typography.body: the model names no role between section_heading \
                  and body text",
             ),
-            (
-                "code size",
-                "defaults.mono_font.size, times the text-scaling factor",
-            ),
+            ("code", &code),
         ],
         &[
             (
@@ -18989,52 +18899,79 @@ fn markdown_info(state: &State) -> String {
     )
 }
 
-/// Canvas, QRCode and Markdown: the three modules that paint content the
-/// application supplies rather than a control.
-fn view_graphics(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let sep = &resolved.separator;
-    let d = &resolved.defaults;
+/// The Graphics page's Markdown settings and its headings' fonts on the
+/// installed 0.8.0 theme `r`: the text `typography.body`, the code
+/// `typography.monospace`, `h1` and `h2` [`next_page_title`] and
+/// [`next_section_title`], `h3` and `h4` the body's size, each at its size
+/// as the theme resolved it (the text scale applied) and in its font where
+/// iced can draw it ([`next_font_from_database`]); the links
+/// `link.label(NONE).color`. Every value the theme leaves unstated, and
+/// every field the model does not carry, is iced's own, read at run time
+/// from `theme` (`markdown::Style::from`, `Settings::with_text_size`).
+fn next_markdown_settings(
+    r: &native_theme::next::ResolvedTheme,
+    theme: &Theme,
+) -> (markdown::Settings, RoleHeadings) {
+    let typography = &r.typography;
+    let iced_style = markdown::Style::from(theme);
+    let font = |style: &TextStyle, mono: bool, own: iced::Font| {
+        next_font_from_database(style, mono).map_or(own, |drawn| drawn.font)
+    };
+    let body_font = font(&typography.body, false, iced_style.font);
+    let style = markdown::Style {
+        font: body_font,
+        inline_code_highlight: iced_style.inline_code_highlight,
+        inline_code_padding: iced_style.inline_code_padding,
+        inline_code_color: iced_style.inline_code_color,
+        inline_code_font: font(&typography.monospace, true, iced_style.inline_code_font),
+        code_block_font: font(&typography.monospace, true, iced_style.code_block_font),
+        link_color: iced_next::text_color_of(&r.link.label(WidgetState::NONE))
+            .unwrap_or(iced_style.link_color),
+    };
+    let body = typography.body.size_px;
+    let mut settings = markdown::Settings::with_text_size(body, style);
+    settings.h1_size = next_page_title(r).size_px.into();
+    settings.h2_size = next_section_title(r).size_px.into();
+    settings.h3_size = body.into();
+    settings.h4_size = body.into();
+    settings.code_size = typography.monospace.size_px.into();
+    let headings = RoleHeadings {
+        h1: font(next_page_title(r), false, body_font),
+        h2: font(next_section_title(r), false, body_font),
+    };
+    (settings, headings)
+}
 
-    let header = section_header(
+/// Canvas, QRCode and Markdown: the three modules that paint content the
+/// application supplies rather than a control, on the installed 0.8.0
+/// theme.
+fn view_graphics(state: &State) -> Element<'_, Message> {
+    let next = state.next_shown();
+    let typography = &next.typography;
+    let gap = Gaps::from_next(&next.layout);
+    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+
+    let header = next_section_header(
         "Graphics Widgets",
         "Canvas, QRCode and Markdown: content the application paints itself",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
     // ---- Canvas ----
 
-    let sketch = ThemeSketch {
-        surface: to_color(resolved.card.background_color),
-        outline: to_color(sep.line_color),
-        outline_width: sep.line_width,
-        corner_radius: resolved.card.border.corner_radius,
-        accent: to_color(d.accent_color),
-        ink: to_color(d.text_color),
-        ink_width: sep.line_width,
-        // iced states a circle by its radius, the model by its diameter.
-        dot_radius: d.icon_sizes.large / 2.0,
-    };
-
     let canvas_demo = hoverable(
         UnlistedKey::Canvas,
         column![
-            text("Canvas (a drawing from the theme)").role(section_title(ts), resolved, a11y),
+            title("Canvas (a drawing from the theme)"),
             text(
                 "Every colour and every width below is a ResolvedTheme field, \
                  captured when the program is built."
             )
-            .body(resolved, a11y),
+            .next_body(next),
             probe(
                 probes::GRAPHICS_CANVAS,
                 Length::Shrink,
-                canvas(sketch)
+                canvas(ThemeSketch::from_next(next))
                     .width(Length::Fixed(280.0))
                     .height(Length::Fixed(120.0)),
             ),
@@ -19045,26 +18982,31 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
 
     // ---- QR code ----
 
-    let qr_cell = to_color(d.text_color);
-    let qr_background = to_color(d.background_color);
+    let (qr_cell, qr_background) = next_qr_colours(next);
     let qr_demo: Element<'_, Message> = match &state.qr_data {
         Some(data) => qr_code(data)
-            .style(move |_theme: &Theme| qr_code::Style {
-                cell: qr_cell,
-                background: qr_background,
+            .style(move |theme: &Theme| {
+                let own = qr_code::default(theme);
+                qr_code::Style {
+                    cell: qr_cell.unwrap_or(own.cell),
+                    background: qr_background.unwrap_or(own.background),
+                }
             })
             .into(),
-        None => text("The payload could not be encoded as a QR code.")
-            .role(&ts.caption, resolved, a11y)
-            .into(),
+        None => next_caption_text(
+            state,
+            "The payload could not be encoded as a QR code.",
+            None,
+        )
+        .into(),
     };
 
     let qr_section = hoverable(
         UnlistedKey::QrCode,
         column![
-            text("QRCode").role(section_title(ts), resolved, a11y),
+            title("QRCode"),
             text("Its two-colour Style is the platform's foreground on its background:")
-                .body(resolved, a11y),
+                .next_body(next),
             probe(probes::GRAPHICS_QR_CODE, Length::Shrink, qr_demo),
         ]
         .spacing(gap.widget)
@@ -19073,28 +19015,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
 
     // ---- Markdown ----
 
-    let md_settings = {
-        // Every field the model does not carry is iced's own, read at run
-        // time from the theme the connector produced.
-        let iced_style = markdown::Style::from(&state.current_theme);
-        let style = markdown::Style {
-            font: theme_font(&resolved.defaults.font),
-            inline_code_highlight: iced_style.inline_code_highlight,
-            inline_code_padding: iced_style.inline_code_padding,
-            inline_code_color: iced_style.inline_code_color,
-            inline_code_font: theme_mono_font(resolved),
-            code_block_font: theme_mono_font(resolved),
-            link_color: to_color(resolved.link.font.color),
-        };
-        let body = native_theme_iced::font_size(resolved, a11y);
-        let mut settings = markdown::Settings::with_text_size(body, style);
-        settings.h1_size = scaled_text_size(page_title(ts).size, a11y).into();
-        settings.h2_size = scaled_text_size(section_title(ts).size, a11y).into();
-        settings.h3_size = body.into();
-        settings.h4_size = body.into();
-        settings.code_size = native_theme_iced::mono_font_size(resolved, a11y).into();
-        settings
-    };
+    let (md_settings, headings) = next_markdown_settings(next, &state.current_theme);
 
     let link_line = match &state.markdown_link {
         Some(uri) => format!("Last link clicked: {uri}"),
@@ -19104,23 +19025,22 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     let markdown_demo = hoverable(
         UnlistedKey::Markdown,
         column![
-            text("Markdown").role(section_title(ts), resolved, a11y),
+            title("Markdown"),
             probe(
                 probes::GRAPHICS_MARKDOWN,
                 Fill,
                 container(markdown::view_with(
                     state.markdown_content.items(),
                     md_settings,
-                    &RoleHeadings {
-                        h1: role_font(page_title(ts), resolved),
-                        h2: role_font(section_title(ts), resolved),
-                    },
+                    &headings,
                 ))
-                .padding(card_padding(resolved, &state.layout))
-                .style(styles::container_card(resolved))
+                .padding(next_card_padding(next))
+                .next_style(iced_next::styles::container_card(next), |card, style| {
+                    card.style(style)
+                })
                 .width(Fill),
             ),
-            text(link_line).role(&ts.caption, resolved, a11y),
+            next_caption_text(state, link_line, None),
         ]
         .spacing(gap.widget)
         .into(),
@@ -19129,9 +19049,9 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     column![
         header,
         canvas_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         qr_section,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         markdown_demo,
     ]
     .spacing(gap.section)
@@ -19223,49 +19143,53 @@ const AW_TAB_LABEL_PADDING: f32 = 5.0;
 
 /// The one width an `iced_aw` `TabBar` lays each of its tabs out at
 /// (`tab_width`, iced_aw 0.14.1 `src/widget/tab_bar.rs:307-312`, applied to
-/// the tab and its label at `:490-495`): `tab.min_width`, or where the
-/// widest of `labels` is wider, that label as iced_aw shapes it, at its
-/// text size plus one (`:398-404`), inside [`AW_TAB_LABEL_PADDING`] and the
-/// tab's `padding`, to the next whole pixel. iced_aw takes no minimum and a
-/// fixed width narrower than a label wraps it onto a second line its tab
-/// clips; `Length::Shrink`, the other sizing it offers, would drop the
-/// theme's minimum (material-3's 90, windows-11's 100).
+/// the tab and its label at `:490-495`), on the installed 0.8.0 theme: the
+/// widest of `labels` as iced_aw shapes it, in `tab.label(NONE)`
+/// ([`next_measured_font`]) at its text size plus one (`:398-404`), inside
+/// [`AW_TAB_LABEL_PADDING`] and the tab's `padding`, to the next whole
+/// pixel; at least `tab.tab(NONE).min_size[0]` where stated. iced_aw takes
+/// no minimum and a fixed width narrower than a label wraps it onto a
+/// second line its tab clips; `Length::Shrink`, the other sizing it offers,
+/// would drop the theme's minimum (material-3's 90, windows-11's 100).
 #[cfg(feature = "iced_aw")]
-fn aw_tab_width(state: &State, labels: &[&'static str], padding: Padding) -> f32 {
-    let t = &state.current_resolved.tab;
-    let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+fn next_aw_tab_width(state: &State, labels: &[&'static str], padding: Padding) -> f32 {
+    let r = state.next_shown();
+    let style = r.tab.label(WidgetState::NONE);
+    let font = next_measured_font(&style);
+    let size = style.size_px + 1.0;
     let widest = labels
         .iter()
-        .map(|label| state.label_widths.width(label, theme_font(&t.font), size))
+        .map(|label| state.label_widths.width(label, font, size))
         .fold(0.0, f32::max);
-    t.min_width
-        .max((widest + 2.0 * AW_TAB_LABEL_PADDING + padding.x()).ceil())
+    let content = (widest + 2.0 * AW_TAB_LABEL_PADDING + padding.x()).ceil();
+    r.tab.tab(WidgetState::NONE).min_size[0].map_or(content, |min| min.max(content))
 }
 
 /// The one height an `iced_aw` `TabBar` lays its tabs out at, the twin of
-/// [`aw_tab_width`]: `tab.min_height`, or where a label's line is taller,
-/// that line inside [`AW_TAB_LABEL_PADDING`] and the tab's `padding`, to the
-/// next whole pixel. iced_aw gives the bar's row, each tab's row and the
-/// label's column the one fixed height (iced_aw 0.14.1
-/// `src/widget/tab_bar.rs:491`, `:509`); the tab's padding and the label's
-/// come off it (`:494`, `:418`; iced_core 0.14.0 `src/layout/limits.rs:79-85`,
-/// `:122-133`). The label is laid out on its text size plus one at iced's
-/// 1.3 (`:398-404`, `:420`) and drawn at its text size, centred in that
-/// node and clipped to it (`:696`, `:901-918`), so a height that leaves the
-/// laid-out line less room cuts the label: macos-tahoe's `tab.min_height` 24
-/// leaves a 4 px node of its 23.8 px line (13 pt, 17.3 px, plus one).
+/// [`next_aw_tab_width`], on the installed 0.8.0 theme: the label's line
+/// inside [`AW_TAB_LABEL_PADDING`] and the tab's `padding`, to the next
+/// whole pixel; at least `tab.tab(NONE).min_size[1]` where stated. iced_aw
+/// gives the bar's row, each tab's row and the label's column the one fixed
+/// height (iced_aw 0.14.1 `src/widget/tab_bar.rs:491`, `:509`); the tab's
+/// padding and the label's come off it (`:494`, `:418`; iced_core 0.14.0
+/// `src/layout/limits.rs:79-85`, `:122-133`). The label,
+/// `tab.label(NONE)`, is laid out on its text size plus one at iced's own
+/// line height, 1.3 (`LineHeight::default`, `:398-404`, `:420`), and drawn
+/// at its text size, centred in that node and clipped to it (`:696`,
+/// `:901-918`), so a height that leaves the laid-out line less room cuts
+/// the label.
 #[cfg(feature = "iced_aw")]
-fn aw_tab_height(state: &State, padding: Padding) -> f32 {
-    let t = &state.current_resolved.tab;
-    let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+fn next_aw_tab_height(r: &native_theme::next::ResolvedTheme, padding: Padding) -> f32 {
+    let size = r.tab.label(WidgetState::NONE).size_px + 1.0;
     let line = f32::from(text::LineHeight::default().to_absolute(iced::Pixels(size)));
-    t.min_height
-        .max((line + 2.0 * AW_TAB_LABEL_PADDING + padding.y()).ceil())
+    let content = (line + 2.0 * AW_TAB_LABEL_PADDING + padding.y()).ceil();
+    r.tab.tab(WidgetState::NONE).min_size[1].map_or(content, |min| min.max(content))
 }
 
 /// How far the Extra page's menu panels lie from the item that opens them,
-/// and their rows and the context menu's entries from one another where the
-/// theme states no `menu.panel_padding_vertical` ([`aw_menu_row_gap`]) (spec
+/// and their rows and the context menu's entries from one another where
+/// `menu.panel(NONE).padding` states no top and bottom
+/// ([`next_aw_menu_row_gap`]) (spec
 /// §3.1): the showcase's own, 2 px, as the model states no menu offset and
 /// no row gap, so a drop-down's panel stands clear of the foot of its title,
 /// which iced_aw's offset of the rows alone would cover. The gpui showcase
@@ -19288,8 +19212,7 @@ const AW_MENU_GAP: f32 = 2.0;
 /// states no stroke. The sides are physical: iced 0.14 has no layout
 /// direction.
 fn menu_popup_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
-    let line = iced_next::stroke_width_of(&menu_frame(r))
-        .unwrap_or(iced_aw::style::menu_bar::Style::default().menu_border.width);
+    let line = menu_frame_width(r);
     let [top, right, bottom, left] = iced_next::padding_of(&r.menu.panel(WidgetState::NONE));
     let [popup_top, popup_right, popup_bottom, popup_left] =
         iced_next::padding_of(&r.popover.panel);
@@ -19304,86 +19227,10 @@ fn menu_popup_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
     }
 }
 
-/// The padding of the Extra page's menu panels round their rows, the
-/// drop-downs' and the context menu's popup, on the 0.7.2 theme until that
-/// page moves to the 0.8.0 model ([`menu_popup_padding`] the window's
-/// menus'): at the left and right `menu.panel_padding_horizontal`, at the
-/// top and bottom `menu.panel_padding_vertical`, each inside
-/// `popover.border.line_width` (the line `styles::aw::menu`'s `menu_border`
-/// and [`menu_panel`]'s container paint over the panel's padding, iced_aw
-/// 0.14.1 `src/widget/menu/menu_tree.rs:770-779`); each pair the theme
-/// leaves unstated `popover.border.padding`, inside the same line,
-/// [`AW_MENU_PADDING`] on a side that leaves unstated too.
-#[cfg(feature = "iced_aw")]
-fn aw_menu_padding(resolved: &ResolvedTheme) -> Padding {
-    let popup = &resolved.popover.border;
-    let pad = native_theme_iced::padding_inside_border(popup, Padding::new(AW_MENU_PADDING));
-    let m = &resolved.menu;
-    let (left, right) = m
-        .panel_padding_horizontal
-        .map_or((pad.left, pad.right), |h| {
-            (h + popup.line_width, h + popup.line_width)
-        });
-    let (top, bottom) = m.panel_padding_vertical.map_or((pad.top, pad.bottom), |v| {
-        (v + popup.line_width, v + popup.line_width)
-    });
-    Padding {
-        top,
-        right,
-        bottom,
-        left,
-    }
-}
-
-/// How far apart the Extra page's menu rows and its context menu's entries
-/// lie: none where the theme states `menu.panel_padding_vertical`, whose
-/// rows touch, as Breeze's do (platform-facts §2.6), and [`AW_MENU_GAP`]
-/// where it does not; the window's menus space their rows 0 in every theme
-/// (`Menu::new`, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:155`).
-#[cfg(feature = "iced_aw")]
-fn aw_menu_row_gap(resolved: &ResolvedTheme) -> f32 {
-    if resolved.menu.panel_padding_vertical.is_some() {
-        0.0
-    } else {
-        AW_MENU_GAP
-    }
-}
-
-/// A menu row's height: `menu.row_height`, exact at a text scale of 1
-/// ([`rows::scaled_height`]), grown above it to hold the row's line and its
-/// padding `pad`; else at least `menu.min_row_height`, grown to the row's
-/// line box and padding, the line box iced's unrounded text size times
-/// `defaults.line_height`, as [`Typeset::themed`] lays it; else none, the
-/// row its content's height. `row_height` wins where a theme states both
-/// (the model's precedence, `MenuTheme::min_row_height`'s doc). The Extra
-/// page's menus take it, on the 0.7.2 theme until that page moves, each
-/// row's label centred in a height it returns; the window's menus and the
-/// page tabs' take [`next_menu_row_height`].
-#[cfg(feature = "iced_aw")]
-fn menu_row_height(
-    resolved: &ResolvedTheme,
-    a11y: &AccessibilityPreferences,
-    pad: Padding,
-) -> Option<f32> {
-    let m = &resolved.menu;
-    let line = resolved.defaults.line_height;
-    match (m.row_height, m.min_row_height) {
-        (Some(h), _) => Some(rows::scaled_height(
-            h,
-            a11y,
-            m.font.size,
-            line,
-            pad.y(),
-            0.0,
-        )),
-        (None, Some(min)) => Some(min.max(scaled_text_size(m.font.size, a11y) * line + pad.y())),
-        (None, None) => None,
-    }
-}
-
-/// A drop-down of the Extra page's `MenuBar`, `width` wide
-/// ([`menu_width`]), its rows `spacing` apart ([`aw_menu_row_gap`]), its
-/// panel padded by `padding` round them ([`aw_menu_padding`]). `iced_aw`
+/// A drop-down of the Extra page's `MenuBar`, `width` wide where it is
+/// known ([`menu_width`]), `iced_aw`'s own width where not ([`sized_menu`]),
+/// its rows `spacing` apart ([`next_aw_menu_row_gap`]), its panel padded by
+/// `padding` round them ([`menu_popup_padding`]). `iced_aw`
 /// pads the panel out from the rows (`pad_rectangle`, iced_aw 0.14.1
 /// `src/widget/menu/menu_tree.rs:419`, `:770`) and places the rows `offset`
 /// from the item that opens the menu, so the rows lie `facing` (the panel's
@@ -19392,32 +19239,48 @@ fn menu_row_height(
 #[cfg(feature = "iced_aw")]
 fn aw_menu<'a>(
     items: Vec<Item<'a, Message, Theme, iced::Renderer>>,
-    width: f32,
+    width: Option<f32>,
     gap: f32,
     spacing: f32,
     facing: f32,
     padding: Padding,
 ) -> Menu<'a, Message, Theme, iced::Renderer> {
-    Menu::new(items)
-        .width(width)
+    sized_menu(Menu::new(items), width)
         .offset(facing + gap)
         .spacing(spacing)
         .padding(padding)
 }
 
-/// The Extra page's context menu's popup, drawn as the page's menus'
-/// panel: `styles::aw::menu`'s `menu_background`, `menu_border` and
-/// `menu_shadow`, read from its output (`menu.background_color`, framed by
-/// `popover.border`, with iced_aw's shadow where
-/// `popover.border.shadow_enabled`). `iced_aw`'s `ContextMenu`
-/// styles only its backdrop (`style/context_menu.rs:48-59`), and the popup
-/// is the page's own element.
+/// How far apart the Extra page's menu rows and its context menu's entries
+/// lie, on the installed 0.8.0 theme: none where `menu.panel(NONE).padding`
+/// states its top and bottom, whose rows touch, as Breeze's do
+/// (platform-facts §2.6), and [`AW_MENU_GAP`] where it does not.
 #[cfg(feature = "iced_aw")]
-fn menu_panel(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style + use<> {
-    let menu = styles::aw::menu(resolved);
+fn next_aw_menu_row_gap(r: &native_theme::next::ResolvedTheme) -> f32 {
+    match iced_next::padding_of(&r.menu.panel(WidgetState::NONE)) {
+        [Some(_), _, Some(_), _] => 0.0,
+        _ => AW_MENU_GAP,
+    }
+}
+
+/// The Extra page's context menu's popup on the installed 0.8.0 theme,
+/// drawn as the page's menus' panel: `iced_next::styles::aw::menu`'s
+/// `menu_background`, `menu_border` and `menu_shadow`, read from its
+/// output; `iced_aw`'s own menu's, `menu_bar::primary`'s, where the
+/// connector cannot map the menu. `iced_aw`'s `ContextMenu` styles only its
+/// backdrop (`style/context_menu.rs:48-59`), and the popup is the page's
+/// own element.
+#[cfg(feature = "iced_aw")]
+fn next_menu_panel(
+    r: &native_theme::next::ResolvedTheme,
+) -> impl Fn(&Theme) -> container::Style + use<> {
+    let menu = iced_next::styles::aw::menu(r);
     move |theme| {
         // A `MenuBar` asks its style for `Active` alone (`menu_bar.rs:587`).
-        let panel = menu(theme, AwStatus::Active);
+        let panel = match &menu {
+            Ok(menu) => menu(theme, AwStatus::Active),
+            Err(_) => iced_aw::style::menu_bar::primary(theme, AwStatus::Active),
+        };
         container::Style {
             background: Some(panel.menu_background),
             border: panel.menu_border,
@@ -19427,24 +19290,27 @@ fn menu_panel(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style +
     }
 }
 
-/// The padding of the Extra page's `iced_aw` `Card`'s head, body and foot,
-/// by the one rule every card takes ([`card_padding`]): iced_aw takes a
-/// padding per section, whole (`Card::padding_head`, `padding_body`,
-/// `padding_foot`), and paints the card's border over its whole bounds, its
-/// sections inside them with no inset (iced_aw 0.14.1
-/// `src/widget/card.rs:604-633`), so a side that meets the card's edge (the
-/// head's top, each section's left and right, the foot's bottom) is
-/// [`card_padding`]'s side, the line width with it, and a side between two
-/// sections the stated side or `layout.container_margin` alone. iced_aw's
+/// The padding of the Extra page's `iced_aw` `Card`'s head, body and foot
+/// on the installed 0.8.0 theme, by the one rule every card takes
+/// ([`next_card_padding`]): iced_aw takes a padding per section, whole
+/// (`Card::padding_head`, `padding_body`, `padding_foot`), and paints the
+/// card's border over its whole bounds, its sections inside them with no
+/// inset (iced_aw 0.14.1 `src/widget/card.rs:604-633`), so a side that
+/// meets the card's edge (the head's top, each section's left and right,
+/// the foot's bottom) is [`next_card_padding`]'s side, the stroke width
+/// with it, and a side between two sections the side
+/// `card.container(NONE).padding` states, `layout.container_margin` where it
+/// leaves it unstated, none where that is unstated too, alone. iced_aw's
 /// own padding, which it keeps private (`widget/card.rs:21`), is set aside
 /// on every side.
 #[cfg(feature = "iced_aw")]
-fn aw_card_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> (Padding, Padding, Padding) {
-    let edge = card_padding(resolved, layout);
-    let inside = native_theme_iced::padding_or(
-        &resolved.card.border.padding,
-        Padding::from(Gaps::from_layout(layout).container),
-    );
+fn next_aw_card_padding(r: &native_theme::next::ResolvedTheme) -> (Padding, Padding, Padding) {
+    let edge = next_card_padding(r);
+    let margin = r
+        .layout
+        .container_margin
+        .map_or(Padding::ZERO, Padding::from);
+    let inside = stated_sides(&r.card.container(WidgetState::NONE), margin);
     (
         Padding {
             bottom: inside.bottom,
@@ -19460,6 +19326,60 @@ fn aw_card_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> (Padding, 
             ..edge
         },
     )
+}
+
+/// The padding of an `iced_aw` `TabBar`'s tab on the installed 0.8.0 theme:
+/// where `tab.tab(NONE).padding` states every side, each side plus the
+/// width of the open tab's outline, as the page tabs' padding
+/// ([`next_tab_padding`]) holds it (the padding starts at the stroke's
+/// inner edge, spec §2, and every tab keeps that room); `None` where it
+/// leaves a side unstated, as iced_aw takes a padding whole and keeps its
+/// own private (widget/tab_bar.rs:41), which then stands. iced_aw pads a
+/// tab's label row by the padding (iced_aw 0.14.1 `src/widget/tab_bar.rs:494`)
+/// and paints the tab's outline on that row's bounds, over the padding
+/// (`:853-873`); the outline is `tab.tab(SELECTED).stroke.width` where
+/// `iced_next::styles::aw::tab_bar` maps it, else iced_aw's own,
+/// `tab_label_border_width` 1 (`src/style/tab_bar.rs:58`, which
+/// `tab_bar::primary` keeps, `:92-111`).
+#[cfg(feature = "iced_aw")]
+fn next_aw_tab_padding(r: &native_theme::next::ResolvedTheme) -> Option<Padding> {
+    let own = iced_aw::style::tab_bar::Style::default().tab_label_border_width;
+    let line = match iced_next::styles::aw::tab_bar(r) {
+        Ok(_) => iced_next::stroke_width_of(&r.tab.tab(WidgetState::SELECTED)).unwrap_or(own),
+        Err(_) => own,
+    };
+    match iced_next::padding_of(&r.tab.tab(WidgetState::NONE)) {
+        [Some(top), Some(right), Some(bottom), Some(left)] => Some(Padding {
+            top: top + line,
+            right: right + line,
+            bottom: bottom + line,
+            left: left + line,
+        }),
+        _ => None,
+    }
+}
+
+/// The padding of the Extra page's `SelectionList`'s rows on the installed
+/// 0.8.0 theme: [`next_list_row_padding`], its top and bottom each half of
+/// what the label, `list.item_label(NONE)` at its size, leaves of
+/// `list.row(NONE).min_size[1]` where that is more than the padding gives:
+/// iced_aw lays a row out as `text_size + padding.y()`
+/// (`selection_list/list.rs:118`, `:209`) and takes no row height. Only the
+/// vertical sides grow: the label is drawn at the row's own `bounds.x`
+/// (`selection_list/list.rs:274`), so horizontal padding never reaches it,
+/// and the list's intrinsic width does read `padding.x()`
+/// (`selection_list.rs:237`, `:244`).
+#[cfg(feature = "iced_aw")]
+fn next_aw_list_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    let pad = next_list_row_padding(r);
+    let label = r.list.item_label(WidgetState::NONE).size_px;
+    match r.list.row(WidgetState::NONE).min_size[1] {
+        Some(min) if min - label > pad.y() => {
+            let half = (min - label) / 2.0;
+            pad.top(half).bottom(half)
+        }
+        _ => pad,
+    }
 }
 
 /// The status `iced_aw` asks its widgets' style functions for.
@@ -19494,6 +19414,31 @@ fn aw_paints<O>(
 /// The Widget Info of the Extra page's iced_aw Card.
 fn aw_card_info(state: &State) -> String {
     let resolved = &state.current_resolved;
+    let next = state.next_shown();
+    // The corners as `iced_next::styles::aw::card` rounds them where it maps
+    // the card, iced_aw's own (`card::primary`) where it does not or the
+    // theme states none.
+    let stated = next
+        .card
+        .container(WidgetState::NONE)
+        .stated
+        .contains(PartStated::CORNERS);
+    let radius_s = match iced_next::styles::aw::card(next) {
+        Ok(style) => format!(
+            "{}, {}",
+            px_text(style(&Theme::Light, AwStatus::Active).border_radius),
+            if stated {
+                "card.container(NONE).corners"
+            } else {
+                "iced_aw's own (card::primary): card.container(NONE).corners unstated"
+            }
+        ),
+        Err(unmapped) => format!(
+            "{}, iced_aw's own (card::primary): {} gives iced no value",
+            px_text(iced_aw::style::card::primary(&Theme::Light, AwStatus::Active).border_radius),
+            unmapped.home()
+        ),
+    };
     widget_tooltip(
         "Card",
         &aw_paints(
@@ -19514,7 +19459,7 @@ fn aw_card_info(state: &State) -> String {
             &line_zero("card"),
         ),
         &[
-            ("radius", "card.border.corner_radius"),
+            ("radius", radius_s.as_str()),
             (
                 "head, body, foot",
                 "transparent: the surface shows through them, under the \
@@ -19523,19 +19468,21 @@ fn aw_card_info(state: &State) -> String {
             ),
             (
                 "section padding",
-                "card.border.padding, layout.container_margin on a side it \
-                 leaves unstated, as every card (card_padding), on the head, \
-                 the body and the foot alike: a side at the card's edge is \
-                 that side plus card.border.line_width, a side between two \
+                "card.container(NONE).padding's stated sides, \
+                 layout.container_margin on a side it leaves unstated, none \
+                 where that is unstated too, as every card \
+                 (next_aw_card_padding), on the head, the body and the foot \
+                 alike: a side at the card's edge is that side plus \
+                 card.container(NONE).stroke.width, a side between two \
                  sections the side alone; iced_aw's own (widget/card.rs:21) \
                  is set aside",
             ),
-            ("buttons' padding", "button_padding"),
+            ("buttons' padding", "next_button_padding"),
             (
                 "buttons' label",
-                font_row("button.font", &resolved.button.font).as_str(),
+                next_font_row("button.label(NONE)", &next.button.label(WidgetState::NONE)).as_str(),
             ),
-            ("buttons' min size", button_min_size_row(resolved).as_str()),
+            ("buttons' min size", next_button_min_size_row(next).as_str()),
         ],
         &[(
             "close icon",
@@ -19551,6 +19498,7 @@ fn aw_card_info(state: &State) -> String {
 /// The Widget Info of the Extra page's iced_aw MenuBar and context menu.
 fn aw_menu_info(state: &State) -> String {
     let resolved = &state.current_resolved;
+    let next = state.next_shown();
     let mut paints = aw_paints(
         state,
         "styles::aw::menu",
@@ -19587,22 +19535,27 @@ fn aw_menu_info(state: &State) -> String {
         &[
             (
                 "item height",
-                "menu_row_height: menu.row_height where the theme states one, on \
-                 the item button of the drop-downs and the context menu alike, its \
-                 label centred in it, grown above a text scale of 1 to hold its \
-                 line and padding (rows::scaled_height); else at least \
-                 menu.min_row_height, grown to the line box and padding",
+                "next_menu_row_height: menu.item(NONE).max_size[1] where the theme \
+                 states it, on the item button of the drop-downs and the context \
+                 menu alike, its label centred in it, grown above a text scale of 1 \
+                 to hold its line and padding; else at least \
+                 menu.item(NONE).min_size[1], grown to the line box and padding; \
+                 else the row's content",
             ),
             (
                 "item padding",
-                "menu.border.padding's stated sides, iced's \
-                 button::DEFAULT_PADDING for the others, on the item button",
+                "menu.item(NONE).padding's stated sides, iced's \
+                 button::DEFAULT_PADDING for the others, on the item button \
+                 (next_menu_row_padding)",
             ),
             (
                 "item label",
                 format!(
                     "{}, the context menu's too",
-                    font_row("menu.font", &resolved.menu.font)
+                    next_font_row(
+                        "menu.item_label(NONE)",
+                        &next.menu.item_label(WidgetState::NONE)
+                    )
                 )
                 .as_str(),
             ),
@@ -19610,37 +19563,37 @@ fn aw_menu_info(state: &State) -> String {
                 "label colour",
                 "menu_bar::Style has no text colour, and the titles and rows \
                  are our own buttons, drawn as the window's menus' are: \
-                 aw_menu_row, menu.font.color at rest with no fill, \
-                 menu.hover_text_color on menu.hover_background under the \
-                 pointer, outlined in menu.hover_border_color where stated; \
-                 while pressed menu.active_background with no outline where \
-                 stated, the hovered look where not, lettered \
-                 menu.active_text_color (else menu.hover_text_color); \
-                 menu.disabled_text_color disabled; a title aw_menu_title, \
-                 menu.bar_hover_background (else menu.hover_background) \
-                 under the pointer and while iced_aw marks its menu open, \
-                 lettered menu.bar_hover_text_color (else \
-                 menu.hover_text_color), with no outline",
+                 menu_row, menu.item_label(NONE).color at rest with no fill, \
+                 menu.item_label(HOVER).color on menu.item(HOVER).fill under \
+                 the pointer and menu.item_label(PRESSED).color on \
+                 menu.item(PRESSED).fill pressed, outlined by the state's \
+                 stroke where a rule states it; menu.item_label(DISABLED).color \
+                 disabled; iced's own flat button's where a state is unstated; \
+                 a title menu_title, menu_bar.item(HOVER).fill (else \
+                 menu.item(HOVER).fill) under the pointer and while iced_aw \
+                 marks its menu open, lettered menu_bar.item_label(HOVER).color \
+                 (else menu.item_label(HOVER).color), with no outline",
             ),
             (
                 "title padding",
-                "title_padding: menu.bar_padding_horizontal and \
-                 .bar_padding_vertical where stated, the item padding's sides \
-                 where unstated",
+                "next_title_padding: menu_bar.item(NONE).padding's stated sides, \
+                 the item padding's sides where unstated",
             ),
             (
                 "draw path",
                 "iced_aw paints path and path border only under \
                  DrawPath::Backdrop (widget/menu/menu_bar.rs:598-621, \
                  menu_tree.rs:783-801); these menus keep its default, \
-                 FakeHovering, so the highlight shown is aw_menu_row's",
+                 FakeHovering, so the highlight shown is menu_row's",
             ),
             (
                 "panel padding",
-                "aw_menu_padding: menu.panel_padding_horizontal and \
-                 .panel_padding_vertical where stated, else \
-                 popover.border.padding, inside the panel's line, the side plus \
-                 popover.border.line_width; iced_aw's 5 where unstated",
+                "menu_popup_padding: menu.panel(NONE).padding's stated sides, \
+                 else popover.panel.padding's, inside the panel's line, the side \
+                 plus the width of the frame's stroke (menu_frame: \
+                 menu.panel(NONE).stroke where stated, else popover.panel.stroke; \
+                 iced_aw's own frame's where neither states one); iced_aw's 5 \
+                 where both leave the side unstated",
             ),
             (
                 "bar padding",
@@ -19649,28 +19602,31 @@ fn aw_menu_info(state: &State) -> String {
             ),
             (
                 "context menu",
-                "our own popup, drawn as the panel (styles::aw::menu's \
-                 menu_background, menu_border and menu_shadow): \
-                 menu.background_color framed by popover.border, padded by \
-                 aw_menu_padding; its entries aw_menu_row",
+                "our own popup, drawn as the panel \
+                 (iced_next::styles::aw::menu's menu_background, menu_border \
+                 and menu_shadow, next_menu_panel): menu.panel(NONE).fill \
+                 framed by menu.panel(NONE).stroke, else popover.panel.stroke, \
+                 padded by menu_popup_padding; its entries menu_row",
             ),
         ],
         &[
             (
                 "shadows",
-                "the model has no shadow geometry — iced_aw's own, a menu's \
-                 only where popover.border.shadow_enabled",
+                "the first outset layer of menu.panel(NONE).shadows, else of \
+                 popover.panel.shadows; iced_aw's own where neither states one",
             ),
             (
                 "panel offset",
                 "AW_MENU_GAP, 2px, the showcase's own: a menu's panel lies that far \
                  from the item that opens it, and its rows and the context menu's \
-                 entries that far apart, none where menu.panel_padding_vertical is \
-                 stated (aw_menu_row_gap)",
+                 entries that far apart, none where menu.panel(NONE).padding \
+                 states its top and bottom (next_aw_menu_row_gap)",
             ),
             (
                 "menu width",
-                "MenuTheme states none — its widest row inside the item padding",
+                "the theme states none — its widest row inside the item padding \
+                 where iced draws the label in the theme's font, iced_aw's own \
+                 width where it does not",
             ),
         ],
     )
@@ -19680,13 +19636,15 @@ fn aw_menu_info(state: &State) -> String {
 /// The Widget Info of the Extra page's iced_aw TabBar and Tabs.
 fn aw_tab_bar_info(state: &State) -> String {
     let resolved = &state.current_resolved;
-    let room = flare_room(resolved);
+    let next = state.next_shown();
+    let room = next_flare_room(next);
     let outward = if room > 0.0 {
         format!(
-            "tab.active_outward_corner_radius, {}: native_theme_iced::tab_flares curves the \
-             selected tab out into the bar at both feet, over each bar; a container pads each \
-             bar by it at both ends, outside it, as iced_aw takes no padding around a bar, \
-             filled tab.bar_background beside the bar, which on this sample insets the Tabs' \
+            "tab.active_outward_corner_radius, {}: iced_next::tab_flares curves the \
+             selected tab out into the bar at both feet, over each bar, where it maps \
+             tab.tab(SELECTED)'s fill and stroke; a container pads each bar by it at both \
+             ends, outside it, as iced_aw takes no padding around a bar, filled \
+             tab.bar(NONE).fill beside the bar, which on this sample insets the Tabs' \
              content panel by it as well",
             px_text(room)
         )
@@ -19729,19 +19687,22 @@ fn aw_tab_bar_info(state: &State) -> String {
             &line_zero("tab"),
         ),
         &[
-            ("label", font_row("tab.font", &resolved.tab.font).as_str()),
+            (
+                "label",
+                next_font_row("tab.label(NONE)", &next.tab.label(WidgetState::NONE)).as_str(),
+            ),
             (
                 "tab width",
-                "the TabBar's: tab.min_width, or the widest label inside iced_aw's \
-                 paddings where that is wider (aw_tab_width), as iced_aw takes one \
-                 width for every tab; the Tabs' share their bar, iced_aw's own \
-                 (tab_width Fill, widget/tab_bar.rs:173)",
+                "the TabBar's: the widest label inside iced_aw's paddings, at least \
+                 tab.tab(NONE).min_size[0] where stated (next_aw_tab_width), as \
+                 iced_aw takes one width for every tab; the Tabs' share their bar, \
+                 iced_aw's own (tab_width Fill, widget/tab_bar.rs:173)",
             ),
             (
                 "bar height",
-                "tab.min_height, or the label's line inside iced_aw's paddings \
-                 where that is taller (aw_tab_height), as iced_aw takes one \
-                 height and cuts a label it leaves too little of",
+                "the label's line inside iced_aw's paddings, at least \
+                 tab.tab(NONE).min_size[1] where stated (next_aw_tab_height), as \
+                 iced_aw takes one height and cuts a label it leaves too little of",
             ),
             (
                 "tab spacing",
@@ -19751,14 +19712,14 @@ fn aw_tab_bar_info(state: &State) -> String {
             ),
             (
                 "tab padding",
-                "tab.border.padding where the theme states every side; \
-                 otherwise iced_aw's own, which it keeps private \
-                 (widget/tab_bar.rs:41)",
+                "tab.tab(NONE).padding, each side plus tab.tab(SELECTED).stroke.width, \
+                 where the theme states every side (next_aw_tab_padding); otherwise \
+                 iced_aw's own, which it keeps private (widget/tab_bar.rs:41)",
             ),
             ("outward corners", outward.as_str()),
         ],
         &[(
-            "min_width / min_height",
+            "tab.tab(NONE).min_size",
             "the platform states minima and iced_aw takes fixed lengths, so the \
              bar is exactly one height and every tab exactly one width, each \
              the minimum unless a label needs more",
@@ -19806,7 +19767,11 @@ fn aw_sidebar_info(state: &State) -> String {
         ),
         &[(
             "label",
-            font_row("sidebar.font", &resolved.sidebar.font).as_str(),
+            next_font_row(
+                "sidebar.item_label(NONE)",
+                &state.next_shown().sidebar.item_label(WidgetState::NONE),
+            )
+            .as_str(),
         )],
         &[(
             "corner radius",
@@ -19852,10 +19817,16 @@ fn aw_spinner_info(state: &State) -> String {
 /// The Widget Info of the Extra page's iced_aw SelectionList.
 fn aw_selection_list_info(state: &State) -> String {
     let resolved = &state.current_resolved;
-    let row_height_s = match resolved.list.row_height {
-        Some(h) => format!("{h:.0}px"),
-        None => "not stated: the label's and list.border.padding's, iced_aw's own 5px on \
-                 a side it leaves unstated"
+    let next = state.next_shown();
+    let row_height_s = match next.list.row(WidgetState::NONE).min_size[1] {
+        Some(h) => format!(
+            "at least {}, list.row(NONE).min_size[1]: the label and \
+             next_aw_list_padding",
+            px_text(h)
+        ),
+        None => "list.row(NONE).min_size[1] unstated: the label's and \
+                 list.row(NONE).padding's, iced_aw's own 5px on a side it leaves \
+                 unstated"
             .to_string(),
     };
     widget_tooltip(
@@ -19894,16 +19865,20 @@ fn aw_selection_list_info(state: &State) -> String {
         &[
             (
                 "row label",
-                font_row("list.item_font", &resolved.list.item_font).as_str(),
+                next_font_row(
+                    "list.item_label(NONE)",
+                    &next.list.item_label(WidgetState::NONE),
+                )
+                .as_str(),
             ),
             ("row height", &row_height_s),
         ],
         &[(
-            "list.row_height",
+            "list.row(NONE).min_size[1]",
             "reachable only indirectly: iced_aw has no item_height setter, so \
              a row is text_size + padding.y() (selection_list/list.rs:118, \
              :209) and the showcase gives new_with the padding that makes the \
-             sum the platform's height",
+             sum the platform's least height where the padding leaves it short",
         )],
     )
 }
@@ -19911,43 +19886,35 @@ fn aw_selection_list_info(state: &State) -> String {
 /// The six `styles::aw::*` functions, on the eight `iced_aw` widgets the
 /// connector's feature enables.
 #[cfg(feature = "iced_aw")]
-fn view_extra(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let sep = &resolved.separator;
-    let menu_t = &resolved.menu;
-    let tab_t = &resolved.tab;
-    let side_t = &resolved.sidebar;
-    let list_t = &resolved.list;
-    let spin_t = &resolved.spinner;
+fn view_extra<'a>(state: &'a State) -> Element<'a, Message> {
+    let next = state.next_shown();
+    let typography = &next.typography;
+    let gap = Gaps::from_next(&next.layout);
+    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let caption = |content: &'static str| next_caption_text(state, content, None);
 
-    let header = section_header(
+    let header = next_section_header(
         "Extra widgets (iced_aw)",
         "The six styles::aw functions, each through the setter its widget offers",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
     // ---- Card ----
 
-    // The card's buttons at least `button.min_width` by `button.min_height`,
-    // as the Buttons page's are.
-    let btn_min = native_theme_iced::button_content_min_size(resolved);
+    // The card's buttons laid out as the Buttons page's push buttons: the
+    // label `button.label(NONE)`, at least [`next_button_floor`], padded by
+    // [`next_button_padding`].
+    let button_label = next.button.label(WidgetState::NONE);
+    let btn_min = next_button_floor(next);
+    let button_pad = next_button_padding(next);
     let card_section: Element<'_, Message> = if state.aw_card_open {
         let card = Card::new(
-            text("Card").role(section_title(ts), resolved, a11y),
-            column![
-                text(
-                    "CardTheme states one fill and one border, so the head, the body \
-                     and the foot are the same surface, and the three labels are \
-                     defaults.text_color."
-                )
-                .role(&ts.caption, resolved, a11y),
-            ]
+            title("Card"),
+            column![caption(
+                "The card's container states one fill and one outline, so the head, \
+                 the body and the foot are the same surface, and the three labels are \
+                 colors.window.foreground."
+            )]
             .spacing(gap.widget),
         )
         .foot(Element::from(
@@ -19955,18 +19922,20 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 probes::AW_CARD_DISMISS,
                 Length::Shrink,
                 button(at_least(
-                    text("Dismiss").typeset(&resolved.button.font, a11y),
+                    text("Dismiss").next_text(&button_label, typography),
                     btn_min
                 ))
                 .on_press(Message::AwCardToggled)
-                .style(styles::button(resolved))
-                .padding(native_theme_iced::button_padding(resolved)),
+                .next_style(iced_next::styles::button(next), |b, style| b.style(style))
+                .padding(button_pad),
             )]
             .spacing(gap.widget),
         ))
         .width(Length::Fixed(420.0))
-        .style(styles::aw::card(resolved));
-        let (head, body, foot) = aw_card_padding(resolved, &state.layout);
+        .next_style(iced_next::styles::aw::card(next), |card, style| {
+            card.style(style)
+        });
+        let (head, body, foot) = next_aw_card_padding(next);
         let card = card
             .padding_head(head)
             .padding_body(body)
@@ -19977,38 +19946,33 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             probes::AW_CARD_SHOW,
             Length::Shrink,
             button(at_least(
-                text("Show the card again").typeset(&resolved.button.font, a11y),
+                text("Show the card again").next_text(&button_label, typography),
                 btn_min,
             ))
             .on_press(Message::AwCardToggled)
-            .style(styles::button_primary(resolved))
-            .padding(native_theme_iced::button_padding(resolved)),
+            .next_style(iced_next::styles::button_primary(next), |b, style| {
+                b.style(style)
+            })
+            .padding(button_pad),
         )
     };
 
     let card_demo = hoverable(
         UnlistedKey::AwCard,
-        column![
-            text("Card").role(section_title(ts), resolved, a11y),
-            card_section,
-        ]
-        .spacing(gap.widget)
-        .into(),
+        column![title("Card"), card_section]
+            .spacing(gap.widget)
+            .into(),
     );
 
     // ---- MenuBar and Menu ----
 
-    // The items are menu rows, as the window's menu bar's are (`aw_menu_row`,
-    // the titles `aw_menu_title`, padded by `title_padding`), padded like the
-    // platform's menu items: the sides menu.border.padding states, a
-    // button's own elsewhere. A theme
-    // that states no row height (KDE's items fit content, with a floor,
-    // `menu.min_row_height`) makes the item at least the floor; a stated one
-    // grows above a text scale of 1 to hold the row's line and padding, as
-    // the window's menu rows do ([`menu_row_height`]). The text is drawn at
-    // the theme's line height, as the window's menus' is.
-    let item_pad = native_theme_iced::padding_or(&menu_t.border.padding, button::DEFAULT_PADDING);
-    let row_height = menu_row_height(resolved, a11y, item_pad);
+    // The items are menu rows, as the window's menu bar's are ([`menu_row`],
+    // the titles [`menu_title`], padded by [`next_title_padding`]), in
+    // `menu.item_label(NONE)`, padded by [`next_menu_row_padding`]; a row
+    // [`next_menu_row_height`] tall where the theme states a height or a
+    // least one, its content's height where it states neither.
+    let item_pad = next_menu_row_padding(next);
+    let row_height = next_menu_row_height(next, item_pad);
     // A row of the page's menus, the drop-downs' and the context menu's
     // alike, as gpui's context menu is a `PopupMenu` whose rows its
     // drop-downs share (gpui-component 0.9.1 `menu/context_menu.rs`). A row
@@ -20022,14 +19986,14 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         let entry = button(
             row![
                 text(label)
-                    .themed(&menu_t.font, resolved, a11y)
+                    .next_text(&next.menu.item_label(WidgetState::NONE), typography)
                     .wrapping(text::Wrapping::None)
             ]
             .align_y(iced::Center)
             .height(line),
         )
         .on_press(Message::AwActionChosen(chosen))
-        .style(aw_menu_row(resolved))
+        .style(menu_row(next))
         .width(Fill)
         .padding(item_pad);
         aw_menu_probe(
@@ -20047,27 +20011,32 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let menu_root = move |label: &'static str| {
         aw_menu_probe(
             label,
-            button(text(label).themed(&menu_t.font, resolved, a11y))
+            button(text(label).next_text(&next.menu.item_label(WidgetState::NONE), typography))
                 .on_press(Message::AwActionChosen(format!("Menu: {label}")))
-                .style(aw_menu_title(resolved, false))
-                .padding(title_padding(menu_t, item_pad)),
+                .style(menu_title(next, false))
+                .padding(next_title_padding(next, item_pad)),
         )
     };
-    let popup_pad = aw_menu_padding(resolved);
-    let row_gap = aw_menu_row_gap(resolved);
+    let popup_pad = menu_popup_padding(next);
+    let row_gap = next_aw_menu_row_gap(next);
     // A menu of the rows `entries`, each with the menu it opens where it
-    // opens one, as wide as its widest row. Its panel's side `facing` the
-    // item that opens it (`popup_pad.top` under a title, `.left` beside a
-    // row) lies [`AW_MENU_GAP`] from that item.
+    // opens one, as wide as its widest row where iced draws the label in
+    // the theme's font ([`next_drawn_font`]), iced_aw's own width where it
+    // does not. Its panel's side `facing` the item that opens it
+    // (`popup_pad.top` under a title, `.left` beside a row) lies
+    // [`AW_MENU_GAP`] from that item.
     let drop = |entries: Vec<(&'static str, Option<_>)>, facing: f32| {
-        let width = menu_width(
-            &state.label_widths,
-            entries.iter().map(|&(label, _)| (label, None)),
-            theme_font(&menu_t.font),
-            scaled_text_size(menu_t.font.size, a11y),
-            item_pad,
-            Some(gap.widget),
-        );
+        let label = next.menu.item_label(WidgetState::NONE);
+        let width = next_drawn_font(&label).map(|font| {
+            menu_width(
+                &state.label_widths,
+                entries.iter().map(|&(label, _)| (label, None)),
+                font,
+                label.size_px,
+                item_pad,
+                next.layout.widget_gap,
+            )
+        });
         let items = entries
             .into_iter()
             .map(|(label, menu)| match menu {
@@ -20107,35 +20076,35 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // The titles side by side with no gap, as the window's menu bar's titles
     // are (iced_aw's own `spacing`, none); the bar has no frame, so no padding:
     // `MenuBar`'s is `Padding::ZERO` (iced_aw 0.14.1 `src/widget/menu/menu_bar.rs:136`).
-    .style(styles::aw::menu(resolved));
+    .next_style(iced_next::styles::aw::menu(next), |bar, style| {
+        bar.style(style)
+    });
 
     let menu_demo = hoverable(
         UnlistedKey::AwMenu,
-        column![
-            text("MenuBar and its Menus").role(section_title(ts), resolved, a11y),
-            menu_bar,
-        ]
-        .spacing(gap.widget)
-        .into(),
+        column![title("MenuBar and its Menus"), menu_bar]
+            .spacing(gap.widget)
+            .into(),
     );
 
     // ---- ContextMenu ----
 
     let context_underlay = container(
         column![
-            text("Right-click inside this panel").body(resolved, a11y),
-            text(
+            text("Right-click inside this panel").next_body(next),
+            caption(
                 "ContextMenu gets no styles::aw function: its own Style is a one-field \
                  backdrop scrim and its default class already emits alpha 0 \
                  (style/context_menu.rs:48-59). The popup is our own element, drawn \
                  as the menu bar's panel, and its entries as the menu bar's rows."
-            )
-            .role(&ts.caption, resolved, a11y),
+            ),
         ]
         .spacing(gap.widget),
     )
-    .padding(card_padding(resolved, &state.layout))
-    .style(styles::container_card(resolved))
+    .padding(next_card_padding(next))
+    .next_style(iced_next::styles::container_card(next), |panel, style| {
+        panel.style(style)
+    })
     .width(Fill);
     let context_underlay = probe(probes::AW_PANELS[0], Fill, context_underlay);
     let context_demo = ContextMenu::new(context_underlay, move || {
@@ -20144,7 +20113,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             probes::AW_CONTEXT_MENU,
             container(column![entry("Copy"), entry("Paste"), entry("Select all")].spacing(row_gap))
                 .padding(popup_pad)
-                .style(menu_panel(resolved))
+                .style(next_menu_panel(next))
                 .width(Length::Fixed(180.0)),
         )
     });
@@ -20152,116 +20121,127 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // ---- TabBar and Tabs ----
 
     // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41) and
-    // takes a padding whole, so only a theme that states every side replaces it.
-    let tab_padding = native_theme_iced::stated_padding(&tab_t.border.padding);
+    // takes a padding whole, so only a theme that states every side replaces
+    // it ([`next_aw_tab_padding`]).
+    let tab_padding = next_aw_tab_padding(next);
     let drawn_padding = tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING));
     // Both bars one height that holds the label's line, never below
-    // tab.min_height ([`aw_tab_height`]), so no label is cut.
-    let tab_height = aw_tab_height(state, drawn_padding);
-    let tab_bar = TabBar::new(Message::AwTabBarSelected)
-        .push(0usize, TabLabel::Text(AW_TAB_BAR_LABELS[0].to_string()))
-        .push(1usize, TabLabel::Text(AW_TAB_BAR_LABELS[1].to_string()))
-        .push(2usize, TabLabel::Text(AW_TAB_BAR_LABELS[2].to_string()))
-        .set_active_tab(&state.aw_tab_bar_active)
-        .text_size(scaled_text_size(tab_t.font.size, a11y))
-        .text_font(theme_font(&tab_t.font))
-        .tab_width(Length::Fixed(aw_tab_width(
-            state,
-            &AW_TAB_BAR_LABELS,
-            drawn_padding,
-        )))
-        .height(Length::Fixed(tab_height));
-    // tab.item_gap between the tabs, where stated; iced_aw's own none
-    // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`), as the Basic
-    // page's bar. The Tabs below take the same.
-    let tab_bar = match tab_t.item_gap {
-        Some(gap) => tab_bar.spacing(gap),
-        None => tab_bar,
-    };
-    let tab_bar = match tab_padding {
-        Some(padding) => tab_bar.padding(padding),
-        None => tab_bar,
+    // `tab.tab(NONE).min_size[1]` where stated ([`next_aw_tab_height`]), so
+    // no label is cut.
+    let tab_height = next_aw_tab_height(next, drawn_padding);
+    let tab_label = next.tab.label(WidgetState::NONE);
+    let tab_font = next_measured_font(&tab_label);
+    // Built where it is drawn, and again where the connector cannot map the
+    // open tab's flares, as `iced_next::tab_flares` takes the bar.
+    let build_tab_bar = || {
+        let tab_bar = TabBar::new(Message::AwTabBarSelected)
+            .push(0usize, TabLabel::Text(AW_TAB_BAR_LABELS[0].to_string()))
+            .push(1usize, TabLabel::Text(AW_TAB_BAR_LABELS[1].to_string()))
+            .push(2usize, TabLabel::Text(AW_TAB_BAR_LABELS[2].to_string()))
+            .set_active_tab(&state.aw_tab_bar_active)
+            .text_size(tab_label.size_px)
+            .text_font(tab_font)
+            .tab_width(Length::Fixed(next_aw_tab_width(
+                state,
+                &AW_TAB_BAR_LABELS,
+                drawn_padding,
+            )))
+            .height(Length::Fixed(tab_height));
+        // tab.item_gap between the tabs, where stated; iced_aw's own none
+        // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`), as the Basic
+        // page's bar. The Tabs below take the same.
+        let tab_bar = match next.tab.item_gap {
+            Some(gap) => tab_bar.spacing(gap),
+            None => tab_bar,
+        };
+        let tab_bar = match tab_padding {
+            Some(padding) => tab_bar.padding(padding),
+            None => tab_bar,
+        };
+        aw_tab_bar_probe(
+            tab_bar.next_style(iced_next::styles::aw::tab_bar(next), |bar, style| {
+                bar.style(style)
+            }),
+        )
     };
 
-    let tab_bar_body = text(match state.aw_tab_bar_active {
+    let tab_bar_body = caption(match state.aw_tab_bar_active {
         0 => "A stand-alone TabBar reports the selection and shows nothing itself.",
-        1 => "The second tab. Its label colour is tab.active_text_color.",
+        1 => "The second tab. Its label colour is tab.label(SELECTED).color.",
         _ => "An unselected tab is Status::Disabled to iced_aw, not a dead one.",
-    })
-    .role(&ts.caption, resolved, a11y);
+    });
 
-    let tabs = Tabs::new(Message::AwTabsSelected)
-        .push(
-            0usize,
-            TabLabel::Text("Colours".to_string()),
-            container(
-                text("Tabs owns its content and forwards the bar's style to the TabBar it holds.")
-                    .role(&ts.caption, resolved, a11y),
-            )
-            .padding(Padding::from(gap.container)),
-        )
-        .push(
-            1usize,
-            TabLabel::Text("Sizes".to_string()),
-            container(
-                text(format!(
-                    "tab.min_width {:.0}px · tab.min_height {:.0}px",
-                    tab_t.min_width, tab_t.min_height
+    let axis = |v: Option<f32>| v.map_or_else(|| "unstated".to_owned(), px_text);
+    let [min_width, min_height] = next.tab.tab(WidgetState::NONE).min_size;
+    let build_tabs = || {
+        let tabs = Tabs::new(Message::AwTabsSelected)
+            .push(
+                0usize,
+                TabLabel::Text("Colours".to_string()),
+                container(caption(
+                    "Tabs owns its content and forwards the bar's style to the TabBar it holds.",
                 ))
-                .role(&ts.caption, resolved, a11y),
+                .padding(Padding::from(gap.container)),
             )
-            .padding(Padding::from(gap.container)),
-        )
-        .set_active_tab(&state.aw_tabs_active)
-        .text_size(scaled_text_size(tab_t.font.size, a11y))
-        .text_font(theme_font(&tab_t.font))
-        .tab_bar_height(Length::Fixed(tab_height))
-        .tab_bar_style(styles::aw::tab_bar(resolved))
-        .height(Length::Shrink);
-    let tabs = match tab_padding {
-        Some(padding) => tabs.tab_label_padding(padding),
-        None => tabs,
-    };
-    let tabs = match tab_t.item_gap {
-        Some(gap) => tabs.tab_label_spacing(gap),
-        None => tabs,
+            .push(
+                1usize,
+                TabLabel::Text("Sizes".to_string()),
+                container(next_caption_text(
+                    state,
+                    format!(
+                        "tab.tab(NONE).min_size {} x {}",
+                        axis(min_width),
+                        axis(min_height)
+                    ),
+                    None,
+                ))
+                .padding(Padding::from(gap.container)),
+            )
+            .set_active_tab(&state.aw_tabs_active)
+            .text_size(tab_label.size_px)
+            .text_font(tab_font)
+            .tab_bar_height(Length::Fixed(tab_height))
+            .height(Length::Shrink)
+            .next_style(iced_next::styles::aw::tab_bar(next), |tabs, style| {
+                tabs.tab_bar_style(style)
+            });
+        let tabs = match tab_padding {
+            Some(padding) => tabs.tab_label_padding(padding),
+            None => tabs,
+        };
+        let tabs = match next.tab.item_gap {
+            Some(gap) => tabs.tab_label_spacing(gap),
+            None => tabs,
+        };
+        drawn_probe(probes::AW_TABS, tabs)
     };
 
     // The room for the open tab's flares at both ends of each bar: iced_aw
     // takes no padding around a bar, so a container's, outside it, which
     // insets the Tabs' content panel by as much. The room beside a bar is
-    // filled tab.bar_background as the bar is: the TabBar's container
+    // filled `tab.bar(NONE).fill` as the bar is: the TabBar's container
     // whole, the Tabs' through a band as tall as its bar under it, so the
-    // content panel's sides stay the page's.
-    let room = flare_room(resolved);
-    let flared = |bar| container(bar).padding(Padding::ZERO.left(room).right(room));
+    // content panel's sides stay the page's. A bar the connector cannot
+    // draw the flares over is drawn without them.
+    let room = next_flare_room(next);
+    let flared =
+        |bar: Element<'a, Message>| container(bar).padding(Padding::ZERO.left(room).right(room));
+    let tab_bar = iced_next::tab_flares(next, build_tab_bar(), &[state.aw_tab_bar_active])
+        .unwrap_or_else(|_| build_tab_bar());
+    let tabs = iced_next::tab_flares(next, build_tabs(), &[0, state.aw_tabs_active])
+        .unwrap_or_else(|_| build_tabs());
     let tab_demo = hoverable(
         UnlistedKey::AwTabBar,
         column![
-            text("TabBar (stand-alone) and Tabs (with content)").role(
-                section_title(ts),
-                resolved,
-                a11y
-            ),
-            flared(native_theme_iced::tab_flares(
-                resolved,
-                aw_tab_bar_probe(tab_bar.style(styles::aw::tab_bar(resolved))),
-                &[state.aw_tab_bar_active],
-            ))
-            .style(surface(state.next_shown(), Surface::TabStrip)),
+            title("TabBar (stand-alone) and Tabs (with content)"),
+            flared(tab_bar).style(surface(next, Surface::TabStrip)),
             tab_bar_body,
-            iced::widget::Stack::new()
-                .push(flared(native_theme_iced::tab_flares(
-                    resolved,
-                    drawn_probe(probes::AW_TABS, tabs),
-                    &[0, state.aw_tabs_active],
-                )))
-                .push_under(
-                    container(iced::widget::Space::new())
-                        .width(Fill)
-                        .height(Length::Fixed(tab_height))
-                        .style(surface(state.next_shown(), Surface::TabStrip)),
-                ),
+            iced::widget::Stack::new().push(flared(tabs)).push_under(
+                container(iced::widget::Space::new())
+                    .width(Fill)
+                    .height(Length::Fixed(tab_height))
+                    .style(surface(next, Surface::TabStrip)),
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -20284,33 +20264,36 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             iced_aw::sidebar::TabLabel::Text("Icons".to_string()),
         )
         .set_active_tab(&state.aw_sidebar_active)
-        .text_size(scaled_text_size(side_t.font.size, a11y))
-        .text_font(theme_font(&side_t.font))
+        .text_size(next.sidebar.item_label(WidgetState::NONE).size_px)
+        .text_font(next_measured_font(
+            &next.sidebar.item_label(WidgetState::NONE),
+        ))
         .width(Length::Fixed(200.0))
         .height(Length::Shrink)
-        .style(styles::aw::sidebar(resolved));
+        .next_style(iced_next::styles::aw::sidebar(next), |bar, style| {
+            bar.style(style)
+        });
 
     let side_demo = hoverable(
         UnlistedKey::AwSidebar,
         column![
-            text("Sidebar").role(section_title(ts), resolved, a11y),
+            title("Sidebar"),
             row![
                 side_bar,
                 probe(
                     probes::AW_PANELS[1],
                     Fill,
-                    container(
-                        text(match state.aw_sidebar_active {
-                            0 =>
-                                "General: an unselected item shows the panel itself — the \
-                                  platform states no fill of its own for one.",
-                            1 => "Appearance: the selected item is sidebar.selection_background.",
-                            _ => "Icons: hovering an item paints sidebar.hover_background.",
-                        })
-                        .role(&ts.caption, resolved, a11y),
-                    )
-                    .padding(card_padding(resolved, &state.layout))
-                    .style(styles::container_card(resolved))
+                    container(caption(match state.aw_sidebar_active {
+                        0 =>
+                            "General: an unselected item shows the panel itself — the \
+                              platform states no fill of its own for one.",
+                        1 => "Appearance: the selected item is sidebar.item(SELECTED).fill.",
+                        _ => "Icons: hovering an item paints sidebar.item(HOVER).fill.",
+                    }))
+                    .padding(next_card_padding(next))
+                    .next_style(iced_next::styles::container_card(next), |panel, style| {
+                        panel.style(style)
+                    })
                     .width(Fill),
                 ),
             ]
@@ -20322,16 +20305,17 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     // ---- Spinner ----
 
+    let diameter = next.spinner.diameter;
     let spinner_demo = hoverable(
         UnlistedKey::AwSpinner,
         column![
-            text("Spinner (styled through its container)").role(section_title(ts), resolved, a11y),
+            title("Spinner (styled through its container)"),
             container(
                 Spinner::new()
-                    .width(Length::Fixed(spin_t.diameter))
-                    .height(Length::Fixed(spin_t.diameter)),
+                    .width(Length::Fixed(diameter))
+                    .height(Length::Fixed(diameter)),
             )
-            .style(styles::aw::spinner(resolved)),
+            .style(iced_next::styles::aw::spinner(next)),
         ]
         .spacing(gap.widget)
         .into(),
@@ -20340,39 +20324,31 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // ---- SelectionList ----
 
     // `iced_aw` lays a row out as `text_size + padding.y()`
-    // (`selection_list/list.rs:118`, `:209`), so `list.row_height` is reachable
-    // after all -- not through a setter of its own, but as the vertical padding
-    // that makes the sum come out. `padding.y()` is top plus bottom, so each
-    // side takes half of what the label leaves. A theme that states no row
-    // height, or one that does not clear its own label size, leaves the
-    // list's row padding standing, `list.border.padding`, iced_aw's own
-    // ([`AW_LIST_PADDING`]) on a side it leaves unstated, as the Basic list's
-    // rows take it, rather than a negative inset.
-    let row_label = scaled_text_size(list_t.item_font.size, a11y);
-    let row_inset = list_t.row_height.map_or(0.0, |h| h - row_label);
-    let row_pad =
-        native_theme_iced::padding_or(&list_t.border.padding, Padding::from(AW_LIST_PADDING));
-    let list_padding = if row_inset > 0.0 {
-        // Only the vertical half is the platform's: the label is drawn at the
-        // row's own `bounds.x` (`selection_list/list.rs:274`), so horizontal
-        // padding never reaches it, and the list's intrinsic width does read
-        // `padding.x()` (`selection_list.rs:237`, `:244`).
-        row_pad.top(row_inset / 2.0).bottom(row_inset / 2.0)
-    } else {
-        row_pad
-    };
+    // (`selection_list/list.rs:118`, `:209`), and has no row height of its
+    // own: the rows' padding, `list.row(NONE).padding`'s stated sides and
+    // iced_aw's own ([`AW_LIST_PADDING`]) on a side it leaves unstated
+    // ([`next_list_row_padding`]), as the Basic list's rows take it, grown
+    // where `list.row(NONE).min_size[1]` is taller ([`next_aw_list_padding`]).
+    let row_label = next.list.item_label(WidgetState::NONE);
+    let list_padding = next_aw_list_padding(next);
 
     // `SelectionList::new_with` is the only constructor that gives the rows a
     // class as well as the list, and it demands a `Clone` style function --
-    // which every `styles::aw::*` closure is.
+    // which every `styles::aw::*` closure is. Where the connector cannot map
+    // the list, iced_aw's own class, `selection_list::primary`, stands.
+    let mapped_list = iced_next::styles::aw::selection_list(next);
+    let list_style = move |theme: &Theme, status: AwStatus| match &mapped_list {
+        Ok(style) => style(theme, status),
+        Err(_) => iced_aw::style::selection_list::primary(theme, status),
+    };
     let selection_list = SelectionList::new_with(
         &state.aw_list_options,
         Message::AwListSelected,
-        row_label,
+        row_label.size_px,
         list_padding,
-        styles::aw::selection_list(resolved),
+        list_style,
         state.aw_list_selected,
-        theme_font(&list_t.item_font),
+        next_measured_font(&row_label),
     )
     .width(Length::Fixed(260.0))
     .height(Length::Fixed(180.0));
@@ -20380,7 +20356,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let list_demo = hoverable(
         UnlistedKey::AwSelectionList,
         column![
-            text("SelectionList").role(section_title(ts), resolved, a11y),
+            title("SelectionList"),
             probe(probes::SELECTION_LIST, Length::Shrink, selection_list),
         ]
         .spacing(gap.widget)
@@ -20395,23 +20371,19 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     column![
         header,
-        text(action_line).role(&ts.caption, resolved, a11y),
+        next_caption_text(state, action_line, None),
         card_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         menu_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
-        column![
-            text("ContextMenu").role(section_title(ts), resolved, a11y),
-            context_demo,
-        ]
-        .spacing(gap.widget),
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
+        column![title("ContextMenu"), context_demo].spacing(gap.widget),
+        separator_line(next),
         tab_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         side_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         spinner_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         list_demo,
     ]
     .spacing(gap.section)
@@ -20424,10 +20396,8 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_icons(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
     let loaded_count = state
         .loaded_icons
         .iter()
@@ -20441,19 +20411,19 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     let total_count = state.loaded_icons.len();
 
     let header = column![
-        text("Icons").role(page_title(ts), resolved, a11y),
+        text("Icons").next_text(next_page_title(next), &next.typography),
         text(format!(
             "All {total_count} IconRole variants — \
              {loaded_count} loaded, {system_count} system"
         ))
-        .body(resolved, a11y),
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        .next_body(next),
+        separator_line(next),
     ]
     .spacing(gap.widget);
 
     let icon_set_info = column![
-        text(format!("Active icon set: {}", state.icon_set_choice)).body(resolved, a11y),
-        text(state.system_icon_theme_label()).role(&ts.caption, resolved, a11y),
+        text(format!("Active icon set: {}", state.icon_set_choice)).next_body(next),
+        next_caption_text(state, state.system_icon_theme_label(), None),
     ]
     .spacing(gap.widget);
 
@@ -20461,7 +20431,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     // lines as the page's width needs, its cells and its lines a gallery's,
     // `ICON_GRID_GAP_REMS` of the gpui rem apart, as the gpui showcase's
     // `flex_wrap` of cells (`pages/icons.rs`).
-    let grid_gap = gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y);
+    let grid_gap = next_gpui_rems(ICON_GRID_GAP_REMS, next);
     let cells: Vec<Element<'_, Message>> = state
         .loaded_icons
         .iter()
@@ -20472,7 +20442,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
             } else {
                 probes::ICON_CELL
             };
-            build_icon_cell(loaded, id, resolved, &ts.caption, a11y)
+            build_icon_cell(loaded, id, next)
         })
         .collect();
     let grid = row(cells)
@@ -20484,9 +20454,9 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     column![
         header,
         icon_set_info,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         animated_section,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         grid,
     ]
     // Header, icon-set summary, animated section and grid are the sections
@@ -20500,12 +20470,10 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 /// `icon_sizes.large`, in the frame its clock gives, still under reduced
 /// motion, drawn by the connector's `Spinner` (`Indicator`).
 fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let title = text("Animated Icons").role(section_title(ts), resolved, a11y);
-    let divider = rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved));
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
+    let title = text("Animated Icons").next_text(next_section_title(next), &next.typography);
+    let divider = separator_line(next);
     let set_name = state
         .icon_set_choice
         .effective_icon_set(state.current_icon_set)
@@ -20522,7 +20490,7 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
                 }
                 Playback::Spin { period_ms } => format!("{set_name} - Spin ({period_ms}ms)"),
             };
-            let label = text(label).role(&ts.caption, resolved, a11y);
+            let label = next_caption_text(state, label, None);
             column![icon, label]
                 .spacing(gap.widget)
                 .align_x(iced::Center)
@@ -20531,29 +20499,27 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
     let mut content = column![title, divider].spacing(gap.widget);
 
     if reduced {
-        content = content.push(text("prefers-reduced-motion: showing static frames").role(
-            &ts.caption,
-            resolved,
-            a11y,
+        content = content.push(next_caption_text(
+            state,
+            "prefers-reduced-motion: showing static frames",
+            None,
         ));
     }
 
     content = match spinner {
         Some(spinner) => content.push(row![spinner].spacing(gap.widget)),
-        None => content.push(
-            text("No animated icons available for this configuration.").role(
-                &ts.caption,
-                resolved,
-                a11y,
-            ),
-        ),
+        None => content.push(next_caption_text(
+            state,
+            "No animated icons available for this configuration.",
+            None,
+        )),
     };
 
     content.into()
 }
 
 /// The space between two cells of the Icons page's grid, and between two of
-/// its rows, in gpui rems ([`gpui_rems`]) (spec §3.1): the gpui showcase's
+/// its rows, in gpui rems ([`next_gpui_rems`]) (spec §3.1): the gpui showcase's
 /// `ICON_GRID_GAP`, `rems(0.5)` (`showcase-gpui/pages/mod.rs`), as the theme
 /// states no icon grid and the cells are a gallery's, not a row of widgets
 /// (Addendum F row 1). The cell's Widget Info names it.
@@ -20569,37 +20535,47 @@ const ICON_CELL_GAP_REMS: f32 = 0.25;
 /// rems (spec §3.1): the gpui showcase's `ICON_CELL_PADDING`, `rems(0.5)`
 /// (`showcase-gpui/demo.rs`), which pads its gallery cells, as the theme
 /// states no icon grid and a cell is a gallery's, not a card's: the cell
-/// takes gpui's padding, not [`card_padding`], though it is drawn on a
+/// takes gpui's padding, not [`next_card_padding`], though it is drawn on a
 /// card's fill. The cell's Widget Info names it.
 const ICON_CELL_PADDING_REMS: f32 = 0.5;
 
 /// An Icons page cell: the icon loaded for its role, its role and its
 /// source, [`ICON_CELL_GAP_REMS`] apart and centred on one another, on a
-/// card's fill (`styles::container_card`), padded [`ICON_CELL_PADDING_REMS`]
-/// round them and as wide as the widest of them, as the gpui showcase's
-/// gallery cell is sized to its content (`demo::icon_cell`).
+/// card's fill (`iced_next::styles::container_card`), padded
+/// [`ICON_CELL_PADDING_REMS`] round them and as wide as the widest of them,
+/// as the gpui showcase's gallery cell is sized to its content
+/// (`demo::icon_cell`), on the installed 0.8.0 theme `r`: the icon
+/// `icons.sizes.toolbar` square in a box `icons.sizes.large` square, the
+/// role and source in the caption. A size the theme leaves unstated is
+/// iced's own: the svg or image at its own size, the box its content's.
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
     probe_id: &'static str,
-    resolved: &ResolvedTheme,
-    caption: &ResolvedTextScaleEntry,
-    a11y: &AccessibilityPreferences,
+    r: &native_theme::next::ResolvedTheme,
 ) -> Element<'a, Message> {
     let role_name = format!("{:?}", loaded.role);
     let source_label = loaded.source.label();
-    let icon_px = resolved.defaults.icon_sizes.toolbar;
-    let cell_px = resolved.defaults.icon_sizes.large;
+    let icon_px = r.icons.sizes.toolbar;
+    let caption = native_theme_iced::next::text_scale(r).caption;
 
-    let icon_element: Element<'a, Message> = match loaded.handle.clone() {
-        Some(IconHandle::Svg(handle)) => svg(handle)
-            .width(Length::Fixed(icon_px))
-            .height(Length::Fixed(icon_px))
+    let icon_element: Element<'a, Message> = match (loaded.handle.clone(), icon_px) {
+        (Some(IconHandle::Svg(handle)), Some(px)) => svg(handle)
+            .width(Length::Fixed(px))
+            .height(Length::Fixed(px))
             .into(),
-        Some(IconHandle::Image(handle)) => iced::widget::image(handle)
-            .width(Length::Fixed(icon_px))
-            .height(Length::Fixed(icon_px))
+        (Some(IconHandle::Svg(handle)), None) => svg(handle).into(),
+        (Some(IconHandle::Image(handle)), Some(px)) => iced::widget::image(handle)
+            .width(Length::Fixed(px))
+            .height(Length::Fixed(px))
             .into(),
-        None => placeholder_icon(icon_px),
+        (Some(IconHandle::Image(handle)), None) => iced::widget::image(handle).into(),
+        (None, px) => placeholder_icon(px, r),
+    };
+    let icon_box = match r.icons.sizes.large {
+        Some(cell_px) => container(icon_element)
+            .center_x(Length::Fixed(cell_px))
+            .center_y(Length::Fixed(cell_px)),
+        None => container(icon_element),
     };
 
     hoverable(
@@ -20609,61 +20585,83 @@ fn build_icon_cell<'a>(
             Length::Shrink,
             container(
                 column![
-                    container(icon_element)
-                        .center_x(Length::Fixed(cell_px))
-                        .center_y(Length::Fixed(cell_px)),
-                    text(role_name.clone()).role(caption, resolved, a11y),
-                    text(source_label).role(caption, resolved, a11y),
+                    icon_box,
+                    text(role_name.clone()).next_text(caption, &r.typography),
+                    text(source_label).next_text(caption, &r.typography),
                 ]
-                .spacing(gpui_rems(ICON_CELL_GAP_REMS, resolved, a11y))
+                .spacing(next_gpui_rems(ICON_CELL_GAP_REMS, r))
                 .align_x(iced::Center),
             )
-            .padding(gpui_rems(ICON_CELL_PADDING_REMS, resolved, a11y))
-            .style(styles::container_card(resolved)),
+            .padding(next_gpui_rems(ICON_CELL_PADDING_REMS, r))
+            .next_style(iced_next::styles::container_card(r), |cell, style| {
+                cell.style(style)
+            }),
         ),
     )
 }
 
 /// The Widget Info of the Icons page's cell for `role`: the icon loaded for
-/// it now, where it came from, and the padding the cell takes; empty where
-/// none is loaded for the role.
+/// it now, where it came from, its sizes, and the padding the cell takes;
+/// empty where none is loaded for the role.
 fn icon_info(state: &State, role: IconRole) -> String {
-    let (resolved, a11y) = (&state.current_resolved, &state.accessibility);
-    let pad = px_text(gpui_rems(ICON_CELL_PADDING_REMS, resolved, a11y));
-    let cell_gap = px_text(gpui_rems(ICON_CELL_GAP_REMS, resolved, a11y));
-    let grid_gap = px_text(gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y));
+    let r = state.next_shown();
+    let pad = px_text(next_gpui_rems(ICON_CELL_PADDING_REMS, r));
+    let cell_gap = px_text(next_gpui_rems(ICON_CELL_GAP_REMS, r));
+    let grid_gap = px_text(next_gpui_rems(ICON_GRID_GAP_REMS, r));
+    let size = |home: &str, size: Option<f32>, own: &str| match size {
+        Some(px) => format!("{}, {home}", px_text(px)),
+        None => format!("{home} unstated: {own}"),
+    };
+    let icon_size = size(
+        "icons.sizes.toolbar",
+        r.icons.sizes.toolbar,
+        "the icon's own size",
+    );
+    let box_size = size("icons.sizes.large", r.icons.sizes.large, "the icon's");
     state
         .loaded_icons
         .iter()
         .find(|loaded| loaded.role == role)
         .map(|loaded| {
             format!(
-                "{role:?}\nicon: {}\nsource: {}\npadding: {pad} round the icon, the role and \
-                 the source, ICON_CELL_PADDING_REMS (gpui's ICON_CELL_PADDING, a half of the \
-                 scaled defaults.font.size), as the gpui showcase's gallery cell: the theme \
+                "{role:?}\nicon: {}\nsource: {}\nicon size: {icon_size}\nicon box: \
+                 {box_size}\ncaption: {}\npadding: {pad} round the icon, the role and \
+                 the source, ICON_CELL_PADDING_REMS (gpui's ICON_CELL_PADDING, a half of \
+                 typography.body.size_px), as the gpui showcase's gallery cell: the theme \
                  states no icon grid\ngap: {cell_gap} between the icon, \
                  the role and the source, ICON_CELL_GAP_REMS (gpui's ICON_CELL_GAP, a quarter \
-                 of the scaled defaults.font.size)\ngrid gap: {grid_gap} between two cells and \
-                 two rows, ICON_GRID_GAP_REMS (gpui's ICON_GRID_GAP, a half of the scaled \
-                 defaults.font.size): the showcase's own, as the theme states no icon grid",
+                 of typography.body.size_px)\ngrid gap: {grid_gap} between two cells and \
+                 two rows, ICON_GRID_GAP_REMS (gpui's ICON_GRID_GAP, a half of \
+                 typography.body.size_px): the showcase's own, as the theme states no icon grid",
                 loaded.name.unwrap_or("(unmapped)"),
                 loaded.source.label(),
+                next_font_row(
+                    next_caption_home(r),
+                    native_theme_iced::next::text_scale(r).caption
+                ),
             )
         })
         .unwrap_or_default()
 }
 
 /// A "?" in the slot of an icon that did not load, drawn at the icon's own
-/// size: it stands in for an icon, not for text in any role.
-fn placeholder_icon<'a>(icon_px: f32) -> Element<'a, Message> {
-    container(
-        text("?")
-            .size(icon_px)
-            .line_height(text::LineHeight::Absolute(icon_px.into())),
-    )
-    .center_x(Length::Fixed(icon_px))
-    .center_y(Length::Fixed(icon_px))
-    .into()
+/// size, `icons.sizes.toolbar`: it stands in for an icon, not for text in
+/// any role; in `typography.body` where the theme states no icon size.
+fn placeholder_icon<'a>(
+    icon_px: Option<f32>,
+    r: &native_theme::next::ResolvedTheme,
+) -> Element<'a, Message> {
+    match icon_px {
+        Some(icon_px) => container(
+            text("?")
+                .size(icon_px)
+                .line_height(text::LineHeight::Absolute(icon_px.into())),
+        )
+        .center_x(Length::Fixed(icon_px))
+        .center_y(Length::Fixed(icon_px))
+        .into(),
+        None => text("?").next_body(r).into(),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -20684,48 +20682,38 @@ fn base_palette_info(state: &State) -> String {
             Paint::leaf("danger", "danger", palette.danger),
         ],
         &[],
-        &[("swatches", swatches_line(state).as_str())],
+        &[(
+            "swatches",
+            theme_map_swatches_line(state.next_shown()).as_str(),
+        )],
     )
 }
 
 fn view_theme_map(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let header = section_header(
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
+    let title =
+        |label: &'static str| text(label).next_text(next_section_title(next), &next.typography);
+    let header = next_section_header(
         "Theme Map",
         "All palette and extended palette colors from the current theme",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
     let palette = state.current_theme.palette();
     let extended = state.current_theme.extended_palette();
-    let swatch_border = native_theme_iced::border_color(&state.current_resolved);
-    let swatch_bw = state.current_resolved.defaults.border.line_width;
-    let swatch_r = native_theme_iced::border_corner_radius(&state.current_resolved);
-    let swatch_frame = iced::Border {
-        color: swatch_border,
-        width: swatch_bw,
-        radius: swatch_r.into(),
-    };
-    // Local closure for concise swatch calls
-    let caption = &ts.caption;
+    // The swatches' frame on the installed 0.8.0 theme ([`swatch_frame`]):
+    // `colors.window.border`, `layout.border_width` wide,
+    // `layout.corner_radius` round, none where the theme states no border
+    // colour.
+    let frame = swatch_frame(next);
     let cs = |label: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(label, color, swatch_frame, caption, resolved, a11y)
+        next_color_swatch(label, color, frame, next)
     };
 
     let swatch_style = SwatchStyle {
-        border_color: swatch_border,
-        border_width: swatch_bw,
-        radius: swatch_r,
-        heading: section_title(ts),
-        caption: &ts.caption,
-        resolved,
-        a11y,
+        frame,
+        next,
         widget_gap: gap.widget,
     };
 
@@ -20733,7 +20721,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     let base_palette = hoverable(
         UnlistedKey::BasePalette,
         column![
-            text("Base Palette (6 fields)").role(section_title(ts), resolved, a11y),
+            title("Base Palette (6 fields)"),
             row![
                 cs("background", palette.background),
                 cs("text", palette.text),
@@ -20758,76 +20746,24 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         ext_danger,
     ] = PaletteSection::ALL.map(|section| hoverable_ext_section(section, extended, &swatch_style));
 
-    // Resolved theme colors (defaults + selected per-widget)
+    // Resolved theme colors (defaults + selected per-widget), six to a row;
+    // a colour the theme leaves unstated has no swatch.
     let native_colors = {
-        let d = &state.current_resolved.defaults;
-        let r = &state.current_resolved;
-        let pairs: Vec<(&str, native_theme::color::Rgba)> = vec![
-            ("accent", d.accent_color),
-            ("background", d.background_color),
-            ("text", d.text_color),
-            ("surface", d.surface_color),
-            ("border", d.border.color),
-            ("muted", d.muted_color),
-            ("shadow", d.shadow_color),
-            ("accent_fg", d.accent_text_color),
-            ("btn_bg", r.button.background_color),
-            ("btn_fg", r.button.font.color),
-            ("btn_primary", r.button.primary_background),
-            ("danger", d.danger_color),
-            ("danger_fg", d.danger_text_color),
-            ("warning", d.warning_color),
-            ("warning_fg", d.warning_text_color),
-            ("success", d.success_color),
-            ("success_fg", d.success_text_color),
-            ("info", d.info_color),
-            ("info_fg", d.info_text_color),
-            ("selection", d.selection_background),
-            ("selection_fg", d.selection_text_color),
-            ("link", d.link_color),
-            ("focus_ring", d.focus_ring_color),
-            ("sidebar_bg", r.sidebar.background_color),
-            ("sidebar_fg", r.sidebar.font.color),
-            ("tooltip_bg", r.tooltip.background_color),
-            ("tooltip_fg", r.tooltip.font.color),
-            ("popover_bg", r.popover.background_color),
-            ("popover_fg", r.popover.font.color),
-            ("input_bg", r.input.background_color),
-            ("input_fg", r.input.font.color),
-            ("disabled_fg", d.disabled_text_color),
-            ("separator", r.separator.line_color),
-            ("alt_row", r.list.alternate_row_background),
-            ("sel_inactive", d.selection_inactive_background),
-            ("sel_inactive_fg", d.selection_inactive_text_color),
-            ("card_bg", r.card.background_color),
-        ];
-
-        // Wrap into rows of 6
-        let mut rows: Vec<Element<'_, Message>> = Vec::new();
-        for chunk in pairs.chunks(6) {
-            let row_items: Vec<Element<'_, Message>> = chunk
-                .iter()
-                .map(|(name, rgba)| {
-                    let [cr, cg, cb, ca] = rgba.to_f32_array();
-                    color_swatch(
-                        name,
-                        Color::from_rgba(cr, cg, cb, ca),
-                        swatch_frame,
-                        &ts.caption,
-                        resolved,
-                        a11y,
-                    )
-                })
-                .collect();
-            rows.push(row(row_items).spacing(SWATCH_GAP_X).into());
-        }
+        let swatches: Vec<(&'static str, Color)> = theme_map_colours(next)
+            .into_iter()
+            .filter_map(|(name, _, color)| color.map(|color| (name, color)))
+            .collect();
+        let rows: Vec<Element<'_, Message>> = swatches
+            .chunks(6)
+            .map(|chunk| {
+                row(chunk.iter().map(|(name, color)| cs(name, *color)))
+                    .spacing(SWATCH_GAP_X)
+                    .into()
+            })
+            .collect();
 
         column![
-            text("Resolved Theme Colors (defaults + per-widget)").role(
-                section_title(ts),
-                resolved,
-                a11y
-            ),
+            title("Resolved Theme Colors (defaults + per-widget)"),
             column(rows).spacing(SWATCH_GAP_Y),
         ]
         .spacing(gap.widget)
@@ -20836,24 +20772,177 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     column![
         header,
         base_palette,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_background,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_primary,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_secondary,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_success,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_warning,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         ext_danger,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         native_colors,
     ]
     .spacing(gap.section)
     .width(Fill)
     .into()
+}
+
+/// One of the Theme Map's resolved colours: its name, the 0.8.0 home it is
+/// read from, and its colour there, `None` where the theme leaves the home
+/// unstated.
+type ThemeMapColour = (&'static str, &'static str, Option<Color>);
+
+/// The Theme Map's resolved colours on the installed 0.8.0 theme `r`, each
+/// named after the 0.7.2 field it showed and read from that field's 0.8.0
+/// home: a colour role as stated, a part's fill as `iced_next::fill_of`
+/// reads it and a text's colour as `iced_next::text_color_of` does, each
+/// `None` where unstated.
+fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 37] {
+    let c = &r.colors;
+    let role = |color: native_theme::next::Color| Some(next_colour(color));
+    let slot = |color: Option<native_theme::next::Color>| color.map(next_colour);
+    let none = WidgetState::NONE;
+    let alternate_row = native_theme::next::ListQuery::new(none).alternate(true);
+    [
+        ("accent", "colors.accent.fill", role(c.accent.fill)),
+        (
+            "background",
+            "colors.window.background",
+            slot(c.window.background),
+        ),
+        (
+            "text",
+            "colors.window.foreground",
+            slot(c.window.foreground),
+        ),
+        ("surface", "colors.view.background", slot(c.view.background)),
+        ("border", "colors.window.border", slot(c.window.border)),
+        (
+            "muted",
+            "colors.window.foreground_muted",
+            slot(c.window.foreground_muted),
+        ),
+        ("shadow", "colors.shadow", role(c.shadow)),
+        (
+            "accent_fg",
+            "colors.accent.foreground",
+            role(c.accent.foreground),
+        ),
+        (
+            "btn_bg",
+            "button.body(NONE).fill",
+            iced_next::fill_of(&r.button.body(none)),
+        ),
+        (
+            "btn_fg",
+            "button.label(NONE).color",
+            iced_next::text_color_of(&r.button.label(none)),
+        ),
+        (
+            "btn_primary",
+            "button.body(NONE;variant=Primary).fill",
+            iced_next::fill_of(&r.button.body(ButtonQuery::primary())),
+        ),
+        ("danger", "colors.error.fill", role(c.error.fill)),
+        (
+            "danger_fg",
+            "colors.error.foreground",
+            role(c.error.foreground),
+        ),
+        ("warning", "colors.warning.fill", role(c.warning.fill)),
+        (
+            "warning_fg",
+            "colors.warning.foreground",
+            role(c.warning.foreground),
+        ),
+        ("success", "colors.success.fill", role(c.success.fill)),
+        (
+            "success_fg",
+            "colors.success.foreground",
+            role(c.success.foreground),
+        ),
+        ("info", "colors.info.fill", role(c.info.fill)),
+        ("info_fg", "colors.info.foreground", role(c.info.foreground)),
+        (
+            "selection",
+            "colors.selection.background",
+            role(c.selection.background),
+        ),
+        (
+            "selection_fg",
+            "colors.selection.foreground",
+            role(c.selection.foreground),
+        ),
+        ("link", "colors.link", role(c.link)),
+        ("focus_ring", "colors.focus_ring", role(c.focus_ring)),
+        (
+            "sidebar_bg",
+            "sidebar.container(NONE).fill",
+            iced_next::fill_of(&r.sidebar.container(none)),
+        ),
+        (
+            "sidebar_fg",
+            "sidebar.item_label(NONE).color",
+            iced_next::text_color_of(&r.sidebar.item_label(none)),
+        ),
+        (
+            "tooltip_bg",
+            "tooltip.panel.fill",
+            iced_next::fill_of(&r.tooltip.panel),
+        ),
+        (
+            "tooltip_fg",
+            "tooltip.text.color",
+            iced_next::text_color_of(&r.tooltip.text),
+        ),
+        (
+            "popover_bg",
+            "popover.panel.fill",
+            iced_next::fill_of(&r.popover.panel),
+        ),
+        (
+            "popover_fg",
+            "popover.text.color",
+            iced_next::text_color_of(&r.popover.text),
+        ),
+        (
+            "input_bg",
+            "input.field(NONE).fill",
+            iced_next::fill_of(&r.input.field(none)),
+        ),
+        (
+            "input_fg",
+            "input.text(NONE).color",
+            iced_next::text_color_of(&r.input.text(none)),
+        ),
+        ("disabled_fg", "colors.disabled_text", role(c.disabled_text)),
+        ("separator", "separator.color", role(r.separator.color)),
+        (
+            "alt_row",
+            "list.row(NONE;alternate=true).fill",
+            iced_next::fill_of(&r.list.row(alternate_row)),
+        ),
+        (
+            "sel_inactive",
+            "colors.selection.unfocused_background",
+            slot(c.selection.unfocused_background),
+        ),
+        (
+            "sel_inactive_fg",
+            "colors.selection.unfocused_foreground",
+            slot(c.selection.unfocused_foreground),
+        ),
+        (
+            "card_bg",
+            "card.container(NONE).fill",
+            iced_next::fill_of(&r.card.container(none)),
+        ),
+    ]
 }
 
 /// `c` as native-theme's `Rgba` prints a theme colour: `#rrggbb`, or
@@ -20875,7 +20964,7 @@ const COLOR_SWATCH_PADDING: Padding = Padding {
 };
 
 /// The space between a colour swatch and its label, in gpui rems
-/// ([`gpui_rems`]) (spec §3.1): the gpui showcase's `SWATCH_LABEL_GAP`,
+/// ([`next_gpui_rems`]) (spec §3.1): the gpui showcase's `SWATCH_LABEL_GAP`,
 /// `rems(0.5)` (`showcase-gpui/pages/mod.rs`), as the theme states no
 /// swatch ([`swatches_line`]).
 const SWATCH_LABEL_GAP_REMS: f32 = 0.5;
@@ -20888,35 +20977,31 @@ const SWATCH_LABEL_GAP_REMS: f32 = 0.5;
 const SWATCH_GAP_X: f32 = 16.0;
 const SWATCH_GAP_Y: f32 = 4.0;
 
-/// The Widget Info line of a table of colour swatches on the 0.7.2 theme,
-/// the Theme Map's, which lays its swatches out by the Layout page Grid's
-/// rule ([`next_swatches_line`]): the showcase's own distances it draws
-/// them at, under the installed theme.
-fn swatches_line(state: &State) -> String {
-    let label_gap = gpui_rems(
-        SWATCH_LABEL_GAP_REMS,
-        &state.current_resolved,
-        &state.accessibility,
-    );
-    format!(
-        "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), its label \
-         {} below (SWATCH_LABEL_GAP_REMS, gpui's SWATCH_LABEL_GAP, a half of the scaled \
-         defaults.font.size); two rows SWATCH_GAP_Y (4px) apart, and on a row two swatches \
-         SWATCH_GAP_X (16px) apart: gpui's, as the theme states no swatch table",
-        px_text(label_gap)
-    )
-}
-
-/// [`swatches_line`] of the Layout page's Grid, on the installed 0.8.0
-/// theme `r` its swatches are laid out on ([`next_color_swatch`]).
-fn next_swatches_line(r: &native_theme::next::ResolvedTheme) -> String {
+/// The Widget Info line of a table of colour swatches on the installed
+/// 0.8.0 theme `r` its swatches are laid out on ([`next_color_swatch`]),
+/// its columns spaced as `columns` says: the showcase's own distances it
+/// draws them at.
+fn swatch_table_line(r: &native_theme::next::ResolvedTheme, columns: &str) -> String {
     format!(
         "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), its label \
          {} below (SWATCH_LABEL_GAP_REMS, gpui's SWATCH_LABEL_GAP, a half of \
-         typography.body.size_px); two rows SWATCH_GAP_Y (4px) apart, the columns splitting \
-         the grid's width evenly (iced's grid takes one spacing, grid.rs:63, :203-205): \
+         typography.body.size_px); two rows SWATCH_GAP_Y (4px) apart, {columns}: \
          gpui's, as the theme states no swatch table",
         px_text(next_gpui_rems(SWATCH_LABEL_GAP_REMS, r))
+    )
+}
+
+/// [`swatch_table_line`] of the Theme Map's tables, rows of swatches.
+fn theme_map_swatches_line(r: &native_theme::next::ResolvedTheme) -> String {
+    swatch_table_line(r, "and on a row two swatches SWATCH_GAP_X (16px) apart")
+}
+
+/// [`swatch_table_line`] of the Layout page's Grid.
+fn next_swatches_line(r: &native_theme::next::ResolvedTheme) -> String {
+    swatch_table_line(
+        r,
+        "the columns splitting the grid's width evenly (iced's grid takes one spacing, \
+         grid.rs:63, :203-205)",
     )
 }
 
@@ -20931,28 +21016,8 @@ fn next_caption_home(r: &native_theme::next::ResolvedTheme) -> &'static str {
     }
 }
 
-/// A colour swatch on the 0.7.2 theme, the Theme Map's: [`swatch_of`] with
-/// its hex and label in `caption`, the label [`SWATCH_LABEL_GAP_REMS`]
-/// below.
-fn color_swatch<'a>(
-    label: &'a str,
-    color: Color,
-    border: iced::Border,
-    caption: &ResolvedTextScaleEntry,
-    resolved: &ResolvedTheme,
-    a11y: &AccessibilityPreferences,
-) -> Element<'a, Message> {
-    swatch_of(
-        color,
-        border,
-        text(color_to_hex(color)).role(caption, resolved, a11y),
-        text(label).role(caption, resolved, a11y),
-        gpui_rems(SWATCH_LABEL_GAP_REMS, resolved, a11y),
-    )
-}
-
-/// [`color_swatch`] on the installed 0.8.0 theme `r`, the Layout page
-/// Grid's: [`swatch_of`] with its hex and label in the caption
+/// A colour swatch on the installed 0.8.0 theme `r`, the Layout page
+/// Grid's and the Theme Map's: [`swatch_of`] with its hex and label in the caption
 /// `native_theme_iced::next::text_scale` gives ([`Typeset::next_text`]),
 /// the label [`SWATCH_LABEL_GAP_REMS`] of the 0.8.0 rem below
 /// ([`next_gpui_rems`]).
@@ -21011,15 +21076,13 @@ fn swatch_of<'a>(
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Swatch rendering parameters shared across extended palette sections.
+/// Swatch rendering parameters shared across extended palette sections, on
+/// the installed 0.8.0 theme.
 struct SwatchStyle<'s> {
-    border_color: Color,
-    border_width: f32,
-    radius: f32,
-    heading: &'s ResolvedTextScaleEntry,
-    caption: &'s ResolvedTextScaleEntry,
-    resolved: &'s ResolvedTheme,
-    a11y: &'s AccessibilityPreferences,
+    /// The swatches' frame ([`swatch_frame`]).
+    frame: iced::Border,
+    /// The theme the headings and the swatches' texts are set in.
+    next: &'s native_theme::next::ResolvedTheme,
     /// `layout.widget_gap`, between a section's heading and its swatches.
     widget_gap: f32,
 }
@@ -21094,7 +21157,10 @@ fn palette_section_info(state: &State, section: PaletteSection) -> String {
             Paint::leaf("strong.text", "strong.text", strong.text),
         ],
         &[],
-        &[("swatches", swatches_line(state).as_str())],
+        &[(
+            "swatches",
+            theme_map_swatches_line(state.next_shown()).as_str(),
+        )],
     )
 }
 
@@ -21109,31 +21175,15 @@ fn hoverable_ext_section<'a>(
     let label = section.label();
     let [base, weak, strong] = section.pairs(extended);
     let SwatchStyle {
-        border_color,
-        border_width,
-        radius,
-        heading,
-        caption,
-        resolved,
-        a11y,
+        frame,
+        next,
         widget_gap,
     } = *style;
     let cs = |field: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(
-            field,
-            color,
-            iced::Border {
-                color: border_color,
-                width: border_width,
-                radius: radius.into(),
-            },
-            caption,
-            resolved,
-            a11y,
-        )
+        next_color_swatch(field, color, frame, next)
     };
     let content: Element<'a, Message> = column![
-        text(label).role(heading, resolved, a11y),
+        text(label).next_text(next_section_title(next), &next.typography),
         row![
             cs("base.color", base.color),
             cs("base.text", base.text),
@@ -21160,13 +21210,6 @@ fn arrow_handle(resolved: &ResolvedTheme) -> pick_list::Handle<iced::Font> {
     native_theme_iced::pick_list_handle::<iced::Renderer>(resolved)
 }
 
-/// The role a page's title is set in: `dialog_title`, the dialog or page title
-/// (`docs/platform-facts.md` §2.19). Not `display`, the hero text of
-/// onboarding and banners, which KDE does not have.
-fn page_title(ts: &ResolvedTextScale) -> &ResolvedTextScaleEntry {
-    &ts.dialog_title
-}
-
 /// The role a section title within a page is set in: `section_heading`, the
 /// section divider (`docs/platform-facts.md` §2.19).
 fn section_title(ts: &ResolvedTextScale) -> &ResolvedTextScaleEntry {
@@ -21191,7 +21234,6 @@ trait Typeset {
         a11y: &AccessibilityPreferences,
     ) -> Self;
     fn typeset(self, font: &ResolvedFontSpec, a11y: &AccessibilityPreferences) -> Self;
-    fn body(self, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Self;
     /// `typeset`, on the theme's line height, `defaults.line_height`.
     fn themed(
         self,
@@ -21207,7 +21249,7 @@ trait Typeset {
     /// where it gives one iced can draw, else in iced's own (spec §10,
     /// rule 0).
     fn next_text(self, style: &TextStyle, typography: &Typography) -> Self;
-    /// `body` on the 0.8.0 model: [`next_text`](Typeset::next_text) in
+    /// Body text on the 0.8.0 model: [`next_text`](Typeset::next_text) in
     /// `typography.body`.
     fn next_body(self, r: &native_theme::next::ResolvedTheme) -> Self;
 }
@@ -21228,10 +21270,6 @@ impl Typeset for iced::widget::Text<'_> {
     fn typeset(self, font: &ResolvedFontSpec, a11y: &AccessibilityPreferences) -> Self {
         self.size(scaled_text_size(font.size, a11y))
             .font(theme_font(font))
-    }
-
-    fn body(self, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Self {
-        self.themed(&resolved.defaults.font, resolved, a11y)
     }
 
     fn themed(
@@ -21273,9 +21311,12 @@ fn next_line_box(typography: &Typography, style: &TextStyle) -> f32 {
     }
 }
 
-/// [`page_title`] on the 0.8.0 model: `typography.title1`, or the body
-/// style where the theme defines none (`native_theme_iced::next::text_scale`,
-/// the table of homes' `text_scale.dialog_title`).
+/// The role a page's title is set in on the 0.8.0 model: `dialog_title`,
+/// the dialog or page title (`docs/platform-facts.md` §2.19), not
+/// `display`, the hero text of onboarding and banners, which KDE does not
+/// have; `typography.title1`, or the body style where the theme defines
+/// none (`native_theme_iced::next::text_scale`, the table of homes'
+/// `text_scale.dialog_title`).
 fn next_page_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
     native_theme_iced::next::text_scale(r).dialog_title
 }
@@ -21287,16 +21328,18 @@ fn next_section_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
     native_theme_iced::next::text_scale(r).section_heading
 }
 
-/// [`theme_mono_font`] on the 0.8.0 model: `typography.monospace` as iced
+/// The theme's monospace font on the 0.8.0 model: `typography.monospace` as iced
 /// can draw it ([`next_font_from_database`]); `None` where it gives no font
 /// iced can draw, and iced's own monospace stays.
 fn next_theme_mono_font(r: &native_theme::next::ResolvedTheme) -> Option<iced::Font> {
     next_font_from_database(&r.typography.monospace, true).map(|drawn| drawn.font)
 }
 
-/// [`gpui_rems`] on the 0.8.0 model: `rems` of gpui-component's rem, which
-/// the gpui connector fills with the body size the 0.8.0 theme resolved,
-/// the text scale already applied (`typography.body.size_px`).
+/// `rems` of gpui-component's rem, its `Theme::font_size` (gpui-component
+/// 0.9.1 `src/root.rs:714`), which the gpui connector fills with the body
+/// size the 0.8.0 theme resolved, the text scale already applied
+/// (`typography.body.size_px`): the size a gpui showcase constant of
+/// `rems(..)` stands for under the installed theme (Addendum F's rem rule).
 fn next_gpui_rems(rems: f32, r: &native_theme::next::ResolvedTheme) -> f32 {
     r.typography.body.size_px * rems
 }
@@ -21380,11 +21423,6 @@ fn role_font(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> iced::
     role_drawn(entry, resolved).font
 }
 
-/// The theme's monospace font as iced can draw it.
-fn theme_mono_font(resolved: &ResolvedTheme) -> iced::Font {
-    mono_drawn(resolved).font
-}
-
 /// How a theme font is drawn.
 fn font_drawn(font: &ResolvedFontSpec) -> Drawn {
     font_from_database(font, false)
@@ -21405,22 +21443,17 @@ fn role_drawn(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> Drawn
     font_from_database(&at_weight, false)
 }
 
-/// A Widget Info row for text in a 0.7.2 theme font, the Extra page's
-/// (`iced_aw`): the field it comes from, and the family, weight and style
-/// it is drawn in where they are not the ones stated.
-#[cfg(feature = "iced_aw")]
-fn font_row(field: &str, font: &ResolvedFontSpec) -> String {
-    font_row_drawn(field, font, &font_drawn(font))
-}
-
-/// [`font_row`], given how the font is drawn. An upright font drawn upright
-/// names no style.
-#[cfg(any(feature = "iced_aw", test))]
+/// A Widget Info row for text in a 0.7.2 theme font, given how it is
+/// drawn: the field it comes from, and the family, weight and style it is
+/// drawn in where they are not the ones stated ([`stated_font_row`], which
+/// [`next_font_row`] takes too). An upright font drawn upright names no
+/// style.
+#[cfg(test)]
 fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn) -> String {
     stated_font_row(field, &font.family, font.weight, font.style, drawn)
 }
 
-/// [`font_row`] on the 0.8.0 model: `style`, a text style of the installed
+/// A Widget Info row for text on the 0.8.0 model: `style`, a text style of the installed
 /// 0.8.0 theme read at `home`, by what iced draws it in
 /// ([`next_font_from_database`]); where it gives no font iced can draw, its
 /// size and the family iced draws instead, its own ([`next_family_drawing`]),
@@ -22088,24 +22121,7 @@ fn register_weight(
     }
 }
 
-fn section_header<'a>(
-    title: &'a str,
-    description: &'a str,
-    resolved: &ResolvedTheme,
-    ts: &ResolvedTextScale,
-    a11y: &AccessibilityPreferences,
-    widget_gap: f32,
-) -> Element<'a, Message> {
-    column![
-        text(title).role(page_title(ts), resolved, a11y),
-        text(description).body(resolved, a11y),
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-    ]
-    .spacing(widget_gap)
-    .into()
-}
-
-/// [`section_header`] on the installed 0.8.0 theme: the title in
+/// A page's header on the installed 0.8.0 theme: the title in
 /// [`next_page_title`], the description in `typography.body`, a
 /// `layout.widget_gap` apart (none where unstated), over a rule
 /// `separator.thickness` thick, in `iced_next::styles::rule`'s colour.
@@ -23184,8 +23200,8 @@ mod tests {
         // selector run over that tab would take the whole test down. Clicking
         // needs no selector -- `simulate` never calls `operate` -- and the
         // point is the popup's own padding, the menu panel's
-        // (`aw_menu_padding`), plus a few pixels into its first entry.
-        let popup_pad = aw_menu_padding(&state.current_resolved);
+        // (`menu_popup_padding`), plus a few pixels into its first entry.
+        let popup_pad = menu_popup_padding(state.next_shown());
         let messages = drive(state, |ui| {
             let underlay = match ui.find("Right-click inside this panel") {
                 Ok(target) => match target.visible_bounds() {
@@ -25678,8 +25694,6 @@ mod tests {
                 "ghost_button",
                 "menu_row",
                 "menu_title",
-                "aw_menu_row",
-                "aw_menu_title",
                 "tab_style",
                 "list_row",
                 "header_section_style",
@@ -26010,16 +26024,15 @@ mod tests {
     /// states for them, not a spacing of the showcase's own: the `Card` and
     /// the `TabBar`/`Tabs` where every side is stated (`iced_aw` keeps their
     /// defaults private), and every container dressed as a card through
-    /// [`card_padding`], the one rule, which reads `card.border` and falls
-    /// back on `layout.container_margin`.
+    /// [`next_card_padding`], the one rule, which reads
+    /// `card.container(NONE)` and falls back on `layout.container_margin`.
     #[test]
     fn card_and_tab_padding_come_from_the_theme() {
         let source = strip_comments_and_strings(SHOWCASE);
-        // The Extra page's Card pads its sections from `aw_card_padding`, the
-        // three it returns by the one card rule, bound in the one `let` that
-        // reads them; no other call sets a section's padding.
-        let from_rule =
-            source.find("let (head, body, foot) = aw_card_padding(resolved, &state.layout);");
+        // The Extra page's Card pads its sections from `next_aw_card_padding`,
+        // the three it returns by the one card rule, bound in the one `let`
+        // that reads them; no other call sets a section's padding.
+        let from_rule = source.find("let (head, body, foot) = next_aw_card_padding(next);");
         // From that `let` to the Card's probe, where the three are set.
         let within = from_rule.and_then(|from| {
             source[from..]
@@ -26037,16 +26050,18 @@ mod tests {
                 assert!(
                     computed,
                     "the card's padding is set section by section at showcase-iced.rs:{}, \
-                     not from card.border",
+                     not from card.container(NONE)",
                     line_at(&source, at)
                 );
             }
         }
         for call in [
-            "aw_card_padding(resolved, &state.layout)",
-            "stated_padding(&tab_t.border.padding)",
-            "let margin = Gaps::from_layout(layout).container;",
-            "card_padding(resolved, &state.layout)",
+            "next_aw_card_padding(next)",
+            "let tab_padding = next_aw_tab_padding(next);",
+            "match iced_next::padding_of(&r.tab.tab(WidgetState::NONE))",
+            "let sides = stated_sides(&container, margin);",
+            "let inside = stated_sides(&r.card.container(WidgetState::NONE), margin);",
+            ".padding(next_card_padding(next))",
         ] {
             assert!(
                 source.contains(call),
@@ -26098,40 +26113,48 @@ mod tests {
     /// `docs/platform-facts.md` §2.19 defines for it -- `dialog_title` for a
     /// page, `section_heading` for a section -- and body text is the theme's
     /// font. KDE has no `display` role; set in it, a page title fell to body
-    /// size, below its own description.
+    /// size, below its own description. On the 0.8.0 model, the text
+    /// scale's roles as `native_theme_iced::next::text_scale` gives them.
     #[test]
     fn page_and_section_titles_take_their_defined_roles() {
-        for preset in [
+        let presets = [
             "kde-breeze",
             "adwaita",
             "macos-monterey",
             "macos-tahoe",
             "windows-11",
-        ] {
-            for is_dark in [false, true] {
-                let at = format!("{preset} (dark: {is_dark})");
-                let resolved = match native_theme_iced::from_preset(preset, is_dark) {
-                    Ok((_, resolved)) => resolved,
-                    Err(error) => panic!("{at}: {error}"),
-                };
-                let ts = &resolved.text_scale;
-                let page = page_title(ts).size;
-                let section = section_title(ts).size;
-                let body = resolved.defaults.font.size;
-                assert!(
-                    page >= section && section >= body,
-                    "{at}: page title {page}px, section title {section}px, body {body}px"
-                );
-                assert!(
-                    std::ptr::eq(page_title(ts), &ts.dialog_title),
-                    "{at}: a page title is not set in dialog_title"
-                );
-                assert!(
-                    std::ptr::eq(section_title(ts), &ts.section_heading),
-                    "{at}: a section title is not set in section_heading"
-                );
+        ];
+        let mut seen = 0;
+        for (at, r) in next_combinations() {
+            if !presets
+                .iter()
+                .any(|preset| at.split('/').next() == Some(*preset))
+            {
+                continue;
             }
+            seen += 1;
+            let scale = native_theme_iced::next::text_scale(&r);
+            let page = next_page_title(&r).size_px;
+            let section = next_section_title(&r).size_px;
+            let body = r.typography.body.size_px;
+            assert!(
+                page >= section && section >= body,
+                "{at}: page title {page}px, section title {section}px, body {body}px"
+            );
+            assert!(
+                std::ptr::eq(next_page_title(&r), scale.dialog_title),
+                "{at}: a page title is not set in dialog_title"
+            );
+            assert!(
+                std::ptr::eq(next_section_title(&r), scale.section_heading),
+                "{at}: a section title is not set in section_heading"
+            );
         }
+        assert_eq!(
+            seen,
+            presets.len() * 2,
+            "a preset is not among the 0.8.0 presets"
+        );
     }
 
     /// Text set in a `text_scale` role takes the role's weight with its size,
@@ -26159,16 +26182,15 @@ mod tests {
                 }
             }
         }
-        let header = match source.find("fn section_header") {
-            Some(start) => match source[start..].find("\n}") {
-                Some(len) => &source[start..start + len],
-                None => &source[start..],
-            },
-            None => panic!("section_header is gone"),
-        };
+        let header = source.find("fn next_section_header").and_then(|start| {
+            let rest = source.get(start..)?;
+            rest.find("\n}").and_then(|len| rest.get(..len))
+        });
         assert!(
-            header.contains("page_title(ts)"),
-            "section_header does not set its title in page_title"
+            header.is_some_and(|header| {
+                header.contains("next_text(next_page_title(next), &next.typography)")
+            }),
+            "next_section_header is gone, or does not set its title in next_page_title"
         );
     }
 
@@ -26267,7 +26289,7 @@ mod tests {
             "container(a).padding([0.0, 0.0])",
             "Padding::new(AW_MENU_PADDING)",
             "Padding::ZERO.top(row_inset / 2.0)",
-            "row![a].spacing(gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y))",
+            "row![a].spacing(next_gpui_rems(ICON_GRID_GAP_REMS, next))",
             "space().width(Fill)",
             "container(a).width(Length::Fixed(80.0))",
             "const PAD: Padding = Padding { top: 4.0, right: 8.0, bottom: 4.0, left: 8.0 };",
@@ -26603,7 +26625,7 @@ mod tests {
     /// gpui showcase constant has gpui's value, the chrome-parity rule, read
     /// from the gpui showcase's source (`showcase-gpui/demo.rs` and
     /// `pages/mod.rs`): a `px(..)` constant in logical pixels, a `rems(..)`
-    /// one as iced's `_REMS` constant of [`gpui_rems`]. The constants with no
+    /// one as iced's `_REMS` constant of [`next_gpui_rems`]. The constants with no
     /// gpui counterpart (`COLOR_SWATCH_PADDING`, `AW_MENU_GAP`) say so in
     /// their docs.
     #[test]
@@ -29134,7 +29156,7 @@ mod tests {
     /// the lines its grid wraps onto, are [`ICON_GRID_GAP_REMS`] of the gpui
     /// rem apart,
     /// the gpui showcase's `ICON_GRID_GAP` (`rems(0.5)`), a half of the
-    /// scaled `defaults.font.size`, as the cells are a gallery's, not a row
+    /// installed 0.8.0 theme's `typography.body.size_px`, as the cells are a gallery's, not a row
     /// of widgets: under every bundled preset in both modes, read from the
     /// theme at test time, and named in a cell's Widget Info.
     #[test]
@@ -29143,10 +29165,7 @@ mod tests {
             let mut state = loaded(preset, dark);
             state.reload_icons();
             state.active_tab = Tab::Icons;
-            let want = state
-                .accessibility
-                .scaled(state.current_resolved.defaults.font.size)
-                * 0.5;
+            let want = state.next_shown().typography.body.size_px * 0.5;
             let mut ui = interface(&state);
             let [first, second] =
                 [probes::ICON_CELL, probes::ICON_CELL_SECOND].map(|id| probe_bounds(&mut ui, id));
@@ -29369,14 +29388,16 @@ mod tests {
             let mut state = loaded(preset, dark);
             state.reload_icons();
             state.active_tab = Tab::Icons;
-            let r = &state.current_resolved;
-            let a11y = &state.accessibility;
-            let caption = &r.text_scale.caption;
-            let pad = gpui_rems(ICON_CELL_PADDING_REMS, r, a11y);
-            let (size, line) = (
-                scaled_text_size(caption.size, a11y),
-                scaled_text_size(caption.line_height, a11y),
-            );
+            let r = state.next_shown();
+            let caption = native_theme_iced::next::text_scale(r).caption;
+            let pad = next_gpui_rems(ICON_CELL_PADDING_REMS, r);
+            let (size, line) = (caption.size_px, next_line_box(&r.typography, caption));
+            // Where the caption gives no font iced can draw, `next_text`
+            // leaves the label in the renderer's default font, which the
+            // simulator makes the Fira Sans it bundles for `Font::DEFAULT`
+            // (`iced_test` 0.14 `src/simulator.rs`, `Simulator::with_size`).
+            let font = next_font_from_database(caption, false)
+                .map_or(iced::Font::with_name("Fira Sans"), |drawn| drawn.font);
             let mut ui = interface(&state);
             let cells: Vec<Rectangle> = [probes::ICON_CELL, probes::ICON_CELL_SECOND]
                 .into_iter()
@@ -29391,7 +29412,7 @@ mod tests {
             labels.sort();
             labels.dedup();
             for label in labels {
-                let width = MeasuredText::new(label.clone(), size, line, role_font(caption, r))
+                let width = MeasuredText::new(label.clone(), size, line, font)
                     .extent()
                     .width;
                 for (_, at) in found.iter().filter(|(content, _)| *content == label) {
@@ -29423,10 +29444,11 @@ mod tests {
     /// M9-154, as M9b Step 8 I1 rules it (theme-data): the Icons page's
     /// cells are padded as the gpui showcase's gallery cells are, by
     /// [`ICON_CELL_PADDING_REMS`] of the gpui rem (gpui's
-    /// `ICON_CELL_PADDING`, `rems(0.5)`), a half of the scaled
-    /// `defaults.font.size`, and their content is centred in them: under
-    /// every bundled preset in both modes, the first cell's role name lies
-    /// the padding, the icon's box and the cell's gap below the cell's top,
+    /// `ICON_CELL_PADDING`, `rems(0.5)`), a half of the installed 0.8.0
+    /// theme's `typography.body.size_px`, and their content is centred in
+    /// them: under every bundled preset in both modes, the first cell's role
+    /// name lies the padding, the icon's box (`icons.sizes.large`) and the
+    /// cell's gap below the cell's top,
     /// its source the padding above the cell's bottom, and the role name and
     /// the source are centred across the cell.
     #[test]
@@ -29435,13 +29457,18 @@ mod tests {
             let mut state = loaded(preset, dark);
             state.reload_icons();
             state.active_tab = Tab::Icons;
-            let r = &state.current_resolved;
-            let pad = gpui_rems(ICON_CELL_PADDING_REMS, r, &state.accessibility);
+            let r = state.next_shown();
+            let pad = next_gpui_rems(ICON_CELL_PADDING_REMS, r);
             let Some(first) = state.loaded_icons.first() else {
                 panic!("{preset} (dark: {dark}): no icon role is listed");
             };
             let (role, source) = (format!("{:?}", first.role), first.source.label());
-            let box_px = r.defaults.icon_sizes.large;
+            let box_px = r.icons.sizes.large;
+            assert!(
+                box_px.is_some(),
+                "{preset} (dark: {dark}): the theme states no icons.sizes.large"
+            );
+            let box_px = box_px.unwrap_or_default();
             let mut ui = interface(&state);
             let cell = probe_bounds(&mut ui, probes::ICON_CELL);
             let found = texts(&mut ui);
@@ -29453,10 +29480,7 @@ mod tests {
                 None => panic!("{preset} (dark: {dark}): {label:?} is not drawn in the cell"),
             };
             let (role_at, source_at) = (at(&role), at(source));
-            let top = role_at.y
-                - cell.y
-                - box_px
-                - gpui_rems(ICON_CELL_GAP_REMS, r, &state.accessibility);
+            let top = role_at.y - cell.y - box_px - next_gpui_rems(ICON_CELL_GAP_REMS, r);
             assert!(
                 near(top, pad),
                 "{preset} (dark: {dark}): the cell's content starts {top}px down, want {pad}px"
@@ -29481,10 +29505,11 @@ mod tests {
     /// The Graphics page's colour lines that are not a style function's
     /// (`Paint::leaf`, which `colour_row_faults` passes by: the hex is read
     /// from the leaf the line names, so it agrees with the line by
-    /// construction) are each held to the widget they describe: a splice of
-    /// the leaf into the resolved theme moves what that widget draws. Every
-    /// colour line of the Canvas's, the QR code's and the Markdown's Widget
-    /// Info has a row here, so a new one needs its own.
+    /// construction) are each held to the widget they describe: the home the
+    /// line names, patched on the installed 0.8.0 theme ([`with_home`]),
+    /// moves what that widget draws. Every colour line of the Canvas's, the
+    /// QR code's and the Markdown's Widget Info has a row here, so a new one
+    /// needs its own.
     ///
     /// The Layout page's Grid's one line, its swatches' frame
     /// (`colors.window.border` of the installed 0.8.0 theme, stated in a
@@ -29496,81 +29521,71 @@ mod tests {
     /// palette fields their swatches are drawn from, read in the same call.
     #[test]
     fn the_graphics_colour_lines_are_what_their_widgets_draw() {
-        type Splice = fn(&mut State, native_theme::color::Rgba);
         /// The widget's info title, its info, its probe, the colour line's
-        /// source and the splice of the leaf it reads.
+        /// source and the home it reads.
         type Row = (
             &'static str,
             fn(&State) -> String,
             &'static str,
             &'static str,
-            Splice,
+            &'static str,
         );
         let rows: [Row; 8] = [
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
-                "card.background_color",
-                |s, c| s.current_resolved.card.background_color = c,
+                "card.container(NONE).fill",
+                "card.container(NONE).fill",
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
-                "separator.line_color",
-                |s, c| s.current_resolved.separator.line_color = c,
+                "separator.color",
+                "separator.color",
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
-                "defaults.text_color",
-                |s, c| s.current_resolved.defaults.text_color = c,
+                "colors.window.foreground",
+                "colors.window.foreground",
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
-                "defaults.accent_color",
-                |s, c| s.current_resolved.defaults.accent_color = c,
+                "colors.accent.fill",
+                "colors.accent.fill",
             ),
             (
                 "QRCode",
                 qr_code_info,
                 probes::GRAPHICS_QR_CODE,
-                "defaults.text_color",
-                |s, c| s.current_resolved.defaults.text_color = c,
+                "colors.window.foreground",
+                "colors.window.foreground",
             ),
             (
                 "QRCode",
                 qr_code_info,
                 probes::GRAPHICS_QR_CODE,
-                "defaults.background_color",
-                |s, c| s.current_resolved.defaults.background_color = c,
+                "colors.window.background",
+                "colors.window.background",
             ),
             (
                 "Markdown",
                 markdown_info,
                 probes::GRAPHICS_MARKDOWN,
-                "link.font.color",
-                |s, c| s.current_resolved.link.font.color = c,
+                "link.label(NONE).color",
+                "link.label(NONE).color",
             ),
             (
                 "Markdown",
                 markdown_info,
                 probes::GRAPHICS_MARKDOWN,
-                "extended.background.base.text, from defaults.text_color",
-                |s, c| {
-                    s.current_resolved.defaults.text_color = c;
-                    // The window's surface hands its text colour, the 0.8.0
-                    // theme's, to the page.
-                    if let Some(next) =
-                        with_home(&s.next_resolved, "colors.window.foreground", &c.to_string())
-                    {
-                        s.next_resolved = next;
-                    }
-                },
+                "extended.background.base.text, from colors.window.foreground",
+                "colors.window.foreground",
             ),
         ];
         let state = page_state("kde-breeze", Tab::Graphics);
@@ -29603,17 +29618,20 @@ mod tests {
         }
         let mut probed = None;
         let (base, ..) = frame_after(&state, view(&state), size, |_| {});
-        for (widget, info, id, leaf, splice) in rows {
+        for (widget, info, id, leaf, home) in rows {
             if !info(&state).contains(leaf) {
                 faults.push(format!("{widget}: its Widget Info names no {leaf}"));
             }
             let mut spliced = page_state("kde-breeze", Tab::Graphics);
-            splice(&mut spliced, spliced_colour("#13579b"));
-            spliced.current_theme = native_theme_iced::to_theme_in(
-                &spliced.current_resolved,
-                "spliced",
-                native_theme_iced::ColorMode::Light,
-            );
+            let patched = with_home(&spliced.next_resolved, home, "#13579b");
+            let Some((patched, theme)) =
+                patched.and_then(|r| iced_next::to_theme(&r).ok().map(|theme| (r, theme)))
+            else {
+                faults.push(format!("{widget}: no patch of {home} gives iced a theme"));
+                continue;
+            };
+            spliced.next_resolved = patched;
+            spliced.current_theme = theme;
             let (image, _, scale) = frame_after(&spliced, view(&spliced), size, |ui| {
                 probed = Some(probe_bounds(ui, id));
             });
@@ -29774,6 +29792,81 @@ mod tests {
             texts(&mut ui).iter().any(|(content, _)| *content == want),
             "the Display page does not show \"{want}\""
         );
+    }
+
+    /// The Theme Map's resolved colours on the installed 0.8.0 theme
+    /// ([`theme_map_colours`]): each swatch is the colour at the 0.8.0 home
+    /// it names, so a colour of the test's own stated there
+    /// ([`with_home`]), on a home kde-breeze states or leaves unstated, is
+    /// the hex the page draws over the swatch's name in the page's
+    /// "Resolved Theme Colors" table; a colour the theme leaves unstated
+    /// has no swatch there.
+    #[test]
+    fn the_theme_map_draws_its_colours_from_their_homes() -> Result<(), String> {
+        const HEADING: &str = "Resolved Theme Colors (defaults + per-widget)";
+        let mut state = page_state("kde-breeze", Tab::ThemeMap);
+        let installed = state.next_shown().clone();
+        // The texts of the table under `state`: each swatch's name with the
+        // text drawn nearest above it in its column, its hex.
+        let table = |state: &State| -> Result<Vec<(String, Option<String>)>, String> {
+            let mut ui = interface(state);
+            let found = texts(&mut ui);
+            drop(ui);
+            let top = found
+                .iter()
+                .find(|(content, _)| content == HEADING)
+                .map(|(_, bounds)| bounds.y + bounds.height)
+                .ok_or_else(|| format!("the Theme Map draws no {HEADING:?}"))?;
+            let names = theme_map_colours(&installed).map(|(name, _, _)| name);
+            Ok(found
+                .iter()
+                .filter(|(content, bounds)| bounds.y >= top && names.contains(&content.as_str()))
+                .map(|(name, label)| {
+                    let hex = found
+                        .iter()
+                        .filter(|(_, above)| {
+                            above.y >= top
+                                && above.y + above.height <= label.y
+                                && (above.center_x() - label.center_x()).abs() < 0.5
+                        })
+                        .max_by(|a, b| a.1.y.total_cmp(&b.1.y))
+                        .map(|(hex, _)| hex.clone());
+                    (name.clone(), hex)
+                })
+                .collect())
+        };
+        let mut faults = Vec::new();
+        for (name, home, _) in theme_map_colours(&installed) {
+            let patched = with_home(&installed, home, "#13579b")
+                .ok_or_else(|| format!("{name}: no patch reaches {home}"))?;
+            splice_next(&mut state, |r| *r = patched.clone());
+            let drawn = table(&state)?;
+            let swatches: Vec<&(String, Option<String>)> =
+                drawn.iter().filter(|(label, _)| label == name).collect();
+            if swatches != [&(name.to_owned(), Some("#13579b".to_owned()))] {
+                faults.push(format!("{name}: {home} at #13579b draws {swatches:?}"));
+            }
+        }
+        splice_next(&mut state, |r| {
+            *r = installed.clone();
+            r.colors.window.foreground_muted = None;
+        });
+        let drawn = table(&state)?;
+        if drawn.iter().any(|(label, _)| label == "muted") {
+            faults.push(format!(
+                "an unstated colors.window.foreground_muted has a swatch: {drawn:?}"
+            ));
+        }
+        if drawn.len()
+            != theme_map_colours(state.next_shown())
+                .iter()
+                .filter(|c| c.2.is_some())
+                .count()
+        {
+            faults.push(format!("the table is not the stated colours: {drawn:?}"));
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+        Ok(())
     }
 
     /// M9-098 (info-truth): the Grid's Widget Info names what spaces it,
@@ -30595,7 +30688,7 @@ mod tests {
             || old.text_scale.section_heading.size == 23.0
             || is(old.list.border.padding.left, 11.0)
             || is(native_theme_iced::list_header_height(old), 41.0)
-            || gpui_rems(SWATCH_LABEL_GAP_REMS, old, &state.accessibility) == 9.0
+            || state.accessibility.scaled(old.defaults.font.size) * SWATCH_LABEL_GAP_REMS == 9.0
         {
             return Err("the splice states 0.7.2's sizes, or no caption or headline".into());
         }
@@ -30924,34 +31017,19 @@ mod tests {
 
     /// M9-155, round 2: the push buttons of the Display, Layout and Extra
     /// pages are laid out at the minimum size the theme states, as the
-    /// Buttons page's are: the four tooltip buttons and the first pane's
-    /// three controls at the installed 0.8.0 theme's
-    /// (`button.body(NONE).min_size`, each axis it states, the Tooltip and
-    /// PaneGrid infos naming it), and, at the 0.7.2 theme's
-    /// (`button.min_width` and `.min_height`), in the `iced_aw` build, the
-    /// card's Dismiss and the button that brings the card back, the Card
-    /// info naming it. kde-breeze states 82 by 32, which "close" and
-    /// "Dismiss" fall short of; windows-11 64 by 32.
+    /// Buttons page's are, on the installed 0.8.0 theme
+    /// (`button.body(NONE).min_size`, each axis it states): the four
+    /// tooltip buttons and the first pane's three controls, the Tooltip and
+    /// PaneGrid infos naming it, and, in the `iced_aw` build, the card's
+    /// Dismiss and the button that brings the card back, the Card info
+    /// naming it. kde-breeze states 82 by 32, which "close" and "Dismiss"
+    /// fall short of; windows-11 64 by 32.
     #[test]
     fn the_other_pages_push_buttons_take_the_stated_minimum_size() {
         let mut faults = Vec::new();
         for preset in ["kde-breeze", "windows-11"] {
             let mut state = loaded(preset, false);
             state.side_panel_visible = false;
-            #[cfg(feature = "iced_aw")]
-            let r = state.current_resolved.clone();
-            #[cfg(feature = "iced_aw")]
-            let under = |what: &str, button: Rectangle| {
-                (button.width < r.button.min_width - 0.01
-                    || button.height < r.button.min_height - 0.01)
-                    .then(|| {
-                        format!(
-                            "{preset}: {what} is {} x {}px, under button.min_width x \
-                             button.min_height {} x {}",
-                            button.width, button.height, r.button.min_width, r.button.min_height
-                        )
-                    })
-            };
 
             // The Display page's, on the installed 0.8.0 theme: at least
             // `button.body(NONE).min_size` on each axis it states.
@@ -31009,27 +31087,21 @@ mod tests {
                 state.active_tab = Tab::Extra;
                 state.aw_card_open = true;
                 let mut ui = interface(&state);
-                faults.extend(under(
+                faults.extend(under_next(
                     "Dismiss",
                     probe_bounds(&mut ui, probes::AW_CARD_DISMISS),
                 ));
                 drop(ui);
                 state.aw_card_open = false;
                 let mut ui = interface(&state);
-                faults.extend(under(
+                faults.extend(under_next(
                     "Show the card again",
                     probe_bounds(&mut ui, probes::AW_CARD_SHOW),
                 ));
                 drop(ui);
                 state.aw_card_open = true;
-                let want = format!(
-                    "min size: {:.0} x {:.0}px, button.min_width x button.min_height",
-                    r.button.min_width, r.button.min_height
-                );
-                if !aw_card_info(&state)
-                    .lines()
-                    .any(|line| line.contains(&want))
-                {
+                let want = format!("buttons' min size: {}", next_button_min_size_row(&next));
+                if !aw_card_info(&state).lines().any(|line| line.trim() == want) {
                     faults.push(format!("{preset}: the Card info does not say {want:?}"));
                 }
             }
@@ -32952,7 +33024,8 @@ mod tests {
     /// answers the query at rest alone and leaves the other states' rules
     /// as the preset orders them; spec §9, step 3, `not_states`), of the
     /// variant `;variant=<Variant>` after them names (`button.body(HOVER;
-    /// variant=Flat).fill` written without the space), a
+    /// variant=Flat).fill` written without the space) or of the rows
+    /// `;alternate=<bool>` names (`list.row(NONE;alternate=true).fill`), a
     /// static widget's part patch, or the colour role. A stroke is stated
     /// 1 px wide in the colour, so a home whose stroke the theme leaves
     /// unstated draws it. A widget's own colour ([`WIDGET_COLOURS`]) is
@@ -32974,10 +33047,11 @@ mod tests {
                 let (states, property) = rest.split_once(").")?;
                 (part, Some(states), property)
             }
-            None => {
-                let (part, property) = rest.split_once('.')?;
-                (part, None, property)
-            }
+            None => match rest.split_once('.') {
+                Some((part, property)) => (part, None, property),
+                // A static widget's own colour (`separator.color`).
+                None => return Some(format!("[widgets.{widget}]\n{rest} = \"{colour}\"\n")),
+            },
         };
         let value = match property {
             "fill" | "color" => format!("{part}.{property} = \"{colour}\""),
@@ -32987,11 +33061,17 @@ mod tests {
         Some(match states {
             None => format!("[widgets.{widget}]\n{value}\n"),
             Some(query) => {
-                let (states, variant) = match query.split_once(";variant=") {
-                    Some((states, variant)) => (
-                        states,
-                        format!("variant = \"{}\"\n", variant.to_lowercase()),
-                    ),
+                let (states, variant) = match query.split_once(';') {
+                    Some((states, matcher)) => match matcher.split_once('=')? {
+                        ("variant", variant) => (
+                            states,
+                            format!("variant = \"{}\"\n", variant.to_lowercase()),
+                        ),
+                        ("alternate", alternate @ ("true" | "false")) => {
+                            (states, format!("alternate = {alternate}\n"))
+                        }
+                        _ => return None,
+                    },
                     None => (query, String::new()),
                 };
                 let names: Vec<String> = states
@@ -34828,15 +34908,14 @@ mod tests {
     }
 
     /// M9-073: the Basic page's tabs are the theme's tabs in either build,
-    /// as the page tab strip's are: under kde-breeze light, the open tab's
-    /// fill set apart (the 0.8.0 theme's `tab.tab(SELECTED).fill`, which
-    /// `tab_style` reads, and the 0.7.2 theme's `tab.active_background`,
-    /// which `styles::aw::tab_bar` reads) fills the open tab in it, a tab's
-    /// label colour set apart (`tab.label(NONE).color`, `tab.font.color`)
-    /// moves the other tab's label, and splicing the tab's least width
-    /// (`tab.min_width` with `iced_aw`, `tab.tab(NONE).min_size[0]` on the
-    /// installed 0.8.0 theme without it) sizes the other tab to it; a click
-    /// on the second tab opens it, which then takes the open tab's fill.
+    /// as the page tab strip's are, on the installed 0.8.0 theme: under
+    /// kde-breeze light, the open tab's fill set apart
+    /// (`tab.tab(SELECTED).fill`, which `tab_style` reads without `iced_aw`
+    /// and `iced_next::styles::aw::tab_bar` with it) fills the open tab in
+    /// it, a tab's label colour set apart (`tab.label(NONE).color`) moves
+    /// the other tab's label, and a patch of the tab's least width
+    /// (`tab.tab(NONE).min_size[0]`) sizes the other tab to it; a click on
+    /// the second tab opens it, which then takes the open tab's fill.
     #[test]
     fn the_basic_tabs_are_the_themes_tabs_and_switch() -> Result<(), String> {
         let mut state = State {
@@ -34848,7 +34927,6 @@ mod tests {
             ThemeChoice::Preset("kde-breeze".to_owned()),
             AppColorMode::Light
         ));
-        let theirs = state.current_resolved.clone();
         let rect = |rects: &ElementRects, id: &str| match rects.get(id) {
             Some(rect) => *rect,
             None => panic!("{id} is not drawn"),
@@ -34880,13 +34958,12 @@ mod tests {
                 }
             }
         };
-        state.current_resolved.tab.active_background = fill;
         mark(&mut state, "tab.tab(SELECTED).fill");
         let (image, rects, _) = basic_frame(&state);
         let (inked, of) = filled(&image, rect(&rects, "basic.tabs.one"));
         assert!(
             inked * 2 > of,
-            "tab.active_background fills {inked} of the open tab's {of} pixels"
+            "tab.tab(SELECTED).fill fills {inked} of the open tab's {of} pixels"
         );
 
         let _ = drive(&mut state, |ui| click_last_text(ui, "Two"));
@@ -34899,32 +34976,22 @@ mod tests {
         );
         let _ = drive(&mut state, |ui| click_last_text(ui, "One"));
 
-        state.current_resolved = theirs.clone();
         (state.next_resolved, state.next_inactive) = next_theirs.clone();
-        state.current_resolved.tab.font.color = fill;
         mark(&mut state, "tab.label(NONE).color");
         let (image, _, _) = basic_frame(&state);
         assert_ne!(
             pixels_in(&image, two, scale),
             pixels_in(&base, two, scale),
-            "tab.font.color does not move the other tab's label"
+            "tab.label(NONE).color does not move the other tab's label"
         );
 
-        state.current_resolved = theirs;
         (state.next_resolved, state.next_inactive) = next_theirs;
         let wide = two.width.max(one.width) + 37.0;
-        #[cfg(feature = "iced_aw")]
-        {
-            state.current_resolved.tab.min_width = wide;
-        }
-        #[cfg(not(feature = "iced_aw"))]
-        {
-            let patch = native_theme::next::ThemePatch::from_toml(&format!(
-                "[[widgets.tab.rules]]\ntab.min_size = [{wide:?}, \"none\"]\n"
-            ))
-            .map_err(|error| format!("the patch: {error:?}"))?;
-            splice_next(&mut state, |r| r.apply_patch(&patch));
-        }
+        let patch = native_theme::next::ThemePatch::from_toml(&format!(
+            "[[widgets.tab.rules]]\ntab.min_size = [{wide:?}, \"none\"]\n"
+        ))
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        splice_next(&mut state, |r| r.apply_patch(&patch));
         let (_, rects, _) = basic_frame(&state);
         let drawn = rect(&rects, "basic.tabs.two").width;
         if (drawn - wide).abs() < 0.5 {
@@ -35415,6 +35482,46 @@ mod tests {
         state
     }
 
+    /// A state's installed 0.8.0 themes, the active window's and the
+    /// inactive one's, as a test keeps them to set them back.
+    #[cfg(feature = "iced_aw")]
+    type NextThemes = (
+        native_theme::next::ResolvedTheme,
+        native_theme::next::ResolvedTheme,
+    );
+
+    /// `state`'s installed 0.8.0 themes ([`NextThemes`]).
+    #[cfg(feature = "iced_aw")]
+    fn next_themes(state: &State) -> NextThemes {
+        (state.next_resolved.clone(), state.next_inactive.clone())
+    }
+
+    /// `state`'s installed 0.8.0 themes set back to `themes`.
+    #[cfg(feature = "iced_aw")]
+    fn next_restored(state: &mut State, themes: &NextThemes) {
+        state.next_resolved = themes.0.clone();
+        state.next_inactive = themes.1.clone();
+    }
+
+    /// `state`'s installed 0.8.0 themes set back to `themes` and patched by
+    /// `toml`, a patch of the test's own, in the active window and the
+    /// inactive one; an error where the patch does not parse.
+    #[cfg(feature = "iced_aw")]
+    fn next_patched(state: &mut State, themes: &NextThemes, toml: &str) -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(toml)
+            .map_err(|error| format!("the patch {toml:?}: {error:?}"))?;
+        next_restored(state, themes);
+        splice_next(state, |r| r.apply_patch(&patch));
+        Ok(())
+    }
+
+    /// The TOML of a patch that states `colour` at `home`
+    /// ([`home_patch_toml`]); an error where no patch reaches the home.
+    #[cfg(feature = "iced_aw")]
+    fn home_toml(home: &str, colour: &str) -> Result<String, String> {
+        home_patch_toml(home, colour).ok_or_else(|| format!("no patch reaches {home}"))
+    }
+
     /// The window under `state`, at its width and tall enough for the Extra
     /// page's menus, drawn once `interaction` has run ([`frame_after`]).
     #[cfg(feature = "iced_aw")]
@@ -35466,19 +35573,19 @@ mod tests {
     }
 
     /// M9-150's class on the Extra page (theme-data): the `iced_aw` menus'
-    /// text is drawn at `defaults.line_height`, as the window's menus' is,
-    /// where iced's own is 1.3 times the size, and a row of a stated
-    /// `menu.row_height` grows above a text scale of 1 to hold its line and
-    /// padding, as the window's rows do (`rows::scaled_height`). At 1 and at
-    /// 1.5 the File title is the line box of `menu.font` at its scaled size
-    /// and `defaults.line_height` plus its padding above and below,
-    /// `menu.bar_padding_vertical` where stated (kde-breeze), else
-    /// `menu.border.padding` ([`title_padding`]);
-    /// the File menu's first row is `menu.row_height` at 1 and at least that
-    /// line box, rounded up, plus the padding at 1.5 (adwaita,
-    /// macos-monterey, material-3), and where the theme states no row height
-    /// the line box plus the padding, at least `menu.min_row_height` where it
-    /// states that (kde-breeze, [`menu_row_height`]), and so is the context
+    /// text is drawn at its line box, `menu.item_label(NONE)`'s
+    /// ([`next_line_box`]), as the window's menus' is, where iced's own is
+    /// 1.3 times the size, and a row of a stated height,
+    /// `menu.item(NONE).max_size[1]`, grows above a text scale of 1 to hold
+    /// its line and padding, as the window's rows do. At 1 and at 1.5 the
+    /// File title is that line box plus its padding above and below,
+    /// `menu_bar.item(NONE).padding` where stated, else the rows'
+    /// ([`next_title_padding`]); the File menu's first row is the stated
+    /// height at 1 and at least that line box, rounded up, plus the padding
+    /// at 1.5 (adwaita, macos-monterey, material-3), and where the theme
+    /// states no row height the line box plus the padding, at least
+    /// `menu.item(NONE).min_size[1]` where it states that (kde-breeze,
+    /// [`next_menu_row_height`]), and so is the context
     /// menu's first entry, as gpui's context menu is a `PopupMenu` whose rows
     /// its drop-downs share (gpui-component 0.9.1 `menu/context_menu.rs`).
     /// Each is computed from the theme at test time.
@@ -35492,18 +35599,20 @@ mod tests {
         {
             let mut state = extra_state(preset, AppColorMode::Light);
             state.accessibility.text_scaling_factor = factor;
-            let r = state.current_resolved.clone();
-            let m = &r.menu;
+            rescaled(&mut state, preset, false);
+            let r = state.next_shown().clone();
+            let label = r.menu.item_label(WidgetState::NONE);
+            let line = next_line_box(&r.typography, &label);
             assert!(
-                (r.defaults.line_height - 1.3).abs() > 0.01,
-                "{preset}: defaults.line_height is iced's own 1.3, which tells nothing"
+                (line - label.size_px * 1.3).abs() > 0.01,
+                "{preset}: the row's line box is iced's own 1.3 times its size, which tells nothing"
             );
-            let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-            let line = scaled_text_size(m.font.size, &state.accessibility) * r.defaults.line_height;
-            let row = match m.row_height {
-                Some(h) if factor > 1.0 => h.max(line.ceil() + pad.y()),
-                Some(h) => h,
-                None => m.min_row_height.unwrap_or(0.0).max(line + pad.y()),
+            let pad = next_menu_row_padding(&r);
+            let item = r.menu.item(WidgetState::NONE);
+            let row = match (item.max_size[1], item.min_size[1]) {
+                (Some(h), _) if factor > 1.0 => h.max(line.ceil() + pad.y()),
+                (Some(h), _) => h,
+                (None, min) => min.map_or(line + pad.y(), |min| min.max(line + pad.y())),
             };
             let (_, rects, _) = extra_frame(&state, open_extra_file_menu);
             let (_, context, _) = extra_frame(&state, open_extra_context_menu);
@@ -35511,7 +35620,7 @@ mod tests {
                 (
                     "the File title",
                     rects.get(probes::AW_FILE),
-                    line + title_padding(m, pad).y(),
+                    line + next_title_padding(&r, pad).y(),
                 ),
                 (
                     "the File menu's first row",
@@ -35537,54 +35646,54 @@ mod tests {
         assert!(faults.is_empty(), "{faults:#?}");
     }
 
-    /// The Extra page's menu rows of a stated `menu.row_height` hold their
-    /// label in the middle of the row, as the window's menu rows and gpui's
-    /// (`popup_menu.rs`'s `items_center`) do: under material-3, with its
-    /// stated row height and that height 20 px taller, the label of the File
-    /// menu's first row and of the context menu's first entry sits 10 px
-    /// lower in the taller row, where a label laid out from the row's top
-    /// stays put. The label is found by its ink in a spliced
-    /// `menu.font.color`.
+    /// The Extra page's menu rows of a stated height,
+    /// `menu.item(NONE).max_size[1]`, hold their label in the middle of the
+    /// row, as the window's menu rows and gpui's (`popup_menu.rs`'s
+    /// `items_center`) do: under material-3, with its stated row height and
+    /// that height 20 px taller, the label of the File menu's first row and
+    /// of the context menu's first entry sits 10 px lower in the taller row,
+    /// where a label laid out from the row's top stays put. The label is
+    /// found by its ink in a patched `menu.item_label(NONE).color`.
     #[cfg(feature = "iced_aw")]
     #[test]
-    fn the_extra_menu_rows_centre_their_label() {
+    fn the_extra_menu_rows_centre_their_label() -> Result<(), String> {
         let state = extra_state("material-3", AppColorMode::Light);
+        let theirs = next_themes(&state);
         // The label's first line below the top of `id`'s row, in logical
         // pixels, with the stated row height `height`: the first line whose
-        // pixels a change of `menu.font.color` changes.
-        let label_top = |height: f32, open: fn(&mut Simulator<'_, Message>), id: &str| {
-            let drawn = |label: &str| {
-                let mut state = State {
-                    current_resolved: state.current_resolved.clone(),
-                    ..extra_state("material-3", AppColorMode::Light)
+        // pixels a change of `menu.item_label(NONE).color` changes.
+        let label_top =
+            |height: f32, open: fn(&mut Simulator<'_, Message>), id: &str| -> Result<f32, String> {
+                let drawn = |label: &str| -> Result<_, String> {
+                    let mut state = extra_state("material-3", AppColorMode::Light);
+                    let toml = format!(
+                        "[[widgets.menu.rules]]\nitem.max_size = [\"none\", {height:?}]\n{}",
+                        home_toml("menu.item_label(NONE).color", label)?
+                    );
+                    next_patched(&mut state, &theirs, &toml)?;
+                    Ok(extra_frame(&state, open))
                 };
-                state.current_resolved.menu.row_height = Some(height);
-                state.current_resolved.menu.font.color = spliced_colour(label);
-                extra_frame(&state, open)
+                let (first, rects, scale) = drawn("#9b1357")?;
+                let (second, _, _) = drawn("#13579b")?;
+                let row = rects
+                    .get(id)
+                    .copied()
+                    .ok_or_else(|| format!("{id} is not drawn at a row height of {height}"))?;
+                let (x0, x1) = (
+                    (row.x * scale).ceil() as u32,
+                    (((row.x + row.width) * scale).floor() as u32).min(first.width()),
+                );
+                let (y0, y1) = (
+                    (row.y * scale).ceil() as u32,
+                    (((row.y + row.height) * scale).floor() as u32).min(first.height()),
+                );
+                (y0..y1)
+                    .find(|&y| (x0..x1).any(|x| first.get_pixel(x, y) != second.get_pixel(x, y)))
+                    .map(|y| (y - y0) as f32 / scale)
+                    .ok_or_else(|| format!("{id}'s label is not drawn in its row"))
             };
-            let (first, rects, scale) = drawn("#9b1357");
-            let (second, _, _) = drawn("#13579b");
-            let row = match rects.get(id) {
-                Some(row) => *row,
-                None => panic!("{id} is not drawn at a row height of {height}"),
-            };
-            let (x0, x1) = (
-                (row.x * scale).ceil() as u32,
-                (((row.x + row.width) * scale).floor() as u32).min(first.width()),
-            );
-            let (y0, y1) = (
-                (row.y * scale).ceil() as u32,
-                (((row.y + row.height) * scale).floor() as u32).min(first.height()),
-            );
-            (y0..y1)
-                .find(|&y| (x0..x1).any(|x| first.get_pixel(x, y) != second.get_pixel(x, y)))
-                .map(|y| (y - y0) as f32 / scale)
-                .unwrap_or_else(|| panic!("{id}'s label is not drawn in its row"))
-        };
-        let stated = match state.current_resolved.menu.row_height {
-            Some(height) => height,
-            None => panic!("material-3 states no menu.row_height"),
-        };
+        let stated = state.next_shown().menu.item(WidgetState::NONE).max_size[1]
+            .ok_or("material-3 states no menu.item(NONE).max_size[1]")?;
         let mut faults = Vec::new();
         for (what, open, id) in [
             (
@@ -35598,95 +35707,111 @@ mod tests {
                 probes::AW_COPY,
             ),
         ] {
-            let moved = label_top(stated + 20.0, open, id) - label_top(stated, open, id);
+            let moved = label_top(stated + 20.0, open, id)? - label_top(stated, open, id)?;
             if (moved - 10.0).abs() > 1.0 {
                 faults.push(format!(
                     "{what}: its label moves {moved} px down in a row 20 px taller, want 10"
                 ));
             }
         }
-        assert!(faults.is_empty(), "{faults:#?}");
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// M9-090 (theme-data): the Extra page's menus are drawn as the theme's
-    /// menus, as the chrome's are. Under kde-breeze light, the menu bar's
-    /// File title, the File menu's first row and the context menu's first
-    /// entry are each a menu row ([`aw_menu_row`]): no fill at rest, where a
-    /// splice of `button.background_color` filled it; a label that
-    /// `menu.font.color` moves; under the pointer a fill of
-    /// `menu.hover_background` and a label `menu.hover_text_color` moves. The
-    /// File menu's panel reaches [`aw_menu_padding`] round its rows, which
-    /// a splice of `popover.border.padding` and `menu.panel_padding_*`
-    /// moves, and lies [`AW_MENU_GAP`]
-    /// below its title's foot; the Recent submenu's panel lies
-    /// [`AW_MENU_GAP`] right of its row. The panels' padding is
-    /// `menu.panel_padding_*`, else `popover.border.padding`, inside
-    /// `popover.border`'s line, the line they draw ([`aw_menu_padding`]):
-    /// under kde-breeze the context entry is `menu.panel_padding_horizontal`
-    /// and `_vertical` plus `popover.border.line_width` in from its popup's
-    /// corner, read from the leaves (3 + 1 = 4 px). The context menu's popup
-    /// is the menu's panel: `menu.background_color`, framed by
-    /// `popover.border`, its first entry that padding in from its corner.
+    /// menus, as the chrome's are, on the installed 0.8.0 theme. Under
+    /// kde-breeze light, the menu bar's File title, the File menu's first
+    /// row and the context menu's first entry are each a menu row
+    /// ([`menu_row`], the title [`menu_title`]): no fill at rest, where a
+    /// patch of `button.body(NONE).fill` filled it; a label that
+    /// `menu.item_label(NONE).color` moves; under the pointer a fill of
+    /// `menu.item(HOVER).fill` and a label `menu.item_label(HOVER).color`
+    /// moves. The File menu's panel reaches [`menu_popup_padding`] round its
+    /// rows, which a patch of `menu.panel(NONE).padding` moves, and lies
+    /// [`AW_MENU_GAP`] below its title's foot; the Recent submenu's panel
+    /// lies [`AW_MENU_GAP`] right of its row. Under kde-breeze the context
+    /// entry is `menu.panel(NONE).padding`'s left and top plus the width of
+    /// the panel's frame ([`menu_frame_width`]) in from its popup's corner,
+    /// read from the homes (3 + 1 = 4 px). The context menu's popup is the
+    /// menu's panel: `menu.panel(NONE).fill`, framed by the stroke of
+    /// [`menu_frame`], its first entry that padding in from its corner.
     #[cfg(feature = "iced_aw")]
     #[test]
-    fn the_extra_menus_are_the_themes_menus() {
+    fn the_extra_menus_are_the_themes_menus() -> Result<(), String> {
         let mut state = extra_state("kde-breeze", AppColorMode::Light);
-        let theirs = state.current_resolved.clone();
-        let [fill, label, panel_fill] = ["#13579b", "#9b1357", "#579b13"].map(spliced_colour);
-        let rect = |rects: &ElementRects, id: &str| match rects.get(id) {
-            Some(rect) => *rect,
-            None => panic!("{id} is not drawn"),
+        let theirs = next_themes(&state);
+        let [fill_hex, label_hex, panel_hex] = ["#13579b", "#9b1357", "#579b13"];
+        let [fill, label, panel_fill] = [fill_hex, label_hex, panel_hex].map(spliced_colour);
+        let rect = |rects: &ElementRects, id: &str| {
+            rects
+                .get(id)
+                .copied()
+                .ok_or_else(|| format!("{id} is not drawn"))
         };
         let mut faults = Vec::new();
         let unfilled = |image: &image::RgbaImage, scale: f32, what: &str, at: Rectangle| {
             let (inked, _) = inked_in(image, at, scale, fill);
             (inked > 0)
-                .then(|| format!("button.background_color fills {inked} pixels of {what} at rest"))
+                .then(|| format!("button.body(NONE).fill fills {inked} pixels of {what} at rest"))
         };
+        let push_fill = home_toml("button.body(NONE).fill", fill_hex)?;
+        let rest_label = home_toml("menu.item_label(NONE).color", label_hex)?;
+        let panel_toml = home_toml("menu.panel(NONE).fill", panel_hex)?;
 
         // The File title at rest.
         let (base, rects, scale) = extra_frame(&state, |_| {});
-        let title = rect(&rects, probes::AW_FILE);
-        state.current_resolved.button.background_color = fill;
+        let title = rect(&rects, probes::AW_FILE)?;
+        next_patched(&mut state, &theirs, &push_fill)?;
         let (image, _, _) = extra_frame(&state, |_| {});
         faults.extend(unfilled(&image, scale, "the File title", title));
-        state.current_resolved = theirs.clone();
-        state.current_resolved.menu.font.color = label;
+        next_patched(&mut state, &theirs, &rest_label)?;
         let (image, _, _) = extra_frame(&state, |_| {});
         let title_moved = pixels_in(&image, title, scale) != pixels_in(&base, title, scale);
 
         // The File menu open, its first row at rest.
-        state.current_resolved = theirs.clone();
+        next_restored(&mut state, &theirs);
         let (base, rects, _) = extra_frame(&state, open_extra_file_menu);
-        let row = rect(&rects, probes::AW_NEW_WINDOW);
-        state.current_resolved.menu.font.color = label;
+        let row = rect(&rects, probes::AW_NEW_WINDOW)?;
+        next_patched(&mut state, &theirs, &rest_label)?;
         let (image, _, _) = extra_frame(&state, open_extra_file_menu);
         let row_moved = pixels_in(&image, row, scale) != pixels_in(&base, row, scale);
 
-        // The panel round the rows, under a wider popover padding.
-        let mut wide = theirs.clone();
-        let pad = &mut wide.popover.border.padding;
-        for side in [&mut pad.top, &mut pad.right, &mut pad.bottom, &mut pad.left] {
-            *side = Some(side.unwrap_or(0.0) + 9.0);
-        }
-        let m = &mut wide.menu;
-        for side in [
-            &mut m.panel_padding_horizontal,
-            &mut m.panel_padding_vertical,
-        ] {
-            *side = side.map(|v| v + 9.0);
-        }
-        wide.menu.background_color = panel_fill;
-        wide.button.background_color = fill;
-        state.current_resolved = wide.clone();
+        // The panel round the rows, under a wider panel padding.
+        let r = &theirs.0;
+        let line = menu_frame_width(r);
+        let [Some(top), Some(right), Some(bottom), Some(left)] =
+            iced_next::padding_of(&r.menu.panel(WidgetState::NONE))
+        else {
+            return Err("kde-breeze states no four sides of menu.panel(NONE).padding".into());
+        };
+        let wide = format!(
+            "[[widgets.menu.rules]]\npanel.padding = {{ top = {:?}, right = {:?}, bottom = {:?}, \
+             left = {:?} }}\n{panel_toml}{push_fill}",
+            top + 9.0,
+            right + 9.0,
+            bottom + 9.0,
+            left + 9.0
+        );
+        next_patched(&mut state, &theirs, &wide)?;
         let (image, rects, _) = extra_frame(&state, open_extra_file_menu);
         let (title, row) = (
-            rect(&rects, probes::AW_FILE),
-            rect(&rects, probes::AW_NEW_WINDOW),
+            rect(&rects, probes::AW_FILE)?,
+            rect(&rects, probes::AW_NEW_WINDOW)?,
         );
         faults.extend(unfilled(&image, scale, "the File menu's first row", row));
-        let pad = aw_menu_padding(&wide);
-        let edge = wide.popover.border.line_width;
+        let pad = menu_popup_padding(state.next_shown());
+        if (pad.left - (left + 9.0 + line)).abs() > 0.01 {
+            faults.push(format!(
+                "the patched menu.panel(NONE).padding's left {} gives the panel a left padding \
+                 of {}, not it plus the frame's {line}",
+                left + 9.0,
+                pad.left
+            ));
+        }
+        let edge = line;
         let inside = Rectangle {
             x: row.x - pad.left + edge + 1.0,
             y: row.center_y() - 1.0,
@@ -35696,9 +35821,9 @@ mod tests {
         let (inked, of) = inked_in(&image, inside, scale, panel_fill);
         if of == 0 || inked < of {
             faults.push(format!(
-                "the File menu's panel fills {inked} of the {of} pixels {:.0} px left of its \
-                 first row, menu.panel_padding_horizontal where stated, else \
-                 popover.border.padding's left, inside popover.border",
+                "menu.panel(NONE).fill fills {inked} of the {of} pixels {:.0} px left of the \
+                 File menu's first row, menu.panel(NONE).padding's left inside the panel's \
+                 frame",
                 pad.left
             ));
         }
@@ -35723,18 +35848,18 @@ mod tests {
         }
 
         // The Recent submenu, open beside its row.
-        state.current_resolved = theirs.clone();
+        next_restored(&mut state, &theirs);
         let (_, rects, _) = extra_frame(&state, open_extra_file_menu);
-        let recent = rect(&rects, probes::AW_RECENT);
+        let recent = rect(&rects, probes::AW_RECENT)?;
         let (_, rects, _) = extra_frame(&state, move |ui| {
             open_extra_file_menu(ui);
             move_to(ui, recent.center());
         });
         let (recent, sub) = (
-            rect(&rects, probes::AW_RECENT),
-            rect(&rects, probes::AW_RECENT_FIRST),
+            rect(&rects, probes::AW_RECENT)?,
+            rect(&rects, probes::AW_RECENT_FIRST)?,
         );
-        let pad = aw_menu_padding(&theirs);
+        let pad = menu_popup_padding(state.next_shown());
         let clear = (sub.x - pad.left) - (recent.x + recent.width);
         if (clear - AW_MENU_GAP).abs() > 0.5 {
             faults.push(format!(
@@ -35744,64 +35869,78 @@ mod tests {
         }
 
         // The File menu's first row under the pointer.
-        state.current_resolved = theirs.clone();
+        next_restored(&mut state, &theirs);
         let (_, rects, _) = extra_frame(&state, open_extra_file_menu);
-        let row = rect(&rects, probes::AW_NEW_WINDOW);
+        let row = rect(&rects, probes::AW_NEW_WINDOW)?;
         let hover_row = move |ui: &mut Simulator<'_, Message>| {
             open_extra_file_menu(ui);
             move_to(ui, row.center());
         };
+        let hover_fill = home_toml("menu.item(HOVER).fill", fill_hex)?;
+        let hover_label = home_toml("menu.item_label(HOVER).color", label_hex)?;
         let (hovered, _, _) = extra_frame(&state, hover_row);
-        state.current_resolved.menu.hover_background = fill;
+        next_patched(&mut state, &theirs, &hover_fill)?;
         let (image, _, _) = extra_frame(&state, hover_row);
         let (inked, of) = inked_in(&image, row, scale, fill);
         if inked * 2 <= of {
             faults.push(format!(
-                "menu.hover_background fills {inked} of the hovered File row's {of} pixels"
+                "menu.item(HOVER).fill fills {inked} of the hovered File row's {of} pixels"
             ));
         }
-        state.current_resolved = theirs.clone();
-        state.current_resolved.menu.hover_text_color = label;
+        next_patched(&mut state, &theirs, &hover_label)?;
         let (image, _, _) = extra_frame(&state, hover_row);
         let hovered_row_moved = pixels_in(&image, row, scale) != pixels_in(&hovered, row, scale);
 
         // The context menu's popup and its first entry at rest.
-        state.current_resolved = theirs.clone();
+        next_restored(&mut state, &theirs);
         let (base, rects, _) = extra_frame(&state, open_extra_context_menu);
         let (popup, copy) = (
-            rect(&rects, probes::AW_CONTEXT_MENU),
-            rect(&rects, probes::AW_COPY),
+            rect(&rects, probes::AW_CONTEXT_MENU)?,
+            rect(&rects, probes::AW_COPY)?,
         );
-        let m = &theirs.menu;
-        let (Some(left), Some(top)) = (m.panel_padding_horizontal, m.panel_padding_vertical) else {
-            panic!("kde-breeze states no menu.panel_padding_* to read");
-        };
-        let line = theirs.popover.border.line_width;
         let pad = Padding {
             left: left + line,
             top: top + line,
-            ..aw_menu_padding(&theirs)
+            ..menu_popup_padding(state.next_shown())
         };
         if (copy.x - popup.x - pad.left).abs() > 0.5 || (copy.y - popup.y - pad.top).abs() > 0.5 {
             faults.push(format!(
                 "the context menu's first entry is {} by {} in from its popup's corner, \
-                 menu.panel_padding_* inside popover.border's line {} by {}",
+                 menu.panel(NONE).padding's left and top inside the panel's frame {} by {}",
                 copy.x - popup.x,
                 copy.y - popup.y,
                 pad.left,
                 pad.top
             ));
         }
-        state.current_resolved.menu.font.color = label;
+        next_patched(&mut state, &theirs, &rest_label)?;
         let (image, _, _) = extra_frame(&state, open_extra_context_menu);
         let entry_moved = pixels_in(&image, copy, scale) != pixels_in(&base, copy, scale);
-        // The splice widens kde-breeze's 1 px popover line to 2, in a colour of its own.
+        // The patch widens kde-breeze's 1 px frame to 2, in a colour of its
+        // own, at the home the frame is read from ([`menu_frame`]).
         let edge = 2.0;
-        state.current_resolved = theirs.clone();
-        state.current_resolved.menu.background_color = panel_fill;
-        state.current_resolved.popover.border.color = label;
-        state.current_resolved.popover.border.line_width = edge;
-        state.current_resolved.button.background_color = fill;
+        let stroke = format!("panel.stroke = {{ width = {edge:?}, color = \"{label_hex}\" }}\n");
+        let (frame_home, frame_toml) = if r
+            .menu
+            .panel(WidgetState::NONE)
+            .stated
+            .contains(PartStated::STROKE)
+        {
+            (
+                "menu.panel(NONE).stroke",
+                format!("[[widgets.menu.rules]]\n{stroke}"),
+            )
+        } else {
+            (
+                "popover.panel.stroke",
+                format!("[widgets.popover]\n{stroke}"),
+            )
+        };
+        next_patched(
+            &mut state,
+            &theirs,
+            &format!("{panel_toml}{frame_toml}{push_fill}"),
+        )?;
         let (image, _, _) = extra_frame(&state, open_extra_context_menu);
         faults.extend(unfilled(
             &image,
@@ -35818,7 +35957,7 @@ mod tests {
         let (inked, of) = inked_in(&image, inside, scale, panel_fill);
         if inked * 2 <= of {
             faults.push(format!(
-                "menu.background_color fills {inked} of the context popup's {of} pixels"
+                "menu.panel(NONE).fill fills {inked} of the context popup's {of} pixels"
             ));
         }
         let frame = Rectangle {
@@ -35830,27 +35969,26 @@ mod tests {
         let (inked, of) = inked_in(&image, frame, scale, label);
         if of == 0 || inked * 2 <= of {
             faults.push(format!(
-                "popover.border.color frames {inked} of the context popup's {of} left-edge pixels"
+                "{frame_home} frames {inked} of the context popup's {of} left-edge pixels"
             ));
         }
 
         // The context menu's first entry under the pointer.
-        state.current_resolved = theirs.clone();
+        next_restored(&mut state, &theirs);
         let hover_entry = move |ui: &mut Simulator<'_, Message>| {
             open_extra_context_menu(ui);
             move_to(ui, copy.center());
         };
         let (hovered, _, _) = extra_frame(&state, hover_entry);
-        state.current_resolved.menu.hover_background = fill;
+        next_patched(&mut state, &theirs, &hover_fill)?;
         let (image, _, _) = extra_frame(&state, hover_entry);
         let (inked, of) = inked_in(&image, copy, scale, fill);
         if inked * 2 <= of {
             faults.push(format!(
-                "menu.hover_background fills {inked} of the hovered context entry's {of} pixels"
+                "menu.item(HOVER).fill fills {inked} of the hovered context entry's {of} pixels"
             ));
         }
-        state.current_resolved = theirs.clone();
-        state.current_resolved.menu.hover_text_color = label;
+        next_patched(&mut state, &theirs, &hover_label)?;
         let (image, _, _) = extra_frame(&state, hover_entry);
         let hovered_entry_moved =
             pixels_in(&image, copy, scale) != pixels_in(&hovered, copy, scale);
@@ -35858,37 +35996,42 @@ mod tests {
         for (moved, what) in [
             (
                 title_moved,
-                "menu.font.color does not move the File title's label",
+                "menu.item_label(NONE).color does not move the File title's label",
             ),
             (
                 row_moved,
-                "menu.font.color does not move the File menu's first row",
+                "menu.item_label(NONE).color does not move the File menu's first row",
             ),
             (
                 hovered_row_moved,
-                "menu.hover_text_color does not move the hovered File row's label",
+                "menu.item_label(HOVER).color does not move the hovered File row's label",
             ),
             (
                 entry_moved,
-                "menu.font.color does not move the context menu's first entry",
+                "menu.item_label(NONE).color does not move the context menu's first entry",
             ),
             (
                 hovered_entry_moved,
-                "menu.hover_text_color does not move the hovered context entry's label",
+                "menu.item_label(HOVER).color does not move the hovered context entry's label",
             ),
         ] {
             if !moved {
                 faults.push(what.to_owned());
             }
         }
-        assert!(faults.is_empty(), "{faults:#?}");
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// G3 T15 (the G3 T13 review's Minors 3 and 4): the Extra page's two
     /// iced_aw wrappers curve the open tab out at its feet, the `TabBar`'s
     /// through the path `&[i]`, the `Tabs`' through `&[0, i]`, its bar on
     /// top. Under windows-11 light with `tab.active_outward_corner_radius` 4
-    /// and the open tab's fill set apart, in each bar the open first tab's
+    /// and the open tab's fill, `tab.tab(SELECTED).fill`, set apart, on the
+    /// installed 0.8.0 theme, in each bar the open first tab's
     /// fill reaches 1.5 to 3 further out on each side in its bottom row than
     /// at its middle (the flares, about 2; a flare about another node lies
     /// elsewhere), and with the radius unstated not at all. With the 0.8.0
@@ -35906,19 +36049,22 @@ mod tests {
                 .get_pixel_checked(x, y)
                 .is_some_and(|p| p.0.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2))
         };
+        let fills = format!(
+            "{}{}",
+            home_toml("tab.tab(SELECTED).fill", "#13579b")?,
+            home_toml("tab.bar(NONE).fill", "#579b13")?
+        );
         for radius in [Some(4.0), None] {
             let mut state = extra_state("windows-11", AppColorMode::Light);
-            state.current_resolved.tab.active_outward_corner_radius = radius;
-            state.current_resolved.tab.active_background = open_fill;
-            for next in [&mut state.next_resolved, &mut state.next_inactive] {
-                *next = with_home(next, "tab.bar(NONE).fill", "#579b13")
-                    .ok_or("no patch reaches tab.bar(NONE).fill")?;
-            }
+            let theirs = next_themes(&state);
+            next_patched(&mut state, &theirs, &fills)?;
+            splice_next(&mut state, |r| r.tab.active_outward_corner_radius = radius);
             let bar_height = aw_bar_height(&state);
             let (image, rects, scale) = extra_frame(&state, |_| {});
-            let Some(tabs) = rects.get(probes::AW_TABS).copied() else {
-                panic!("the Tabs are not drawn");
-            };
+            let tabs = rects
+                .get(probes::AW_TABS)
+                .copied()
+                .ok_or("the Tabs are not drawn")?;
             let page_tabs = listed(&rects, "chrome.page_tabs");
             let px = |y: f32| (y * scale).round() as u32;
             for (bar, rows) in [
@@ -35937,7 +36083,9 @@ mod tests {
                 let (Some(&(_, mid_left, mid_right)), Some(&(_, foot_left, foot_right))) =
                     (spans.get(spans.len() / 2), spans.last())
                 else {
-                    panic!("{bar}, radius {radius:?}: its open tab is not drawn in its fill");
+                    return Err(format!(
+                        "{bar}, radius {radius:?}: its open tab is not drawn in its fill"
+                    ));
                 };
                 let out = |a: u32, b: u32| (f64::from(a) - f64::from(b)) as f32 / scale;
                 let (left, right) = (out(mid_left, foot_left), out(foot_right, mid_right));
@@ -35954,8 +36102,12 @@ mod tests {
                 let Some(&(mid_y, _, _)) = spans.get(spans.len() / 2) else {
                     continue;
                 };
-                // The tab's outer left edge, its fill's being a line width in.
-                let x0 = mid_left as f32 / scale - state.current_resolved.tab.border.line_width;
+                // The tab's outer left edge, its fill's being the open tab's
+                // stroke width in.
+                let line =
+                    iced_next::stroke_width_of(&state.next_shown().tab.tab(WidgetState::SELECTED))
+                        .ok_or("windows-11 states no tab.tab(SELECTED).stroke")?;
+                let x0 = mid_left as f32 / scale - line;
                 let room = ((x0 - 3.5) * scale).floor() as u32;
                 assert!(
                     is(&image, room, mid_y, bar_fill),
@@ -35980,8 +36132,10 @@ mod tests {
     /// 0.14.1 `src/widget/tab_bar.rs:390-404`, `layout_text`), and draws it
     /// clipped to that box (`:900-917`), so under every preset the Theme row
     /// installs ([`installed_presets`]), in both modes, each label's box is
-    /// one such line tall and at least as wide as the label shaped on one
-    /// line, inside its tab, and each tab is at least `tab.min_width` wide.
+    /// one such line tall, of `tab.label(NONE)`'s size plus one, and at
+    /// least as wide as the label shaped on one line in the font it is
+    /// drawn in, inside its tab, and each tab is at least
+    /// `tab.tab(NONE).min_size[0]` wide where stated.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_extra_tab_bar_labels_are_one_whole_line() {
@@ -35989,8 +36143,11 @@ mod tests {
         for preset in installed_presets() {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let state = extra_state(preset, mode);
-                let t = &state.current_resolved.tab;
-                let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+                let r = state.next_shown();
+                let style = r.tab.label(WidgetState::NONE);
+                let font = next_measured_font(&style);
+                let min_width = r.tab.tab(WidgetState::NONE).min_size[0];
+                let size = style.size_px + 1.0;
                 let line = line_of(size);
                 let (_, rects, _) = extra_frame(&state, |_| {});
                 for ((label, label_id), tab_id) in AW_TAB_BAR_LABELS
@@ -36002,9 +36159,7 @@ mod tests {
                         faults.push(format!("{preset} {mode:?}: the {label} tab is not drawn"));
                         continue;
                     };
-                    let one_line =
-                        MeasuredText::new(label.to_owned(), size, line, theme_font(&t.font))
-                            .extent();
+                    let one_line = MeasuredText::new(label.to_owned(), size, line, font).extent();
                     if at.height > line + 0.01 || at.width + 0.01 < one_line.width {
                         faults.push(format!(
                             "{preset} {mode:?}: {label} is laid out {}x{}, one line of it is \
@@ -36017,10 +36172,13 @@ mod tests {
                             "{preset} {mode:?}: {label}'s box {at:?} runs out of its tab {tab:?}"
                         ));
                     }
-                    if tab.width + 0.01 < t.min_width {
+                    if let Some(min) = min_width
+                        && tab.width + 0.01 < min
+                    {
                         faults.push(format!(
-                            "{preset} {mode:?}: the {label} tab is {}px wide, tab.min_width {}",
-                            tab.width, t.min_width
+                            "{preset} {mode:?}: the {label} tab is {}px wide, \
+                             tab.tab(NONE).min_size[0] {min}",
+                            tab.width
                         ));
                     }
                 }
@@ -36030,36 +36188,49 @@ mod tests {
     }
 
     /// M9b Step 8, round 2 (ux): the Basic page's `iced_aw` `TabBar` takes
-    /// the Extra page's rule ([`aw_tab_width`]): both tabs one width that
-    /// fits the wider label, never below `tab.min_width`, so no label wraps.
-    /// iced_aw lays a label out at its text size plus one inside a `Column`
-    /// padded [`AW_TAB_LABEL_PADDING`] inside the tab's padding (iced_aw
-    /// 0.14.1 `src/widget/tab_bar.rs:398-417`, `:490-495`), so a label stays
-    /// on one line where its tab holds its one-line width and those
-    /// paddings. Under every preset the Theme row installs
-    /// ([`installed_presets`]), in both modes, at the stated `tab.min_width`
-    /// and with it spliced to 20 px, narrower than "One", each tab, as the
-    /// layout dump records it, holds its label so and is at least
-    /// `tab.min_width` wide.
+    /// the Extra page's rule ([`next_aw_tab_width`]): both tabs one width
+    /// that fits the wider label, never below `tab.tab(NONE).min_size[0]`
+    /// where stated, so no label wraps. iced_aw lays a label out at its text
+    /// size plus one inside a `Column` padded [`AW_TAB_LABEL_PADDING`]
+    /// inside the tab's padding (iced_aw 0.14.1 `src/widget/tab_bar.rs:398-417`,
+    /// `:490-495`), so a label stays on one line where its tab holds its
+    /// one-line width and those paddings. Under every preset the Theme row
+    /// installs ([`installed_presets`]), in both modes, at the stated least
+    /// width and with it patched to 20 px, narrower than "One", each tab, as
+    /// the layout dump records it, holds its label, `tab.label(NONE)` in the
+    /// font it is drawn in, so and is at least the least width wide.
     #[cfg(feature = "iced_aw")]
     #[test]
-    fn the_basic_tab_labels_are_one_whole_line() {
+    fn the_basic_tab_labels_are_one_whole_line() -> Result<(), String> {
         let mut faults = Vec::new();
         for preset in installed_presets() {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 for narrow in [false, true] {
                     let mut state = page_state(preset, Tab::Basic);
-                    assert!(
-                        state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode),
-                        "{preset} does not install"
-                    );
-                    if narrow {
-                        state.current_resolved.tab.min_width = 20.0;
+                    if !state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode) {
+                        return Err(format!("{preset} does not install"));
                     }
-                    let t = &state.current_resolved.tab;
-                    let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
-                    let padding = native_theme_iced::stated_padding(&t.border.padding)
-                        .unwrap_or(Padding::new(AW_TAB_PADDING));
+                    if narrow {
+                        let theirs = next_themes(&state);
+                        let height = theirs.0.tab.tab(WidgetState::NONE).min_size[1]
+                            .map_or_else(|| "\"none\"".to_owned(), |h| format!("{h:?}"));
+                        next_patched(
+                            &mut state,
+                            &theirs,
+                            &format!("[[widgets.tab.rules]]\ntab.min_size = [20.0, {height}]\n"),
+                        )?;
+                    }
+                    let r = state.next_shown();
+                    let style = r.tab.label(WidgetState::NONE);
+                    let font = next_measured_font(&style);
+                    let min_width = r.tab.tab(WidgetState::NONE).min_size[0];
+                    if narrow && min_width != Some(20.0) {
+                        return Err(format!(
+                            "{preset}: the patch leaves the least width {min_width:?}"
+                        ));
+                    }
+                    let size = style.size_px + 1.0;
+                    let padding = next_aw_tab_padding(r).unwrap_or(Padding::new(AW_TAB_PADDING));
                     let (drawn, _) = drawn_frame(&state);
                     for (label, tab_id) in BASIC_TABS
                         .into_iter()
@@ -36070,10 +36241,9 @@ mod tests {
                             faults.push(format!("{what}: not drawn"));
                             continue;
                         };
-                        let one_line =
-                            MeasuredText::new(label.to_owned(), size, size, theme_font(&t.font))
-                                .extent()
-                                .width;
+                        let one_line = MeasuredText::new(label.to_owned(), size, size, font)
+                            .extent()
+                            .width;
                         let holds = one_line + 2.0 * AW_TAB_LABEL_PADDING + padding.x();
                         if tab.width + 0.01 < holds {
                             faults.push(format!(
@@ -36081,26 +36251,32 @@ mod tests {
                                 tab.width
                             ));
                         }
-                        if tab.width + 0.01 < t.min_width {
+                        if let Some(min) = min_width
+                            && tab.width + 0.01 < min
+                        {
                             faults.push(format!(
-                                "{what}: the tab is {}px wide, tab.min_width {}",
-                                tab.width, t.min_width
+                                "{what}: the tab is {}px wide, tab.tab(NONE).min_size[0] {min}",
+                                tab.width
                             ));
                         }
                     }
                 }
             }
         }
-        assert!(faults.is_empty(), "{faults:#?}");
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// The height the `iced_aw` bars are drawn at under `state`
-    /// ([`aw_tab_height`]), at the padding they are drawn with.
+    /// ([`next_aw_tab_height`]), at the padding they are drawn with.
     #[cfg(feature = "iced_aw")]
     fn aw_bar_height(state: &State) -> f32 {
-        let padding = native_theme_iced::stated_padding(&state.current_resolved.tab.border.padding)
-            .unwrap_or(Padding::new(AW_TAB_PADDING));
-        aw_tab_height(state, padding)
+        let r = state.next_shown();
+        let padding = next_aw_tab_padding(r).unwrap_or(Padding::new(AW_TAB_PADDING));
+        next_aw_tab_height(r, padding)
     }
 
     /// M9x CI item I1 (M9-169): the Basic page's `iced_aw` `TabBar` leaves
@@ -36111,15 +36287,15 @@ mod tests {
     /// 40209162435 cut the labels under macos-tahoe to a 4 px strip. Under
     /// every preset in both modes, each label's text node, the tab's row's
     /// column's text (`[i, 0, 0]` under the bar), is at least its line,
-    /// iced_aw's text size plus one at iced's 1.3, tall.
+    /// iced_aw's text size, `tab.label(NONE)`'s plus one, at iced's 1.3,
+    /// tall.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_basic_tab_labels_keep_their_whole_line() {
         let mut faults = Vec::new();
         for (preset, dark) in every_preset_in_both_modes() {
             let state = loaded(preset, dark);
-            let t = &state.current_resolved.tab;
-            let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+            let size = state.next_shown().tab.label(WidgetState::NONE).size_px + 1.0;
             let line = f32::from(text::LineHeight::default().to_absolute(iced::Pixels(size)));
             // The row's container, the flares' stack, its bar, then the
             // tab's row, its label's column and the label.
@@ -36319,22 +36495,14 @@ mod tests {
     /// M9b Step 8, round 3 (the re-review's n8): the Basic page's column rule
     /// reserves the tabs as its tab row draws them, their labels fitted
     /// ([`basic_tabs_width`]), not two least widths: under kde-breeze with
-    /// the tab label's size spliced to 40 px (`tab.font.size` on the 0.7.2
-    /// theme `iced_aw`'s bar reads, `tab.label(NONE).size_px` on the
-    /// installed 0.8.0 theme without it), where each label needs more than
-    /// the minimum and the tab row is the page's widest control, the widest
+    /// the tab label's size, `tab.label(NONE).size_px` on the installed
+    /// 0.8.0 theme, patched to 40 px, where each label needs more than the
+    /// minimum and the tab row is the page's widest control, the widest
     /// control the rule counts with holds the drawn tab row and the room for
-    /// its flares.
+    /// its flares, in either build.
     #[test]
     fn the_basic_column_rule_reserves_the_fitted_tabs() -> Result<(), String> {
         let mut state = page_state("kde-breeze", Tab::Basic);
-        #[cfg(feature = "iced_aw")]
-        let least = {
-            state.current_resolved.tab.font.size = 40.0;
-            let t = &state.current_resolved.tab;
-            2.0 * t.min_width + t.item_gap.unwrap_or_default()
-        };
-        #[cfg(not(feature = "iced_aw"))]
         let least = {
             let patch = native_theme::next::ThemePatch::from_toml(
                 "[[widgets.tab.rules]]\nlabel.size_px = 40.0\n",
@@ -36345,7 +36513,9 @@ mod tests {
             if r.tab.label(WidgetState::NONE).size_px != 40.0 {
                 return Err("the patch does not size the tab label".into());
             }
-            2.0 * r.tab.tab(WidgetState::NONE).min_size[0].unwrap_or_default() + next_tab_gap(r)
+            let min = r.tab.tab(WidgetState::NONE).min_size[0]
+                .ok_or("kde-breeze states no tab.tab(NONE).min_size[0]")?;
+            2.0 * min + next_tab_gap(r)
         };
         let (drawn, _) = drawn_frame(&state);
         let (Some(one), Some(two)) = (drawn.get("basic.tabs.one"), drawn.get("basic.tabs.two"))
@@ -36379,19 +36549,19 @@ mod tests {
     /// spacing, none, where it does not (`DEFAULT_SPACING`, iced_aw 0.14.1
     /// `src/widget/tab_bar.rs:43`), over every preset the Theme row installs
     /// ([`installed_presets`]) in both modes (adwaita and kde-breeze state
-    /// 0): its tabs are all one width,
-    /// [`aw_tab_width`] (`tab.min_width`, or the widest label's where that is
-    /// wider), and each label is centred in its tab, so two neighbours'
-    /// labels are that width and the gap apart. The `Tabs` beside it take the same gap:
-    /// under kde-breeze, with the gap spliced 10 px wider, the bar's two tabs
-    /// are 10 px further apart, and so are the `Tabs`' two, whose labels no
-    /// selector reaches (`Tabs::operate` visits the open tab's content
-    /// alone, iced_aw 0.14.1 `src/widget/tabs.rs:601-621`): the second's
-    /// fill, `tab.background_color`, starts 10 px further from the end of
-    /// the open one's, `tab.active_background`.
+    /// 0): its tabs are all one width, [`next_aw_tab_width`] (the widest
+    /// label's, at least `tab.tab(NONE).min_size[0]` where stated), and each
+    /// label is centred in its tab, so two neighbours' labels are that width
+    /// and the gap apart. The `Tabs` beside it take the same gap: under
+    /// kde-breeze, on the installed 0.8.0 theme, with the gap 10 px wider,
+    /// the bar's two tabs are 10 px further apart, and so are the `Tabs`'
+    /// two, whose labels no selector reaches (`Tabs::operate` visits the
+    /// open tab's content alone, iced_aw 0.14.1 `src/widget/tabs.rs:601-621`):
+    /// the second's fill, a patched `tab.tab(NONE).fill`, starts 10 px
+    /// further from the end of the open one's, `tab.tab(SELECTED).fill`.
     #[cfg(feature = "iced_aw")]
     #[test]
-    fn the_extra_tab_bars_take_the_tab_gap() {
+    fn the_extra_tab_bars_take_the_tab_gap() -> Result<(), String> {
         let centres = |state: &State| -> [f32; 2] {
             let mut ui = interface(state);
             let all = texts(&mut ui);
@@ -36411,27 +36581,32 @@ mod tests {
         for preset in installed_presets() {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let state = extra_state(preset, mode);
-                let t = &state.current_resolved.tab;
-                let padding = native_theme_iced::stated_padding(&t.border.padding)
-                    .unwrap_or(Padding::new(AW_TAB_PADDING));
-                let width = aw_tab_width(&state, &AW_TAB_BAR_LABELS, padding);
-                let want = width + t.item_gap.unwrap_or(0.0);
+                let r = state.next_shown();
+                let padding = next_aw_tab_padding(r).unwrap_or(Padding::new(AW_TAB_PADDING));
+                let width = next_aw_tab_width(&state, &AW_TAB_BAR_LABELS, padding);
+                let want = width + next_tab_gap(r);
                 let [overview, details] = centres(&state);
                 if (details - overview - want).abs() > 0.5 {
                     faults.push(format!(
                         "{preset} {mode:?}: the TabBar's tabs are {} apart, the tab width \
                          {width} and tab.item_gap {:?}",
                         details - overview,
-                        t.item_gap
+                        r.tab.item_gap
                     ));
                 }
             }
         }
 
         let mut state = extra_state("kde-breeze", AppColorMode::Light);
-        let [open_fill, other_fill] = ["#13579b", "#9b1357"].map(spliced_colour);
-        state.current_resolved.tab.active_background = open_fill;
-        state.current_resolved.tab.background_color = other_fill;
+        let [open_hex, other_hex] = ["#13579b", "#9b1357"];
+        let [open_fill, other_fill] = [open_hex, other_hex].map(spliced_colour);
+        let theirs = next_themes(&state);
+        let fills = format!(
+            "{}{}",
+            home_toml("tab.tab(SELECTED).fill", open_hex)?,
+            home_toml("tab.tab(NONE).fill", other_hex)?
+        );
+        next_patched(&mut state, &theirs, &fills)?;
         // How far the Tabs' second tab's fill starts from where the open
         // first tab's ends, across the middle of their bar, in logical
         // pixels: the gap between them, and the open tab's frame.
@@ -36466,8 +36641,13 @@ mod tests {
         };
         let [overview, details] = centres(&state);
         let apart = between(&state);
-        let gap = state.current_resolved.tab.item_gap.unwrap_or(0.0) + 10.0;
-        state.current_resolved.tab.item_gap = Some(gap);
+        let gap = state
+            .next_shown()
+            .tab
+            .item_gap
+            .ok_or("kde-breeze states no tab.item_gap")?
+            + 10.0;
+        splice_next(&mut state, |r| r.tab.item_gap = Some(gap));
         let [wide_overview, wide_details] = centres(&state);
         let bar = (wide_details - wide_overview) - (details - overview);
         let tabs = between(&state) - apart;
@@ -36477,25 +36657,157 @@ mod tests {
                  {tabs} px further apart"
             ));
         }
-        assert!(faults.is_empty(), "{faults:#?}");
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// [`next_aw_tab_padding`] pads an `iced_aw` tab by its stated sides
+    /// plus the open tab's outline as iced_aw draws it, over the padding
+    /// (iced_aw 0.14.1 `src/widget/tab_bar.rs:494`, `:853-873`): on every
+    /// preset where `tab.tab(NONE).padding` states every side, each side
+    /// plus `tab.tab(SELECTED).stroke.width` where the connector maps the
+    /// bar and the theme states it, else iced_aw's own 1
+    /// (`tab_label_border_width`, `src/style/tab_bar.rs:58`); `None` where a
+    /// side is unstated. A patch stating the four sides (3, 5, 7, 9) and the
+    /// open tab's stroke 2 wide gives 5, 7, 9, 11; with that stroke stated
+    /// as none, 3, 5, 7, 9.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_aw_tab_padding_holds_the_open_tabs_outline() -> Result<(), String> {
+        let sides = |p: Padding| (p.top, p.right, p.bottom, p.left);
+        let own = iced_aw::style::tab_bar::Style::default().tab_label_border_width;
+        let outline =
+            |r: &native_theme::next::ResolvedTheme| match iced_next::styles::aw::tab_bar(r) {
+                Ok(_) => {
+                    iced_next::stroke_width_of(&r.tab.tab(WidgetState::SELECTED)).unwrap_or(own)
+                }
+                Err(_) => own,
+            };
+        let mut failures = Vec::new();
+        let mut patched_checked = 0;
+        for (label, r) in next_combinations() {
+            let line = outline(&r);
+            let want = match iced_next::padding_of(&r.tab.tab(WidgetState::NONE)) {
+                [Some(top), Some(right), Some(bottom), Some(left)] => {
+                    Some((top + line, right + line, bottom + line, left + line))
+                }
+                _ => None,
+            };
+            let drawn = next_aw_tab_padding(&r).map(sides);
+            if drawn != want {
+                failures.push(format!("{label}: {drawn:?}, want {want:?}"));
+            }
+            for (stroke, width) in [
+                ("{ width = 2.0, color = \"#ff0000\" }", 2.0),
+                ("\"none\"", 0.0),
+            ] {
+                let patch = native_theme::next::ThemePatch::from_toml(&format!(
+                    "[[widgets.tab.rules]]\ntab.padding = {{ top = 3.0, right = 5.0, bottom = 7.0, \
+                     left = 9.0 }}\n\n[[widgets.tab.rules]]\nstates = [\"selected\"]\n\
+                     tab.stroke = {stroke}\n"
+                ))
+                .map_err(|error| format!("the tab patch: {error:?}"))?;
+                let mut patched = r.clone();
+                patched.apply_patch(&patch);
+                if iced_next::styles::aw::tab_bar(&patched).is_err() {
+                    continue;
+                }
+                patched_checked += 1;
+                let want = Some((3.0 + width, 5.0 + width, 7.0 + width, 9.0 + width));
+                let drawn = next_aw_tab_padding(&patched).map(sides);
+                if drawn != want {
+                    failures.push(format!(
+                        "{label}, the open tab's stroke {stroke}: {drawn:?}, want {want:?}"
+                    ));
+                }
+            }
+        }
+        if patched_checked == 0 {
+            failures.push("no preset's tab bar maps under the patch".to_owned());
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
+    }
+
+    /// [`next_aw_list_padding`] gives the `SelectionList`'s rows
+    /// `list.row(NONE).min_size[1]` as a least height, never a height the
+    /// padding is cut to: iced_aw lays a row out as its text size plus the
+    /// padding's top and bottom (iced_aw 0.14.1
+    /// `src/widget/selection_list/list.rs:118`, `:209`), so on every preset
+    /// that row is the larger of the stated least height and
+    /// `list.item_label(NONE)`'s size plus [`next_list_row_padding`]'s top
+    /// and bottom, the padding's left and right kept; a patch stating a
+    /// 60 px least height makes the row 60 tall, one stating 1 px leaves the
+    /// padding as [`next_list_row_padding`] gives it.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_aw_list_rows_take_the_least_row_height() -> Result<(), String> {
+        let mut failures = Vec::new();
+        for (label, theirs) in next_combinations() {
+            for least in [None, Some(60.0_f32), Some(1.0)] {
+                let mut r = theirs.clone();
+                if let Some(height) = least {
+                    let patch = native_theme::next::ThemePatch::from_toml(&format!(
+                        "[[widgets.list.rules]]\nrow.min_size = [\"none\", {height:?}]\n"
+                    ))
+                    .map_err(|error| format!("the list patch: {error:?}"))?;
+                    r.apply_patch(&patch);
+                }
+                let what = format!("{label}, least {least:?}");
+                let base = next_list_row_padding(&r);
+                let pad = next_aw_list_padding(&r);
+                let size = r.list.item_label(WidgetState::NONE).size_px;
+                let row = size + pad.y();
+                let fitted = size + base.y();
+                let want =
+                    r.list.row(WidgetState::NONE).min_size[1].map_or(fitted, |min| min.max(fitted));
+                if (row - want).abs() > 0.01 {
+                    failures.push(format!("{what}: the row is {row} tall, want {want}"));
+                }
+                if pad.left != base.left || pad.right != base.right {
+                    failures.push(format!("{what}: {pad:?} moves the sides of {base:?}"));
+                }
+                if least == Some(60.0) && (row - 60.0).abs() > 0.01 {
+                    failures.push(format!("{what}: the row is {row} tall"));
+                }
+                if least == Some(1.0) && pad != base {
+                    failures.push(format!("{what}: {pad:?}, want {base:?}"));
+                }
+            }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
     }
 
     /// M9b Step 8 m6 (theme-data): the Extra page's `Card` shows its border
     /// all round, as the gpui showcase's card does: no head, body or foot
     /// fill covers it at the card's sides (`styles::aw::card`'s transparent
     /// section fills over `iced_aw`'s fill-and-border quad). Under
-    /// kde-breeze, light and dark, with `card.border.color` spliced to a
-    /// colour of its own, the card's outermost column is that colour from
-    /// below its top corner to above its bottom one.
+    /// kde-breeze, light and dark, with `card.container(NONE).stroke.color`
+    /// patched to a colour of its own, the card's outermost column is that
+    /// colour from below its top corner to above its bottom one.
     #[cfg(feature = "iced_aw")]
     #[test]
-    fn the_extra_card_shows_its_border_at_its_sides() {
-        let line = spliced_colour("#13579b");
-        let want = to_color(line);
+    fn the_extra_card_shows_its_border_at_its_sides() -> Result<(), String> {
+        let hex = "#13579b";
+        let want = to_color(spliced_colour(hex));
+        let toml = home_toml("card.container(NONE).stroke.color", hex)?;
         for mode in [AppColorMode::Light, AppColorMode::Dark] {
             let mut state = extra_state("kde-breeze", mode);
-            state.current_resolved.card.border.color = line;
-            let radius = state.current_resolved.card.border.corner_radius;
+            let theirs = next_themes(&state);
+            next_patched(&mut state, &theirs, &toml)?;
+            let radius =
+                iced_next::radius_of(&state.next_shown().card.container(WidgetState::NONE))
+                    .ok_or("kde-breeze states no card.container(NONE).corners")?;
             let card = std::cell::Cell::new(Rectangle::default());
             let (image, _, scale) =
                 extra_frame(&state, |ui| card.set(probe_bounds(ui, probes::AW_CARD)));
@@ -36519,43 +36831,53 @@ mod tests {
                     }
                 }
             }
-            assert!(
-                covered.is_empty(),
-                "{mode:?}: {} pixels of the card's side ({card:?}) are not its border, first {:?}",
-                covered.len(),
-                covered.first()
-            );
+            if !covered.is_empty() {
+                return Err(format!(
+                    "{mode:?}: {} pixels of the card's side ({card:?}) are not its border, \
+                     first {:?}",
+                    covered.len(),
+                    covered.first()
+                ));
+            }
         }
+        Ok(())
     }
 
     /// M9-143, as M9b Step 8 N1 rules it (theme-data): the Extra page's
-    /// `Card` pads each section by the one card rule ([`card_padding`]):
-    /// under kde-breeze, which states every side of `card.border.padding`,
-    /// the head's title and the body's caption start
-    /// `card.border.padding.left + card.border.line_width` in from the
-    /// card's left edge, and the title `.top` plus the line width below its
-    /// top edge; under adwaita and material-3, which state none,
-    /// `layout.container_margin` plus the line width (12 and 6), where
-    /// iced_aw's own 10 px stood (`DEFAULT_PADDING`, iced_aw 0.14.1
-    /// `src/widget/card.rs:21`).
+    /// `Card` pads each section by the one card rule ([`next_card_padding`]):
+    /// under kde-breeze, which states every side of
+    /// `card.container(NONE).padding`, the head's title and the body's
+    /// caption start its left side plus `card.container(NONE).stroke.width`
+    /// in from the card's left edge, and the title its top side plus the
+    /// stroke width below its top edge; under adwaita and material-3, which
+    /// state none, `layout.container_margin` plus the stroke width (iced's
+    /// own `Border::default`, no line, where the card states no stroke),
+    /// where iced_aw's own 10 px stood (`DEFAULT_PADDING`, iced_aw 0.14.1
+    /// `src/widget/card.rs:21`). Each is read from the homes at test time.
     #[cfg(feature = "iced_aw")]
     #[test]
-    fn the_extra_card_pads_inside_its_border() {
+    fn the_extra_card_pads_inside_its_border() -> Result<(), String> {
         let mut faults = Vec::new();
         for preset in ["kde-breeze", "adwaita", "material-3"] {
             let state = extra_state(preset, AppColorMode::Light);
-            let border = &state.current_resolved.card.border;
-            let margin = state.layout.container_margin.unwrap_or_default();
-            let (left, top) = (
-                border.padding.left.unwrap_or(margin) + border.line_width,
-                border.padding.top.unwrap_or(margin) + border.line_width,
-            );
-            assert_eq!(
-                native_theme_iced::stated_padding(&border.padding).is_some(),
-                preset == "kde-breeze",
-                "{preset}: card.border.padding is {:?}",
-                border.padding
-            );
+            let r = state.next_shown();
+            let container = r.card.container(WidgetState::NONE);
+            let sides = iced_next::padding_of(&container);
+            let line =
+                iced_next::stroke_width_of(&container).unwrap_or(iced::Border::default().width);
+            let margin = r.layout.container_margin;
+            let side = |stated: Option<f32>| {
+                stated.or(margin).map(|side| side + line).ok_or_else(|| {
+                    format!("{preset} states neither the card's side nor the container margin")
+                })
+            };
+            let [top, _, _, left] = sides;
+            let (left, top) = (side(left)?, side(top)?);
+            if sides.iter().all(Option::is_some) != (preset == "kde-breeze") {
+                faults.push(format!(
+                    "{preset}: card.container(NONE).padding is {sides:?}"
+                ));
+            }
             let mut ui = interface(&state);
             let card = probe_bounds(&mut ui, probes::AW_CARD);
             let all = texts(&mut ui);
@@ -36566,9 +36888,11 @@ mod tests {
             };
             let (Some(head), Some(caption)) = (
                 within(&|content| content == "Card"),
-                within(&|content| content.starts_with("CardTheme states one fill")),
+                within(&|content| content.starts_with("The card's container states one fill")),
             ) else {
-                panic!("{preset}: the card's title or caption is not drawn in it");
+                return Err(format!(
+                    "{preset}: the card's title or caption is not drawn in it"
+                ));
             };
             for (what, inset, want) in [
                 ("the head's title, from the left", head.x - card.x, left),
@@ -36584,16 +36908,20 @@ mod tests {
                 }
             }
         }
-        assert!(faults.is_empty(), "{faults:#?}");
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// M9-090, M9-097, M9-143 (info-truth): the Extra page's Widget Info
     /// says what the page draws, under kde-breeze light: the MenuBar's label
-    /// colour is [`aw_menu_row`]'s (the titles [`aw_menu_title`]'s), the menus'
-    /// panel padding is [`aw_menu_padding`]'s and the context menu's popup
+    /// colour is [`menu_row`]'s (the titles [`menu_title`]'s), the menus'
+    /// panel padding is [`menu_popup_padding`]'s and the context menu's popup
     /// the panel's, with no `styles::button` named; the tabs' spacing is
     /// `tab.item_gap`; the Card's sections are padded inside
-    /// `card.border.line_width`.
+    /// `card.container(NONE).stroke.width`.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_extra_infos_say_what_the_page_draws() {
@@ -36609,15 +36937,17 @@ mod tests {
             (
                 &menu,
                 "label colour",
-                &["aw_menu_row", "aw_menu_title", "menu.font.color"][..],
+                &["menu_row", "menu_title", "menu.item_label(NONE).color"][..],
             ),
             (
                 &menu,
                 "panel padding",
                 &[
-                    "aw_menu_padding",
-                    "popover.border.padding",
-                    "popover.border.line_width",
+                    "menu_popup_padding",
+                    "menu.panel(NONE).padding",
+                    "popover.panel.padding",
+                    "menu.panel(NONE).stroke",
+                    "popover.panel.stroke",
                 ][..],
             ),
             (&menu, "panel offset", &["AW_MENU_GAP"][..]),
@@ -36625,14 +36955,18 @@ mod tests {
                 &menu,
                 "context menu",
                 &[
-                    "menu.background_color",
-                    "popover.border",
-                    "aw_menu_padding",
-                    "aw_menu_row",
+                    "menu.panel(NONE).fill",
+                    "popover.panel.stroke",
+                    "menu_popup_padding",
+                    "menu_row",
                 ][..],
             ),
             (&menu, "bar padding", &["no frame"][..]),
-            (&menu, "shadows", &["popover.border.shadow_enabled"][..]),
+            (
+                &menu,
+                "shadows",
+                &["menu.panel(NONE).shadows", "popover.panel.shadows"][..],
+            ),
             (
                 &aw_tab_bar_info(&state),
                 "tab spacing",
@@ -36641,7 +36975,10 @@ mod tests {
             (
                 &aw_card_info(&state),
                 "section padding",
-                &["card.border.padding", "card.border.line_width"][..],
+                &[
+                    "card.container(NONE).padding",
+                    "card.container(NONE).stroke.width",
+                ][..],
             ),
         ] {
             match line(info, row) {
@@ -40706,7 +41043,7 @@ mod tests {
     /// `container_margin`, none where unstated. Both tab rows' first tabs
     /// start the room for the open tab's flares further in, where the theme
     /// states them: windows-11's 4, the one bundled preset's, a literal here
-    /// rather than [`flare_room`]'s, so the test does not take its room from
+    /// rather than [`next_flare_room`]'s, so the test does not take its room from
     /// the code it checks. Under the spliced padding the panel's route says
     /// so.
     #[test]
