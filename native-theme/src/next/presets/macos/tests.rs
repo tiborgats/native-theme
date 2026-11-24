@@ -1246,6 +1246,65 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
     }
 }
 
+/// The same pressed fills under a system accent ([`lay_system_over`]): a
+/// system that reads the preset's own accent keeps them, one that reads
+/// another accent drops them, so the checked box and the filled track keep
+/// their fill pressed and the row takes the selection's.
+#[test]
+fn the_pressed_fills_measured_on_the_default_accent_drop_under_a_system_accent() {
+    let pressed = |theme: &ResolvedTheme| {
+        [
+            solid(
+                &theme
+                    .checkbox
+                    .indicator(WidgetState::CHECKED | WidgetState::PRESSED)
+                    .fill,
+            ),
+            solid(&theme.slider.active_track(WidgetState::PRESSED).fill),
+            solid(&theme.sidebar.item(WidgetState::PRESSED).fill),
+        ]
+    };
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(Preset::MacosTahoe, scheme);
+        let measured = [
+            c.checkbox_checked_pressed,
+            c.slider_fill_pressed,
+            c.sidebar_pressed,
+        ];
+        assert!(measured.iter().all(Option::is_some), "{scheme:?}");
+        let with_system_accent = |accent| {
+            let system = SystemOverrides {
+                color_schemes: vec![(
+                    (scheme, Contrast::Normal),
+                    OsColors {
+                        accent: Some(accent),
+                        ..OsColors::default()
+                    },
+                )],
+                ..SystemOverrides::default()
+            };
+            Theme::preset(Preset::MacosTahoe)
+                .with_system_overrides(system)
+                .resolve(&ctx)
+        };
+        let same = with_system_accent(c.accent);
+        assert_eq!(pressed(&same), measured, "{scheme:?} same accent");
+        let other = with_system_accent(hex(RED));
+        assert_eq!(other.colors.accent.fill, hex(RED), "{scheme:?}");
+        assert_eq!(
+            pressed(&other),
+            [
+                solid(&other.checkbox.indicator(WidgetState::CHECKED).fill),
+                solid(&other.slider.active_track(WidgetState::NONE).fill),
+                solid(&other.sidebar.item(WidgetState::SELECTED).fill),
+            ],
+            "{scheme:?} another accent"
+        );
+        assert_ne!(pressed(&other), measured, "{scheme:?} another accent");
+    }
+}
+
 /// The single-line text field states its own focus ring, 4 px wide from
 /// 2 px (monterey) or 1 px (tahoe) inside its frame, shown on any focus (the
 /// mouse-down brings it; os-probe run 45231684209, `*.pressed.text_field`);
