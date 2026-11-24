@@ -33204,6 +33204,78 @@ mod tests {
         Ok(())
     }
 
+    /// No bundled preset, light or dark, in an active or an inactive
+    /// window, states a value that a style the showcase dresses a widget in
+    /// (`NextDressed::next_style`) cannot map: where one did, the widget
+    /// would be iced's own with no Widget Info line naming the home. A
+    /// style's `Unmapped` comes from its source alone, so each style is
+    /// asked once whatever its other arguments.
+    #[test]
+    fn no_bundled_preset_leaves_a_dressed_style_unmapped() {
+        use iced_next::styles as s;
+        let prefs = AccessibilityPreferences::default();
+        let mut unmapped = Vec::new();
+        for preset in Preset::ALL {
+            for dark in [false, true] {
+                for active in [true, false] {
+                    let mut ctx = next_context(None, dark, &prefs);
+                    ctx.window_active = active;
+                    let r = native_theme::next::Theme::preset(*preset).resolve(&ctx);
+                    let at = format!("{}, dark {dark}, active {active}", preset.as_str());
+                    let position = styles::SegmentPosition::of(0, BASIC_SEGMENTS.len());
+                    #[cfg_attr(not(feature = "iced_aw"), allow(unused_mut))]
+                    let mut styles = vec![
+                        ("button", s::button(&r).err()),
+                        ("button_toggle", s::button_toggle(&r, true).err()),
+                        ("toolbar_button", s::toolbar_button(&r, true).err()),
+                        ("button_primary", s::button_primary(&r).err()),
+                        ("button_default", s::button_default(&r).err()),
+                        ("button_danger", s::button_danger(&r).err()),
+                        ("button_success", s::button_success(&r).err()),
+                        ("button_warning", s::button_warning(&r).err()),
+                        ("button_link", s::button_link(&r).err()),
+                        ("text_input", s::text_input(&r).err()),
+                        ("text_editor", s::text_editor(&r).err()),
+                        ("checkbox", s::checkbox(&r).err()),
+                        (
+                            "checkbox_over",
+                            s::checkbox_over(&r, Color::TRANSPARENT).err(),
+                        ),
+                        ("toggler", s::toggler(&r).err()),
+                        ("pick_list", s::pick_list(&r).err()),
+                        ("menu", s::menu(&r).err()),
+                        ("slider", s::slider(&r).err()),
+                        ("vertical_slider", s::vertical_slider(&r).err()),
+                        ("scrollable", s::scrollable(&r, view_focus(active)).err()),
+                        ("segmented_control", s::segmented_control(&r, false).err()),
+                        ("segment_separator", s::segment_separator(&r, false).err()),
+                        ("segment", s::segment(&r, true, position).err()),
+                        ("expander", s::expander(&r).err()),
+                        ("expander_frame", s::expander_frame(&r).err()),
+                        ("progress_bar", s::progress_bar(&r).err()),
+                        ("toolbar_rule", s::toolbar_rule(&r).err()),
+                        ("pane_grid", s::pane_grid(&r).err()),
+                        ("tooltip", s::tooltip(&r).err()),
+                        ("container_card", s::container_card(&r).err()),
+                        ("dialog", s::dialog(&r).err()),
+                        ("toolbar", s::toolbar(&r).err()),
+                    ];
+                    #[cfg(feature = "iced_aw")]
+                    styles.extend([
+                        ("aw::card", s::aw::card(&r).err()),
+                        ("aw::menu", s::aw::menu(&r).err()),
+                        ("aw::tab_bar", s::aw::tab_bar(&r).err()),
+                        ("aw::sidebar", s::aw::sidebar(&r).err()),
+                    ]);
+                    unmapped.extend(styles.into_iter().filter_map(|(name, err)| {
+                        err.map(|e| format!("{at}: {name}: {}", e.home()))
+                    }));
+                }
+            }
+        }
+        assert!(unmapped.is_empty(), "{unmapped:#?}");
+    }
+
     /// The Basic page's slider handle and expander frame are routed by the
     /// installed 0.8.0 theme's homes, not by 0.7.2's fields: on kde-breeze,
     /// whose 0.7.2 theme outlines the handle 1 px wide and leaves the
