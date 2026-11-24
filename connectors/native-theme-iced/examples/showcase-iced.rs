@@ -469,6 +469,29 @@ fn card_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> Padding {
     }
 }
 
+/// [`card_padding`] on the installed 0.8.0 theme: each side
+/// `card.container(NONE).padding` states, `layout.container_margin` on a
+/// side it leaves unstated, iced's own, a container's `Padding::ZERO`,
+/// where that is unstated too; plus `card.container(NONE).stroke.width`, as
+/// the padding lies inside the card's border, which iced paints over the
+/// padded box (iced's own border, `Border::default`, no line, where the
+/// theme states no stroke iced can draw).
+fn next_card_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    let container = r.card.container(WidgetState::NONE);
+    let line = iced_next::stroke_width_of(&container).unwrap_or(iced::Border::default().width);
+    let margin = r
+        .layout
+        .container_margin
+        .map_or(Padding::ZERO, Padding::from);
+    let sides = stated_sides(&container, margin);
+    Padding {
+        top: sides.top + line,
+        right: sides.right + line,
+        bottom: sides.bottom + line,
+        left: sides.left + line,
+    }
+}
+
 /// The menu-bar row's side padding where the theme states no
 /// `layout.container_margin` (spec §3.1): the gpui showcase's
 /// `MENU_BAR_PADDING` (`showcase-gpui/demo.rs`), so the shared chrome looks
@@ -13752,7 +13775,6 @@ fn next_expander_arrow_size(r: &native_theme::next::ResolvedTheme) -> f32 {
 /// leaves. The tab bar is `iced_aw`'s; without the `iced_aw` feature it is
 /// the page tab strip's tabs ([`tab_button`]).
 fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
-    let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let next = state.next_shown();
@@ -13821,7 +13843,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         ),
         tagged(
             "basic.buttons.tooltip.bubble.text",
-            text("A tooltip").themed(&resolved.tooltip.font, resolved, a11y),
+            text("A tooltip").next_text(&next.tooltip.text, &next.typography),
         )
         .part("basic.buttons.tooltip.bubble", move |layout| {
             Some(layout.bounds().expand(tip_padding))
@@ -14831,7 +14853,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     let card_group = group(
         "basic.card.heading",
         "Card",
-        // Padded as every card is ([`card_padding`]).
+        // Padded by the installed 0.8.0 theme's card ([`next_card_padding`]).
         probe(
             probes::BASIC_CARD,
             Length::Shrink,
@@ -14839,9 +14861,9 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 "basic.card.frame",
                 container(tagged(
                     "basic.card.text",
-                    text("Card content").body(resolved, a11y),
+                    text("Card content").next_body(next),
                 ))
-                .padding(card_padding(resolved, &state.layout))
+                .padding(next_card_padding(next))
                 .width(Length::Fixed(BASIC_WIDE))
                 .style(styles::container_card(resolved)),
             ),
@@ -29500,6 +29522,79 @@ mod tests {
         }
     }
 
+    /// The Basic card's padding and text and the Basic tooltip's text follow
+    /// the installed 0.8.0 theme alone ([`next_card_padding`]): kde-breeze
+    /// with, on the 0.8.0 theme only, a card padded 9 on every side inside a
+    /// 2 px stroke, a body line box of 23 px and a tooltip text line box of
+    /// 27 px, lays the card's text 11 px in from the card's top left corner,
+    /// 23 px tall, and the open tooltip's text 27 px tall.
+    #[test]
+    fn the_basic_card_and_tooltip_text_take_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.card.rules]]\n\
+             container.padding = { top = 9.0, right = 9.0, bottom = 9.0, left = 9.0 }\n\
+             container.stroke = { width = 2.0, color = \"#13579b\" }\n\
+             [widgets.tooltip]\ntext.line_height = 27.0\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.timings.tooltip_show_ms = None;
+            let body = &mut r.typography.body;
+            body.line_height = 23.0;
+            body.stated = body.stated.union(TextStated::LINE_HEIGHT);
+        });
+        let old = &state.current_resolved;
+        if old.card.border.padding.top == Some(9.0)
+            || old.defaults.font.size * old.defaults.line_height == 23.0
+        {
+            return Err("the splice states 0.7.2's sizes".into());
+        }
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        recording(|| {
+            let iced_theme = super::theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    faults.push(format!("the interface did not draw: {error}"));
+                }
+            }
+            let laid = drawn_layout();
+            match (laid.get("basic.card.frame"), laid.get("basic.card.text")) {
+                (Some(card), Some(text))
+                    if near(text.x - card.x, 11.0)
+                        && near(text.y - card.y, 11.0)
+                        && near(text.height, 23.0) => {}
+                pair => faults.push(format!("the card and its text: {pair:?}")),
+            }
+            let Some(button) = laid.get("basic.buttons.tooltip").copied() else {
+                faults.push("the tooltip's button is not drawn".to_owned());
+                return;
+            };
+            ui.point_at(button.center());
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
+                position: button.center(),
+            })]);
+            for _ in 0..3 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    faults.push(format!("the interface did not draw: {error}"));
+                }
+            }
+            match drawn_layout().get("basic.buttons.tooltip.bubble.text") {
+                Some(tip) if near(tip.height, 27.0) => {}
+                tip => faults.push(format!("the tooltip's text: {tip:?}, not 27 tall")),
+            }
+        });
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
     /// Where the Basic page's text input, drop-down and text area are not
     /// laid out at the sizes the 0.8.0 theme `r` gives them: the input's
     /// height ([`next_field_height`] of `input.text(NONE)`,
@@ -30140,19 +30235,20 @@ mod tests {
                 );
             }
 
-            // "Card content" sits the card's padding in from its edges: the
-            // padding `card.border` states (kde-breeze's Kirigami Card) inside
-            // the card's border line, and `layout.container_margin` where it
-            // states none.
+            // "Card content" sits the card's padding in from its edges, on
+            // the installed 0.8.0 theme: the padding
+            // `card.container(NONE)` states (kde-breeze's Kirigami Card), or
+            // `layout.container_margin` where it states none, inside the
+            // card's border line.
             let card = probe_bounds(&mut ui, probes::BASIC_CARD);
-            let margin = Gaps::from_layout(&state.layout).container;
-            let stated = r.card.border.padding;
-            let line = r.card.border.line_width;
+            let container = next.card.container(WidgetState::NONE);
+            let [top, _, _, left] = iced_next::padding_of(&container);
+            let margin = next.layout.container_margin.unwrap_or_default();
+            let line = iced_next::stroke_width_of(&container).unwrap_or_default();
             let inset = Padding {
-                top: stated.top.map_or(margin, |v| v + line),
-                right: stated.right.map_or(margin, |v| v + line),
-                bottom: stated.bottom.map_or(margin, |v| v + line),
-                left: stated.left.map_or(margin, |v| v + line),
+                top: top.unwrap_or(margin) + line,
+                left: left.unwrap_or(margin) + line,
+                ..Padding::ZERO
             };
             let label = texts(&mut ui)
                 .into_iter()
