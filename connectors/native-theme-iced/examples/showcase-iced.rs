@@ -9040,12 +9040,12 @@ const AW_TAB_BAR: &[&str] = &[
 ];
 
 /// What the drawing of a listed element depends on in the state shown: the
-/// resolved theme, whether the Basic page's edit-mode switch is on, and,
-/// where iced_aw's `TabBar` draws the Basic page's tabs, which of them is
-/// open.
+/// installed 0.8.0 theme ([`State::next_shown`]), whether the Basic page's
+/// edit-mode switch is on, and, where iced_aw's `TabBar` draws the Basic
+/// page's tabs, which of them is open.
 #[derive(Clone, Copy)]
 struct Shown<'a> {
-    resolved: &'a ResolvedTheme,
+    resolved: &'a native_theme::next::ResolvedTheme,
     /// [`State::basic_edit`]: whether the edit-mode switch is checked.
     basic_edit: bool,
     /// [`State::basic_tab`]: the index of the open tab in [`BASIC_TABS`].
@@ -9056,7 +9056,7 @@ struct Shown<'a> {
 impl<'a> Shown<'a> {
     fn of(state: &'a State) -> Self {
         Self {
-            resolved: &state.current_resolved,
+            resolved: state.next_shown(),
             basic_edit: state.basic_edit,
             #[cfg(feature = "iced_aw")]
             basic_tab: state.basic_tab,
@@ -9066,7 +9066,7 @@ impl<'a> Shown<'a> {
     /// `resolved` as the showcase opens: the edit-mode switch on, the first
     /// tab open.
     #[cfg(test)]
-    fn opening(resolved: &'a ResolvedTheme) -> Self {
+    fn opening(resolved: &'a native_theme::next::ResolvedTheme) -> Self {
         Self {
             resolved,
             basic_edit: true,
@@ -9145,7 +9145,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         // `styles::button`'s pressed pair, which `styles::button_default`'s
         // rows do not cover.
         _ if under("basic.buttons.dialog_default")
-            && resolved.button.default_button_background.is_some()
+            && iced_next::state_fill_of(&resolved.button.body(WidgetState::DEFAULT)).is_some()
             && (leaf == "button.active_background" || leaf == "button.active_text_color") =>
         {
             Drawing::only(BUTTON, &["Pressed"], &[])
@@ -9158,7 +9158,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         // ([`CheckMark`]); where it states none, iced's glyph is drawn, in
         // `styles::checkbox`'s colour.
         _ if under("basic.checkboxes")
-            && resolved.checkbox.check_mark_stroke_width.is_some()
+            && next_check_stroke(resolved).is_some()
             && (id.ends_with(".mark") || leaf == "checkbox.indicator_color") =>
         {
             return None;
@@ -10551,12 +10551,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
     // Whether the showcase paints the check mark: on the Basic page, where
     // the installed 0.8.0 theme states its line,
-    // `checkbox.checkmark(NONE).stroke_width`.
-    let mark = if under("basic.") {
-        next_check_stroke(state.next_shown()).is_some()
-    } else {
-        resolved.checkbox.check_mark_stroke_width.is_some()
-    };
+    // `checkbox.checkmark(NONE).stroke_width`; the Selection page's check
+    // boxes draw iced's own glyph.
+    let mark = under("basic.") && next_check_stroke(state.next_shown()).is_some();
     let class = if tool {
         "iced_next::styles::toolbar_button"
     } else if ghost {
@@ -10996,20 +10993,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- menu and popover ----
         ("menu", "font") => "the row's text size and theme_font".into(),
-        ("menu", "bar_padding_horizontal_px")
-            if resolved.menu.bar_padding_horizontal.is_none() =>
-        {
-            "not drawn: unstated; title_padding takes the rows' left and right padding".into()
-        }
-        ("menu", "bar_padding_horizontal_px") => {
-            "title_padding: the title button's left and right padding".into()
-        }
-        ("menu", "bar_padding_vertical_px") if resolved.menu.bar_padding_vertical.is_none() => {
-            "not drawn: unstated; title_padding takes the rows' top and bottom padding".into()
-        }
-        ("menu", "bar_padding_vertical_px") => {
-            "title_padding: the title button's top and bottom padding".into()
-        }
         ("menu", "border.corner_radius_px") if under("chrome.menu_bar.") => {
             "menu_title: the title's border radius, menu.item(NONE).corners, else \
              menu.panel(NONE).corners, iced's own flat button's (button::text) where both are \
@@ -11026,29 +11009,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "menu_row: the Hovered border's width, menu.item(HOVER).stroke.width, where a HOVER \
              rule states the stroke, and the Pressed one's, menu.item(PRESSED).stroke.width, \
              where a PRESSED rule states it"
-                .into()
-        }
-        ("menu", "row_height_px") if resolved.menu.row_height.is_none() => {
-            "not drawn: unstated; menu_row_height takes menu.min_row_height, where stated, \
-             or the row's content"
-                .into()
-        }
-        ("menu", "row_height_px") => {
-            "menu_row_height: the row button's height, where stated, grown above a text \
-             scale of 1 to hold its line and padding (rows::scaled_height)"
-                .into()
-        }
-        ("menu", "min_row_height_px") if resolved.menu.row_height.is_some() => {
-            "not drawn: menu.row_height is stated, and menu_row_height draws it in this \
-             one's place"
-                .into()
-        }
-        ("menu", "min_row_height_px") if resolved.menu.min_row_height.is_none() => {
-            "not drawn: unstated; menu_row_height leaves the row its content's height".into()
-        }
-        ("menu", "min_row_height_px") => {
-            "menu_row_height: the row button's least height, grown to its line box and \
-             padding"
                 .into()
         }
         ("menu", "icon_text_gap_px") => "not reachable: no iced menu draws an icon".into(),
@@ -11074,24 +11034,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("menu", "separator_color") => {
             "line_style: the rule's colour, menu.separator(NONE).fill".into()
-        }
-        ("menu", f) if side(f).is_some() && under("chrome.menu_bar.") => {
-            let m = &resolved.menu;
-            let (bar, stated) = match side(f) {
-                Some("top" | "bottom") => ("vertical", m.bar_padding_vertical.is_some()),
-                _ => ("horizontal", m.bar_padding_horizontal.is_some()),
-            };
-            if stated {
-                format!(
-                    "not drawn: menu.bar_padding_{bar} is stated, and title_padding pads the \
-                     title's side by it"
-                )
-                .into()
-            } else {
-                "title_padding: Button::padding where menu.bar_padding_* leaves it unstated, \
-                 iced's own on an unstated side"
-                    .into()
-            }
         }
         ("menu", f) if side(f).is_some() => "Button::padding, iced's own on an unstated side".into(),
         ("popover", "border.corner_radius_px") => {
@@ -11346,13 +11288,16 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("slider", "track_height_px") => "styles::slider: the rail's width".into(),
         ("slider", "thumb_border_line_width_px")
-            if resolved.slider.thumb_border_line_width.is_none() =>
+            if iced_next::stroke_color_of(&state.next_shown().slider.thumb(WidgetState::NONE))
+                .is_none() =>
         {
-            "not drawn: unstated; styles::slider keeps iced's handle border, none".into()
+            "not drawn: slider.thumb(NONE).stroke is unstated or none; \
+             iced_next::styles::slider keeps iced's handle border, none"
+                .into()
         }
         ("slider", "thumb_border_line_width_px") => {
-            "styles::slider: the handle's border_width, where the status's outline colour is \
-             stated"
+            "iced_next::styles::slider: the handle's border_width, \
+             slider.thumb(NONE).stroke.width, where the status's outline colour is stated"
                 .into()
         }
         ("slider", "thumb_diameter_px") => {
@@ -11613,7 +11558,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              false or unstated, the header outlined in neither case"
                 .into()
         }
-        ("expander", "border.corner_radius_px") if resolved.expander.frame_enabled == Some(true) => {
+        ("expander", "border.corner_radius_px")
+            if state.next_shown().expander.frame_enabled == Some(true) =>
+        {
             "styles::expander_frame: border.radius; styles::expander: the hovered header's \
              fill's"
                 .into()
@@ -11621,7 +11568,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("expander", "border.corner_radius_px") => {
             "styles::expander: the hovered header's fill's radius".into()
         }
-        ("expander", "border.line_width_px") if resolved.expander.frame_enabled == Some(true) => {
+        ("expander", "border.line_width_px")
+            if state.next_shown().expander.frame_enabled == Some(true) =>
+        {
             "styles::expander_frame: border.width".into()
         }
         ("expander", "border.line_width_px") => {
@@ -33026,6 +32975,42 @@ mod tests {
         );
     }
 
+    /// The Basic page's slider handle and expander frame are routed by the
+    /// installed 0.8.0 theme's homes, not by 0.7.2's fields: on kde-breeze,
+    /// whose 0.7.2 theme outlines the handle 1 px wide and leaves the
+    /// expander unframed, a 0.8.0 handle stroked none is not drawn and a
+    /// framed 0.8.0 expander rounds its frame.
+    #[test]
+    fn the_slider_and_expander_routes_read_the_installed_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.slider.rules]]\nthumb.stroke = \"none\"\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = loaded("kde-breeze", false);
+        assert!(
+            state.window_active,
+            "the window is active as the showcase opens"
+        );
+        state.next_resolved.apply_patch(&patch);
+        state.next_resolved.expander.frame_enabled = Some(true);
+        let route = |id: &str, leaf: &str| {
+            elements::element(id)
+                .map(|element| iced_route(&state, element, leaf))
+                .ok_or(format!("{id} is not listed"))
+        };
+        let line = route(
+            "basic.slider.control.thumb",
+            "slider.thumb_border_line_width_px",
+        )?;
+        assert!(line.starts_with("not drawn"), "the handle's line: {line}");
+        let line = route("basic.expander.details", "expander.border.corner_radius_px")?;
+        assert!(
+            line.contains("expander_frame"),
+            "the framed expander's corners: {line}"
+        );
+        Ok(())
+    }
+
     /// The listed colour leaves the connector draws only where the theme
     /// leaves another value unstated, in a state no bundled preset has, not
     /// in the state the element opens in, or, under the presets whose drawing
@@ -33303,6 +33288,7 @@ mod tests {
         };
         assert!(contract_homes().is_some(), "the export is read");
         let bundled = bundled_combinations();
+        let next = next_combinations();
         let jsons: Vec<serde_json::Value> = bundled
             .iter()
             .map(|(label, r)| match serde_json::to_value(r) {
@@ -33332,7 +33318,7 @@ mod tests {
                     .iter()
                     .any(|(id, l, _)| *id == element.id && l == leaf);
                 let undrawn = placed
-                    && bundled.iter().any(|(_, r)| {
+                    && next.iter().any(|(_, r)| {
                         drawing(element, leaf, Shown::opening(r)).is_some()
                             && colour_route(element, leaf, Shown::opening(r), None)
                                 .is_some_and(|route| route.starts_with("not drawn here"))
@@ -33404,7 +33390,7 @@ mod tests {
         let Some(export) = contract_homes() else {
             panic!("contract-homes.toml does not parse");
         };
-        let bundled = bundled_combinations();
+        let bundled = next_combinations();
         let mut failures = Vec::new();
         for element in elements::elements() {
             for leaf in &element.leaves {
@@ -36322,8 +36308,13 @@ mod tests {
     /// `tab.active_background`, as the showcase opens.
     fn drawing_rows(id: &str) -> Option<&'static [&'static str]> {
         let element = elements::element(id)?;
-        let r = curving_out(Some(4.0)).current_resolved;
-        drawing(element, "tab.active_background", Shown::opening(&r)).map(|d| d.rows)
+        let state = curving_out(Some(4.0));
+        drawing(
+            element,
+            "tab.active_background",
+            Shown::opening(state.next_shown()),
+        )
+        .map(|d| d.rows)
     }
 
     /// How many of `image`'s pixels inside `rect`, a rectangle in logical
