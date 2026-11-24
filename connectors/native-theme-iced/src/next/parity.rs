@@ -845,6 +845,36 @@ const fn unfilled_toolbar(presets: &'static [&'static str]) -> Difference {
     }
 }
 
+/// A toolbar button on `presets` whose checked fill the theme states nothing
+/// for ([`CHECKED`]), its hovered and pressed fills stated
+/// ([`MEASURED_TOOLBAR_FILLS`]).
+const fn unchecked_toolbar(presets: &'static [&'static str]) -> Difference {
+    Difference {
+        leaf: "toolbar_button",
+        presets,
+        listed: Listed {
+            states: States {
+                checked: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        stated: &[],
+        reason: &[MEASURED_TOOLBAR_FILLS, CHECKED],
+    }
+}
+
+/// The reason of the macOS presets' toolbar button fills.
+const MEASURED_TOOLBAR_FILLS: &str = "0.7.2's macOS toolbar states no \
+     toolbar.button_hover_background or button_active_background, so its connector drew \
+     iced's secondary button in those states; the 0.8.0 presets state the real toolbar's \
+     measured hovered and pressed button, opaque over the opaque title bar, macos-monterey \
+     #dfdfdf / #414141 and #d2d2d2 / #4e4e4e, macos-tahoe #f2f2f2 / #393939 and #e6e6e6 / \
+     #484848 (os-probe run 45252258079, Reduce Transparency off, `*.hovered.toolbar_button`, \
+     `*.pressed.toolbar_button` `fill`; native-theme/tests/next_homes.toml, rows \
+     toolbar.button_hover_background and toolbar.button_active_background, listed \
+     differences), toolbar.button(HOVER) and toolbar.button(PRESSED)";
+
 /// The reason of a checked button whose fill and label the 0.8.0 theme
 /// states and 0.7.2 does not.
 const STATED_CHECKED: &str = "0.7.2 states no button.checked_background or \
@@ -1093,8 +1123,23 @@ macro_rules! toolbar_widths {
 /// A toolbar button's outline width ([`toolbar_widths`]).
 const TOOLBAR_WIDTHS: [Stated; 8] = toolbar_widths!();
 
-/// macos-tahoe's toolbar button: [`TOOLBAR_WIDTHS`].
-const TAHOE_TOOLBAR: &[&[Stated]] = &[&TOOLBAR_WIDTHS];
+/// A toolbar button's hovered and pressed fill, the macOS presets' measured
+/// ones ([`MEASURED_TOOLBAR_FILLS`]).
+const TOOLBAR_FILLS: [Stated; 2] = [
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, toolbar.button(HOVER)),
+    ),
+    set(
+        at!(PRESSED),
+        Field::Background,
+        home!(fill, toolbar.button(PRESSED)),
+    ),
+];
+
+/// macos-tahoe's toolbar button: [`TOOLBAR_WIDTHS`], [`TOOLBAR_FILLS`].
+const TAHOE_TOOLBAR: &[&[Stated]] = &[&TOOLBAR_WIDTHS, &TOOLBAR_FILLS];
 
 /// A button's hovered and pressed stroke colour.
 const STATE_STROKES: &[&[Stated]] = &[&[button_stroke!(HOVER;), button_stroke!(PRESSED;)]];
@@ -1144,8 +1189,16 @@ const MONTEREY_BUTTON: &[&[Stated]] = &[
     ],
 ];
 
-/// macos-monterey's toolbar button: the button's pressed label.
-const MONTEREY_TOOLBAR: &[&[Stated]] = &[&[PRESSED_LABEL]];
+/// The macOS presets' unselected tab's measured fill and a hovered tab's as
+/// its rest one.
+const TAB_FILLS: [Stated; 2] = [
+    set(at!(NONE), Field::Background, home!(fill, tab.tab(NONE))),
+    set(at!(HOVER), Field::Background, home!(fill, tab.tab(HOVER))),
+];
+
+/// macos-monterey's toolbar button: the button's pressed label,
+/// [`TOOLBAR_FILLS`].
+const MONTEREY_TOOLBAR: &[&[Stated]] = &[&[PRESSED_LABEL], &TOOLBAR_FILLS];
 
 /// A check box's hovered stroke, checked or not (`checkbox.indicator(HOVER)`,
 /// `indicator(HOVER|CHECKED)` where a rule for HOVER states it).
@@ -1978,8 +2031,8 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         TOGGLE_PRESSED_STROKE,
     ),
-    unfilled_toolbar(&["macos-tahoe"])
-        .stating(TAHOE_TOOLBAR, &[TOOLBAR_STATE_FILLS, CHECKED, STATED]),
+    unchecked_toolbar(&["macos-tahoe"])
+        .stating(TAHOE_TOOLBAR, &[MEASURED_TOOLBAR_FILLS, CHECKED, STATED]),
     Difference {
         leaf: "toolbar_button",
         presets: &["ios-13"],
@@ -1996,8 +2049,8 @@ const DIFFERENCES: &[Difference] = &[
         stated: &[&TOOLBAR_WIDTHS],
         reason: &[TOOLBAR_STATE_FILLS, CHECKED, STATED_CHECKED, STATED],
     },
-    unfilled_toolbar(&["macos-monterey"])
-        .stating(MONTEREY_TOOLBAR, &[TOOLBAR_STATE_FILLS, CHECKED, STATED]),
+    unchecked_toolbar(&["macos-monterey"])
+        .stating(MONTEREY_TOOLBAR, &[MEASURED_TOOLBAR_FILLS, CHECKED, STATED]),
     unfilled_toolbar(&["material-3"]),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
@@ -2756,20 +2809,46 @@ const DIFFERENCES: &[Difference] = &[
         &[TAB_STROKE, TAB_IDLE_STROKE],
     ),
     // the macOS presets state an unselected tab's measured fill (`tab.tab(NONE)`) and a hovered
-    // tab's as its rest one (`tab.tab(HOVER)`).
+    // tab's as its rest one (`tab.tab(HOVER)`); macos-tahoe also the selected tab's measured fill
+    // and white label (`tab.tab(SELECTED)`, `tab.label(SELECTED)`), its icon in the label's colour.
     aw(
         "aw::tab_bar",
-        MACOS,
+        &["macos-monterey"],
+        LineAlign::Outside,
+        States::STATED,
+        (true, false),
+        &[TAB_STROKE, TAB_IDLE_STROKE],
+    )
+    .stating(&[&TAB_FILLS], &[TAB_STROKE, TAB_IDLE_STROKE, STATED]),
+    aw(
+        "aw::tab_bar",
+        &["macos-tahoe"],
         LineAlign::Outside,
         States::STATED,
         (true, false),
         &[TAB_STROKE, TAB_IDLE_STROKE],
     )
     .stating(
-        &[&[
-            set(at!(NONE), Field::Background, home!(fill, tab.tab(NONE))),
-            set(at!(HOVER), Field::Background, home!(fill, tab.tab(HOVER))),
-        ]],
+        &[
+            &TAB_FILLS,
+            &[
+                set(
+                    at!(SELECTED),
+                    Field::Background,
+                    home!(fill, tab.tab(SELECTED)),
+                ),
+                set(
+                    at!(SELECTED),
+                    Field::TextColor,
+                    home!(color, tab.label(SELECTED)),
+                ),
+                set(
+                    at!(SELECTED),
+                    Field::IconColor,
+                    home!(color, tab.label(SELECTED)),
+                ),
+            ],
+        ],
         &[TAB_STROKE, TAB_IDLE_STROKE, STATED],
     ),
     // iced_aw: sidebar.container(NONE)'s stroke and sidebar.item(HOVER).
@@ -3608,9 +3687,9 @@ impl Fields for iced_aw::style::tab_bar::Style {
             Field::Background => {
                 self.tab_label_background = Background::Color(color_of(field, &value)?);
             }
+            Field::TextColor => self.text_color = color_of(field, &value)?,
+            Field::IconColor => self.icon_color = color_of(field, &value)?,
             Field::HandleBackground
-            | Field::TextColor
-            | Field::IconColor
             | Field::BorderWidth
             | Field::BorderColor
             | Field::InnerRadius

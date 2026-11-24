@@ -1657,7 +1657,25 @@
       }
     },
     "button": {
-      "base": {}
+      "base": {},
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "button": {
+            "fill": "#414141"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "button": {
+            "fill": "#4e4e4e"
+          }
+        }
+      ]
     },
     "button_label": {
       "base": {

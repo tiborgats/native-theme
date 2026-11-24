@@ -21519,8 +21519,8 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
 /// paints no hover or press on a selected Button); a click turns it off, and with the pointer
 /// moved off it paints no fill (the rest fill is transparent), and its info
 /// claims the text, hover and pressed fills its neighbours claim and no
-/// checked colour; a second click checks it again. Under macos-tahoe light,
-/// which states no checked fill, its fill is the custom variant's selected
+/// checked colour; a second click checks it again. Under ios-13 light,
+/// which states no checked or pressed toolbar fill, its fill is the custom variant's selected
 /// fill, `secondary_active`, and its info claims only that fill and the
 /// variant's text.
 #[gpui::test]
@@ -21634,14 +21634,18 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
         );
     }
 
-    use_light_preset(&mut cx, &showcase, "macos-tahoe");
+    use_light_preset(&mut cx, &showcase, "ios-13");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
+    let next = next_theme(&mut cx, &showcase);
     assert!(
-        r.toolbar.button_checked_background.is_none()
-            && r.toolbar.button_active_background.is_none()
-            && r.button.active_background.is_none(),
-        "macos-tahoe now states a fill toolbar_button_checked takes, so this part proves nothing"
+        next.as_ref().is_some_and(|r| {
+            use native_theme::next::WidgetState;
+            native_theme_gpui::next::state_fill_of(&r.toolbar.button(WidgetState::CHECKED))
+                .is_none()
+                && native_theme_gpui::next::state_fill_of(&r.toolbar.button(WidgetState::PRESSED))
+                    .is_none()
+        }),
+        "ios-13 now states a toolbar fill toolbar_button_checked takes, so this part proves nothing"
     );
     assert!(read(&mut cx, &showcase, |this, _| this.basic_edit));
     hover(&mut cx, away);
@@ -21650,7 +21654,7 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
     assert_eq!(
         painted_fill(&mut cx, button),
         Some(selected),
-        "macos-tahoe: the checked edit button is not filled with the variant's selected fill"
+        "ios-13: the checked edit button is not filled with the variant's selected fill"
     );
     let info = settle_on(&mut cx, &showcase, button);
     let mut roles: Vec<&str> = info
@@ -21661,7 +21665,7 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
     assert_eq!(
         roles,
         ["selected bg", "text"],
-        "macos-tahoe: the checked edit button's info claims colours other than the selected \
+        "ios-13: the checked edit button's info claims colours other than the selected \
          fill and the variant's text: {info:?}"
     );
 }

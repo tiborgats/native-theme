@@ -1505,6 +1505,31 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(toolbar.button_label(HOVER).color),
     ),
+    // M2.FS4b-c5i4 item 2: the real toolbar's measured button fills, macos-tahoe's selected tab
+    s(
+        "Toolbar",
+        &[M, T],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(toolbar.button(HOVER).fill),
+    ),
+    s(
+        "Toolbar",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(toolbar.button(PRESSED).fill),
+    ),
+    s(
+        "Tab",
+        &[T],
+        ".visuals.selection.bg_fill",
+        home!(tab.tab(SELECTED).fill),
+    ),
+    s(
+        "Tab",
+        &[T],
+        ".visuals.selection.stroke.color",
+        home!(tab.label(SELECTED).color),
+    ),
     s("Card", &[M, T], ".fill", home!(card.container(NONE).fill)),
     s(
         "Card",
@@ -1662,7 +1687,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     Gap {
         diff: d(
             "Tab",
-            &[M, T],
+            &[M],
             ".visuals.selection.stroke.color",
             Cause::StateKeepsBase,
             STATE_KEEPS_BASE,

@@ -1969,10 +1969,18 @@ difference_values = { "macos-monterey" = { light = "#0000000d", dark = "#ffffff0
 [[row]]
 key = "tab.active_background"
 homes = ["tab.tab(SELECTED).fill"]
+difference_presets = ["macos-tahoe"]
+difference_reason = "0.7.2's macos-tahoe selected tab is the window's background (uncited); 0.8.0 states NSTabView's measured selected tab on macOS 26, drawn on the accent"
+difference_citation = "os-probe run 45252258079 (macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.tab_One` `fill`"
+difference_values = { "macos-tahoe" = { light = "#0077f9", dark = "#077dff" } }
 
 [[row]]
 key = "tab.active_text_color"
 homes = ["tab.label(SELECTED).color"]
+difference_presets = ["macos-tahoe"]
+difference_reason = "0.7.2's macos-tahoe selected tab is lettered in the body text (uncited); 0.8.0 states NSTabView's measured selected tab on macOS 26, lettered white on the accent"
+difference_citation = "os-probe run 45252258079 (macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.tab_One` `label`"
+difference_values = { "macos-tahoe" = "#ffffff" }
 
 [[row]]
 key = "tab.bar_background"
@@ -2197,6 +2205,10 @@ homes = ["toolbar.button_icon(NONE).size"]
 [[row]]
 key = "toolbar.button_hover_background"
 homes = ["toolbar.button(HOVER).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS toolbar states no button fill; 0.8.0 states the real toolbar's measured hovered button, opaque over the opaque title bar"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.hovered.toolbar_button` `fill`"
+difference_values = { "macos-monterey" = { light = "#dfdfdf", dark = "#414141" }, "macos-tahoe" = { light = "#f2f2f2", dark = "#393939" } }
 
 [[row]]
 key = "toolbar.button_hover_border_color"
@@ -2211,6 +2223,10 @@ note = "0.7.2 doc: under the pointer and while pressed; over a checked button to
 [[row]]
 key = "toolbar.button_active_background"
 homes = ["toolbar.button(PRESSED).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS toolbar states no button fill; 0.8.0 states the real toolbar's measured pressed button, opaque over the opaque title bar"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.pressed.toolbar_button` `fill`"
+difference_values = { "macos-monterey" = { light = "#d2d2d2", dark = "#4e4e4e" }, "macos-tahoe" = { light = "#e6e6e6", dark = "#484848" } }
 
 [[row]]
 key = "toolbar.button_checked_background"

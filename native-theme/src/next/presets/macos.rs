@@ -320,6 +320,10 @@ struct SchemeColors {
     tab_fill: Color,
     /// An unselected tab pressed.
     tab_pressed: Color,
+    /// A selected tab's fill, measured on the default accent; `None` where
+    /// the generation does not draw it on the accent or another accent is
+    /// laid over ([`drop_accent_measurements`]).
+    tab_selected: Option<Color>,
     sidebar_background: Color,
     sidebar_foreground: Option<Color>,
     /// A pressed source-list row's fill, measured on the default accent;
@@ -348,6 +352,10 @@ struct SchemeColors {
     toolbar_label_hover: Option<Color>,
     /// A toolbar button's label pressed.
     toolbar_label_pressed: Color,
+    /// A toolbar button's fill hovered, opaque over the opaque title bar.
+    toolbar_button_hover: Color,
+    /// A toolbar button's fill pressed, opaque over the opaque title bar.
+    toolbar_button_pressed: Color,
     /// The box's fill.
     card_fill: Color,
     /// The box's outline; `None` where it draws none.
@@ -549,6 +557,7 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // `tab.tab(PRESSED).fill`: an unselected tab pressed, #f0f0f0 (measured, os-probe run
     // 45198750893, macOS 15, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xf0f0_f0ff),
+    tab_selected: None,
     // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
     // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
     // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
@@ -604,6 +613,12 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     toolbar_label: srgb8(0x6060_60ff),
     toolbar_label_hover: None,
     toolbar_label_pressed: srgb8(0x3434_34ff),
+    // `toolbar.button(HOVER).fill`, `toolbar.button(PRESSED).fill`: #dfdfdf hovered, #d2d2d2
+    // pressed, over the title bar's #ececec, opaque over the opaque title bar (measured, os-probe
+    // run 45252258079, macOS 15, Reduce Transparency off, `aqua.hovered.toolbar_button`,
+    // `aqua.pressed.toolbar_button`, `aqua.normal.toolbar_button` `fill`)
+    toolbar_button_hover: srgb8(0xdfdf_dfff),
+    toolbar_button_pressed: srgb8(0xd2d2_d2ff),
     // `card.container.fill`: NSBox (primary, untitled), black at alpha 8/255 (measured, os-probe
     // run 45252258079, macOS 15, `*.normal.box` `fill`)
     card_fill: srgb8(0x0000_0008),
@@ -808,6 +823,7 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `tab.tab(PRESSED).fill`: an unselected tab pressed, white at alpha 100/255 (measured,
     // os-probe run 45198750893, macOS 15, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xffff_ff64),
+    tab_selected: None,
     // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
     // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
     // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
@@ -864,6 +880,12 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     toolbar_label: srgb8(0xb4b4_b4ff),
     toolbar_label_hover: None,
     toolbar_label_pressed: srgb8(0xeeee_eeff),
+    // `toolbar.button(HOVER).fill`, `toolbar.button(PRESSED).fill`: #414141 hovered, #4e4e4e
+    // pressed, over the title bar's #343434, opaque over the opaque title bar (measured, os-probe
+    // run 45252258079, macOS 15, Reduce Transparency off, `darkAqua.hovered.toolbar_button`,
+    // `darkAqua.pressed.toolbar_button`, `darkAqua.normal.toolbar_button` `fill`)
+    toolbar_button_hover: srgb8(0x4141_41ff),
+    toolbar_button_pressed: srgb8(0x4e4e_4eff),
     // `card.container.fill`: NSBox (primary, untitled), white at alpha 8/255 (measured, os-probe
     // run 45252258079, macOS 15, `*.normal.box` `fill`)
     card_fill: srgb8(0xffff_ff08),
@@ -1068,6 +1090,9 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `tab.tab(PRESSED).fill`: an unselected tab pressed, black at alpha 63/255 (measured, os-probe
     // run 45198750893, macOS 26, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0x0000_003f),
+    // `tab.tab(SELECTED).fill`: #0077f9, on the default accent, lettered white (measured, os-probe
+    // run 45252258079, macOS 26, Reduce Transparency off, `aqua.normal.tab_One` `fill`, `label`)
+    tab_selected: Some(srgb8(0x0077_f9ff)),
     // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
     // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
     // macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749,
@@ -1115,6 +1140,13 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     toolbar_label: srgb8(0x4d4d_4dff),
     toolbar_label_hover: Some(srgb8(0x4949_49ff)),
     toolbar_label_pressed: srgb8(0x4545_45ff),
+    // `toolbar.button(HOVER).fill`, `toolbar.button(PRESSED).fill`: #f2f2f2 hovered, #e6e6e6
+    // pressed, over the title bar's #ffffff, opaque over the opaque title bar of the real toolbar
+    // (measured, os-probe run 45252258079, macOS 26, Reduce Transparency off,
+    // `aqua.hovered.toolbar_button`, `aqua.pressed.toolbar_button`, `aqua.normal.toolbar_button`
+    // `fill`)
+    toolbar_button_hover: srgb8(0xf2f2_f2ff),
+    toolbar_button_pressed: srgb8(0xe6e6_e6ff),
     // `card.container.fill`: NSBox (primary, untitled), black at alpha 8/255 (measured, os-probe
     // run 45252258079, macOS 26, `*.normal.box` `fill`)
     card_fill: srgb8(0x0000_0008),
@@ -1322,6 +1354,10 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `tab.tab(PRESSED).fill`: an unselected tab pressed, white at alpha 63/255 (measured, os-probe
     // run 45198750893, macOS 26, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xffff_ff3f),
+    // `tab.tab(SELECTED).fill`: #077dff, on the default accent, lettered white (measured, os-probe
+    // run 45252258079, macOS 26, Reduce Transparency off, `darkAqua.normal.tab_One` `fill`,
+    // `label`)
+    tab_selected: Some(srgb8(0x077d_ffff)),
     // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
     // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
     // macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749,
@@ -1371,6 +1407,13 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     toolbar_label: srgb8(0xe9e9_e9ff),
     toolbar_label_hover: Some(srgb8(0xebeb_ebff)),
     toolbar_label_pressed: srgb8(0xecec_ecff),
+    // `toolbar.button(HOVER).fill`, `toolbar.button(PRESSED).fill`: #393939 hovered, #484848
+    // pressed, over the title bar's #252525, opaque over the opaque title bar of the real toolbar
+    // (measured, os-probe run 45252258079, macOS 26, Reduce Transparency off,
+    // `darkAqua.hovered.toolbar_button`, `darkAqua.pressed.toolbar_button`,
+    // `darkAqua.normal.toolbar_button` `fill`)
+    toolbar_button_hover: srgb8(0x3939_39ff),
+    toolbar_button_pressed: srgb8(0x4848_48ff),
     // `card.container.fill`: NSBox (primary, untitled), white at alpha 8/255 (measured, os-probe
     // run 45252258079, macOS 26, `*.normal.box` `fill`)
     card_fill: srgb8(0xffff_ff08),
@@ -1479,6 +1522,9 @@ struct Generation {
     tab_min_height: f32,
     tab_padding_vertical: Option<f32>,
     tab_padding_horizontal: Option<f32>,
+    /// Whether a selected tab is drawn on the accent, lettered in the
+    /// accent's text.
+    tab_selected_on_accent: bool,
     toolbar_bar_height: Option<f32>,
     toolbar_item_gap: Option<f32>,
     /// Whether a hovered toolbar button's label is measured as at rest.
@@ -1736,6 +1782,9 @@ const MONTEREY: Generation = Generation {
     // `tab.border.padding.left`, `tab.border.padding.right`: platform-facts.md (§2.11): NSTabView
     // 12; 4 (measured)
     tab_padding_horizontal: Some(12.0),
+    // `tab.tab(SELECTED).fill`: not on the accent, #ffffff / #ffffff49 (measured, os-probe run
+    // 45252258079, macOS 15, `*.normal.tab_One` `fill`)
+    tab_selected_on_accent: false,
     // `toolbar.bar_height`: platform-facts.md (§2.13): NSToolbar 38
     toolbar_bar_height: Some(38.0),
     // `toolbar.item_gap`: platform-facts.md (§2.13): AppKit 8
@@ -2055,6 +2104,11 @@ const TAHOE: Generation = Generation {
     tab_min_height: 24.0,
     tab_padding_vertical: None,
     tab_padding_horizontal: None,
+    // `tab.tab(SELECTED)`: on the accent, lettered white: #0077f9 / #077dff on the default accent
+    // (`*.normal.tab_One`, os-probe run 45252258079, macOS 26), #db373c / #ff575b on the red one,
+    // the checked check box's fill under each (`*.normal.tab_One`, `*.normal.checkbox_on` `fill`,
+    // `label`, os-probe run 45345116763, macOS 26, `controls-accent`)
+    tab_selected_on_accent: true,
     toolbar_bar_height: None,
     toolbar_item_gap: None,
     // `toolbar.button_label(HOVER)`: not the rest one: in the real toolbar the scheme's own
@@ -2620,10 +2674,13 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 /// explicit accent over a system accent) compares it with the accent then in
 /// force, not the preset's, and does not restore them, which leaves the
 /// unmeasured rest fill rather than a colour measured for another accent.
+/// It also drops the selected tab's fill measured on the default accent,
+/// which then takes the accent's fill, as the checked box's does.
 fn drop_accent_measurements(c: &mut SchemeColors) {
     c.checkbox_checked_pressed = None;
     c.slider_fill_pressed = None;
     c.sidebar_pressed = None;
+    c.tab_selected = None;
 }
 
 /// The fonts the system states for widgets of their own: the menu's
@@ -3810,10 +3867,12 @@ fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
 /// `defaults.background_color` where unstated), a tab of least sizes with
 /// `macos-monterey`'s padding and hover fill; the selected tab in the
 /// window's background again (`tab.active_background`:
-/// `defaults.background_color` where unstated); the UI font in the window's
-/// text, which a hovered and a selected tab keep (0.7.2: `tab.font` is
-/// `defaults.font`, `hover_text_color` `tab.font.color` and
-/// `active_text_color` `defaults.text_color` where unstated, so no rule).
+/// `defaults.background_color` where unstated), or where the generation
+/// draws it on the accent, in its measured fill lettered in the accent's
+/// text; the UI font in the window's text, which a hovered tab keeps, and a
+/// selected one off the accent (0.7.2: `tab.font` is `defaults.font`,
+/// `hover_text_color` `tab.font.color` and `active_text_color`
+/// `defaults.text_color` where unstated).
 /// 0.7.2 states no outline, corners, shadow or indicator.
 fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typography) -> TabWidget {
     let bar = RuleBuilder::new(PartStyle::default())
@@ -3838,7 +3897,11 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
-            roles.window.background.map(fill),
+            if g.tab_selected_on_accent {
+                Some(fill(c.tab_selected.unwrap_or(roles.accent.fill)))
+            } else {
+                roles.window.background.map(fill)
+            },
         )
         .build();
     // Hovered and pressed, the label as at rest: the hovered tab differs from its normal capture
@@ -3861,6 +3924,11 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
                     .into_iter()
                     .flat_map(|_| [WidgetState::HOVER, WidgetState::PRESSED].map(RuleSelector::on)),
                 rest_color.map(TextProp::Color),
+            )
+            .rules(
+                g.tab_selected_on_accent
+                    .then(|| RuleSelector::on(WidgetState::SELECTED)),
+                [TextProp::Color(roles.accent.foreground)],
             )
             .build(),
         RuleBuilder::new(PartStyle::default()).build(),
@@ -3944,8 +4012,8 @@ fn sidebar(
 /// labels in the UI font (`toolbar.font`: `defaults.font` where unstated)
 /// and their measured colours,
 /// their icons at the toolbar's size (`toolbar.icon_size`:
-/// `defaults.icon_sizes.toolbar` where unstated). 0.7.2 states no button
-/// fill.
+/// `defaults.icon_sizes.toolbar` where unstated); a hovered and a pressed
+/// button in its measured fill (0.7.2 states no button fill).
 fn toolbar(
     c: &SchemeColors,
     g: &Generation,
@@ -3990,10 +4058,20 @@ fn toolbar(
             [TextProp::Color(c.toolbar_label_pressed)],
         )
         .build();
+    let button = RuleBuilder::new(PartStyle::default())
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.toolbar_button_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.toolbar_button_pressed)],
+        )
+        .build();
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
-        RuleBuilder::new(PartStyle::default()).build(),
+        button,
         button_label,
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),

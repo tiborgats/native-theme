@@ -1265,7 +1265,7 @@
             "selected"
           ],
           "tab": {
-            "fill": "#1e1e1e"
+            "fill": "#077dff"
           }
         }
       ]
@@ -1296,6 +1296,14 @@
           ],
           "label": {
             "color": "#ffffffd8"
+          }
+        },
+        {
+          "states": [
+            "selected"
+          ],
+          "label": {
+            "color": "#ffffff"
           }
         }
       ]
@@ -1624,7 +1632,25 @@
       }
     },
     "button": {
-      "base": {}
+      "base": {},
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "button": {
+            "fill": "#393939"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "button": {
+            "fill": "#484848"
+          }
+        }
+      ]
     },
     "button_label": {
       "base": {

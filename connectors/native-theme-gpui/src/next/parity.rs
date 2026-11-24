@@ -717,17 +717,17 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "geometry::toolbar_button_checked",
         presets: &["macos-monterey", "macos-tahoe"],
-        reason: "neither model states a toolbar button's checked or pressed fill on the macOS \
-                 presets, so the refinement's fill is the push button's pressed one \
-                 (crate::geometry::toolbar_button_checked); the 0.8.0 presets state the \
-                 measured pressed fill (docs/facts/macos/button.toml on v0.8.0-rc1 at \
-                 78ee0efd, `button.body.fill` states [pressed]: macos-monterey #f0f0f0 / \
-                 #ffffff5c, os-probe run 41006842699, macOS 15; macos-tahoe #0000002a / \
-                 #ffffff2a, the same run, macOS 26; native-theme/tests/next_homes.toml, row \
-                 button.active_background, a listed difference), where 0.7.2 gives \
-                 macos-monterey's soft option #d6d6db / #4e4e50 and on macos-tahoe none (no \
-                 fill); so the refinement's background is button.body(PRESSED)'s fill; every \
-                 other field of the refinement is equal",
+        reason: "neither model states a toolbar button's checked fill on the macOS presets, so \
+                 the refinement's fill is the toolbar button's pressed one, else the push \
+                 button's (crate::geometry::toolbar_button_checked); 0.7.2 states neither \
+                 pressed fill on macos-tahoe and only the push button's soft option #d6d6db / \
+                 #4e4e50 on macos-monterey; the 0.8.0 presets state the real toolbar's \
+                 measured pressed button, macos-monterey #d2d2d2 / #4e4e4e, macos-tahoe \
+                 #e6e6e6 / #484848 (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.pressed.toolbar_button` `fill`; native-theme/tests/next_homes.toml, row \
+                 toolbar.button_active_background, a listed difference); so the refinement's \
+                 background is toolbar.button(PRESSED)'s fill; every other field of the \
+                 refinement is equal",
     },
     Difference {
         leaf: "geometry::toolbar",
@@ -891,12 +891,55 @@ const DIFFERENCES: &[Difference] = &[
                  difference), so the tab slot, its token and its stored config string are \
                  tab.tab(NONE)'s fill; every other leaf of the theme is equal",
     },
+    Difference {
+        leaf: TAB_ACTIVE,
+        presets: &["macos-tahoe"],
+        reason: "0.7.2's macos-tahoe gives a selected tab the window's background (uncited); \
+                 the 0.8.0 preset states NSTabView's measured selected tab on macOS 26, on the \
+                 accent, #0077f9 / #077dff (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.normal.tab_One` `fill`; native-theme/tests/next_homes.toml, row \
+                 tab.active_background, a listed difference), so the tab_active slot, its token \
+                 and its stored config string are tab.tab(SELECTED)'s fill; every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: TAB_ACTIVE_TEXT,
+        presets: &["macos-tahoe"],
+        reason: "0.7.2's macos-tahoe letters a selected tab in the body text (uncited); the \
+                 0.8.0 preset states it white on the accent, as macOS 26 draws it (os-probe run \
+                 45252258079, `*.normal.tab_One` `label`; native-theme/tests/next_homes.toml, \
+                 row tab.active_text_color, a listed difference), so the \
+                 tab_active_foreground slot, its token and its stored config string are \
+                 tab.label(SELECTED)'s colour; every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: "variants::toolbar_button",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macOS toolbar states no button fill; the 0.8.0 presets state the real \
+                 toolbar's measured hovered and pressed button, macos-monterey #dfdfdf / \
+                 #414141 and #d2d2d2 / #4e4e4e, macos-tahoe #f2f2f2 / #393939 and #e6e6e6 / \
+                 #484848 (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.hovered.toolbar_button`, `*.pressed.toolbar_button` `fill`; \
+                 native-theme/tests/next_homes.toml, rows toolbar.button_hover_background and \
+                 toolbar.button_active_background, listed differences), so the states' hover \
+                 and active are toolbar.button(HOVER)'s and toolbar.button(PRESSED)'s fills; \
+                 the hovered outline is equal",
+    },
 ];
 
 /// The leaf of [`DIFFERENCES`]' entry for an unselected tab's fill: the
 /// `ThemeColor` slot `tab`, its token and its stored config string, compared
 /// by [`slot_as_old`] ([`STATED_SLOTS`]).
 const TAB_FILL: &str = "to_theme: tab";
+
+/// The leaf of [`DIFFERENCES`]' entry for a selected tab's fill: the
+/// `ThemeColor` slot `tab_active`, its token and its stored config string.
+const TAB_ACTIVE: &str = "to_theme: tab_active";
+
+/// The leaf of [`DIFFERENCES`]' entry for a selected tab's label: the
+/// `ThemeColor` slot `tab_active_foreground`, its token and its stored config
+/// string.
+const TAB_ACTIVE_TEXT: &str = "to_theme: tab_active_foreground";
 
 /// The leaf of [`DIFFERENCES`]' entry for the text field's outline: the
 /// `ThemeColor` slot `input`, its token and its stored config string,
@@ -1039,6 +1082,34 @@ const STATED_SLOTS: &[StatedSlot] = &[
             theme.tokens.tab = from.tokens.tab;
         },
         copy_config: |config, from| config.tab = from.tab.clone(),
+    },
+    StatedSlot {
+        leaf: TAB_ACTIVE,
+        what: "the selected tab's stated fill",
+        of: |new| super::fill_of(&new.tab.tab(native_theme::next::WidgetState::SELECTED)),
+        color: |c| c.tab_active,
+        token: |t| t.tab_active,
+        config: |c| c.tab_active.clone(),
+        copy: |theme, from| {
+            theme.colors.tab_active = from.colors.tab_active;
+            theme.tokens.tab_active = from.tokens.tab_active;
+        },
+        copy_config: |config, from| config.tab_active = from.tab_active.clone(),
+    },
+    StatedSlot {
+        leaf: TAB_ACTIVE_TEXT,
+        what: "the selected tab's stated label",
+        of: |new| super::text_color_of(&new.tab.label(native_theme::next::WidgetState::SELECTED)),
+        color: |c| c.tab_active_foreground,
+        token: |t| t.tab_active_foreground,
+        config: |c| c.tab_active_foreground.clone(),
+        copy: |theme, from| {
+            theme.colors.tab_active_foreground = from.colors.tab_active_foreground;
+            theme.tokens.tab_active_foreground = from.tokens.tab_active_foreground;
+        },
+        copy_config: |config, from| {
+            config.tab_active_foreground = from.tab_active_foreground.clone();
+        },
     },
 ];
 
@@ -2340,9 +2411,9 @@ fn compare_builders(
                 report.count(toolbar_checked);
                 let o = crate::geometry::toolbar_button_checked(Native::unscaled(old));
                 let t = &new.toolbar;
-                let unstated = super::state_fill_of(&t.button(WidgetState::CHECKED)).is_none()
-                    && super::state_fill_of(&t.button(WidgetState::PRESSED)).is_none();
-                let pressed = super::state_fill_of(&new.button.body(WidgetState::PRESSED));
+                let unstated = super::state_fill_of(&t.button(WidgetState::CHECKED)).is_none();
+                let pressed = super::state_fill_of(&t.button(WidgetState::PRESSED))
+                    .or_else(|| super::state_fill_of(&new.button.body(WidgetState::PRESSED)));
                 let mut corrected = o.clone();
                 corrected.background = n.background.clone();
                 let filled =
@@ -2358,12 +2429,37 @@ fn compare_builders(
         }
         None => builder!(report, old, new, toolbar_button_checked),
     }
-    compare_mapped(
-        report,
-        "variants::toolbar_button",
-        crate::variants::toolbar_button_states(Native::unscaled(old)),
-        super::builders::toolbar_button_states(new),
-    );
+    let toolbar_states = "variants::toolbar_button";
+    let o = crate::variants::toolbar_button_states(Native::unscaled(old));
+    match report.listed(toolbar_states) {
+        Some(listed) => {
+            if let Some(n) =
+                report.mapped(toolbar_states, super::builders::toolbar_button_states(new))
+            {
+                use native_theme::next::WidgetState;
+                report.count(toolbar_states);
+                let t = &new.toolbar;
+                let hover = super::state_fill_of(&t.button(WidgetState::HOVER));
+                let active = super::state_fill_of(&t.button(WidgetState::PRESSED));
+                let mut corrected = o;
+                corrected.hover = n.hover;
+                corrected.active = n.active;
+                if hover.is_none() || n.hover != hover || n.active != active || corrected != n {
+                    report.failures.push(format!(
+                        "{}: {toolbar_states}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => compare_mapped(
+            report,
+            toolbar_states,
+            o,
+            super::builders::toolbar_button_states(new),
+        ),
+    }
     let max_width = "geometry::dialog_max_width";
     match report.listed(max_width) {
         Some(listed) => {
