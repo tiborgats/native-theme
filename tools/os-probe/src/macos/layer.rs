@@ -43,6 +43,17 @@ pub(super) struct Rgba {
 }
 
 impl Rgba {
+    /// A capture of `width` x `height` pixels, row by row from the top
+    /// left, for the tests.
+    #[cfg(test)]
+    pub(super) fn from_pixels(width: usize, height: usize, pixels: Vec<[u8; 4]>) -> Self {
+        Self {
+            width,
+            height,
+            pixels,
+        }
+    }
+
     /// The capture's pixels as RGBA bytes, alpha first or last as its format
     /// says, `ff` where it has no alpha.
     pub(super) fn from_rep(rep: &NSBitmapImageRep) -> Result<Self, String> {

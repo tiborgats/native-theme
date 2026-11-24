@@ -24,8 +24,11 @@ mod motion;
 mod timeline;
 mod transition;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
@@ -1091,10 +1094,12 @@ fn layer_text() -> String {
     )
 }
 
-/// The capture taken over the window's own background, and the layer
-/// solved from the black and white ones.
+/// The capture taken over the window's own background, the ones over the
+/// black and white backdrops, and the layer solved from those two.
 struct Shots {
     window: Option<Rgba>,
+    black: Option<Rgba>,
+    white: Option<Rgba>,
     layer: Option<Layer>,
 }
 
@@ -1776,12 +1781,16 @@ impl Pass<'_> {
             }
         };
         out::put_table(t, "layer", table);
-        let window_rgba = captured
-            .into_iter()
-            .find(|(k, _, _)| *k == Backdrop::Window)
-            .and_then(|(_, rgba, _)| rgba);
+        let mut take = |b: Backdrop| {
+            captured
+                .iter_mut()
+                .find(|(k, _, _)| *k == b)
+                .and_then(|(_, rgba, _)| rgba.take())
+        };
         Shots {
-            window: window_rgba,
+            window: take(Backdrop::Window),
+            black: take(Backdrop::Black),
+            white: take(Backdrop::White),
             layer,
         }
     }
@@ -1979,7 +1988,9 @@ impl Pass<'_> {
         let moved =
             CGEvent::new_mouse_event(None, CGEventType::MouseMoved, at, CGMouseButton::Left);
         out::put(&mut t, "mouseMoved_created", out::boolean(moved.is_some()));
-        CGEvent::post(CGEventTapLocation::HIDEventTap, moved.as_deref());
+        if let Some(moved) = moved.as_deref() {
+            CGEvent::post(CGEventTapLocation::HIDEventTap, Some(moved));
+        }
         window.displayIfNeeded();
         out::put_table(&mut t, "events", pump_counting(self.app, HOVER_STEPS));
         let location = NSEvent::mouseLocation();
@@ -2058,10 +2069,16 @@ impl Pass<'_> {
 
     /// Press at `at` (Quartz's global points) with a real mouse-down and
     /// capture the window to `<dir>/<file>` from a second thread while the
-    /// control tracks the mouse on this one; the second thread posts the
-    /// mouse-up once the capture is done, and then, where `escape` is set,
-    /// an Escape key down and up (a pop-up's menu that the mouse-up left
-    /// open is closed by it).
+    /// control tracks the mouse on this one; once the capture is done a
+    /// timer in the run loop's common modes (it fires in the tracking loop)
+    /// posts the mouse-up on this thread where the window at the press point
+    /// is still the probe's (`post_at_own_window`), and then, where `escape`
+    /// is set, `CLICK_CAPTURE_DELAY` later an Escape key down and up where
+    /// the probe's application is active (a pop-up's menu that the mouse-up
+    /// left open is closed by it); each to the probe's process alone where
+    /// not. Where the timer has posted no release `CLICK_WAIT_STEPS` pump
+    /// steps after the capture, the second thread posts it to the probe's
+    /// process alone, so the tracking ends (`release_by_watchdog`, an error).
     #[allow(clippy::too_many_arguments)]
     fn click_at(
         &self,
@@ -2105,29 +2122,105 @@ impl Pass<'_> {
         let before = (window.isKeyWindow(), self.app.isActive());
         let number = window.windowNumber();
         let worker_path = path.clone();
+        let captured_flag = Arc::new(AtomicBool::new(false));
+        let worker_flag = Arc::clone(&captured_flag);
+        let released = Arc::new(AtomicBool::new(false));
+        let worker_released = Arc::clone(&released);
         let worker = std::thread::spawn(move || {
             std::thread::sleep(CLICK_CAPTURE_DELAY);
             let captured = screencapture(number, &worker_path);
-            let up =
-                CGEvent::new_mouse_event(None, CGEventType::LeftMouseUp, at, CGMouseButton::Left);
-            let created = up.is_some();
-            CGEvent::post(CGEventTapLocation::HIDEventTap, up.as_deref());
-            if escape {
-                std::thread::sleep(CLICK_CAPTURE_DELAY);
-                for key_down in [true, false] {
-                    let key = CGEvent::new_keyboard_event(None, ESCAPE_KEY_CODE, key_down);
-                    CGEvent::post(CGEventTapLocation::HIDEventTap, key.as_deref());
+            worker_flag.store(true, Ordering::Release);
+            let start = std::time::Instant::now();
+            while !worker_released.load(Ordering::Acquire) {
+                if start.elapsed() >= PUMP_STEP.saturating_mul(CLICK_WAIT_STEPS)
+                    && !worker_released.swap(true, Ordering::AcqRel)
+                {
+                    return (captured, Some(release_to_own_process(at, escape)));
                 }
+                std::thread::sleep(PUMP_STEP);
             }
-            (captured, created)
+            (captured, None)
         });
+        let release = Rc::new(Release {
+            released,
+            done: Cell::new(false),
+            up_at: Cell::new(None),
+            reads: RefCell::new(Table::new()),
+        });
+        let timer = {
+            let release = Rc::clone(&release);
+            let mtm = self.mtm;
+            let screen = NSPoint::new(at.x, self.primary_height - at.y);
+            ffi::common_modes_timer(mtm, PUMP_STEP.as_secs_f64(), move || {
+                if release.done.get()
+                    || release.released.load(Ordering::Acquire)
+                    || !captured_flag.load(Ordering::Acquire)
+                {
+                    return;
+                }
+                let mut reads = release.reads.borrow_mut();
+                match release.up_at.get() {
+                    None => {
+                        let up = CGEvent::new_mouse_event(
+                            None,
+                            CGEventType::LeftMouseUp,
+                            at,
+                            CGMouseButton::Left,
+                        );
+                        out::put(&mut reads, "mouseUp_created", out::boolean(up.is_some()));
+                        if let Some(up) = up.as_deref() {
+                            post_at_own_window(&mut reads, "mouseUp", mtm, number, screen, up);
+                        }
+                        release.up_at.set(Some(std::time::Instant::now()));
+                        release.finish(!escape);
+                    }
+                    Some(up_at) if up_at.elapsed() >= CLICK_CAPTURE_DELAY => {
+                        let active = NSApplication::sharedApplication(mtm).isActive();
+                        out::put(&mut reads, "escape_NSApp_isActive", out::boolean(active));
+                        let mut created = Vec::new();
+                        for key_down in [true, false] {
+                            let key = CGEvent::new_keyboard_event(None, ESCAPE_KEY_CODE, key_down);
+                            created.push(out::boolean(key.is_some()));
+                            if let Some(key) = key.as_deref() {
+                                post_to_own_process(&mut reads, "escape", active, key);
+                            }
+                        }
+                        out::put(&mut reads, "escape_created", out::array(created));
+                        if !active {
+                            out::put(
+                                &mut reads,
+                                "error",
+                                out::unavailable(
+                                    "the probe's application is not active: the Escape was posted to the probe's process alone",
+                                ),
+                            );
+                        }
+                        release.finish(true);
+                    }
+                    Some(_) => {}
+                }
+            })
+        };
         CGEvent::post(CGEventTapLocation::HIDEventTap, Some(&*down));
         let steps = pump(self.app, CLICK_WAIT_STEPS, || worker.is_finished());
+        timer.invalidate();
         out::put(t, "wait_steps", out::int(i64::from(steps)));
-        let (captured, up_created) = worker
+        let (captured, watchdog) = worker
             .join()
-            .unwrap_or_else(|_| (Err("the capture thread panicked".to_owned()), false));
-        out::put(t, "mouseUp_created", out::boolean(up_created));
+            .unwrap_or_else(|_| (Err("the capture thread panicked".to_owned()), None));
+        for (k, v) in release.reads.take() {
+            t.insert(k, v);
+        }
+        if let Some(watchdog) = watchdog {
+            out::put(t, "release_by_watchdog", out::text(watchdog));
+            out::put(
+                t,
+                "error",
+                out::unavailable(format!(
+                    "the release timer did not post the release within {CLICK_WAIT_STEPS} pump steps of the capture: the second thread posted it to the probe's process alone"
+                )),
+            );
+        }
         // Deliver the mouse-up, so the tracking ends before the next state.
         self.settle(window, SETTLE_STEPS);
         let after = (window.isKeyWindow(), self.app.isActive());
@@ -2141,6 +2234,131 @@ impl Pass<'_> {
         );
         read_capture(t, captured, &path, &format!("{rel}/{file}"))
     }
+}
+
+/// A press's release, posted by `click_at`'s timer on the main thread once
+/// the capture is done: whether it is (`done`, and `released`, which the
+/// capture thread waits on), when the mouse-up was posted, and what was
+/// read and posted.
+struct Release {
+    released: Arc<AtomicBool>,
+    done: Cell<bool>,
+    up_at: Cell<Option<std::time::Instant>>,
+    reads: RefCell<Table>,
+}
+
+impl Release {
+    /// Mark the release done where `done` is set.
+    fn finish(&self, done: bool) {
+        if done {
+            self.done.set(true);
+            self.released.store(true, Ordering::Release);
+        }
+    }
+}
+
+/// The probe's process id, as `CGEventPostToPid` takes it.
+fn own_pid() -> Result<i32, String> {
+    i32::try_from(std::process::id()).map_err(|e| format!("the probe's pid: {e}"))
+}
+
+/// Post the mouse event `event` to the HID event tap where the window a
+/// mouse event at `screen` (AppKit's screen points) reaches is the probe's:
+/// its window `number`, or another window its process owns (a pop-up's
+/// menu); else to the probe's process alone, with the error; into `t` as
+/// `<name>_window_under`, `<name>_window_is_ours` and `<name>_posted_to`.
+fn post_at_own_window(
+    t: &mut Table,
+    name: &str,
+    mtm: MainThreadMarker,
+    number: isize,
+    screen: NSPoint,
+    event: &CGEvent,
+) {
+    let under = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(screen, 0, mtm);
+    out::put(t, &format!("{name}_window_under"), out::int_isize(under));
+    let owner = if under == number {
+        Ok(None)
+    } else {
+        ffi::window_owner_pid(under).map(Some)
+    };
+    let pid = own_pid();
+    let ours = match (&owner, &pid) {
+        (Ok(None), _) => true,
+        (Ok(Some(owner)), Ok(pid)) => *owner == i64::from(*pid),
+        _ => false,
+    };
+    if let Ok(Some(owner)) = &owner {
+        out::put(t, &format!("{name}_window_owner_pid"), out::int(*owner));
+    }
+    out::put(t, &format!("{name}_window_is_ours"), out::boolean(ours));
+    post_to_own_process(t, name, ours, event);
+    if !ours {
+        let why = match (owner, pid) {
+            (Err(e), _) | (_, Err(e)) => e,
+            (Ok(owner), Ok(pid)) => format!(
+                "window {under} (process {}) is not the probe's (window {number}, process {pid})",
+                owner.map_or_else(|| "the probe's".to_owned(), |o| o.to_string())
+            ),
+        };
+        out::put(
+            t,
+            "error",
+            out::unavailable(format!(
+                "at the {name}'s point {why}: it was posted to the probe's process alone"
+            )),
+        );
+    }
+}
+
+/// Post `event` to the HID event tap where `ours`, else to the probe's
+/// process alone (`CGEventPostToPid`); into `t.<name>_posted_to`.
+fn post_to_own_process(t: &mut Table, name: &str, ours: bool, event: &CGEvent) {
+    let posted = if ours {
+        CGEvent::post(CGEventTapLocation::HIDEventTap, Some(event));
+        "HID event tap".to_owned()
+    } else {
+        match own_pid() {
+            Ok(pid) => {
+                CGEvent::post_to_pid(pid, Some(event));
+                format!("the probe's process {pid} (CGEventPostToPid)")
+            }
+            Err(e) => format!("not posted: {e}"),
+        }
+    };
+    out::put(t, &format!("{name}_posted_to"), out::text(posted));
+}
+
+/// The capture thread's release where the main thread's timer posted none:
+/// the mouse-up at `at` (Quartz's global points) and, where `escape` is set,
+/// an Escape down and up, each posted to the probe's process alone; what
+/// was posted.
+fn release_to_own_process(at: NSPoint, escape: bool) -> String {
+    let pid = match own_pid() {
+        Ok(pid) => pid,
+        Err(e) => return format!("nothing posted: {e}"),
+    };
+    let mut events = vec![CGEvent::new_mouse_event(
+        None,
+        CGEventType::LeftMouseUp,
+        at,
+        CGMouseButton::Left,
+    )];
+    if escape {
+        for key_down in [true, false] {
+            events.push(CGEvent::new_keyboard_event(None, ESCAPE_KEY_CODE, key_down));
+        }
+    }
+    let mut posted = 0_usize;
+    for event in events.iter().flatten() {
+        CGEvent::post_to_pid(pid, Some(event));
+        posted = posted.saturating_add(1);
+    }
+    format!(
+        "{posted} of {} events (the mouse-up{}) posted to process {pid}",
+        events.len(),
+        if escape { ", Escape down and up" } else { "" }
+    )
 }
 
 /// Where the cursor is parked: right of the window's frame, in AppKit's

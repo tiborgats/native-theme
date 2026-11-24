@@ -312,6 +312,33 @@ pub(super) fn superview(view: &NSView) -> Option<Retained<NSView>> {
     unsafe { view.superview() }
 }
 
+/// The process that owns window `number` (`kCGWindowOwnerPID` of its
+/// `CGWindowListCopyWindowInfo` entry); an error where the window server
+/// lists no such window or the entry has no owner.
+pub(super) fn window_owner_pid(number: isize) -> Result<i64, String> {
+    let id = u32::try_from(number).map_err(|e| format!("window number {number}: {e}"))?;
+    let list = objc2_core_graphics::CGWindowListCopyWindowInfo(
+        objc2_core_graphics::CGWindowListOption::OptionIncludingWindow,
+        id,
+    )
+    .ok_or_else(|| format!("CGWindowListCopyWindowInfo({id}) is NULL"))?;
+    // SAFETY: CGWindow.h documents the array's elements as CFDictionary
+    // objects whose keys are the kCGWindow* CFString constants; each value
+    // read is checked by `downcast` before it is used.
+    let list =
+        unsafe { CFRetained::cast_unchecked::<CFArray<CFDictionary<CFString, CFType>>>(list) };
+    let entry = list
+        .get(0)
+        .ok_or_else(|| format!("the window server lists no window {id}"))?;
+    // SAFETY: reads a CoreGraphics `extern` CFString constant.
+    let key = unsafe { objc2_core_graphics::kCGWindowOwnerPID };
+    entry
+        .get(key)
+        .and_then(|value| value.downcast::<objc2_core_foundation::CFNumber>().ok())
+        .and_then(|pid| pid.as_i64())
+        .ok_or_else(|| format!("window {id}'s entry has no kCGWindowOwnerPID number"))
+}
+
 /// `NSDefaultRunLoopMode`, the mode the probe pumps its events in.
 pub(super) fn default_run_loop_mode() -> &'static NSRunLoopMode {
     // SAFETY: reads a Foundation `extern` NSString constant.

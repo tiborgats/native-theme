@@ -25,7 +25,7 @@ on:
         required: false
         default: ""
       passes:
-        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, events, motion, motion-reduce-motion-off, colors, colors-highlight-red, probe-not-key, app-bundle, controls); empty runs every pass, each pass of each image a job of its own. The image's settings and wallpaper are recorded always"
+        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, events, motion, motion-reduce-motion-off, colors, colors-highlight-red, probe-not-key, app-bundle, controls, controls-accent); empty runs every pass, each pass of each image a job of its own. The image's settings and wallpaper are recorded always"
         required: false
         default: ""
       images:
@@ -85,7 +85,8 @@ jobs:
                    "probe-rt-off", "probe-contrast", "probe-tinting-off", "probe-rt-tinting-off",
                    "probe-accent", "probe-contrast-accent", "button-focus-accent", "reads",
                    "reads-accent", "reads-rtl", "events", "motion", "motion-reduce-motion-off",
-                   "colors", "colors-highlight-red", "probe-not-key", "app-bundle", "controls"]
+                   "colors", "colors-highlight-red", "probe-not-key", "app-bundle", "controls",
+                   "controls-accent"]
           asked = [p for p in os.environ["PASSES"].split(",") if p] or every
           unknown = [p for p in asked if p not in every]
           if unknown:
@@ -159,7 +160,8 @@ jobs:
                          "com.apple.universalaccess reduceMotion" \
                          "-g AppleReduceDesktopTinting" \
                          "-g AppleAccentColor" \
-                         "-g AppleKeyboardUIMode"; do
+                         "-g AppleKeyboardUIMode" \
+                         "-g com.apple.swipescrolldirection"; do
             set -- $setting
             value="$(defaults read "$1" "$2" 2>&1)"
             if [ $? -ne 0 ]; then
@@ -234,30 +236,64 @@ jobs:
       # The controls pass measures macOS's default look, so Reduce
       # Transparency, which the macOS 15 and 26 images turn on
       # (`reduceTransparency` 1 in the step above), is turned off for it on
-      # the runner VM (disposable; the probe itself only reads):
-      # button-pass-controls/settings.txt records the image's value, the
-      # write's exit status and the value read back, and the step fails where
-      # the read-back is not 0. The probe's own read,
+      # the runner VM (disposable; the probe itself only reads), for the
+      # controls and controls-accent passes:
+      # button-pass-<pass>/settings.txt records the image's value, the
+      # write's exit status and the value read back (read once), and the step
+      # fails where the read-back is not 0. The probe's own read,
       # accessibilityDisplayShouldReduceTransparency, is in probe.toml's
-      # [macos.environment.accessibility].
+      # [macos.environment.accessibility], and the controls step fails where
+      # it is not false.
       - name: Turn Reduce Transparency off for the controls pass (macOS)
-        if: runner.os == 'macOS' && matrix.pass == 'controls'
+        if: runner.os == 'macOS' && (matrix.pass == 'controls' || matrix.pass == 'controls-accent')
         run: |
           set +e
-          out=os-probe-out/button-pass-controls
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
           mkdir -p "$out"
+          defaults write com.apple.universalaccess reduceTransparency -bool false
+          status=$?
+          read_back="$(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
           {
             echo "image's reduceTransparency: $(cat "$RUNNER_TEMP/universalaccess/reduceTransparency" 2>/dev/null || echo 'not recorded')"
-            defaults write com.apple.universalaccess reduceTransparency -bool false
-            echo "write reduceTransparency false: exit $?"
-            echo "read back: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+            echo "write reduceTransparency false: exit $status"
+            echo "read back: $read_back"
           } > "$out/settings.txt" 2>&1
           cat "$out/settings.txt"
-          read_back="$(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
           if [ "$read_back" != "0" ]; then
             echo "::error::reduceTransparency reads back '$read_back', not 0"
             exit 1
           fi
+      # The red accent for the controls-accent pass (AppleAccentColor 0, as
+      # the button-accent pass sets it), before the probe starts, so AppKit
+      # reads it at launch: the image's value, the write's exit status and
+      # the value read back appended to button-pass-controls-accent/settings.txt;
+      # the step fails where the read-back is not 0. The VM is disposable, so
+      # the image's value is not restored.
+      - name: Set the red accent for the controls pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'controls-accent'
+        run: |
+          set +e
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
+          mkdir -p "$out"
+          defaults write -g AppleAccentColor -int 0
+          status=$?
+          read_back="$(defaults read -g AppleAccentColor 2>&1)"
+          {
+            echo "image's AppleAccentColor: $(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+            echo "write AppleAccentColor 0: exit $status"
+            echo "read back: $read_back"
+          } >> "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          if [ "$read_back" != "0" ]; then
+            echo "::error::AppleAccentColor reads back '$read_back', not 0"
+            exit 1
+          fi
+      # The probe's unit tests on the image (the controls pass's pure
+      # helpers among them, which need no window server), in the release
+      # profile the probe is built in.
+      - name: Test the probe (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'controls'
+        run: cargo test -p native-theme-os-probe --release
       # The controls pass (M2.FS4 of the 0.8.0 plan): the controls other than
       # the push buttons in one key window (check boxes, disclosure buttons, a
       # pop-up, a text field, a segmented control, a switch, a slider, two
@@ -275,13 +311,17 @@ jobs:
       # build fails, where the probe exits non-zero (it does where
       # [macos.button_pass] or [macos.button_pass.controls] or its
       # toolbar_sheet is missing or holds an error, or where every target of
-      # either sheet is in error) or wrote no probe.toml; the upload still
-      # runs.
+      # either sheet is in error, or where a state of either sheet is in
+      # error or lacks a capture) or wrote no probe.toml, and where its
+      # probe.toml does not read accessibilityDisplayShouldReduceTransparency
+      # false; the upload still runs. The controls-accent pass is the same
+      # pass with the red accent set before it, into
+      # button-pass-controls-accent/.
       - name: Run the controls pass (macOS)
-        if: runner.os == 'macOS' && matrix.pass == 'controls'
+        if: runner.os == 'macOS' && (matrix.pass == 'controls' || matrix.pass == 'controls-accent')
         run: |
           set +e
-          out=os-probe-out/button-pass-controls
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
           probe="$PWD/target/release/native-theme-os-probe"
           mkdir -p "$out"
           cargo build -p native-theme-os-probe --release
@@ -306,6 +346,10 @@ jobs:
           status=$?
           echo "probe: exit $status"
           if [ ! -s "$out/probe.toml" ]; then echo "no $out/probe.toml"; exit 1; fi
+          if ! grep -qx 'accessibilityDisplayShouldReduceTransparency = false' "$out/probe.toml"; then
+            echo "::error::$out/probe.toml does not hold accessibilityDisplayShouldReduceTransparency = false"
+            exit 1
+          fi
           exit $status
       # The symbols pass (pass MP-symbols of the 0.8.0 measurement plan; U102,
       # U324, U613): the SF Symbol configuration and image size AppKit gives

@@ -30,10 +30,11 @@
 //! radio buttons, a search field's cancel button, interrupted focus rings
 //! and carets; `--button-pass --events` posts clicks, drags, hovers and
 //! typing and reads what AppKit made of them; `--button-pass --controls`
-//! hovers and presses the other controls (check box, pop-up, disclosure,
-//! text field, tables, segmented control, slider, the knobs of a legacy and
-//! an overlay scroller, switch, tab view, split view, box, toolbar) over
-//! every backdrop, then the toolbar button again in a toolbar sheet whose
+//! hovers and presses the other controls (check boxes and radio buttons,
+//! pop-up, disclosure, text field, tables, segmented control, slider, the
+//! knobs of a legacy and an overlay scroller, switch, tab view, split view,
+//! box, toolbar) over every backdrop, captures disabled check boxes and
+//! radio buttons at rest, then the toolbar button again in a toolbar sheet whose
 //! content view lies under its transparent title bar; `--colors`, macOS only, the
 //! colours pass alone: every NSColor and Core Animation's colour
 //! interpolation.
@@ -72,7 +73,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events | --controls]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --controls, with --button-pass only: the other controls (the scrollers' knobs among them) hovered and pressed by posted mouse events over every backdrop, then the toolbar button in a toolbar sheet; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events | --controls]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --controls, with --button-pass only: the other controls (the scrollers' knobs and radio buttons among them) hovered and pressed by posted mouse events over every backdrop, disabled check boxes and radio buttons at rest, then the toolbar button in a toolbar sheet; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -328,11 +329,24 @@ fn run(options: &Options) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// The appearances the controls pass captures each sheet in: the keys of
+/// `APPEARANCES` in `macos.rs`.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+const CONTROLS_APPEARANCES: [&str; 2] = ["aqua", "darkAqua"];
+
+/// The keys of a state's captures over the black, white and grey backdrops
+/// (`Backdrop::key` in `macos/buttons.rs`); the one over the window's own
+/// background is the state's own `file` or its `window.file`.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+const OVER_BACKDROPS: [&str; 3] = ["over_black", "over_white", "over_grey"];
+
 /// Why the controls pass's output is a failure, where it is:
 /// `[macos.button_pass]` missing, not a table or holding an `error`;
 /// `[macos.button_pass.controls]` or its `toolbar_sheet` missing, not a
-/// table or holding an `error`; or either sheet with no target outside
-/// error.
+/// table or holding an `error`; either sheet with no target outside error;
+/// or, in either sheet, an appearance missing, recorded unavailable or
+/// holding an `error` (`appearance_table`'s cannot-create one), or a state's
+/// failure (`states_error`). A `targets` row's own `error` is no failure.
 #[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn pass_error(doc: &toml::Table) -> Option<String> {
     let pass = doc
@@ -347,6 +361,7 @@ fn pass_error(doc: &toml::Table) -> Option<String> {
             .ok_or(format!("{path} is missing"))
             .and_then(|controls| table_without_error(controls, path))?;
         targets_error(controls, path)?;
+        states_error(controls, path)?;
         Ok(controls)
     });
     controls
@@ -356,9 +371,126 @@ fn pass_error(doc: &toml::Table) -> Option<String> {
                 .get("toolbar_sheet")
                 .ok_or(format!("{path} is missing"))
                 .and_then(|toolbar| table_without_error(toolbar, path))?;
-            targets_error(toolbar, path)
+            targets_error(toolbar, path)?;
+            states_error(toolbar, path)
         })
         .err()
+}
+
+/// An error (the reason) where, in one of the sheet's appearances, its
+/// `normal` or `highlighted` state lacks one of its four captures, an
+/// `error` lies under `normal.backdrop_shows`, or a target placed in
+/// `targets` (no `error` of its own) lacks its `hovered.<target>` (unless
+/// its `hovered` is false) or, where its `pressed` is true, its
+/// `pressed.<target>`, or that state lacks one of its four captures or
+/// holds an `error` or a `window_at_press_is_ours = false` anywhere under it.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+fn states_error(sheet: &toml::Table, path: &str) -> Result<(), String> {
+    let placed: Vec<(&String, &toml::Table)> = sheet
+        .get("targets")
+        .and_then(toml::Value::as_table)
+        .map(|targets| {
+            targets
+                .iter()
+                .filter_map(|(name, t)| {
+                    t.as_table()
+                        .filter(|t| !t.contains_key("error"))
+                        .map(|t| (name, t))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    for key in CONTROLS_APPEARANCES {
+        let at = format!("{path}.{key}");
+        let appearance = sheet
+            .get(key)
+            .ok_or(format!("{at} is missing"))
+            .and_then(|a| table_without_error(a, &at))?;
+        let state = |names: &[&str]| -> Result<&toml::Table, String> {
+            let state_path = format!("{at}.{}", names.join("."));
+            names
+                .iter()
+                .try_fold(appearance, |t, name| {
+                    t.get(*name).and_then(toml::Value::as_table)
+                })
+                .ok_or(format!("{state_path} is missing or not a table"))
+        };
+        for name in ["normal", "highlighted"] {
+            captures_error(state(&[name])?, &format!("{at}.{name}"))?;
+        }
+        let shows = state(&["normal", "backdrop_shows"])?;
+        first_error(shows, &format!("{at}.normal.backdrop_shows"))?;
+        for (name, target) in &placed {
+            let flag = |k: &str| target.get(k).and_then(toml::Value::as_bool);
+            for (kind, wanted) in [
+                ("hovered", flag("hovered") != Some(false)),
+                ("pressed", flag("pressed") == Some(true)),
+            ] {
+                if wanted {
+                    let s = state(&[kind, name])?;
+                    let s_path = format!("{at}.{kind}.{name}");
+                    first_error(s, &s_path)?;
+                    captures_error(s, &s_path)?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// An error (the reason) where `state` lacks a capture: its own `file` or
+/// `window.file`, and `<backdrop>.file` for each of `OVER_BACKDROPS`.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+fn captures_error(state: &toml::Table, path: &str) -> Result<(), String> {
+    let file = |t: Option<&toml::Value>| {
+        t.and_then(|t| t.get("file"))
+            .and_then(toml::Value::as_str)
+            .is_some()
+    };
+    let window =
+        state.get("file").and_then(toml::Value::as_str).is_some() || file(state.get("window"));
+    let missing: Vec<&str> = std::iter::once(("window", window))
+        .chain(OVER_BACKDROPS.iter().map(|k| (*k, file(state.get(*k)))))
+        .filter(|(_, present)| !present)
+        .map(|(k, _)| k)
+        .collect();
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("{path} has no capture {}", missing.join(", ")))
+    }
+}
+
+/// An error (the reason) at the first `error` key, or
+/// `window_at_press_is_ours = false`, anywhere under `table`, its arrays
+/// included.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+fn first_error(table: &toml::Table, path: &str) -> Result<(), String> {
+    for (key, value) in table {
+        let at = format!("{path}.{key}");
+        if key == "error" {
+            return Err(format!("{at} = {value}"));
+        }
+        if key == "window_at_press_is_ours" && value.as_bool() == Some(false) {
+            return Err(format!("{at} = false: the press was skipped"));
+        }
+        value_error(value, &at)?;
+    }
+    Ok(())
+}
+
+/// `first_error` of `value` where it is a table, or of each table in it
+/// where it is an array.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+fn value_error(value: &toml::Value, path: &str) -> Result<(), String> {
+    match value {
+        toml::Value::Table(t) => first_error(t, path),
+        toml::Value::Array(items) => items
+            .iter()
+            .enumerate()
+            .try_for_each(|(i, item)| value_error(item, &format!("{path}[{i}]"))),
+        _ => Ok(()),
+    }
 }
 
 /// `value` as a table without an `error` key, or (as `Err`, the reason)
@@ -648,26 +780,267 @@ mod tests {
         assert!(parse(&["--button-pass", "--controls", "--not-key"]).is_err());
     }
 
-    /// A controls pass's output with a placed target in each sheet, and the
-    /// rest of `extra`.
-    fn controls_doc(extra: &str) -> Result<toml::Table, toml::de::Error> {
-        format!(
-            "[macos.button_pass.controls.targets.push]\nclass = \"NSButton\"\n\
-             [macos.button_pass.controls.toolbar_sheet.targets.toolbar_button]\nclass = \"NSButton\"\n{extra}"
-        )
-        .parse()
+    const CONTROLS: &str = "macos.button_pass.controls";
+    const TOOLBAR: &str = "macos.button_pass.controls.toolbar_sheet";
+
+    /// The four captures of a state at `path`: the window's own as the
+    /// state's `file` (`own`) or its `window.file`.
+    fn captures(path: &str, own: bool) -> String {
+        let mut text = if own {
+            format!("[{path}]\nfile = \"a.png\"\n")
+        } else {
+            format!("[{path}.window]\nfile = \"a.png\"\n")
+        };
+        for backdrop in OVER_BACKDROPS {
+            text.push_str(&format!("[{path}.{backdrop}]\nfile = \"b.png\"\n"));
+        }
+        text
+    }
+
+    /// One sheet at `sheet` with `targets` (name, hovered, pressed), each
+    /// placed, and every state of both appearances captured whole.
+    fn sheet_text(sheet: &str, targets: &[(&str, bool, bool)]) -> String {
+        let mut text = String::new();
+        for (name, hovered, pressed) in targets {
+            text.push_str(&format!(
+                "[{sheet}.targets.{name}]\nclass = \"NSButton\"\nhovered = {hovered}\npressed = {pressed}\n"
+            ));
+        }
+        for key in CONTROLS_APPEARANCES {
+            text.push_str(&captures(&format!("{sheet}.{key}.normal"), true));
+            text.push_str(&captures(&format!("{sheet}.{key}.highlighted"), true));
+            for (name, hovered, pressed) in targets {
+                text.push_str(&format!(
+                    "[{sheet}.{key}.normal.backdrop_shows.{name}]\ndiffering_pixels = 1\n"
+                ));
+                if *hovered {
+                    text.push_str(&captures(&format!("{sheet}.{key}.hovered.{name}"), true));
+                }
+                if *pressed {
+                    text.push_str(&captures(&format!("{sheet}.{key}.pressed.{name}"), false));
+                    text.push_str(&format!(
+                        "[{sheet}.{key}.pressed.{name}.over_black.cursor]\nwindow_under_cursor_is_ours = true\n\
+                         [{sheet}.{key}.pressed.{name}.window.press]\nwindow_at_press_is_ours = true\n"
+                    ));
+                }
+            }
+        }
+        text
+    }
+
+    /// A whole controls pass's output: in the controls sheet a pressed
+    /// target, a hovered one and one neither, in the toolbar sheet a
+    /// pressed one.
+    fn controls_doc() -> Result<toml::Table, String> {
+        let mut text = sheet_text(
+            CONTROLS,
+            &[
+                ("push", true, true),
+                ("box", true, false),
+                ("radio_disabled_on", false, false),
+            ],
+        );
+        text.push_str(&sheet_text(TOOLBAR, &[("toolbar_button", true, true)]));
+        text.parse().map_err(|e: toml::de::Error| e.to_string())
+    }
+
+    /// The table at `path` (dotted keys) in `doc`.
+    fn table_at<'a>(doc: &'a mut toml::Table, path: &str) -> Result<&'a mut toml::Table, String> {
+        path.split('.').try_fold(doc, |t, key| {
+            t.get_mut(key)
+                .and_then(toml::Value::as_table_mut)
+                .ok_or(format!("{path}: no table {key}"))
+        })
+    }
+
+    /// `Ok` where the output was a failure, else the error.
+    fn fails(failed: bool) -> Result<(), String> {
+        if failed {
+            Ok(())
+        } else {
+            Err("the output is no failure".to_owned())
+        }
+    }
+
+    /// `Ok` where `doc` is no failure, else its reason.
+    fn passes(doc: &toml::Table) -> Result<(), String> {
+        pass_error(doc).map_or(Ok(()), Err)
     }
 
     #[test]
-    fn a_controls_pass_with_a_placed_target_in_each_sheet_is_no_failure() {
-        assert!(matches!(
-            controls_doc("").map(|doc| pass_error(&doc)),
-            Ok(None)
-        ));
-        let one_in_error = controls_doc(
-            "[macos.button_pass.controls.targets.box]\nerror = \"unavailable: the part is empty\"\n",
-        );
-        assert!(matches!(one_in_error.map(|doc| pass_error(&doc)), Ok(None)));
+    fn a_whole_controls_pass_is_no_failure() -> Result<(), String> {
+        passes(&controls_doc()?)
+    }
+
+    #[test]
+    fn a_target_rows_own_error_is_no_failure() -> Result<(), String> {
+        let mut doc = controls_doc()?;
+        let row = table_at(&mut doc, &format!("{CONTROLS}.targets.box"))?;
+        row.insert("error".to_owned(), "unavailable: the part is empty".into());
+        for key in CONTROLS_APPEARANCES {
+            table_at(&mut doc, &format!("{CONTROLS}.{key}.hovered"))?.remove("box");
+        }
+        passes(&doc)
+    }
+
+    /// `edit` applied to a whole controls pass's output, and whether that
+    /// output is then a failure.
+    fn fails_after(edit: impl Fn(&mut toml::Table) -> Result<(), String>) -> Result<bool, String> {
+        let mut doc = controls_doc()?;
+        edit(&mut doc)?;
+        Ok(pass_error(&doc).is_some())
+    }
+
+    /// `key = value` set in the table at `path`.
+    fn set(doc: &mut toml::Table, path: &str, key: &str, value: toml::Value) -> Result<(), String> {
+        table_at(doc, path)?.insert(key.to_owned(), value);
+        Ok(())
+    }
+
+    /// The key `key` removed from the table at `path`.
+    fn remove(doc: &mut toml::Table, path: &str, key: &str) -> Result<(), String> {
+        table_at(doc, path)?
+            .remove(key)
+            .map(|_| ())
+            .ok_or(format!("{path} has no {key}"))
+    }
+
+    #[test]
+    fn an_error_under_a_hovered_or_pressed_target_is_a_failure() -> Result<(), String> {
+        let error = || toml::Value::from("unavailable: x");
+        fails(fails_after(|d| {
+            set(
+                d,
+                &format!("{CONTROLS}.aqua.hovered.push"),
+                "error",
+                error(),
+            )
+        })?)?;
+        fails(fails_after(|d| {
+            set(
+                d,
+                &format!("{CONTROLS}.darkAqua.pressed.push.over_black.cursor"),
+                "error",
+                error(),
+            )
+        })?)?;
+        fails(fails_after(|d| {
+            set(
+                d,
+                &format!("{TOOLBAR}.darkAqua.pressed.toolbar_button.window"),
+                "error",
+                error(),
+            )
+        })?)?;
+        fails(fails_after(|d| {
+            let mut scroll = toml::Table::new();
+            scroll.insert("error".to_owned(), error());
+            let scrolls = toml::Value::Array(vec![toml::Table::new().into(), scroll.into()]);
+            let mut reveal = toml::Table::new();
+            reveal.insert("scrolls".to_owned(), scrolls);
+            set(
+                d,
+                &format!("{CONTROLS}.aqua.hovered.box"),
+                "reveal",
+                reveal.into(),
+            )
+        })?)?;
+        Ok(())
+    }
+
+    #[test]
+    fn a_press_skipped_as_not_on_the_probes_window_is_a_failure() -> Result<(), String> {
+        fails(fails_after(|d| {
+            set(
+                d,
+                &format!("{CONTROLS}.aqua.pressed.push.window.press"),
+                "window_at_press_is_ours",
+                false.into(),
+            )
+        })?)?;
+        Ok(())
+    }
+
+    #[test]
+    fn an_appearance_unavailable_or_in_error_is_a_failure() -> Result<(), String> {
+        fails(fails_after(|d| {
+            set(
+                d,
+                CONTROLS,
+                "darkAqua",
+                "unavailable: appearanceNamed(NSAppearanceNameDarkAqua) is nil".into(),
+            )
+        })?)?;
+        fails(fails_after(|d| {
+            set(
+                d,
+                &format!("{TOOLBAR}.aqua"),
+                "error",
+                "unavailable: cannot create aqua/controls_toolbar".into(),
+            )
+        })?)?;
+        fails(fails_after(|d| remove(d, TOOLBAR, "aqua"))?)?;
+        Ok(())
+    }
+
+    #[test]
+    fn a_missing_capture_or_state_is_a_failure() -> Result<(), String> {
+        fails(fails_after(|d| {
+            remove(d, &format!("{CONTROLS}.aqua.normal"), "over_grey")
+        })?)?;
+        fails(fails_after(|d| {
+            remove(d, &format!("{CONTROLS}.darkAqua.highlighted"), "file")
+        })?)?;
+        fails(fails_after(|d| {
+            remove(d, &format!("{CONTROLS}.aqua.pressed.push.window"), "file")
+        })?)?;
+        fails(fails_after(|d| {
+            remove(
+                d,
+                &format!("{TOOLBAR}.darkAqua.pressed.toolbar_button.over_white"),
+                "file",
+            )
+        })?)?;
+        fails(fails_after(|d| {
+            remove(d, &format!("{CONTROLS}.aqua.pressed"), "push")
+        })?)?;
+        fails(fails_after(|d| {
+            remove(d, &format!("{CONTROLS}.darkAqua.hovered"), "box")
+        })?)?;
+        fails(fails_after(|d| {
+            remove(d, &format!("{CONTROLS}.aqua.normal"), "backdrop_shows")
+        })?)?;
+        Ok(())
+    }
+
+    #[test]
+    fn a_target_hovered_false_needs_no_hovered_state() -> Result<(), String> {
+        let mut doc = controls_doc()?;
+        let hovered = table_at(&mut doc, &format!("{CONTROLS}.aqua.hovered"))?;
+        if hovered.contains_key("radio_disabled_on") {
+            return Err("the output holds the target's hovered state".to_owned());
+        }
+        passes(&doc)?;
+        set(
+            &mut doc,
+            &format!("{CONTROLS}.targets.radio_disabled_on"),
+            "hovered",
+            true.into(),
+        )?;
+        fails(pass_error(&doc).is_some())
+    }
+
+    #[test]
+    fn a_backdrop_flag_that_disagrees_with_the_count_is_a_failure() -> Result<(), String> {
+        fails(fails_after(|d| {
+            set(
+                d,
+                &format!("{CONTROLS}.darkAqua.normal.backdrop_shows.push"),
+                "error",
+                "unavailable: over_backdrop is true, yet no pixel of the part differs".into(),
+            )
+        })?)?;
+        Ok(())
     }
 
     #[test]
