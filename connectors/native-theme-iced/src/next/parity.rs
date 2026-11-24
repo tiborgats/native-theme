@@ -3090,7 +3090,7 @@ fn compare_styles(
         let (old_theme, new_theme) = themes;
         let class_old = |l: Option<Listed>| {
             let source = l.map_or(b, |l| b.listed(l));
-            o::class_button(&source, to_color(fill), to_color(label), class)
+            o::class_button(&source, Some(to_color(fill)), Some(to_color(label)), class)
         };
         let old_fn = class_old(None);
         if let Some(new_fn) = report.mapped(name, new_fn) {

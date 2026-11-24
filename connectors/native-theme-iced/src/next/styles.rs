@@ -14,7 +14,8 @@ use native_theme::next::{
 };
 
 use super::borders::{
-    flagged, line, line_or_none, outline, outline_or_iced, radius, state_line, stroke_width,
+    flagged, line, line_or_none, outline, outline_or_iced, part_outline, radius, state_line,
+    stroke_width,
 };
 use super::{
     Mapped, Unmapped, fill, fill_of, state_fill, state_text_color, stated, text_color,
@@ -50,7 +51,10 @@ pub(crate) fn state_layer(part: &PartStyle, home: &'static str) -> Mapped<Option
 /// its state (its `from_state` bit clear) is `None`, and the state is then
 /// iced's own for that status (spec §2, `from_state`). A button that states
 /// no disabled opacity takes iced's own disabled look for each colour the
-/// theme leaves to iced (spec §10, rule 0).
+/// theme leaves to iced (spec §10, rule 0). The fill, the label and each
+/// border property at rest, of the plain and of the primary button, are
+/// `None` where the theme leaves them unstated, iced's own class's at rest
+/// there (spec §10, rule 0).
 fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let b = &r.button;
     let rest = b.body(WidgetState::NONE);
@@ -60,7 +64,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let primary = b.body(ButtonQuery::primary());
     let c = &r.colors;
     Ok(ButtonSource {
-        background: fill(&rest, "button.body(NONE).fill")?,
+        background: fill_of(&rest),
         hover_background: state_layer(&hover, "button.body(HOVER).fill")?,
         active_background: state_layer(&pressed, "button.body(PRESSED).fill")?,
         disabled_background: state_fill(
@@ -69,7 +73,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
         )?,
         checked_background: state_fill(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
         checked_primary: true,
-        label: text_color(&b.label(WidgetState::NONE), "button.label(NONE).color")?,
+        label: text_color_of(&b.label(WidgetState::NONE)),
         hover_label: state_text_color(&b.label(WidgetState::HOVER), "button.label(HOVER).color")?,
         active_label: state_text_color(
             &b.label(WidgetState::PRESSED),
@@ -84,8 +88,8 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             "button.label(CHECKED).color",
         )?,
         disabled_opacity: b.disabled_opacity,
-        border: outline!(rest, "button.body(NONE)")?,
-        primary_border: outline!(primary, "button.body(NONE; variant=Primary)")?,
+        border: part_outline!(rest, "button.body(NONE)")?,
+        primary_border: part_outline!(primary, "button.body(NONE; variant=Primary)")?,
         hover_border_color: state_line(&hover, "button.body(HOVER).stroke.color")?,
         pressed_border_color: state_line(&pressed, "button.body(PRESSED).stroke.color")?,
         primary_hover_border_color: state_line(
@@ -96,11 +100,8 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.body(ButtonQuery::primary().state(WidgetState::PRESSED)),
             "button.body(PRESSED; variant=Primary).stroke.color",
         )?,
-        primary_background: fill(&primary, "button.body(NONE; variant=Primary).fill")?,
-        primary_label: text_color(
-            &b.label(ButtonQuery::primary()),
-            "button.label(NONE; variant=Primary).color",
-        )?,
+        primary_background: fill_of(&primary),
+        primary_label: text_color_of(&b.label(ButtonQuery::primary())),
         default_background: state_fill(&default, "button.body(DEFAULT).fill")?,
         default_label: state_text_color(
             &b.label(WidgetState::DEFAULT),
@@ -164,7 +165,10 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -183,7 +187,10 @@ pub fn button(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_toggle(
     r: &ResolvedTheme,
     checked: bool,
@@ -207,7 +214,10 @@ pub fn button_toggle(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn toolbar_button(
     r: &ResolvedTheme,
     checked: bool,
@@ -225,7 +235,10 @@ pub fn toolbar_button(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_primary(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -238,7 +251,10 @@ pub fn button_primary(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_default(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -251,7 +267,10 @@ pub fn button_default(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_danger(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -260,8 +279,8 @@ pub fn button_danger(
     let role = &r.colors.error;
     Ok(old::class_button(
         &button_source(r)?,
-        to_color(role.fill),
-        to_color(role.foreground),
+        Some(to_color(role.fill)),
+        Some(to_color(role.foreground)),
         iced_widget::button::danger,
     ))
 }
@@ -271,7 +290,10 @@ pub fn button_danger(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_success(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -280,8 +302,8 @@ pub fn button_success(
     let role = &r.colors.success;
     Ok(old::class_button(
         &button_source(r)?,
-        to_color(role.fill),
-        to_color(role.foreground),
+        Some(to_color(role.fill)),
+        Some(to_color(role.foreground)),
         iced_widget::button::success,
     ))
 }
@@ -291,7 +313,10 @@ pub fn button_success(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the button needs.
+/// [`super::Unmapped`] where the theme states no window background or
+/// foreground, or states a value in a form iced cannot draw (a per-side
+/// stroke, a concentric radius); a value at rest it leaves unstated is
+/// iced's own class's (spec §10, rule 0).
 pub fn button_warning(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -300,28 +325,35 @@ pub fn button_warning(
     let role = &r.colors.warning;
     Ok(old::class_button(
         &button_source(r)?,
-        to_color(role.fill),
-        to_color(role.foreground),
+        Some(to_color(role.fill)),
+        Some(to_color(role.foreground)),
         iced_widget::button::warning,
     ))
 }
 
 /// [`crate::styles::button_link`]: faded when disabled by the theme's
 /// `colors.disabled_opacity`, the link stating none of its own. A hover
-/// fill no `HOVER` rule states is iced's own text button's.
+/// fill no `HOVER` rule states is iced's own text button's, and so is each
+/// of the fill and the label at rest and the disabled label the theme
+/// leaves unstated (spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the link needs.
+/// [`super::Unmapped`] where a state's fill is stated in a form iced cannot
+/// paint (a layered paint with no fallback colour).
 pub fn button_link(
     r: &ResolvedTheme,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<>,
 > {
+    Ok(old::button_link_from(&link_source(r)?))
+}
+
+/// [`LinkSource`] of the 0.8.0 model.
+fn link_source(r: &ResolvedTheme) -> Mapped<LinkSource> {
     let l = &r.link;
-    let idle = fill(&l.container(WidgetState::NONE), "link.container(NONE).fill")?;
-    Ok(old::button_link_from(&LinkSource {
-        background: idle,
+    Ok(LinkSource {
+        background: fill_of(&l.container(WidgetState::NONE)),
         hover_background: state_layer(
             &l.container(WidgetState::HOVER),
             "link.container(HOVER).fill",
@@ -329,20 +361,16 @@ pub fn button_link(
         pressed_background: state_layer(
             &l.container(WidgetState::PRESSED),
             "link.container(PRESSED).fill",
-        )?
-        .map(|pressed| pressed.over(idle)),
-        label: text_color(&l.label(WidgetState::NONE), "link.label(NONE).color")?,
+        )?,
+        label: text_color_of(&l.label(WidgetState::NONE)),
         hover_label: state_text_color(&l.label(WidgetState::HOVER), "link.label(HOVER).color")?,
         active_label: state_text_color(
             &l.label(WidgetState::PRESSED),
             "link.label(PRESSED).color",
         )?,
-        disabled_label: text_color(
-            &l.label(WidgetState::DISABLED),
-            "link.label(DISABLED).color",
-        )?,
+        disabled_label: text_color_of(&l.label(WidgetState::DISABLED)),
         disabled_opacity: r.colors.disabled_opacity,
-    }))
+    })
 }
 
 /// [`InputSource`] of the 0.8.0 model, of the field `$w` of `$r` (`input`

@@ -308,6 +308,50 @@ impl Outline {
     }
 }
 
+/// A border of which the theme may leave a property unstated: the stroke
+/// with its width, and the corners, each `None` where unstated, which is
+/// iced's own there (spec §10, rule 0); [`Self::or`] completes it with
+/// iced's own border of the widget.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct PartOutline {
+    pub stroke: Option<(Line, f32)>,
+    pub radius: Option<Radius>,
+}
+
+impl PartOutline {
+    /// This border, each property the theme leaves unstated `iced`'s.
+    pub(crate) fn or(self, iced: Border) -> Outline {
+        let (line, width) = self
+            .stroke
+            .unwrap_or((Line::outside(iced.color), iced.width));
+        Outline {
+            line,
+            width,
+            radius: self.radius.unwrap_or(iced.radius),
+        }
+    }
+
+    /// [`Outline::aligned`] of the stroke, where stated.
+    #[cfg(test)]
+    pub(crate) fn aligned(self, align: LineAlign) -> Self {
+        Self {
+            stroke: self
+                .stroke
+                .map(|(line, width)| (line.aligned(align), width)),
+            ..self
+        }
+    }
+}
+
+impl From<Outline> for PartOutline {
+    fn from(outline: Outline) -> Self {
+        Self {
+            stroke: Some((outline.line, outline.width)),
+            radius: Some(outline.radius),
+        }
+    }
+}
+
 /// One property of a widget in a status: `stated`, what the theme states
 /// for the status's state, where it states it (its `from_state` bit set,
 /// queried with that state's flag alone); else the toolkit's own treatment
@@ -448,10 +492,12 @@ pub fn button(
 /// iced's own for that status (spec §2, `from_state`), never the idle fill
 /// composited over itself; the disabled look where the theme states no
 /// opacity is iced's own too (spec §10, rule 0). The 0.7.2 model states
-/// both.
+/// both. A fill, a label or a border property at rest the theme leaves
+/// unstated is `None`, iced's own class's at rest (spec §10, rule 0); the
+/// 0.7.2 model states each.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ButtonSource {
-    pub background: Color,
+    pub background: Option<Color>,
     pub hover_background: Option<Layer>,
     /// The pressed fill: 0.7.2's `active_background`, its hover layer where
     /// that is unset, which its connector drew as the pressed one.
@@ -466,17 +512,17 @@ pub(crate) struct ButtonSource {
     /// the label at rest (0.8.0: spec §10, rule 0a), else in the pressed one
     /// (0.7.2).
     pub checked_primary: bool,
-    pub label: Color,
+    pub label: Option<Color>,
     pub hover_label: Option<Color>,
     pub active_label: Option<Color>,
     /// The disabled label where the theme states one.
     pub disabled_label: Option<Color>,
     pub checked_label: Option<Color>,
     pub disabled_opacity: Option<f32>,
-    pub border: Outline,
+    pub border: PartOutline,
     /// The primary button's own border: 0.7.2's `border`, which the model
     /// gives every button.
-    pub primary_border: Outline,
+    pub primary_border: PartOutline,
     pub hover_border_color: Option<Line>,
     /// The border of a pressed button: 0.7.2's `hover_border_color`, which a
     /// pressed button keeps.
@@ -485,8 +531,8 @@ pub(crate) struct ButtonSource {
     /// `hover_border_color`, which the model gives every button.
     pub primary_hover_border_color: Option<Line>,
     pub primary_pressed_border_color: Option<Line>,
-    pub primary_background: Color,
-    pub primary_label: Color,
+    pub primary_background: Option<Color>,
+    pub primary_label: Option<Color>,
     pub default_background: Option<Color>,
     pub default_label: Option<Color>,
     pub default_border_color: Option<Line>,
@@ -504,26 +550,26 @@ impl ButtonSource {
         let line = |c: Option<Rgba>| c.map(|c| Line::outside(to_color(c)));
         let hover = to_color(b.hover_background);
         Self {
-            background: to_color(b.background_color),
+            background: Some(to_color(b.background_color)),
             hover_background: Some(Layer::Color(hover)),
             active_background: Some(Layer::Color(b.active_background.map_or(hover, to_color))),
             disabled_background: b.disabled_background.map(to_color),
             checked_background: b.checked_background.map(to_color),
             checked_primary: false,
-            label: to_color(b.font.color),
+            label: Some(to_color(b.font.color)),
             hover_label: Some(to_color(b.hover_text_color)),
             active_label: Some(to_color(b.active_text_color)),
             disabled_label: Some(to_color(b.disabled_text_color)),
             checked_label: b.checked_text_color.map(to_color),
             disabled_opacity: Some(b.disabled_opacity),
-            border: Outline::of(&b.border),
-            primary_border: Outline::of(&b.border),
+            border: Outline::of(&b.border).into(),
+            primary_border: Outline::of(&b.border).into(),
             hover_border_color: line(b.hover_border_color),
             pressed_border_color: line(b.hover_border_color),
             primary_hover_border_color: line(b.hover_border_color),
             primary_pressed_border_color: line(b.hover_border_color),
-            primary_background: to_color(b.primary_background),
-            primary_label: to_color(b.primary_text_color),
+            primary_background: Some(to_color(b.primary_background)),
+            primary_label: Some(to_color(b.primary_text_color)),
             default_background: b.default_button_background.map(to_color),
             default_label: b.default_button_text_color.map(to_color),
             default_border_color: line(b.default_button_border_color),
@@ -535,7 +581,8 @@ impl ButtonSource {
     /// The border a button shows in `status` over `fill`: under the pointer
     /// the hover stroke where the theme states one, pressed the pressed one,
     /// else [`Outline::in_state`] against `class`, the iced class the button
-    /// replaces; the one at rest at rest and disabled.
+    /// replaces; the one at rest at rest and disabled. Each property of the
+    /// border at rest the theme leaves unstated is `class`'s at rest.
     fn border_at(
         &self,
         theme: &Theme,
@@ -548,20 +595,32 @@ impl ButtonSource {
             class(theme, Status::Active).border,
             class(theme, status).border,
         );
+        let border = self.border.or(iced.0);
         match status {
-            Status::Active | Status::Disabled => self.border.over(fill),
-            Status::Hovered => self.border.in_state(self.hover_border_color, fill, iced),
-            Status::Pressed => self.border.in_state(self.pressed_border_color, fill, iced),
+            Status::Active | Status::Disabled => border.over(fill),
+            Status::Hovered => border.in_state(self.hover_border_color, fill, iced),
+            Status::Pressed => border.in_state(self.pressed_border_color, fill, iced),
         }
     }
 
-    /// The hovered and the pressed fill: each layer over the idle fill (a
+    /// The fill, the label and the border at rest, each the theme leaves
+    /// unstated iced's own neutral class's at rest (spec §10, rule 0).
+    fn at_rest(&self, theme: &Theme) -> (Color, Color, Outline) {
+        let own = iced_widget::button::secondary(theme, iced_widget::button::Status::Active);
+        (
+            self.background.unwrap_or(painted(own.background)),
+            self.label.unwrap_or(own.text_color),
+            self.border.or(own.border),
+        )
+    }
+
+    /// The hovered and the pressed fill: each layer over the `idle` fill (a
     /// whole fill as it is, [`Layer::over`]). A
     /// layer `None` is a state the theme states no fill for, whose fill is
     /// then as [`in_state`] gives it against iced's own (spec §2,
     /// `from_state`; spec §10, rule 0).
-    fn layered(&self) -> (Option<Color>, Option<Color>) {
-        let over = |layer: Option<Layer>| layer.map(|layer| layer.over(self.background));
+    fn layered(&self, idle: Color) -> (Option<Color>, Option<Color>) {
+        let over = |layer: Option<Layer>| layer.map(|layer| layer.over(idle));
         (over(self.hover_background), over(self.active_background))
     }
 
@@ -624,16 +683,14 @@ pub(crate) fn button_from(
     use iced_widget::button::{Status, Style};
 
     let source = *b;
-    let idle = b.background;
-    let (hovered, pressed) = b.layered();
-
-    let label = b.label;
     let hovered_label = b.hover_label;
     let pressed_label = b.active_label;
     let opacity = b.disabled_opacity;
 
     move |theme, status| {
         let iced = Style::default();
+        let (idle, label, outline) = source.at_rest(theme);
+        let (hovered, pressed) = source.layered(idle);
         // Each of the fill, the label and the stroke the theme states
         // nothing for in a state is as [`in_state`] gives it against iced's
         // own neutral class.
@@ -648,18 +705,11 @@ pub(crate) fn button_from(
                 (own.0.background, own.1.background),
             );
             let text = in_state(text, label, (own.0.text_color, own.1.text_color));
-            let border =
-                source
-                    .border
-                    .in_state(line, painted(background), (own.0.border, own.1.border));
+            let border = outline.in_state(line, painted(background), (own.0.border, own.1.border));
             (background, text, border)
         };
         let (background, text_color, border) = match status {
-            Status::Active => (
-                Some(Background::Color(idle)),
-                label,
-                source.border.over(idle),
-            ),
+            Status::Active => (Some(Background::Color(idle)), label, outline.over(idle)),
             Status::Hovered => state(hovered, hovered_label, source.hover_border_color),
             Status::Pressed => state(pressed, pressed_label, source.pressed_border_color),
             // A translucent disabled fill replaces the idle one and lets the
@@ -671,7 +721,7 @@ pub(crate) fn button_from(
                     idle,
                     source.disabled_label,
                     label,
-                    source.border,
+                    outline,
                     opacity,
                 );
                 (Some(Background::Color(fill)), label, border)
@@ -745,13 +795,11 @@ pub(crate) fn button_toggle_from(
         // (spec §10, rule 0a: "a stated `CHECKED` fill is lettered in the
         // stated `CHECKED` label, else in the label at rest"); on 0.7.2's,
         // the pressed one the theme states, else the label at rest.
+        let (_, rest_label, outline) = source.at_rest(theme);
         let (fill, label) = match source.checked_background {
             Some(fill) => {
                 let pressed = source.active_label.filter(|_| !source.checked_primary);
-                (
-                    fill,
-                    source.checked_label.or(pressed).unwrap_or(source.label),
-                )
+                (fill, source.checked_label.or(pressed).unwrap_or(rest_label))
             }
             None => {
                 let shown = if source.checked_primary {
@@ -769,7 +817,6 @@ pub(crate) fn button_toggle_from(
                 )
             }
         };
-        let outline = source.border;
         let (background, text_color, border) = match status {
             Status::Active | Status::Hovered | Status::Pressed => (
                 fill,
@@ -781,7 +828,7 @@ pub(crate) fn button_toggle_from(
                     source.disabled_background,
                     fill,
                     source.disabled_label,
-                    source.label,
+                    rest_label,
                     outline,
                     opacity,
                 ),
@@ -953,25 +1000,20 @@ pub(crate) fn toolbar_button_from(
     let pressed = t.active_background.map(Layer::as_given);
     let checked_fill = t.checked_background;
 
-    let push_labels = (
-        b.label,
-        b.hover_label,
-        b.active_label,
-        b.checked_label,
-        b.disabled_label,
-    );
     let disabled_opacity = b.disabled_opacity;
 
-    let outline = Outline {
-        line: Line::outside(Color::TRANSPARENT),
-        ..b.border
-    };
+    let source = *b;
     let t = *t;
     let primary = button_primary_from(b);
     let checked_primary = b.checked_primary;
 
     move |theme, status| {
         let iced = Style::default();
+        let (_, push_label, push_outline) = source.at_rest(theme);
+        let outline = Outline {
+            line: Line::outside(Color::TRANSPARENT),
+            ..push_outline
+        };
         // On the 0.8.0 model the toolbar's own labels, an unstated label at
         // rest iced's own neutral class's; on 0.7.2's the push button's.
         let (label, hover_label, active_label, checked_label, disabled_label) = match t.labels {
@@ -984,7 +1026,13 @@ pub(crate) fn toolbar_button_from(
                 l.checked,
                 l.disabled,
             ),
-            None => push_labels,
+            None => (
+                push_label,
+                source.hover_label,
+                source.active_label,
+                source.checked_label,
+                source.disabled_label,
+            ),
         };
         // A disabled label the theme leaves to iced is the label at rest, faded
         // by the theme's disabled opacity as `button_from` fades it, or as
@@ -1073,52 +1121,58 @@ pub(crate) fn toolbar_button_from(
 /// where the platform states a disabled fill, which it gives every button
 /// class; where it states none it dims by opacity alone
 /// (`docs/platform-facts.md` §2.1.6), and the class keeps its idle pair. Either
-/// is faded by `button.disabled_opacity` (see [`faded`]).
+/// is faded by `button.disabled_opacity` (see [`faded`]). A fill, a label
+/// or a border property at rest the theme leaves unstated (`None`) is
+/// `class`'s at rest (spec §10, rule 0).
 pub(crate) fn class_button(
     b: &ButtonSource,
-    fill: Color,
-    label: Color,
+    fill: Option<Color>,
+    label: Option<Color>,
     class: fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style,
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
-    let idle = fill;
-    let idle_label = label;
-    let disabled = match b.disabled_background {
-        Some(_) => (b.disabled_background, idle, b.disabled_label, b.label),
-        None => (None, idle, None, idle_label),
-    };
     let opacity = b.disabled_opacity;
     let source = *b;
 
     move |theme, status| {
         let iced = class(theme, status);
+        let own = class(theme, Status::Active);
+        let idle = fill.unwrap_or(painted(own.background));
+        let idle_label = label.unwrap_or(own.text_color);
+        let outline = source.border.or(own.border);
         let (background, text_color, border) = match status {
             Status::Active => (
                 Some(Background::Color(idle)),
                 idle_label,
-                source.border.over(idle),
+                outline.over(idle),
             ),
             // Neither the fill nor the label of these two states has a native
             // source, so each is as [`in_state`] gives it against this
             // class.
             Status::Hovered | Status::Pressed => {
-                let rest = class(theme, Status::Active);
                 let background = in_state(
                     None,
                     Some(Background::Color(idle)),
-                    (rest.background, iced.background),
+                    (own.background, iced.background),
                 );
                 (
                     background,
-                    in_state(None, idle_label, (rest.text_color, iced.text_color)),
+                    in_state(None, idle_label, (own.text_color, iced.text_color)),
                     source.border_at(theme, status, painted(background), class),
                 )
             }
             Status::Disabled => {
-                let (fill, idle, label, idle_label) = disabled;
+                let (fill, label, idle_label) = match source.disabled_background {
+                    Some(_) => (
+                        source.disabled_background,
+                        source.disabled_label,
+                        source.at_rest(theme).1,
+                    ),
+                    None => (None, None, idle_label),
+                };
                 let (fill, label, border) =
-                    disabled_button(fill, idle, label, idle_label, source.border, opacity);
+                    disabled_button(fill, idle, label, idle_label, outline, opacity);
                 (Some(Background::Color(fill)), label, border)
             }
         };
@@ -1174,18 +1228,22 @@ pub(crate) fn button_primary_from(
         iced_widget::button::primary,
     );
 
-    let primary = iced_core::theme::palette::Primary::generate(
-        b.primary_background,
-        b.window_background,
-        b.window_text,
-    );
-    let hovered = primary.strong.color;
-    let pressed = primary.base.color;
+    // Where the theme states no primary fill, the class's own hovered and
+    // pressed fills, as [`class_button`] gives them from iced's own fill at
+    // rest.
+    let generated = b.primary_background.map(|fill| {
+        let primary =
+            iced_core::theme::palette::Primary::generate(fill, b.window_background, b.window_text);
+        (primary.strong.color, primary.base.color)
+    });
     let label = b.primary_label;
     let source = *b;
 
     move |theme, status| {
         let style = class(theme, status);
+        let Some((hovered, pressed)) = generated else {
+            return style;
+        };
         let background = match status {
             Status::Hovered => hovered,
             Status::Pressed => pressed,
@@ -1193,7 +1251,7 @@ pub(crate) fn button_primary_from(
         };
         Style {
             background: Some(Background::Color(background)),
-            text_color: label,
+            text_color: label.unwrap_or(style.text_color),
             border: source.border_at(theme, status, background, iced_widget::button::primary),
             ..style
         }
@@ -1230,15 +1288,17 @@ pub(crate) fn button_default_from(
     let primary = button_primary_from(b);
 
     let fill = b.default_background;
-    let label = b.default_label.unwrap_or(b.label);
-    let border = b.border.with(b.default_border_color);
-    let hovered_border = border.with(b.hover_border_color);
-    let pressed_border = border.with(b.pressed_border_color);
+    let source = *b;
 
     move |theme, status| {
         let Some(fill) = fill else {
             return primary(theme, status);
         };
+        let (_, rest_label, outline) = source.at_rest(theme);
+        let label = source.default_label.unwrap_or(rest_label);
+        let border = outline.with(source.default_border_color);
+        let hovered_border = border.with(source.hover_border_color);
+        let pressed_border = border.with(source.pressed_border_color);
         let rest = plain(theme, Status::Active);
         match status {
             Status::Active => Style {
@@ -1277,8 +1337,8 @@ pub fn button_danger(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         &ButtonSource::of(resolved),
-        to_color(resolved.defaults.danger_color),
-        to_color(resolved.defaults.danger_text_color),
+        Some(to_color(resolved.defaults.danger_color)),
+        Some(to_color(resolved.defaults.danger_text_color)),
         iced_widget::button::danger,
     )
 }
@@ -1294,8 +1354,8 @@ pub fn button_success(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         &ButtonSource::of(resolved),
-        to_color(resolved.defaults.success_color),
-        to_color(resolved.defaults.success_text_color),
+        Some(to_color(resolved.defaults.success_color)),
+        Some(to_color(resolved.defaults.success_text_color)),
         iced_widget::button::success,
     )
 }
@@ -1311,8 +1371,8 @@ pub fn button_warning(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         &ButtonSource::of(resolved),
-        to_color(resolved.defaults.warning_color),
-        to_color(resolved.defaults.warning_text_color),
+        Some(to_color(resolved.defaults.warning_color)),
+        Some(to_color(resolved.defaults.warning_text_color)),
         iced_widget::button::warning,
     )
 }
@@ -1340,18 +1400,21 @@ pub fn button_link(
 
 /// What [`button_link`] reads, of either model. A hover or pressed fill or
 /// label `None` is iced's own text button's for the status (spec §2,
-/// `from_state`).
+/// `from_state`). The fill and the label at rest and the disabled label the
+/// theme leaves unstated are `None`, iced's own text button's (spec §10,
+/// rule 0); the 0.7.2 model states each.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct LinkSource {
-    pub background: Color,
+    pub background: Option<Color>,
     /// The hover layer over the idle fill.
     pub hover_background: Option<Layer>,
-    /// The fill of a pressed link, as painted: the 0.7.2 model's idle one.
-    pub pressed_background: Option<Color>,
-    pub label: Color,
+    /// The pressed layer over the idle fill: on the 0.7.2 model the idle
+    /// fill itself.
+    pub pressed_background: Option<Layer>,
+    pub label: Option<Color>,
     pub hover_label: Option<Color>,
     pub active_label: Option<Color>,
-    pub disabled_label: Color,
+    pub disabled_label: Option<Color>,
     pub disabled_opacity: f32,
 }
 
@@ -1360,13 +1423,13 @@ impl LinkSource {
     pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let l = &resolved.link;
         Self {
-            background: to_color(l.background_color),
+            background: Some(to_color(l.background_color)),
             hover_background: Some(Layer::Color(to_color(l.hover_background))),
-            pressed_background: Some(to_color(l.background_color)),
-            label: to_color(l.font.color),
+            pressed_background: Some(Layer::Whole(to_color(l.background_color))),
+            label: Some(to_color(l.font.color)),
             hover_label: Some(to_color(l.hover_text_color)),
             active_label: Some(to_color(l.active_text_color)),
-            disabled_label: to_color(l.disabled_text_color),
+            disabled_label: Some(to_color(l.disabled_text_color)),
             // `LinkTheme` states no `disabled_opacity`: the defaults' fades it.
             disabled_opacity: resolved.defaults.disabled_opacity,
         }
@@ -1393,23 +1456,28 @@ pub(crate) fn button_link_from(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
-    let idle = Some(Background::Color(l.background));
-    let hovered = l
-        .hover_background
-        .map(|hover| Background::Color(hover.over(l.background)));
-    let pressed = l.pressed_background.map(Background::Color);
-
-    let label = l.label;
+    let source = *l;
     let hovered_label = l.hover_label;
     let pressed_label = l.active_label;
-    let disabled_label = faded(l.disabled_label, l.disabled_opacity);
+    let disabled_label = l
+        .disabled_label
+        .map(|label| faded(label, l.disabled_opacity));
 
     move |theme, status| {
         let iced = iced_widget::button::text(theme, status);
         // Each of the fill and the label the theme states nothing for in a
         // hover or a press is as [`in_state`] gives it against iced's own
-        // text button.
+        // text button, as is each at rest and the disabled label where the
+        // theme leaves it unstated.
         let rest = iced_widget::button::text(theme, Status::Active);
+        let idle = source.background.map(Background::Color).or(rest.background);
+        let label = source.label.unwrap_or(rest.text_color);
+        let layered =
+            |layer: Option<Layer>| layer.map(|layer| Background::Color(layer.over(painted(idle))));
+        let (hovered, pressed) = (
+            layered(source.hover_background),
+            layered(source.pressed_background),
+        );
         let own = |fill: Option<Background>, text: Option<Color>| {
             (
                 in_state(fill.map(Some), idle, (rest.background, iced.background)),
@@ -1420,7 +1488,7 @@ pub(crate) fn button_link_from(
             Status::Active => (idle, label),
             Status::Hovered => own(hovered, hovered_label),
             Status::Pressed => own(pressed, pressed_label),
-            Status::Disabled => (idle, disabled_label),
+            Status::Disabled => (idle, disabled_label.unwrap_or(iced.text_color)),
         };
         Style {
             background,

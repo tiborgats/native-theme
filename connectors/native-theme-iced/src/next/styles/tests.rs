@@ -151,7 +151,7 @@ fn a_toolbar_button_reads_the_toolbar_labels() -> TestResult {
     let (mut stated, mut left) = (0, 0);
     for (preset, r) in every_preset() {
         let mut b = super::button_source(&r)?;
-        b.label = push;
+        b.label = Some(push);
         b.hover_label = Some(push);
         b.active_label = Some(push);
         b.checked_label = Some(push);
@@ -2116,6 +2116,111 @@ fn a_card_keeps_iceds_own_per_property() -> TestResult {
         {
             assert_eq!(card.border, iced_container().border, "{preset:?}");
         }
+    }
+    Ok(())
+}
+
+/// The plain and the primary button keep iced's own class's look at rest
+/// per property (spec §10, rule 0), not as a whole: with the fill at rest
+/// unstated, iced's own fill and the theme's label; with the label
+/// unstated, iced's own label and the theme's fill; with the stroke and the
+/// corners unstated, iced's own border and the theme's fill.
+#[test]
+fn a_button_keeps_iceds_own_per_property_at_rest() -> TestResult {
+    use crate::styles::{ButtonSource, PartOutline, button_from, button_primary_from};
+    use iced_widget::button::{Status, primary, secondary};
+    let unlined = PartOutline {
+        stroke: None,
+        radius: None,
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let b = super::button_source(&r)?;
+        let at_rest = |source: &ButtonSource| button_from(source)(&theme, Status::Active);
+        let stated = at_rest(&b);
+        let own = secondary(&theme, Status::Active);
+
+        let s = at_rest(&ButtonSource {
+            background: None,
+            ..b
+        });
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+        let s = at_rest(&ButtonSource { label: None, ..b });
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+        let s = at_rest(&ButtonSource {
+            border: unlined,
+            ..b
+        });
+        assert_eq!(s.border, own.border, "{preset:?} border");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+
+        let at_rest = |source: &ButtonSource| button_primary_from(source)(&theme, Status::Active);
+        let stated = at_rest(&b);
+        let own = primary(&theme, Status::Active);
+        let s = at_rest(&ButtonSource {
+            primary_background: None,
+            ..b
+        });
+        assert_eq!(s.background, own.background, "{preset:?} primary fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} primary label");
+        let s = at_rest(&ButtonSource {
+            primary_label: None,
+            ..b
+        });
+        assert_eq!(s.text_color, own.text_color, "{preset:?} primary label");
+        assert_eq!(s.background, stated.background, "{preset:?} primary fill");
+        let s = at_rest(&ButtonSource {
+            primary_border: unlined,
+            ..b
+        });
+        assert_eq!(s.border, own.border, "{preset:?} primary border");
+        assert_eq!(s.background, stated.background, "{preset:?} primary fill");
+    }
+    Ok(())
+}
+
+/// The link keeps iced's own text button's look per property (spec §10,
+/// rule 0): with the fill at rest unstated, iced's own fill and the
+/// theme's label; with the label at rest unstated, iced's own label and
+/// the theme's fill; with the disabled label unstated, iced's own disabled
+/// label.
+#[test]
+fn a_link_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{LinkSource, button_link_from};
+    use iced_widget::button::{Status, text};
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let l = super::link_source(&r)?;
+        let at = |source: &LinkSource, status| button_link_from(source)(&theme, status);
+        let stated = at(&l, Status::Active);
+        let own = text(&theme, Status::Active);
+
+        let s = at(
+            &LinkSource {
+                background: None,
+                ..l
+            },
+            Status::Active,
+        );
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+        let s = at(&LinkSource { label: None, ..l }, Status::Active);
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+        let s = at(
+            &LinkSource {
+                disabled_label: None,
+                ..l
+            },
+            Status::Disabled,
+        );
+        assert_eq!(
+            s.text_color,
+            text(&theme, Status::Disabled).text_color,
+            "{preset:?} disabled label"
+        );
     }
     Ok(())
 }
