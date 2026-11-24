@@ -160,8 +160,9 @@ fn drop_shadow(part: &PartStyle, home: &'static str) -> Option<DropShadow> {
 
 /// [`BaseSource`] of the 0.8.0 model. The scroll bar's thumb at rest is the handle of a view
 /// without the focus, where 0.7.2's `scrollbar.thumb_color` lives on kde-breeze; a theme with
-/// no rule for that state returns its plain thumb there. A caption or headline style the
-/// typography does not define is the body's (the table's `home_fallback`).
+/// no rule for that state returns its plain thumb there. A caption or headline style is laid
+/// over the body (`Typography::over_body`); one the typography does not define is the body's
+/// (the table's `home_fallback`).
 pub(crate) fn base_source(r: &ResolvedTheme) -> BaseSource {
     let c = &r.colors;
     let t = &r.typography;
@@ -175,14 +176,14 @@ pub(crate) fn base_source(r: &ResolvedTheme) -> BaseSource {
     BaseSource {
         sizes: [
             size(
-                t.caption.as_ref().unwrap_or(&t.body),
+                &t.over_body(t.caption.as_ref()),
                 "typography.caption.size_px",
             ),
             size(&t.body, "typography.body.size_px"),
             size(&t.monospace, "typography.monospace.size_px"),
             size(&b.label(WidgetState::NONE), "button.label(NONE).size_px"),
             size(
-                t.headline.as_ref().unwrap_or(&t.body),
+                &t.over_body(t.headline.as_ref()),
                 "typography.headline.size_px",
             ),
         ],

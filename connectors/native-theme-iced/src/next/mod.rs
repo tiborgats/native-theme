@@ -416,31 +416,33 @@ pub fn icon_sizes(r: &ResolvedTheme) -> &IconSizes {
 }
 
 /// The four text roles of 0.7.2's `text_scale`, each the typography's style
-/// at its home, or the body's where the theme defines no such role (the
-/// table of homes, rows `text_scale.*`, `home_fallback`).
-#[derive(Clone, Copy, Debug)]
-pub struct TextScale<'a> {
+/// at its home laid over the body (`Typography::over_body`), or the body's
+/// where the theme defines no such role (the table of homes, rows
+/// `text_scale.*`, `home_fallback`).
+#[derive(Clone, Debug)]
+pub struct TextScale {
     /// `typography.caption`.
-    pub caption: &'a TextStyle,
+    pub caption: TextStyle,
     /// `typography.headline`.
-    pub section_heading: &'a TextStyle,
+    pub section_heading: TextStyle,
     /// `typography.title1`.
-    pub dialog_title: &'a TextStyle,
+    pub dialog_title: TextStyle,
     /// `typography.display`.
-    pub display: &'a TextStyle,
+    pub display: TextStyle,
 }
 
 /// [`crate::text_scale`]: the four text roles 0.7.2 names, each a size,
 /// weight and line height as the theme states them, already scaled by the
-/// text scale the theme was resolved for.
+/// text scale the theme was resolved for, in the body's family, colour and
+/// slant where the role states none.
 #[must_use]
-pub fn text_scale(r: &ResolvedTheme) -> TextScale<'_> {
+pub fn text_scale(r: &ResolvedTheme) -> TextScale {
     let t = &r.typography;
     TextScale {
-        caption: t.caption.as_ref().unwrap_or(&t.body),
-        section_heading: t.headline.as_ref().unwrap_or(&t.body),
-        dialog_title: t.title1.as_ref().unwrap_or(&t.body),
-        display: t.display.as_ref().unwrap_or(&t.body),
+        caption: t.over_body(t.caption.as_ref()),
+        section_heading: t.over_body(t.headline.as_ref()),
+        dialog_title: t.over_body(t.title1.as_ref()),
+        display: t.over_body(t.display.as_ref()),
     }
 }
 

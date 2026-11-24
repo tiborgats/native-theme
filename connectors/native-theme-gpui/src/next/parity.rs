@@ -1920,7 +1920,7 @@ fn compare_root(report: &mut Report, old: &ResolvedTheme, new: &native_theme::ne
         "root::text_scale",
         [&o.caption, &o.section_heading, &o.dialog_title, &o.display]
             .map(|e| (e.size, e.weight, e.line_height)),
-        [n.caption, n.section_heading, n.dialog_title, n.display]
+        [&n.caption, &n.section_heading, &n.dialog_title, &n.display]
             .map(|t| (t.size_px, t.weight, t.line_height)),
     );
     report.leaf(
