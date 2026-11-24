@@ -12131,6 +12131,127 @@ fn the_basic_icon_buttons_are_the_toolbars_gap_apart_and_outlined_on_hover() -> 
     Ok(())
 }
 
+/// The chrome toolbar's tool buttons are outlined hovered and pressed in the «toolbar» scope's
+/// hovered and pressed button's stroke, which `demo::next_tool_button` leaves to the scope: where
+/// a rule states `toolbar.button(HOVER)` and `toolbar.button(PRESSED)`'s stroke, its width
+/// (kde-breeze light patched to twice its stated hover width, which the 0.7.2
+/// `button.border.line_width` beside it is not), and where none does, the scope's own hovered
+/// and pressed button's (adwaita light states neither, spec §10 rule 0). The Command Palette
+/// button, hovered and then pressed, is painted in that pen.
+#[test]
+fn a_chrome_tool_buttons_outline_is_the_toolbar_scopes() -> Result<(), String> {
+    use native_theme::next::{PartPatch, PartStated, Stroke, ThemePatch, ToolbarRule, WidgetState};
+    use native_theme_egui::next::{state_stroke_color_of, stroke_width_of};
+    const ID: &str = "chrome.toolbar.command_palette";
+    /// Whether the button, hovered and then pressed, is painted in `hovered` and `pressed`.
+    fn lined(
+        harness: &mut Harness<'static, App>,
+        [hovered, pressed]: [egui::Stroke; 2],
+    ) -> [bool; 2] {
+        let place = place_of(harness, ID);
+        let painted = |harness: &Harness<'static, App>, pen: egui::Stroke| {
+            harness
+                .output()
+                .shapes
+                .iter()
+                .any(|clipped| match &clipped.shape {
+                    egui::Shape::Rect(s) => {
+                        s.stroke == pen && place.expand(1.0).contains_rect(s.rect)
+                    }
+                    _ => false,
+                })
+        };
+        harness.hover_at(place.center());
+        harness.run_steps(3);
+        let hover = painted(harness, hovered);
+        harness.drag_at(place.center());
+        harness.run_steps(3);
+        let press = painted(harness, pressed);
+        [hover, press]
+    }
+    let (mut harness, r) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |r| {
+        let width = 2.0 * stroke_width_of(&r.toolbar.button(WidgetState::HOVER))?;
+        let pen = PartPatch::new().stroke(Stroke::uniform(width, r.colors.window.border?));
+        Some(
+            ThemePatch::new()
+                .toolbar(
+                    ToolbarRule::new()
+                        .states(WidgetState::HOVER)
+                        .button(pen.clone()),
+                )
+                .toolbar(ToolbarRule::new().states(WidgetState::PRESSED).button(pen)),
+        )
+    })?;
+    let old = harness
+        .state()
+        .atlas
+        .old_resolved(egui::Theme::Light)
+        .button
+        .border
+        .line_width;
+    let pens = [WidgetState::HOVER, WidgetState::PRESSED].map(|state| {
+        let part = r.toolbar.button(state);
+        stroke_width_of(&part)
+            .zip(state_stroke_color_of(&part))
+            .map(|(width, colour)| egui::Stroke::new(width, colour))
+    });
+    let [Some(hovered), Some(pressed)] = pens else {
+        return Err(format!(
+            "the patched kde-breeze states no toolbar button pen: {pens:?}"
+        ));
+    };
+    assert!(
+        !near(hovered.width, old) && !near(pressed.width, old),
+        "the patched width {} is the 0.7.2 button.border.line_width {old}, so the patch proves \
+         nothing",
+        hovered.width
+    );
+    assert_eq!(
+        lined(&mut harness, [hovered, pressed]),
+        [true; 2],
+        "patched kde-breeze: [hovered, pressed] Command Palette lined in {hovered:?}, {pressed:?}"
+    );
+
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "adwaita");
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("adwaita: no 0.8.0 theme installed")?;
+    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+        assert!(
+            !r.toolbar
+                .button(state)
+                .from_state
+                .contains(PartStated::STROKE),
+            "adwaita now states toolbar.button({state:?})'s stroke"
+        );
+    }
+    let atlas = native_theme_egui::ThemeAtlas::from_ctx(&harness.ctx)
+        .ok_or("adwaita: no atlas installed")?;
+    let mut scope = egui::Style::default();
+    atlas
+        .role_modifier(
+            egui::Theme::Light,
+            native_theme_egui::Role::Toolbar,
+            RoleVariant::Normal,
+        )
+        .apply(&mut scope);
+    let own = &scope.visuals.widgets;
+    let (hovered, pressed) = (own.hovered.bg_stroke, own.active.bg_stroke);
+    assert!(
+        hovered.width > 0.0 && pressed.width > 0.0,
+        "adwaita's toolbar scope draws no outline of its own, so this part proves nothing"
+    );
+    assert_eq!(
+        lined(&mut harness, [hovered, pressed]),
+        [true; 2],
+        "adwaita: [hovered, pressed] Command Palette lined in the scope's own {hovered:?}, \
+         {pressed:?}"
+    );
+    Ok(())
+}
+
 /// How far egui 0.37.0 puts a framed button's content in from the frame's edge, for a
 /// `Spacing::button_padding` side of `padding` and a resting border `stroke` wide: the frame's
 /// inner margin is whole points (`Margin`'s sides are `i8`, `From<Vec2>` rounds,
