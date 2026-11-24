@@ -1104,6 +1104,13 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),
+    // the checked box's outline width, a stroke stated as none for `CHECKED` no width
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(checkbox.indicator(CHECKED).stroke.width),
+    ),
     // the checked box's outline, which the disabled checked cell keeps
     s(
         "Checkbox/SelectedDisabled",

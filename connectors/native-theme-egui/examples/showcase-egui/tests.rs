@@ -11250,6 +11250,77 @@ fn a_tab_label_is_drawn_at_its_stated_weight() -> Result<(), String> {
     Ok(())
 }
 
+/// The face a tab's label is drawn in at its stated weight is one `demo::Semibold::register`
+/// registers, not only one a test holds ([`hold_weights`]): on material-3 with its tab label
+/// patched to a weight no other text of it is drawn at, with that weight's family dropped from
+/// the fonts (as an install's `set_fonts` drops what was added before it), a registration
+/// handed egui's own proportional face for every face it asks for (`Semibold::register_with`)
+/// binds that family from the patched theme and not from the unpatched one, so the page tabs
+/// are drawn in it.
+#[cfg(feature = "system-fonts")]
+#[test]
+fn the_tab_labels_weight_face_is_registered_by_semibold() -> Result<(), String> {
+    let preset = "material-3";
+    let mut basic = open_page_under(Page::Basic, egui::Theme::Light, preset);
+    let unpatched = basic.state().atlas.clone();
+    let patch =
+        native_theme::next::ThemePatch::from_toml("[[widgets.tab.rules]]\nlabel.weight = 800\n")
+            .map_err(|e| e.to_string())?;
+    let atlas = unpatched.patched(&patch)?;
+    let ctx = basic.ctx.clone();
+    basic.state_mut().adopt_pair(&ctx, atlas.clone());
+    basic.run_steps(4);
+    let r = atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?;
+    let weight = native_theme_egui::next::role_font_weight(r, native_theme_egui::Role::Tab)
+        .map_err(|e| e.to_string())?;
+    let body = native_theme_egui::next::font_weight(r).map_err(|e| e.to_string())?;
+    assert_eq!(weight, 800, "{preset}: the patched tab weight");
+    assert_ne!(weight, body, "{preset}: the tab's weight is not the body's");
+    let family = crate::demo::weight_family(weight);
+    let own = egui::FontDefinitions::default();
+    let name = own
+        .families
+        .get(&egui::FontFamily::Proportional)
+        .and_then(|names| names.first())
+        .ok_or("egui has no proportional face")?;
+    let data = own.font_data.get(name).ok_or("egui's face has no data")?;
+    let (bytes, index) = ((*data.font).as_ref().to_vec(), data.index);
+    let bound = |ctx: &egui::Context| ctx.fonts(|f| f.definitions().families.contains_key(&family));
+
+    let mut fonts = ctx.fonts(|f| f.definitions().clone());
+    fonts.families.remove(&family);
+    ctx.set_fonts(fonts);
+    basic.run_steps(2);
+    assert!(!bound(&ctx), "{preset}: the family is still bound");
+    basic
+        .state_mut()
+        .semibold
+        .register_with(&ctx, &unpatched, |_, _, _| Some((bytes.clone(), index)));
+    basic.run_steps(2);
+    assert!(
+        !bound(&ctx),
+        "{preset}: the unpatched theme asks for a face at the patched tab weight"
+    );
+    basic
+        .state_mut()
+        .semibold
+        .register_with(&ctx, &atlas, |_, _, _| Some((bytes.clone(), index)));
+    basic.run_steps(2);
+    assert!(
+        bound(&ctx),
+        "{preset}: the tab weight's face is not registered"
+    );
+    let tab = basic.state().registry.places()["chrome.page_tabs.basic"];
+    assert_eq!(
+        galley_font(&basic, "Basic", &[tab]).family,
+        family,
+        "{preset}: the Basic tab is not in the registered face"
+    );
+    Ok(())
+}
+
 /// The Basic page paints the List's and the table's frames per call (`pages::basic::list_frame`)
 /// and rounds the rows' fills where they meet them (`inner_corners`), so their routes name that
 /// call, not the `Role::List` scope's style field `mapping.toml` names for the connector: the

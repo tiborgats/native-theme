@@ -666,6 +666,97 @@ fn a_translucent_mixed_outline_is_drawn_over_its_fill() -> Result<(), Box<dyn st
     Ok(())
 }
 
+/// The checked box's outline is drawn at the width a rule states for `CHECKED`, not the
+/// unchecked box's, in every entry at rest, and under the pointer where a rule states the
+/// outline for `HOVER` asked alone (the combined state's, the `CHECKED` rule's here).
+#[test]
+fn the_checked_boxs_stated_outline_width_is_drawn() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::PartStated;
+
+    let green = egui::Color32::from_rgb(0, 0xff, 0);
+    let rule = "[[widgets.checkbox.rules]]\nstates = [\"checked\"]\n\
+                indicator.stroke = { width = 3.0, color = \"#00ff00\" }\n";
+    for &(key, preset) in PRESETS {
+        let atlas = patched_light(preset, rule)?;
+        let w = &atlas
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, crate::RoleVariant::Selected)
+            .visuals
+            .widgets;
+        for (name, e) in [
+            ("noninteractive", &w.noninteractive),
+            ("inactive", &w.inactive),
+            ("open", &w.open),
+        ] {
+            assert_eq!(e.bg_stroke.width, 3.0, "{key}: the {name} outline's width");
+            assert_eq!(
+                e.bg_stroke.color, green,
+                "{key}: the {name} outline's colour"
+            );
+        }
+        let r = Theme::preset(preset)
+            .with_patch(ThemePatch::from_toml(rule)?)
+            .resolve(&ThemeContext::light());
+        if r.checkbox
+            .indicator(WidgetState::HOVER)
+            .from_state
+            .contains(PartStated::STROKE)
+        {
+            assert_eq!(
+                w.hovered.bg_stroke.width, 3.0,
+                "{key}: the hovered outline's width"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The checked box's and the mixed box's mark take the width a rule states for their flag in
+/// every entry, and under the pointer the width a rule states for `HOVER` asked alone, the
+/// combined state's (spec §2, `from_state`); with no rule for `HOVER`, the resting width.
+#[test]
+fn a_marks_stated_width_is_read_per_state() -> Result<(), Box<dyn std::error::Error>> {
+    for flag in ["checked", "indeterminate"] {
+        let rest = format!(
+            "[[widgets.checkbox.rules]]\nstates = [\"{flag}\"]\ncheckmark.stroke_width = 3.0\n"
+        );
+        let hover = format!(
+            "{rest}[[widgets.checkbox.rules]]\nstates = [\"hover\"]\ncheckmark.stroke_width = 4.0\n\
+             [[widgets.checkbox.rules]]\nstates = [\"hover\", \"{flag}\"]\n\
+             checkmark.stroke_width = 5.0\n"
+        );
+        for &(key, preset) in PRESETS {
+            let marks = |patch: &str| -> Result<egui::style::Widgets, Box<dyn std::error::Error>> {
+                Ok(if flag == "checked" {
+                    patched_light(preset, patch)?
+                        .scheme(egui::Theme::Light)
+                        .cell(crate::Role::Checkbox, crate::RoleVariant::Selected)
+                        .visuals
+                        .widgets
+                        .clone()
+                } else {
+                    mixed_over_normal(preset, patch)?.1.widgets
+                })
+            };
+            let w = marks(&rest)?;
+            for (name, e) in [
+                ("noninteractive", &w.noninteractive),
+                ("inactive", &w.inactive),
+                ("hovered", &w.hovered),
+                ("active", &w.active),
+                ("open", &w.open),
+            ] {
+                assert_eq!(e.fg_stroke.width, 3.0, "{key} {flag}: the {name} mark");
+            }
+            let w = marks(&hover)?;
+            assert_eq!(w.inactive.fg_stroke.width, 3.0, "{key} {flag}: at rest");
+            assert_eq!(w.hovered.fg_stroke.width, 5.0, "{key} {flag}: hovered");
+            assert_eq!(w.active.fg_stroke.width, 3.0, "{key} {flag}: pressed");
+        }
+    }
+    Ok(())
+}
+
 /// A tool button's and a menu item's hovered and pressed outline widths are the ones a rule
 /// states for the state.
 #[test]

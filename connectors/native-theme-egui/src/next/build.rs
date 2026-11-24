@@ -882,19 +882,21 @@ fn state_edge(part: &PartStyle, home: &'static str) -> Option<(StateLine, LineAl
     state_line(part, home).map(|line| (line, edge(part).1))
 }
 
-/// The homes a note names a [`MarkedBox`]'s values by: its fill and outline width at rest, and
-/// the hovered and the pressed ones.
+/// The homes a note names a [`MarkedBox`]'s values by: its fill and outline width at rest, the
+/// hovered and the pressed ones, and its mark's width at rest, hovered and pressed.
 struct MarkedHomes {
     fill: &'static str,
     width: &'static str,
     state_fill: [&'static str; 2],
     state_width: [&'static str; 2],
+    mark_width: [&'static str; 3],
 }
 
-/// The box `flag` marks (`CHECKED`, `INDETERMINATE`): its fill where a rule states one for the
-/// flag; its outline colour, the flag's query's, transparent for one stated as none (spec §10,
-/// rule 2), so the box does not keep the unchecked box's over its own fill; and under the
-/// pointer and pressed, each of fill and outline the combined state's where a rule states it
+/// The box `flag` marks (`CHECKED`, `INDETERMINATE`): its fill and its outline's width where a
+/// rule states them for the flag; its outline colour, the flag's query's, transparent for one
+/// stated as none (spec §10, rule 2), so the box does not keep the unchecked box's over its own
+/// fill; its mark's width where a rule states it for the flag; and under the pointer and
+/// pressed, each of fill, outline and mark width the combined state's where a rule states it
 /// for `HOVER` or `PRESSED` asked alone, else `None`, and the box keeps egui's own treatment of
 /// the hover or the press (spec §2, `from_state`: a connector that keeps its own treatment of
 /// one flag over a value stated for another asks that flag alone).
@@ -910,10 +912,21 @@ fn marked_box(k: &CheckboxWidget, flag: WidgetState, homes: MarkedHomes) -> Mark
             .contains(PartStated::STROKE)
             .then(|| line_of(&k.indicator(state | flag), home))
     };
+    // the mark's width where a rule states it for `asked`, the query `at`'s
+    let mark_width = |asked: WidgetState, at: WidgetState, home: &'static str| {
+        k.checkmark(asked)
+            .from_state
+            .contains(IconStated::STROKE_WIDTH)
+            .then(|| k.checkmark(at).stroke_width)
+            .flatten()
+            .map(|v| (v, home))
+    };
     let [hover_fill, press_fill] = homes.state_fill;
     let [hover_width, press_width] = homes.state_width;
+    let [mark_rest, mark_hover, mark_press] = homes.mark_width;
     MarkedBox {
         fill: state_fill_at(&part, homes.fill),
+        width: state_line(&part, homes.width).and_then(|line| line.width),
         outline: line_of(&part, homes.width).color,
         align: edge(&part).1,
         state_fill: [
@@ -924,17 +937,21 @@ fn marked_box(k: &CheckboxWidget, flag: WidgetState, homes: MarkedHomes) -> Mark
             stated_line(S::HOVER, hover_width),
             stated_line(S::PRESSED, press_width),
         ],
+        mark_width: [
+            mark_width(flag, flag, mark_rest),
+            mark_width(S::HOVER, S::HOVER | flag, mark_hover),
+            mark_width(S::PRESSED, S::PRESSED | flag, mark_press),
+        ],
     }
 }
 
 /// The mixed check box of the 0.8.0 theme `r`, as a rule states it for `INDETERMINATE`: the
-/// box ([`marked_box`]), its outline's width at rest, and its mark's colour at rest and, where a
-/// rule states one for `HOVER` or `PRESSED` asked alone, the combined state's, and its width.
+/// box ([`marked_box`]) and its mark's colour at rest and, where a rule states one for `HOVER`
+/// or `PRESSED` asked alone, the combined state's.
 pub(crate) fn mixed_box(r: &ResolvedTheme) -> MixedBox {
     use WidgetState as S;
     let k = &r.checkbox;
     let flag = S::INDETERMINATE;
-    let mark = k.checkmark(flag);
     let state_mark = |state: WidgetState| {
         state_icon_color(&k.checkmark(state)).and_then(|_| icon_color(&k.checkmark(state | flag)))
     };
@@ -953,24 +970,18 @@ pub(crate) fn mixed_box(r: &ResolvedTheme) -> MixedBox {
                     "checkbox.indicator(HOVER|INDETERMINATE).stroke.width",
                     "checkbox.indicator(PRESSED|INDETERMINATE).stroke.width",
                 ],
+                mark_width: [
+                    "checkbox.checkmark(INDETERMINATE).stroke_width",
+                    "checkbox.checkmark(HOVER|INDETERMINATE).stroke_width",
+                    "checkbox.checkmark(PRESSED|INDETERMINATE).stroke_width",
+                ],
             },
         ),
-        width: state_line(
-            &k.indicator(flag),
-            "checkbox.indicator(INDETERMINATE).stroke.width",
-        )
-        .and_then(|line| line.width),
         mark: [
-            state_icon_color(&mark),
+            state_icon_color(&k.checkmark(flag)),
             state_mark(S::HOVER),
             state_mark(S::PRESSED),
         ],
-        mark_width: mark
-            .from_state
-            .contains(IconStated::STROKE_WIDTH)
-            .then_some(mark.stroke_width)
-            .flatten()
-            .map(|v| (v, "checkbox.checkmark(INDETERMINATE).stroke_width")),
     }
 }
 
@@ -1030,6 +1041,11 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
                     state_width: [
                         "checkbox.indicator(HOVER|CHECKED).stroke.width",
                         "checkbox.indicator(PRESSED|CHECKED).stroke.width",
+                    ],
+                    mark_width: [
+                        "checkbox.checkmark(CHECKED).stroke_width",
+                        "checkbox.checkmark(HOVER|CHECKED).stroke_width",
+                        "checkbox.checkmark(PRESSED|CHECKED).stroke_width",
                     ],
                 },
             ),

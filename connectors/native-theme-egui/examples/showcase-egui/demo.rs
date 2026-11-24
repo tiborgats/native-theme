@@ -1364,79 +1364,93 @@ impl Semibold {
     /// registered.
     pub(crate) fn register(&mut self, ctx: &egui::Context, atlas: &crate::app::OldAtlas) {
         #[cfg(feature = "system-fonts")]
-        {
-            use native_theme::next::{FontStyle, TextStated, WidgetState};
-            use native_theme::theme::FontStyle as Slant;
-            use native_theme_egui::{TextRole, next};
-
-            self.registrations = self.registrations.saturating_add(1);
-            self.invalid.clear();
-            // The faces the connector's font plan asks for (`next::font_plan_from_system(light)`):
-            // the light theme's body text, where it states its family and slant, as the
-            // connector's face request reads them, each slant the one `system_face` takes.
-            let Some(light) = atlas.next_resolved(egui::Theme::Light) else {
-                return;
-            };
-            let body = &light.typography.body;
-            let style = match body.style {
-                FontStyle::Normal => Slant::Normal,
-                FontStyle::Italic => Slant::Italic,
-                FontStyle::Oblique => Slant::Oblique,
-                _ => return,
-            };
-            if !body.stated.contains(TextStated::FAMILY | TextStated::STYLE) {
-                return;
-            }
-            let mut families = vec![(
-                crate::SEMIBOLD_WEIGHT,
-                egui::FontFamily::Name(SEMIBOLD_FAMILY.into()),
-            )];
-            // The weights the pages draw text at besides the body's (`weighted_family`): each
-            // text role's (`next::text_role_weight`, the section headings and the Typography
-            // group), the table header's where stated (`pages::data::TableHeader`) and the tab
-            // label's where stated (`next_tab_label`), of each
-            // scheme's installed theme whose body weight is stated (`next::font_weight`).
-            for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-                let Some(t) = atlas.next_resolved(scheme) else {
-                    continue;
-                };
-                let Ok(body_weight) = next::font_weight(t) else {
-                    continue;
-                };
-                let header = t.list.header_label(WidgetState::NONE);
-                let roles = [
-                    TextRole::Caption,
-                    TextRole::SectionHeading,
-                    TextRole::DialogTitle,
-                    TextRole::Display,
-                ]
-                .map(|role| next::text_role_weight(t, role));
-                let header = header
-                    .stated
-                    .contains(TextStated::WEIGHT)
-                    .then_some(header.weight);
-                let tab = next::role_font_weight(t, native_theme_egui::Role::Tab).ok();
-                for weight in roles.into_iter().chain(header).chain(tab) {
-                    let family = weight_family(weight);
-                    if weight != body_weight && !families.iter().any(|(_, f)| *f == family) {
-                        families.push((weight, family));
-                    }
-                }
-            }
-            // The family the connector's font plan draws the body in, as `FontPlan::from_system`
-            // recorded it: the platform's substitute its `FontFamilyUnavailable` note names where
-            // the OS lacks the theme's family, else the theme's own.
-            let unavailable = unavailable_families(atlas.notes());
-            let drawn = drawn_family(&unavailable, &body.family).unwrap_or(&body.family);
-            for (weight, family) in families {
-                let Some(face) = native_theme::fonts::system_face(drawn, weight, style) else {
-                    continue;
-                };
-                self.add_face(ctx, (drawn, weight), family, face.data.to_vec(), face.index);
-            }
-        }
+        self.register_with(ctx, atlas, |family, weight, style| {
+            native_theme::fonts::system_face(family, weight, style)
+                .map(|face| (face.data.to_vec(), face.index))
+        });
         #[cfg(not(feature = "system-fonts"))]
         let _ = (ctx, atlas, &mut self.registrations);
+    }
+
+    /// [`Semibold::register`] with `face` in place of `native_theme::fonts::system_face`: the
+    /// bytes and the face index of the font file of a family at a weight and a slant, `None`
+    /// where there is none.
+    #[cfg(feature = "system-fonts")]
+    pub(crate) fn register_with(
+        &mut self,
+        ctx: &egui::Context,
+        atlas: &crate::app::OldAtlas,
+        face: impl Fn(&str, u16, native_theme::theme::FontStyle) -> Option<(Vec<u8>, u32)>,
+    ) {
+        use native_theme::next::{FontStyle, TextStated, WidgetState};
+        use native_theme::theme::FontStyle as Slant;
+        use native_theme_egui::{TextRole, next};
+
+        self.registrations = self.registrations.saturating_add(1);
+        self.invalid.clear();
+        // The faces the connector's font plan asks for (`next::font_plan_from_system(light)`):
+        // the light theme's body text, where it states its family and slant, as the
+        // connector's face request reads them, each slant the one `system_face` takes.
+        let Some(light) = atlas.next_resolved(egui::Theme::Light) else {
+            return;
+        };
+        let body = &light.typography.body;
+        let style = match body.style {
+            FontStyle::Normal => Slant::Normal,
+            FontStyle::Italic => Slant::Italic,
+            FontStyle::Oblique => Slant::Oblique,
+            _ => return,
+        };
+        if !body.stated.contains(TextStated::FAMILY | TextStated::STYLE) {
+            return;
+        }
+        let mut families = vec![(
+            crate::SEMIBOLD_WEIGHT,
+            egui::FontFamily::Name(SEMIBOLD_FAMILY.into()),
+        )];
+        // The weights the pages draw text at besides the body's (`weighted_family`): each
+        // text role's (`next::text_role_weight`, the section headings and the Typography
+        // group), the table header's where stated (`pages::data::TableHeader`) and the tab
+        // label's where stated (`next_tab_label`), of each
+        // scheme's installed theme whose body weight is stated (`next::font_weight`).
+        for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+            let Some(t) = atlas.next_resolved(scheme) else {
+                continue;
+            };
+            let Ok(body_weight) = next::font_weight(t) else {
+                continue;
+            };
+            let header = t.list.header_label(WidgetState::NONE);
+            let roles = [
+                TextRole::Caption,
+                TextRole::SectionHeading,
+                TextRole::DialogTitle,
+                TextRole::Display,
+            ]
+            .map(|role| next::text_role_weight(t, role));
+            let header = header
+                .stated
+                .contains(TextStated::WEIGHT)
+                .then_some(header.weight);
+            let tab = next::role_font_weight(t, native_theme_egui::Role::Tab).ok();
+            for weight in roles.into_iter().chain(header).chain(tab) {
+                let family = weight_family(weight);
+                if weight != body_weight && !families.iter().any(|(_, f)| *f == family) {
+                    families.push((weight, family));
+                }
+            }
+        }
+        // The family the connector's font plan draws the body in, as `FontPlan::from_system`
+        // recorded it: the platform's substitute its `FontFamilyUnavailable` note names where
+        // the OS lacks the theme's family, else the theme's own.
+        let unavailable = unavailable_families(atlas.notes());
+        let drawn = drawn_family(&unavailable, &body.family).unwrap_or(&body.family);
+        for (weight, family) in families {
+            let Some((bytes, index)) = face(drawn, weight, style) else {
+                continue;
+            };
+            self.add_face(ctx, (drawn, weight), family, bytes, index);
+        }
     }
 
     /// Add `bytes`, the face at `index` of a font file of `drawn.0` at the weight `drawn.1`,

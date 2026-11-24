@@ -38,16 +38,20 @@ pub(crate) struct Disabled {
     pub border: Option<(StateLine, LineAlign)>,
 }
 
-/// A box a state flag marks, the checked one or the mixed one: its fill and outline colour at
-/// rest, where its stroke lies, and its fill and outline under the pointer and pressed.
+/// A box a state flag marks, the checked one or the mixed one: its fill, outline width and
+/// outline colour at rest, where its stroke lies, its fill and outline under the pointer and
+/// pressed, and its mark's width at rest, under the pointer and pressed.
 pub(crate) struct MarkedBox {
     pub fill: Read<Rgba>,
+    pub width: Read<f32>,
     pub outline: Option<Rgba>,
     pub align: LineAlign,
     /// The hovered and the pressed box's fill.
     pub state_fill: [Read<Rgba>; 2],
     /// The hovered and the pressed box's outline.
     pub state_border: [Option<StateLine>; 2],
+    /// The resting, the hovered and the pressed box's mark width.
+    pub mark_width: [Read<f32>; 3],
 }
 
 /// The checked box.
@@ -131,10 +135,12 @@ impl VariantSource {
             checked: CheckedBox {
                 look: MarkedBox {
                     fill: Some((k.checked_background, "checkbox.checked_background")),
+                    width: None,
                     outline: Some(k.border.color),
                     align: LineAlign::Outside,
                     state_fill: [None; 2],
                     state_border: [StateLine::colour(k.hover_border_color); 2],
+                    mark_width: [None; 3],
                 },
                 disabled_fill: k
                     .disabled_background
@@ -267,17 +273,24 @@ pub(crate) fn selected_cell(
     Some(style)
 }
 
-/// The box a state flag marks, `k`, laid over `w`, the unchecked box's entries: its fill in
-/// every entry; under the pointer and pressed the fill the theme states for that state, else
-/// what `unstated` gives for the fill at rest; its outline colour drawn over the fill of each
-/// entry ([`Line::over`]), and under the pointer and pressed the outline the theme states for
-/// that state, else what `unstated` gives ([`state_borders`]).
+/// The box a state flag marks, `k`, laid over `w`, the unchecked box's entries: its outline's
+/// width at rest in every entry ([`stroke`]); its fill in every entry; under the pointer and
+/// pressed the fill the theme states for that state, else what `unstated` gives for the fill at
+/// rest; its outline colour drawn over the fill of each entry ([`Line::over`]), and under the
+/// pointer and pressed the outline the theme states for that state, else what `unstated` gives
+/// ([`state_borders`]); its mark's width at rest in every entry, one in every state (§6.1),
+/// and under the pointer and pressed the width the theme states for that state.
 pub(crate) fn marked_box(
     w: &mut egui::style::Widgets,
     k: &MarkedBox,
     unstated: Unstated<'_>,
     notes: &mut Vec<Note>,
 ) {
+    if let Some((width, path)) = k.width {
+        for e in every_entry(w) {
+            e.bg_stroke = stroke(path, e.bg_stroke, e.bg_stroke.color, width, notes);
+        }
+    }
     if let Some(fill) = noted(k.fill, notes) {
         for entry in [
             &mut w.noninteractive,
@@ -314,39 +327,42 @@ pub(crate) fn marked_box(
         unstated,
         notes,
     );
+    // The mark is a line in the state's `fg_stroke` (`egui/src/widgets/checkbox.rs:151-158`).
+    let [rest, hover, press] = k.mark_width;
+    if let Some((width, path)) = rest {
+        for e in every_entry(w) {
+            e.fg_stroke.width = length(path, width, e.fg_stroke.width, notes);
+        }
+    }
+    for (e, state) in [(&mut w.hovered, hover), (&mut w.active, press)] {
+        if let Some((width, path)) = state {
+            e.fg_stroke.width = length(path, width, e.fg_stroke.width, notes);
+        }
+    }
 }
 
-/// The mixed check box: the [`MarkedBox`] of the mixed state, its outline's width at rest, and
-/// its mark's colour at rest, under the pointer and pressed and its width, each where a rule
-/// states it.
+/// The mixed check box: the [`MarkedBox`] of the mixed state and its mark's colour at rest,
+/// under the pointer and pressed, each where a rule states it.
 pub(crate) struct MixedBox {
     pub look: MarkedBox,
-    pub width: Read<f32>,
     pub mark: [Option<Rgba>; 3],
-    pub mark_width: Read<f32>,
 }
 
 /// The mixed box `m` laid over `v`, the visuals of the unchecked box's scope: egui draws a mixed
 /// box as its unchecked one with a dash in the mark's stroke (egui 0.37.0
-/// `src/widgets/checkbox.rs:135-141`). The outline's width at rest goes into every entry
-/// ([`stroke`]) before [`marked_box`] lays the box over them, as the checked box's cell does;
-/// the mark's colours go into `fg_stroke` as the unchecked box's cell writes its check mark
-/// ([`write_states_with`]), an unstated hovered or pressed one what `unstated` gives, and its
-/// width into every entry, one in every state (§6.1). Where it states a mark, the label is first
-/// held to the colour it has at rest: egui letters a check box's label in the mark's
-/// `fg_stroke` where `override_text_color` is unset (egui 0.37.0
-/// `src/theme/default_style.rs:182-186`, `src/widget_text.rs:831-835`).
+/// `src/widgets/checkbox.rs:135-141`). [`marked_box`] lays the box and its mark's width over the
+/// entries, as the checked box's cell does; the mark's colours go into `fg_stroke` as the
+/// unchecked box's cell writes its check mark ([`write_states_with`]), an unstated hovered or
+/// pressed one what `unstated` gives. Where it states a mark, the label is first held to the
+/// colour it has at rest: egui letters a check box's label in the mark's `fg_stroke` where
+/// `override_text_color` is unset (egui 0.37.0 `src/theme/default_style.rs:182-186`,
+/// `src/widget_text.rs:831-835`).
 pub(crate) fn mixed_cell(
     v: &mut egui::Visuals,
     m: &MixedBox,
     unstated: Unstated<'_>,
     notes: &mut Vec<Note>,
 ) {
-    if let Some((width, path)) = m.width {
-        for e in every_entry(&mut v.widgets) {
-            e.bg_stroke = stroke(path, e.bg_stroke, e.bg_stroke.color, width, notes);
-        }
-    }
     marked_box(&mut v.widgets, &m.look, unstated, notes);
     let [idle, hover, active] = m.mark;
     if idle.is_some() || hover.is_some() || active.is_some() {
@@ -369,11 +385,6 @@ pub(crate) fn mixed_cell(
             unstated,
             notes,
         );
-    }
-    if let Some((width, path)) = m.mark_width {
-        for e in every_entry(&mut v.widgets) {
-            e.fg_stroke.width = length(path, width, e.fg_stroke.width, notes);
-        }
     }
 }
 
