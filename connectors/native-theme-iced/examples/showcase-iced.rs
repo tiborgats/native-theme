@@ -3735,7 +3735,7 @@ fn content_panel(state: &State) -> Element<'_, Message> {
         let danger = next_colour(r.colors.error.fill);
         panel = panel.push(
             container(text(msg.as_str()).color(danger).next_text(
-                native_theme_iced::next::text_scale(r).caption,
+                &native_theme_iced::next::text_scale(r).caption,
                 &r.typography,
             ))
             .padding(window.bottom(0.0))
@@ -8413,7 +8413,7 @@ fn next_caption_text<'a>(
     let r = state.next_shown();
     text(content)
         .next_text(
-            native_theme_iced::next::text_scale(r).caption,
+            &native_theme_iced::next::text_scale(r).caption,
             &r.typography,
         )
         .color_maybe(color)
@@ -8424,7 +8424,7 @@ fn next_caption_text<'a>(
 /// ([`info_inks`]).
 fn inspector_heading<'a>(state: &State, content: impl text::IntoFragment<'a>) -> text::Text<'a> {
     let r = state.next_shown();
-    let mut heading = native_theme_iced::next::text_scale(r).caption.clone();
+    let mut heading = native_theme_iced::next::text_scale(r).caption;
     heading.weight = HEADING_WEIGHT;
     text(content)
         .next_text(&heading, &r.typography)
@@ -13795,7 +13795,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // of the installed 0.8.0 theme ([`next_section_title`]), over its
     // controls, each of which carries its own tags.
     let group = |id: &'static str, label: &'a str, controls: Element<'a, Message>| {
-        let heading = text(label).next_text(next_section_title(next), &next.typography);
+        let heading = text(label).next_text(&next_section_title(next), &next.typography);
         Element::from(column![tagged(id, heading), controls].spacing(gap.widget))
     };
     // The push buttons' label, `button.label(NONE)`, the floor under it and
@@ -15006,7 +15006,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         column![
             tagged(
                 "basic.typography.caption",
-                text("Caption").next_text(roles.caption, t)
+                text("Caption").next_text(&roles.caption, t)
             ),
             tagged("basic.typography.body", text("Body").next_body(next)),
             // The label's underline, which a text button cannot carry: the
@@ -15026,11 +15026,11 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             ),
             tagged(
                 "basic.typography.section_heading",
-                text("Section heading").next_text(roles.section_heading, t)
+                text("Section heading").next_text(&roles.section_heading, t)
             ),
             tagged(
                 "basic.typography.dialog_title",
-                text("Dialog title").next_text(roles.dialog_title, t)
+                text("Dialog title").next_text(&roles.dialog_title, t)
             ),
             tagged("basic.typography.monospace", monospace),
         ]
@@ -16150,7 +16150,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
     let button_label = next.button.label(WidgetState::NONE);
     let btn_min = next_button_floor(next);
     let btn_pad = next_button_padding(next);
-    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let title = |label: &'static str| text(label).next_text(&next_section_title(next), typography);
     let [
         primary,
         secondary,
@@ -16477,7 +16477,7 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     let typography = &next.typography;
-    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let title = |label: &'static str| text(label).next_text(&next_section_title(next), typography);
 
     let header = next_section_header(
         "Inputs",
@@ -16987,7 +16987,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     let typography = &next.typography;
-    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let title = |label: &'static str| text(label).next_text(&next_section_title(next), typography);
     let caption = |content: String| next_caption_text(state, content, None);
 
     let header = next_section_header(
@@ -17417,7 +17417,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     let title =
-        |label: &'static str| text(label).next_text(next_section_title(next), &next.typography);
+        |label: &'static str| text(label).next_text(&next_section_title(next), &next.typography);
     let caption = |content: &'static str| next_caption_text(state, content, None);
 
     let header = next_section_header(
@@ -17685,7 +17685,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let next = state.next_shown();
     let typography = &next.typography;
     let gap = Gaps::from_next(&next.layout);
-    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let title = |label: &'static str| text(label).next_text(&next_section_title(next), typography);
     let caption = |content: String| next_caption_text(state, content, None);
     // The corners the caption names: the card's own where the theme states
     // them, iced's own container's, square, where not
@@ -17995,7 +17995,7 @@ fn grid_info(state: &State) -> String {
     let border_width_s = format!("{}, layout.border_width", px_text(next.layout.border_width));
     let labels_s = next_font_row(
         next_caption_home(next),
-        native_theme_iced::next::text_scale(next).caption,
+        &native_theme_iced::next::text_scale(next).caption,
     );
     let columns =
         format!("{LAYOUT_GRID_COLUMNS}, the showcase's own: the model states no column count");
@@ -18237,7 +18237,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     let next = state.next_shown();
     let typography = &next.typography;
     let gap = Gaps::from_next(&next.layout);
-    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let title = |label: &'static str| text(label).next_text(&next_section_title(next), typography);
     let thickness = next.separator.thickness;
     let divider = || rule::horizontal(thickness).style(iced_next::styles::rule(next));
     let split_width = next.splitter.divider_width;
@@ -18469,10 +18469,10 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
         )
     };
     let scale_rows: Vec<ScaleRow> = vec![
-        scale_row("caption", roles.caption),
-        scale_row("section_heading", roles.section_heading),
-        scale_row("dialog_title", roles.dialog_title),
-        scale_row("display", roles.display),
+        scale_row("caption", &roles.caption),
+        scale_row("section_heading", &roles.section_heading),
+        scale_row("dialog_title", &roles.dialog_title),
+        scale_row("display", &roles.display),
     ];
 
     // iced pads a table's cells outside them (iced_widget 0.14.2
@@ -18843,8 +18843,8 @@ fn markdown_info(state: &State) -> String {
     };
     let headings = format!(
         "{} / {}",
-        next_font_row("text_scale.dialog_title", next_page_title(next)),
-        next_font_row("text_scale.section_heading", next_section_title(next)),
+        next_font_row("text_scale.dialog_title", &next_page_title(next)),
+        next_font_row("text_scale.section_heading", &next_section_title(next)),
     );
     let body = next_font_row("typography.body", &next.typography.body);
     let code = next_font_row("typography.monospace", &next.typography.monospace);
@@ -18936,8 +18936,8 @@ fn next_markdown_settings(
     settings.h4_size = body.into();
     settings.code_size = typography.monospace.size_px.into();
     let headings = RoleHeadings {
-        h1: font(next_page_title(r), false, body_font),
-        h2: font(next_section_title(r), false, body_font),
+        h1: font(&next_page_title(r), false, body_font),
+        h2: font(&next_section_title(r), false, body_font),
     };
     (settings, headings)
 }
@@ -18949,7 +18949,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     let next = state.next_shown();
     let typography = &next.typography;
     let gap = Gaps::from_next(&next.layout);
-    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let title = |label: &'static str| text(label).next_text(&next_section_title(next), typography);
 
     let header = next_section_header(
         "Graphics Widgets",
@@ -19890,7 +19890,7 @@ fn view_extra<'a>(state: &'a State) -> Element<'a, Message> {
     let next = state.next_shown();
     let typography = &next.typography;
     let gap = Gaps::from_next(&next.layout);
-    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let title = |label: &'static str| text(label).next_text(&next_section_title(next), typography);
     let caption = |content: &'static str| next_caption_text(state, content, None);
 
     let header = next_section_header(
@@ -20411,7 +20411,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     let total_count = state.loaded_icons.len();
 
     let header = column![
-        text("Icons").next_text(next_page_title(next), &next.typography),
+        text("Icons").next_text(&next_page_title(next), &next.typography),
         text(format!(
             "All {total_count} IconRole variants — \
              {loaded_count} loaded, {system_count} system"
@@ -20472,7 +20472,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
-    let title = text("Animated Icons").next_text(next_section_title(next), &next.typography);
+    let title = text("Animated Icons").next_text(&next_section_title(next), &next.typography);
     let divider = separator_line(next);
     let set_name = state
         .icon_set_choice
@@ -20556,7 +20556,7 @@ fn build_icon_cell<'a>(
     let role_name = format!("{:?}", loaded.role);
     let source_label = loaded.source.label();
     let icon_px = r.icons.sizes.toolbar;
-    let caption = native_theme_iced::next::text_scale(r).caption;
+    let caption = &native_theme_iced::next::text_scale(r).caption;
 
     let icon_element: Element<'a, Message> = match (loaded.handle.clone(), icon_px) {
         (Some(IconHandle::Svg(handle)), Some(px)) => svg(handle)
@@ -20637,7 +20637,7 @@ fn icon_info(state: &State, role: IconRole) -> String {
                 loaded.source.label(),
                 next_font_row(
                     next_caption_home(r),
-                    native_theme_iced::next::text_scale(r).caption
+                    &native_theme_iced::next::text_scale(r).caption
                 ),
             )
         })
@@ -20693,7 +20693,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     let title =
-        |label: &'static str| text(label).next_text(next_section_title(next), &next.typography);
+        |label: &'static str| text(label).next_text(&next_section_title(next), &next.typography);
     let header = next_section_header(
         "Theme Map",
         "All palette and extended palette colors from the current theme",
@@ -21027,7 +21027,7 @@ fn next_color_swatch<'a>(
     border: iced::Border,
     r: &native_theme::next::ResolvedTheme,
 ) -> Element<'a, Message> {
-    let caption = native_theme_iced::next::text_scale(r).caption;
+    let caption = &native_theme_iced::next::text_scale(r).caption;
     swatch_of(
         color,
         border,
@@ -21183,7 +21183,7 @@ fn hoverable_ext_section<'a>(
         next_color_swatch(field, color, frame, next)
     };
     let content: Element<'a, Message> = column![
-        text(label).next_text(next_section_title(next), &next.typography),
+        text(label).next_text(&next_section_title(next), &next.typography),
         row![
             cs("base.color", base.color),
             cs("base.text", base.text),
@@ -21314,17 +21314,18 @@ fn next_line_box(typography: &Typography, style: &TextStyle) -> f32 {
 /// The role a page's title is set in on the 0.8.0 model: `dialog_title`,
 /// the dialog or page title (`docs/platform-facts.md` §2.19), not
 /// `display`, the hero text of onboarding and banners, which KDE does not
-/// have; `typography.title1`, or the body style where the theme defines
-/// none (`native_theme_iced::next::text_scale`, the table of homes'
-/// `text_scale.dialog_title`).
-fn next_page_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
+/// have; `typography.title1` laid over the body style, property by
+/// property (`Typography::over_body`; `native_theme_iced::next::text_scale`,
+/// the table of homes' `text_scale.dialog_title`).
+fn next_page_title(r: &native_theme::next::ResolvedTheme) -> TextStyle {
     native_theme_iced::next::text_scale(r).dialog_title
 }
 
-/// [`section_title`] on the 0.8.0 model: `typography.headline`, or the body
-/// style where the theme defines none (`native_theme_iced::next::text_scale`,
-/// the table of homes' `text_scale.section_heading`).
-fn next_section_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
+/// [`section_title`] on the 0.8.0 model: `typography.headline` laid over the
+/// body style, property by property (`Typography::over_body`;
+/// `native_theme_iced::next::text_scale`, the table of homes'
+/// `text_scale.section_heading`).
+fn next_section_title(r: &native_theme::next::ResolvedTheme) -> TextStyle {
     native_theme_iced::next::text_scale(r).section_heading
 }
 
@@ -22132,7 +22133,7 @@ fn next_section_header<'a>(
 ) -> Element<'a, Message> {
     let next = state.next_shown();
     column![
-        text(title).next_text(next_page_title(next), &next.typography),
+        text(title).next_text(&next_page_title(next), &next.typography),
         text(description).next_body(next),
         rule::horizontal(next.separator.thickness).style(iced_next::styles::rule(next)),
     ]
@@ -26142,11 +26143,11 @@ mod tests {
                 "{at}: page title {page}px, section title {section}px, body {body}px"
             );
             assert!(
-                std::ptr::eq(next_page_title(&r), scale.dialog_title),
+                next_page_title(&r) == scale.dialog_title,
                 "{at}: a page title is not set in dialog_title"
             );
             assert!(
-                std::ptr::eq(next_section_title(&r), scale.section_heading),
+                next_section_title(&r) == scale.section_heading,
                 "{at}: a section title is not set in section_heading"
             );
         }
@@ -26188,7 +26189,7 @@ mod tests {
         });
         assert!(
             header.is_some_and(|header| {
-                header.contains("next_text(next_page_title(next), &next.typography)")
+                header.contains("next_text(&next_page_title(next), &next.typography)")
             }),
             "next_section_header is gone, or does not set its title in next_page_title"
         );
@@ -26751,7 +26752,7 @@ mod tests {
     fn text_takes_the_themes_line_height() {
         let state = page_state("kde-breeze", Tab::Basic);
         let r = state.next_shown();
-        let heading = next_line_box(&r.typography, next_section_title(r));
+        let heading = next_line_box(&r.typography, &next_section_title(r));
         let body = next_line_box(&r.typography, &r.typography.body);
         let mut ui = interface(&state);
         let title = height_of(&mut ui, "Checkboxes");
@@ -29389,7 +29390,7 @@ mod tests {
             state.reload_icons();
             state.active_tab = Tab::Icons;
             let r = state.next_shown();
-            let caption = native_theme_iced::next::text_scale(r).caption;
+            let caption = &native_theme_iced::next::text_scale(r).caption;
             let pad = next_gpui_rems(ICON_CELL_PADDING_REMS, r);
             let (size, line) = (caption.size_px, next_line_box(&r.typography, caption));
             // Where the caption gives no font iced can draw, `next_text`
@@ -44149,14 +44150,8 @@ thing(0);
         assert!(std::ptr::eq(state.next_shown(), &state.next_inactive));
         let r = &state.next_resolved;
         let t = &r.typography;
-        assert!(std::ptr::eq(
-            next_page_title(r),
-            t.title1.as_ref().unwrap_or(&t.body)
-        ));
-        assert!(std::ptr::eq(
-            next_section_title(r),
-            t.headline.as_ref().unwrap_or(&t.body)
-        ));
+        assert_eq!(next_page_title(r), t.over_body(t.title1.as_ref()));
+        assert_eq!(next_section_title(r), t.over_body(t.headline.as_ref()));
         assert_eq!(
             next_gpui_rems(TOOLTIP_GAP_REMS, r),
             t.body.size_px * TOOLTIP_GAP_REMS
