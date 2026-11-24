@@ -51,6 +51,8 @@ use iced_aw::style::{card, menu_bar, selection_list, sidebar, tab_bar};
 // walkers, the `check_*` helpers and every `#[test]` stay here, because the
 // tests are the single roots of trust and read all three tables at once.
 mod derived;
+#[cfg(feature = "iced_aw")]
+mod homes;
 mod pairs;
 mod rows;
 
@@ -5835,7 +5837,6 @@ fn render_contract_leaves(reach: &Reach) -> String {
     use std::fmt::Write as _;
 
     let labels: Vec<String> = reach.combinations.iter().map(Combination::label).collect();
-    let all: BTreeSet<usize> = (0..labels.len()).collect();
     let mut out = String::new();
     let _ = write!(
         out,
@@ -5878,69 +5879,99 @@ combinations = {}
     for leaf in &reach.leaves {
         let _ = write!(out, "\n[leaves.{}]\n", toml_string(leaf));
         match reach.moves.get(leaf) {
-            Some(rows) => {
-                // Per row, its statuses grouped by the bases they move in.
-                type Groups<'a> = Vec<(BTreeSet<usize>, Vec<&'a str>)>;
-                let mut grouped: BTreeMap<&str, Groups<'_>> = BTreeMap::new();
-                for (key, bases) in rows {
-                    let groups = grouped.entry(key.row.as_str()).or_default();
-                    let status = key.status.as_deref();
-                    match groups.iter_mut().find(|(b, _)| b == bases) {
-                        Some((_, statuses)) => statuses.extend(status),
-                        None => groups.push((bases.clone(), status.into_iter().collect())),
-                    }
-                }
-                out.push_str("moves = [\n");
-                for (row, groups) in &grouped {
-                    for (bases, statuses) in groups {
-                        let mut entry = format!("row = {}", toml_string(row));
-                        if !statuses.is_empty() {
-                            let _ = write!(
-                                entry,
-                                ", statuses = {}",
-                                toml_strings(statuses.iter().copied())
-                            );
-                        }
-                        if bases != &all {
-                            let except = all
-                                .difference(bases)
-                                .filter_map(|&i| labels.get(i))
-                                .map(String::as_str);
-                            let _ = write!(entry, ", except = {}", toml_strings(except));
-                        }
-                        let _ = writeln!(out, "  {{ {entry} }},");
-                    }
-                }
-                out.push_str("]\n");
-            }
+            Some(rows) => render_moves(&mut out, rows, &labels),
             None => {
                 if let Some((named, entry, kind, why)) = naming(leaf) {
-                    let _ = writeln!(out, "named = {}", toml_string(named));
-                    let _ = writeln!(out, "entry = {}", toml_string(entry));
-                    let _ = writeln!(out, "kind = {}", toml_string(&kind));
-                    let _ = writeln!(out, "why = {}", toml_string(why));
+                    render_named(&mut out, named, entry, &kind, why);
                 }
             }
         }
     }
+    render_rows(&mut out, &reach.moves, "leaves");
+    out
+}
 
-    let mut converse: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
-    for (leaf, rows) in &reach.moves {
-        for key in rows.keys() {
-            converse
-                .entry(key.row.as_str())
-                .or_default()
-                .insert(leaf.as_str());
+/// The `moves` array an export (`contract-leaves.toml`, `contract-homes.toml`)
+/// gives one key: per row, its statuses grouped by the bases they move in,
+/// each group with the bases among `labels` it does not move in.
+#[cfg(feature = "iced_aw")]
+fn render_moves(out: &mut String, rows: &BTreeMap<Reached, BTreeSet<usize>>, labels: &[String]) {
+    use std::fmt::Write as _;
+
+    let all: BTreeSet<usize> = (0..labels.len()).collect();
+    type Groups<'a> = Vec<(BTreeSet<usize>, Vec<&'a str>)>;
+    let mut grouped: BTreeMap<&str, Groups<'_>> = BTreeMap::new();
+    for (key, bases) in rows {
+        let groups = grouped.entry(key.row.as_str()).or_default();
+        let status = key.status.as_deref();
+        match groups.iter_mut().find(|(b, _)| b == bases) {
+            Some((_, statuses)) => statuses.extend(status),
+            None => groups.push((bases.clone(), status.into_iter().collect())),
         }
     }
-    for (row, leaves) in &converse {
+    out.push_str("moves = [\n");
+    for (row, groups) in &grouped {
+        for (bases, statuses) in groups {
+            let mut entry = format!("row = {}", toml_string(row));
+            if !statuses.is_empty() {
+                let _ = write!(
+                    entry,
+                    ", statuses = {}",
+                    toml_strings(statuses.iter().copied())
+                );
+            }
+            if bases != &all {
+                let except = all
+                    .difference(bases)
+                    .filter_map(|&i| labels.get(i))
+                    .map(String::as_str);
+                let _ = write!(entry, ", except = {}", toml_strings(except));
+            }
+            let _ = writeln!(out, "  {{ {entry} }},");
+        }
+    }
+    out.push_str("]\n");
+}
+
+/// The four lines an export gives a key that moves no row: the table that
+/// names it, the entry's name, the kind of reason and the reason.
+#[cfg(feature = "iced_aw")]
+fn render_named(out: &mut String, named: &str, entry: &str, kind: &str, why: &str) {
+    use std::fmt::Write as _;
+
+    let _ = writeln!(out, "named = {}", toml_string(named));
+    let _ = writeln!(out, "entry = {}", toml_string(entry));
+    let _ = writeln!(out, "kind = {}", toml_string(kind));
+    let _ = writeln!(out, "why = {}", toml_string(why));
+}
+
+/// The `[rows."<row>"]` tables of an export: per row the keys of `moves`
+/// that move it, under `key` (`leaves`, `homes`), and the feature the row
+/// exists under where a build can lack it.
+#[cfg(feature = "iced_aw")]
+fn render_rows(
+    out: &mut String,
+    moves: &BTreeMap<String, BTreeMap<Reached, BTreeSet<usize>>>,
+    key: &str,
+) {
+    use std::fmt::Write as _;
+
+    let mut converse: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
+    for (moved_by, rows) in moves {
+        for reached in rows.keys() {
+            converse
+                .entry(reached.row.as_str())
+                .or_default()
+                .insert(moved_by.as_str());
+        }
+    }
+    for (row, keys) in &converse {
         let _ = write!(out, "\n[rows.{}]\n", toml_string(row));
         if let Some(cfg) = row_cfg(row) {
             let _ = writeln!(out, "cfg = {}", toml_string(cfg));
         }
-        let _ = writeln!(out, "leaves = {}", toml_strings(leaves.iter().copied()));
+        let _ = writeln!(out, "{key} = {}", toml_strings(keys.iter().copied()));
     }
-    out
 }
 
 /// Rewrites `contract-leaves.toml` from the walk; run on purpose, with every
