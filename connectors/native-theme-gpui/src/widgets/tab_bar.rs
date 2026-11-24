@@ -758,6 +758,7 @@ impl RenderOnce for TabBar {
         let tab_ring = |at: native_theme::next::WidgetState| {
             theme.ring(
                 by_key,
+                super::OwnTrigger::KeyboardOnly,
                 move |r, focus| r.tab.tab(focus | at),
                 super::RingHomes::TAB,
             )

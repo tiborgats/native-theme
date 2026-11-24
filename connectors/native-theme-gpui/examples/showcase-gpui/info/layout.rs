@@ -1305,10 +1305,14 @@ fn tab_bar_ring(info: WidgetInfo, r: &NextTheme) -> WidgetInfo {
         "focus ring",
         format!(
             "{} an inset shadow {at}.stroke.width, {}px, wide inside the tab against its edge, in the tab's corners{} (native-theme-gpui/widgets/tab_bar.rs, TabBar)",
-            if f.trigger == Some(FocusTrigger::KeyboardOnly) {
-                "on the focused tab, for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, focus_followed_key):"
-            } else {
-                "on the focused tab:"
+            match f.trigger {
+                Some(FocusTrigger::KeyboardOnly) => {
+                    "on the focused tab, for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, focus_followed_key):"
+                }
+                None => {
+                    "on the focused tab, for a focus that followed a key press only: the theme states no trigger, and gpui-component's own tab rings a keyboard focus only (gpui-component/tab/tab.rs:965, focus_visible; native-theme-gpui/widgets/mod.rs, OwnTrigger):"
+                }
+                Some(_) => "on the focused tab:",
             },
             px_text(width),
             match inner {

@@ -910,6 +910,7 @@ impl Switch {
                 // Read again: the keyed states took `cx` mutably.
                 ThemeSource::of(cx)?.ring(
                     by_key,
+                    super::OwnTrigger::AnyFocus,
                     move |r, focus| r.switch.track(focus | at),
                     super::RingHomes::SWITCH,
                 )

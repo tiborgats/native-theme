@@ -899,6 +899,20 @@ use crate::next::{Mapped, Unmapped};
 #[cfg(test)]
 mod parity;
 
+/// The focus that rings gpui-component's own control, which a theme-drawn
+/// control's 0.8.0 ring follows where the theme states no trigger (spec §2,
+/// `FocusIndicator`: "toolkit default focus trigger").
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum OwnTrigger {
+    /// Any focus: gpui-component's check box, radio, switch and slider ring
+    /// whenever focused (gpui-component 0.10.0 checkbox.rs:328, radio.rs:226,
+    /// switch.rs:289, slider.rs:234-239).
+    AnyFocus,
+    /// A focus that followed a key press: its tab, ringed in `focus_visible`
+    /// (gpui-component 0.10.0 tab/tab.rs:965).
+    KeyboardOnly,
+}
+
 /// The theme a theme-drawn control takes its look from: the variant installed
 /// for the current mode, a 0.7.2 one [`apply`](crate::apply) installed, read
 /// through [`ActiveNativeTheme::native`](crate::ActiveNativeTheme::native), or a
@@ -956,11 +970,14 @@ impl<'a> ThemeSource<'a> {
     /// for another ([`FocusRing::next_indicator`]), the part's own fields'
     /// homes `homes`. `None` where the theme states none the control can draw,
     /// or one shown for keyboard focus only and the focus followed no key
-    /// (spec §2, `FocusIndicator`'s trigger contract; where the trigger is
-    /// unstated, gpui-component's own rings any focus).
+    /// (spec §2, `FocusIndicator`'s trigger contract). Where a 0.8.0 ring's
+    /// trigger is unstated, the toolkit's default trigger is `own`, the one
+    /// gpui-component's own control rings by ([`OwnTrigger`]); a 0.7.2 theme
+    /// that does not say draws the ring on any focus, as its model states.
     fn ring(
         self,
         by_key: bool,
+        own: OwnTrigger,
         part: impl FnOnce(
             &native_theme::next::ResolvedTheme,
             WidgetState,
@@ -976,7 +993,11 @@ impl<'a> ThemeSource<'a> {
         let part = part(r, focus_state(by_key));
         let (f, homes) = part_focus(r, &part, homes)?;
         let ring = FocusRing::next_indicator(f, &homes).ok().flatten()?;
-        (by_key || f.trigger != Some(FocusTrigger::KeyboardOnly)).then_some(ring)
+        let keyboard_only = match f.trigger {
+            Some(trigger) => trigger == FocusTrigger::KeyboardOnly,
+            None => own == OwnTrigger::KeyboardOnly,
+        };
+        (by_key || !keyboard_only).then_some(ring)
     }
 
     /// Whether the platform shows its focus ring for keyboard focus only:

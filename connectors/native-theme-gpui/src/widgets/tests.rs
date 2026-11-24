@@ -6535,6 +6535,54 @@ fn a_focused_tab_draws_the_second_ring_inward_from_the_first(cx: &mut TestAppCon
     );
 }
 
+/// A tab's ring whose trigger the theme leaves unstated follows the toolkit's
+/// default trigger (spec §2, `FocusIndicator`), gpui-component's own tab's, a
+/// focus that followed a key press only (gpui-component 0.10.0
+/// tab/tab.rs:965, `focus_visible`): the tab the program focuses with no key
+/// draws no ring, and an arrow key's move rings the tab it reaches.
+#[cfg(feature = "gpui-fast")]
+#[gpui::test]
+fn a_tab_ring_with_no_trigger_stated_rings_a_keyboard_focus_only(cx: &mut TestAppContext) {
+    let r = with_own_tab_ring(own_ring());
+    assert_eq!(
+        r.tab
+            .tab(native_theme::next::WidgetState::FOCUSED)
+            .focus
+            .as_deref()
+            .map(|f| f.trigger),
+        Some(None),
+        "the tab's own ring states no trigger"
+    );
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| {
+            TabBar::new("t")
+                .w_full()
+                .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
+                .into_any_element()
+        }),
+    );
+    redraw(cx);
+    let bar = bounds(cx, "native-tab-bar");
+    focus_next(cx);
+    redraw(cx);
+    let painted = shadows_over(cx, bar);
+    assert!(painted.is_empty(), "no ring without a key: {painted:?}");
+    cx.simulate_keystrokes("right");
+    redraw(cx);
+    let scale = cx.update(|window, _| window.scale_factor());
+    let tab = bounds(cx, "tab1").scale(scale);
+    let painted = shadows_over(cx, bar);
+    assert!(
+        painted.len() == 1
+            && painted
+                .first()
+                .is_some_and(|s| s.element_bounds.contains(&tab.center())),
+        "one ring on tab 1 after Right: {painted:?}"
+    );
+}
+
 /// What the tab bar's inset ring cannot place is named at its home: an
 /// offset other than minus the stroke's width and stated corners, of the
 /// tab's own ring where the theme states one, else of the global ring;

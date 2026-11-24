@@ -699,7 +699,7 @@ impl Parts {
             (Some(ThemeSource::Next(r)), Some(by_key)) => super::states_own_focus(r, by_key, part),
             _ => false,
         };
-        let ring = seen.and_then(|by_key| theme?.ring(by_key, part, homes));
+        let ring = seen.and_then(|key| theme?.ring(key, super::OwnTrigger::AnyFocus, part, homes));
         let (indicator_ring, row_ring) = if own { (ring, None) } else { (None, ring) };
         let (indicator, label) =
             indicator_and_label(&self, &look, round, text, indicator_ring, window, cx);
