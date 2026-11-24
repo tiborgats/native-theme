@@ -760,7 +760,6 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#e0e0e5",
             "stroke": {
               "width": 0.5,
               "color": "#d6d6d6"

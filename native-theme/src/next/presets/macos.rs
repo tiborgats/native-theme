@@ -267,7 +267,6 @@ struct SchemeColors {
     /// A disabled checked toggle's label; `None` where the generation states
     /// none.
     button_checked_disabled_foreground: Option<Color>,
-    checkbox_hover: Option<Color>,
     checkbox_unchecked: Color,
     checkbox_unchecked_border: Color,
     /// The unchecked box's edge pressed; `None` where it is the rest one.
@@ -426,8 +425,6 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     button_checked_mix_with: None,
     button_checked_foreground: None,
     button_checked_disabled_foreground: None,
-    // `checkbox.hover_background`: soft_option: checkbox hover state -- subtle highlight
-    checkbox_hover: Some(srgb8(0xe0e0_e5ff)),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): ← background_color, the unchecked
     // box measured white on macOS 14 and 15 (os-probe run 40348854007,
     // renders/aqua/checkbox-regular-off@2x.png; the radio's the same)
@@ -673,8 +670,6 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     button_checked_mix_with: None,
     button_checked_foreground: None,
     button_checked_disabled_foreground: None,
-    // `checkbox.hover_background`: soft_option: checkbox hover state -- subtle highlight
-    checkbox_hover: Some(srgb8(0x4444_46ff)),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): ← background_color, white at alpha
     // 55/255 at the box's centre, a gradient from 40/255 at its top to 71/255 at its bottom, not
     // controlBackgroundColor (measured, os-probe run 40348854007,
@@ -932,7 +927,6 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `os-probe-macos-26/layers-key-push.toml`, `key.push.aqua.disabled.*-toggle_on.label`; under
     // the red accent too, `tiebreak-derivations.toml`, `derivation.checked_disabled_label_light_*`)
     button_checked_disabled_foreground: Some(srgb8(0xffff_ff20)),
-    checkbox_hover: None,
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): macOS 26: the unchecked box is one
     // fill, systemFillColor's value #00000019 (measured, renders/aqua/checkbox-regular-off@2x.png;
     // probe); the probe's window is never ordered front, so this is the box of a window that is not
@@ -1172,7 +1166,6 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // facts' tolerance of 2 levels; under the red accent too, `tiebreak-derivations.toml`,
     // `derivation.checked_disabled_label_dark_*`)
     button_checked_disabled_foreground: Some(srgb8(0xffff_ff20)),
-    checkbox_hover: None,
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): macOS 26: the unchecked box is one
     // fill, systemFillColor's value #ffffff19 (measured,
     // renders/darkAqua/checkbox-regular-off@2x.png; probe); the probe's window is never ordered
@@ -3104,10 +3097,11 @@ fn radio(
             PartProp::MaxSize([dot_size; 2]),
         ])
         .build();
-    // The radio's hovered fill is 0.7.2's (`checkbox.hover_background`, which serves both); its
-    // states were not measured.
+    // The radio's states were not measured: its hovered fill is left unstated, not 0.7.2's
+    // uncited `checkbox.hover_background` (#e0e0e5 / #444446), which the check box measured in
+    // the same run contradicts (os-probe run 45198750893: hovered, the box as at rest).
     let states = IndicatorFills {
-        hover: c.checkbox_hover,
+        hover: None,
         pressed: None,
         checked_pressed: None,
     };

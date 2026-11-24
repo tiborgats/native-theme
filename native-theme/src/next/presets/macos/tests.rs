@@ -117,6 +117,21 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
     );
 }
 
+/// The radio's states were not measured, so no rule states its hovered
+/// fill: it is the rest fill, not 0.7.2's uncited hover fill.
+#[test]
+fn an_unchecked_radio_s_hovered_fill_is_left_unstated() {
+    for (preset, theme) in every_theme() {
+        let hovered = theme.radio.indicator(WidgetState::HOVER);
+        assert!(!hovered.from_state.contains(PartStated::FILL), "{preset:?}");
+        assert_eq!(
+            hovered.fill,
+            theme.radio.indicator(WidgetState::NONE).fill,
+            "{preset:?}"
+        );
+    }
+}
+
 #[test]
 fn a_disabled_look_wins_over_the_pointer_and_the_selection() {
     for (preset, theme) in every_theme() {
