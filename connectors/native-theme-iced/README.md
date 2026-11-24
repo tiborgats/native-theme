@@ -709,7 +709,11 @@ in none of them:
   `basic_table` does.
 - **A button's and a slider's focus.** An iced button takes no keyboard
   focus (`iced_widget` 0.14.2 `src/button.rs:257-273`), so
-  `button.focus_border_color` has no receiver, and iced's slider has no
+  `button.focus_border_color` has no receiver, nor has a stroke stated for
+  a focused button (`button.body(FOCUS_VISIBLE)`, of a flat button too:
+  Breeze's flat button turns its pen Highlight when focused, as when
+  hovered or pressed, and the showcase's flat buttons draw that pen hovered
+  and pressed only), and iced's slider has no
   focused status, so `slider.thumb_focus_border_color` is not drawn.
 - **The window frame.** iced takes no colour for the title bar or the window
   border (`window::Settings::decorations` is a `bool`); it passes the

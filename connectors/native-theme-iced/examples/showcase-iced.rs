@@ -5199,8 +5199,15 @@ fn in_state<T: PartialEq>(stated: Option<T>, rest: T, iced: (T, T)) -> T {
 /// `button.body(PRESSED;variant=Flat).fill` and
 /// `button.label(PRESSED;variant=Flat).color` while pressed, and while
 /// `selected`, as a toggle that is on;
-/// `button.label(DISABLED;variant=Flat).color` disabled; rounded by
-/// `button.body(NONE;variant=Flat).corners`. A rule that names no variant
+/// `button.label(DISABLED;variant=Flat).color` disabled; outlined hovered
+/// by `button.body(HOVER;variant=Flat).stroke` and pressed by
+/// `button.body(PRESSED;variant=Flat).stroke` where a rule states it for
+/// the state (Breeze's Highlight pen), as iced draws it over that state's
+/// fill ([`next_edge`]), on the bounds, over the padding, so it moves
+/// nothing (iced_widget 0.14.2 `src/button.rs:379-385`); rounded by
+/// `button.body(NONE;variant=Flat).corners`. iced's button takes no
+/// keyboard focus, so `button.body(FOCUS_VISIBLE;variant=Flat)` has no
+/// status to be drawn in. A rule that names no variant
 /// answers the flat button's query too, so where no rule states the flat
 /// button it takes the button's own states. Each property the theme leaves
 /// unstated in a status is iced's own flat button's, `button::text`
@@ -5219,6 +5226,18 @@ fn ghost_button(
     let pressed_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::PRESSED)));
     let disabled_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::DISABLED)));
     let radius = iced_next::radius_of(&b.body(flat(WidgetState::NONE)));
+    let edge = |state: WidgetState| {
+        let part = b.body(flat(state));
+        part.from_state
+            .contains(PartStated::STROKE)
+            .then(|| {
+                let under = iced_next::state_fill_of(&part).unwrap_or(Color::TRANSPARENT);
+                next_edge(&part, under)
+            })
+            .flatten()
+    };
+    let hover_edge = edge(WidgetState::HOVER);
+    let pressed_edge = edge(WidgetState::PRESSED);
     move |theme, status| {
         let shown = match status {
             button::Status::Disabled => status,
@@ -5227,13 +5246,17 @@ fn ghost_button(
         };
         let rest = button::text(theme, button::Status::Active);
         let own = button::text(theme, shown);
-        let (fill, text) = match shown {
-            button::Status::Active => (None, None),
-            button::Status::Hovered => (hover, hover_label),
-            button::Status::Pressed => (pressed, pressed_label),
-            button::Status::Disabled => (None, disabled_label),
+        let (fill, text, edge) = match shown {
+            button::Status::Active => (None, None, None),
+            button::Status::Hovered => (hover, hover_label, hover_edge),
+            button::Status::Pressed => (pressed, pressed_label, pressed_edge),
+            button::Status::Disabled => (None, disabled_label, None),
         };
-        let border = radius.map_or(own.border, |radius| own.border.rounded(radius));
+        let border = edge.map_or(own.border, |edge| iced::Border {
+            radius: own.border.radius,
+            ..edge
+        });
+        let border = radius.map_or(border, |radius| border.rounded(radius));
         button::Style {
             background: in_state(
                 fill.map(|fill| Some(iced::Background::Color(fill))),
@@ -26081,6 +26104,10 @@ mod tests {
         ("button::text", "fn menu_title("),
         ("button::text", "fn tab_style("),
         ("button::text", "fn list_row("),
+        (
+            "button::text",
+            "fn a_flat_button_draws_the_stroke_its_state_states(",
+        ),
     ];
 
     /// Whether the use of `class` at `at` in `source` lies in the body of a
@@ -34074,6 +34101,87 @@ mod tests {
         assert_eq!(in_state(Some(3), 1, (5, 7)), 3);
         assert_eq!(in_state(None, 1, (5, 7)), 7);
         assert_eq!(in_state(None, 1, (5, 5)), 1);
+    }
+
+    /// [`ghost_button`] outlines a hovered and a pressed flat button, and a
+    /// selected one, drawn pressed, by the stroke a rule states for the
+    /// state, `button.body(HOVER;variant=Flat).stroke` and
+    /// `button.body(PRESSED;variant=Flat).stroke` as iced draws it over the
+    /// state's fill ([`next_edge`]); where none does, the border is iced's own
+    /// flat button's, `button::text`'s. On every preset of the 0.8.0 model,
+    /// and on each with a flat hover and pressed stroke stated by a patch;
+    /// kde-breeze's hovered flat button is outlined (Breeze's Highlight pen,
+    /// platform-facts §2.3).
+    #[test]
+    fn a_flat_button_draws_the_stroke_its_state_states() -> Result<(), String> {
+        let mut failures = Vec::new();
+        let mut breeze = 0;
+        for (label, r) in next_combinations() {
+            let patched = with_home(
+                &r,
+                "button.body(HOVER;variant=Flat).stroke.color",
+                "#13579b",
+            )
+            .and_then(|patched| {
+                with_home(
+                    &patched,
+                    "button.body(PRESSED;variant=Flat).stroke.color",
+                    "#9b5713",
+                )
+            })
+            .ok_or("no patch reaches the flat button's stroke")?;
+            for (name, r) in [(label.clone(), r), (format!("{label}, patched"), patched)] {
+                let theme = native_theme_iced::next::to_theme(&r)
+                    .map_err(|error| format!("{name}: no iced theme: {error:?}"))?;
+                for selected in [false, true] {
+                    let style = ghost_button(&r, selected);
+                    for (status, state) in [
+                        (button::Status::Hovered, WidgetState::HOVER),
+                        (button::Status::Pressed, WidgetState::PRESSED),
+                    ] {
+                        let state = if selected {
+                            WidgetState::PRESSED
+                        } else {
+                            state
+                        };
+                        let part = r.button.body(flat(state));
+                        let under = iced_next::state_fill_of(&part).unwrap_or(Color::TRANSPARENT);
+                        let stated = part
+                            .from_state
+                            .contains(PartStated::STROKE)
+                            .then(|| next_edge(&part, under))
+                            .flatten();
+                        let drawn = style(&theme, status).border;
+                        let expected = stated.unwrap_or(button::text(&theme, status).border);
+                        let seen = |border: iced::Border| {
+                            (border.width, (border.width > 0.0).then_some(border.color))
+                        };
+                        if seen(drawn) != seen(expected) {
+                            failures.push(format!(
+                                "{name}, selected {selected}, {status:?}: drawn {drawn:?}, \
+                                 expected {expected:?}"
+                            ));
+                        }
+                        if label.starts_with("kde-breeze")
+                            && !selected
+                            && state == WidgetState::HOVER
+                            && stated.is_some()
+                            && drawn.width > 0.0
+                        {
+                            breeze += 1;
+                        }
+                    }
+                }
+            }
+        }
+        if breeze == 0 {
+            failures.push("no kde-breeze hovered flat button is outlined".to_owned());
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(failures.join("\n"))
+        }
     }
 
     /// [`ghost_padding`] pads a flat button by the sides
