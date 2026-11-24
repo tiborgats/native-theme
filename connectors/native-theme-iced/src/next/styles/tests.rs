@@ -2224,3 +2224,107 @@ fn a_link_keeps_iceds_own_per_property() -> TestResult {
     }
     Ok(())
 }
+
+/// The check box keeps iced's own box's look per property (spec §10, rule
+/// 0): with the fill at rest unstated, iced's own fill and the theme's
+/// label; with the label unstated, iced's own and the theme's fill; with
+/// the mark unstated, iced's own mark; with the stroke, its width and the
+/// corners unstated, iced's own border and the theme's fill.
+#[test]
+fn a_check_box_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{CheckboxSource, checkbox_from};
+    use iced_widget::checkbox::{Status, primary};
+    let (off, on) = (
+        Status::Active { is_checked: false },
+        Status::Active { is_checked: true },
+    );
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let c = super::checkbox_source(&r)?;
+        let ground = IcedColor::WHITE;
+        let at = |source: &CheckboxSource, status| checkbox_from(source, ground)(&theme, status);
+        let stated = at(&c, off);
+
+        let mut fills = c.fills;
+        fills.unchecked = None;
+        let s = at(&CheckboxSource { fills, ..c }, off);
+        assert_eq!(
+            s.background,
+            primary(&theme, off).background,
+            "{preset:?} fill"
+        );
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+
+        let s = at(&CheckboxSource { label: None, ..c }, off);
+        assert_eq!(
+            s.text_color,
+            primary(&theme, off).text_color,
+            "{preset:?} label"
+        );
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+
+        let s = at(&CheckboxSource { mark: None, ..c }, on);
+        assert_eq!(
+            s.icon_color,
+            primary(&theme, on).icon_color,
+            "{preset:?} mark"
+        );
+
+        let mut fills = c.fills;
+        fills.unchecked_border = None;
+        let s = at(
+            &CheckboxSource {
+                fills,
+                border_width: None,
+                border_radius: None,
+                ..c
+            },
+            off,
+        );
+        assert_eq!(s.border, primary(&theme, off).border, "{preset:?} border");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The radio keeps iced's own radio's look per property (spec §10, rule
+/// 0): with the fill at rest unstated, iced's own fill and the theme's
+/// label; with the label unstated, iced's own and the theme's fill; with
+/// the dot unstated, iced's own dot; with the stroke and its width
+/// unstated, iced's own border and the theme's fill.
+#[test]
+fn a_radio_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::radio_from;
+    use iced_widget::radio::{Status, default};
+    let off = Status::Active { is_selected: false };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let (fills, dot, label, width) = super::radio_source(&r)?;
+        let own = default(&theme, off);
+        let stated = radio_from(fills, dot, label, width)(&theme, off);
+
+        let mut unfilled = fills;
+        unfilled.unchecked = None;
+        let s = radio_from(unfilled, dot, label, width)(&theme, off);
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+
+        let s = radio_from(fills, dot, None, width)(&theme, off);
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+
+        let s = radio_from(fills, None, label, width)(&theme, off);
+        assert_eq!(s.dot_color, own.dot_color, "{preset:?} dot");
+
+        let mut unlined = fills;
+        unlined.unchecked_border = None;
+        let s = radio_from(unlined, dot, label, None)(&theme, off);
+        assert_eq!(
+            (s.border_color, s.border_width),
+            (own.border_color, own.border_width),
+            "{preset:?} border"
+        );
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}

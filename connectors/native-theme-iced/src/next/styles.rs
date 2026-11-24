@@ -459,33 +459,27 @@ pub fn text_editor(
 macro_rules! check_fills {
     ($w:expr, $home:literal) => {{
         let w = $w;
-        let unchecked = fill(
-            &w.indicator(WidgetState::NONE),
-            concat!($home, ".indicator(NONE).fill"),
-        )?;
-        let checked = fill(
-            &w.indicator(WidgetState::CHECKED),
-            concat!($home, ".indicator(CHECKED).fill"),
-        )?;
         let hover = w.indicator(WidgetState::HOVER);
         let checked_hover = w.indicator(WidgetState::HOVER | WidgetState::CHECKED);
         Ok::<CheckFills, Unmapped>(CheckFills {
-            checked,
-            unchecked,
+            checked: fill_of(&w.indicator(WidgetState::CHECKED)),
+            unchecked: fill_of(&w.indicator(WidgetState::NONE)),
             hover_fill: state_layer(&hover, concat!($home, ".indicator(HOVER).fill"))?
-                .map(|layer| layer.over(unchecked)),
+                .map(Layer::as_given),
             checked_hover_fill: flagged(&hover, &checked_hover, PartStated::FILL, |p| {
                 layer(p, concat!($home, ".indicator(HOVER|CHECKED).fill"))
             })?
-            .map(|layer| layer.over(checked)),
-            checked_border: line_or_none(
+            .map(Layer::as_given),
+            checked_border: edge(
                 &w.indicator(WidgetState::CHECKED),
                 concat!($home, ".indicator(CHECKED).stroke.color"),
-            )?,
-            unchecked_border: line_or_none(
+            )?
+            .map(|(_, line)| line),
+            unchecked_border: edge(
                 &w.indicator(WidgetState::NONE),
                 concat!($home, ".indicator(NONE).stroke.color"),
-            )?,
+            )?
+            .map(|(_, line)| line),
             hover_border: state_line(&hover, concat!($home, ".indicator(HOVER).stroke.color"))?,
             checked_hover_border: flagged(&hover, &checked_hover, PartStated::STROKE, |p| {
                 line_or_none(p, concat!($home, ".indicator(HOVER|CHECKED).stroke.color"))
@@ -503,9 +497,6 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
     let c = &r.checkbox;
     let rest = c.indicator(WidgetState::NONE);
     let mark = c.checkmark(WidgetState::CHECKED);
-    if !mark.stated.contains(IconStated::COLOR) {
-        return Err(Unmapped("checkbox.checkmark(CHECKED).color"));
-    }
     Ok(CheckboxSource {
         fills: check_fills!(c, "checkbox")?,
         disabled_background: state_fill(
@@ -529,7 +520,10 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
             |p| line_or_none(p, "checkbox.indicator(DISABLED|CHECKED).stroke.color"),
         )?,
         disabled_opacity: c.disabled_opacity,
-        mark: to_color(mark.color),
+        mark: mark
+            .stated
+            .contains(IconStated::COLOR)
+            .then(|| to_color(mark.color)),
         disabled_mark: {
             let checked = c.checkmark(WidgetState::DISABLED | WidgetState::CHECKED);
             (c.checkmark(WidgetState::DISABLED)
@@ -538,13 +532,10 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
                 && checked.stated.contains(IconStated::COLOR))
             .then(|| to_color(checked.color))
         },
-        label: text_color(&c.label(WidgetState::NONE), "checkbox.label(NONE).color")?,
-        disabled_label: text_color(
-            &c.label(WidgetState::DISABLED),
-            "checkbox.label(DISABLED).color",
-        )?,
-        border_width: stroke_width(&rest, "checkbox.indicator(NONE).stroke.width")?,
-        border_radius: radius(&rest, "checkbox.indicator(NONE).corners")?,
+        label: text_color_of(&c.label(WidgetState::NONE)),
+        disabled_label: text_color_of(&c.label(WidgetState::DISABLED)),
+        border_width: edge(&rest, "checkbox.indicator(NONE).stroke.width")?.map(|(width, _)| width),
+        border_radius: radius_or_iced(&rest, "checkbox.indicator(NONE).corners")?,
     })
 }
 
@@ -556,7 +547,10 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the box needs.
+/// [`super::Unmapped`] where the theme states no window background, or
+/// states a value in a form iced cannot draw (a layered fill with no
+/// fallback colour, a per-side stroke, a concentric radius); a value at
+/// rest it leaves unstated is iced's own box's (spec §10, rule 0).
 pub fn checkbox(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -570,7 +564,10 @@ pub fn checkbox(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the box needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke, a
+/// concentric radius); a value at rest it leaves unstated is iced's own
+/// box's (spec §10, rule 0).
 pub fn checkbox_over(
     r: &ResolvedTheme,
     backdrop: iced_core::Color,
@@ -586,20 +583,40 @@ pub fn checkbox_over(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the radio needs.
+/// [`super::Unmapped`] where the theme states a value in a form iced cannot
+/// draw (a layered fill with no fallback colour, a per-side stroke); a
+/// value at rest it leaves unstated is iced's own radio's (spec §10, rule
+/// 0).
 pub fn radio(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + Clone + use<>>
 {
+    let (fills, dot, label, width) = radio_source(r)?;
+    Ok(old::radio_from(fills, dot, label, width))
+}
+
+/// What [`radio`] hands [`old::radio_from`]: the circle's fills and
+/// strokes, the dot, the label and the stroke's width, each at rest `None`
+/// where the theme leaves it unstated.
+type RadioSource = (
+    CheckFills,
+    Option<iced_core::Color>,
+    Option<iced_core::Color>,
+    Option<f32>,
+);
+
+/// [`RadioSource`] of the 0.8.0 model.
+fn radio_source(r: &ResolvedTheme) -> Mapped<RadioSource> {
     let w = &r.radio;
-    Ok(old::radio_from(
+    Ok((
         check_fills!(w, "radio")?,
-        fill(&w.dot(WidgetState::CHECKED), "radio.dot(CHECKED).fill")?,
-        text_color(&w.label(WidgetState::NONE), "radio.label(NONE).color")?,
-        stroke_width(
+        fill_of(&w.dot(WidgetState::CHECKED)),
+        text_color_of(&w.label(WidgetState::NONE)),
+        edge(
             &w.indicator(WidgetState::NONE),
             "radio.indicator(NONE).stroke.width",
-        )?,
+        )?
+        .map(|(width, _)| width),
     ))
 }
 

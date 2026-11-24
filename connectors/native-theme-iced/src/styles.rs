@@ -1874,22 +1874,24 @@ pub fn checkbox(
 /// the theme states nothing for the hovered box, which is then iced's own
 /// (spec §2, `from_state`); the 0.7.2 model's unset soft options are the
 /// platform saying the box looks as it does at rest, and its reads state
-/// that.
+/// that. A fill or a stroke at rest the theme leaves unstated is `None`,
+/// iced's own control's at rest (spec §10, rule 0); the 0.7.2 model states
+/// each.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct CheckFills {
-    pub checked: Color,
+    pub checked: Option<Color>,
     /// The unchecked fill: `checkbox.unchecked_background`, or the box's own
     /// fill where that is unset.
-    pub unchecked: Color,
+    pub unchecked: Option<Color>,
     /// The fill of an unchecked box under the pointer: its hover layer over
     /// the unchecked fill.
     pub hover_fill: Option<Color>,
     /// The fill of a checked box under the pointer.
     pub checked_hover_fill: Option<Color>,
-    pub checked_border: Line,
+    pub checked_border: Option<Line>,
     /// `checkbox.unchecked_border_color`, or the box's own border colour
     /// where that is unset.
-    pub unchecked_border: Line,
+    pub unchecked_border: Option<Line>,
     /// The border of an unchecked box under the pointer.
     pub hover_border: Option<Line>,
     /// The border of a checked box under the pointer.
@@ -1909,15 +1911,15 @@ impl CheckFills {
         let unchecked_border = line(c.unchecked_border_color.unwrap_or(c.border.color));
         let checked_border = line(c.border.color);
         Self {
-            checked: to_color(c.checked_background),
-            unchecked,
+            checked: Some(to_color(c.checked_background)),
+            unchecked: Some(unchecked),
             hover_fill: Some(c.hover_background.map_or(unchecked, |hover| {
                 composite_over(to_color(hover), unchecked)
             })),
             // 0.7.2's connector kept a checked box's fill under the pointer.
             checked_hover_fill: Some(to_color(c.checked_background)),
-            checked_border,
-            unchecked_border,
+            checked_border: Some(checked_border),
+            unchecked_border: Some(unchecked_border),
             hover_border: Some(c.hover_border_color.map_or(unchecked_border, line)),
             checked_hover_border: Some(c.hover_border_color.map_or(checked_border, line)),
             hover_label: Some(to_color(c.font.color)),
@@ -1931,8 +1933,8 @@ impl CheckFills {
         let (align, s) = (listed.align, listed.states);
         let line = |l: Option<Line>| l.map(|l| l.aligned(align)).filter(|_| !s.hover_stroke);
         Self {
-            checked_border: self.checked_border.aligned(align),
-            unchecked_border: self.unchecked_border.aligned(align),
+            checked_border: self.checked_border.map(|l| l.aligned(align)),
+            unchecked_border: self.unchecked_border.map(|l| l.aligned(align)),
             hover_fill: self.hover_fill.filter(|_| !s.hover_fill),
             checked_hover_fill: self.checked_hover_fill.filter(|_| !s.hover_fill),
             hover_border: line(self.hover_border),
@@ -1946,33 +1948,27 @@ impl CheckFills {
     /// `width`) of a box that is checked or not, under the pointer or not,
     /// the stroke laid over that fill ([`Line::over`]). Under the pointer
     /// each the theme states nothing for is as [`in_state`] gives it against
-    /// `iced`, iced's own fill and border at rest and in the status.
+    /// `iced`, iced's own fill and border at rest and in the status. A fill,
+    /// a stroke or a width at rest the theme leaves unstated is iced's own
+    /// at rest.
     fn at(
         &self,
         is_checked: bool,
         is_hovered: bool,
-        width: f32,
+        width: Option<f32>,
         iced: impl Fn() -> ((Color, Border), (Color, Border)),
     ) -> (Color, Color, f32) {
-        let (fill, line, hover_fill, hover_line) = if is_checked {
-            (
-                self.checked,
-                self.checked_border,
-                self.checked_hover_fill,
-                self.checked_hover_border,
-            )
+        let ((iced_fill, iced_rest), (iced_hover_fill, iced_hover)) = iced();
+        let (fill, line) = self.rest(is_checked, (iced_fill, iced_rest));
+        let width = width.unwrap_or(iced_rest.width);
+        let (hover_fill, hover_line) = if is_checked {
+            (self.checked_hover_fill, self.checked_hover_border)
         } else {
-            (
-                self.unchecked,
-                self.unchecked_border,
-                self.hover_fill,
-                self.hover_border,
-            )
+            (self.hover_fill, self.hover_border)
         };
         if !is_hovered {
             return (fill, line.over(fill), line.width(width));
         }
-        let ((iced_fill, iced_rest), (iced_hover_fill, iced_hover)) = iced();
         let fill = in_state(hover_fill, fill, (iced_fill, iced_hover_fill));
         let rest = Outline {
             line,
@@ -1981,6 +1977,20 @@ impl CheckFills {
         };
         let border = rest.in_state(hover_line, fill, (iced_rest, iced_hover));
         (fill, border.color, border.width)
+    }
+
+    /// The fill and the stroke of a box at rest, checked or not, each the
+    /// theme leaves unstated `iced`'s, iced's own fill and border at rest.
+    fn rest(&self, is_checked: bool, iced: (Color, Border)) -> (Color, Line) {
+        let (fill, line) = if is_checked {
+            (self.checked, self.checked_border)
+        } else {
+            (self.unchecked, self.unchecked_border)
+        };
+        (
+            fill.unwrap_or(iced.0),
+            line.unwrap_or(Line::outside(iced.1.color)),
+        )
     }
 }
 
@@ -2000,14 +2010,17 @@ pub(crate) struct CheckboxSource {
     pub checked_disabled_border: Option<Line>,
     pub disabled_opacity: Option<f32>,
     /// The check mark.
-    pub mark: Color,
+    pub mark: Option<Color>,
     /// The checked disabled box's mark, where the theme states a disabled
     /// mark.
     pub disabled_mark: Option<Color>,
-    pub label: Color,
-    pub disabled_label: Color,
-    pub border_width: f32,
-    pub border_radius: f32,
+    /// The labels, the mark, the stroke's width and the corners: each
+    /// `None` where the theme leaves it unstated, iced's own box's in the
+    /// status (spec §10, rule 0); the 0.7.2 model states each.
+    pub label: Option<Color>,
+    pub disabled_label: Option<Color>,
+    pub border_width: Option<f32>,
+    pub border_radius: Option<f32>,
 }
 
 impl CheckboxSource {
@@ -2020,15 +2033,15 @@ impl CheckboxSource {
             fills,
             disabled_background: c.disabled_background.map(to_color),
             checked_disabled_background: c.disabled_background.map(to_color),
-            disabled_border: Some(fills.unchecked_border),
-            checked_disabled_border: Some(fills.checked_border),
+            disabled_border: fills.unchecked_border,
+            checked_disabled_border: fills.checked_border,
             disabled_opacity: Some(c.disabled_opacity),
-            mark: to_color(c.indicator_color),
+            mark: Some(to_color(c.indicator_color)),
             disabled_mark: None,
-            label: to_color(c.font.color),
-            disabled_label: to_color(c.disabled_text_color),
-            border_width: c.border.line_width,
-            border_radius: c.border.corner_radius,
+            label: Some(to_color(c.font.color)),
+            disabled_label: Some(to_color(c.disabled_text_color)),
+            border_width: Some(c.border.line_width),
+            border_radius: Some(c.border.corner_radius),
         }
     }
 
@@ -2086,13 +2099,15 @@ pub(crate) fn checkbox_from(
     let disabled_label = c.disabled_label;
 
     let border_width = c.border_width;
-    let border_radius = Radius::new(c.border_radius);
+    let border_radius = c.border_radius.map(Radius::new);
 
     move |theme, status| {
         let own = |status| {
             let own = iced_widget::checkbox::primary(theme, status);
             (painted(Some(own.background)), own.border, own.text_color)
         };
+        let own_style = iced_widget::checkbox::primary(theme, status);
+        let mark = mark.unwrap_or(own_style.icon_color);
         // A box the theme states no opacity for is drawn in the colours it
         // states, not faded.
         let fade = |under: Color, color: Color| {
@@ -2104,7 +2119,7 @@ pub(crate) fn checkbox_from(
                     let (fill, border, _) = own(status);
                     ((fill, border), (fill, border))
                 });
-                (fill, border, Some(label), mark, width)
+                (fill, border, label.or(own_style.text_color), mark, width)
             }
             Status::Hovered { is_checked } => {
                 let rest = own(Status::Active { is_checked });
@@ -2114,7 +2129,7 @@ pub(crate) fn checkbox_from(
                 });
                 let text = in_state(
                     fills.hover_label.map(Some),
-                    Some(label),
+                    label.or(rest.2),
                     (rest.2, hovered.2),
                 );
                 (fill, border, text, mark, width)
@@ -2136,39 +2151,32 @@ pub(crate) fn checkbox_from(
             // `checkbox.disabled_opacity` as one widget over the ground: the
             // border and the mark on the fill.
             Status::Disabled { is_checked } => {
-                let (at_rest, line, stated_line, disabled) = if is_checked {
-                    (
-                        fills.checked,
-                        fills.checked_border,
-                        checked_disabled_border,
-                        checked_disabled,
-                    )
+                let (stated_line, disabled) = if is_checked {
+                    (checked_disabled_border, checked_disabled)
                 } else {
-                    (
-                        fills.unchecked,
-                        fills.unchecked_border,
-                        disabled_border,
-                        disabled,
-                    )
+                    (disabled_border, disabled)
                 };
+                let (own_fill, own_rest, _) = own(Status::Active { is_checked });
+                let (_, own_disabled, _) = own(status);
+                let (at_rest, line) = fills.rest(is_checked, (own_fill, own_rest));
                 let (background, mark) = match disabled {
-                    Some(fill) => (fill, disabled_label),
+                    Some(fill) => (fill, disabled_label.unwrap_or(own_style.icon_color)),
                     None => (at_rest, mark),
                 };
                 let mark = disabled_mark.filter(|_| is_checked).unwrap_or(mark);
                 let fill = composite_over(background, ground);
-                let (_, own_rest, _) = own(Status::Active { is_checked });
-                let (_, own_disabled, _) = own(status);
                 let rest = Outline {
                     line,
-                    width: border_width,
+                    width: border_width.unwrap_or(own_rest.width),
                     radius: own_rest.radius,
                 };
                 let border = rest.in_state(stated_line, background, (own_rest, own_disabled));
                 (
                     fade(ground, background),
                     fade(fill, border.color),
-                    Some(fade(ground, disabled_label)),
+                    disabled_label
+                        .map(|label| fade(ground, label))
+                        .or(own_style.text_color),
                     fade(fill, mark),
                     border.width,
                 )
@@ -2180,7 +2188,7 @@ pub(crate) fn checkbox_from(
             border: Border {
                 color: border_color,
                 width,
-                radius: border_radius,
+                radius: border_radius.unwrap_or(own_style.border.radius),
             },
             text_color,
         }
@@ -2225,19 +2233,20 @@ pub fn radio(
     let c = &resolved.checkbox;
     radio_from(
         CheckFills::of(c),
-        to_color(c.indicator_color),
-        to_color(c.font.color),
-        c.border.line_width,
+        Some(to_color(c.indicator_color)),
+        Some(to_color(c.font.color)),
+        Some(c.border.line_width),
     )
 }
 
 /// [`radio`] of what it reads: the circle's fills and borders, the dot, the
-/// label and the border's width.
+/// label and the border's width, each the theme leaves unstated (`None`)
+/// iced's own radio's in the status (spec §10, rule 0).
 pub(crate) fn radio_from(
     fills: CheckFills,
-    dot: Color,
-    label: Color,
-    border_width: f32,
+    dot: Option<Color>,
+    label: Option<Color>,
+    border_width: Option<f32>,
 ) -> impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + Clone + use<> {
     use iced_widget::radio::{Status, Style};
 
@@ -2257,7 +2266,7 @@ pub(crate) fn radio_from(
                     let (fill, border, _) = own(status);
                     ((fill, border), (fill, border))
                 });
-                (fill, border, Some(label), width)
+                (fill, border, label.or(own(status).2), width)
             }
             Status::Hovered { is_selected } => {
                 let rest = own(Status::Active { is_selected });
@@ -2267,7 +2276,7 @@ pub(crate) fn radio_from(
                 });
                 let text = in_state(
                     fills.hover_label.map(Some),
-                    Some(label),
+                    label.or(rest.2),
                     (rest.2, hovered.2),
                 );
                 (fill, border, text, width)
@@ -2275,7 +2284,7 @@ pub(crate) fn radio_from(
         };
         Style {
             background: Background::Color(background),
-            dot_color: dot,
+            dot_color: dot.unwrap_or(iced_widget::radio::default(theme, status).dot_color),
             border_width,
             border_color,
             text_color,

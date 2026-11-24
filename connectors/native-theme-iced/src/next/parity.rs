@@ -3200,9 +3200,9 @@ fn compare_styles(
             n::radio(new),
             |l: Listed| o::radio_from(
                 fills.listed(l),
-                to_color(c.indicator_color),
-                to_color(c.font.color),
-                c.border.line_width,
+                Some(to_color(c.indicator_color)),
+                Some(to_color(c.font.color)),
+                Some(c.border.line_width),
             ),
             circles,
             none
