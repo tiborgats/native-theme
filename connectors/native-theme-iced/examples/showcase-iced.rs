@@ -7592,36 +7592,6 @@ struct TabSpec {
     tag: Option<&'static str>,
 }
 
-/// A tab as, without `iced_aw`, the Basic page's are, on the 0.7.2 theme
-/// until that page moves: a button in [`tab_style`], `label` in
-/// `tab.font`, padded by `tab.border.padding` inside its border (iced's
-/// button padding on a side it leaves unstated), at least `tab.min_width`
-/// by `tab.min_height`, with the open tab's line where the theme states
-/// one. The page tabs and the inspector's take [`next_tab_button`].
-#[cfg(not(feature = "iced_aw"))]
-fn tab_button<'a>(
-    state: &'a State,
-    label: &'a str,
-    open: bool,
-    message: Message,
-) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
-    let t = &resolved.tab;
-    let pad = native_theme_iced::padding_inside_border(&t.border, button::DEFAULT_PADDING);
-    let min = iced::Size::new(
-        (t.min_width - pad.x()).max(0.0),
-        (t.min_height - pad.y()).max(0.0),
-    );
-    let tab = button(at_least(
-        text(label).themed(&t.font, resolved, &state.accessibility),
-        min,
-    ))
-    .padding(pad)
-    .style(tab_style(state.next_shown(), open))
-    .on_press(message);
-    native_theme_iced::tab_indicator(resolved, tab, open)
-}
-
 /// The room a row of tabs keeps free at both ends, inside its clip, for the
 /// selected tab's outward corners ([`native_theme_iced::tab_flares`]):
 /// `tab.active_outward_corner_radius` where it is a positive, finite length,
@@ -7807,7 +7777,7 @@ thread_local! {
 }
 
 /// The widths of the texts the tab rows and the menus are sized by
-/// ([`tab_width`], [`aw_tab_width`], [`menu_width`]), each as iced shapes it
+/// ([`next_tab_width`], [`aw_tab_width`], [`menu_width`]), each as iced shapes it
 /// ([`MeasuredText`]) in a font at a size, shaped the first time a view asks
 /// for it and kept: the view is rebuilt on every message, twenty times a
 /// second while the Basic page's spinner turns, and a text's width changes
@@ -7844,20 +7814,6 @@ impl LabelWidths {
     fn clear(&self) {
         self.0.take();
     }
-}
-
-/// The width [`tab_button`] lays a tab reading `label` out at: the label as
-/// iced shapes it in `tab.font` ([`LabelWidths`]), at least `tab.min_width`
-/// less the padding, inside the padding. The Basic page's, without
-/// `iced_aw`, on the 0.7.2 theme until that page moves; the page tabs take
-/// [`next_tab_width`].
-#[cfg(not(feature = "iced_aw"))]
-fn tab_width(state: &State, label: &'static str) -> f32 {
-    let t = &state.current_resolved.tab;
-    let pad = native_theme_iced::padding_inside_border(&t.border, button::DEFAULT_PADDING);
-    let size = scaled_text_size(t.font.size, &state.accessibility);
-    let text = state.label_widths.width(label, theme_font(&t.font), size);
-    pad.x() + text.max((t.min_width - pad.x()).max(0.0))
 }
 
 /// The left edges of tabs `widths` wide, laid `gap` apart after `room`, in
@@ -10164,15 +10120,17 @@ fn menu_layout_route(
     Some(route)
 }
 
-/// The route of a layout leaf `leaf` of the page tabs or the inspector's
-/// tabs under `r`, the installed 0.8.0 theme, of the tab row where `strip`
-/// ([`tab_row`]), else of a tab ([`next_tab_button`]): what is drawn of the
-/// leaf's 0.8.0 home, naming it, or that the home is unstated and what is
-/// drawn in its place. `None` for a leaf neither lays out.
+/// The route of a layout leaf `leaf` of the page tabs, the inspector's tabs
+/// or, without `iced_aw`, the Basic page's, under `r`, the installed 0.8.0
+/// theme, of the tab row where `strip` (laid out by `row`, [`tab_row`] or
+/// [`basic_tab_row`]), else of a tab ([`next_tab_button`]): what is drawn
+/// of the leaf's 0.8.0 home, naming it, or that the home is unstated and
+/// what is drawn in its place. `None` for a leaf neither lays out.
 fn tab_layout_route(
     r: &native_theme::next::ResolvedTheme,
     leaf: &str,
     strip: bool,
+    row: &str,
 ) -> Option<String> {
     let t = &r.tab;
     let tab = t.tab(WidgetState::NONE);
@@ -10188,7 +10146,7 @@ fn tab_layout_route(
             "not drawn: tab.item_gap is unstated; the tabs' row keeps its own spacing, none"
                 .to_owned()
         }
-        "tab.item_gap_px" => "tab_row: the tabs' Row::spacing, tab.item_gap".to_owned(),
+        "tab.item_gap_px" => format!("{row}: the tabs' Row::spacing, tab.item_gap"),
         "tab.active_outward_corner_radius_px" if next_flare_room(r) == 0.0 => {
             "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
              and the row keeps no room for them"
@@ -10608,11 +10566,23 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         && !under("chrome.page_tabs.menu")
         && !under("chrome.page_tabs.rule"))
         || under("chrome.side_panel.inspector_tabs");
-    if chrome_tabs
+    let basic_tabs = !cfg!(feature = "iced_aw")
+        && ["basic.tabs.bar", "basic.tabs.one", "basic.tabs.two"].contains(&id);
+    if (chrome_tabs || basic_tabs)
         && let Some(route) = tab_layout_route(
             state.next_shown(),
             leaf,
-            id == "chrome.page_tabs" || id == "chrome.side_panel.inspector_tabs",
+            [
+                "chrome.page_tabs",
+                "chrome.side_panel.inspector_tabs",
+                "basic.tabs.bar",
+            ]
+            .contains(&id),
+            if basic_tabs {
+                "basic_tab_row"
+            } else {
+                "tab_row"
+            },
         )
     {
         return if route.starts_with("not drawn") {
@@ -11272,6 +11242,20 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "bar_background") => {
             "surface: the strip container's background, tab.bar(NONE).fill".into()
         }
+        ("tab", "item_gap_px") if id == "basic.page" => {
+            "basic_widest: the gap between the two tabs a column holds, tab.item_gap \
+             (next_tab_gap)"
+                .into()
+        }
+        ("tab", "min_width_px") if id == "basic.page" => {
+            if cfg!(feature = "iced_aw") {
+                "basic_tabs_width: the two tabs a column holds, each aw_tab_width wide".into()
+            } else {
+                "basic_tabs_width: the two tabs a column holds, each next_tab_width wide, at \
+                 least tab.tab(NONE).min_size[0]"
+                    .into()
+            }
+        }
         ("tab", "item_gap_px") => "the tabs' spacing, where stated".into(),
         #[cfg(feature = "iced_aw")]
         ("tab", "active_indicator_width_px" | "active_indicator_side") if under("basic.tabs.") => {
@@ -11281,7 +11265,13 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "active_indicator_width_px" | "active_indicator_side") => {
             "native_theme_iced::tab_indicator: the line stacked over the open tab".into()
         }
-        ("tab", "active_outward_corner_radius_px") if flare_room(resolved) == 0.0 => {
+        ("tab", "active_outward_corner_radius_px")
+            if (if under("basic.tabs.") {
+                flare_room(resolved)
+            } else {
+                next_flare_room(state.next_shown())
+            }) == 0.0 =>
+        {
             "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
              and the row keeps no room for them"
                 .into()
@@ -13205,8 +13195,8 @@ fn basic_segmented_in_last_column(columns: usize) -> bool {
 
 /// The two Basic tabs' widths together, as the Basic page's tab row lays
 /// them out: with `iced_aw` one width each, [`aw_tab_width`], which fits the
-/// wider label and is never below `tab.min_width`; without it each
-/// [`tab_button`]'s own, [`tab_width`].
+/// wider label and is never below `tab.min_width`; without it each tab's
+/// own on the installed 0.8.0 theme, [`next_tab_width`].
 fn basic_tabs_width(state: &State) -> f32 {
     #[cfg(feature = "iced_aw")]
     {
@@ -13216,7 +13206,10 @@ fn basic_tabs_width(state: &State) -> f32 {
     }
     #[cfg(not(feature = "iced_aw"))]
     {
-        BASIC_TABS.iter().map(|label| tab_width(state, label)).sum()
+        BASIC_TABS
+            .iter()
+            .map(|label| next_tab_width(state, label))
+            .sum()
     }
 }
 
@@ -13577,16 +13570,19 @@ fn px_text(px: f32) -> String {
 }
 
 /// The Basic page's tab row: `iced_aw`'s `TabBar` in the `iced_aw` build,
-/// the page tab strip's tabs ([`tab_button`]) otherwise, `basic_tab` open,
-/// with its outward corners where the theme states them
+/// on the 0.7.2 theme with the Extra page's bar ([`aw_tab_width`]), with its
+/// outward corners where that theme states them
 /// ([`native_theme_iced::tab_flares`]) and the room for them at both ends
-/// ([`flare_room`]): inside the strip without `iced_aw`, outside the bar,
-/// which takes no padding of its own, with it.
+/// ([`flare_room`]) outside the bar, which takes no padding of its own;
+/// otherwise the page tab strip's tabs on the installed 0.8.0 theme
+/// ([`next_tab_button`]), with their flares (`iced_next::tab_flares`) and
+/// the room for them ([`next_flare_room`]) inside the strip; `basic_tab`
+/// open.
 fn basic_tab_row(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let tab_t = &resolved.tab;
     #[cfg(feature = "iced_aw")]
     let tab_row: Element<'_, Message> = {
+        let resolved = &state.current_resolved;
+        let tab_t = &resolved.tab;
         let [one, two] = BASIC_TABS;
         // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
         // and takes a padding whole.
@@ -13666,28 +13662,35 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
         .style(surface(state.next_shown(), Surface::TabStrip))
         .into()
     };
-    // Without iced_aw, the page tab strip's tabs ([`tab_button`]), the
-    // chosen one open, tab.item_gap apart where stated (a row's own none
-    // otherwise), on a strip of `tab.bar_background` as iced_aw's bar is.
+    // Without iced_aw, the page tab strip's tabs on the installed 0.8.0
+    // theme ([`next_tab_button`]), the chosen one open, tab.item_gap apart
+    // where stated (a row's own none otherwise), on a strip of
+    // `tab.bar(NONE).fill` as iced_aw's bar is.
     #[cfg(not(feature = "iced_aw"))]
     let tab_row: Element<'_, Message> = {
-        let tabs = BASIC_TABS.iter().enumerate().map(|(i, label)| {
-            tab_button(
-                state,
-                label,
-                i == state.basic_tab,
-                Message::BasicTabSelected(i),
-            )
-        });
-        let room = flare_room(resolved);
-        let tabs = match tab_t.item_gap {
-            Some(gap) => row(tabs).spacing(gap),
-            None => row(tabs),
-        }
-        .padding(Padding::ZERO.left(room).right(room));
+        let r = state.next_shown();
+        let room = next_flare_room(r);
+        let row_of = || {
+            let tabs = BASIC_TABS.iter().enumerate().map(|(i, label)| {
+                next_tab_button(
+                    state,
+                    label,
+                    i == state.basic_tab,
+                    Message::BasicTabSelected(i),
+                )
+            });
+            match r.tab.item_gap {
+                Some(gap) => row(tabs).spacing(gap),
+                None => row(tabs),
+            }
+            .padding(Padding::ZERO.left(room).right(room))
+            .wrap()
+        };
         // The open tab's flares over the row, which `tab_flares` passes
-        // through, so `[0, i]` still names the container's tabs.
-        let tabs = native_theme_iced::tab_flares(resolved, tabs.wrap(), &[state.basic_tab]);
+        // through, so `[0, i]` still names the container's tabs; the row
+        // alone where the connector cannot map them.
+        let tabs = iced_next::tab_flares(r, row_of(), &[state.basic_tab])
+            .unwrap_or_else(|_| row_of().into());
         tagged(
             "basic.tabs.bar",
             container(tabs).style(surface(state.next_shown(), Surface::TabStrip)),
@@ -13828,7 +13831,7 @@ fn next_expander_arrow_size(r: &native_theme::next::ResolvedTheme) -> f32 {
 /// `styles::container_card`. The list is list rows in a scrollable and the
 /// spinner an arc on a canvas, each drawn from its `list.*` and `spinner.*`
 /// leaves. The tab bar is `iced_aw`'s; without the `iced_aw` feature it is
-/// the page tab strip's tabs ([`tab_button`]).
+/// the page tab strip's tabs ([`next_tab_button`]).
 fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
     let next = state.next_shown();
@@ -29875,6 +29878,29 @@ mod tests {
         found
     }
 
+    /// The Basic page shown under `preset` in the mode `dark` names, installed
+    /// in both models ([`State::install_in_mode`], so a later change of the
+    /// preferences resolves the same preset again), under the default
+    /// accessibility preferences, the side panel shown.
+    fn basic_installed(preset: &str, dark: bool) -> State {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            active_tab: Tab::Basic,
+            ..State::default()
+        };
+        let mode = if dark {
+            AppColorMode::Dark
+        } else {
+            AppColorMode::Light
+        };
+        assert!(
+            state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode),
+            "{preset} (dark: {dark}) does not install: {:?}",
+            state.error_message
+        );
+        state
+    }
+
     /// The Basic page's column rule, the gpui and egui pages' too: five
     /// columns under a preset whose widest fixed-width control fits a fifth
     /// of the page, four under material-3 (its drop-down is 210 wide), two
@@ -29886,14 +29912,11 @@ mod tests {
         for (preset, content, columns) in [
             ("kde-breeze", 979.0, 5),
             ("adwaita", 979.0, 5),
-            ("catppuccin-mocha", 976.0, 5),
             ("material-3", 976.0, 4),
             ("kde-breeze", 400.0, 2),
             ("kde-breeze", 250.0, 1),
         ] {
-            let mut state = State::default();
-            let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), false);
-            assert!(loaded.is_ok(), "{preset}: {loaded:?}");
+            let state = basic_installed(preset, false);
             assert_eq!(
                 basic_column_count(
                     state.next_shown(),
@@ -32491,28 +32514,20 @@ mod tests {
     /// control may reach into the section gap but keeps `layout.widget_gap`
     /// from the next column's left edge, and in the last column may reach
     /// into the page's right margin but keeps `layout.widget_gap` from the
-    /// scroll area's edge, under every bundled preset at a text scale of 1 and
-    /// of 2.25, the largest, with the side panel shown, as the window opens:
-    /// at 2.25 three columns, the old floor, left it past the window under
-    /// macos-monterey (about 38 px) and ios-13. The four Linux parity presets
-    /// keep their columns at 1: kde-breeze, adwaita and catppuccin-mocha
-    /// five, material-3 four. It prints each preset's count.
+    /// scroll area's edge, under every preset the Theme row installs
+    /// ([`installed_presets`]) at a text scale of 1 and of 2.25, the largest,
+    /// with the side panel shown, as the window opens: at 2.25 three columns,
+    /// the old floor, left it past the window under macos-monterey (about
+    /// 38 px) and ios-13. The Linux parity presets the 0.8.0 model has keep
+    /// their columns at 1: kde-breeze and adwaita five, material-3 four. It
+    /// prints each preset's count.
     #[test]
     fn the_column_count_holds_the_segmented_control() {
         let mut faults = Vec::new();
-        let kept = [
-            ("kde-breeze", 5),
-            ("adwaita", 5),
-            ("catppuccin-mocha", 5),
-            ("material-3", 4),
-        ];
-        for preset in native_theme::theme::Theme::list_presets()
-            .iter()
-            .map(|info| info.key)
-        {
+        let kept = [("kde-breeze", 5), ("adwaita", 5), ("material-3", 4)];
+        for preset in installed_presets() {
             for scale in [1.0, 2.25] {
-                let mut state = loaded(preset, false);
-                state.active_tab = Tab::Basic;
+                let mut state = basic_installed(preset, false);
                 let _ = update(&mut state, Message::TextScaleSelected(TextScale(scale)));
                 let gap = state.next_shown().layout.widget_gap.unwrap_or_default();
                 let margin = state.next_shown().layout.window_margin.unwrap_or_default();
@@ -32942,11 +32957,12 @@ mod tests {
     /// `tab_style` reads, and the 0.7.2 theme's `tab.active_background`,
     /// which `styles::aw::tab_bar` reads) fills the open tab in it, a tab's
     /// label colour set apart (`tab.label(NONE).color`, `tab.font.color`)
-    /// moves the other tab's label, and splicing
-    /// `tab.min_width` sizes the other tab to it; a click on the second tab
-    /// opens it, which then takes the open tab's fill.
+    /// moves the other tab's label, and splicing the tab's least width
+    /// (`tab.min_width` with `iced_aw`, `tab.tab(NONE).min_size[0]` on the
+    /// installed 0.8.0 theme without it) sizes the other tab to it; a click
+    /// on the second tab opens it, which then takes the open tab's fill.
     #[test]
-    fn the_basic_tabs_are_the_themes_tabs_and_switch() {
+    fn the_basic_tabs_are_the_themes_tabs_and_switch() -> Result<(), String> {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             side_panel_visible: false,
@@ -33021,13 +33037,27 @@ mod tests {
         state.current_resolved = theirs;
         (state.next_resolved, state.next_inactive) = next_theirs;
         let wide = two.width.max(one.width) + 37.0;
-        state.current_resolved.tab.min_width = wide;
+        #[cfg(feature = "iced_aw")]
+        {
+            state.current_resolved.tab.min_width = wide;
+        }
+        #[cfg(not(feature = "iced_aw"))]
+        {
+            let patch = native_theme::next::ThemePatch::from_toml(&format!(
+                "[[widgets.tab.rules]]\ntab.min_size = [{wide:?}, \"none\"]\n"
+            ))
+            .map_err(|error| format!("the patch: {error:?}"))?;
+            splice_next(&mut state, |r| r.apply_patch(&patch));
+        }
         let (_, rects, _) = basic_frame(&state);
         let drawn = rect(&rects, "basic.tabs.two").width;
-        assert!(
-            (drawn - wide).abs() < 0.5,
-            "the other tab is {drawn} wide under tab.min_width {wide}"
-        );
+        if (drawn - wide).abs() < 0.5 {
+            Ok(())
+        } else {
+            Err(format!(
+                "the other tab is {drawn} wide under the least width {wide}"
+            ))
+        }
     }
 
     /// A colour for a splice, from its `#rrggbb`.
@@ -33111,8 +33141,10 @@ mod tests {
 
     /// G3 T13 (D1): the Basic page's tabs curve out at the open tab's feet,
     /// in this build (the default one, and `--features iced_aw`, the one the
-    /// Windows runners capture): with `tab.active_background` set apart from
-    /// the bar's fill, the pixel centred at `(x0 - 0.25, y1 - 0.25)` of the
+    /// Windows runners capture): with the open tab's fill set apart from the
+    /// bar's (`tab.active_background`, which the `iced_aw` bar's flares
+    /// read, and `tab.tab(SELECTED).fill` on the installed 0.8.0 theme, which
+    /// the other build's do), the pixel centred at `(x0 - 0.25, y1 - 0.25)` of the
     /// open tab's rectangle and its mirror `(x1 + 0.25, y1 - 0.25)`, 4.65
     /// from each flare's centre, past the outline's band, are
     /// `tab.active_background` (each channel within 2), and with the radius
@@ -33126,6 +33158,11 @@ mod tests {
             for radius in [Some(4.0), None] {
                 let mut state = curving_out(radius);
                 state.current_resolved.tab.active_background = fill;
+                for next in [&mut state.next_resolved, &mut state.next_inactive] {
+                    if let Some(marked) = with_home(next, "tab.tab(SELECTED).fill", "#13579b") {
+                        *next = marked;
+                    }
+                }
                 state.basic_tab = open;
                 let (image, rects, scale) = tab_rows_frame(&state);
                 let tab = listed(&rects, id);
@@ -33182,6 +33219,97 @@ mod tests {
                 columns,
                 "radius {radius:?}"
             );
+        }
+    }
+
+    /// The Basic tabs without `iced_aw` follow the installed 0.8.0 theme
+    /// alone ([`basic_tab_row`], [`next_tab_button`], [`basic_tabs_width`]):
+    /// kde-breeze with, on the 0.8.0 theme only, a 60 px tab label, a 9 px
+    /// `tab.item_gap` and a 5 px `tab.active_outward_corner_radius` lays the
+    /// first tab 5 px into its bar, the second 9 px after it, each as wide as
+    /// [`next_tab_width`] has it (wider than at the label's own size), and
+    /// the column rule's widest control holds the row and the room for its
+    /// flares at both ends.
+    #[cfg(not(feature = "iced_aw"))]
+    #[test]
+    fn the_basic_tabs_take_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.tab.rules]]\nlabel.size_px = 60.0\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        let before = next_tab_width(&state, "One");
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.tab.item_gap = Some(9.0);
+            r.tab.active_outward_corner_radius = Some(5.0);
+        });
+        state.label_widths.clear();
+        let t = &state.current_resolved.tab;
+        if t.font.size == 60.0
+            || t.item_gap == Some(9.0)
+            || t.active_outward_corner_radius == Some(5.0)
+        {
+            return Err("the splice states 0.7.2's tab".into());
+        }
+        let widths = BASIC_TABS.map(|label| next_tab_width(&state, label));
+        if widths[0] <= before + 1.0 {
+            return Err(format!(
+                "next_tab_width is {}px at 60 px, {before}px before: the patch sizes no label",
+                widths[0]
+            ));
+        }
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let laid = recording(|| {
+            let iced_theme = super::theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    faults.push(format!("the interface did not draw: {error}"));
+                }
+            }
+            drawn_layout()
+        });
+        let (Some(bar), Some(one), Some(two)) = (
+            laid.get("basic.tabs.bar"),
+            laid.get("basic.tabs.one"),
+            laid.get("basic.tabs.two"),
+        ) else {
+            return Err("the Basic tabs are not drawn".into());
+        };
+        if !near(one.x - bar.x, 5.0) {
+            faults.push(format!(
+                "the first tab is {}px into its bar, not 5",
+                one.x - bar.x
+            ));
+        }
+        if !near(two.x - (one.x + one.width), 9.0) {
+            faults.push(format!(
+                "the tabs are {}px apart, not 9",
+                two.x - (one.x + one.width)
+            ));
+        }
+        for (tab, width) in [(one, widths[0]), (two, widths[1])] {
+            if !near(tab.width, width) {
+                faults.push(format!(
+                    "a tab is {}px wide, next_tab_width {width}px",
+                    tab.width
+                ));
+            }
+        }
+        let row = two.x + two.width - one.x;
+        let widest = basic_widest(state.next_shown(), basic_tabs_width(&state));
+        if widest + 0.01 < row + 10.0 {
+            faults.push(format!(
+                "the column rule counts {widest}px for a {row}px row and 10px of flares"
+            ));
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
         }
     }
 
@@ -33305,7 +33433,7 @@ mod tests {
                      pointer is iced_aw's Hovered, drawn with no outline and square corners, \
                      styles/aw.rs:241-244, while its flares, their arcs and the strip stay)"
                 } else {
-                    "native_theme_iced::tab_flares, over the row"
+                    "native_theme_iced::next::tab_flares, over the row"
                 },
             ),
             (
@@ -33322,7 +33450,7 @@ mod tests {
                     "a container's padding outside the bar at both ends, filled \
                      tab.bar_background as the bar is"
                 } else {
-                    "the row's padding at both ends"
+                    "the row's padding at both ends (next_flare_room)"
                 },
             ),
             ("basic.page", "room for both flares in basic_column_count"),
@@ -33387,7 +33515,6 @@ mod tests {
     }
 
     /// The keys of the presets the Theme row installs, the 0.8.0 model's.
-    #[cfg(feature = "iced_aw")]
     fn installed_presets() -> impl Iterator<Item = &'static str> {
         native_theme::theme::Theme::list_presets()
             .iter()
@@ -34315,37 +34442,60 @@ mod tests {
 
     /// M9b Step 8, round 3 (the re-review's n8): the Basic page's column rule
     /// reserves the tabs as its tab row draws them, their labels fitted
-    /// ([`basic_tabs_width`]), not two `tab.min_width`s: under kde-breeze
-    /// with `tab.font.size` spliced to 40 px, where each label needs more
-    /// than the minimum and the tab row is the page's widest control, the
-    /// widest control the rule counts with holds the drawn tab row and the
-    /// room for its flares.
+    /// ([`basic_tabs_width`]), not two least widths: under kde-breeze with
+    /// the tab label's size spliced to 40 px (`tab.font.size` on the 0.7.2
+    /// theme `iced_aw`'s bar reads, `tab.label(NONE).size_px` on the
+    /// installed 0.8.0 theme without it), where each label needs more than
+    /// the minimum and the tab row is the page's widest control, the widest
+    /// control the rule counts with holds the drawn tab row and the room for
+    /// its flares.
     #[test]
-    fn the_basic_column_rule_reserves_the_fitted_tabs() {
+    fn the_basic_column_rule_reserves_the_fitted_tabs() -> Result<(), String> {
         let mut state = page_state("kde-breeze", Tab::Basic);
-        state.current_resolved.tab.font.size = 40.0;
-        let t = &state.current_resolved.tab;
+        #[cfg(feature = "iced_aw")]
+        let least = {
+            state.current_resolved.tab.font.size = 40.0;
+            let t = &state.current_resolved.tab;
+            2.0 * t.min_width + t.item_gap.unwrap_or_default()
+        };
+        #[cfg(not(feature = "iced_aw"))]
+        let least = {
+            let patch = native_theme::next::ThemePatch::from_toml(
+                "[[widgets.tab.rules]]\nlabel.size_px = 40.0\n",
+            )
+            .map_err(|error| format!("the patch: {error:?}"))?;
+            splice_next(&mut state, |r| r.apply_patch(&patch));
+            let r = state.next_shown();
+            if r.tab.label(WidgetState::NONE).size_px != 40.0 {
+                return Err("the patch does not size the tab label".into());
+            }
+            2.0 * r.tab.tab(WidgetState::NONE).min_size[0].unwrap_or_default() + next_tab_gap(r)
+        };
         let (drawn, _) = drawn_frame(&state);
         let (Some(one), Some(two)) = (drawn.get("basic.tabs.one"), drawn.get("basic.tabs.two"))
         else {
-            panic!("the Basic tabs are not drawn");
+            return Err("the Basic tabs are not drawn".into());
         };
         let row = (two.x + two.width) - one.x;
         let next = state.next_shown();
         let others = next_drop_down_width(next).max(BASIC_WIDE).max(BASIC_WIDTH);
-        assert!(
-            row > (2.0 * t.min_width + t.item_gap.unwrap_or_default()).max(others) + 0.01,
-            "the tab row is {row}px, no wider than two tab.min_width ({}) or the page's other \
-             widest control ({others}): the case is not met",
-            t.min_width
-        );
+        if row <= least.max(others) + 0.01 {
+            return Err(format!(
+                "the tab row is {row}px, no wider than two least widths and the gap ({least}) \
+                 or the page's other widest control ({others}): the case is not met"
+            ));
+        }
         let room = next_flare_room(next);
         let widest = basic_widest(next, basic_tabs_width(&state));
-        assert!(
-            widest + 0.01 >= row + room + room,
-            "the column rule counts {widest}px, the tab row is {row}px and its flares' room {}px",
-            2.0 * room
-        );
+        if widest + 0.01 >= row + room + room {
+            Ok(())
+        } else {
+            Err(format!(
+                "the column rule counts {widest}px, the tab row is {row}px and its flares' room \
+                 {}px",
+                2.0 * room
+            ))
+        }
     }
 
     /// M9-097 (theme-data): the Extra page's `TabBar` spaces its tabs
@@ -37767,7 +37917,8 @@ mod tests {
         }
     }
 
-    /// The Basic page never needs sideways scrolling under any bundled preset
+    /// The Basic page never needs sideways scrolling under any preset the
+    /// Theme row installs ([`installed_presets`])
     /// in either mode (M9-074: macos-tahoe states no `layout.section_gap`, and
     /// the column count takes none), nor in light at the largest text scale,
     /// 2.25 (item 15(1) of the round 2-3 review): laid out in the page area of a 1280 x
@@ -37778,18 +37929,9 @@ mod tests {
     #[test]
     fn the_basic_page_fits_the_window_across() {
         recording(|| {
-            for preset in native_theme::theme::Theme::list_presets()
-                .iter()
-                .map(|info| info.key)
-            {
+            for preset in installed_presets() {
                 for (dark, scale) in [(false, 1.0), (true, 1.0), (false, 2.25)] {
-                    let mut state = State {
-                        accessibility: native_theme_iced::AccessibilityPreferences::default(),
-                        active_tab: Tab::Basic,
-                        ..State::default()
-                    };
-                    let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), dark);
-                    assert!(loaded.is_ok(), "{preset}: {loaded:?}");
+                    let mut state = basic_installed(preset, dark);
                     if scale != 1.0 {
                         let _ = update(&mut state, Message::TextScaleSelected(TextScale(scale)));
                     }
