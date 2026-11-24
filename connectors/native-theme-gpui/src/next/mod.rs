@@ -750,7 +750,7 @@ pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
 /// else gpui-component's own (spec §10, rule 0). A rule that names no variant
 /// is the flat button's too (spec §2), so a theme that states no flat rule
 /// gives it the push button's stated fills.
-fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
+pub(crate) fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
     let b = &r.button;
     let upstream = upstream_colors(r);
     let flat = ButtonQuery::flat();

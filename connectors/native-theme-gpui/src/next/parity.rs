@@ -546,16 +546,22 @@ const DIFFERENCES: &[Difference] = &[
         leaf: "geometry::toolbar_button_checked",
         presets: &["macos-monterey", "macos-tahoe"],
         reason: "neither model states a toolbar button's checked or pressed fill on the macOS \
-                 presets, so the refinement's fill is the push button's pressed one \
-                 (crate::geometry::toolbar_button_checked); the 0.8.0 presets state the \
+                 presets, so 0.7.2's refinement's fill is the push button's pressed one \
+                 (crate::geometry::toolbar_button_checked), and 0.8.0's gpui-component's own \
+                 selected ghost's, secondary_active (gpui-component 0.10.0 \
+                 button/button.rs:1346; spec §10, rule 0a), which crate::next installs from the \
+                 flat button's pressed fill, button.body(PRESSED; variant=Flat), and the \
+                 presets, stating no flat rule, give the push button's (spec §1, \"Axis values \
+                 without data\"); the 0.8.0 presets state the \
                  measured pressed fill (docs/facts/macos/button.toml on v0.8.0-rc1 at \
                  78ee0efd, `button.body.fill` states [pressed]: macos-monterey #f0f0f0 / \
                  #ffffff5c, os-probe run 41006842699, macOS 15; macos-tahoe #0000002a / \
                  #ffffff2a, the same run, macOS 26; native-theme/tests/next_homes.toml, row \
                  button.active_background, a listed difference), where 0.7.2 gives \
                  macos-monterey's soft option #d6d6db / #4e4e50 and on macos-tahoe none (no \
-                 fill); so the refinement's background is button.body(PRESSED)'s fill; every \
-                 other field of the refinement is equal",
+                 fill); so the refinement's background is secondary_active, the flat button's \
+                 pressed fill, here button.body(PRESSED)'s; every other field of the \
+                 refinement is equal",
     },
     Difference {
         leaf: "geometry::button",
@@ -1748,15 +1754,15 @@ fn compare_builders(
                 use native_theme::next::WidgetState;
                 report.count(toolbar_checked);
                 let o = crate::geometry::toolbar_button_checked(Native::unscaled(old));
-                let t = &new.toolbar;
-                let unstated = super::state_fill_of(&t.button(WidgetState::CHECKED)).is_none()
-                    && super::state_fill_of(&t.button(WidgetState::PRESSED)).is_none();
-                let pressed = super::state_fill_of(&new.button.body(WidgetState::PRESSED));
+                let unstated =
+                    super::state_fill_of(&new.toolbar.button(WidgetState::CHECKED)).is_none();
+                let own = super::flat_button_states(new)
+                    .ok()
+                    .map(|(_, pressed)| pressed);
                 let mut corrected = o.clone();
                 corrected.background = n.background.clone();
-                let filled =
-                    pressed.map(|fill| gpui::StyleRefinement::default().bg(fill).background);
-                if !unstated || filled != Some(n.background.clone()) || corrected != n {
+                let filled = own.map(|fill| gpui::StyleRefinement::default().bg(fill).background);
+                if !unstated || filled != Some(n.background.clone()) || corrected != n || o == n {
                     report.failures.push(format!(
                         "{}: {toolbar_checked}: the listed difference ({}) no longer \
                          describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",

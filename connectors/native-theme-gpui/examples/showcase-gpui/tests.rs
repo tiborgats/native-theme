@@ -23352,17 +23352,17 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
 }
 
 /// Every arm of `checked_fill`, the fill a checked tool Button claims from
-/// the fills `next::geometry::toolbar_button_checked` reads --
-/// `toolbar.button(CHECKED).fill`, `toolbar.button(PRESSED).fill`,
-/// `button.body(PRESSED).fill` -- each stated or not, the builder applying
-/// or not, the rest refinement's transparent fill there or not, the variant
-/// built from the toolbar's states or fallen back on the Ghost: where the
-/// builder applies, the checked, the toolbar's pressed, then the pressed
-/// body's fill, in that order; else none where the rest fill is cleared;
-/// else the variant's selected fill, the toolbar's pressed fill where the
-/// variant takes it, else the variant's own pressed fill. No bundled preset leaves the three unstated, so a
-/// part stating nothing is built, and kde-breeze's stated checked part
-/// stands for a stated fill. Dropping a condition or swapping two arms
+/// the fills it reads -- `toolbar.button(CHECKED).fill`,
+/// `toolbar.button(PRESSED).fill` -- each stated or not, the builder
+/// (`next::geometry::toolbar_button_checked`) applying or not, the rest
+/// refinement's transparent fill there or not, the variant built from the
+/// toolbar's states or fallen back on the Ghost: where the builder applies,
+/// the checked fill where stated, else gpui-component's own selected
+/// ghost's, never a pressed fill (spec §10, rule 0a); else none where the
+/// rest fill is cleared; else the variant's selected fill, the toolbar's
+/// pressed fill where the variant takes it, else the variant's own pressed
+/// fill. A part stating nothing is built, and kde-breeze's stated checked
+/// part stands for a stated fill. Dropping a condition or swapping two arms
 /// fails a row.
 #[test]
 fn a_checked_tool_buttons_claimed_fill_takes_each_source_in_order() -> Result<(), String> {
@@ -23377,90 +23377,32 @@ fn a_checked_tool_buttons_claimed_fill_takes_each_source_in_order() -> Result<()
         "kde-breeze no longer states toolbar.button(CHECKED).fill, so this test proves nothing"
     );
     let part = |is: bool| if is { &stated } else { &none };
-    // (checked, pressed, body pressed stated; builder applies; rest fill
-    // cleared; variant from the toolbar's states; the fill claimed)
+    // (checked, pressed stated; builder applies; rest fill cleared; variant
+    // from the toolbar's states; the fill claimed)
     let rows = [
-        (
-            [true, false, false],
-            [true, false, false],
-            CheckedFill::Checked,
-        ),
-        (
-            [true, false, false],
-            [false, false, true],
-            CheckedFill::Variant,
-        ),
-        (
-            [true, true, false],
-            [true, false, false],
-            CheckedFill::Checked,
-        ),
-        (
-            [true, false, true],
-            [true, false, false],
-            CheckedFill::Checked,
-        ),
-        (
-            [false, true, false],
-            [true, false, false],
-            CheckedFill::Pressed,
-        ),
-        (
-            [false, true, true],
-            [true, false, false],
-            CheckedFill::Pressed,
-        ),
-        (
-            [false, false, true],
-            [true, false, false],
-            CheckedFill::BodyPressed,
-        ),
-        (
-            [false, false, true],
-            [false, false, true],
-            CheckedFill::Variant,
-        ),
-        (
-            [false, true, false],
-            [true, true, false],
-            CheckedFill::Pressed,
-        ),
-        ([false, false, false], [true, true, true], CheckedFill::Rest),
-        ([false, true, false], [false, true, true], CheckedFill::Rest),
-        (
-            [false, true, false],
-            [false, false, true],
-            CheckedFill::Pressed,
-        ),
-        (
-            [false, true, false],
-            [false, false, false],
-            CheckedFill::Variant,
-        ),
-        (
-            [false, false, false],
-            [false, false, false],
-            CheckedFill::Variant,
-        ),
-        (
-            [true, true, true],
-            [false, false, true],
-            CheckedFill::Pressed,
-        ),
+        ([true, false], [true, false, false], CheckedFill::Checked),
+        ([true, false], [false, false, true], CheckedFill::Variant),
+        ([true, true], [true, false, false], CheckedFill::Checked),
+        ([true, true], [true, true, true], CheckedFill::Checked),
+        ([false, true], [true, false, false], CheckedFill::Own),
+        ([false, true], [true, false, true], CheckedFill::Own),
+        ([false, false], [true, false, false], CheckedFill::Own),
+        ([false, true], [true, true, false], CheckedFill::Own),
+        ([false, false], [true, true, true], CheckedFill::Own),
+        ([false, false], [false, true, true], CheckedFill::Rest),
+        ([false, true], [false, true, true], CheckedFill::Rest),
+        ([false, true], [false, false, true], CheckedFill::Pressed),
+        ([false, true], [false, false, false], CheckedFill::Variant),
+        ([false, false], [false, false, true], CheckedFill::Variant),
+        ([false, false], [false, false, false], CheckedFill::Variant),
+        ([true, true], [false, false, true], CheckedFill::Pressed),
     ];
-    for ([checked, pressed, body], [applied, cleared, states], expected) in rows {
+    for ([checked, pressed], [applied, cleared, states], expected) in rows {
         assert_eq!(
-            checked_fill(
-                part(checked),
-                part(pressed),
-                part(body),
-                applied,
-                cleared,
-                states
-            ),
+            checked_fill(part(checked), part(pressed), applied, cleared, states),
             expected,
-            "stated checked {checked}, pressed {pressed}, body pressed {body}; builder applies \
-             {applied}; rest fill cleared {cleared}; variant from the toolbar's states {states}"
+            "stated checked {checked}, pressed {pressed}; builder applies {applied}; rest fill \
+             cleared {cleared}; variant from the toolbar's states {states}"
         );
     }
     Ok(())

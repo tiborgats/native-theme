@@ -139,6 +139,60 @@ mod tests {
 
     use super::*;
 
+    /// A checked toolbar button whose checked fill no rule states
+    /// (macos-tahoe states none) is filled as gpui-component's own selected
+    /// ghost, with `tokens.secondary_active` as `apply` installs it, not with
+    /// a pressed fill of the theme's: the flat button's pressed fill is
+    /// patched to one of its own, which `apply` gives `secondary_active`, so
+    /// it differs from the push button's and the toolbar's pressed fills.
+    #[gpui::test]
+    fn an_unstated_checked_toolbar_fill_is_the_selected_ghosts(cx: &mut gpui::TestAppContext) {
+        use gpui::{Hsla, Styled as _};
+        use gpui_component::ActiveTheme as _;
+        use native_theme::next::{
+            ButtonRule, ButtonVariant, Color, Paint, PartPatch, ThemePatch, WidgetState,
+        };
+        cx.update(|cx| {
+            gpui_component::init(cx);
+            for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+                let mut r = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+                r.apply_patch(
+                    &ThemePatch::new().button(
+                        ButtonRule::new()
+                            .variant(ButtonVariant::Flat)
+                            .states(WidgetState::PRESSED)
+                            .body(PartPatch::new().fill(Paint::Solid(Color::rgb(1.0, 0.0, 0.0)))),
+                    ),
+                );
+                let t = &r.toolbar;
+                assert_eq!(
+                    super::super::state_fill_of(&t.button(WidgetState::CHECKED)),
+                    None,
+                    "macos-tahoe {:?} states a checked toolbar fill",
+                    ctx.scheme
+                );
+                assert_eq!(super::super::apply(&r, cx), Ok(()));
+                let own = Hsla::from(cx.theme().tokens.secondary_active);
+                let pressed = [
+                    super::super::state_fill_of(&t.button(WidgetState::PRESSED)),
+                    super::super::state_fill_of(&r.button.body(WidgetState::PRESSED)),
+                ];
+                assert!(
+                    !pressed.contains(&Some(own)),
+                    "macos-tahoe {:?}: a pressed fill is the selected ghost's, so this proves \
+                     nothing",
+                    ctx.scheme
+                );
+                assert_eq!(
+                    toolbar_button_checked(&r).map(|c| c.background),
+                    Ok(StyleRefinement::default().bg(own).background),
+                    "macos-tahoe {:?}",
+                    ctx.scheme
+                );
+            }
+        });
+    }
+
     /// Every public builder returns what the internal mapping, which the
     /// parity test compares with 0.7.2's builders, returns; and every public
     /// builder of [`crate::geometry`] has one here.
