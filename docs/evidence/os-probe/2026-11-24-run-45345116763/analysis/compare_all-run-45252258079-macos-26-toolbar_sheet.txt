@@ -1,0 +1,2 @@
+aqua.hovered.toolbar_button
+    diff_from_normal: {'differing_pixels': 1826, 'max_byte_delta': 12} -> {'differing_pixels': 1828, 'max_byte_delta': 12}
