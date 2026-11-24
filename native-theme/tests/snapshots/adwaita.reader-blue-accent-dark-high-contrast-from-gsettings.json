@@ -102,7 +102,7 @@
     "link_visited": null,
     "disabled_text": "#ffffff",
     "shadow": "#00000040",
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "error": {
       "fill": "#c01c28",
       "foreground": "#ffffff",
@@ -308,7 +308,7 @@
   "button": {
     "origin": "native",
     "icon_text_gap": 8.0,
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "body": {
       "exclusive": [
         [
@@ -447,7 +447,7 @@
   },
   "input": {
     "origin": "native",
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "field": {
       "base": {
         "fill": "#38383c",
@@ -553,7 +553,7 @@
   },
   "text_area": {
     "origin": "native",
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "field": {
       "base": {
         "fill": "#38383c",
@@ -656,7 +656,7 @@
   "checkbox": {
     "origin": "native",
     "label_gap": 8.0,
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "indicator": {
       "base": {
         "fill": "#303034",
@@ -794,7 +794,7 @@
   "radio": {
     "origin": "native",
     "label_gap": 8.0,
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "indicator": {
       "base": {
         "fill": "#303034",
@@ -904,7 +904,7 @@
     "label_gap": 6.0,
     "label_gap_stretches": true,
     "show_state_glyphs": null,
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "track": {
       "base": {
         "fill": "#4a4a4e",
@@ -1031,7 +1031,7 @@
             "disabled"
           ],
           "label": {
-            "color": "srgb(1, 1, 1, 0.5)"
+            "color": "#ffffff66"
           }
         }
       ]
@@ -1040,7 +1040,7 @@
   "slider": {
     "origin": "native",
     "tick_length": 4.0,
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "track": {
       "base": {
         "fill": "#929292"
@@ -1811,7 +1811,7 @@
   "combo_box": {
     "origin": "native",
     "arrow_area_width": null,
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "field": {
       "base": {
         "fill": "#38383c",
@@ -1906,7 +1906,7 @@
   "segmented_control": {
     "origin": "native",
     "separator_width": 1.0,
-    "disabled_opacity": 0.5,
+    "disabled_opacity": 0.4,
     "track": {
       "base": {
         "fill": "#38383c",

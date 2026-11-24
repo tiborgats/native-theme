@@ -2675,6 +2675,32 @@ pub(crate) fn gnome_cases() -> Vec<(
 )> {
     const BLUE: (u8, u8, u8) = (0x35, 0x84, 0xe4);
     const PURPLE: (u8, u8, u8) = (0x91, 0x41, 0xac);
+    // Listed under `Contrast::High`: the adwaita builder's disabled opacity is libadwaita's
+    // `--disabled-opacity: 40%` under `prefers-contrast: more` (`_colors.scss:323-328` at 1.10.0;
+    // its module documentation), which every widget's disabled opacity takes; 0.7.2's reader keeps
+    // the preset's 0.5.
+    const DISABLED_OPACITY: [&str; 8] = [
+        "defaults.disabled_opacity",
+        "button.disabled_opacity",
+        "checkbox.disabled_opacity",
+        "input.disabled_opacity",
+        "slider.disabled_opacity",
+        "switch.disabled_opacity",
+        "combo_box.disabled_opacity",
+        "segmented_control.disabled_opacity",
+    ];
+    const HIGH_CONTRAST_NO_ACCENT: [&str; 10] = [
+        "defaults.disabled_opacity",
+        "defaults.focus_ring_color",
+        "button.disabled_opacity",
+        "checkbox.disabled_opacity",
+        "input.disabled_opacity",
+        "input.focus_border_color",
+        "slider.disabled_opacity",
+        "switch.disabled_opacity",
+        "combo_box.disabled_opacity",
+        "segmented_control.disabled_opacity",
+    ];
     let base = default_gnome_data;
     let with = |f: fn(&mut crate::gnome::GnomePortalData)| {
         let mut data = base();
@@ -2716,7 +2742,7 @@ pub(crate) fn gnome_cases() -> Vec<(
                 d.accent_rgb = portal_accent(PURPLE);
                 d.high_contrast = true;
             }),
-            &[],
+            &DISABLED_OPACITY,
         ),
         (
             "blue accent, dark, high contrast from gsettings",
@@ -2725,7 +2751,7 @@ pub(crate) fn gnome_cases() -> Vec<(
                 d.accent_rgb = portal_accent(BLUE);
                 d.gsettings_high_contrast = Some(true);
             }),
-            &[],
+            &DISABLED_OPACITY,
         ),
         // Listed: under `Contrast::High` the adwaita builder draws the preset's focus ring, and the
         // focused text field's outline, at libadwaita's `$focus_border_color_hc` alpha of 0.8 (its
@@ -2738,7 +2764,7 @@ pub(crate) fn gnome_cases() -> Vec<(
         (
             "high contrast without an accent",
             with(|d| d.high_contrast = true),
-            &["defaults.focus_ring_color", "input.focus_border_color"],
+            &HIGH_CONTRAST_NO_ACCENT,
         ),
         (
             "an accent out of range",
@@ -3017,9 +3043,15 @@ pub(crate) fn windows_cases() -> Vec<(
     // whose value is the preset's accent fill at 0.9, which every case's accent (and high contrast's
     // button face) replaces.
     const ACCENT: &[&str] = &["switch.hover_checked_background"];
+    // The hovered unchecked box and a disabled checked box under high contrast: the builder takes
+    // WinUI's high-contrast brushes, `SystemColorHighlightTextColorBrush` and
+    // `SystemColorGrayTextColorBrush` (CheckBox_themeresources.xaml:142, :148 at microsoft-ui-xaml
+    // 8463f45), where 0.7.2's `apply_sys_colors` keeps the preset's colours.
     const HIGH_CONTRAST: &[&str] = &[
         "button.hover_border_color",
+        "checkbox.hover_background",
         "checkbox.hover_border_color",
+        "checkbox.disabled_background",
         "switch.hover_checked_background",
         "combo_box.hover_border_color",
         "expander.hover_background",

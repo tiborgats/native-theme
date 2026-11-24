@@ -54,10 +54,11 @@
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
 //! rows (`ListKind::alternate`), the two orientations of the scroll bar and
 //! of the slider's groove, no control size, and the contrast levels `Normal`
-//! and `High`. `High` states one value of its own, the focus ring's alpha 0.8,
-//! which the focused text field's outline takes too
-//! ([`FOCUS_RING_ALPHA_HIGH`]); every other value at `High` is `Normal`'s, as
-//! no source the builder reads states it. A query for anything else returns
+//! and `High`. `High` states two values of its own, the focus ring's alpha
+//! 0.8, which the focused text field's outline takes too
+//! ([`FOCUS_RING_ALPHA_HIGH`]), and the disabled opacity 0.4, which the
+//! disabled switch's label takes too ([`DISABLED_OPACITY_HIGH`]); every other
+//! value at `High` is `Normal`'s, as no source the builder reads states it. A query for anything else returns
 //! the part's base style. A maximized or full-screen window has no data of
 //! its own: its frame and title bar are the normal window's.
 //!
@@ -727,6 +728,11 @@ const SHADOW_ENABLED: bool = true;
 // `defaults.disabled_opacity`: platform-facts.md (§2.1.6): --disabled-opacity 50%, the only
 // disabled mechanism
 const DISABLED_OPACITY: f32 = 0.5;
+
+/// The opacity of a disabled control under `Contrast::High`: libadwaita's
+/// `--disabled-opacity: 40%` under `prefers-contrast: more` (libadwaita
+/// 1.10.0 `_colors.scss:323-328`).
+const DISABLED_OPACITY_HIGH: f32 = 0.4;
 
 /// The focus ring's width.
 // `defaults.focus_ring_width`: 0.7.2 adwaita.toml (uncited)
@@ -1590,7 +1596,8 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
 /// `src/resolve/inheritance.rs`, `resolve_defaults_internal`); the caret and
 /// the disabled text are the window's text (`input.caret_color`,
 /// `defaults.disabled_text_color`); the info status is the accent. Under
-/// `Contrast::High` the focus ring is its colour at [`FOCUS_RING_ALPHA_HIGH`].
+/// `Contrast::High` the focus ring is its colour at [`FOCUS_RING_ALPHA_HIGH`]
+/// and the disabled opacity [`DISABLED_OPACITY_HIGH`].
 ///
 /// The active palette `palette`, whose colours `c` holds already, states
 /// the roles its slots name (spec §7, "The roles a palette states"): the
@@ -1685,7 +1692,10 @@ fn roles(
         link_visited: None,
         disabled_text: c.window_foreground,
         shadow: c.shadow,
-        disabled_opacity: DISABLED_OPACITY,
+        disabled_opacity: match contrast {
+            Contrast::High => DISABLED_OPACITY_HIGH,
+            Contrast::Normal | Contrast::Increased => DISABLED_OPACITY,
+        },
         error: status(c.error, c.error_foreground),
         warning: status(c.warning, c.warning_foreground),
         success: status(c.success, c.success_foreground),
@@ -2979,7 +2989,7 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
         WidgetOrigin::Native,
         track,
         thumb,
-        switch_label(c, typography),
+        switch_label(c, typography, roles.disabled_opacity),
         // `label_side`, `label_gap_stretches`: libadwaita's labelled switch is `AdwSwitchRow`, its
         // title first and expanding (adw-action-row.ui:40-43), the switch a suffix at the row's
         // end (adw-switch-row.c:161; adw-action-row.ui:91-94, at libadwaita 1.10.0).
@@ -2998,10 +3008,14 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
 /// body font, whose family, size and weight its rule leaves (:146-151); a
 /// hovered, pressed or on row changes only its background and the switch's
 /// (:75-78, :592-601; _switch.scss:8-9, :36-55; adw-switch-row.c:217-227);
-/// insensitive, on or off, the title fades to [`DISABLED_OPACITY`]
-/// (`label:disabled { filter: Opacity(var(--disabled-opacity)) }`,
-/// _labels.scss:8-10; _colors.scss:320).
-fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+/// insensitive, on or off, the title fades to `disabled_opacity`, the
+/// contrast's (`label:disabled { filter: Opacity(var(--disabled-opacity)) }`,
+/// _labels.scss:8-10; _colors.scss:320, :327).
+fn switch_label(
+    c: &SchemeColors,
+    typography: &Typography,
+    disabled_opacity: f32,
+) -> RuleSet<TextStyle, TextProp> {
     let same = [
         RuleSelector::on(WidgetState::HOVER),
         RuleSelector::on(WidgetState::PRESSED),
@@ -3012,7 +3026,7 @@ fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle,
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(
-                c.row_foreground.mul_alpha(DISABLED_OPACITY),
+                c.row_foreground.mul_alpha(disabled_opacity),
             )],
         )
         .build()

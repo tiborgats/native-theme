@@ -738,10 +738,23 @@
         },
         {
           "states": [
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#000001",
+            "stroke": {
+              "width": 1.0,
+              "color": "#000001"
+            }
+          }
+        },
+        {
+          "states": [
             "hover"
           ],
           "not_states": [
-            "checked"
+            "checked",
+            "indeterminate"
           ],
           "indicator": {
             "stroke": {
@@ -756,7 +769,8 @@
           ],
           "not_states": [
             "disabled",
-            "checked"
+            "checked",
+            "indeterminate"
           ],
           "indicator": {
             "fill": "#00000018",

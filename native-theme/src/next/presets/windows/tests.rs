@@ -459,6 +459,90 @@ fn the_system_s_high_contrast_colours_make_high_available() {
     assert_eq!(dark.colors.accent.fill, accent);
 }
 
+/// Under high contrast the hovered unchecked box and circle are the
+/// selection's text colour, a disabled checked or mixed box the disabled text
+/// with its mark in the window colour, and a disabled checked radio's circle
+/// the window colour in the disabled text with its dot in the disabled text
+/// (WinUI's high-contrast dictionaries, CheckBox_themeresources.xaml:142,
+/// :148, :136, :160; RadioButton_themeresources.xaml:81, :91, :87, :95).
+#[test]
+fn a_high_contrast_check_box_takes_the_system_colours() {
+    use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
+    let [highlight, highlight_text, window, gray] =
+        [1, 2, 3, 4].map(|b| Color::from_srgb8(0, 0, b, 0xff));
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            window: Some(SurfaceColors {
+                background: Some(window),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        selection: Some(OsSelectionColors::new(
+            Some(highlight),
+            Some(highlight_text),
+            None,
+            None,
+        )),
+        disabled_text: Some(gray),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    let solid = Paint::Solid;
+    assert_eq!(
+        high.checkbox.indicator(WidgetState::HOVER).fill,
+        solid(highlight_text)
+    );
+    assert_eq!(
+        high.radio.indicator(WidgetState::HOVER).fill,
+        solid(highlight_text)
+    );
+    let width = high.layout.border_width;
+    for on in [WidgetState::CHECKED, WidgetState::INDETERMINATE] {
+        let state = WidgetState::DISABLED | on;
+        let indicator = high.checkbox.indicator(state);
+        assert_eq!(indicator.fill, solid(gray));
+        assert_eq!(indicator.stroke, Stroke::uniform(width, gray));
+        assert_eq!(high.checkbox.checkmark(state).color, window);
+    }
+    let state = WidgetState::DISABLED | WidgetState::CHECKED;
+    let circle = high.radio.indicator(state);
+    assert_eq!(circle.fill, solid(window));
+    assert_eq!(circle.stroke, Stroke::uniform(width, gray));
+    assert_eq!(high.radio.dot(state).fill, solid(gray));
+    let normal = theme.resolve(&ThemeContext::light());
+    assert_eq!(
+        normal.checkbox.indicator(WidgetState::HOVER).fill,
+        solid(LIGHT.checkbox_hover)
+    );
+}
+
+/// A mixed box at rest is filled and outlined in the accent's fill, as WinUI
+/// paints it (CheckBox_themeresources.xaml:237, :225), and hovered or pressed
+/// keeps that look.
+#[test]
+fn a_mixed_box_is_the_accent_fill() -> TestResult {
+    for theme in both_schemes() {
+        let accent = theme.checkbox.indicator(WidgetState::CHECKED).fill;
+        let Paint::Solid(color) = accent else {
+            return Err("the checked fill is not solid".into());
+        };
+        let edge = Stroke::uniform(theme.layout.border_width, color);
+        for extra in [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED] {
+            let mixed = theme.checkbox.indicator(WidgetState::INDETERMINATE | extra);
+            assert_eq!(mixed.fill, accent);
+            assert_eq!(mixed.stroke, edge);
+        }
+    }
+    Ok(())
+}
+
 /// Under high contrast the hovered on switch is the system's button face
 /// (`ToggleSwitchFillOnPointerOver` = `SystemColorButtonFaceColorBrush`,
 /// ToggleSwitch_themeresources.xaml:88), whatever the accent.

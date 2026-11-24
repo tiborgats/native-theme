@@ -3383,8 +3383,13 @@ fn button(
 /// radio, breezehelper.cpp:853-854, :1005-1006 at breeze f0b1d75; the
 /// Disabled Highlight #e3e5e7 / #1f2124, platform-facts.md (§2.21)). A
 /// portal accent replaces neither frame colour (0.7.2's `apply_kde_accent`
-/// leaves both fields on kdeglobals' colours).
-fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle, PartProp> {
+/// leaves both fields on kdeglobals' colours). Each state of `on` (checked,
+/// and for the check box mixed) draws the checked look.
+fn indicator(
+    c: &SchemeColors,
+    layout: &LayoutMetrics,
+    on: &[WidgetState],
+) -> RuleBuilder<PartStyle, PartProp> {
     RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_HOVER)
         .base([
             fill(c.button_background),
@@ -3394,8 +3399,8 @@ fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle,
             PartProp::MinSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
             PartProp::MaxSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
         ])
-        .rule(
-            RuleSelector::on(WidgetState::CHECKED),
+        .rules(
+            on.iter().map(|&state| RuleSelector::on(state)),
             [
                 fill(c.checkbox_checked),
                 outline(layout, c.selection_background),
@@ -3409,8 +3414,9 @@ fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle,
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.button_disabled_background)],
         )
-        .rule(
-            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+        .rules(
+            on.iter()
+                .map(|&state| RuleSelector::on(WidgetState::DISABLED | state)),
             [
                 fill(c.checkbox_disabled_checked),
                 outline(layout, c.switch_disabled_on_frame),
@@ -3442,7 +3448,8 @@ fn checkbox(
     // `checkbox.indicator_color`: platform-facts.md (§2.5), palette.text(), `[Colors:View]`
     // ForegroundNormal, the checked box's mark, stated for `CHECKED` (spec §2, `from_state`);
     // hovered and pressed the same: the mark's pen is `QPen(palette.text(), …)` in every state
-    // (breezehelper.cpp:938 at breeze f0b1d75), and renderCheckBox ignores `sunken` (:888).
+    // (breezehelper.cpp:938 at breeze f0b1d75), and renderCheckBox ignores `sunken` (:888); the
+    // partial mark's three squares in the same `palette.text()` (:948-952).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base(roles.view.foreground.map(IconProp::Color))
         .base([IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH))])
@@ -3450,6 +3457,7 @@ fn checkbox(
             roles.view.foreground.into_iter().flat_map(|_| {
                 [
                     RuleSelector::on(WidgetState::CHECKED),
+                    RuleSelector::on(WidgetState::INDETERMINATE),
                     RuleSelector::on(WidgetState::HOVER),
                     RuleSelector::on(WidgetState::PRESSED),
                 ]
@@ -3470,34 +3478,31 @@ fn checkbox(
     // Pressed: renderCheckBoxBackground fills `palette.button().darker(sunken ? 110 : 100)`
     // (breezehelper.cpp:862, :42; `sunken` is State_Sunken, breezestyle.cpp:4912), and the hover
     // pen stays over the frame while the pointer presses (breezehelper.cpp:894-907,
-    // breezestyle.cpp:4913). A checked box keeps its checked look; a disabled one its own.
-    let indicator = indicator(c, layout)
-        .base([corners(layout)])
-        .rule(
-            RuleSelector::on(WidgetState::HOVER)
-                .except(WidgetState::CHECKED | WidgetState::DISABLED),
-            [fill(c.button_background)],
-        )
-        .rule(
-            RuleSelector::on(WidgetState::PRESSED)
-                .except(WidgetState::CHECKED | WidgetState::DISABLED),
-            [fill(c.checkbox_pressed)],
-        )
-        .rule(
-            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
-            [outline(layout, c.accent)],
-        )
-        // A disabled partial box as a disabled checked one: `CheckPartial` is not `CheckOff`, so
-        // the highlight overlay and frame are drawn (breezehelper.cpp:853-854, :865-869;
-        // platform-facts.md (§2.5) `disabled_background`).
-        .rule(
-            RuleSelector::on(WidgetState::DISABLED | WidgetState::INDETERMINATE),
-            [
-                fill(c.checkbox_disabled_checked),
-                outline(layout, c.switch_disabled_on_frame),
-            ],
-        )
-        .build();
+    // breezestyle.cpp:4913). A checked box keeps its checked look; a disabled one its own. A
+    // partial box, enabled or disabled, as a checked one: `CheckPartial` is not `CheckOff`, so the
+    // highlight overlay and the highlight frame are drawn (breezehelper.cpp:853-854, :865-869;
+    // `State_NoChange` gives `CheckPartial`, breezestyle.cpp:4917-4918; platform-facts.md (§2.5)
+    // `disabled_background`).
+    let on = WidgetState::CHECKED | WidgetState::INDETERMINATE;
+    let indicator = indicator(
+        c,
+        layout,
+        &[WidgetState::CHECKED, WidgetState::INDETERMINATE],
+    )
+    .base([corners(layout)])
+    .rule(
+        RuleSelector::on(WidgetState::HOVER).except(on | WidgetState::DISABLED),
+        [fill(c.button_background)],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::PRESSED).except(on | WidgetState::DISABLED),
+        [fill(c.checkbox_pressed)],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
+        [outline(layout, c.accent)],
+    )
+    .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
         indicator,
@@ -3541,7 +3546,7 @@ fn radio(
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, layout).build(),
+        indicator(c, layout, &[WidgetState::CHECKED]).build(),
         dot,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,

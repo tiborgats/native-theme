@@ -1151,6 +1151,14 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(checkbox.indicator(NONE).stroke.color),
     ),
+    // ios-13's disabled empty box: WebKit's -webkit-control-background, systemBackground
+    // (RenderThemeIOS.mm:1387-1388, :1027 at WebKit 31adf9d), where 0.7.2's fill is uncited (M2.FS4)
+    s(
+        "Checkbox/Disabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_fill",
+        home!(checkbox.indicator(DISABLED).fill),
+    ),
     s(
         "ComboBox",
         &[M],

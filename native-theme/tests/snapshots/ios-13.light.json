@@ -718,7 +718,11 @@
             "disabled"
           ],
           "indicator": {
-            "fill": "#e5e5ea80"
+            "fill": "#ffffff",
+            "stroke": {
+              "width": 1.5,
+              "color": "srgb(0.23529412, 0.23529412, 0.2627451, 0.18)"
+            }
           }
         },
         {
@@ -728,6 +732,25 @@
           ],
           "indicator": {
             "fill": "#eeeeef",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#007aff",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "srgb(0, 0.47843137, 1, 0.75)",
             "stroke": "none"
           }
         },
@@ -867,7 +890,11 @@
             "disabled"
           ],
           "indicator": {
-            "fill": "#e5e5ea80"
+            "fill": "#ffffff",
+            "stroke": {
+              "width": 1.5,
+              "color": "srgb(0.23529412, 0.23529412, 0.2627451, 0.18)"
+            }
           }
         },
         {

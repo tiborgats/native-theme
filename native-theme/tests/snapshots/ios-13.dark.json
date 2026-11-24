@@ -718,7 +718,11 @@
             "disabled"
           ],
           "indicator": {
-            "fill": "#2c2c2e80"
+            "fill": "#000000",
+            "stroke": {
+              "width": 1.5,
+              "color": "srgb(0.92156863, 0.92156863, 0.9607843, 0.18)"
+            }
           }
         },
         {
@@ -728,6 +732,25 @@
           ],
           "indicator": {
             "fill": "#1c1c1e",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#0a84ff",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "srgb(0.039215688, 0.5176471, 1, 0.75)",
             "stroke": "none"
           }
         },
@@ -867,7 +890,11 @@
             "disabled"
           ],
           "indicator": {
-            "fill": "#2c2c2e80"
+            "fill": "#000000",
+            "stroke": {
+              "width": 1.5,
+              "color": "srgb(0.92156863, 0.92156863, 0.9607843, 0.18)"
+            }
           }
         },
         {

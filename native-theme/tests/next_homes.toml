@@ -789,8 +789,8 @@ homes = [
 ]
 null_reference = "CHECKED"
 difference_presets = ["kde-breeze", "windows-11", "material-3", "ios-13"]
-difference_reason = "0.7.2 has one disabled fill for a checked and an unchecked indicator; 0.8.0 states the checked one as each source draws it: kde-breeze the Disabled Button under the Disabled Highlight at 0.3 (a box that is not CheckOff keeps the highlight overlay), windows-11 AccentFillColorDisabled, ios-13 WebKit's opaqueTertiaryFill; material-3's radio button no fill, disabled or checked (material-web draws a ring and a dot only)"
-difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (disabled_background), breezehelper.cpp:862, :865-869, :1012-1019 at breeze f0b1d75, kcolorscheme.cpp:317-320 at kcolorscheme 27066d4; windows-11: CheckBoxCheckBackgroundFillCheckedDisabled, RadioButtonOuterEllipseCheckedFillDisabled = AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:236, :60; RadioButton_themeresources.xaml:149, :33), AccentFillColorDisabled #37000000 / #28FFFFFF (Common_themeresources_any.xaml:242, :38 at microsoft-ui-xaml 8463f45); material-3: radio/internal/radio.ts:108-120 at material-web cbd34a8; ios-13: RenderThemeIOS.mm:1372, :1387-1388, :1502, :1561-1563 at WebKit 31adf9d, ios-18 expected.txt:90-93"
+difference_reason = "0.7.2 has one disabled fill for a checked and an unchecked indicator; 0.8.0 states the checked one as each source draws it: kde-breeze the Disabled Button under the Disabled Highlight at 0.3 (a box that is not CheckOff keeps the highlight overlay), windows-11 AccentFillColorDisabled, ios-13 WebKit's opaqueTertiaryFill (and its unchecked one WebKit's -webkit-control-background, systemBackground, where 0.7.2's value is uncited); material-3's radio button no fill, disabled or checked (material-web draws a ring and a dot only)"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (disabled_background), breezehelper.cpp:862, :865-869, :1012-1019 at breeze f0b1d75, kcolorscheme.cpp:317-320 at kcolorscheme 27066d4; windows-11: CheckBoxCheckBackgroundFillCheckedDisabled, RadioButtonOuterEllipseCheckedFillDisabled = AccentFillColorDisabledBrush (CheckBox_themeresources.xaml:236, :60; RadioButton_themeresources.xaml:149, :33), AccentFillColorDisabled #37000000 / #28FFFFFF (Common_themeresources_any.xaml:242, :38 at microsoft-ui-xaml 8463f45); material-3: radio/internal/radio.ts:108-120 at material-web cbd34a8; ios-13: RenderThemeIOS.mm:1027, :1372, :1387-1388, :1502, :1561-1563 at WebKit 31adf9d, ios-18 expected.txt:7, :9, :90-93"
 
 [row.difference_values.kde-breeze]
 "checkbox.indicator(DISABLED).fill" = { light = "#f0f0f0", dark = "#272a2e" }
@@ -811,8 +811,8 @@ difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (disabled_backgr
 "radio.indicator(DISABLED|CHECKED).fill" = "#00000000"
 
 [row.difference_values.ios-13]
-"checkbox.indicator(DISABLED).fill" = { light = "#e5e5ea80", dark = "#2c2c2e80" }
-"radio.indicator(DISABLED).fill" = { light = "#e5e5ea80", dark = "#2c2c2e80" }
+"checkbox.indicator(DISABLED).fill" = { light = "#ffffffff", dark = "#000000ff" }
+"radio.indicator(DISABLED).fill" = { light = "#ffffffff", dark = "#000000ff" }
 "checkbox.indicator(DISABLED|CHECKED).fill" = { light = "#eeeeefff", dark = "#1c1c1eff" }
 "radio.indicator(DISABLED|CHECKED).fill" = { light = "#eeeeefff", dark = "#1c1c1eff" }
 

@@ -713,7 +713,7 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#ffffff0b"
+            "fill": "#060606"
           }
         },
         {
@@ -738,10 +738,23 @@
         },
         {
           "states": [
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#050505",
+            "stroke": {
+              "width": 1.0,
+              "color": "#050505"
+            }
+          }
+        },
+        {
+          "states": [
             "hover"
           ],
           "not_states": [
-            "checked"
+            "checked",
+            "indeterminate"
           ],
           "indicator": {
             "stroke": {
@@ -756,7 +769,8 @@
           ],
           "not_states": [
             "disabled",
-            "checked"
+            "checked",
+            "indeterminate"
           ],
           "indicator": {
             "fill": "#ffffff12",
@@ -772,10 +786,10 @@
             "checked"
           ],
           "indicator": {
-            "fill": "#ffffff28",
+            "fill": "#070707",
             "stroke": {
               "width": 1.0,
-              "color": "#ffffff28"
+              "color": "#070707"
             }
           }
         },
@@ -785,10 +799,10 @@
             "indeterminate"
           ],
           "indicator": {
-            "fill": "#ffffff28",
+            "fill": "#070707",
             "stroke": {
               "width": 1.0,
-              "color": "#ffffff28"
+              "color": "#070707"
             }
           }
         }
@@ -820,7 +834,7 @@
             "disabled"
           ],
           "checkmark": {
-            "color": "#ffffff87"
+            "color": "#010101"
           }
         }
       ]
@@ -875,7 +889,7 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#ffffff0b"
+            "fill": "#060606"
           }
         },
         {
@@ -904,10 +918,10 @@
             "checked"
           ],
           "indicator": {
-            "fill": "#ffffff28",
+            "fill": "#010101",
             "stroke": {
               "width": 1.0,
-              "color": "#ffffff28"
+              "color": "#070707"
             }
           }
         }
@@ -931,7 +945,7 @@
             "disabled"
           ],
           "dot": {
-            "fill": "#060606"
+            "fill": "#070707"
           }
         }
       ]

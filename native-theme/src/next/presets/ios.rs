@@ -725,6 +725,9 @@ const CHECK_DISABLED_OPACITY: f32 = 1.0;
 // by which a pressed check box's or radio button's fill and mark (:1390-1393, :1416-1417) and a
 // pressed select's background and text (:862-870) are multiplied
 const PRESSED_STATE_OPACITY: f32 = 0.75;
+// (WebKit) checkboxRadioBorderDisabledOpacity, by which a disabled empty check box's or radio
+// button's outline colour is multiplied (RenderThemeIOS.mm:1355, :1361-1362 at WebKit 31adf9d)
+const CHECKBOX_BORDER_DISABLED_OPACITY: f32 = 0.3;
 // `button.border.line_width`: (WebKit) an iOS button's `border: 1px solid
 // -webkit-control-background` (html.css:889)
 const BUTTON_BORDER_WIDTH: f32 = 1.0;
@@ -1532,8 +1535,9 @@ fn button(
 /// `radio_indicator_width` is `indicator_width` where unstated): its
 /// unchecked fill in WebKit's outline, no shadow; under the pointer its
 /// hover fill; checked, the accent (0.7.2: `checkbox.checked_background` is
-/// `defaults.accent_color` where unstated) with no outline; disabled, its
-/// disabled fill, and checked, WebKit's `opaqueTertiaryFill` with no outline.
+/// `defaults.accent_color` where unstated) with no outline; disabled, WebKit's
+/// empty box in its outline at [`CHECKBOX_BORDER_DISABLED_OPACITY`], and
+/// checked, WebKit's `opaqueTertiaryFill` with no outline.
 fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, PartProp> {
     let size = [Some(CHECKBOX_INDICATOR_SIZE); 2];
     // (WebKit) checkboxRadioBorderColor: secondaryLabel (ios.rs's `muted`), read for Enabled and
@@ -1584,9 +1588,19 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, Par
                 no_edge,
             ],
         )
+        // (WebKit) not enabled and empty: checkboxRadioBackgroundColor is -webkit-control-background
+        // (RenderThemeIOS.mm:1387-1388), systemBackground (:1027), and checkboxRadioBorderColor
+        // secondaryLabel at checkboxRadioBorderDisabledOpacity (:1359-1362), where 0.7.2 took its
+        // uncited `checkbox.disabled_background`.
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(c.disabled_fill)],
+            [
+                fill(c.background),
+                PartProp::Stroke(Stroke::uniform(
+                    CHECKBOX_OUTLINE_WIDTH,
+                    c.muted.mul_alpha(CHECKBOX_BORDER_DISABLED_OPACITY),
+                )),
+            ],
         )
         // (WebKit) checkboxRadioBackgroundColor: not enabled and not empty, opaqueTertiaryFill
         // (RenderThemeIOS.mm:1372, :1387-1388); a checked box or circle is filled only (:1502,
@@ -1643,6 +1657,20 @@ fn checkbox(
         WidgetOrigin::Native,
         indicator(c, roles)
             .base([corners(layout.corner_radius)])
+            // A mixed box as a checked one: `isEmpty` is false for Indeterminate, so the tint, at
+            // pressedStateOpacity while pressed (RenderThemeIOS.mm:1372, :1390-1393), filled only
+            // (:1483, :1502); the bar in the mark's colour (:1410-1420, :1510-1516).
+            .rule(
+                RuleSelector::on(WidgetState::INDETERMINATE),
+                [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],
+            )
+            .rule(
+                RuleSelector::on(WidgetState::PRESSED | WidgetState::INDETERMINATE),
+                [
+                    fill(roles.accent.fill.mul_alpha(PRESSED_STATE_OPACITY)),
+                    PartProp::Stroke(Stroke::None),
+                ],
+            )
             // A disabled mixed box as a disabled checked one (`isEmpty` false,
             // RenderThemeIOS.mm:1372, :1387-1388; filled only, :1502).
             .rule(

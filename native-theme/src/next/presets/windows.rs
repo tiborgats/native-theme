@@ -94,9 +94,12 @@
 //!   outline over the hovered fill, as 0.7.2's egui connector draws a checked
 //!   box ("`checkbox.hover_background` is the unchecked box's hover fill, so
 //!   the hovered entry holds the checked fill too":
-//!   `connectors/native-theme-egui/src/style/variants.rs`); the disabled fill
-//!   over both, checked or not (0.7.2's `checkbox.disabled_background`, which
-//!   the table of homes compares at `DISABLED | CHECKED` too);
+//!   `connectors/native-theme-egui/src/style/variants.rs`), and the mixed
+//!   box's over the hovered and the pressed unchecked looks, as the checked
+//!   one's (WinUI states the same brushes for both,
+//!   `CheckBox_themeresources.xaml`); the disabled fill over all of them,
+//!   checked or not (0.7.2's `checkbox.disabled_background`, which the table
+//!   of homes compares at `DISABLED | CHECKED` too);
 //! - the switch's track: the hovered on track (`HOVER | CHECKED`), whose
 //!   colour 0.7.2 states apart (`switch.hover_checked_background`), over the
 //!   hovered and the checked track; the disabled off track over the hovered
@@ -1603,8 +1606,8 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         },
         elevations: Arc::from([]),
         button: button(c, &hc, &colors, &typography, &layout),
-        checkbox: checkbox(c, &colors, &typography, &layout),
-        radio: radio(c, &colors, &typography, &layout),
+        checkbox: checkbox(c, &hc, &colors, &typography, &layout),
+        radio: radio(c, &hc, &colors, &typography, &layout),
         scrollbar: scrollbar(
             c,
             &colors,
@@ -1710,8 +1713,12 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
 /// `COLOR_HIGHLIGHT` the selection, the accent and every accent fill, the
 /// list's selected row, the segmented control's outline and selected
 /// segment and the focused text field's outline; `COLOR_HIGHLIGHTTEXT` the
-/// text on them; `COLOR_HOTLIGHT` the link; `COLOR_GRAYTEXT` the disabled
-/// text and the inactive title.
+/// text on them and the hovered unchecked box and circle; `COLOR_HOTLIGHT`
+/// the link; `COLOR_GRAYTEXT` the disabled text, the inactive title and a
+/// disabled checked or mixed box's fill and outline, a disabled checked
+/// circle's outline and its dot; `COLOR_WINDOW` also a disabled checked or
+/// mixed box's mark and a disabled checked circle's fill ([`checkbox`],
+/// [`radio`]).
 #[derive(Clone, Copy, Default)]
 struct HighContrast {
     /// `COLOR_WINDOW`.
@@ -1766,8 +1773,13 @@ impl HighContrast {
     /// Lay the colours over each of `c`'s fields whose every key takes the
     /// same system colour: the view's background and the menu's
     /// (`COLOR_WINDOW`); the accent, the accent's fill and the segmented
-    /// control's outline (`COLOR_HIGHLIGHT`); the selection's text
-    /// (`COLOR_HIGHLIGHTTEXT`); the focus ring and the informational fill
+    /// control's outline (`COLOR_HIGHLIGHT`); the selection's text and the
+    /// hovered unchecked box and circle (`COLOR_HIGHLIGHTTEXT`:
+    /// `CheckBoxCheckBackgroundFillUncheckedPointerOver`,
+    /// `RadioButtonOuterEllipseFillPointerOver` =
+    /// `SystemColorHighlightTextColorBrush`, CheckBox_themeresources.xaml:142,
+    /// RadioButton_themeresources.xaml:81 at microsoft-ui-xaml 8463f45); the
+    /// focus ring and the informational fill
     /// (`COLOR_WINDOWTEXT`); the link (`COLOR_HOTLIGHT`); the hovered on
     /// switch (`COLOR_BTNFACE`); the inactive title (`COLOR_GRAYTEXT`). A
     /// field whose keys take different colours, or some none, the widgets
@@ -1784,6 +1796,7 @@ impl HighContrast {
         lay(&mut c.accent_fill, self.highlight);
         lay(&mut c.control_stroke, self.highlight);
         lay(&mut c.selection_foreground, self.highlight_text);
+        lay(&mut c.checkbox_hover, self.highlight_text);
         lay(&mut c.focus_ring, self.window_text);
         lay(&mut c.info, self.window_text);
         lay(&mut c.link, self.hotlight);
@@ -2438,9 +2451,13 @@ fn check_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, 
 /// The check box: [`indicator`] with the default corners (0.7.2's
 /// `checkbox.border.corner_radius`, `resolve_border_inheritance`), a check
 /// mark in the accent's text colour (0.7.2: `checkbox.indicator_color` is
-/// `defaults.accent_text_color` where unstated), [`check_label`].
+/// `defaults.accent_text_color` where unstated), [`check_label`]. Mixed, the
+/// box filled and outlined in the accent's fill. Under high contrast a
+/// disabled checked or mixed box is `COLOR_GRAYTEXT` with its mark in
+/// `COLOR_WINDOW` ([`HighContrast`]).
 fn checkbox(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
@@ -2459,28 +2476,41 @@ fn checkbox(
             [IconProp::Color(c.accent_text_secondary)],
         )
         // Disabled, checked or mixed: TextOnAccentFillColorDisabled (CheckBox_themeresources.xaml:248,
-        // :252, set by the CheckedDisabled and IndeterminateDisabled states, :471, :587).
+        // :252, set by the CheckedDisabled and IndeterminateDisabled states, :471, :587); under high
+        // contrast SystemColorWindowColor (:160, :164).
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [IconProp::Color(c.accent_text_disabled)],
+            [IconProp::Color(hc.window.unwrap_or(c.accent_text_disabled))],
         )
         .build();
+    let disabled_checked = hc.gray_text.unwrap_or(c.accent_fill_disabled);
+    let disabled_checked_edge = hc.gray_text.unwrap_or(c.strong_stroke_disabled);
     // An unchecked box pressed: CheckBoxCheckBackgroundFillUncheckedPressed =
     // ControlAltFillColorQuarternary (CheckBox_themeresources.xaml:231 at microsoft-ui-xaml
     // 8463f45) in CheckBoxCheckBackgroundStrokeUncheckedPressed = ControlStrongStrokeColorDisabled
     // (:219). A checked box keeps its checked look; a disabled one its own. An unchecked box
     // hovered keeps its outline: CheckBoxCheckBackgroundStrokeUncheckedPointerOver =
     // ControlStrongStrokeColorDefault, the rest brush (CheckBox_themeresources.xaml:218, :42; rest
-    // :217, :41).
+    // :217, :41). A mixed box at rest: CheckBoxCheckBackgroundFillIndeterminate and
+    // …StrokeIndeterminate = AccentFillColorDefaultBrush (CheckBox_themeresources.xaml:237, :225; :61,
+    // :49), the checked box's brushes (:233, :221); its mark TextOnAccentFillColorPrimary (:249), the
+    // checked mark's (:245). Hovered or pressed it keeps that look, as a checked box does.
+    let checked_or_mixed = WidgetState::CHECKED | WidgetState::INDETERMINATE;
     let indicator = indicator(c, roles, layout)
         .base([corners(layout.corner_radius)])
         .rule(
-            RuleSelector::on(WidgetState::HOVER).except(WidgetState::CHECKED),
+            RuleSelector::on(WidgetState::INDETERMINATE),
+            [
+                fill(c.accent_fill),
+                stroke(layout.border_width, c.accent_fill),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER).except(checked_or_mixed),
             [stroke(layout.border_width, c.strong_stroke)],
         )
         .rule(
-            RuleSelector::on(WidgetState::PRESSED)
-                .except(WidgetState::CHECKED | WidgetState::DISABLED),
+            RuleSelector::on(WidgetState::PRESSED).except(checked_or_mixed | WidgetState::DISABLED),
             [
                 fill(c.alt_fill_quarternary),
                 stroke(layout.border_width, c.strong_stroke_disabled),
@@ -2488,15 +2518,16 @@ fn checkbox(
         )
         // Disabled and checked or mixed: AccentFillColorDisabled in ControlStrongStrokeColorDisabled
         // (CheckBoxCheckBackgroundFillCheckedDisabled, …StrokeCheckedDisabled, set at
-        // CheckBox_themeresources.xaml:465-468; …IndeterminateDisabled at :578-581).
+        // CheckBox_themeresources.xaml:465-468; …IndeterminateDisabled at :578-581); under high
+        // contrast both SystemColorGrayTextColor (:148, :136; :152, :140).
         .rules(
             [
                 RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
                 RuleSelector::on(WidgetState::DISABLED | WidgetState::INDETERMINATE),
             ],
             [
-                fill(c.accent_fill_disabled),
-                stroke(layout.border_width, c.strong_stroke_disabled),
+                fill(disabled_checked),
+                stroke(layout.border_width, disabled_checked_edge),
             ],
         )
         .build();
@@ -2515,6 +2546,7 @@ fn checkbox(
 /// in the accent's text colour (`checkbox.indicator_color`), [`check_label`].
 fn radio(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
@@ -2523,7 +2555,7 @@ fn radio(
     // TextOnAccentFillColorPrimary, the rest's colour (RadioButton_themeresources.xaml:153, :37,
     // set at :333; the rest's RadioButtonCheckGlyphFill, :150, :34, at microsoft-ui-xaml 8463f45).
     // The disabled key names the `Color` resource where the property is a `Brush`; what the
-    // runtime draws from it is not measured.
+    // runtime draws from it is not measured. Under high contrast SystemColorGrayTextColor (:95).
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
             fill(roles.accent.foreground),
@@ -2532,18 +2564,22 @@ fn radio(
         ])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(roles.accent.foreground)],
+            [fill(hc.gray_text.unwrap_or(roles.accent.foreground))],
         )
         .build();
     // Disabled and checked, the circle filled and stroked in AccentFillColorDisabled
     // (RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled, set at
-    // RadioButton_themeresources.xaml:326-330).
+    // RadioButton_themeresources.xaml:326-330); under high contrast filled in
+    // SystemColorWindowColor and stroked in SystemColorGrayTextColor (:91, :87).
     let indicator = indicator(c, roles, layout)
         .rule(
             RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
             [
-                fill(c.accent_fill_disabled),
-                stroke(layout.border_width, c.accent_fill_disabled),
+                fill(hc.window.unwrap_or(c.accent_fill_disabled)),
+                stroke(
+                    layout.border_width,
+                    hc.gray_text.unwrap_or(c.accent_fill_disabled),
+                ),
             ],
         )
         .build();

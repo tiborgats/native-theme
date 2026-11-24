@@ -26,7 +26,8 @@ fn the_constant_colours_are_their_8_bit_channels() {
 }
 
 /// Under `Contrast::High` the focus ring, and the focused text field's
-/// outline with it, is the ring's colour at alpha 0.8; nothing else changes.
+/// outline with it, is the ring's colour at alpha 0.8, and the disabled
+/// opacity, the disabled switch label's too, is 0.4; nothing else changes.
 #[test]
 fn under_high_contrast_the_focus_ring_is_at_alpha_0_8() {
     for ctx in [ThemeContext::light(), ThemeContext::dark()] {
@@ -45,7 +46,36 @@ fn under_high_contrast_the_focus_ring_is_at_alpha_0_8() {
             high.input.field(WidgetState::FOCUSED).stroke,
             Stroke::uniform(INPUT_BORDER_WIDTH, high.colors.focus_ring)
         );
+        assert_eq!(normal.colors.disabled_opacity, DISABLED_OPACITY);
+        assert_eq!(high.colors.disabled_opacity, DISABLED_OPACITY_HIGH);
+        let rest = high.switch.label(WidgetState::NONE).color;
+        assert_eq!(
+            high.switch.label(WidgetState::DISABLED).color,
+            rest.mul_alpha(DISABLED_OPACITY_HIGH)
+        );
+        let opacities = |t: &ResolvedTheme| {
+            [
+                t.button.disabled_opacity,
+                t.checkbox.disabled_opacity,
+                t.radio.disabled_opacity,
+                t.input.disabled_opacity,
+                t.text_area.disabled_opacity,
+                t.slider.disabled_opacity,
+                t.switch.disabled_opacity,
+                t.combo_box.disabled_opacity,
+                t.segmented_control.disabled_opacity,
+            ]
+        };
+        assert_eq!(opacities(&high), [Some(DISABLED_OPACITY_HIGH); 9]);
         let mut same = high.clone();
+        same.colors.disabled_opacity = normal.colors.disabled_opacity;
+        same.button.disabled_opacity = normal.button.disabled_opacity;
+        same.checkbox.disabled_opacity = normal.checkbox.disabled_opacity;
+        same.radio.disabled_opacity = normal.radio.disabled_opacity;
+        same.slider.disabled_opacity = normal.slider.disabled_opacity;
+        same.switch = normal.switch.clone();
+        same.combo_box.disabled_opacity = normal.combo_box.disabled_opacity;
+        same.segmented_control.disabled_opacity = normal.segmented_control.disabled_opacity;
         same.colors.focus_ring = normal.colors.focus_ring;
         same.focus_ring = normal.focus_ring.clone();
         same.input = normal.input.clone();
