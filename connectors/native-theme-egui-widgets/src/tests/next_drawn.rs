@@ -1022,7 +1022,17 @@ fn scaled_installed(
     preset: Preset,
     scale: f32,
 ) -> Result<egui::Context, Box<dyn std::error::Error>> {
-    let theme = NextTheme::preset(preset);
+    patched_scaled_installed(preset, "", scale)
+}
+
+/// [`scaled_installed`] with `patch` applied to the preset.
+fn patched_scaled_installed(
+    preset: Preset,
+    patch: &str,
+    scale: f32,
+) -> Result<egui::Context, Box<dyn std::error::Error>> {
+    let patch = native_theme_egui::native_theme::next::ThemePatch::from_toml(patch)?;
+    let theme = NextTheme::preset(preset).with_patch(patch);
     let [light, light_inactive, dark, dark_inactive] = [
         ThemeContext::light(),
         ThemeContext::light().with_window_active(false),
@@ -1112,6 +1122,63 @@ fn the_expander_header_grows_by_its_line_box_once() -> TestResult {
         grown > 0,
         "no header grows above a text scale of 1: the test proves nothing"
     );
+    Ok(())
+}
+
+/// A line height stated on `expander.header_label(NONE)` is the title's line box above a text
+/// scale of 1, on the painted header (kde-breeze, adwaita) and on egui's own (material-3), in
+/// place of its size times `typography.line_height_multiplier`: the header is the stated height
+/// grown to that line box, rounded up, and the padding above and below it.
+#[test]
+fn the_expander_header_grows_by_its_stated_line_height() -> TestResult {
+    use crate::expander::Layout;
+    use native_theme_egui::native_theme::next::WidgetState;
+    let patch = "[[widgets.expander.rules]]\nstates = []\nheader_label.line_height = 61.0\n";
+    let scale = 2.0;
+    let mut faults = Vec::new();
+    for preset in [Preset::KdeBreeze, Preset::Adwaita, Preset::Material3] {
+        let resolved = |patch: &str| -> Result<NextResolved, Box<dyn std::error::Error>> {
+            let patch = native_theme_egui::native_theme::next::ThemePatch::from_toml(patch)?;
+            Ok(NextTheme::preset(preset)
+                .with_patch(patch)
+                .resolve(&ThemeContext::light().with_text_scale(scale)))
+        };
+        let (stock, r) = (resolved("")?, resolved(patch)?);
+        let title = r.expander.header_label(WidgetState::NONE);
+        let line = title.line_height.ceil();
+        let stock_title = stock.expander.header_label(WidgetState::NONE);
+        let by_size = (stock_title.size_px * stock.typography.line_height_multiplier).ceil();
+        assert_ne!(
+            line, by_size,
+            "{preset:?}: the stated line box is the size's: the test proves nothing"
+        );
+        let layout = Layout::next_of(&r);
+        let [_, stated] = r.expander.header(WidgetState::NONE).min_size;
+        let stated = stated.ok_or("no stated header height")?;
+        let ctx = patched_scaled_installed(preset, patch, scale)?;
+        let mut own = 0.0;
+        let _ = pass(&ctx, at(1.0), |ui| {
+            own = ui
+                .native_scope(Role::Expander, RoleVariant::Normal, |ui| {
+                    ui.spacing().button_padding.y
+                })
+                .inner;
+        });
+        let padding = if layout.lays_out() {
+            layout.padding.top.unwrap_or(own) + layout.padding.bottom.unwrap_or(own)
+        } else {
+            own + own
+        };
+        let want = stated.max(line + padding);
+        let got = drawn_expander(&ctx).1.rect.height();
+        if layout.line != Some(line) || got != want {
+            faults.push(format!(
+                "{preset:?}: the header is {got}, its line box {:?}; want {want}, {line}",
+                layout.line
+            ));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
     Ok(())
 }
 

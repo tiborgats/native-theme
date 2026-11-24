@@ -68,8 +68,8 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// Under an atlas of the 0.8.0 model each of these is read at its home: `expander.arrow_side`,
 /// `arrow_gap`, `content_indent` and `frame_enabled`, the header's padding at
 /// `expander.header(NONE)`, the arrow's size and colour at `expander.arrow(NONE)`, the title's
-/// size at `expander.header_label(NONE)` (which holds the text scale already) and the line
-/// height at `typography.line_height_multiplier`; the arrow over egui's own header is
+/// line box at `expander.header_label(NONE)`'s line height, else its size (which holds the text
+/// scale already) at `typography.line_height_multiplier`; the arrow over egui's own header is
 /// `native_theme_egui::next::expander_icon`'s.
 #[must_use = "You should call .show()"]
 pub struct Expander {
@@ -306,13 +306,22 @@ fn scaled_line(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> Option<f3
         .then(|| (prefs.scaled(t.expander.font.size) * t.defaults.line_height).ceil())
 }
 
-/// [`scaled_line`] of a 0.8.0 theme, resolved for a text scale above 1: the title's font at
-/// `expander.header_label(NONE)`'s size, which holds the text scale already, times
-/// `typography.line_height_multiplier`, rounded up. `None` at a text scale of 1 or less, and
-/// where the theme states no title size.
+/// [`scaled_line`] of a 0.8.0 theme, resolved for a text scale above 1: the title's line box,
+/// `expander.header_label(NONE)`'s own `line_height` where the theme states one, else its size
+/// times `typography.line_height_multiplier`, each of which holds the text scale already,
+/// rounded up. `None` at a text scale of 1 or less, and where the theme states neither the
+/// title's line height nor its size.
 fn next_line(r: &NextResolvedTheme) -> Option<f32> {
+    if r.context.text_scale <= 1.0 {
+        return None;
+    }
     let title = r.expander.header_label(WidgetState::NONE);
-    (r.context.text_scale > 1.0 && title.stated.contains(TextStated::SIZE_PX))
+    if title.stated.contains(TextStated::LINE_HEIGHT) {
+        return Some(title.line_height.ceil());
+    }
+    title
+        .stated
+        .contains(TextStated::SIZE_PX)
         .then(|| (title.size_px * r.typography.line_height_multiplier).ceil())
 }
 
