@@ -4727,7 +4727,8 @@ fn triggered_ring(
 /// FR4: where the part a role's cell reads states a ring of its own at the focused state, the
 /// plugin paints it round a widget in that role's scope in place of the global ring, on the
 /// same geometry (the widget's rect grown by the ring's offset); a role whose part states none
-/// paints none; another role keeps the global ring.
+/// paints none; another role keeps the global ring; a widget in no scope takes the button body's
+/// ring, as it takes its look.
 #[test]
 fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() -> Result<(), Box<dyn std::error::Error>>
 {
@@ -4748,7 +4749,12 @@ fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() -> Result<(), Box<dyn 
                     .indicator(PartPatch::new().focus(None)),
             )
     };
-    for role in [Role::Button, Role::Tab, Role::Checkbox] {
+    for role in [
+        Some(Role::Button),
+        Some(Role::Tab),
+        Some(Role::Checkbox),
+        None,
+    ] {
         let (ctx, atlas, probe) = next_ring_harness(patch())?;
         let theme = ctx.theme();
         let global = *atlas
@@ -4767,9 +4773,12 @@ fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() -> Result<(), Box<dyn 
             "the test could not tell the rings apart"
         );
         let mut show = |ui: &mut egui::Ui| {
-            in_window(ui, |ui| {
-                ui.native_scope(role, RoleVariant::Normal, |ui| ui.button("b"))
-                    .inner
+            in_window(ui, |ui| match role {
+                Some(role) => {
+                    ui.native_scope(role, RoleVariant::Normal, |ui| ui.button("b"))
+                        .inner
+                }
+                None => ui.button("b"),
             })
         };
         let first = pass_ui(&ctx, egui::RawInput::default(), &mut show);
@@ -4782,15 +4791,15 @@ fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() -> Result<(), Box<dyn 
             rings_on(&seen, first.layer_id, global.stroke),
         );
         match role {
-            Role::Button => {
-                assert_eq!(globals.len(), 0, "the global ring is not drawn");
+            Some(Role::Button) | None => {
+                assert_eq!(globals.len(), 0, "{role:?}: the global ring is not drawn");
                 assert_eq!(
                     owns.iter().map(|r| r.rect).collect::<Vec<_>>(),
                     [focused.rect.expand(own.offset)],
-                    "the body's own ring, on the ring's geometry"
+                    "{role:?}: the body's own ring, on the ring's geometry"
                 );
             }
-            Role::Tab => {
+            Some(Role::Tab) => {
                 assert_eq!(owns.len(), 0, "the tab states no ring of its own");
                 assert_eq!(globals.len(), 1, "the global ring");
             }

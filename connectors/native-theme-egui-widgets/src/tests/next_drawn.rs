@@ -1393,6 +1393,47 @@ fn a_hovered_and_a_pressed_switch_label_take_their_state_colours() -> TestResult
     Ok(())
 }
 
+/// A hovered switch whose label no rule states for `HOVER` letters it in egui's own hovered
+/// label colour, its scope's `widgets.hovered.fg_stroke` (spec §10, rule 0), as egui's
+/// `Checkbox` letters an uncoloured label, not in its rest colour; here on ios-13, which states
+/// no hovered switch label.
+#[test]
+fn an_unstated_hovered_switch_label_is_egui_s_own() -> TestResult {
+    use crate::switch::Look;
+    let look = Look::next_of(&patched(Preset::Ios13, "")?).ok_or("no look")?;
+    assert_eq!(
+        look.hover_text, None,
+        "ios-13 states a hovered switch label"
+    );
+    let ctx = patched_installed(Preset::Ios13, "")?;
+    let mut own = None;
+    let _ = response(&ctx, at(1.0), |ui| {
+        ui.native_scope(Role::Switch, RoleVariant::Normal, |ui| {
+            own = Some(ui.visuals().widgets.hovered.text_color());
+            ui.label("")
+        })
+        .inner
+    });
+    let own = own.ok_or("the scope was not shown")?;
+    let add = |ui: &mut egui::Ui| ui.add(Switch::new(&mut false).label("Wi-Fi"));
+    let (parts, shapes) = drawn_switch(&ctx);
+    let (_, rest) = drawn_text(&shapes).ok_or("no label drawn")?;
+    assert_ne!(
+        rest, own,
+        "the label at rest is egui's hovered colour: the test proves nothing"
+    );
+    let centre = parts.get("track").ok_or("no track")?.center();
+    let hover = egui::RawInput {
+        events: vec![egui::Event::PointerMoved(centre)],
+        ..at(1.0)
+    };
+    let _ = response(&ctx, hover, add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    assert!(r.hovered(), "the switch is not hovered");
+    assert_eq!(drawn_text(&flat(&out.shapes)).map(|(_, c)| c), Some(own));
+    Ok(())
+}
+
 /// `switch.label(NONE).size_px` letters the label at that size in egui's `Proportional` family,
 /// as the connector's role fonts are, here a size kde-breeze does not state; where it is
 /// unstated (ios-13 states no font of `switch.label`) the size is egui's own; a size that is not

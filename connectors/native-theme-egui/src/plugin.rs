@@ -871,8 +871,9 @@ fn innermost_scope(
 /// of the press) and, when the focused widget changes, keeps the answer for that widget.
 ///
 /// The ring is the innermost scope's role's part's own where that part states one
-/// ([`PartRing::Own`], none where it states none), else the scheme's; either is drawn on the
-/// same geometry, shown as its own trigger says.
+/// ([`PartRing::Own`], none where it states none), else the scheme's; a widget in no scope takes
+/// the base style's look, `button.body`'s (`Role::Button`, `Normal`), and so its ring. Either is
+/// drawn on the same geometry, shown as its own trigger says.
 fn paint_focus_ring(ui: &egui::Ui, by_key: bool) {
     let ctx = ui.ctx();
     let Some(atlas) = ThemeAtlas::from_ctx(ctx) else {
@@ -897,9 +898,17 @@ fn paint_focus_ring(ui: &egui::Ui, by_key: bool) {
         .filter(|entry| entry.pass_nr == pass_nr)
         .unwrap_or_default();
     let scope = innermost_scope(ctx, &entry, &widget);
-    let ring = match scope.map(|(_, rings)| rings.get(by_key)) {
-        Some(PartRing::Own(ring)) => ring,
-        Some(PartRing::Global) | None => atlas.focus_ring(theme).copied(),
+    let rings = scope.map_or_else(
+        || {
+            atlas
+                .scheme(theme)
+                .part_rings(crate::Role::Button, crate::RoleVariant::Normal)
+        },
+        |(_, rings)| rings,
+    );
+    let ring = match rings.get(by_key) {
+        PartRing::Own(ring) => ring,
+        PartRing::Global => atlas.focus_ring(theme).copied(),
     };
     let Some(ring) = ring else {
         return;

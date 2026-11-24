@@ -753,8 +753,9 @@ listed here, and a value the theme leaves unstated is egui's own
   | `Toolbar` | `toolbar.button` |
   | `Sidebar` | `sidebar.item` |
 
-  Every other role, and a scope `native_set_style_with_ring` styled, takes
-  the global ring. egui has no radio role: a `RadioButton` in a
+  A widget in no scope takes the base style's look, `button.body`'s, and
+  so `button.body`'s own ring. Every other role, and a scope
+  `native_set_style_with_ring` styled, takes the global ring. egui has no radio role: a `RadioButton` in a
   `Role::Checkbox` scope takes `checkbox.indicator`'s ring, and
   `radio.indicator`'s own is not drawn, reported as a `Note::Unmapped` at
   `radio.indicator(FOCUSED).focus` or `radio.indicator(FOCUS_VISIBLE).focus`

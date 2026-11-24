@@ -17,8 +17,7 @@ pub(crate) fn show(
     (json, preset): (&crate::info::JsonCache, &str),
     ui: &mut egui::Ui,
 ) {
-    let theme = ui.ctx().theme();
-    let json = json.get(atlas, theme);
+    let json = json.get(atlas, ui.ctx());
     // The page's heading, as the gpui Theme Map's "All ThemeColor Fields"
     // (`showcase-gpui/pages/theme_map.rs:271-276`).
     caption(reg, ui, "All mapping.toml Rows");

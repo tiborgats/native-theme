@@ -375,30 +375,38 @@ impl InfoTheme {
     }
 }
 
-/// The installed 0.8.0 theme of `theme`'s slot for an active window, the one Widget Info shows
-/// (`OldAtlas::next_resolved`), with its serialised form; an error where the atlas holds none.
-pub(crate) fn info_theme(atlas: &OldAtlas, theme: egui::Theme) -> Result<InfoTheme, String> {
+/// The installed 0.8.0 theme the pages draw in `ctx`, the one Widget Info shows
+/// (`OldAtlas::next_shown`: the scheme egui draws, for an inactive window while the viewport is
+/// unfocused), with its serialised form; an error where the atlas holds none.
+pub(crate) fn info_theme(atlas: &OldAtlas, ctx: &egui::Context) -> Result<InfoTheme, String> {
     let resolved = atlas
-        .next_resolved(theme)
+        .next_shown(ctx)
         .ok_or("the atlas holds no 0.8.0 theme, which Widget Info reads")?;
     InfoTheme::new(resolved.clone())
 }
 
-/// [`info_theme`] for each scheme, made on first use and kept until the next install: Widget
-/// Info and the Theme Map read it on every pass.
+/// [`info_theme`] for each scheme, for an active and an inactive window, made on first use and
+/// kept until the next install: Widget Info and the Theme Map read it on every pass.
 #[derive(Default)]
 pub(crate) struct JsonCache {
-    light: std::cell::OnceCell<Result<InfoTheme, String>>,
-    dark: std::cell::OnceCell<Result<InfoTheme, String>>,
+    /// `[light, dark]`, each `[active, inactive]`.
+    cells: [[std::cell::OnceCell<Result<InfoTheme, String>>; 2]; 2],
 }
 
 impl JsonCache {
-    pub(crate) fn get(&self, atlas: &OldAtlas, theme: egui::Theme) -> &Result<InfoTheme, String> {
-        let cell = match theme {
-            egui::Theme::Light => &self.light,
-            egui::Theme::Dark => &self.dark,
+    /// [`info_theme`] of the theme the pages draw in `ctx`.
+    pub(crate) fn get(&self, atlas: &OldAtlas, ctx: &egui::Context) -> &Result<InfoTheme, String> {
+        let [light, dark] = &self.cells;
+        let [active, inactive] = match ctx.theme() {
+            egui::Theme::Light => light,
+            egui::Theme::Dark => dark,
         };
-        cell.get_or_init(|| info_theme(atlas, theme))
+        let cell = if OldAtlas::shows_inactive(ctx) {
+            inactive
+        } else {
+            active
+        };
+        cell.get_or_init(|| info_theme(atlas, ctx))
     }
 }
 
@@ -1365,14 +1373,15 @@ pub(crate) fn widget_tab(
 /// showcase did not add at another weight (`demo::Semibold::invalid`), the
 /// fonts of the installed 0.8.0 theme, `typography.body` and `typography.monospace`, by the
 /// families egui draws (`demo::DrawnFamilies`) in their defined units (§8.7), the window-frame
-/// facts of §10.4, and the manifest's `[unwritten]` table.
+/// facts of §10.4, and the manifest's `[unwritten]` table; the theme is the one the pages draw
+/// (`OldAtlas::next_shown`).
 pub(crate) fn theme_tab(
     ui: &mut egui::Ui,
     atlas: &OldAtlas,
     semibold: &crate::demo::Semibold,
     manifest: &Result<Manifest, String>,
 ) {
-    let r = atlas.next_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     // The section names as the Widget tab draws its own (`widget_tab`): one heading style in
     // the panel, whichever tab is shown.
     let text = InfoText::of(ui, r);

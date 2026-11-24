@@ -1388,14 +1388,13 @@ fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
 
 /// The inspector's content below the tabs: the Widget tab or the Theme tab (§10.4).
 fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
-    let theme = ui.ctx().theme();
     match app.inspector_tab {
         InspectorTab::Widget => {
             let view = app.registry.shown().map(|shown| {
                 match (
                     &app.elements,
                     &app.manifest,
-                    app.json.get(&app.atlas, theme),
+                    app.json.get(&app.atlas, ui.ctx()),
                 ) {
                     (Ok(elements), Ok(manifest), Ok(json)) => Ok(crate::info::InfoView::of(
                         shown,

@@ -9886,7 +9886,7 @@ fn manifest_and_json(
     harness: &Harness<'_, App>,
 ) -> Result<(Manifest, crate::info::InfoTheme), String> {
     let manifest = Manifest::parse(MANIFEST)?;
-    let json = crate::info::info_theme(&harness.state().atlas, harness.ctx.theme())?;
+    let json = crate::info::info_theme(&harness.state().atlas, &harness.ctx)?;
     Ok((manifest, json))
 }
 
@@ -10270,7 +10270,7 @@ fn the_info_is_the_manifest() {
     let shown = harness.state().registry.shown().cloned().expect("shown");
     // What the inspector prints from: the app's JSON, which it keeps between installs.
     let app = harness.state();
-    let json = app.json.get(&app.atlas, harness.ctx.theme()).clone();
+    let json = app.json.get(&app.atlas, &harness.ctx).clone();
     assert!(json.is_ok(), "{json:?}");
     let Ok(json) = json else { return };
     let elements = crate::elements::showcase_elements().unwrap_or_default();
@@ -13878,6 +13878,34 @@ fn a_failed_desktop_read_starts_the_platform_preset_and_says_so() {
             assert_eq!(app.default_preset, system.preset_id().as_str());
         }
     }
+}
+
+/// Widget Info and the Theme Map read the theme the pages draw (`OldAtlas::next_shown`): the
+/// inactive window's while the viewport is unfocused, the active one's while it is focused.
+#[test]
+fn widget_info_reads_the_theme_the_pages_draw() -> Result<(), String> {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    for focused in [false, true] {
+        let input = harness.input_mut();
+        input.focused = focused;
+        input
+            .viewports
+            .entry(egui::ViewportId::ROOT)
+            .or_default()
+            .focused = Some(focused);
+        harness.run_steps(3);
+        let app = harness.state();
+        let shown = app.atlas.next_shown(&harness.ctx).ok_or("no 0.8.0 theme")?;
+        assert_eq!(shown.context.window_active, focused, "the pages' theme");
+        let info = app
+            .json
+            .get(&app.atlas, &harness.ctx)
+            .as_ref()
+            .map_err(Clone::clone)?;
+        assert_eq!(&info.theme, shown, "focused {focused}: Widget Info's theme");
+    }
+    Ok(())
 }
 
 /// The page groups' helpers on the 0.8.0 model read the installed 0.8.0 theme the window shows:

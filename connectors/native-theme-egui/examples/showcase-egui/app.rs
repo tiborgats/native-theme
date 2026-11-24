@@ -559,11 +559,17 @@ impl OldAtlas {
         ctx: &egui::Context,
     ) -> Option<&native_theme::next::ResolvedTheme> {
         let theme = ctx.theme();
-        if ctx.input(|i| i.viewport().focused) == Some(false) {
+        if Self::shows_inactive(ctx) {
             Some(self.next_inactive(theme))
         } else {
             self.next_resolved(theme)
         }
+    }
+
+    /// Whether [`OldAtlas::next_shown`] gives the inactive window's theme: while the viewport
+    /// reports itself unfocused.
+    pub(crate) fn shows_inactive(ctx: &egui::Context) -> bool {
+        ctx.input(|i| i.viewport().focused) == Some(false)
     }
 
     /// Why the 0.8.0 theme of `theme`'s slot is at a lower contrast than asked, where it is.

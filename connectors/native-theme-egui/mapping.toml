@@ -1328,6 +1328,7 @@ sinks   = [
   { path = "visuals.widgets.active.bg_stroke.color", when = "stated; None takes button.hover_border_color, else button.border.color" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "button", when = "stated; None takes button.hover_border_color, else button.border.color" },
 ]
+note    = "egui draws a focused button, push or flat, in its one active entry, the pressed look (egui-0.37.0/src/widget_style/mod.rs:212-222): a focused button takes the pressed fill and label, outlined in this colour"
 
 ["button.font.family"]
 verdict  = "unmappable"
@@ -1868,6 +1869,7 @@ probe     = "italic"
 verdict = "scoped"
 homes = ["checkbox.label(NONE).color", "radio.label(NONE).color"]
 sinks   = [{ path = "visuals.override_text_color", scope = "checkbox" }]
+note    = "egui letters a label in override_text_color whatever the pointer does (egui-0.37.0/src/widget_text.rs:831-835), so where the label's colour is stated a hovered or pressed check box or radio button keeps it, neither a hovered label colour a rule states nor egui's own (widgets.hovered.fg_stroke, src/theme/default_style.rs:172-186) is drawn"
 
 ["checkbox.border.color"]
 verdict = "scoped"

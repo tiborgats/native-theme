@@ -258,11 +258,13 @@ impl Registry {
             record.info.not_themeable.push((what, note.to_string()));
         }
     }
-    /// Add each of `notes`, the notes [`flat`] returned, to the last record.
+    /// Add each of `notes`, the notes [`flat`] returned, to the last record, and
+    /// [`FLAT_FOCUS_NOTE`].
     pub(crate) fn flat_last(&mut self, notes: &[native_theme_egui::Note]) {
         for note in notes {
             self.note_last("flat button", &format!("{note:?}"));
         }
+        self.note_last(FLAT_FOCUS_NOTE.0, FLAT_FOCUS_NOTE.1);
     }
     /// Note on the last record that it is a button drawn in a `ghost` scope.
     pub(crate) fn ghost_last(&mut self) {
@@ -272,6 +274,15 @@ impl Registry {
         });
     }
 }
+
+/// What a flat button notes under *Not themeable*: egui draws a focused button, push or flat,
+/// in its one `active` entry, the pressed look (egui 0.37.0 `src/widget_style/mod.rs:212-222`,
+/// `Response::widget_state`); a push button's is `mapping.toml`'s note on
+/// `button.focus_border_color`.
+pub(crate) const FLAT_FOCUS_NOTE: (&str, &str) = (
+    "focused",
+    "in the pressed look, button.body(PRESSED; variant=Flat) where stated, outlined as focused: egui draws a focused button in its one active entry (egui-0.37.0 src/widget_style/mod.rs:212-222)",
+);
 
 /// What a button drawn in a `ghost` scope notes under *Not themeable*.
 pub(crate) const GHOST_NOTE: (&str, &str) = (
