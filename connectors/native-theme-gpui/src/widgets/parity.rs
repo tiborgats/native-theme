@@ -752,7 +752,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         "ThemeSource::focus_ring",
         "",
         FocusRing::of(&old),
-        given(FocusRing::next_of(&new)),
+        FocusRing::next_of(&new).and_then(given),
     );
     r.leaf(
         "ThemeSource::keyboard_only",

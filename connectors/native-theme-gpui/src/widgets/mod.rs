@@ -308,36 +308,50 @@ fn color(rgba: Rgba) -> Hsla {
 /// `Tab` now draws another, 2 px inset at the full colour, on keyboard focus
 /// only (gpui-component 0.10.0 `src/tab/tab.rs:933`, `:962-973`).
 ///
-/// The ring is `defaults.focus_ring_color` as stated, alpha included, a band
-/// `defaults.focus_ring_width` wide whose outer edge is the element's bounds
-/// grown by `defaults.focus_ring_offset + focus_ring_width` (the offset from
-/// the element's edge to the ring's inner edge, outward where positive), its
-/// corners the element's grown as much, floored at 0. It is an absolute
-/// child laid out against the element's padding box, so it moves nothing
-/// (as upstream's `focus_ring`), which puts its edges at the border widths
-/// the element states, plus the growth, outside; an unstated border width or
-/// radius is none, as gpui lays it out (upstream reads them the same way,
-/// `src/styled.rs:197-221`). The same geometry as the iced connector's
+/// The ring is placed as the model places one (spec §2, `FocusIndicator`, CSS's
+/// `outline` and `outline-offset`): its base line is the element's edge moved
+/// out by `defaults.focus_ring_offset` (`focus_ring.offset`; inward where
+/// negative), its corners `focus_ring.corners` where the theme states them,
+/// else the element's grown by the offset, floored at 0. The ring is a band
+/// `defaults.focus_ring_width` wide outward from that line in
+/// `defaults.focus_ring_color` (`focus_ring.stroke`'s width and colour), alpha
+/// included, and the second ring `focus_ring.inner_stroke` states a band of its
+/// width inward from it; each band's far edge is concentric. Each band is an
+/// absolute child laid out against the element's padding box, so it moves
+/// nothing (as upstream's `focus_ring`), which puts its edges at the border
+/// widths the element states, plus the offset, outside; an unstated border
+/// width or radius is none, as gpui lays it out (upstream reads them the same
+/// way, `src/styled.rs:197-221`). The same geometry as the iced connector's
 /// `focus_ring::RingLook::quad` and the egui connector's `paint_focus_ring`
 /// (`connectors/native-theme-iced/src/focus_ring.rs`,
 /// `connectors/native-theme-egui/src/plugin.rs`).
 ///
 /// No ring where the width is not positive or the width or the offset is not
-/// finite. Where the ring lies inset at the element's edge (`offset` is
-/// minus `width`, libadwaita's) and the element states a border of its own,
-/// that border takes `focus_ring_color` instead, as the iced connector's
-/// focused field draws its ring as its border; an element without a border
-/// gets the band inside its edge. The caller adds the ring after the element's
-/// other children, so it paints over them, as the iced and egui rings do, and
-/// after its own refinement, which it reads the border and the corners from.
+/// finite. The ring is painted over the element, inside its edge too, where an
+/// inset ring (libadwaita's, `offset` minus `width`) lies: the caller adds it
+/// after the element's other children and after its own refinement, which it
+/// reads the border and the corners from, and gpui paints an element's border
+/// after its children (gpui-pre 0.3.12 `src/style.rs`, `Style::paint`), so
+/// where the ring reaches inside the edge of an element whose border shows,
+/// the border is drawn as a child before the ring, the element's own made
+/// transparent.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct FocusRing {
-    /// `defaults.focus_ring_color`, as stated.
+    /// `defaults.focus_ring_color` (`focus_ring.stroke`'s colour), as stated.
     color: Hsla,
-    /// `defaults.focus_ring_width`: positive and finite.
+    /// `defaults.focus_ring_width` (`focus_ring.stroke`'s width): positive
+    /// and finite.
     width: f32,
     /// `defaults.focus_ring_offset`: finite.
     offset: f32,
+    /// The second ring, inward from the base line: `focus_ring.inner_stroke`'s
+    /// colour and its positive, finite width; `None` where the theme states
+    /// none (0.7.2 states none).
+    inner: Option<(Hsla, f32)>,
+    /// The base line's corners, `focus_ring.corners`, top left, top right,
+    /// bottom right, bottom left; `None` where the theme states none (0.7.2
+    /// states none), and the element's grown by the offset are drawn.
+    corners: Option<[f32; 4]>,
 }
 
 impl FocusRing {
@@ -349,74 +363,220 @@ impl FocusRing {
             color: color(d.focus_ring_color),
             width,
             offset,
+            inner: None,
+            corners: None,
         })
     }
 
     /// The ring a 0.8.0 theme states, as [`FocusRing::of`] reads it from the
-    /// homes of its fields: `colors.focus_ring`, `focus_ring.stroke.width`
-    /// (none where the ring has no stroke, and no ring where its stroke is per
-    /// side) and `focus_ring.offset`.
-    fn next_of(r: &native_theme::next::ResolvedTheme) -> Option<Self> {
-        let width = crate::next::focus_ring_width(r).ok()?;
-        let offset = r.focus_ring.offset;
-        (width.is_finite() && offset.is_finite() && width > 0.0).then(|| Self {
-            color: crate::next::hsla(r.colors.focus_ring),
-            width,
-            offset,
-        })
+    /// homes of its fields: `focus_ring.stroke`'s colour and width, its offset
+    /// (`focus_ring.offset`), the second ring inside it
+    /// (`focus_ring.inner_stroke`) and the corners of its base line
+    /// (`focus_ring.corners`); `Ok(None)` where the ring has no stroke, or one
+    /// of a width that is not positive, or a width or an offset that is not
+    /// finite.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`] where the indicator is not a ring (`focus_ring.kind`: a
+    /// fill or an underline, which no theme-drawn control draws), a stroke
+    /// is stated per side, or the corners are concentric, which needs the
+    /// container's radius.
+    fn next_of(r: &native_theme::next::ResolvedTheme) -> Mapped<Option<Self>> {
+        use native_theme::next::{FocusKind, Stroke};
+        let f = &r.focus_ring;
+        if f.kind != FocusKind::Ring {
+            return Err(Unmapped("focus_ring.kind"));
+        }
+        let (width, stroke_color) = match &f.stroke {
+            Stroke::None => return Ok(None),
+            Stroke::Uniform { width, color, .. } => (*width, *color),
+            _ => return Err(Unmapped("focus_ring.stroke.color")),
+        };
+        let inner = match &f.inner_stroke {
+            Stroke::None => None,
+            Stroke::Uniform { width, color, .. } => {
+                (width.is_finite() && *width > 0.0).then(|| (crate::next::hsla(*color), *width))
+            }
+            _ => return Err(Unmapped("focus_ring.inner_stroke.color")),
+        };
+        let corners = match &f.corners {
+            Some(corners) => Some(ring_corners(corners)?),
+            None => None,
+        };
+        let offset = f.offset;
+        Ok(
+            (width.is_finite() && offset.is_finite() && width > 0.0).then(|| Self {
+                color: crate::next::hsla(stroke_color),
+                width,
+                offset,
+                inner,
+                corners,
+            }),
+        )
     }
 
-    /// `element` with the ring round it, or with its border in the ring's
-    /// colour where the ring lies inset at its edge.
+    /// `element` with the ring over it, and the second ring inside the first
+    /// where the theme states one.
     fn draw<E: gpui::Styled + gpui::ParentElement>(self, mut element: E, window: &Window) -> E {
-        use gpui_component::StyledExt as _;
-        let Self {
-            color: ring,
-            width,
-            offset,
-        } = self;
         let rem = window.rem_size();
         let length = |l: Option<gpui::AbsoluteLength>| {
             l.map(|l| f32::from(l.to_pixels(rem))).unwrap_or_default()
         };
         let style = element.style();
-        let (top, right, bottom, left) = (
+        let edges = [
             length(style.border_widths.top),
             length(style.border_widths.right),
             length(style.border_widths.bottom),
             length(style.border_widths.left),
-        );
-        // An inset ring on an element with a border of its own is that border in the
-        // ring's colour; on one without, the band below draws it inside the edge, as the
-        // egui connector's inset band (`paint_focus_ring`).
-        if offset == -width && [top, right, bottom, left].iter().any(|w| *w > 0.0) {
-            return element.border_color(ring);
+        ];
+        let radii = [
+            length(style.corner_radii.top_left),
+            length(style.corner_radii.top_right),
+            length(style.corner_radii.bottom_right),
+            length(style.corner_radii.bottom_left),
+        ];
+        let base = self
+            .corners
+            .unwrap_or_else(|| radii.map(|r| r + self.offset))
+            .map(|r| r.max(0.0));
+        // How far out from the element's edge the ring's inner edge lies.
+        let reach = match self.inner {
+            Some((_, width)) => self.offset - width,
+            None => self.offset,
+        };
+        let border_shows = style.border_color.is_some_and(|c| !c.is_transparent())
+            && edges.iter().any(|w| *w > 0.0);
+        if border_shows && reach < 0.0 {
+            let own = gpui::StyleRefinement {
+                border_widths: style.border_widths.clone(),
+                border_color: style.border_color,
+                border_style: style.border_style,
+                corner_radii: style.corner_radii.clone(),
+                ..Default::default()
+            };
+            style.border_color = Some(gpui::transparent_black());
+            element = element.child(band(edges, 0.0, None, &own));
         }
-        let grow = offset + width;
-        let corner = |l: Option<gpui::AbsoluteLength>| Some(px((length(l) + grow).max(0.0)).into());
-        let mut band = gpui::StyleRefinement::default();
-        band.corner_radii.top_left = corner(style.corner_radii.top_left);
-        band.corner_radii.top_right = corner(style.corner_radii.top_right);
-        band.corner_radii.bottom_right = corner(style.corner_radii.bottom_right);
-        band.corner_radii.bottom_left = corner(style.corner_radii.bottom_left);
-        element.child(
-            div()
-                .debug_selector(|| FOCUS_RING_SELECTOR.into())
-                .flex_none()
-                .absolute()
-                .top(px(-(grow + top)))
-                .right(px(-(grow + right)))
-                .bottom(px(-(grow + bottom)))
-                .left(px(-(grow + left)))
-                .border(px(width))
-                .border_color(ring)
-                .refine_style(&band),
-        )
+        let mut look = ring_band(base.map(|r| r + self.width), self.width, self.color);
+        element = element.child(band(
+            edges,
+            self.offset + self.width,
+            Some(FOCUS_RING_SELECTOR),
+            &look,
+        ));
+        if let Some((color, width)) = self.inner {
+            look = ring_band(base, width, color);
+            element = element.child(band(
+                edges,
+                self.offset,
+                Some(FOCUS_RING_INNER_SELECTOR),
+                &look,
+            ));
+        }
+        element
     }
+}
+
+/// Where a 0.8.0 theme states a focus indicator the theme-drawn controls
+/// cannot draw, its home: `focus_ring.kind` for a fill or an underline,
+/// `focus_ring.stroke.color` or `focus_ring.inner_stroke.color` for a ring stated
+/// per side, `focus_ring.corners` for concentric corners; `None` where they
+/// draw the theme's ring, or the theme states none. The check their ring
+/// passes (`FocusRing::next_of`).
+#[must_use]
+pub fn focus_ring_unmapped(r: &native_theme::next::ResolvedTheme) -> Option<Unmapped> {
+    FocusRing::next_of(r).err()
+}
+
+/// A 0.8.0 focus ring's stroke colour (`focus_ring.stroke`, or its
+/// `inner_stroke`), as the theme-drawn controls' ring takes it
+/// (`FocusRing::next_of`), where stated as one stroke of one colour; `None`
+/// where the ring has no such stroke, or one stated per side, which they do
+/// not draw ([`focus_ring_unmapped`]).
+#[must_use]
+pub fn ring_stroke_color_of(stroke: &native_theme::next::Stroke) -> Option<Hsla> {
+    match stroke {
+        native_theme::next::Stroke::Uniform { color, .. } => Some(crate::next::hsla(*color)),
+        _ => None,
+    }
+}
+
+/// A stated ring's `corners` as gpui rounds a box, corner by corner, top
+/// left, top right, bottom right, bottom left: square corners are no radius,
+/// a pill gpui-component's full radius, which gpui clamps to half the
+/// shorter side ([`crate::next::PILL_RADIUS`]). gpui's corner is circular,
+/// so a continuous curve is drawn as the circular corner of its radius (spec
+/// §10, rule 2).
+///
+/// # Errors
+///
+/// [`Unmapped`] `focus_ring.corners` for a concentric radius, which needs the
+/// container's radius.
+fn ring_corners(corners: &native_theme::next::Corners) -> Mapped<[f32; 4]> {
+    use native_theme::next::CornerRadius;
+    match corners.radius {
+        CornerRadius::None => Ok([0.0; 4]),
+        CornerRadius::Uniform(r) => Ok([r; 4]),
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => Ok([top_left, top_right, bottom_right, bottom_left]),
+        CornerRadius::Pill => Ok([crate::next::PILL_RADIUS; 4]),
+        _ => Err(Unmapped("focus_ring.corners")),
+    }
+}
+
+/// A ring's band as a box's border: `width` wide in `color`, the box's
+/// corners `radii` (top left, top right, bottom right, bottom left).
+fn ring_band(radii: [f32; 4], width: f32, color: Hsla) -> gpui::StyleRefinement {
+    let [top_left, top_right, bottom_right, bottom_left] = radii.map(|r| Some(px(r).into()));
+    let mut band = gpui::StyleRefinement::default();
+    band.border_widths.top = Some(px(width).into());
+    band.border_widths.right = Some(px(width).into());
+    band.border_widths.bottom = Some(px(width).into());
+    band.border_widths.left = Some(px(width).into());
+    band.border_color = Some(color);
+    band.corner_radii.top_left = top_left;
+    band.corner_radii.top_right = top_right;
+    band.corner_radii.bottom_right = bottom_right;
+    band.corner_radii.bottom_left = bottom_left;
+    band
+}
+
+/// An absolute box over an element whose border widths are `edges` (top,
+/// right, bottom, left), its edge the element's grown by `grow`, styled by
+/// `look`, under the debug selector `selector` where one is given.
+fn band(
+    edges: [f32; 4],
+    grow: f32,
+    selector: Option<&'static str>,
+    look: &gpui::StyleRefinement,
+) -> gpui::Div {
+    use gpui::prelude::FluentBuilder as _;
+    use gpui_component::StyledExt as _;
+    let [top, right, bottom, left] = edges;
+    div()
+        .when_some(selector, |band, selector| {
+            band.debug_selector(move || selector.into())
+        })
+        .flex_none()
+        .absolute()
+        .top(px(-(grow + top)))
+        .right(px(-(grow + right)))
+        .bottom(px(-(grow + bottom)))
+        .left(px(-(grow + left)))
+        .refine_style(look)
 }
 
 /// The debug selector of the ring [`FocusRing::draw`] draws.
 const FOCUS_RING_SELECTOR: &str = "native-focus-ring";
+
+/// The debug selector of the second ring [`FocusRing::draw`] draws inside the
+/// first.
+const FOCUS_RING_INNER_SELECTOR: &str = "native-focus-ring-inner";
 
 /// Whether a theme-drawn control's focus followed a key, decided when it gets the focus
 /// and kept until it loses it (docs/issues/0004_kde-open-items-rationale.md D4).
@@ -649,11 +809,12 @@ impl<'a> ThemeSource<'a> {
         }
     }
 
-    /// The theme's focus ring ([`FocusRing::of`], [`FocusRing::next_of`]).
+    /// The theme's focus ring ([`FocusRing::of`], [`FocusRing::next_of`]):
+    /// none where a 0.8.0 theme states one no theme-drawn control can draw.
     fn focus_ring(self) -> Option<FocusRing> {
         match self {
             Self::Old(n) => FocusRing::of(n.resolved),
-            Self::Next(r) => FocusRing::next_of(r),
+            Self::Next(r) => FocusRing::next_of(r).ok().flatten(),
         }
     }
 

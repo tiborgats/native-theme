@@ -953,12 +953,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["focus_ring.stroke.color"],
-        "gpui: the ring the theme-drawn Checkbox, Radio, Slider and Switch draw, as stated (widgets/mod.rs, FocusRing::of); and ThemeColor ring (colors.rs, ring_colour: opaque where the band is off): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style). gpui-component's widgets draw that ring 3px wide with its alpha set to 0.5, whatever the colour's own (gpui-component/styled.rs:12, FOCUS_RING_OPACITY; :250-298, focus_style), and the Tab draws another, 2px inset at the full colour, on keyboard focus only (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)",
+        "gpui: the ring the theme-drawn Checkbox, Radio, Slider and Switch draw over the control, as stated (widgets/mod.rs, FocusRing::next_of); and ThemeColor ring (colors.rs, ring_colour: opaque where the band is off): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style). gpui-component's widgets draw that ring 3px wide with its alpha set to 0.5, whatever the colour's own (gpui-component/styled.rs:12, FOCUS_RING_OPACITY; :250-298, focus_style), and the Tab draws another, 2px inset at the full colour, on keyboard focus only (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)",
     ),
     (
         "",
         &["focus_ring.offset"],
-        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, offset + width outside the control's edge, the control's border tinted where the ring lies inset at it (widgets/mod.rs, FocusRing::draw); upstream's own widgets' ring lies against the border, no offset (styled.rs, focus_ring)",
+        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, a band of its width outward from the control's edge moved out by the offset, drawn over the control, inside its edge too where the offset is negative (widgets/mod.rs, FocusRing::draw); upstream's own widgets' ring lies against the border, no offset (styled.rs, focus_ring)",
     ),
     (
         "",
@@ -968,7 +968,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["focus_ring.stroke.width"],
-        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, this wide, none where it is not positive (widgets/mod.rs, FocusRing::of); upstream's own widgets' ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11, FOCUS_RING_WIDTH), and a width > 0 turns it on where the theme does not say keyboard only (native-theme-gpui/colors.rs, focus_band_on)",
+        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, this wide, none where it is not positive (widgets/mod.rs, FocusRing::next_of); upstream's own widgets' ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11, FOCUS_RING_WIDTH), and a width > 0 turns it on where the theme does not say keyboard only (native-theme-gpui/colors.rs, focus_band_on)",
     ),
     (
         "basic.typography.body",

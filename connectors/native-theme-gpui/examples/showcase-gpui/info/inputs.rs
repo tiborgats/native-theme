@@ -8,6 +8,8 @@ use native_theme::next::{FocusTrigger, PartStated, TextStyle};
 use native_theme::next::{ResolvedTheme as NextTheme, Stroke, WidgetState};
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
+use native_theme_gpui::widgets::ring_stroke_color_of;
+#[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{
     CheckboxLook, SliderLook, SwitchLabelFont, SwitchLabelHome, SwitchLook, ThumbOutline,
 };
@@ -1271,47 +1273,77 @@ pub fn mixed_checkbox(t: &Theme, label: &'static str) -> WidgetInfo {
 
 /// The focus ring a theme-drawn control draws round its `part` while focused
 /// under the installed 0.8.0 theme, as `FocusRing::next_of` reads it
-/// (native-theme-gpui/widgets/mod.rs): `colors.focus_ring`,
-/// `focus_ring.stroke.width` wide, its outer edge `focus_ring.offset` plus
-/// the width outside the part, drawn for a focus that followed a key press
-/// only where `focus_ring.trigger` says keyboard only; inset at the edge it
-/// is a band inside the part's edge, as none of these parts has a border of
-/// its own.
+/// (native-theme-gpui/widgets/mod.rs): `focus_ring.stroke`'s colour, a band
+/// of its width outward from the base line, the part's edge moved out by
+/// `focus_ring.offset`, its corners `focus_ring.corners` where stated, else
+/// the part's grown by the offset, floored at 0; the second ring
+/// `focus_ring.inner_stroke` states a band inward from the same line; drawn
+/// over the part, inside its edge too, for a focus that followed a key press
+/// only where `focus_ring.trigger` says keyboard only. A ring the controls
+/// cannot draw (`widgets::focus_ring_unmapped`) is named at its home.
 #[cfg(feature = "widgets")]
 fn next_focus_ring(info: WidgetInfo, r: &NextTheme, part: &str) -> WidgetInfo {
-    let offset = r.focus_ring.offset;
-    let width = native_theme_gpui::next::focus_ring_width(r)
-        .ok()
-        .filter(|width| width.is_finite() && offset.is_finite() && *width > 0.0);
-    let Some(width) = width else {
+    if let Some(unmapped) = native_theme_gpui::widgets::focus_ring_unmapped(r) {
         return info.config(
             "focus ring",
-            "none: the theme's focus_ring.stroke.width is not positive, or is stated per side (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+            format!(
+                "none: the theme states no value gpui can take at {} (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+                unmapped.home()
+            ),
+        );
+    }
+    let f = &r.focus_ring;
+    let offset = f.offset;
+    let stroke = match &f.stroke {
+        Stroke::Uniform { width, .. }
+            if width.is_finite() && offset.is_finite() && *width > 0.0 =>
+        {
+            Some(*width)
+        }
+        _ => None,
+    };
+    let Some(width) = stroke else {
+        return info.config(
+            "focus ring",
+            "none: the theme states no ring, its focus_ring.stroke.width not positive, or its focus_ring.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
         );
     };
-    let place = if offset == -width {
-        format!(
-            "inset at the {part}'s edge, a band inside it, the {part} having no border of its own to take the colour"
-        )
-    } else {
-        format!(
-            "its outer edge {}px outside the {part}'s, focus_ring.offset {}px plus the width, its corners grown as much",
-            px_text(offset + width),
-            px_text(offset)
-        )
+    let corners = match f.corners {
+        Some(_) => "focus_ring.corners, as stated".to_string(),
+        None => format!("the {part}'s corners grown by the offset, floored at 0"),
     };
-    info.color(claim(
+    let inner = match &f.inner_stroke {
+        Stroke::Uniform { width, .. } if width.is_finite() && *width > 0.0 => Some(*width),
+        _ => None,
+    };
+    info.colors(stated_claim(
         "focus ring",
-        "colors.focus_ring",
-        next_stated(r.colors.focus_ring),
-        "native-theme-gpui/widgets/mod.rs:363",
+        "focus_ring.stroke.color",
+        ring_stroke_color_of(&r.focus_ring.stroke),
+        "native-theme-gpui/widgets/mod.rs:393-394",
     ))
+    .colors(inner.and_then(|_| {
+        stated_claim(
+            "focus ring inner",
+            "focus_ring.inner_stroke.color",
+            ring_stroke_color_of(&r.focus_ring.inner_stroke),
+            "native-theme-gpui/widgets/mod.rs:398-401",
+        )
+    }))
     .config(
         "focus ring",
         format!(
-            "focus_ring.stroke.width {}px wide, {place}, painted over the {part}'s other parts (native-theme-gpui/widgets/mod.rs, FocusRing::draw){}",
+            "focus_ring.stroke.width {}px wide outward from the base line, the {part}'s edge moved {}px out by focus_ring.offset, its corners {corners}{}, painted over the {part}, inside its edge too (native-theme-gpui/widgets/mod.rs, FocusRing::draw){}",
             px_text(width),
-            if r.focus_ring.trigger == Some(FocusTrigger::KeyboardOnly) {
+            px_text(offset),
+            match inner {
+                Some(inner) => format!(
+                    ", and focus_ring.inner_stroke {}px wide inward from it",
+                    px_text(inner)
+                ),
+                None => String::new(),
+            },
+            if f.trigger == Some(FocusTrigger::KeyboardOnly) {
                 ", for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, ring_shows)"
             } else {
                 ""

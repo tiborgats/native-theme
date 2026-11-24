@@ -9,6 +9,8 @@ use native_theme_gpui::next::{
     fill_of, padding_of, state_fill_of, state_text_color_of, text_color_of,
 };
 #[cfg(feature = "widgets")]
+use native_theme_gpui::widgets::ring_stroke_color_of;
+#[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{SeparatorLook, TabLook};
 
 use super::{
@@ -1210,25 +1212,40 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
 
 /// `info` with the focus ring `widgets::TabBar` draws round a tab under the
 /// 0.8.0 theme `r`, as `FocusRing::next_of` reads it
-/// (native-theme-gpui/widgets/mod.rs): `colors.focus_ring`,
-/// `focus_ring.stroke.width` wide, inside the tab.
+/// (native-theme-gpui/widgets/mod.rs): `focus_ring.stroke`'s colour, its
+/// width wide, inside the tab; a ring the bar cannot draw
+/// (`widgets::focus_ring_unmapped`) is named at its home.
 #[cfg(feature = "widgets")]
 fn tab_bar_ring(info: WidgetInfo, r: &NextTheme) -> WidgetInfo {
-    let offset = r.focus_ring.offset;
-    let width = native_theme_gpui::next::focus_ring_width(r)
-        .ok()
-        .filter(|width| width.is_finite() && offset.is_finite() && *width > 0.0);
-    let Some(width) = width else {
+    if let Some(unmapped) = native_theme_gpui::widgets::focus_ring_unmapped(r) {
         return info.config(
             "focus ring",
-            "none: the theme states no ring, its focus_ring.stroke.width not positive or stated per side, or its focus_ring.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+            format!(
+                "none: the theme states no value gpui can take at {} (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+                unmapped.home()
+            ),
+        );
+    }
+    let offset = r.focus_ring.offset;
+    let stroke = match &r.focus_ring.stroke {
+        native_theme::next::Stroke::Uniform { width, .. }
+            if width.is_finite() && offset.is_finite() && *width > 0.0 =>
+        {
+            Some(*width)
+        }
+        _ => None,
+    };
+    let Some(width) = stroke else {
+        return info.config(
+            "focus ring",
+            "none: the theme states no ring, its focus_ring.stroke.width not positive, or its focus_ring.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
         );
     };
-    info.color(claim(
+    info.colors(stated_claim(
         "focus ring",
-        "colors.focus_ring",
-        super::next_stated(r.colors.focus_ring),
-        "native-theme-gpui/widgets/mod.rs:363",
+        "focus_ring.stroke.color",
+        ring_stroke_color_of(&r.focus_ring.stroke),
+        "native-theme-gpui/widgets/mod.rs:393-394",
     ))
     .config(
         "focus ring",

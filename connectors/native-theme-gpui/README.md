@@ -1125,11 +1125,22 @@ argument has no effect. `icons::to_image_source` documents it.
 Non-finite or non-positive scaling factors count as 1.0.
 
 Keyboard focus: the theme-drawn `Checkbox`, `Radio`, `Slider` and `Switch` draw the
-theme's focus ring while focused: `defaults.focus_ring_color` as stated, a band
-`defaults.focus_ring_width` wide whose outer edge lies `focus_ring_offset` plus the
-width outside the control, over its other parts; where the ring lies inset at the
-edge (libadwaita's) it is a band inside the edge, the control having no border of
-its own. Where the theme says the platform shows its ring for keyboard focus
+theme's focus ring while focused, placed as the model places it
+(docs/v0.8.0-spec.md §2, `FocusIndicator`): its base line is the control's edge
+moved out by `defaults.focus_ring_offset` (inward where negative), its corners the
+control's grown by the offset, floored at 0, or, on a 0.8.0 theme,
+`focus_ring.corners` where stated; the ring is a band
+`defaults.focus_ring_width` wide outward from that line in
+`defaults.focus_ring_color` as stated (on a 0.8.0 theme `focus_ring.stroke`'s own
+width and colour), and a 0.8.0 theme's `focus_ring.inner_stroke` a second band
+inward from it, each far edge concentric. Both are painted over the control,
+inside its edge too, where an inset ring (libadwaita's) lies; gpui paints a box's
+border after its children (gpui-pre 0.3.12 `src/style.rs`, `Style::paint`), so
+where the ring reaches inside the edge of a control whose border shows, that
+border is drawn as a child under the ring. A 0.8.0 indicator that is not a ring
+(`focus_ring.kind` `Fill` or `Underline`), a ring stated per side and concentric
+corners are unmapped (`widgets::focus_ring_unmapped`), and no ring is drawn.
+Where the theme says the platform shows its ring for keyboard focus
 only, a control draws it only for a focus that followed a key press: the answer
 is `Window::last_input_was_keyboard` when the focus arrives, kept until it
 leaves. The theme-drawn `TabBar` rings the focused tab by the same rule, inside

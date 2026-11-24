@@ -2958,7 +2958,18 @@ fn ringed_square(
     let mut r = resolved("kde-breeze", ColorMode::Light);
     r.defaults.focus_ring_width = width;
     r.defaults.focus_ring_offset = offset;
-    let ring = FocusRing::of(&r);
+    let cx = ring_drawn(cx, FocusRing::of(&r), bordered, 4.0);
+    (cx, r)
+}
+
+/// `ring` drawn round a 40 px square with `radius` corners and a 1 px
+/// border where `bordered`, and the square as it is where `ring` is `None`.
+fn ring_drawn(
+    cx: &mut TestAppContext,
+    ring: Option<FocusRing>,
+    bordered: bool,
+    radius: f32,
+) -> &mut VisualTestContext {
     let cx = window_with(
         cx,
         Some(("kde-breeze", ColorMode::Light)),
@@ -2968,8 +2979,10 @@ fn ringed_square(
                 .debug_selector(|| "ringed".into())
                 .relative()
                 .size(px(40.))
-                .when(bordered, |square| square.border(px(1.)))
-                .rounded(px(4.));
+                .when(bordered, |square| {
+                    square.border(px(1.)).border_color(SQUARE_BORDER)
+                })
+                .rounded(px(radius));
             match ring {
                 Some(ring) => ring.draw(square, window).into_any_element(),
                 None => square.into_any_element(),
@@ -2977,8 +2990,17 @@ fn ringed_square(
         }),
     );
     redraw(cx);
-    (cx, r)
+    cx
 }
+
+/// The colour of [`ring_drawn`]'s square's border: opaque black, which no
+/// ring of these tests is drawn in.
+const SQUARE_BORDER: gpui::Hsla = gpui::Hsla {
+    h: 0.0,
+    s: 0.0,
+    l: 0.0,
+    a: 1.0,
+};
 
 /// The quads painted over `b` grown by `grow` on every side, scaled.
 fn quads_round(cx: &mut VisualTestContext, b: Bounds<Pixels>, grow: f32) -> Vec<gpui::Quad> {
@@ -3019,19 +3041,28 @@ fn the_focus_ring_is_the_themes(cx: &mut TestAppContext) {
             "width {width}, offset {offset}"
         );
     }
-    // Inset at the edge: the square's own border is the ring.
+    // Inset at the edge of a square with a border of its own: the band inside
+    // the edge, painted after the square's border, which a child draws in its
+    // colour, the square's own made transparent (spec §2, `FocusIndicator`:
+    // the ring is painted over the part).
     let (cx, r) = ringed(cx, 2.0, -2.0);
     let ring = color(r.defaults.focus_ring_color);
     let square = bounds(cx, "ringed");
-    assert!(
-        cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
-        "an inset ring adds no band"
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR).map(|b| b.size),
+        Some(square.size),
+        "an inset ring is a band at the edge"
     );
-    assert!(
-        quads_round(cx, square, 0.0)
+    let at_edge = quads_round(cx, square, 0.0);
+    let painted = |c: gpui::Hsla| {
+        at_edge
             .iter()
-            .any(|q| q.border_color == ring && q.border_widths.top.0 > 0.0),
-        "an inset ring is not the square's border"
+            .position(|q| q.border_color == c && q.border_widths.top.0 > 0.0)
+    };
+    let (border, band) = (painted(SQUARE_BORDER), painted(ring));
+    assert!(
+        matches!((border, band), (Some(border), Some(band)) if border < band),
+        "the border, then the band over it, at the edge: {border:?}, {band:?} in {at_edge:?}"
     );
     // Inset at the edge of an element with no border of its own (adwaita's
     // ring on the checkbox row, the switch track, the slider thumb): the band
@@ -3069,6 +3100,166 @@ fn the_focus_ring_is_the_themes(cx: &mut TestAppContext) {
             "{width}, {offset}: the square's border took the ring's colour"
         );
     }
+}
+
+/// The 0.8.0 ring of FR2's tests: its own stroke, `outer` 2 px wide, the
+/// second ring `inner` 1 px wide, 1 px out from the edge, the base line's
+/// corners `corners`.
+fn next_ring(
+    outer: native_theme::next::Color,
+    inner: native_theme::next::Stroke,
+    corners: Option<native_theme::next::Corners>,
+) -> native_theme::next::ResolvedTheme {
+    use native_theme::next::{FocusIndicator, FocusKind, Preset, Stroke, ThemeContext};
+    let mut r =
+        native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    r.focus_ring = FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(2.0, outer),
+        inner,
+        1.0,
+        corners,
+        None,
+    );
+    r
+}
+
+/// Two colours no preset's ring is drawn in.
+const OUTER: native_theme::next::Color = native_theme::next::Color::new(0.1, 0.2, 0.9, 1.0);
+const INNER: native_theme::next::Color = native_theme::next::Color::new(0.9, 0.8, 0.1, 1.0);
+
+/// A 0.8.0 ring is drawn as the spec places it (§2, `FocusIndicator`): in
+/// its own stroke's colour, not `colors.focus_ring`; a band of its width
+/// outward from the base line, the square's edge moved out by the offset,
+/// and the second ring a band of its width inward from it; the base line's
+/// corners the stated `corners`, else the square's grown by the offset,
+/// floored at 0, each band's far edge concentric.
+#[gpui::test]
+fn a_next_ring_draws_its_stroke_inner_stroke_and_corners(cx: &mut TestAppContext) {
+    use native_theme::next::{Corners, Stroke};
+    for (corners, base) in [(Some(Corners::uniform(9.0)), 9.0), (None, 5.0)] {
+        let r = next_ring(OUTER, Stroke::uniform(1.0, INNER), corners);
+        assert_ne!(r.colors.focus_ring, OUTER);
+        let ring = FocusRing::next_of(&r).ok().flatten();
+        let cx = ring_drawn(cx, ring, false, 4.0);
+        let square = bounds(cx, "ringed");
+        let scale = cx.update(|window, _| window.scale_factor());
+        let near = |a: f32, b: f32| (a - b * scale).abs() < 0.01;
+        let outer = quads_round(cx, square, 3.0);
+        assert!(
+            outer
+                .iter()
+                .any(|q| q.border_color == crate::next::hsla(OUTER)
+                    && near(q.border_widths.top.0, 2.0)
+                    && near(q.corner_radii.top_left.0, base + 2.0)),
+            "{corners:?}: no 2 px ring outward from the base line: {outer:?}"
+        );
+        let inner = quads_round(cx, square, 1.0);
+        assert!(
+            inner
+                .iter()
+                .any(|q| q.border_color == crate::next::hsla(INNER)
+                    && near(q.border_widths.top.0, 1.0)
+                    && near(q.corner_radii.top_left.0, base)),
+            "{corners:?}: no 1 px ring inward from the base line: {inner:?}"
+        );
+        assert_eq!(
+            cx.debug_bounds(FOCUS_RING_INNER_SELECTOR).map(|b| b.size),
+            Some(square.dilate(px(1.0)).size),
+            "{corners:?}"
+        );
+    }
+    let r = next_ring(OUTER, Stroke::None, None);
+    let cx = ring_drawn(cx, FocusRing::next_of(&r).ok().flatten(), false, 4.0);
+    assert!(cx.debug_bounds(FOCUS_RING_SELECTOR).is_some());
+    assert!(
+        cx.debug_bounds(FOCUS_RING_INNER_SELECTOR).is_none(),
+        "a second ring the theme states none of"
+    );
+}
+
+/// A ring whose offset takes the base line past the square's corners rounds
+/// it square, and the band's outer edge by the band's width (spec §2: the
+/// part's radii plus the offset, floored at 0, the far edge concentric):
+/// macOS's ring, 3 px at -1, round square corners is 3 px round outside.
+#[gpui::test]
+fn a_ring_inside_a_square_corner_is_rounded_by_its_width(cx: &mut TestAppContext) {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.defaults.focus_ring_width = 3.0;
+    r.defaults.focus_ring_offset = -1.0;
+    let cx = ring_drawn(cx, FocusRing::of(&r), false, 0.0);
+    let square = bounds(cx, "ringed");
+    let scale = cx.update(|window, _| window.scale_factor());
+    let band = quads_round(cx, square, 2.0);
+    assert!(
+        band.iter()
+            .any(|q| (q.corner_radii.top_left.0 - 3.0 * scale).abs() < 0.01),
+        "no ring 3 px round outside: {band:?}"
+    );
+}
+
+/// A focus indicator no theme-drawn control can draw is [`Unmapped`] at its
+/// home, and no ring is drawn: a fill or an underline, a ring or second
+/// ring stated per side, concentric corners; continuous corners are drawn
+/// circular (spec §10, rule 2), a pill gpui-component's full radius.
+#[test]
+fn a_focus_indicator_gpui_cannot_draw_is_unmapped() {
+    use crate::next::Unmapped;
+    use native_theme::next::{
+        CornerRadius, Corners, FocusKind, Paint, Stroke, StrokeAlign, StrokeSide,
+    };
+    let side = || StrokeSide {
+        width: 1.0,
+        paint: Paint::Solid(INNER),
+    };
+    let sides = || Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside);
+    let unmapped = |r: &native_theme::next::ResolvedTheme| super::focus_ring_unmapped(r);
+    let mut r = next_ring(OUTER, Stroke::None, None);
+    assert_eq!(unmapped(&r), None);
+    for kind in [FocusKind::Fill, FocusKind::Underline] {
+        r.focus_ring.kind = kind;
+        assert_eq!(unmapped(&r), Some(Unmapped("focus_ring.kind")), "{kind:?}");
+    }
+    let mut r = next_ring(OUTER, sides(), None);
+    assert_eq!(
+        unmapped(&r),
+        Some(Unmapped("focus_ring.inner_stroke.color"))
+    );
+    r.focus_ring.inner_stroke = Stroke::None;
+    r.focus_ring.stroke = sides();
+    assert_eq!(unmapped(&r), Some(Unmapped("focus_ring.stroke.color")));
+    let corners = |radius| {
+        let r = next_ring(
+            OUTER,
+            Stroke::None,
+            Some(Corners {
+                radius,
+                curve: native_theme::next::CornerCurve::Continuous,
+            }),
+        );
+        FocusRing::next_of(&r).map(|ring| ring.and_then(|ring| ring.corners))
+    };
+    assert_eq!(
+        corners(CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        }),
+        Err(Unmapped("focus_ring.corners"))
+    );
+    assert_eq!(corners(CornerRadius::Uniform(4.0)), Ok(Some([4.0; 4])));
+    assert_eq!(
+        corners(CornerRadius::Pill),
+        Ok(Some([crate::next::PILL_RADIUS; 4]))
+    );
+    assert_eq!(
+        corners(CornerRadius::PerCorner {
+            top_left: 1.0,
+            top_right: 2.0,
+            bottom_right: 3.0,
+            bottom_left: 4.0,
+        }),
+        Ok(Some([1.0, 2.0, 3.0, 4.0]))
+    );
 }
 
 #[derive(Clone, Copy)]

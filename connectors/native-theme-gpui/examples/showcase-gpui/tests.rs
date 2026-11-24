@@ -21848,11 +21848,11 @@ fn look_findings(
 }
 
 /// What is wrong with the focus ring `info` claims, if anything: a control
-/// that can take the focus claims `colors.focus_ring`, read by
-/// `FocusRing::next_of` (native-theme-gpui/widgets/mod.rs:363), where the
-/// theme states a ring --
-/// a `focus_ring.stroke.width` above 0 and a finite `focus_ring.offset` --
-/// and none otherwise.
+/// that can take the focus claims `focus_ring.stroke`'s colour, read by
+/// `FocusRing::next_of` (native-theme-gpui/widgets/mod.rs:393-394), where the
+/// theme states a ring the controls draw --
+/// one stroke `focus_ring.stroke.width` above 0, a finite `focus_ring.offset`
+/// and nothing `widgets::focus_ring_unmapped` names -- and none otherwise.
 #[cfg(feature = "widgets")]
 fn next_ring_findings(
     whose: &str,
@@ -21861,15 +21861,22 @@ fn next_ring_findings(
     focusable: bool,
 ) -> Vec<String> {
     let offset = r.focus_ring.offset;
-    let drawn = focusable
-        && native_theme_gpui::next::focus_ring_width(r)
-            .is_ok_and(|width| width.is_finite() && offset.is_finite() && width > 0.0);
+    let stroke = match &r.focus_ring.stroke {
+        native_theme::next::Stroke::Uniform { width, color, .. }
+            if width.is_finite() && offset.is_finite() && *width > 0.0 =>
+        {
+            Some(*color)
+        }
+        _ => None,
+    };
+    let drawn = stroke
+        .filter(|_| focusable && native_theme_gpui::widgets::focus_ring_unmapped(r).is_none());
     let found = claim_by_role(info, "focus ring").map(|c| (c.value, c.field, c.cited_at));
-    let expected = drawn.then(|| {
+    let expected = drawn.map(|color| {
         (
-            crate::info::next_stated(r.colors.focus_ring),
-            "colors.focus_ring",
-            "native-theme-gpui/widgets/mod.rs:363",
+            crate::info::next_stated(color),
+            "focus_ring.stroke.color",
+            "native-theme-gpui/widgets/mod.rs:393-394",
         )
     });
     if found == expected {

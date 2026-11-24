@@ -619,16 +619,28 @@ fn value_of(
 
 /// The radius of `corners`, the serialised form's `{ radius, curve }` at
 /// `segments`, where the property is `corners`, the curve is continuous and
-/// the radius rounds a corner (not `none`); `None` otherwise.
+/// the radius rounds a corner: not `none` nor a zero radius, which round
+/// nothing, and not a concentric one (`{ inset, min_radius }`), which no
+/// toolkit the showcases draw with takes (it needs the container's radius),
+/// so none draws it circular; `None` otherwise.
 fn continuous_radius<'a>(
     segments: &[&str],
     corners: &'a serde_json::Map<String, serde_json::Value>,
 ) -> Option<&'a serde_json::Value> {
     let radius = corners.get("radius")?;
+    let rounds = |v: &serde_json::Value| v.as_f64().is_some_and(|r| r != 0.0);
+    let rounds_a_corner = match radius {
+        serde_json::Value::String(name) => name != "none",
+        serde_json::Value::Number(_) => rounds(radius),
+        serde_json::Value::Object(per_corner) => {
+            !per_corner.contains_key("inset") && per_corner.values().any(rounds)
+        }
+        _ => false,
+    };
     (segments.last() == Some(&"corners")
         && corners.get("curve").and_then(serde_json::Value::as_str) == Some("continuous")
-        && radius.as_str() != Some("none"))
-    .then_some(radius)
+        && rounds_a_corner)
+        .then_some(radius)
 }
 
 /// The properties and fields measured in logical pixels (docs/v0.8.0-spec.md
@@ -1272,6 +1284,24 @@ mod tests {
             "square corners have no curve"
         );
         assert_eq!(value("focus_ring.corners")?, "3 px");
+
+        // A zero radius rounds nothing, and a concentric one no toolkit
+        // takes: neither is drawn circular.
+        for radius in [
+            CornerRadius::Uniform(0.0),
+            CornerRadius::Concentric {
+                inset: 2.0,
+                min_radius: 1.0,
+            },
+        ] {
+            r.focus_ring.corners = Some(Corners {
+                radius,
+                curve: CornerCurve::Continuous,
+            });
+            let json = theme_json(&r)?;
+            let shown = text(&r, &json, "focus_ring.corners")?;
+            assert!(!shown.contains(DRAWN_CIRCULAR), "{radius:?}: {shown}");
+        }
         Ok(())
     }
 

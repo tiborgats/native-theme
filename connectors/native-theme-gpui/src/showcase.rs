@@ -2936,12 +2936,14 @@ fn value_reads_field(value: &str, field: &str) -> bool {
 /// theme states it. At a state other than `NONE` the helper's `state_` form
 /// may stand in its place, which reads the value only where a rule states it
 /// for that state, as 0.7.2's soft option of a state. A text's `color` and an
-/// icon's (`expander.arrow(NONE).color`) each have a helper of their own.
+/// icon's (`expander.arrow(NONE).color`) each have a helper of their own,
+/// and so has a focus ring's stroke (`focus_ring.stroke.color`).
 const HOME_PROPERTIES: &[(&str, &str)] = &[
     ("fill", "fill_of"),
     ("stroke.color", "stroke_color_of"),
     ("color", "text_color_of"),
     ("color", "icon_color_of"),
+    ("color", "ring_stroke_color_of"),
 ];
 
 /// Whether a claim's `field` is in the 0.8.0 form: a home as the table of

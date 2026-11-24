@@ -721,13 +721,15 @@ listed here, and a value the theme leaves unstated is egui's own
   continuous corner (`CornerCurve::Continuous`, Apple's) is drawn as the
   circular corner of the stated radius (spec §10, rule 2), and Widget Info
   marks its value `(drawn circular)`. A pill is drawn as 255, which epaint
-  clamps to half the rect's shorter side (`epaint-0.37.0/src/tessellator.rs`,
-  `path::rounded_rectangle`), so a part whose shorter side passes 510
+  clamps to half the rect's shorter side (`epaint-0.37.0/src/rounded_rect.rs`,
+  `RoundedRect::new`), so a part whose shorter side passes 510
   points is rounded by 255 only. A
   concentric radius (`CornerRadius::Concentric`) is the container's radius
-  less an inset, which the atlas does not know, and per-corner radii that
-  differ reach no sink: the atlas carries one radius per part. Both leave
-  the part's radius egui's own; no preset states either.
+  less an inset, which the atlas does not know. Per-corner radii that differ
+  are a limit of this connector, not of egui, whose `CornerRadius` holds one
+  radius per corner: the atlas carries one radius per part (one `f32`), so
+  they reach no sink. Both leave the part's radius egui's own; no preset
+  states either.
 - **A stroke per side.** egui strokes a rect with one `Stroke`, one width
   and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
   `RectShape::stroke`). Where the theme states a part's stroke per side
