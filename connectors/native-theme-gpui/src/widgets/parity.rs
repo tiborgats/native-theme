@@ -662,18 +662,27 @@ fn hover_border_home(
     .map(Some)
 }
 
-/// An enabled unchecked check box's or radio's fill under the pointer from
-/// its 0.8.0 homes: the fill a rule states for `HOVER`, else the fill at
-/// rest; `None` checked or disabled.
+/// An enabled check box's or radio's fill under the pointer from its 0.8.0
+/// homes: the fill resolved at `HOVER` and the shown state where a rule
+/// states one; else unchecked the fill at rest, checked none; checked, none
+/// too where it is the checked fill; `None` disabled.
 fn hover_fill_home(
     indicator: &dyn Fn(WidgetState) -> native_theme::next::PartStyle,
     checked: bool,
     disabled: bool,
 ) -> Mapped<Option<gpui::Hsla>> {
-    if checked || disabled {
+    if disabled {
         return Ok(None);
     }
-    match crate::next::state_fill(&indicator(WidgetState::HOVER), "indicator(HOVER).fill")? {
+    let hover = crate::next::state_fill(
+        &indicator(WidgetState::HOVER | shown(checked)),
+        "indicator(HOVER|shown).fill",
+    )?;
+    if checked {
+        let on = fill(&indicator(WidgetState::CHECKED), "indicator(CHECKED).fill")?;
+        return Ok(hover.filter(|hover| *hover != on));
+    }
+    match hover {
         Some(hover) => Ok(Some(hover)),
         None => fill(&indicator(WidgetState::NONE), "indicator(NONE).fill").map(Some),
     }

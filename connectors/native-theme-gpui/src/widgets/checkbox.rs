@@ -43,10 +43,10 @@ pub struct CheckboxLook {
     pub border_width: Pixels,
     /// The indicator's fill in this state.
     pub fill: Hsla,
-    /// The fill while the pointer is over the control: `hover_background` composited over
-    /// the unchecked fill (a 0.8.0 theme's hovered fill, the whole fill, as it is), or that
-    /// fill at rest where the theme states no hover, and only for an enabled, unchecked control
-    /// -- the model states no hover fill for a checked one; `hover_border` frames both.
+    /// The fill while the pointer is over an enabled control: `hover_background` composited over
+    /// the unchecked fill, or that fill where the theme states no hover, unchecked only (0.7.2
+    /// states none checked); of a 0.8.0 theme, the fill resolved at `HOVER` and the checked state
+    /// as it is, the rest fill unchecked where none, checked only where not the checked fill.
     pub hover_fill: Option<Hsla>,
     /// The indicator's border colour while the pointer is over the control:
     /// `hover_border_color`, for an enabled control, checked or not; `None`
@@ -234,8 +234,8 @@ impl CheckboxLook {
         disabled: bool,
     ) -> Mapped<Self> {
         use crate::next::{
-            fill as part_fill, hsla, padding_of, radius, state_fill, stated, stroke_color,
-            stroke_width, text_color,
+            fill as part_fill, hsla, padding_of, radius, stated, stroke_color, stroke_width,
+            text_color,
         };
         use native_theme::next::{IconStated, PartStated, WidgetState};
         let at = |checkbox: &'static str, radio_home: &'static str| {
@@ -332,12 +332,12 @@ impl CheckboxLook {
                         ),
                     )?,
                     disabled_fill,
-                    hover: state_fill(
-                        &indicator(WidgetState::HOVER),
-                        at(
-                            "checkbox.indicator(HOVER).fill",
-                            "radio.indicator(HOVER).fill",
-                        ),
+                    hover: hovered_fill(
+                        &indicator(WidgetState::HOVER | shown),
+                        &on,
+                        radio,
+                        checked,
+                        disabled,
                     )?,
                     border: stroke_color(
                         &on,
@@ -450,7 +450,7 @@ impl CheckboxLook {
             (true, None) if checked || c.radio => enabled_fill.opacity(DISABLED_INDICATOR_ALPHA),
             _ => enabled_fill,
         };
-        let hover_fill = (!checked && !disabled).then(|| c.hover.unwrap_or(c.unchecked));
+        let hover_fill = c.hover.or((!checked && !disabled).then_some(c.unchecked));
         let enabled_border = if checked {
             c.border
         } else {
@@ -800,6 +800,41 @@ fn disabled_label(
         "colors.window.foreground_muted",
     )
     .map(crate::next::hsla)
+}
+
+/// The fill an enabled check box or radio, `checked` or not, draws under the
+/// pointer, where a rule states one: its indicator's at `HOVER` and the
+/// control's checked state (`hovered`), the fill the engine resolves there in
+/// rule order (spec §3); checked, none where that is the checked fill (`on`'s),
+/// which then does not change under the pointer. `None` disabled.
+fn hovered_fill(
+    hovered: &native_theme::next::PartStyle,
+    on: &native_theme::next::PartStyle,
+    radio: bool,
+    checked: bool,
+    disabled: bool,
+) -> Mapped<Option<Hsla>> {
+    let hover = crate::next::state_fill(
+        hovered,
+        match (radio, checked) {
+            (false, false) => "checkbox.indicator(HOVER).fill",
+            (false, true) => "checkbox.indicator(HOVER|CHECKED).fill",
+            (true, false) => "radio.indicator(HOVER).fill",
+            (true, true) => "radio.indicator(HOVER|CHECKED).fill",
+        },
+    )?;
+    if disabled || !checked {
+        return Ok(hover.filter(|_| !disabled));
+    }
+    let rest = crate::next::fill(
+        on,
+        if radio {
+            "radio.indicator(CHECKED).fill"
+        } else {
+            "checkbox.indicator(CHECKED).fill"
+        },
+    )?;
+    Ok(hover.filter(|hover| *hover != rest))
 }
 
 fn stroked_check(
@@ -1493,6 +1528,11 @@ impl CheckboxLook {
                     "checkbox.indicator(INDETERMINATE).fill",
                 )?),
             };
+            let hovered = crate::next::state_fill(
+                &indicator(WidgetState::HOVER | MIXED),
+                "checkbox.indicator(HOVER|INDETERMINATE).fill",
+            )?;
+            look.hover_fill = hovered.filter(|hover| !disabled && *hover != look.fill);
         }
         if ruled(PartStated::STROKE) {
             let on = "checkbox.indicator(INDETERMINATE).stroke.color";

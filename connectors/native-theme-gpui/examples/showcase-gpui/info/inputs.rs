@@ -1531,19 +1531,33 @@ fn native_indicator(
     // An unset hover is the box at rest (CheckboxLook::next_of); the swatch
     // is the fill drawn under the pointer, the layer composited over the
     // fill.
+    // Checked, the fill resolved at HOVER|CHECKED, claimed where it is not the
+    // checked fill, the only case the look draws one.
     let hover_stated = state_fill_of(&indicator(WidgetState::HOVER)).is_some();
-    let info = info.colors(match (radio, hover_stated) {
+    let info = info.colors(match (radio, hover_stated || checked) {
+        (false, true) if checked => stated_claim(
+            "hover, checkbox.indicator(HOVER|CHECKED).fill in place of the fill",
+            "checkbox.indicator(HOVER|CHECKED).fill",
+            look.hover_fill,
+            "native-theme-gpui/widgets/checkbox.rs:821",
+        ),
+        (true, true) if checked => stated_claim(
+            "hover, radio.indicator(HOVER|CHECKED).fill in place of the fill",
+            "radio.indicator(HOVER|CHECKED).fill",
+            look.hover_fill,
+            "native-theme-gpui/widgets/checkbox.rs:823",
+        ),
         (false, true) => stated_claim(
             "hover, checkbox.indicator(HOVER).fill over the fill",
             "checkbox.indicator(HOVER).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:338",
+            "native-theme-gpui/widgets/checkbox.rs:820",
         ),
         (true, true) => stated_claim(
             "hover, radio.indicator(HOVER).fill over the fill",
             "radio.indicator(HOVER).fill",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:339",
+            "native-theme-gpui/widgets/checkbox.rs:822",
         ),
         (false, false) => stated_claim(
             "hover, none stated: the fill at rest",
@@ -1837,14 +1851,14 @@ pub fn native_radio_column(
     let info = info.colors(
         if state_fill_of(&r.radio.indicator(WidgetState::HOVER)).is_some() {
             stated_claim(
-                "hover, radio.indicator(HOVER).fill over an unselected fill",
+                "unselected hover, radio.indicator(HOVER).fill over an unselected fill",
                 "radio.indicator(HOVER).fill",
                 unselected.hover_fill,
-                "native-theme-gpui/widgets/checkbox.rs:339",
+                "native-theme-gpui/widgets/checkbox.rs:822",
             )
         } else {
             stated_claim(
-                "hover, none stated: an unselected fill at rest",
+                "unselected hover, none stated: an unselected fill at rest",
                 "radio.indicator(NONE).fill",
                 unselected.hover_fill,
                 "native-theme-gpui/widgets/checkbox.rs:324",

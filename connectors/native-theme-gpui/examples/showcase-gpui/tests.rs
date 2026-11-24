@@ -21366,8 +21366,9 @@ type Leaf = (&'static str, &'static str);
 /// rule states a disabled fill (:272-275), else `indicator(CHECKED)` checked
 /// (:330-331), else `indicator(NONE)` (:323-324), at half alpha where
 /// disabled, checked or a radio's; the hover
-/// `indicator(HOVER).fill` where a rule states it (:338-339), else the fill
-/// at rest; the hover edge `indicator(HOVER)`'s (:288-291), at the checked
+/// `indicator(HOVER).fill` where a rule states it (:820, :822), else the fill
+/// at rest, checked `indicator(HOVER|CHECKED).fill` (:821, :823) where it is
+/// not the checked fill; the hover edge `indicator(HOVER)`'s (:288-291), at the checked
 /// state where checked; the border disabled `indicator(DISABLED)`'s (at the
 /// checked state too where checked) where a rule states a disabled stroke
 /// (:422-427), else `indicator(CHECKED)`'s checked (:345-346), else
@@ -21443,16 +21444,26 @@ fn checkbox_homes(
         ),
         (false, false) => rest,
     };
-    let hover = if native_theme_gpui::next::state_fill_of(&indicator(WidgetState::HOVER)).is_some()
-    {
+    let hover = if checked {
+        at(
+            (
+                "checkbox.indicator(HOVER|CHECKED).fill",
+                "native-theme-gpui/widgets/checkbox.rs:821",
+            ),
+            (
+                "radio.indicator(HOVER|CHECKED).fill",
+                "native-theme-gpui/widgets/checkbox.rs:823",
+            ),
+        )
+    } else if native_theme_gpui::next::state_fill_of(&indicator(WidgetState::HOVER)).is_some() {
         at(
             (
                 "checkbox.indicator(HOVER).fill",
-                "native-theme-gpui/widgets/checkbox.rs:338",
+                "native-theme-gpui/widgets/checkbox.rs:820",
             ),
             (
                 "radio.indicator(HOVER).fill",
-                "native-theme-gpui/widgets/checkbox.rs:339",
+                "native-theme-gpui/widgets/checkbox.rs:822",
             ),
         )
     } else {
@@ -22083,13 +22094,14 @@ fn a_theme_drawn_controls_info_prints_its_look() {
             continue;
         };
         let (selected, unselected) = (selected.faded_over(ground), unselected.faded_over(ground));
-        let [fill, _, hover_edge, border, mark, label] = checkbox_homes(&r, true, true, false);
+        let [fill, hover, hover_edge, border, mark, label] = checkbox_homes(&r, true, true, false);
         let [off_fill, off_hover, _, off_border, _, _] = checkbox_homes(&r, true, false, false);
         wrong.extend(look_findings(
             &format!("{name}: the radios"),
             &info,
             &[
                 ("fill", Some(selected.fill), fill),
+                ("hover", selected.hover_fill, hover),
                 (
                     "hovered edge",
                     edge(selected.hover_border, selected.border_width),
@@ -22108,7 +22120,7 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                     edge(Some(unselected.border), unselected.border_width),
                     off_border,
                 ),
-                ("hover", unselected.hover_fill, off_hover),
+                ("unselected hover", unselected.hover_fill, off_hover),
             ],
             &["focus ring"],
         ));

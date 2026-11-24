@@ -7066,3 +7066,98 @@ fn a_mixed_box_draws_the_look_stated_for_the_indeterminate_state() -> crate::nex
     );
     Ok(())
 }
+
+/// A hovered checked check box or radio draws the fill the engine resolves at
+/// `HOVER|CHECKED` (spec §3, rule order), none where that is the checked fill:
+/// on every preset, in both schemes, and there that fill is never the
+/// unchecked control's hover fill, which a `HOVER` rule states on some.
+/// Adwaita light patched to state a fill for `HOVER|CHECKED`: the hovered
+/// checked box draws it, a disabled one none, an unchecked one its own; patched
+/// to state fills for `INDETERMINATE` and `HOVER|INDETERMINATE`, the hovered
+/// mixed box draws the latter.
+#[test]
+fn a_hovered_checked_box_draws_the_fill_resolved_for_its_state() -> crate::next::Mapped<()> {
+    use crate::next::state_fill_of;
+    use native_theme::next::{
+        CheckboxRule, Color, Paint, PartPatch, Preset, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    const HOVERED_ON: WidgetState = WidgetState::HOVER.union(WidgetState::CHECKED);
+    for preset in Preset::ALL {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = NextTheme::preset(*preset).resolve(&ctx);
+            for radio in [false, true] {
+                let name = format!("{preset:?} {:?}, radio {radio}", ctx.scheme);
+                let indicator = |state| {
+                    if radio {
+                        r.radio.indicator(state)
+                    } else {
+                        r.checkbox.indicator(state)
+                    }
+                };
+                let look = if radio {
+                    CheckboxLook::next_radio(&r, true, false)?
+                } else {
+                    CheckboxLook::next_of(&r, true, false)?
+                };
+                let resolved = state_fill_of(&indicator(HOVERED_ON));
+                let on = crate::next::fill(&indicator(WidgetState::CHECKED), "indicator(CHECKED)")?;
+                assert_eq!(
+                    look.hover_fill,
+                    resolved.filter(|hover| *hover != on),
+                    "{name}"
+                );
+                if let Some(unchecked) = state_fill_of(&indicator(WidgetState::HOVER)) {
+                    assert_ne!(
+                        resolved,
+                        Some(unchecked),
+                        "{name}: the hovered checked control resolves to the unchecked hover fill"
+                    );
+                }
+            }
+        }
+    }
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    let unchecked = CheckboxLook::next_of(&r, false, false)?.hover_fill;
+    let fill_rule = |states, colour| {
+        CheckboxRule::new()
+            .states(states)
+            .indicator(PartPatch::new().fill(Paint::Solid(colour)))
+    };
+    let hovered = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    r.apply_patch(&ThemePatch::new().checkbox(fill_rule(HOVERED_ON, hovered)));
+    assert_eq!(
+        CheckboxLook::next_of(&r, true, false)?.hover_fill,
+        Some(crate::next::hsla(hovered)),
+        "patched, enabled"
+    );
+    assert_eq!(
+        CheckboxLook::next_of(&r, true, true)?.hover_fill,
+        None,
+        "patched, disabled"
+    );
+    assert_eq!(
+        CheckboxLook::next_of(&r, false, false)?.hover_fill,
+        unchecked,
+        "patched, unchecked"
+    );
+    let [mixed, hovered_mixed] = [
+        Color::from_srgb8(0x23, 0x45, 0x67, 0xff),
+        Color::from_srgb8(0x34, 0x56, 0x78, 0xff),
+    ];
+    r.apply_patch(&ThemePatch::new().checkbox(fill_rule(WidgetState::INDETERMINATE, mixed)));
+    r.apply_patch(&ThemePatch::new().checkbox(fill_rule(
+        WidgetState::HOVER | WidgetState::INDETERMINATE,
+        hovered_mixed,
+    )));
+    let look = CheckboxLook::next_mixed(&r, false)?;
+    assert_eq!(
+        (look.fill, look.hover_fill),
+        (
+            crate::next::hsla(mixed),
+            Some(crate::next::hsla(hovered_mixed))
+        ),
+        "patched, mixed"
+    );
+    Ok(())
+}
