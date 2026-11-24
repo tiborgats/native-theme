@@ -1130,6 +1130,20 @@ pub(crate) fn checkbox_drawn(
     )
 }
 
+/// [`checkbox_drawn`] of a mixed `widgets::Checkbox`, whose look is
+/// `CheckboxLook::next_mixed`'s.
+#[cfg(feature = "widgets")]
+pub(crate) fn mixed_checkbox_drawn(
+    r: &NextTheme,
+    disabled: bool,
+) -> Result<(CheckboxLook, Hsla), &'static str> {
+    drawn_or_upstream(
+        CheckboxLook::next_mixed(r, disabled).map_err(|unstated| unstated.home()),
+        next_ground(r),
+        unstated_label_font(&r.checkbox.label(WidgetState::NONE), "checkbox.label(NONE)"),
+    )
+}
+
 /// [`native_checkbox`], `mixed` or not.
 #[cfg(feature = "widgets")]
 fn drawn_checkbox(
@@ -1141,7 +1155,12 @@ fn drawn_checkbox(
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Checkbox");
     let text = r.checkbox.label(WidgetState::NONE);
-    let (rest, ground) = match checkbox_drawn(r, checked, disabled) {
+    let drawn = if mixed {
+        mixed_checkbox_drawn(r, disabled)
+    } else {
+        checkbox_drawn(r, checked, disabled)
+    };
+    let (rest, ground) = match drawn {
         Ok(drawn) => drawn,
         Err(home) => {
             let info = drawn_by_upstream(info, "Checkbox", home);
@@ -1195,15 +1214,15 @@ fn drawn_checkbox(
             length_text(look.mark_size),
         )),
         (Some(stroke), true) => info.config("mixed mark", format!(
-            "the connector strokes upstream's dash, the line of its Minus icon, at checkbox.checkmark(NONE).stroke_width, {}, in a {} square, the box inside {inside}, in the checked mark's colour (native-theme-gpui/widgets/checkbox.rs, MINUS_POINTS; stroked_check)",
+            "the connector strokes upstream's dash, the line of its Minus icon, at checkbox.checkmark(NONE).stroke_width, {}, in a {} square, the box inside {inside}, in the mixed look's mark colour (native-theme-gpui/widgets/checkbox.rs, MINUS_POINTS; stroked_check)",
             length_text(stroke),
             length_text(look.mark_size),
         )),
         (None, false) => info.not_themeable("check mark", super::own_icons("Check, the mark gpui-component's own checkbox draws (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws where the theme states no checkbox.checkmark(NONE).stroke_width, filling the box inside its stroke")),
-        (None, true) => info.not_themeable("mixed mark", super::own_icons("Minus, the dash gpui-component's own checkbox draws in the mixed state (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws through the application's icon resolver where the theme states no checkbox.checkmark(NONE).stroke_width, filling the box inside its stroke, in the checked mark's colour")),
+        (None, true) => info.not_themeable("mixed mark", super::own_icons("Minus, the dash gpui-component's own checkbox draws in the mixed state (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws through the application's icon resolver where the theme states no checkbox.checkmark(NONE).stroke_width, filling the box inside its stroke, in the mixed look's mark colour")),
     };
     let info = if mixed {
-        info.not_themeable("mixed look", "the checked state's fill, border and mark colour: the model states no look of its own for the mixed state, so widgets::Checkbox draws it as checked, with the dash in place of the check (native-theme-gpui/widgets/checkbox.rs, Checkbox::indeterminate)")
+        info.config("mixed look", "checkbox.indicator(INDETERMINATE)'s fill and stroke and checkbox.checkmark(INDETERMINATE).color, each read as the checked box reads its own (DISABLED and HOVER with it), where a rule states it for INDETERMINATE; else the checked state's, as gpui-component draws a mixed box as a checked one (gpui-component/checkbox.rs:354-358), with the dash in place of the check (native-theme-gpui/widgets/checkbox.rs, CheckboxLook::next_mixed)")
     } else {
         info
     };
@@ -1683,7 +1702,7 @@ fn native_indicator(
             "mark",
             "checkbox.checkmark(DISABLED|CHECKED).color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:764",
+            "native-theme-gpui/widgets/checkbox.rs:769",
         ),
         (true, true, true) => stated_claim(
             "mark",
@@ -1730,7 +1749,7 @@ fn native_indicator(
             "label, disabled, none stated: gpui-component's own muted_foreground",
             "colors.window.foreground_muted",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:795",
+            "native-theme-gpui/widgets/checkbox.rs:800",
         ),
         (false, true, true) => claim(
             "label",

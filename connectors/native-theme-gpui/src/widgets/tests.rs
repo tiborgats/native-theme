@@ -6931,3 +6931,101 @@ fn a_stated_state_is_drawn_over_gpui_components_own_treatment() -> crate::next::
     }
     Ok(())
 }
+
+/// A mixed check box is drawn as a checked one where a 0.8.0 theme states no
+/// rule for `INDETERMINATE`, as gpui-component draws it (gpui-component
+/// 0.10.0 checkbox.rs:354-358; spec §10, rule 0): so on every preset, none of
+/// which states one. Adwaita light, which states no rule for a disabled
+/// indicator's fill or stroke or a disabled mark, patched to state a fill, a
+/// stroke and a mark colour for `INDETERMINATE`: the mixed box draws those,
+/// a checked one does not, and disabled it draws them at half alpha; patched
+/// further to state others for `DISABLED`, disabled it draws those, read at
+/// `DISABLED|INDETERMINATE`.
+#[test]
+fn a_mixed_box_draws_the_look_stated_for_the_indeterminate_state() -> crate::next::Mapped<()> {
+    use native_theme::next::{
+        CheckboxRule, Color, IconPatch, IconStated, Paint, PartPatch, PartStated, Preset, Stroke,
+        Theme as NextTheme, ThemeContext, ThemePatch, WidgetState,
+    };
+    for preset in Preset::ALL {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = NextTheme::preset(*preset).resolve(&ctx);
+            for disabled in [false, true] {
+                assert_eq!(
+                    CheckboxLook::next_mixed(&r, disabled),
+                    CheckboxLook::next_of(&r, true, disabled),
+                    "{preset:?} {:?}, disabled {disabled}",
+                    ctx.scheme
+                );
+            }
+        }
+    }
+    let mut r = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::light());
+    let off = r.checkbox.indicator(WidgetState::DISABLED).from_state;
+    assert!(
+        !off.contains(PartStated::FILL)
+            && !off.contains(PartStated::STROKE)
+            && !r
+                .checkbox
+                .checkmark(WidgetState::DISABLED)
+                .from_state
+                .contains(IconStated::COLOR),
+        "adwaita light now states a disabled indicator fill, stroke or mark, which this test \
+         needs unstated"
+    );
+    let Some(width) =
+        crate::next::stroke_width_of(&r.checkbox.indicator(WidgetState::NONE)).filter(|w| *w > 0.)
+    else {
+        return Err(Unmapped("checkbox.indicator(NONE).stroke.width"));
+    };
+    let rule = |states, [fill, stroke, mark]: [Color; 3]| {
+        CheckboxRule::new()
+            .states(states)
+            .indicator(
+                PartPatch::new()
+                    .fill(Paint::Solid(fill))
+                    .stroke(Stroke::uniform(width, stroke)),
+            )
+            .checkmark(IconPatch::new().color(mark))
+    };
+    let mixed = [
+        Color::from_srgb8(0x12, 0x34, 0x56, 0xff),
+        Color::from_srgb8(0x23, 0x45, 0x67, 0xff),
+        Color::from_srgb8(0x34, 0x56, 0x78, 0xff),
+    ];
+    r.apply_patch(&ThemePatch::new().checkbox(rule(WidgetState::INDETERMINATE, mixed)));
+    let drawn = |look: &CheckboxLook| [look.fill, look.border, look.mark];
+    let [fill, stroke, mark] = mixed.map(crate::next::hsla);
+    assert_eq!(
+        drawn(&CheckboxLook::next_mixed(&r, false)?),
+        [fill, stroke, mark],
+        "patched, enabled"
+    );
+    let checked = drawn(&CheckboxLook::next_of(&r, true, false)?);
+    for (part, colour) in checked.iter().zip([fill, stroke, mark]) {
+        assert_ne!(*part, colour, "patched, the checked box");
+    }
+    let half = |c: gpui::Hsla| c.opacity(super::checkbox::DISABLED_INDICATOR_ALPHA);
+    assert_eq!(
+        drawn(&CheckboxLook::next_mixed(&r, true)?),
+        [half(fill), half(stroke), half(mark)],
+        "patched, disabled"
+    );
+    let disabled = [
+        Color::from_srgb8(0x45, 0x67, 0x89, 0xff),
+        Color::from_srgb8(0x56, 0x78, 0x9a, 0xff),
+        Color::from_srgb8(0x67, 0x89, 0xab, 0xff),
+    ];
+    r.apply_patch(&ThemePatch::new().checkbox(rule(WidgetState::DISABLED, disabled)));
+    assert_eq!(
+        drawn(&CheckboxLook::next_mixed(&r, true)?),
+        disabled.map(crate::next::hsla),
+        "patched for DISABLED too, disabled"
+    );
+    assert_eq!(
+        drawn(&CheckboxLook::next_mixed(&r, false)?),
+        [fill, stroke, mark],
+        "patched for DISABLED too, enabled"
+    );
+    Ok(())
+}

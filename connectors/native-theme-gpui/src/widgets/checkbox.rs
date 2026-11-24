@@ -620,7 +620,7 @@ impl Parts {
     /// the widget's own, as gpui-component refines its checkbox's
     /// (checkbox.rs:294). Without a native theme or a finite look it hands
     /// the parts back, for gpui-component's control. An indeterminate control
-    /// takes the checked look. The indicator leads, on the start edge of the
+    /// takes the mixed look ([`CheckboxLook::next_mixed`]). The indicator leads, on the start edge of the
     /// layout direction (`LayoutDirection::global`), as gpui-component lays
     /// its checkbox out (checkbox.rs, `flex_row_dir`).
     fn render<E>(
@@ -641,6 +641,11 @@ impl Parts {
             theme.look(
                 |r| CheckboxLook::radio(r, checked, disabled),
                 |r| CheckboxLook::next_radio(r, checked, disabled),
+            )
+        } else if self.indeterminate {
+            theme.look(
+                |r| CheckboxLook::of(r, true, disabled),
+                |r| CheckboxLook::next_mixed(r, disabled),
             )
         } else {
             theme.look(
@@ -1101,7 +1106,9 @@ impl Checkbox {
 
     /// Whether it shows the mixed state, as a checkbox over a group whose
     /// items are only partly checked: gpui-base's indeterminate state, drawn
-    /// as when checked with gpui-component's dash in place of the check. While
+    /// as when checked with gpui-component's dash in place of the check, in
+    /// the fill, stroke and mark colour a 0.8.0 theme states for
+    /// `INDETERMINATE` ([`CheckboxLook::next_mixed`]). While
     /// set it wins over [`checked`](Self::checked), and activating it requests
     /// `true`, as gpui-component's (gpui-component 0.10.0 checkbox.rs:256,
     /// gpui-base 0.10.0 checkbox.rs:142).
@@ -1444,5 +1451,92 @@ impl RenderOnce for RadioGroup {
                 .enumerate()
                 .map(|(ix, radio)| radio.set_position(ix.saturating_add(1), total)),
         )
+    }
+}
+
+impl CheckboxLook {
+    /// The look of a mixed (indeterminate) check box of a 0.8.0 theme,
+    /// `disabled` or not: the checked box's ([`CheckboxLook::next_of`]), its
+    /// indicator's fill and stroke and its mark's colour each read at
+    /// `INDETERMINATE` in place of `CHECKED`, with `DISABLED` and `HOVER` as
+    /// the checked box reads them, where a rule states it for
+    /// `INDETERMINATE`; where none does, the checked box's, as
+    /// gpui-component draws an indeterminate box as a checked one
+    /// (gpui-component 0.10.0 checkbox.rs:354-358; spec §10, rule 0).
+    ///
+    /// # Errors
+    ///
+    /// As [`CheckboxLook::next_of`]'s.
+    pub fn next_mixed(r: &native_theme::next::ResolvedTheme, disabled: bool) -> Mapped<Self> {
+        use crate::next::{Unmapped, fill, hsla, stroke_color};
+        use native_theme::next::{IconStated, IconStyle, PartStated, WidgetState};
+        const MIXED: WidgetState = WidgetState::INDETERMINATE;
+        let off = WidgetState::DISABLED | MIXED;
+        let c = &r.checkbox;
+        let mut look = Self::next_of(r, true, disabled)?;
+        let indicator = |state| c.indicator(state);
+        let mark = |state| c.checkmark(state);
+        let ruled = |bit| indicator(MIXED).from_state.contains(bit);
+        let ruled_off = |bit| indicator(WidgetState::DISABLED).from_state.contains(bit);
+        let dim = |colour: Hsla| colour.opacity(DISABLED_INDICATOR_ALPHA);
+        // Disabled, the one a rule states for `DISABLED`; else the enabled one
+        // dimmed, as gpui-component dims a disabled checked box's.
+        if ruled(PartStated::FILL) {
+            look.fill = match (disabled, ruled_off(PartStated::FILL)) {
+                (false, _) => fill(&indicator(MIXED), "checkbox.indicator(INDETERMINATE).fill")?,
+                (true, true) => fill(
+                    &indicator(off),
+                    "checkbox.indicator(DISABLED|INDETERMINATE).fill",
+                )?,
+                (true, false) => dim(fill(
+                    &indicator(MIXED),
+                    "checkbox.indicator(INDETERMINATE).fill",
+                )?),
+            };
+        }
+        if ruled(PartStated::STROKE) {
+            let on = "checkbox.indicator(INDETERMINATE).stroke.color";
+            look.border = match (disabled, ruled_off(PartStated::STROKE)) {
+                (false, _) => stroke_color(&indicator(MIXED), on)?,
+                (true, true) => stroke_color(
+                    &indicator(off),
+                    "checkbox.indicator(DISABLED|INDETERMINATE).stroke.color",
+                )?,
+                (true, false) => dim(stroke_color(&indicator(MIXED), on)?),
+            };
+            let hovered = indicator(WidgetState::HOVER)
+                .from_state
+                .contains(PartStated::STROKE);
+            look.hover_border = if hovered && !disabled {
+                Some(stroke_color(
+                    &indicator(WidgetState::HOVER | MIXED),
+                    "checkbox.indicator(HOVER|INDETERMINATE).stroke.color",
+                )?)
+            } else {
+                None
+            };
+        }
+        let colour = |icon: &IconStyle, home: &'static str| {
+            if icon.stated.contains(IconStated::COLOR) {
+                Ok(hsla(icon.color))
+            } else {
+                Err(Unmapped(home))
+            }
+        };
+        if mark(MIXED).from_state.contains(IconStated::COLOR) {
+            let on = "checkbox.checkmark(INDETERMINATE).color";
+            let mark_off = mark(WidgetState::DISABLED)
+                .from_state
+                .contains(IconStated::COLOR);
+            look.mark = match (disabled, mark_off) {
+                (false, _) => colour(&mark(MIXED), on)?,
+                (true, true) => colour(
+                    &mark(off),
+                    "checkbox.checkmark(DISABLED|INDETERMINATE).color",
+                )?,
+                (true, false) => dim(colour(&mark(MIXED), on)?),
+            };
+        }
+        Ok(look)
     }
 }

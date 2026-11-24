@@ -21372,12 +21372,12 @@ type Leaf = (&'static str, &'static str);
 /// checked state too where checked) where a rule states a disabled stroke
 /// (:422-427), else `indicator(CHECKED)`'s checked (:345-346), else
 /// `indicator(NONE)`'s (:352-353), at half alpha where disabled; the mark
-/// disabled `checkbox.checkmark(DISABLED|CHECKED).color` (:764) or
+/// disabled `checkbox.checkmark(DISABLED|CHECKED).color` (:769) or
 /// `radio.dot(DISABLED|CHECKED).fill` (:403) where a rule states it for
 /// `DISABLED`, else `checkbox.checkmark(CHECKED).color` (:305) or
 /// `radio.dot(CHECKED).fill` (:300), at half alpha where disabled; the label
 /// disabled `label(DISABLED).color` where a rule states it (:365-366), else
-/// gpui-component's own, `colors.window.foreground_muted` (:795), enabled
+/// gpui-component's own, `colors.window.foreground_muted` (:800), enabled
 /// `label(NONE).color` (:360) -- as (fill, hover, hover edge, border, mark,
 /// label).
 #[cfg(feature = "widgets")]
@@ -21551,7 +21551,7 @@ fn checkbox_homes(
     } else {
         (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/checkbox.rs:795",
+            "native-theme-gpui/widgets/checkbox.rs:800",
         )
     };
     let mark_ruled = if radio {
@@ -21569,7 +21569,7 @@ fn checkbox_homes(
         at(
             (
                 "checkbox.checkmark(DISABLED|CHECKED).color",
-                "native-theme-gpui/widgets/checkbox.rs:764",
+                "native-theme-gpui/widgets/checkbox.rs:769",
             ),
             (
                 "radio.dot(DISABLED|CHECKED).fill",

@@ -5227,13 +5227,13 @@ pub(crate) fn theme_checkbox(_: &App) -> Option<&native_theme::next::ResolvedThe
 
 /// The Inputs page's label of its theme-drawn mixed checkbox: theme-drawn
 /// where [`theme_checkbox`] gives a theme whose look the widget draws, a
-/// mixed box being drawn as a checked one (`info::inputs::checkbox_drawn`:
-/// the look, the window's colour and the label font stated), else
-/// gpui-component's own, which the widget draws in its place.
+/// mixed box's look, the window's colour and the label font being stated
+/// (`info::inputs::mixed_checkbox_drawn`), else gpui-component's own, which
+/// the widget draws in its place.
 pub(crate) fn mixed_checkbox_label(cx: &App) -> &'static str {
     #[cfg(feature = "widgets")]
     let drawn =
-        theme_checkbox(cx).is_some_and(|r| info::inputs::checkbox_drawn(r, true, false).is_ok());
+        theme_checkbox(cx).is_some_and(|r| info::inputs::mixed_checkbox_drawn(r, false).is_ok());
     #[cfg(not(feature = "widgets"))]
     let drawn = theme_checkbox(cx).is_some();
     mixed_label(drawn)
