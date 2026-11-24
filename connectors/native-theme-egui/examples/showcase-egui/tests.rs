@@ -649,7 +649,8 @@ fn column_rule(harness: &Harness<'_, App>, theme: egui::Theme) -> crate::pages::
 /// `layout.widget_gap` from the content panel's edge, under every bundled
 /// preset at a text scale of 1 and of 2.25, the largest, where three columns, the old floor,
 /// left it past the window under macos-monterey, macos-tahoe and ios-13; and the three Linux
-/// platform presets the Theme row offers keep their columns at a text scale of 1: kde-breeze
+/// platform presets, installed through the Theme row's path ([`open_page_under`]), keep their
+/// columns at a text scale of 1: kde-breeze
 /// and adwaita five, material-3 four (the window's own content width). It prints each preset's
 /// count.
 #[test]
@@ -703,11 +704,7 @@ fn the_column_count_holds_the_segmented_control() {
         }
     }
     for (preset, want) in [("kde-breeze", 5), ("adwaita", 5), ("material-3", 4)] {
-        let mut harness = open(
-            egui::Theme::Light,
-            cli(&[("--theme", preset), ("--tab", "basic")]),
-        );
-        harness.run_steps(4);
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
         let laid = harness
             .state()
             .registry
@@ -1623,7 +1620,8 @@ fn open_page_under_at(
 }
 
 /// `preset` installed into `harness` through the Theme row's path, in `theme`'s mode, as
-/// [`open_page_under`] installs it.
+/// [`open_page_under`] installs it; the installed atlas is named as the unpatched preset
+/// resolves (`preset_name`), so a test checks the theme it runs under.
 fn install_under(harness: &mut Harness<'static, App>, theme: egui::Theme, preset: &str) {
     let ctx = harness.ctx.clone();
     let mode = match theme {
@@ -1636,6 +1634,11 @@ fn install_under(harness: &mut Harness<'static, App>, theme: egui::Theme, preset
     harness.run_steps(4);
     assert_eq!(harness.state().theme_error, None, "{preset} installs");
     assert_eq!(harness.ctx.theme(), theme, "{preset} is drawn in {theme:?}");
+    assert_eq!(
+        Ok(harness.state().atlas.name()),
+        preset_name(preset).as_deref(),
+        "the installed atlas is {preset}'s"
+    );
 }
 
 /// [`open_page_under`], then the patch `patch` makes of the installed 0.8.0 theme of `theme`'s
@@ -3128,11 +3131,7 @@ fn the_nested_panels_stay_inside_the_page() {
 /// (kde-breeze: a 3 + 18 + 2 bar under a 32 button).
 #[test]
 fn the_status_bar_is_one_line_and_its_padding_tall() -> Result<(), String> {
-    let mut harness = open(
-        egui::Theme::Light,
-        cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]),
-    );
-    harness.run_steps(4);
+    let harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     let Some(r) = harness
         .state()
         .atlas
@@ -3545,11 +3544,7 @@ fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
         element_notes(&harness, "chrome.toolbar")
     );
 
-    let mut harness = open(
-        egui::Theme::Light,
-        cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]),
-    );
-    harness.run_steps(4);
+    let harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     for id in ["chrome.toolbar", "chrome.status_bar", "chrome.menu_bar"] {
         assert!(
             element_notes(&harness, id)
@@ -4276,11 +4271,7 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
 fn basic_checkbox_and_radio_rows_fit_the_indicator() -> Result<(), String> {
     use native_theme::next::WidgetState;
     for preset in ["kde-breeze", "material-3"] {
-        let mut harness = open(
-            egui::Theme::Light,
-            cli(&[("--theme", preset), ("--tab", "basic")]),
-        );
-        harness.run_steps(4);
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
         let r = harness
             .state()
             .atlas
@@ -4451,11 +4442,7 @@ fn the_basic_page_applies_the_per_call_leaves() -> Result<(), String> {
     // `input.field(NONE).min_size[1]`, so no check below passes on an unstated value alone
     let mut stated = [false; 3];
     for preset in ["kde-breeze", "material-3"] {
-        let mut harness = open(
-            egui::Theme::Light,
-            cli(&[("--theme", preset), ("--tab", "basic")]),
-        );
-        harness.run_steps(4);
+        let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
         harness.remove_cursor();
         harness.run_steps(2);
         let r = harness
@@ -7684,7 +7671,7 @@ mod the_side_panel_keeps_its_width_when_widget_info_scrolls {
 
 fn the_side_panel_keeps_its_width_under(preset: &str, theme: egui::Theme) -> Result<(), String> {
     const STEP: f32 = 1.0 / 60.0;
-    let cli = cli(&[("--theme", preset), ("--tab", "basic")]);
+    let cli = cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]);
     let mut harness = Harness::builder()
         .with_context_setup(emoji_fallbacks)
         .with_theme(theme)
@@ -7693,12 +7680,6 @@ fn the_side_panel_keeps_its_width_under(preset: &str, theme: egui::Theme) -> Res
         .build_eframe(move |cc| {
             App::new(cc, &cli).expect("the showcase starts under a bundled preset")
         });
-    // The harness turns animations off (`egui_kittest/src/lib.rs:144-150`); a display runs
-    // them for egui's own `animation_time`.
-    let animation_time = egui::Style::default().animation_time;
-    harness
-        .ctx
-        .all_styles_mut(|style| style.animation_time = animation_time);
     harness.run_steps(4);
     let width_of = |h: &Harness<'_, App>| {
         h.state()
@@ -7710,7 +7691,8 @@ fn the_side_panel_keeps_its_width_under(preset: &str, theme: egui::Theme) -> Res
             .ok_or("the side panel is shown")
     };
     // The panel's record holds its splitter's line, in room its frame reserves after it: the
-    // installed 0.8.0 theme's `splitter.divider_width`.
+    // `splitter.divider_width` of the 0.8.0 theme it opened under. The panel is resizable, so
+    // `preset`'s install keeps the width it opened at.
     let opened = crate::LEFT_PANEL_WIDTH
         + harness
             .state()
@@ -7720,6 +7702,19 @@ fn the_side_panel_keeps_its_width_under(preset: &str, theme: egui::Theme) -> Res
             .splitter
             .divider_width;
     assert_eq!(width_of(&harness)?, opened);
+    install_under(&mut harness, theme, preset);
+    // The harness turns animations off (`egui_kittest/src/lib.rs:144-150`); a display runs
+    // them for egui's own `animation_time`.
+    let animation_time = egui::Style::default().animation_time;
+    harness
+        .ctx
+        .all_styles_mut(|style| style.animation_time = animation_time);
+    harness.run_steps(4);
+    assert_eq!(
+        width_of(&harness)?,
+        opened,
+        "{preset} {theme:?}: the install changed the side panel's width"
+    );
     let centres: Vec<(&'static str, egui::Pos2)> = harness
         .state()
         .registry
@@ -7931,11 +7926,7 @@ fn the_icons_page_says_why_the_system_icon_theme_is_unavailable() {
 /// the `item_spacing` egui puts between widgets anyway.
 #[test]
 fn groups_and_columns_are_a_section_gap_apart() {
-    let mut harness = open(
-        egui::Theme::Light,
-        cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]),
-    );
-    harness.run_steps(4);
+    let harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     let Some(gap) = harness.state().atlas.layout().section_gap else {
         panic!("kde-breeze states layout.section_gap");
     };
@@ -8177,11 +8168,7 @@ fn the_basic_page_has_every_group_in_its_column() {
         "the controls are listed per group, in order"
     );
     for (preset, expected) in [("kde-breeze", 5), ("material-3", 4), ("adwaita", 5)] {
-        let mut harness = open(
-            egui::Theme::Light,
-            cli(&[("--theme", preset), ("--tab", "basic")]),
-        );
-        harness.run_steps(4);
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
         let count = column_count(
             &column_rule(&harness, egui::Theme::Light),
             harness.state().demo_state.content_width,
@@ -8303,7 +8290,8 @@ fn the_basic_page_has_every_group_in_its_column() {
 }
 
 /// The Basic page never needs sideways scrolling at the window's default size, 1280 × 720, in
-/// both modes, under the three Linux presets the Theme row offers: every element it places ends inside
+/// both modes, under the three Linux presets, installed through the Theme row's path
+/// ([`open_page_under`]): every element it places ends inside
 /// the content panel, and it lays out the columns its rule counts from the panel's width. It may
 /// be taller than its area (material-3 is): it then scrolls, and the test reports it. The
 /// columns are as far apart as `column_count` counts them (M9-105), so the page fits at a
@@ -8317,8 +8305,7 @@ fn the_basic_page_fits_the_window_across() {
     use crate::pages::basic::column_count;
     for preset in ["kde-breeze", "material-3", "adwaita"] {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
-            let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
-            harness.run_steps(4);
+            let harness = open_page_under(Page::Basic, theme, preset);
             fits_across(&harness, theme, preset);
         }
     }
@@ -9433,11 +9420,7 @@ fn section_headings_take_the_section_heading_role() -> Result<(), String> {
     use native_theme_egui::next;
     let mut other_weight = Vec::new();
     for preset in ["kde-breeze", TEST_PRESET, "adwaita"] {
-        let mut harness = open(
-            egui::Theme::Light,
-            cli(&[("--theme", preset), ("--tab", "basic")]),
-        );
-        harness.run_steps(4);
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
         let r = harness
             .state()
             .atlas
@@ -9532,9 +9515,9 @@ fn the_pointer_flag_is_a_point() {
 #[test]
 fn a_held_pointer_hovers_and_presses_the_control_under_it() -> Result<(), String> {
     use native_theme::next::WidgetState;
-    let args = [("--theme", "kde-breeze"), ("--tab", "basic")];
+    let args = [("--theme", TEST_PRESET), ("--tab", "basic")];
     let mut probe = open(egui::Theme::Light, cli(&args));
-    probe.run_steps(4);
+    install_under(&mut probe, egui::Theme::Light, "kde-breeze");
     let Some(rect) = probe
         .state()
         .registry
@@ -9561,6 +9544,7 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() -> Result<(), String
         args.pointer = Some((rect.center().x as u16, rect.center().y as u16));
         args.press = press;
         let mut harness = open(egui::Theme::Light, args);
+        install_under(&mut harness, egui::Theme::Light, "kde-breeze");
         for step in 0..16u32 {
             let ctx = harness.ctx.clone();
             let mut input = std::mem::take(harness.input_mut());
@@ -9749,9 +9733,9 @@ fn the_dialog_default_button_is_drawn_in_its_state() -> Result<(), String> {
 /// shut.
 #[test]
 fn a_held_pointer_opens_the_tooltip_under_it() {
-    let args = [("--theme", "kde-breeze"), ("--tab", "basic")];
+    let args = [("--theme", TEST_PRESET), ("--tab", "basic")];
     let mut probe = open(egui::Theme::Light, cli(&args));
-    probe.run_steps(4);
+    install_under(&mut probe, egui::Theme::Light, "kde-breeze");
     let Some(rect) = probe
         .state()
         .registry
@@ -9765,6 +9749,7 @@ fn a_held_pointer_opens_the_tooltip_under_it() {
     let mut args = cli(&args);
     args.pointer = Some((rect.center().x as u16, rect.center().y as u16));
     let mut harness = open(egui::Theme::Light, args);
+    install_under(&mut harness, egui::Theme::Light, "kde-breeze");
     assert!(
         harness.query_by_label("A tooltip").is_none(),
         "the tooltip is open before the pointer is held"
@@ -9790,12 +9775,12 @@ fn a_held_pointer_opens_the_tooltip_under_it() {
 /// captured.
 #[test]
 fn a_capture_is_drawn_at_rest_under_the_pointer() {
-    let args = [("--theme", "kde-breeze"), ("--tab", "basic")];
+    let args = [("--theme", TEST_PRESET), ("--tab", "basic")];
     for capturing in [false, true] {
         let mut args = cli(&args);
         args.capture = capturing;
         let mut harness = open(egui::Theme::Light, args);
-        harness.run_steps(4);
+        install_under(&mut harness, egui::Theme::Light, "kde-breeze");
         let Some(rect) = harness
             .state()
             .registry
@@ -12618,10 +12603,10 @@ fn the_layout_dump_is_the_lists_object() {
 /// is not dumped, which is what makes the first half mean something.
 #[test]
 fn a_layout_dump_is_the_same_under_the_pointer() {
-    let args = || cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]);
+    let args = || cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]);
     let at = {
         let mut harness = open(egui::Theme::Light, args());
-        harness.run_steps(4);
+        install_under(&mut harness, egui::Theme::Light, "kde-breeze");
         let Some(rect) = harness
             .state()
             .registry
@@ -12636,7 +12621,8 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
     };
     // The pointer is over the window before the dump's layout has had the time to settle, as
     // the desktop's is when the window opens under it: the harness's first passes, which
-    // `build_eframe` runs, take no time (`with_step_dt`), so the steps below set the clock.
+    // `build_eframe` runs, and the install's take no time (`with_step_dt`), so the steps below
+    // set the clock.
     let run = |dump: Option<&std::path::Path>, pointer: bool| {
         let mut args = args();
         args.dump_layout = dump.map(|path| path.display().to_string());
@@ -12648,6 +12634,13 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
             .build_eframe(move |cc| {
                 App::new(cc, &args).expect("the showcase starts under a bundled preset")
             });
+        let built = harness.ctx.input(|i| i.time);
+        install_under(&mut harness, egui::Theme::Light, "kde-breeze");
+        assert_eq!(
+            harness.ctx.input(|i| i.time),
+            built,
+            "the install's passes took no time"
+        );
         for step in 0..16u32 {
             let ctx = harness.ctx.clone();
             let mut input = std::mem::take(harness.input_mut());
@@ -13759,6 +13752,11 @@ fn the_icon_cache_is_forgotten_where_the_icon_choice_changes() -> std::io::Resul
                 ("--variant", "light"),
                 ("--tab", "icons"),
             ]),
+        );
+        assert_eq!(
+            Ok(harness.state().atlas.name()),
+            preset_name("kde-breeze").as_deref(),
+            "the child runs under kde-breeze"
         );
         let ctx = harness.ctx.clone();
         let loaded = |harness: &Harness<'_, App>, theme: &str| {
