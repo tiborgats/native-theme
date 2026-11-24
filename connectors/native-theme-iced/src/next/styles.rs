@@ -646,7 +646,8 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
                 None
             }
         },
-        thumb_border: edge(&thumb_off, "switch.thumb(NONE).stroke")?,
+        thumb_border: edge(&thumb_on, "switch.thumb(CHECKED).stroke")?,
+        unchecked_thumb_border: edge(&thumb_off, "switch.thumb(NONE).stroke")?,
         track_radius: radius_or_iced(&off, "switch.track(NONE).corners")?,
         track_height,
         thumb_diameter,
@@ -904,8 +905,9 @@ fn slider_across(
 }
 
 /// [`crate::styles::scrollable`]: the rail's fill, the scroller at rest (the
-/// handle of a view without the focus, which is the plain handle on every
-/// preset: spec §5, S3; iced knows no view focus), under the pointer and
+/// handle of the view that has the focus, `thumb(NONE)`: spec §5, S3; iced
+/// knows no view focus, and a connector sets `UNFOCUSED_VIEW` only where the
+/// view lacks it, spec §3, `WidgetState`), under the pointer and
 /// dragged (`thumb(PRESSED)`, spec §5, `scrollbar.thumb_active_color`), with
 /// its outline and corners where the theme states them (Breeze's pen round
 /// a pill), each value the theme states nothing for iced's own, and whether
@@ -921,18 +923,17 @@ pub fn scrollable(
     impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>,
 > {
     let s = &r.scrollbar;
-    let thumb = s.thumb(WidgetState::UNFOCUSED_VIEW);
+    let thumb = s.thumb(WidgetState::NONE);
     let hover = s.thumb(WidgetState::HOVER);
     let pressed = s.thumb(WidgetState::PRESSED);
     Ok(old::scrollable_from(&ScrollbarSource {
         track: fill(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
-        thumb: fill(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).fill")?,
+        thumb: fill(&thumb, "scrollbar.thumb(NONE).fill")?,
         hovered_thumb: state_fill(&hover, "scrollbar.thumb(HOVER).fill")?,
         dragged_thumb: state_fill(&pressed, "scrollbar.thumb(PRESSED).fill")?,
         overlay_mode: s.overlay_mode,
-        thumb_edge: edge(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).stroke")?,
-        thumb_radius: radius_or_iced(&thumb, "scrollbar.thumb(UNFOCUSED_VIEW).corners")?
-            .map(Radius::new),
+        thumb_edge: edge(&thumb, "scrollbar.thumb(NONE).stroke")?,
+        thumb_radius: radius_or_iced(&thumb, "scrollbar.thumb(NONE).corners")?.map(Radius::new),
         hovered_thumb_line: state_line(&hover, "scrollbar.thumb(HOVER).stroke.color")?,
         dragged_thumb_line: state_line(&pressed, "scrollbar.thumb(PRESSED).stroke.color")?,
     }))

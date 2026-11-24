@@ -380,10 +380,11 @@ pub(crate) struct Listed {
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Added {
     Nothing,
-    /// A scroll bar handle's outline: the pen's width and alignment, its
-    /// colour at rest, under the pointer and dragged, round a pill
-    /// ([`crate::styles::pill`]).
+    /// A scroll bar handle's fill at rest and its outline: the pen's width
+    /// and alignment, its colour at rest, under the pointer and dragged,
+    /// round a pill ([`crate::styles::pill`]).
     ScrollerOutline {
+        thumb: iced_core::Color,
         width: f32,
         align: LineAlign,
         rest: iced_core::Color,
@@ -945,41 +946,54 @@ const SCROLLER_OUTLINE: &str = "the theme states the scroll bar handle's outline
      2; the kde-breeze preset states Breeze's handle (native-theme's kde-breeze preset, S2: \
      Helper::renderScrollBarHandle and scrollBarHandleColor, breezehelper.cpp at breeze \
      f0b1d75): a pen 1.001 wide centred on the edge in the handle's colour at alpha \
-     frameContrast, 0.2, WindowText in a view without the focus, DecorationHover #3daee9 \
-     under the pointer and dragged, round a pill, which iced draws as the pen over the fill \
-     at half its alpha (CENTER) and as a radius its renderers clamp to half the shorter side \
-     (styles::pill; docs/v0.8.0-plan.md §2, M4 step 1: each visible property the new model \
-     states and the toolkit can draw wired through)";
+     frameContrast, 0.2, DecorationFocus #3daee9 at rest in the view that has the focus, \
+     DecorationHover #3daee9 under the pointer and dragged, round a pill, which iced draws as \
+     the pen over the fill at half its alpha (CENTER) and as a radius its renderers clamp to \
+     half the shorter side (styles::pill; docs/v0.8.0-plan.md §2, M4 step 1: each visible \
+     property the new model states and the toolkit can draw wired through)";
 
-/// Breeze's WindowText at frameContrast, the handle's outline at rest in a
-/// view without the focus: #232629 light, #fcfcfc dark, at alpha 0.2.
-const BREEZE_TEXT_FRAME_LIGHT: iced_core::Color =
-    iced_core::Color::from_rgba8(0x23, 0x26, 0x29, 0.2);
-const BREEZE_TEXT_FRAME_DARK: iced_core::Color =
-    iced_core::Color::from_rgba8(0xfc, 0xfc, 0xfc, 0.2);
+/// The reason of a scroll bar handle at rest drawn as the focused view's.
+const FOCUSED_HANDLE: &str = "the scroller at rest is the handle of the view that has the \
+     focus, scrollbar.thumb(NONE) (docs/v0.8.0-spec.md §5, S3; §3, WidgetState: \
+     UNFOCUSED_VIEW only where the view lacks the focus, which iced does not report), where \
+     0.7.2 states one handle, the plain one of a view without the focus \
+     (scrollbar.thumb_color); the kde-breeze preset states Breeze's measured focused handle \
+     (native-theme's kde-breeze preset, `scrollbar_thumb_focused`: \
+     docs/issues/0004_kde-leftovers-rationale.md, S3), #b1d9ef light, #2a546b dark";
+
+/// Breeze's handle in the view that has the focus (native-theme's
+/// kde-breeze preset, `scrollbar_thumb_focused`): #b1d9ef light, #2a546b
+/// dark.
+const BREEZE_FOCUSED_HANDLE_LIGHT: iced_core::Color = iced_core::Color::from_rgb8(0xb1, 0xd9, 0xef);
+const BREEZE_FOCUSED_HANDLE_DARK: iced_core::Color = iced_core::Color::from_rgb8(0x2a, 0x54, 0x6b);
+
+/// Breeze's DecorationFocus at frameContrast, the handle's outline at rest
+/// in the view that has the focus: #3daee9 at alpha 0.2.
+const BREEZE_FOCUS_FRAME: iced_core::Color = iced_core::Color::from_rgba8(0x3d, 0xae, 0xe9, 0.2);
 
 /// Breeze's DecorationHover at frameContrast, the handle's outline under
 /// the pointer and dragged: #3daee9 at alpha 0.2.
 const BREEZE_HOVER_FRAME: iced_core::Color = iced_core::Color::from_rgba8(0x3d, 0xae, 0xe9, 0.2);
 
-/// Breeze's scrollable on the scheme `presets` names, its handle outlined
-/// at rest in `rest`.
-const fn breeze_scroller(presets: &'static [&'static str], rest: iced_core::Color) -> Difference {
+/// Breeze's scrollable on the scheme `presets` names, its handle at rest
+/// filled `thumb`.
+const fn breeze_scroller(presets: &'static [&'static str], thumb: iced_core::Color) -> Difference {
     Difference {
         leaf: "scrollable",
         presets,
         listed: Listed {
             added: Added::ScrollerOutline {
+                thumb,
                 width: 1.001,
                 align: LineAlign::Center,
-                rest,
+                rest: BREEZE_FOCUS_FRAME,
                 hovered: BREEZE_HOVER_FRAME,
                 dragged: BREEZE_HOVER_FRAME,
             },
             ..Listed::aligned(LineAlign::Outside)
         },
         stated: &[],
-        reason: &[SCROLLER_OUTLINE],
+        reason: &[SCROLLER_OUTLINE, FOCUSED_HANDLE],
     }
 }
 
@@ -2010,10 +2024,10 @@ const DIFFERENCES: &[Difference] = &[
         )]],
         reason: &[SLIDER_RAIL, STATED],
     },
-    // Breeze's handle outline (scrollbar.thumb(UNFOCUSED_VIEW), (HOVER) and
-    // (PRESSED): stroke and corners).
-    breeze_scroller(&["kde-breeze/light"], BREEZE_TEXT_FRAME_LIGHT),
-    breeze_scroller(&["kde-breeze/dark"], BREEZE_TEXT_FRAME_DARK),
+    // Breeze's handle at rest (scrollbar.thumb(NONE): fill) and its outline
+    // (scrollbar.thumb(NONE), (HOVER) and (PRESSED): stroke and corners).
+    breeze_scroller(&["kde-breeze/light"], BREEZE_FOCUSED_HANDLE_LIGHT),
+    breeze_scroller(&["kde-breeze/dark"], BREEZE_FOCUSED_HANDLE_DARK),
     // scrollbar.thumb(PRESSED) and scrollbar.thumb(HOVER).
     Difference {
         leaf: "scrollable",

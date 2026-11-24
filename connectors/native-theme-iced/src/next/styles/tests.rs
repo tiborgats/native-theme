@@ -882,7 +882,7 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
     };
     for (preset, r) in every_preset() {
         let theme = to_theme(&r)?;
-        let rest = r.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
+        let rest = r.scrollbar.thumb(WidgetState::NONE);
         let border = super::scrollable(&r)?(&theme, active)
             .vertical_rail
             .scroller
@@ -955,6 +955,39 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
             .scroller
             .border;
         assert_eq!(hidden.width, 0.0, "{preset:?}");
+    }
+    Ok(())
+}
+
+/// A scroller at rest is the handle of the view that has the focus,
+/// `thumb(NONE)`: a rule stated for `UNFOCUSED_VIEW` alone does not paint it
+/// (spec §3, `WidgetState`; spec §5, `S3`).
+#[test]
+fn a_scroller_at_rest_is_the_focused_views_handle() -> TestResult {
+    use iced_widget::scrollable::Status;
+    let active = Status::Active {
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    let unfocused = Color::new(0.9, 0.1, 0.1, 1.0);
+    let patch = ThemePatch::new()
+        .scrollbar(ScrollbarRule::new().thumb(PartPatch::new().fill(Paint::Solid(DISTINCT))))
+        .scrollbar(
+            ScrollbarRule::new()
+                .states(WidgetState::UNFOCUSED_VIEW)
+                .thumb(PartPatch::new().fill(Paint::Solid(unfocused))),
+        );
+    for (preset, mut r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        r.scrollbar.overlay_mode = false;
+        let scroller = super::scrollable(&r)?(&theme, active)
+            .vertical_rail
+            .scroller;
+        assert_eq!(
+            background_color(Some(scroller.background)),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
     }
     Ok(())
 }
@@ -1270,6 +1303,41 @@ fn a_switch_thumb_no_hover_rule_states_is_iceds_own() -> TestResult {
         }
     }
     assert!(iceds > 0, "iced's own thumb covered");
+    Ok(())
+}
+
+/// A switch's thumb is outlined in the stroke its own state states, on and
+/// off, at rest and under the pointer: a checked thumb's stated outline is
+/// the checked one, not the off thumb's (spec §10, rule 0, per property).
+#[test]
+fn a_switch_thumb_is_outlined_in_its_own_states_stroke() -> TestResult {
+    use iced_widget::toggler::Status;
+    let off = Color::new(0.9, 0.1, 0.1, 1.0);
+    let on = Color::new(0.1, 0.1, 0.9, 1.0);
+    let patch = ThemePatch::new()
+        .switch(SwitchRule::new().thumb(PartPatch::new().stroke(Stroke::uniform(1.0, off))))
+        .switch(
+            SwitchRule::new()
+                .states(WidgetState::CHECKED)
+                .thumb(PartPatch::new().stroke(Stroke::uniform(2.0, on))),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::toggler(&r)?;
+        for (is_toggled, colour, width) in [(false, off, 1.0), (true, on, 2.0)] {
+            for status in [
+                Status::Active { is_toggled },
+                Status::Hovered { is_toggled },
+            ] {
+                let drawn = style(&theme, status);
+                assert_eq!(
+                    (drawn.foreground_border_color, drawn.foreground_border_width),
+                    (to_color(colour), width),
+                    "{preset:?} {status:?}"
+                );
+            }
+        }
+    }
     Ok(())
 }
 

@@ -2293,7 +2293,10 @@ pub(crate) struct SwitchSource {
     /// rest.
     pub disabled_checked_track_border: Option<(f32, Line)>,
     pub disabled_unchecked_track_border: Option<(f32, Line)>,
+    /// The thumb's outline on and off, as stated (width, stroke), where the
+    /// theme states both.
     pub thumb_border: Option<(f32, Line)>,
+    pub unchecked_thumb_border: Option<(f32, Line)>,
     pub track_radius: Option<f32>,
     pub track_height: Option<f32>,
     pub thumb_diameter: Option<f32>,
@@ -2321,6 +2324,11 @@ impl SwitchSource {
             })
         };
         let track = |colour| outline(colour, s.track_border_line_width, LineAlign::Inside);
+        let thumb_border = outline(
+            s.thumb_border_color,
+            s.thumb_border_line_width,
+            LineAlign::Outside,
+        );
         let unchecked_thumb = s.unchecked_thumb_background.unwrap_or(s.thumb_background);
         let checked = to_color(s.checked_background);
         let unchecked = to_color(s.unchecked_background);
@@ -2347,11 +2355,9 @@ impl SwitchSource {
             unchecked_track_border: track(s.unchecked_track_border_color),
             disabled_checked_track_border: track(s.disabled_checked_track_border_color),
             disabled_unchecked_track_border: track(s.disabled_unchecked_track_border_color),
-            thumb_border: outline(
-                s.thumb_border_color,
-                s.thumb_border_line_width,
-                LineAlign::Outside,
-            ),
+            // 0.7.2 states one thumb outline, on and off.
+            thumb_border,
+            unchecked_thumb_border: thumb_border,
             track_radius: Some(s.track_radius),
             track_height: Some(s.track_height),
             thumb_diameter: Some(s.thumb_diameter),
@@ -2444,13 +2450,16 @@ pub(crate) fn toggler_from(
         rest_edge_off,
         disabled_unchecked,
     );
-    let thumb_edge = s.thumb_border;
-    let disabled_thumb_edge = |track: Color, thumb: Color| {
-        over(thumb_edge, thumb)
+    let thumb_edge_on = s.thumb_border;
+    let thumb_edge_off = s.unchecked_thumb_border;
+    let disabled_thumb_edge = |edge: Option<(f32, Line)>, track: Color, thumb: Color| {
+        over(edge, thumb)
             .map(|(width, edge)| (width, edge.map(|e| fade(composite_over(track, ground), e))))
     };
-    let disabled_thumb_edge_on = disabled_thumb_edge(disabled_checked, disabled_thumb);
-    let disabled_thumb_edge_off = disabled_thumb_edge(disabled_unchecked, disabled_unchecked_thumb);
+    let disabled_thumb_edge_on =
+        disabled_thumb_edge(thumb_edge_on, disabled_checked, disabled_thumb);
+    let disabled_thumb_edge_off =
+        disabled_thumb_edge(thumb_edge_off, disabled_unchecked, disabled_unchecked_thumb);
 
     let track_radius = s.track_radius.map(Radius::new);
     // Guarded so that a track with no height, or a thumb taller than its
@@ -2535,10 +2544,10 @@ pub(crate) fn toggler_from(
             Status::Disabled { is_toggled: true } => (disabled_edge_on, disabled_thumb_edge_on),
             Status::Disabled { is_toggled: false } => (disabled_edge_off, disabled_thumb_edge_off),
             Status::Active { is_toggled } | Status::Hovered { is_toggled } => {
-                let rest = if is_toggled {
-                    rest_edge_on
+                let (rest, thumb_edge) = if is_toggled {
+                    (rest_edge_on, thumb_edge_on)
                 } else {
-                    rest_edge_off
+                    (rest_edge_off, thumb_edge_off)
                 };
                 (over(rest, background), over(thumb_edge, foreground))
             }
@@ -3178,6 +3187,7 @@ impl ScrollbarSource {
         match listed.added {
             Added::Nothing | Added::CheckedButton => listed_self,
             Added::ScrollerOutline {
+                thumb,
                 width,
                 align,
                 rest,
@@ -3189,6 +3199,7 @@ impl ScrollbarSource {
                     ..Line::outside(color)
                 };
                 Self {
+                    thumb,
                     thumb_edge: Some((width, line(rest))),
                     thumb_radius: Some(pill()),
                     hovered_thumb_line: Some(line(hovered)),

@@ -46,8 +46,8 @@ const QUERIED_HOMES: &[&str] = &[
     "link.container(PRESSED).fill",
     "menu.panel(NONE).stroke.color",
     "scrollbar.thumb(HOVER).stroke.color",
+    "scrollbar.thumb(NONE).stroke.color",
     "scrollbar.thumb(PRESSED).stroke.color",
-    "scrollbar.thumb(UNFOCUSED_VIEW).stroke.color",
     "segmented_control.segment(PRESSED).fill",
     "segmented_control.separator(NONE).fill",
     "slider.active_track(HOVER).fill",
@@ -102,23 +102,18 @@ const UNREAD_HOMES: &[UnreadHome] = &[
         why: NO_DISABLED_RADIO,
     },
     UnreadHome {
-        home: "scrollbar.thumb(NONE).fill",
-        kind: "read at another query",
-        why: "`next::styles::scrollable` reads the thumb at rest as \
-             `scrollbar.thumb(UNFOCUSED_VIEW)` (src/next/styles.rs, `scrollable`), which a rule \
-             for no state does not answer",
+        home: "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+        kind: "no receiver",
+        why: "iced 0.14's scrollable reports no view focus (iced_widget 0.14.2 \
+             src/scrollable.rs, `Status`: Active, Hovered and Dragged), so \
+             `next::styles::scrollable` draws the handle at rest as the focused view's, \
+             `scrollbar.thumb(NONE)` (src/next/styles.rs, `scrollable`; spec §3, `WidgetState`)",
     },
     UnreadHome {
         home: "slider.thumb(HOVER|FOCUSED).stroke.color",
         kind: "no receiver",
         why: "iced 0.14's slider has no focused status (iced_widget 0.14.2 src/slider.rs, \
              `Status`: Active, Hovered and Dragged)",
-    },
-    UnreadHome {
-        home: "switch.thumb(CHECKED).stroke.color",
-        kind: "not read",
-        why: "`next::styles::toggler` draws the thumb's outline in every status from \
-             `switch.thumb(NONE).stroke` (src/next/styles.rs, `switch_source`, `thumb_border`)",
     },
     UnreadHome {
         home: "switch.thumb(HOVER|CHECKED).fill",
