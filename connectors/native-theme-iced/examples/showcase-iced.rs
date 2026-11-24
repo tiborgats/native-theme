@@ -416,7 +416,9 @@ const INSPECTOR_TABS_ID: &str = "showcase-inspector-tabs";
 struct Gaps {
     /// Space between adjacent widgets, `layout.widget_gap`.
     widget: f32,
-    /// Padding inside a container, `layout.container_margin`.
+    /// Padding inside a container, `layout.container_margin`: the Extra
+    /// page's (`iced_aw`) alone reads it.
+    #[cfg_attr(not(feature = "iced_aw"), allow(dead_code))]
     container: f32,
     /// Padding inside the main window, `layout.window_margin`.
     window: f32,
@@ -483,6 +485,7 @@ fn layout_value(stated: Option<f32>) -> String {
 /// gpui showcase's card and GroupBox put it, inside their border by the
 /// stated side or the margin (`demo::card`, `demo::group_box`, through
 /// `padded`).
+#[cfg(feature = "iced_aw")]
 fn card_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> Padding {
     let border = &resolved.card.border;
     let margin = Gaps::from_layout(layout).container;
@@ -18530,17 +18533,40 @@ const QR_PAYLOAD: &str = "https://github.com/tiborgats/native-theme";
 ///
 /// `canvas` has no `Catalog` and no `Style` of its own: a [`canvas::Program`]
 /// is handed the theme and paints whatever it likes (`canvas/program.rs:49`).
-/// So the values are captured from the resolved theme when the program is
-/// built, which `view` does once per frame.
+/// So the values are captured from the installed 0.8.0 theme when the
+/// program is built, which `view` does once per frame. `canvas` has no value
+/// of its own for any of them, so a part whose value the theme leaves
+/// unstated is not drawn ([`ThemeSketch::from_next`]).
 struct ThemeSketch {
-    surface: Color,
+    surface: Option<Color>,
     outline: Color,
     outline_width: f32,
-    corner_radius: f32,
+    corner_radius: Option<f32>,
     accent: Color,
-    ink: Color,
+    ink: Option<Color>,
     ink_width: f32,
-    dot_radius: f32,
+    dot_diameter: Option<f32>,
+}
+
+impl ThemeSketch {
+    /// The sketch of `r`: the panel `card.container(NONE)`'s fill and
+    /// corners (square where the theme states none), outlined in
+    /// `separator.color` `separator.thickness` wide; the baseline
+    /// `colors.window.foreground` as wide; the dot `colors.accent.fill`,
+    /// `icons.sizes.large` across.
+    fn from_next(r: &native_theme::next::ResolvedTheme) -> Self {
+        let card = r.card.container(WidgetState::NONE);
+        Self {
+            surface: iced_next::fill_of(&card),
+            outline: next_colour(r.separator.color),
+            outline_width: r.separator.thickness,
+            corner_radius: iced_next::radius_of(&card),
+            accent: next_colour(r.colors.accent.fill),
+            ink: r.colors.window.foreground.map(next_colour),
+            ink_width: r.separator.thickness,
+            dot_diameter: r.icons.sizes.large,
+        }
+    }
 }
 
 impl<Message> canvas::Program<Message> for ThemeSketch {
@@ -18556,12 +18582,15 @@ impl<Message> canvas::Program<Message> for ThemeSketch {
     ) -> Vec<canvas::Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
 
-        let panel = canvas::Path::rounded_rectangle(
-            iced::Point::ORIGIN,
-            frame.size(),
-            self.corner_radius.into(),
-        );
-        frame.fill(&panel, self.surface);
+        let panel = match self.corner_radius {
+            Some(radius) => {
+                canvas::Path::rounded_rectangle(iced::Point::ORIGIN, frame.size(), radius.into())
+            }
+            None => canvas::Path::rectangle(iced::Point::ORIGIN, frame.size()),
+        };
+        if let Some(surface) = self.surface {
+            frame.fill(&panel, surface);
+        }
         frame.stroke(
             &panel,
             canvas::Stroke::default()
@@ -18570,65 +18599,109 @@ impl<Message> canvas::Program<Message> for ThemeSketch {
         );
 
         let center = frame.center();
-        let baseline = canvas::Path::line(
-            iced::Point::new(0.0, center.y),
-            iced::Point::new(frame.width(), center.y),
-        );
-        frame.stroke(
-            &baseline,
-            canvas::Stroke::default()
-                .with_color(self.ink)
-                .with_width(self.ink_width),
-        );
+        if let Some(ink) = self.ink {
+            let baseline = canvas::Path::line(
+                iced::Point::new(0.0, center.y),
+                iced::Point::new(frame.width(), center.y),
+            );
+            frame.stroke(
+                &baseline,
+                canvas::Stroke::default()
+                    .with_color(ink)
+                    .with_width(self.ink_width),
+            );
+        }
 
-        frame.fill(&canvas::Path::circle(center, self.dot_radius), self.accent);
+        // iced states a circle by its radius, the model by its diameter.
+        if let Some(diameter) = self.dot_diameter {
+            frame.fill(&canvas::Path::circle(center, diameter / 2.0), self.accent);
+        }
 
         vec![frame.into_geometry()]
     }
 }
 
-/// The Widget Info of the Graphics page's canvas.
+/// The Widget Info of the Graphics page's canvas, on the installed 0.8.0
+/// theme ([`ThemeSketch::from_next`]).
 fn canvas_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let sep = &resolved.separator;
-    let d = &resolved.defaults;
-    let line_width_s = format!("{:.0}px", sep.line_width);
-    let dot_s = format!("{:.0}px", d.icon_sizes.large);
-    widget_tooltip(
-        "Canvas",
-        &[
-            Paint::leaf(
-                "panel fill",
-                "card.background_color",
-                to_color(resolved.card.background_color),
-            ),
-            Paint::leaf("outline", "separator.line_color", to_color(sep.line_color)),
-            Paint::leaf("baseline", "defaults.text_color", to_color(d.text_color)),
-            Paint::leaf("dot", "defaults.accent_color", to_color(d.accent_color)),
-        ],
-        &[
-            ("stroke width", &line_width_s),
-            ("panel radius", "card.border.corner_radius"),
-            ("dot diameter", &dot_s),
-        ],
-        &[(
-            "Style",
-            "canvas has no Catalog and no Style: a Program paints with \
-             whatever it is given (canvas/program.rs:49-56)",
-        )],
+    let sketch = ThemeSketch::from_next(state.next_shown());
+    let mut paints = Vec::new();
+    let mut unstated = Vec::new();
+    match sketch.surface {
+        Some(surface) => paints.push(Paint::leaf(
+            "panel fill",
+            "card.container(NONE).fill",
+            surface,
+        )),
+        None => unstated.push((
+            "panel fill",
+            "card.container(NONE).fill unstated: not drawn",
+        )),
+    }
+    paints.push(Paint::leaf("outline", "separator.color", sketch.outline));
+    match sketch.ink {
+        Some(ink) => paints.push(Paint::leaf("baseline", "colors.window.foreground", ink)),
+        None => unstated.push(("baseline", "colors.window.foreground unstated: not drawn")),
+    }
+    paints.push(Paint::leaf("dot", "colors.accent.fill", sketch.accent));
+    let line_width_s = format!("separator.thickness, {}", px_text(sketch.outline_width));
+    let radius_s = match sketch.corner_radius {
+        Some(radius) => format!("card.container(NONE).corners, {}", px_text(radius)),
+        None => "card.container(NONE).corners unstated: square".to_owned(),
+    };
+    let dot_s = sketch
+        .dot_diameter
+        .map(|diameter| format!("icons.sizes.large, {}", px_text(diameter)));
+    let mut config = vec![
+        ("stroke width", line_width_s.as_str()),
+        ("panel radius", radius_s.as_str()),
+    ];
+    match &dot_s {
+        Some(dot) => config.push(("dot diameter", dot)),
+        None => unstated.push(("dot", "icons.sizes.large unstated: not drawn")),
+    }
+    unstated.push((
+        "Style",
+        "canvas has no Catalog and no Style: a Program paints with \
+         whatever it is given (canvas/program.rs:49-56), so a part the \
+         theme states no value for is not drawn",
+    ));
+    widget_tooltip("Canvas", &paints, &config, &unstated)
+}
+
+/// The QR code's cell and background colours on the installed 0.8.0 theme:
+/// `colors.window.foreground` on `colors.window.background`, each where the
+/// theme states it; `None` for iced's own ([`qr_code::default`]).
+fn next_qr_colours(r: &native_theme::next::ResolvedTheme) -> (Option<Color>, Option<Color>) {
+    let window = &r.colors.window;
+    (
+        window.foreground.map(next_colour),
+        window.background.map(next_colour),
     )
 }
 
 /// The Widget Info of the Graphics page's QR code.
 fn qr_code_info(state: &State) -> String {
-    let d = &state.current_resolved.defaults;
-    let qr_cell = to_color(d.text_color);
-    let qr_background = to_color(d.background_color);
+    let (cell, background) = next_qr_colours(state.next_shown());
+    let own = qr_code::default(&state.current_theme);
+    let paint = |role, home: &str, colour: Option<Color>, own: Color| match colour {
+        Some(colour) => Paint::leaf(role, home, colour),
+        None => Paint::leaf(
+            role,
+            format!("{home} unstated: iced's own (qr_code::default, the palette's)"),
+            own,
+        ),
+    };
     widget_tooltip(
         "QRCode",
         &[
-            Paint::leaf("cell", "defaults.text_color", qr_cell),
-            Paint::leaf("background", "defaults.background_color", qr_background),
+            paint("cell", "colors.window.foreground", cell, own.cell),
+            paint(
+                "background",
+                "colors.window.background",
+                background,
+                own.background,
+            ),
         ],
         &[("payload", QR_PAYLOAD)],
         &[(
@@ -18638,60 +18711,49 @@ fn qr_code_info(state: &State) -> String {
     )
 }
 
-/// The Widget Info of the Graphics page's Markdown.
+/// The Widget Info of the Graphics page's Markdown, on the installed 0.8.0
+/// theme ([`next_markdown_settings`]).
 fn markdown_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
+    let next = state.next_shown();
+    let link = match iced_next::text_color_of(&next.link.label(WidgetState::NONE)) {
+        Some(link) => Paint::leaf("link", "link.label(NONE).color", link),
+        None => Paint::leaf(
+            "link",
+            "link.label(NONE).color unstated: iced's own (markdown::Style::from)",
+            markdown::Style::from(&state.current_theme).link_color,
+        ),
+    };
+    let headings = format!(
+        "{} / {}",
+        next_font_row("text_scale.dialog_title", next_page_title(next)),
+        next_font_row("text_scale.section_heading", next_section_title(next)),
+    );
+    let body = next_font_row("typography.body", &next.typography.body);
+    let code = next_font_row("typography.monospace", &next.typography.monospace);
     widget_tooltip(
         "Markdown",
         &[
-            Paint::leaf(
-                "link",
-                "link.font.color",
-                to_color(resolved.link.font.color),
-            ),
+            link,
             // Markdown states no colour of its own, so iced paints it with
             // the slot `Base::base` hands every inheriting widget
             // (`iced_core` theme.rs:334); the connector sets that slot from
-            // `defaults.text_color`, so reading it live shows what is on
-            // screen rather than the palette input behind it.
+            // `colors.window.foreground`, so reading it live shows what is
+            // on screen rather than the palette input behind it.
             Paint::leaf(
                 "text",
-                "extended.background.base.text, from defaults.text_color",
+                "extended.background.base.text, from colors.window.foreground",
                 state.current_theme.extended_palette().background.base.text,
             ),
         ],
         &[
-            (
-                "base size",
-                "defaults.font.size, times the text-scaling factor",
-            ),
-            (
-                "h1 / h2",
-                format!(
-                    "text_scale dialog_title / section_heading, size (times the \
-                     text-scaling factor); defaults.font's family, {}; weight {} / {}",
-                    family_label(
-                        &resolved.defaults.font.family,
-                        &role_drawn(section_title(ts), resolved)
-                    ),
-                    weight_label(page_title(ts).weight, &role_drawn(page_title(ts), resolved)),
-                    weight_label(
-                        section_title(ts).weight,
-                        &role_drawn(section_title(ts), resolved)
-                    ),
-                )
-                .as_str(),
-            ),
+            ("text", &body),
+            ("h1 / h2", &headings),
             (
                 "h3 – h6",
-                "defaults.font: the model names no role between section_heading \
+                "typography.body: the model names no role between section_heading \
                  and body text",
             ),
-            (
-                "code size",
-                "defaults.mono_font.size, times the text-scaling factor",
-            ),
+            ("code", &code),
         ],
         &[
             (
@@ -18719,52 +18781,79 @@ fn markdown_info(state: &State) -> String {
     )
 }
 
-/// Canvas, QRCode and Markdown: the three modules that paint content the
-/// application supplies rather than a control.
-fn view_graphics(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let sep = &resolved.separator;
-    let d = &resolved.defaults;
+/// The Graphics page's Markdown settings and its headings' fonts on the
+/// installed 0.8.0 theme `r`: the text `typography.body`, the code
+/// `typography.monospace`, `h1` and `h2` [`next_page_title`] and
+/// [`next_section_title`], `h3` and `h4` the body's size, each at its size
+/// as the theme resolved it (the text scale applied) and in its font where
+/// iced can draw it ([`next_font_from_database`]); the links
+/// `link.label(NONE).color`. Every value the theme leaves unstated, and
+/// every field the model does not carry, is iced's own, read at run time
+/// from `theme` (`markdown::Style::from`, `Settings::with_text_size`).
+fn next_markdown_settings(
+    r: &native_theme::next::ResolvedTheme,
+    theme: &Theme,
+) -> (markdown::Settings, RoleHeadings) {
+    let typography = &r.typography;
+    let iced_style = markdown::Style::from(theme);
+    let font = |style: &TextStyle, mono: bool, own: iced::Font| {
+        next_font_from_database(style, mono).map_or(own, |drawn| drawn.font)
+    };
+    let body_font = font(&typography.body, false, iced_style.font);
+    let style = markdown::Style {
+        font: body_font,
+        inline_code_highlight: iced_style.inline_code_highlight,
+        inline_code_padding: iced_style.inline_code_padding,
+        inline_code_color: iced_style.inline_code_color,
+        inline_code_font: font(&typography.monospace, true, iced_style.inline_code_font),
+        code_block_font: font(&typography.monospace, true, iced_style.code_block_font),
+        link_color: iced_next::text_color_of(&r.link.label(WidgetState::NONE))
+            .unwrap_or(iced_style.link_color),
+    };
+    let body = typography.body.size_px;
+    let mut settings = markdown::Settings::with_text_size(body, style);
+    settings.h1_size = next_page_title(r).size_px.into();
+    settings.h2_size = next_section_title(r).size_px.into();
+    settings.h3_size = body.into();
+    settings.h4_size = body.into();
+    settings.code_size = typography.monospace.size_px.into();
+    let headings = RoleHeadings {
+        h1: font(next_page_title(r), false, body_font),
+        h2: font(next_section_title(r), false, body_font),
+    };
+    (settings, headings)
+}
 
-    let header = section_header(
+/// Canvas, QRCode and Markdown: the three modules that paint content the
+/// application supplies rather than a control, on the installed 0.8.0
+/// theme.
+fn view_graphics(state: &State) -> Element<'_, Message> {
+    let next = state.next_shown();
+    let typography = &next.typography;
+    let gap = Gaps::from_next(&next.layout);
+    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+
+    let header = next_section_header(
         "Graphics Widgets",
         "Canvas, QRCode and Markdown: content the application paints itself",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
     // ---- Canvas ----
 
-    let sketch = ThemeSketch {
-        surface: to_color(resolved.card.background_color),
-        outline: to_color(sep.line_color),
-        outline_width: sep.line_width,
-        corner_radius: resolved.card.border.corner_radius,
-        accent: to_color(d.accent_color),
-        ink: to_color(d.text_color),
-        ink_width: sep.line_width,
-        // iced states a circle by its radius, the model by its diameter.
-        dot_radius: d.icon_sizes.large / 2.0,
-    };
-
     let canvas_demo = hoverable(
         UnlistedKey::Canvas,
         column![
-            text("Canvas (a drawing from the theme)").role(section_title(ts), resolved, a11y),
+            title("Canvas (a drawing from the theme)"),
             text(
                 "Every colour and every width below is a ResolvedTheme field, \
                  captured when the program is built."
             )
-            .body(resolved, a11y),
+            .next_body(next),
             probe(
                 probes::GRAPHICS_CANVAS,
                 Length::Shrink,
-                canvas(sketch)
+                canvas(ThemeSketch::from_next(next))
                     .width(Length::Fixed(280.0))
                     .height(Length::Fixed(120.0)),
             ),
@@ -18775,26 +18864,31 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
 
     // ---- QR code ----
 
-    let qr_cell = to_color(d.text_color);
-    let qr_background = to_color(d.background_color);
+    let (qr_cell, qr_background) = next_qr_colours(next);
     let qr_demo: Element<'_, Message> = match &state.qr_data {
         Some(data) => qr_code(data)
-            .style(move |_theme: &Theme| qr_code::Style {
-                cell: qr_cell,
-                background: qr_background,
+            .style(move |theme: &Theme| {
+                let own = qr_code::default(theme);
+                qr_code::Style {
+                    cell: qr_cell.unwrap_or(own.cell),
+                    background: qr_background.unwrap_or(own.background),
+                }
             })
             .into(),
-        None => text("The payload could not be encoded as a QR code.")
-            .role(&ts.caption, resolved, a11y)
-            .into(),
+        None => next_caption_text(
+            state,
+            "The payload could not be encoded as a QR code.",
+            None,
+        )
+        .into(),
     };
 
     let qr_section = hoverable(
         UnlistedKey::QrCode,
         column![
-            text("QRCode").role(section_title(ts), resolved, a11y),
+            title("QRCode"),
             text("Its two-colour Style is the platform's foreground on its background:")
-                .body(resolved, a11y),
+                .next_body(next),
             probe(probes::GRAPHICS_QR_CODE, Length::Shrink, qr_demo),
         ]
         .spacing(gap.widget)
@@ -18803,28 +18897,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
 
     // ---- Markdown ----
 
-    let md_settings = {
-        // Every field the model does not carry is iced's own, read at run
-        // time from the theme the connector produced.
-        let iced_style = markdown::Style::from(&state.current_theme);
-        let style = markdown::Style {
-            font: theme_font(&resolved.defaults.font),
-            inline_code_highlight: iced_style.inline_code_highlight,
-            inline_code_padding: iced_style.inline_code_padding,
-            inline_code_color: iced_style.inline_code_color,
-            inline_code_font: theme_mono_font(resolved),
-            code_block_font: theme_mono_font(resolved),
-            link_color: to_color(resolved.link.font.color),
-        };
-        let body = native_theme_iced::font_size(resolved, a11y);
-        let mut settings = markdown::Settings::with_text_size(body, style);
-        settings.h1_size = scaled_text_size(page_title(ts).size, a11y).into();
-        settings.h2_size = scaled_text_size(section_title(ts).size, a11y).into();
-        settings.h3_size = body.into();
-        settings.h4_size = body.into();
-        settings.code_size = native_theme_iced::mono_font_size(resolved, a11y).into();
-        settings
-    };
+    let (md_settings, headings) = next_markdown_settings(next, &state.current_theme);
 
     let link_line = match &state.markdown_link {
         Some(uri) => format!("Last link clicked: {uri}"),
@@ -18834,23 +18907,22 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     let markdown_demo = hoverable(
         UnlistedKey::Markdown,
         column![
-            text("Markdown").role(section_title(ts), resolved, a11y),
+            title("Markdown"),
             probe(
                 probes::GRAPHICS_MARKDOWN,
                 Fill,
                 container(markdown::view_with(
                     state.markdown_content.items(),
                     md_settings,
-                    &RoleHeadings {
-                        h1: role_font(page_title(ts), resolved),
-                        h2: role_font(section_title(ts), resolved),
-                    },
+                    &headings,
                 ))
-                .padding(card_padding(resolved, &state.layout))
-                .style(styles::container_card(resolved))
+                .padding(next_card_padding(next))
+                .next_style(iced_next::styles::container_card(next), |card, style| {
+                    card.style(style)
+                })
                 .width(Fill),
             ),
-            text(link_line).role(&ts.caption, resolved, a11y),
+            next_caption_text(state, link_line, None),
         ]
         .spacing(gap.widget)
         .into(),
@@ -18859,9 +18931,9 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     column![
         header,
         canvas_demo,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         qr_section,
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         markdown_demo,
     ]
     .spacing(gap.section)
@@ -21017,7 +21089,7 @@ fn next_section_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
     native_theme_iced::next::text_scale(r).section_heading
 }
 
-/// [`theme_mono_font`] on the 0.8.0 model: `typography.monospace` as iced
+/// The theme's monospace font on the 0.8.0 model: `typography.monospace` as iced
 /// can draw it ([`next_font_from_database`]); `None` where it gives no font
 /// iced can draw, and iced's own monospace stays.
 fn next_theme_mono_font(r: &native_theme::next::ResolvedTheme) -> Option<iced::Font> {
@@ -21108,11 +21180,6 @@ fn theme_font(font: &ResolvedFontSpec) -> iced::Font {
 /// and style, which a role does not state for itself.
 fn role_font(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> iced::Font {
     role_drawn(entry, resolved).font
-}
-
-/// The theme's monospace font as iced can draw it.
-fn theme_mono_font(resolved: &ResolvedTheme) -> iced::Font {
-    mono_drawn(resolved).font
 }
 
 /// How a theme font is drawn.
@@ -29210,10 +29277,11 @@ mod tests {
     /// The Graphics page's colour lines that are not a style function's
     /// (`Paint::leaf`, which `colour_row_faults` passes by: the hex is read
     /// from the leaf the line names, so it agrees with the line by
-    /// construction) are each held to the widget they describe: a splice of
-    /// the leaf into the resolved theme moves what that widget draws. Every
-    /// colour line of the Canvas's, the QR code's and the Markdown's Widget
-    /// Info has a row here, so a new one needs its own.
+    /// construction) are each held to the widget they describe: the home the
+    /// line names, patched on the installed 0.8.0 theme ([`with_home`]),
+    /// moves what that widget draws. Every colour line of the Canvas's, the
+    /// QR code's and the Markdown's Widget Info has a row here, so a new one
+    /// needs its own.
     ///
     /// The Layout page's Grid's one line, its swatches' frame
     /// (`defaults.border.color`), is held here too. The other 16
@@ -29224,81 +29292,71 @@ mod tests {
     /// palette fields their swatches are drawn from, read in the same call.
     #[test]
     fn the_graphics_colour_lines_are_what_their_widgets_draw() {
-        type Splice = fn(&mut State, native_theme::color::Rgba);
         /// The widget's info title, its info, its probe, the colour line's
-        /// source and the splice of the leaf it reads.
+        /// source and the home it reads.
         type Row = (
             &'static str,
             fn(&State) -> String,
             &'static str,
             &'static str,
-            Splice,
+            &'static str,
         );
         let rows: [Row; 8] = [
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
-                "card.background_color",
-                |s, c| s.current_resolved.card.background_color = c,
+                "card.container(NONE).fill",
+                "card.container(NONE).fill",
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
-                "separator.line_color",
-                |s, c| s.current_resolved.separator.line_color = c,
+                "separator.color",
+                "separator.color",
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
-                "defaults.text_color",
-                |s, c| s.current_resolved.defaults.text_color = c,
+                "colors.window.foreground",
+                "colors.window.foreground",
             ),
             (
                 "Canvas",
                 canvas_info,
                 probes::GRAPHICS_CANVAS,
-                "defaults.accent_color",
-                |s, c| s.current_resolved.defaults.accent_color = c,
+                "colors.accent.fill",
+                "colors.accent.fill",
             ),
             (
                 "QRCode",
                 qr_code_info,
                 probes::GRAPHICS_QR_CODE,
-                "defaults.text_color",
-                |s, c| s.current_resolved.defaults.text_color = c,
+                "colors.window.foreground",
+                "colors.window.foreground",
             ),
             (
                 "QRCode",
                 qr_code_info,
                 probes::GRAPHICS_QR_CODE,
-                "defaults.background_color",
-                |s, c| s.current_resolved.defaults.background_color = c,
+                "colors.window.background",
+                "colors.window.background",
             ),
             (
                 "Markdown",
                 markdown_info,
                 probes::GRAPHICS_MARKDOWN,
-                "link.font.color",
-                |s, c| s.current_resolved.link.font.color = c,
+                "link.label(NONE).color",
+                "link.label(NONE).color",
             ),
             (
                 "Markdown",
                 markdown_info,
                 probes::GRAPHICS_MARKDOWN,
-                "extended.background.base.text, from defaults.text_color",
-                |s, c| {
-                    s.current_resolved.defaults.text_color = c;
-                    // The window's surface hands its text colour, the 0.8.0
-                    // theme's, to the page.
-                    if let Some(next) =
-                        with_home(&s.next_resolved, "colors.window.foreground", &c.to_string())
-                    {
-                        s.next_resolved = next;
-                    }
-                },
+                "extended.background.base.text, from colors.window.foreground",
+                "colors.window.foreground",
             ),
         ];
         let state = page_state("kde-breeze", Tab::Graphics);
@@ -29331,17 +29389,20 @@ mod tests {
         }
         let mut probed = None;
         let (base, ..) = frame_after(&state, view(&state), size, |_| {});
-        for (widget, info, id, leaf, splice) in rows {
+        for (widget, info, id, leaf, home) in rows {
             if !info(&state).contains(leaf) {
                 faults.push(format!("{widget}: its Widget Info names no {leaf}"));
             }
             let mut spliced = page_state("kde-breeze", Tab::Graphics);
-            splice(&mut spliced, spliced_colour("#13579b"));
-            spliced.current_theme = native_theme_iced::to_theme_in(
-                &spliced.current_resolved,
-                "spliced",
-                native_theme_iced::ColorMode::Light,
-            );
+            let patched = with_home(&spliced.next_resolved, home, "#13579b");
+            let Some((patched, theme)) =
+                patched.and_then(|r| iced_next::to_theme(&r).ok().map(|theme| (r, theme)))
+            else {
+                faults.push(format!("{widget}: no patch of {home} gives iced a theme"));
+                continue;
+            };
+            spliced.next_resolved = patched;
+            spliced.current_theme = theme;
             let (image, _, scale) = frame_after(&spliced, view(&spliced), size, |ui| {
                 probed = Some(probe_bounds(ui, id));
             });
@@ -32688,10 +32749,11 @@ mod tests {
                 let (states, property) = rest.split_once(").")?;
                 (part, Some(states), property)
             }
-            None => {
-                let (part, property) = rest.split_once('.')?;
-                (part, None, property)
-            }
+            None => match rest.split_once('.') {
+                Some((part, property)) => (part, None, property),
+                // A static widget's own colour (`separator.color`).
+                None => return Some(format!("[widgets.{widget}]\n{rest} = \"{colour}\"\n")),
+            },
         };
         let value = match property {
             "fill" | "color" => format!("{part}.{property} = \"{colour}\""),
