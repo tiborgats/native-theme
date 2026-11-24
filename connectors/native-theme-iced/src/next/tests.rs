@@ -223,6 +223,37 @@ fn a_stated_inner_stroke_and_corners_are_drawn_on_the_ring() -> TestResult {
     Ok(())
 }
 
+/// A ring with no stated corners has its inner edge's corners the field's
+/// radius plus the offset, floored at 0, and its outer edge's those grown
+/// by the width (spec §2, `FocusIndicator`): round a square field, 3 wide
+/// at offset -1, the outer radius is 3, not the 2 the field's radius grown
+/// by the offset and the width together gives.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_ring_with_no_stated_corners_floors_its_inner_corners_before_the_width() -> TestResult {
+    use iced_core::border::Radius;
+    use iced_core::{Padding, Point, Rectangle, Size};
+    use native_theme::next::{FocusIndicator, FocusKind, FocusTrigger, Stroke};
+
+    let field = Rectangle::new(Point::new(10.0, 20.0), Size::new(100.0, 30.0));
+    for (preset, mut r) in every_preset() {
+        r.focus_ring = FocusIndicator::new(
+            FocusKind::Ring,
+            Stroke::uniform(3.0, OUTER),
+            Stroke::None,
+            -1.0,
+            None,
+            Some(FocusTrigger::Always),
+        );
+        let look = super::ring_look(&r, 0.0)?.ok_or("a ring")?;
+        let (ring, _) = look.quad(field).ok_or("the ring's quad")?;
+        assert_eq!(ring.bounds, field.expand(Padding::new(2.0)), "{preset:?}");
+        assert_eq!(ring.border.width, 3.0, "{preset:?}");
+        assert_eq!(ring.border.radius, Radius::from(3.0), "{preset:?}");
+    }
+    Ok(())
+}
+
 /// A focus indicator iced's ring cannot draw is [`Unmapped`]: a fill or an
 /// underline, an inner stroke per side, concentric corners; continuous
 /// corners are drawn circular (spec §10, rule 2).

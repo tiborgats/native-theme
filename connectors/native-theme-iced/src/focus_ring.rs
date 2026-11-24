@@ -108,18 +108,17 @@ impl RingLook {
     /// and its fill: iced draws a quad's border inside its bounds
     /// (iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl:78-83`), so the bounds
     /// are the field's grown by `offset + width`, the ring's outer edge, the
-    /// border `width` wide and the radius the field's grown as much, the
-    /// curve concentric with the field's, as the egui connector strokes the
-    /// ring outside the field's grown by `offset` (its `plugin.rs`,
-    /// `paint_focus_ring`). Where the theme states the corners of the ring's
-    /// inner edge ([`corners`](Self::corners)), the quad's radius is each
-    /// grown by `width`, the outer edge concentric with the inner. `None`
+    /// border `width` wide. The corners of the ring's inner edge, the line
+    /// `offset` places, are the field's radius plus `offset`, floored at 0,
+    /// or those the theme states ([`corners`](Self::corners)); the quad's
+    /// radius is each grown by `width`, the outer edge concentric with the
+    /// inner (spec §2, `FocusIndicator`: the geometry of a `Ring`). `None`
     /// where an inset ring leaves no room.
     pub(crate) fn quad(&self, field: Rectangle) -> Option<(Quad, Background)> {
         let out = self.offset + self.width;
         let grow = |corner: f32| corner.max(0.0) + self.width;
         let radius = self.corners.map_or_else(
-            || Radius::from((self.radius + out).max(0.0)),
+            || Radius::from(grow(self.radius + self.offset)),
             |r| Radius {
                 top_left: grow(r.top_left),
                 top_right: grow(r.top_right),
