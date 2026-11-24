@@ -1888,30 +1888,32 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.menu_bar.",
         &["menu.item(HOVER).fill"],
-        "gpui: menu.item(HOVER).fill where a rule states it for the hover state (else gpui-component's own accent, demo::menu_hover_of), the title's fill under the pointer where no rule states menu_bar.item(HOVER).fill, and while open where none states menu_bar.item(OPEN).fill either (MenuLook::next_of, demo::MenuTitle)",
+        "gpui: menu.item(HOVER).fill where a rule states it for the hover state (else gpui-component's own accent, demo::menu_hover_of), the title's fill under the pointer where no rule states menu_bar.item(HOVER).fill (MenuLook::next_of, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         &["menu.item_label(HOVER).color"],
-        "gpui: menu.item_label(HOVER).color where a rule states it for the hover state (else as demo::menu_hover_of gives it), the title's text under the pointer where no rule states menu_bar.item_label(HOVER).color, and while open where none states menu_bar.item_label(OPEN).color either (MenuLook::next_of, demo::MenuTitle)",
+        "gpui: menu.item_label(HOVER).color where a rule states it for the hover state (else as demo::menu_hover_of gives it), the title's text under the pointer where no rule states menu_bar.item_label(HOVER).color (MenuLook::next_of, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         &["menu_bar.item(HOVER).fill"],
-        "gpui: menu_bar.item(HOVER).fill where a rule states it, the title's fill under the pointer, and while open where none states menu_bar.item(OPEN).fill (MenuLook::next_of, MenuLook::title)",
+        "gpui: menu_bar.item(HOVER).fill where a rule states it, the title's fill under the pointer (MenuLook::next_of, MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",
         &["menu_bar.item(OPEN).fill"],
-        "gpui: menu_bar.item(OPEN).fill where a rule states it, the title's fill while its menu is open, under the pointer too (MenuLook::next_of, MenuLook::title)",
+        "gpui: menu_bar.item(OPEN).fill where a rule states it, the title's fill while its menu is open, under the pointer too; where none states it, gpui-component's own open title, a selected Ghost's secondary_active (gpui-component 0.10.0 menu/app_menu_bar.rs AppMenu::render, button/button.rs ButtonVariant::selected; MenuLook::next_of, MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",
-        &[
-            "menu_bar.item_label(HOVER).color",
-            "menu_bar.item_label(OPEN).color",
-        ],
-        "gpui: menu_bar.item_label(HOVER).color where a rule states it, the title's text under the pointer, and while open where none states menu_bar.item_label(OPEN).color (MenuLook::next_of, MenuLook::title)",
+        &["menu_bar.item_label(HOVER).color"],
+        "gpui: menu_bar.item_label(HOVER).color where a rule states it, the title's text under the pointer (MenuLook::next_of, MenuLook::title)",
+    ),
+    (
+        "chrome.menu_bar.",
+        &["menu_bar.item_label(OPEN).color"],
+        "gpui: menu_bar.item_label(OPEN).color where a rule states it, the title's text while its menu is open, under the pointer too; where none states it, the title's text at rest, as a selected Ghost keeps its text (gpui-component 0.10.0 button/button.rs ButtonVariant::selected; MenuLook::next_of, MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",

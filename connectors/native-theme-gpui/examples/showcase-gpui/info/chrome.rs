@@ -386,8 +386,9 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
     let look = crate::demo::MenuLook::next_of(r, t);
     let rows = look.rows();
     // Which titles the item's hover colours still reach: a title takes the
-    // bar's hover colours under the pointer and its open ones, else those,
-    // while open (demo::MenuLook).
+    // bar's hover colours under the pointer, else those; while open, the
+    // bar's open ones, else gpui-component's own open title
+    // (demo::MenuLook).
     let info = match text_color_of(&r.menu.item_label(WidgetState::NONE)) {
         Some(_) => info.colors(stated_claim(
             "title and item text",
@@ -419,139 +420,116 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
         (false, true) => HoverText::AtRest,
         (false, false) => HoverText::Accent,
     };
-    let info = match (bar_hover, bar_open, hover_stated) {
-        (None, None, true) => info.colors(stated_claim(
-            "hovered or open title, hovered item",
-            "menu.item(HOVER).fill",
-            state_fill_of(&r.menu.item(WidgetState::HOVER)),
-            "showcase",
-        )),
-        (None, None, false) => info.color(claim(
-            "hovered or open title, hovered item, none stated: gpui-component's own",
-            "accent",
-            t.accent,
-            "showcase",
-        )),
-        (None, Some(_), true) => info.colors(stated_claim(
+    let info = match (bar_hover, hover_stated) {
+        (None, true) => info.colors(stated_claim(
             "hovered title, hovered item",
             "menu.item(HOVER).fill",
             state_fill_of(&r.menu.item(WidgetState::HOVER)),
             "showcase",
         )),
-        (None, Some(_), false) => info.color(claim(
+        (None, false) => info.color(claim(
             "hovered title, hovered item, none stated: gpui-component's own",
             "accent",
             t.accent,
             "showcase",
         )),
-        (Some(_), _, true) => info.colors(stated_claim(
+        (Some(_), true) => info.colors(stated_claim(
             "hovered item",
             "menu.item(HOVER).fill",
             state_fill_of(&r.menu.item(WidgetState::HOVER)),
             "showcase",
         )),
-        (Some(_), _, false) => info.color(claim(
+        (Some(_), false) => info.color(claim(
             "hovered item, none stated: gpui-component's own",
             "accent",
             t.accent,
             "showcase",
         )),
     };
-    let info = match (bar_hover_text, bar_open_text, hover_text_from) {
-        (None, None, HoverText::Stated) => info.colors(stated_claim(
-            "a hovered or open title's text, a hovered item's",
-            "menu.item_label(HOVER).color",
-            state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
-            "showcase",
-        )),
-        (None, None, HoverText::AtRest) => info.colors(stated_claim(
-            "a hovered or open title's text, a hovered item's, none stated over the stated hover fill: the text at rest",
-            "menu.item_label(NONE).color",
-            text_color_of(&r.menu.item_label(WidgetState::NONE)),
-            "showcase",
-        )),
-        (None, None, HoverText::Accent) => info.color(claim(
-            "a hovered or open title's text, a hovered item's, none stated: gpui-component's own",
-            "accent_foreground",
-            t.accent_foreground,
-            "showcase",
-        )),
-        (None, Some(_), HoverText::Stated) => info.colors(stated_claim(
+    let info = match (bar_hover_text, hover_text_from) {
+        (None, HoverText::Stated) => info.colors(stated_claim(
             "a hovered title's text, a hovered item's",
             "menu.item_label(HOVER).color",
             state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
             "showcase",
         )),
-        (None, Some(_), HoverText::AtRest) => info.colors(stated_claim(
+        (None, HoverText::AtRest) => info.colors(stated_claim(
             "a hovered title's text, a hovered item's, none stated over the stated hover fill: the text at rest",
             "menu.item_label(NONE).color",
             text_color_of(&r.menu.item_label(WidgetState::NONE)),
             "showcase",
         )),
-        (None, Some(_), HoverText::Accent) => info.color(claim(
+        (None, HoverText::Accent) => info.color(claim(
             "a hovered title's text, a hovered item's, none stated: gpui-component's own",
             "accent_foreground",
             t.accent_foreground,
             "showcase",
         )),
-        (Some(_), _, HoverText::Stated) => info.colors(stated_claim(
+        (Some(_), HoverText::Stated) => info.colors(stated_claim(
             "a hovered item's text",
             "menu.item_label(HOVER).color",
             state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
             "showcase",
         )),
-        (Some(_), _, HoverText::AtRest) => info.colors(stated_claim(
+        (Some(_), HoverText::AtRest) => info.colors(stated_claim(
             "a hovered item's text, none stated over the stated hover fill: the text at rest",
             "menu.item_label(NONE).color",
             text_color_of(&r.menu.item_label(WidgetState::NONE)),
             "showcase",
         )),
-        (Some(_), _, HoverText::Accent) => info.color(claim(
+        (Some(_), HoverText::Accent) => info.color(claim(
             "a hovered item's text, none stated: gpui-component's own",
             "accent_foreground",
             t.accent_foreground,
             "showcase",
         )),
     };
+    // An open title where the bar states no open look is gpui-component's
+    // own, a selected Ghost button: its fill secondary_active, its text the
+    // title's at rest (demo::MenuLook).
     let info = match bar_open {
-        None => info.colors(stated_claim(
-            "hovered or open title",
-            "menu_bar.item(HOVER).fill",
-            state_fill_of(&r.menu_bar.item(WidgetState::HOVER)),
-            "showcase",
-        )),
         Some(_) => info.colors(stated_claim(
-            "hovered title",
-            "menu_bar.item(HOVER).fill",
-            state_fill_of(&r.menu_bar.item(WidgetState::HOVER)),
-            "showcase",
-        )),
-    };
-    let info = match bar_open_text {
-        None => info.colors(stated_claim(
-            "hovered or open title's text",
-            "menu_bar.item_label(HOVER).color",
-            state_text_color_of(&r.menu_bar.item_label(WidgetState::HOVER)),
-            "showcase",
-        )),
-        Some(_) => info.colors(stated_claim(
-            "hovered title's text",
-            "menu_bar.item_label(HOVER).color",
-            state_text_color_of(&r.menu_bar.item_label(WidgetState::HOVER)),
-            "showcase",
-        )),
-    };
-    let info = info
-        .colors(stated_claim(
             "open title",
             "menu_bar.item(OPEN).fill",
             state_fill_of(&r.menu_bar.item(WidgetState::OPEN)),
             "showcase",
-        ))
-        .colors(stated_claim(
+        )),
+        None => info.color(claim(
+            "open title, none stated: gpui-component's own selected Ghost",
+            "secondary_active",
+            t.secondary_active,
+            "gpui-component/button/button.rs:1346",
+        )),
+    };
+    let info = match (bar_open_text, text_color_of(&m.item_label(WidgetState::NONE))) {
+        (Some(_), _) => info.colors(stated_claim(
             "open title's text",
             "menu_bar.item_label(OPEN).color",
             state_text_color_of(&r.menu_bar.item_label(WidgetState::OPEN)),
+            "showcase",
+        )),
+        (None, Some(_)) => info.colors(stated_claim(
+            "open title's text, none stated: the title's at rest",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        (None, None) => info.not_themeable(
+            "open title text",
+            "the title's at rest, the menu bar's own: the theme states neither menu_bar.item_label(OPEN).color nor menu.item_label(NONE).color",
+        ),
+    };
+    let info = info
+        .colors(stated_claim(
+            "hovered title",
+            "menu_bar.item(HOVER).fill",
+            state_fill_of(&r.menu_bar.item(WidgetState::HOVER)),
+            "showcase",
+        ))
+        .colors(stated_claim(
+            "hovered title's text",
+            "menu_bar.item_label(HOVER).color",
+            state_text_color_of(&r.menu_bar.item_label(WidgetState::HOVER)),
             "showcase",
         ))
         .colors(edge_claim(

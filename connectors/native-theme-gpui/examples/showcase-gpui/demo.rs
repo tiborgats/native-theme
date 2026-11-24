@@ -550,11 +550,17 @@ pub(crate) struct MenuLook {
     /// text in each: the fill and the colour a rule states for
     /// `menu_bar.item(HOVER)` and `menu_bar.item_label(HOVER)`, else the
     /// hovered row's; and for `menu_bar.item(OPEN)` and
-    /// `menu_bar.item_label(OPEN)`, else the hovered title's.
+    /// `menu_bar.item_label(OPEN)`, else gpui-component's own open title, a
+    /// selected Ghost button (gpui-component 0.10.0 menu/app_menu_bar.rs,
+    /// `AppMenu::render`: `.ghost()` and `.open(is_open)`): the fill
+    /// `secondary_active` (button/button.rs, `ButtonVariant::selected`), the
+    /// text the title's at rest, `title_text` (a Ghost's text is
+    /// `secondary_foreground` at rest and selected alike,
+    /// `ButtonVariant::text_color`).
     bar_hover: Hsla,
     bar_open: Hsla,
     bar_hover_text: Hsla,
-    bar_open_text: Hsla,
+    bar_open_text: Option<Hsla>,
     /// `menu.item(NONE)`'s padding sides.
     padding: [Option<f32>; 4],
     /// A title's padding: `menu_bar.item(NONE)`'s sides over `padding`.
@@ -609,14 +615,16 @@ impl MenuLook {
             .unwrap_or(rows.hover_text);
         let padding = next::padding_of(&parts.rest);
         let [panel_top, _, panel_bottom, _] = next::padding_of(&parts.panel);
+        let title_text = next::text_color_of(&parts.label);
         Self {
             item: next::geometry::menu_item(r).ok(),
-            title_text: next::text_color_of(&parts.label),
+            title_text,
             bar_hover,
-            bar_open: next::state_fill_of(&bar.item(WidgetState::OPEN)).unwrap_or(bar_hover),
+            bar_open: next::state_fill_of(&bar.item(WidgetState::OPEN))
+                .unwrap_or(t.secondary_active),
             bar_hover_text,
             bar_open_text: next::state_text_color_of(&bar.item_label(WidgetState::OPEN))
-                .unwrap_or(bar_hover_text),
+                .or(title_text),
             padding,
             title_padding: padding_over(next::padding_of(&bar.item(WidgetState::NONE)), padding),
             row_height: parts.rest.max_size[1].map(px),
@@ -655,8 +663,8 @@ impl MenuLook {
     /// `title` as a menu title, in the font `next::geometry::menu_item`
     /// sets, padded by `title_padding`, and filled `bar_open` and lettered
     /// `bar_open_text` where `selected` (its menu is open, under the pointer
-    /// too), filled `bar_hover` and lettered `bar_hover_text` under the
-    /// pointer.
+    /// too; where that is `None`, in the text it sits in), filled `bar_hover`
+    /// and lettered `bar_hover_text` under the pointer.
     pub(crate) fn title(&self, title: Stateful<Div>, selected: bool) -> Stateful<Div> {
         let (hover, hover_text) = (self.bar_hover, self.bar_hover_text);
         next_padded(
@@ -668,7 +676,9 @@ impl MenuLook {
         .when_some(self.rows.radius, |title, radius| title.rounded(radius))
         .map(|title| {
             if selected {
-                title.bg(self.bar_open).text_color(self.bar_open_text)
+                title
+                    .bg(self.bar_open)
+                    .when_some(self.bar_open_text, |title, text| title.text_color(text))
             } else {
                 title
                     .when_some(self.title_text, |title, text| title.text_color(text))

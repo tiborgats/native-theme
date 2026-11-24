@@ -11423,9 +11423,11 @@ fn the_menu_bar_takes_the_toolbars_fill(cx: &mut TestAppContext) {
 /// its sides, measured against the title with every padding 0. kde-breeze's
 /// open fill is patched to `colors.window.border` first, a colour of the same
 /// theme apart from its hover fill. Under adwaita light, whose menu bar
-/// states no item look, a title takes the item's: `menu.item(HOVER).fill`
-/// lettered `menu.item_label(HOVER).color`, open and hovered. Each text
-/// colour is the one the frame laid the title's text out in
+/// states no item look, a hovered title takes the item's:
+/// `menu.item(HOVER).fill` lettered `menu.item_label(HOVER).color`; an open
+/// one is gpui-component's own open title, a selected Ghost button
+/// (spec §10 rule 0): filled `secondary_active`, lettered in its text at
+/// rest. Each text colour is the one the frame laid the title's text out in
 /// (`elements::label_probe`).
 #[gpui::test]
 fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
@@ -11561,16 +11563,23 @@ fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
     );
     hover(&mut cx, far);
     draw(&mut cx);
+    let at_rest = lettered(&mut cx, title);
+    let selected = cx.update(|_w, cx| Theme::global(cx).secondary_active);
+    assert_ne!(
+        Some(selected),
+        item,
+        "adwaita light's menu.item(HOVER).fill is gpui's secondary_active, so the test could not tell them apart"
+    );
     open_menu(&mut cx, &showcase, "theme");
     assert_eq!(
         painted_fill(&mut cx, title),
-        item,
-        "with the bar's fills unstated, an open title is not filled with menu.item(HOVER).fill"
+        Some(selected),
+        "with the bar's open fill unstated, an open title is not gpui-component's selected Ghost, secondary_active"
     );
     assert_eq!(
         lettered(&mut cx, title),
-        item_text,
-        "with the bar's text unstated, an open title is not lettered in menu.item_label(HOVER).color"
+        at_rest,
+        "with the bar's open text unstated, an open title is not lettered in its text at rest"
     );
     click(&mut cx, title);
 }
