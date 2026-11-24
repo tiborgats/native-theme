@@ -5094,12 +5094,20 @@ fn chrome_icon<'a>(
     system: bool,
     color: Color,
 ) -> Option<Element<'a, Message>> {
+    recoloured_icon(icon, size, (!system).then_some(color))
+}
+
+/// `icon` at `size`, as [`chrome_icon`] draws it: an svg in `recolour`
+/// where given, in its own colours where `None`.
+fn recoloured_icon<'a>(
+    icon: &IconData,
+    size: Option<f32>,
+    recolour: Option<Color>,
+) -> Option<Element<'a, Message>> {
     let side = size.map_or(Length::Shrink, Length::Fixed);
     match icon {
-        IconData::Svg(_) => {
-            native_theme_iced::icons::to_svg_handle(icon, (!system).then_some(color))
-                .map(|handle| svg(handle).width(side).height(side).into())
-        }
+        IconData::Svg(_) => native_theme_iced::icons::to_svg_handle(icon, recolour)
+            .map(|handle| svg(handle).width(side).height(side).into()),
         IconData::Rgba { .. } => native_theme_iced::icons::to_image_handle(icon)
             .map(|handle| iced::widget::image(handle).width(side).height(side).into()),
         _ => None,
@@ -13748,11 +13756,11 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let next = state.next_shown();
-    let ts = &resolved.text_scale;
-    // A group: its heading, tagged `<group>.heading`, over its controls,
-    // each of which carries its own tags.
+    // A group: its heading, tagged `<group>.heading`, in the section title
+    // of the installed 0.8.0 theme ([`next_section_title`]), over its
+    // controls, each of which carries its own tags.
     let group = |id: &'static str, label: &'a str, controls: Element<'a, Message>| {
-        let heading = text(label).role(section_title(ts), resolved, a11y);
+        let heading = text(label).next_text(next_section_title(next), &next.typography);
         Element::from(column![tagged(id, heading), controls].spacing(gap.widget))
     };
     // The push buttons' label, `button.label(NONE)`, the floor under it and
@@ -14852,9 +14860,10 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     );
 
     // Four icon-only tool buttons, as the toolbar's: flat, their icons the
-    // shown set's Copy, Paste, Delete and Edit at `toolbar.icon_size`, the
-    // toolbar's item gap apart. Edit is an edit-mode switch, on at start: the
-    // one toolbar button that is ever checked.
+    // shown set's Copy, Paste, Delete and Edit at
+    // `toolbar.button_icon(NONE).size` ([`tool_icon_size`]), the toolbar's
+    // item gap apart ([`ToolbarLayout`]). Edit is an edit-mode switch, on at
+    // start: the one toolbar button that is ever checked.
     let icons = &state.chrome_icons;
     let tool = |tags, icon, label, selected, action| {
         icon_button(
@@ -14904,34 +14913,44 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             Message::BasicEditToggled,
         ),
     ]
-    .spacing(resolved.toolbar.item_gap.unwrap_or(gap.widget))
+    .spacing(ToolbarLayout::of(next).gap)
     .align_y(iced::Center)
     .wrap();
 
     // The text scale, a line per role, each in its own size, line height
-    // and weight, in the body font's family, the link after the body text
-    // (Basic v4); the monospace font last.
-    let mono = &resolved.defaults.mono_font;
-    let link = &resolved.link;
+    // and weight, the link after the body text (Basic v4); the monospace
+    // font last: the installed 0.8.0 theme's `typography` roles
+    // (`native_theme_iced::next::text_scale`) and `link.label(NONE)`.
+    let roles = native_theme_iced::next::text_scale(next);
+    let t = &next.typography;
+    let link = next.link.label(WidgetState::NONE);
+    let underlined = link.decoration.kind == native_theme::next::DecorationKind::Underline;
+    // `typography.monospace` in the monospace face iced draws it in, iced's
+    // own font where it gives none ([`next_theme_mono_font`]).
+    let monospace = text("Monospace").next_text(&t.monospace, t);
+    let monospace = match next_theme_mono_font(next) {
+        Some(font) => monospace.font(font),
+        None => monospace,
+    };
     let typography = group(
         "basic.typography.heading",
         "Typography",
         column![
             tagged(
                 "basic.typography.caption",
-                text("Caption").role(&ts.caption, resolved, a11y)
+                text("Caption").next_text(roles.caption, t)
             ),
-            tagged("basic.typography.body", text("Body").body(resolved, a11y)),
-            // `link.underline_enabled`, which a text button cannot carry: the
+            tagged("basic.typography.body", text("Body").next_body(next)),
+            // The label's underline, which a text button cannot carry: the
             // label is a span, which iced underlines in its own colour, the
             // colour `styles::button_link` gives the button's text.
             tagged(
                 "basic.typography.link",
                 button(
-                    rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
-                        .size(scaled_text_size(link.font.size, a11y))
-                        .line_height(native_theme_iced::line_height(resolved))
-                        .font(theme_font(&link.font))
+                    rich_text([span::<(), _>("Link").underline(underlined)])
+                        .size(link.size_px)
+                        .line_height(iced::Pixels(next_line_box(t, &link)))
+                        .next_font(&link, |label, font| label.font(font))
                 )
                 .on_press(Message::ButtonPressed)
                 .style(styles::button_link(resolved))
@@ -14939,18 +14958,13 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             ),
             tagged(
                 "basic.typography.section_heading",
-                text("Section heading").role(&ts.section_heading, resolved, a11y)
+                text("Section heading").next_text(roles.section_heading, t)
             ),
             tagged(
                 "basic.typography.dialog_title",
-                text("Dialog title").role(&ts.dialog_title, resolved, a11y)
+                text("Dialog title").next_text(roles.dialog_title, t)
             ),
-            tagged(
-                "basic.typography.monospace",
-                text("Monospace")
-                    .themed(mono, resolved, a11y)
-                    .font(theme_mono_font(resolved))
-            ),
+            tagged("basic.typography.monospace", monospace),
         ]
         .spacing(gap.widget)
         .into(),
@@ -14959,23 +14973,25 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     let table = group("basic.table.heading", "Table", basic_table(state));
 
     // One icon of the shown set, `IconRole::FolderOpen`, at each size the
-    // theme states for small, toolbar and large icons; none where the set
-    // has no such icon.
-    let folder = |id: &'static str, size: f32| -> Element<'a, Message> {
+    // installed 0.8.0 theme states for small, toolbar and large icons,
+    // `icons.sizes`, at its own size where one is unstated ([`chrome_icon`]),
+    // a bundled set's in `colors.window.foreground`, in its own colours
+    // where that is unstated, as [`load_chrome_icons`] leaves an OS theme's;
+    // none where the set has no such icon.
+    let folder_colour = next
+        .colors
+        .window
+        .foreground
+        .filter(|_| !icons.system)
+        .map(next_colour);
+    let folder = |id: &'static str, size: Option<f32>| -> Element<'a, Message> {
         icons
             .folder
             .as_ref()
-            .and_then(|icon| {
-                chrome_icon(
-                    icon,
-                    Some(size),
-                    icons.system,
-                    to_color(resolved.defaults.text_color),
-                )
-            })
+            .and_then(|icon| recoloured_icon(icon, size, folder_colour))
             .map_or_else(|| space().into(), |icon| tagged(id, icon).into())
     };
-    let sizes = &resolved.defaults.icon_sizes;
+    let sizes = &next.icons.sizes;
     // The icon buttons over the icons at their sizes (Basic v4).
     let icon_group = group(
         "basic.icons.heading",
@@ -20618,13 +20634,6 @@ fn next_page_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
 /// [`section_title`] on the 0.8.0 model: `typography.headline`, or the body
 /// style where the theme defines none (`native_theme_iced::next::text_scale`,
 /// the table of homes' `text_scale.section_heading`).
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 fn next_section_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
     native_theme_iced::next::text_scale(r).section_heading
 }
@@ -20632,13 +20641,6 @@ fn next_section_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
 /// [`theme_mono_font`] on the 0.8.0 model: `typography.monospace` as iced
 /// can draw it ([`next_font_from_database`]); `None` where it gives no font
 /// iced can draw, and iced's own monospace stays.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 fn next_theme_mono_font(r: &native_theme::next::ResolvedTheme) -> Option<iced::Font> {
     next_font_from_database(&r.typography.monospace, true).map(|drawn| drawn.font)
 }
@@ -26009,30 +26011,22 @@ mod tests {
         }
     }
 
-    /// Text in a `text_scale` role and body text are laid out in the theme's
-    /// line boxes (the role's `line_height`, `defaults.line_height` times the
-    /// size), not iced's own 1.3: the Basic tab's section title and its body
-    /// text.
+    /// Text in a `typography` role and body text are laid out in the
+    /// installed 0.8.0 theme's line boxes ([`next_line_box`]: the style's
+    /// `line_height` where stated, its size by
+    /// `typography.line_height_multiplier` where not), not iced's own 1.3:
+    /// the Basic tab's section title and its body text.
     #[test]
     fn text_takes_the_themes_line_height() {
-        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        let heading = resolved.text_scale.section_heading.line_height;
-        let body = resolved.defaults.font.size * resolved.defaults.line_height;
-        let state = State {
-            current_theme: theme,
-            current_resolved: resolved,
-            accessibility: native_theme_iced::AccessibilityPreferences::default(),
-            active_tab: Tab::Basic,
-            ..State::default()
-        };
+        let state = page_state("kde-breeze", Tab::Basic);
+        let r = state.next_shown();
+        let heading = next_line_box(&r.typography, next_section_title(r));
+        let body = next_line_box(&r.typography, &r.typography.body);
         let mut ui = interface(&state);
         let title = height_of(&mut ui, "Checkboxes");
         assert!(
             (title - heading).abs() < 0.01,
-            "a section title is {title}px tall, section_heading.line_height is {heading}px"
+            "a section title is {title}px tall, its 0.8.0 line box is {heading}px"
         );
         let text = height_of(&mut ui, "Body");
         assert!(
@@ -26043,7 +26037,9 @@ mod tests {
 
     /// A link is underlined exactly where the theme says the platform
     /// underlines links: every underline the showcase asks iced for is
-    /// `link.underline_enabled`, and the Basic tab's link asks for one.
+    /// 0.7.2's `link.underline_enabled` or, on the Basic tab, whose link
+    /// asks for one, the installed 0.8.0 theme's: an underline as
+    /// `link.label(NONE).decoration`.
     #[test]
     fn a_link_is_underlined_by_link_underline_enabled() {
         let source = strip_comments_and_strings(SHOWCASE);
@@ -26062,12 +26058,19 @@ mod tests {
             })
             .collect();
         assert!(
-            basic.contains(".underline("),
-            "the Basic tab's link asks for no underline"
+            basic.contains(".underline(underlined)")
+                && basic.contains("let link = next.link.label(WidgetState::NONE);")
+                && basic.contains(
+                    "let underlined = link.decoration.kind == \
+                     native_theme::next::DecorationKind::Underline;"
+                ),
+            "the Basic tab's link asks for no underline from link.label(NONE).decoration"
         );
         assert!(
-            calls.iter().all(|args| *args == "(link.underline_enabled)"),
-            "an underline not taken from link.underline_enabled: {calls:?}"
+            calls
+                .iter()
+                .all(|args| *args == "(link.underline_enabled)" || *args == "(underlined)"),
+            "an underline not taken from the link's: {calls:?}"
         );
     }
 
@@ -29393,6 +29396,102 @@ mod tests {
         match get("basic.separator.line") {
             Some(line) if near(line.height, 5.0) => {}
             line => faults.push(format!("the separator: {line:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// The Basic page's group headings, its typography lines, its tool
+    /// buttons' gap and its icons follow the installed 0.8.0 theme alone:
+    /// kde-breeze with, on the 0.8.0 theme only, line boxes of 29, 21, 33,
+    /// 37 and 26 px for the caption, body, headline, title1 and monospace
+    /// styles, a link label patched to a 28 px line, the toolbar's items
+    /// 13 px apart and icons of 11, 21 and 41 px (in the Material set, which
+    /// every host has), lays them out at those sizes.
+    #[test]
+    fn the_basic_typography_and_icons_take_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[widgets.toolbar]\nitem_gap = 13.0\n\
+             [[widgets.link.rules]]\nlabel.size_px = 22.0\nlabel.line_height = 28.0\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        state.icon_set_choice = IconSetChoice::Material;
+        state.reload_icons();
+        let boxed = |style: &TextStyle, size: f32, line: f32| {
+            let mut style = style.clone();
+            style.size_px = size;
+            style.line_height = line;
+            style.stated = style.stated.union(TextStated::LINE_HEIGHT);
+            style
+        };
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            let t = &mut r.typography;
+            let body = t.body.clone();
+            t.caption = Some(boxed(&body, 19.0, 29.0));
+            t.headline = Some(boxed(&body, 23.0, 33.0));
+            t.title1 = Some(boxed(&body, 27.0, 37.0));
+            t.monospace = boxed(&t.monospace, 18.0, 26.0);
+            t.body = boxed(&body, 15.0, 21.0);
+            r.icons.sizes.small = Some(11.0);
+            r.icons.sizes.toolbar = Some(21.0);
+            r.icons.sizes.large = Some(41.0);
+        });
+        let old = &state.current_resolved;
+        let ts = &old.text_scale;
+        if [
+            ts.caption.line_height,
+            ts.section_heading.line_height,
+            ts.dialog_title.line_height,
+        ]
+        .iter()
+        .any(|&line| [29.0, 33.0, 37.0].contains(&line))
+            || old.toolbar.item_gap == Some(13.0)
+            || old.defaults.icon_sizes.small == 11.0
+        {
+            return Err("the splice states 0.7.2's sizes".into());
+        }
+        let laid = recording(|| {
+            let mut ui = interface(&state);
+            let _ = texts(&mut ui);
+            surveyed_layout()
+        });
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let get = |id: &str| laid.get(id).copied();
+        for (id, height) in [
+            ("basic.buttons.heading", 33.0),
+            ("basic.typography.heading", 33.0),
+            ("basic.typography.caption", 29.0),
+            ("basic.typography.body", 21.0),
+            ("basic.typography.link", 28.0),
+            ("basic.typography.section_heading", 33.0),
+            ("basic.typography.dialog_title", 37.0),
+            ("basic.typography.monospace", 26.0),
+        ] {
+            match get(id) {
+                Some(rect) if near(rect.height, height) => {}
+                rect => faults.push(format!("{id}: {rect:?}, not {height} tall")),
+            }
+        }
+        match (get("basic.icons.copy"), get("basic.icons.paste")) {
+            (Some(copy), Some(paste))
+                if near(copy.y, paste.y) && near(paste.x - (copy.x + copy.width), 13.0) => {}
+            pair => faults.push(format!("the tool buttons are not 13 apart: {pair:?}")),
+        }
+        for (id, side) in [
+            ("basic.icons.small", 11.0),
+            ("basic.icons.toolbar", 21.0),
+            ("basic.icons.large", 41.0),
+        ] {
+            match get(id) {
+                Some(rect) if near(rect.width, side) && near(rect.height, side) => {}
+                rect => faults.push(format!("{id}: {rect:?}, not {side} square")),
+            }
         }
         if faults.is_empty() {
             Ok(())
