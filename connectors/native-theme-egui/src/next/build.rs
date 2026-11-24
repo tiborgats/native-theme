@@ -5,7 +5,7 @@
 //! rule 0); a place a note names is the home's.
 
 use native_theme::next::{
-    ButtonQuery, CheckboxWidget, Color, CornerRadius, Corners, FocusKind, FocusTrigger, IconStated,
+    ButtonQuery, CheckboxWidget, Color, CornerRadius, FocusKind, FocusTrigger, IconStated,
     IconStyle, ListQuery, Orientation, PartStated, PartStyle, Preset, ResolvedTheme, Stroke,
     StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
@@ -59,7 +59,7 @@ fn state_fill_at(part: &PartStyle, home: &'static str) -> Read<Rgba> {
 /// A [`Note::Unmapped`] at `home` where `part` states corners egui cannot draw as the one
 /// radius it rounds a widget by: radii that differ corner by corner, or concentric ones (spec
 /// §10, rule 2). egui's own radius stays, as [`radius_of`] gives none.
-fn meet_corners(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) {
+pub(crate) fn meet_corners(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) {
     if !part.stated.contains(PartStated::CORNERS) {
         return;
     }
@@ -392,22 +392,14 @@ fn thumb(r: &ResolvedTheme) -> [Read<Rgba>; 3] {
     ]
 }
 
-/// A part's corners as one radius egui rounds by: [`radius_of`]'s, and for a pill the largest
-/// radius egui's `CornerRadius` holds, which epaint clamps to half the shape's shorter side
-/// (`epaint-0.37.0` `src/rounded_rect.rs`, `RoundedRect::new`), as the focus ring's pill is.
-pub(crate) fn pill_radius(part: &PartStyle) -> Option<f32> {
-    if part.stated.contains(PartStated::CORNERS) && part.corners == Corners::pill() {
-        return Some(f32::from(u8::MAX));
-    }
-    radius_of(part)
-}
-
 /// The scroll bar thumb's corners (`scrollbar.thumb(NONE).corners`) as the one radius egui
-/// rounds the thumb and its trough by ([`pill_radius`]), noted where egui cannot draw them
+/// rounds the thumb and its trough by ([`radius_of`]; a pill the largest radius egui's
+/// `CornerRadius` holds, which epaint clamps to half the shape's shorter side, `epaint-0.37.0`
+/// `src/rounded_rect.rs`, `RoundedRect::new`), noted where egui cannot draw them
 /// ([`meet_corners`]).
 fn thumb_radius(thumb: &PartStyle, notes: &mut Vec<Note>) -> Option<f32> {
     meet_corners(thumb, "scrollbar.thumb(NONE).corners", notes);
-    pill_radius(thumb)
+    radius_of(thumb)
 }
 
 /// A part's outline with the homes of its corners and stroke width ([`edge_at`]).
@@ -1340,10 +1332,11 @@ pub(crate) fn sources(
 ///
 /// [`Unmapped`] `focus_ring.kind` where the indicator is not a ring (a fill, an underline),
 /// which the plugin's ring cannot draw, `focus_ring.inner_stroke` where the second ring is
-/// stated per side, and `focus_ring.corners` where the corners are continuous or concentric.
+/// stated per side, and `focus_ring.corners` where the corners are concentric, which needs
+/// the container's radius; a continuous curve is drawn as the circular corner of its radius
+/// (spec §10, rule 2).
 pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
     use crate::plugin::RingCorners;
-    use native_theme::next::{CornerCurve, CornerRadius};
 
     let ring = &r.focus_ring;
     if ring.kind != FocusKind::Ring {
@@ -1361,25 +1354,22 @@ pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
         }
         _ => return Err(Unmapped("focus_ring.inner_stroke")),
     };
-    let corners = match ring.corners.map(|c| (c.radius, c.curve)) {
+    let corners = match ring.corners.map(|c| c.radius) {
         None => None,
-        Some((CornerRadius::None, _)) => Some(RingCorners::Radii([0.0; 4])),
-        Some((CornerRadius::Uniform(v), CornerCurve::Circular)) => Some(RingCorners::Radii([v; 4])),
-        Some((
-            CornerRadius::PerCorner {
-                top_left,
-                top_right,
-                bottom_right,
-                bottom_left,
-            },
-            CornerCurve::Circular,
-        )) => Some(RingCorners::Radii([
+        Some(CornerRadius::None) => Some(RingCorners::Radii([0.0; 4])),
+        Some(CornerRadius::Uniform(v)) => Some(RingCorners::Radii([v; 4])),
+        Some(CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        }) => Some(RingCorners::Radii([
             top_left,
             top_right,
             bottom_right,
             bottom_left,
         ])),
-        Some((CornerRadius::Pill, CornerCurve::Circular)) => Some(RingCorners::Pill),
+        Some(CornerRadius::Pill) => Some(RingCorners::Pill),
         Some(_) => return Err(Unmapped("focus_ring.corners")),
     };
     Ok(FocusRingSource {

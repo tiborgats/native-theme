@@ -34,9 +34,9 @@ use std::time::Duration;
 
 use egui::{Color32, FontId};
 use native_theme::next::{
-    Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FontStyle, MotionPreference,
-    Orientation, PartStated, PartStyle, ResolvedTheme, Scheme, Stroke, StyleQuery, TextStated,
-    TextStyle, WidgetState, WindowState,
+    Contrast, CornerRadius, DialogButtonOrder, FontStyle, MotionPreference, Orientation,
+    PartStated, PartStyle, ResolvedTheme, Scheme, Stroke, StyleQuery, TextStated, TextStyle,
+    WidgetState, WindowState,
 };
 
 use crate::accessors::text_size_or_stock;
@@ -240,18 +240,32 @@ pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     }
 }
 
-/// A part's corner radius, where stated as one circular radius, or as
-/// square corners, which are no radius; `None` where it is not stated, or
-/// stated in a form egui cannot draw as one radius (a pill, per-corner
-/// radii, a continuous curve).
+/// A part's corner radius as one radius: one radius stated for every
+/// corner, square corners, which are no radius, or a pill, the largest
+/// radius egui's `CornerRadius` holds (`u8::MAX`), which epaint clamps to
+/// half the shorter side ([`crate::convert::to_corner_radius`]); `None`
+/// where it is not stated, or stated as per-corner radii that differ, or as
+/// a concentric radius, which needs the container's. egui's corner is
+/// circular, so a continuous curve is drawn as the circular corner of its
+/// radius (spec §10, rule 2).
 #[must_use]
 pub fn radius_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return None;
     }
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Some(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+    match part.corners.radius {
+        CornerRadius::None => Some(0.0),
+        CornerRadius::Uniform(r) => Some(r),
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => [top_right, bottom_right, bottom_left]
+            .iter()
+            .all(|&r| r == top_left)
+            .then_some(top_left),
+        CornerRadius::Pill => Some(f32::from(u8::MAX)),
         _ => None,
     }
 }
@@ -1103,20 +1117,30 @@ pub fn input_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped<egu
 /// margin ([`text_area_margin`]), its stroke width in every state, its
 /// resting stroke colour, its corner radius and its focused stroke colour
 /// (`text_area.field(FOCUSED)`), each the scope's where the theme states
-/// none.
+/// none. Returns with the frame the notes on values it draws otherwise
+/// than stated, as the atlas's: a [`crate::Note::Unmapped`] at
+/// `text_area.field(NONE).corners` where the field's radii differ corner
+/// by corner or are concentric, which keep the scope's radius
+/// ([`radius_of`]).
 ///
 /// # Errors
 ///
 /// [`Unmapped`] where [`text_area_margin`] is, or the field's stroke is per
 /// side.
-pub fn text_area_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped<egui::Frame> {
+pub fn text_area_frame(
+    ui: &egui::Ui,
+    id: egui::Id,
+    r: &ResolvedTheme,
+) -> Mapped<(egui::Frame, Vec<crate::Note>)> {
     let field = r.text_area.field(WidgetState::NONE);
     let color = if field.stated.contains(PartStated::STROKE) {
         Some(line_color(&field, "text_area.field(NONE).stroke.color")?)
     } else {
         None
     };
-    Ok(crate::accessors::field_frame(
+    let mut notes = Vec::new();
+    build::meet_corners(&field, "text_area.field(NONE).corners", &mut notes);
+    let frame = crate::accessors::field_frame(
         ui,
         id,
         &crate::accessors::FieldFrameSource {
@@ -1131,7 +1155,8 @@ pub fn text_area_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped
                 radius: radius_of(&field),
             }),
         },
-    ))
+    );
+    Ok((frame, notes))
 }
 
 /// The arrow's colour [`expander_icon`] paints in,

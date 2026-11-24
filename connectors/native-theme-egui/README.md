@@ -725,9 +725,8 @@ listed here, and a value the theme leaves unstated is egui's own
   outside the part at the offset, so the ring lies outside at the offset
   whatever the alignment says. A `kind` of `Fill` or `Underline` is no
   ring: `next::to_theme` returns `Unmapped("focus_ring.kind")` for it; a
-  ring or second ring stated per side is `Unmapped`, and so are continuous
-  or concentric corners, which `CornerRadius` (four circular radii,
-  `epaint-0.37.0/src/corner_radius.rs`) cannot hold.
+  ring or second ring stated per side is `Unmapped`, and so are concentric
+  corners, which need the container's radius.
 - **A stroke per side.** egui strokes a rect with one `Stroke`, one width
   and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
   `RectShape::stroke`). Where the theme states a part's stroke per side
@@ -735,11 +734,18 @@ listed here, and a value the theme leaves unstated is egui's own
   stated none, and the part reads (`next::stroke_color_of`,
   `next::stroke_width_of`) return `None`; the atlas reports each such stroke
   it meets as a `Note::Unmapped` at its home in `ThemeAtlas::notes`.
-- **Corners that differ corner by corner, or concentric ones.** The atlas
-  rounds each part by one radius (`next::radius_of`). Where the theme states
-  a part's radii per corner and they differ, or states them concentric with
-  a container, the part keeps egui's own radius, and the atlas reports it as
-  a `Note::Unmapped` at the corners' home.
+- **Corners.** egui rounds a rect with four circular radii, each a whole
+  point up to 255 (`epaint-0.37.0/src/corner_radius.rs`, `CornerRadius`),
+  and the atlas rounds each part by one radius (`next::radius_of`). A
+  continuous corner (`CornerCurve::Continuous`, Apple's) is drawn as the
+  circular corner of the stated radius (docs/v0.8.0-spec.md §10, rule 2),
+  per-corner radii that are one as that radius, and a pill as 255, which
+  epaint clamps to half the rect's shorter side (`epaint-0.37.0`
+  `src/rounded_rect.rs`, `RoundedRect::new`). Where the theme states a
+  part's radii per corner and they differ, or states them concentric with
+  a container, the part keeps egui's own radius, and the atlas (and
+  `next::text_area_frame`, for the multi-line field) reports it as a
+  `Note::Unmapped` at the corners' home.
 - **Shadows beyond one outset layer.** egui's `Shadow` is one outset
   shadow: an offset in whole points (`[i8; 2]`), a blur and a spread in
   whole points (`u8`), and a colour (`epaint-0.37.0/src/shadow.rs`), one

@@ -1649,7 +1649,8 @@ fn a_disabled_radio_is_faded_by_its_stated_opacity() -> TestResult {
 }
 
 /// A progress bar's track stroke stated as none is no outline, on every preset whose bar has
-/// one; its pill corners are half its stated height.
+/// one; its pill corners are half its stated height, its continuous ones the circular corner of
+/// their radius.
 #[test]
 fn a_progress_bar_track_stated_as_none_has_no_outline() -> TestResult {
     use crate::progress_bar::Bar;
@@ -1674,16 +1675,26 @@ fn a_progress_bar_track_stated_as_none_has_no_outline() -> TestResult {
     let bar = Bar::next_of(&patched(Preset::KdeBreeze, pill)?);
     assert_eq!(bar.radius, Some(3.0));
     assert_eq!(bar.min_width, Some(100.0));
+    let continuous = "[[widgets.progress_bar.rules]]\nstates = []\n\
+                      track.corners = { radius = 8.0, curve = \"continuous\" }\n";
+    let bar = Bar::next_of(&patched(Preset::KdeBreeze, continuous)?);
+    assert_eq!(
+        bar.radius,
+        Some(8.0),
+        "a continuous curve is drawn circular"
+    );
     Ok(())
 }
 
-/// A progress bar whose corners egui cannot draw as one radius keeps egui's own, half its
-/// height, and is still outlined as stated (spec §10, rule 0, per property).
+/// A progress bar whose corners egui cannot draw as one radius (radii that differ corner by
+/// corner) keeps egui's own, half its height, and is still outlined as stated (spec §10,
+/// rule 0, per property).
 #[test]
 fn a_progress_bar_outline_stays_where_its_corners_are_egui_s() -> TestResult {
     use crate::progress_bar::Bar;
     let patch = "[[widgets.progress_bar.rules]]\nstates = []\n\
-                 track.corners = { radius = 8.0, curve = \"continuous\" }\n\
+                 track.corners = { radius = { top_left = 1, top_right = 2, bottom_right = 3, \
+                 bottom_left = 4 } }\n\
                  track.stroke = { width = 2.0, color = \"#ff00ff\" }\n";
     let magenta = egui::Color32::from_rgb(255, 0, 255);
     let bar = Bar::next_of(&patched(Preset::KdeBreeze, patch)?);

@@ -21,7 +21,7 @@ pub(crate) use native_theme_egui::next::{
 
 use native_theme_egui::egui::Color32;
 use native_theme_egui::native_theme::next::{
-    CornerCurve, CornerRadius, IconStated, IconStyle, PartStated, PartStyle, ResolvedTheme,
+    CornerRadius, IconStated, IconStyle, PartStated, PartStyle, ResolvedTheme,
 };
 
 /// [`fill_of`] `part` where `ruled`, the part queried with the state's flag alone, has its
@@ -46,14 +46,15 @@ pub(crate) fn ruled_stroke(ruled: &PartStyle, part: &PartStyle) -> Option<Color3
 }
 
 /// A part's corner radius on a box `width` × `height`: [`radius_of`], or for a pill, half the
-/// shorter side of a box whose size is known; `None` where it is not stated or stated in a form
-/// egui cannot draw as one radius.
+/// shorter side of a box whose size is known (on another, [`radius_of`]'s pill, which epaint
+/// clamps to half the shorter side); `None` where it is not stated or stated in a form egui
+/// cannot draw as one radius.
 pub(crate) fn radius(part: &PartStyle, width: Option<f32>, height: Option<f32>) -> Option<f32> {
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::Pill, CornerCurve::Circular)
+    match (part.corners.radius, width.zip(height)) {
+        (CornerRadius::Pill, Some((width, height)))
             if part.stated.contains(PartStated::CORNERS) =>
         {
-            Some(0.5 * width?.min(height?))
+            Some(0.5 * width.min(height))
         }
         _ => radius_of(part),
     }

@@ -675,7 +675,7 @@ macro_rules! home {
                 let s = $(WidgetState::$s)|+;
                 let part = r.$w.$p(s);
                 part_stated(&part, PartStated::CORNERS, s)
-                    .then(|| build::pill_radius(&part))
+                    .then(|| super::radius_of(&part))
                     .flatten()
                     .map(HomeValue::Radius)
             }

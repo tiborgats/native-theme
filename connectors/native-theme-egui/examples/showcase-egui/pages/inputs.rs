@@ -4,7 +4,7 @@
 
 use native_theme_egui::{Role, RoleVariant, next};
 
-use super::{DemoState, Framed, caption, field_frame, input_min_size};
+use super::{DemoState, Framed, caption, field_frame, input_min_size, text_area_frame};
 use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
@@ -37,8 +37,10 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
         },
     );
     let id = ui.make_persistent_id("inputs/multiline");
+    let mut notes = Vec::new();
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (multiline)", |ui| {
-        let frame = field_frame(ui, id, r, next::text_area_frame);
+        let frame;
+        (frame, notes) = text_area_frame(ui, id, r);
         ui.add(
             egui::TextEdit::multiline(&mut state.multiline)
                 .min_size(min)
@@ -47,6 +49,9 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
         )
         .accessible_name("TextEdit (multiline)")
     });
+    for note in notes {
+        reg.note_last("frame", &format!("{note:?}"));
+    }
     let id = ui.make_persistent_id("inputs/password");
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (password)", |ui| {
         let frame = field_frame(ui, id, r, next::input_frame);

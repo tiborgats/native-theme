@@ -219,9 +219,9 @@ pub(crate) fn input_min_size(r: Option<&native_theme::next::ResolvedTheme>) -> e
     egui::vec2(0.0, height.unwrap_or_default())
 }
 
-/// The frame `build` (`next::input_frame` or `next::text_area_frame`) makes of the installed
-/// 0.8.0 theme `r` for the field `id`; `None`, egui's own frame, where the theme states none egui
-/// can take (`next::Unmapped`) or no 0.8.0 theme is installed.
+/// The frame `build` (`next::input_frame`) makes of the installed 0.8.0 theme `r` for the field
+/// `id`; `None`, egui's own frame, where the theme states none egui can take
+/// (`next::Unmapped`) or no 0.8.0 theme is installed.
 pub(crate) fn field_frame(
     ui: &egui::Ui,
     id: egui::Id,
@@ -233,6 +233,19 @@ pub(crate) fn field_frame(
     ) -> native_theme_egui::next::Mapped<egui::Frame>,
 ) -> Option<egui::Frame> {
     r.and_then(|r| build(ui, id, r).ok())
+}
+
+/// [`field_frame`] of `next::text_area_frame`, the multi-line field's, with the notes it returns
+/// on values it draws otherwise than stated; no note where it gives no frame.
+pub(crate) fn text_area_frame(
+    ui: &egui::Ui,
+    id: egui::Id,
+    r: Option<&native_theme::next::ResolvedTheme>,
+) -> (Option<egui::Frame>, Vec<native_theme_egui::Note>) {
+    match r.and_then(|r| native_theme_egui::next::text_area_frame(ui, id, r).ok()) {
+        Some((frame, notes)) => (Some(frame), notes),
+        None => (None, Vec::new()),
+    }
 }
 
 /// A `TextEdit` in the frame [`field_frame`] gives, or in egui's own where it gives none.

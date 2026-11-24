@@ -27,7 +27,9 @@ use native_theme_egui_widgets::spinner::Spinner;
 use native_theme_egui_widgets::switch::Switch;
 
 use super::data::TableHeader;
-use super::{DemoState, Framed, button_min_size, caption, field_frame, input_min_size};
+use super::{
+    DemoState, Framed, button_min_size, caption, field_frame, input_min_size, text_area_frame,
+};
 use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
@@ -1065,17 +1067,20 @@ fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: 
 }
 
 /// The Text area group: its frame `next::text_area_frame` of the installed 0.8.0 theme
-/// ([`field_frame`]), egui's own where the theme states none egui can take.
+/// ([`text_area_frame`]), egui's own where the theme states none egui can take, its notes under
+/// *Not themeable*.
 fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
     let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.text_area.heading", "Text area");
     let id = ui.make_persistent_id("basic/area");
     let mut text = None;
+    let mut notes = Vec::new();
     let kind = "TextEdit (multiline)";
     let area = demo::scoped(reg, ui, Role::Input, normal, kind, |ui| {
         line_box_rows(ui);
-        let frame = field_frame(ui, id, r, next::text_area_frame);
+        let frame;
+        (frame, notes) = text_area_frame(ui, id, r);
         let field = ui
             .add(
                 egui::TextEdit::multiline(&mut state.basic_area)
@@ -1089,6 +1094,9 @@ fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &m
         text = Some(field_text(ui, &field, &frame, AREA_TEXT, false));
         field
     });
+    for note in notes {
+        reg.note_last("frame", &format!("{note:?}"));
+    }
     reg.tag("basic.text_area.field", &area);
     if let Some(text) = text {
         reg.place(ui, "basic.text_area.field.text", text);

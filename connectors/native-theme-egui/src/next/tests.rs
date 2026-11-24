@@ -254,6 +254,157 @@ fn a_per_side_stroke_is_noted_unmapped() -> Result<(), Box<dyn std::error::Error
     Ok(())
 }
 
+/// Each form of a stated radius as the one-radius read takes it: a continuous curve drawn as
+/// the circular corner of its radius (spec §10, rule 2), a pill as the largest radius egui
+/// holds, which epaint clamps to half the shorter side, per-corner radii where the four are
+/// one; per-corner radii that differ and a concentric radius, which needs the container's,
+/// not. On a patched theme a continuous panel's radius reaches material-3's menu outline.
+#[test]
+fn every_radius_form_is_read_as_egui_rounds_it() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{CornerCurve, CornerRadius, Corners, PartStated, PartStyle};
+
+    let part = |radius: CornerRadius, curve: CornerCurve| {
+        let mut part = PartStyle::default();
+        part.corners = Corners { radius, curve };
+        part.stated |= PartStated::CORNERS;
+        part
+    };
+    let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
+        top_left,
+        top_right,
+        bottom_right,
+        bottom_left,
+    };
+    for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
+        let read = |radius| super::radius_of(&part(radius, curve));
+        assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
+        assert_eq!(read(CornerRadius::None), Some(0.0));
+        assert_eq!(read(CornerRadius::Pill), Some(255.0));
+        assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
+        assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
+        assert_eq!(
+            read(CornerRadius::Concentric {
+                inset: 2.0,
+                min_radius: 1.0,
+            }),
+            None
+        );
+    }
+    assert_eq!(super::radius_of(&PartStyle::default()), None);
+
+    let panel =
+        "[[widgets.menu.rules]]\npanel.corners = { radius = 4.0, curve = \"continuous\" }\n";
+    let r = Theme::preset(Preset::Material3)
+        .with_patch(ThemePatch::from_toml(panel)?)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        super::build::cell_source(&r, &mut Vec::new())
+            .menu
+            .outline
+            .edge
+            .radius,
+        Some(4.0)
+    );
+    Ok(())
+}
+
+/// The atlas rounds the button by each form of its body's corners egui can draw, and notes
+/// none of them: a pill by the largest radius egui holds (epaint clamps it to half the
+/// shorter side), a continuous curve as the circular corner of its radius, per-corner radii
+/// that are one by that radius.
+#[test]
+fn the_atlas_rounds_a_pill_a_continuous_curve_and_equal_corners()
+-> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{ButtonRule, CornerCurve, CornerRadius, Corners};
+
+    let rounded = |corners: Corners| -> Result<_, Box<dyn std::error::Error>> {
+        let patch =
+            ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().corners(corners)));
+        let atlas = atlas_of(&Theme::preset(Preset::KdeBreeze).with_patch(patch))?;
+        let mut style = egui::Style::default();
+        atlas
+            .role_modifier(
+                egui::Theme::Light,
+                crate::Role::Button,
+                crate::RoleVariant::Normal,
+            )
+            .apply(&mut style);
+        let unmapped = atlas
+            .notes()
+            .iter()
+            .any(|note| matches!(note, crate::Note::Unmapped { .. }));
+        Ok((style.visuals.widgets.inactive.corner_radius, unmapped))
+    };
+    let equal = Corners {
+        radius: CornerRadius::PerCorner {
+            top_left: 3.0,
+            top_right: 3.0,
+            bottom_right: 3.0,
+            bottom_left: 3.0,
+        },
+        curve: CornerCurve::Circular,
+    };
+    for (corners, want) in [
+        (Corners::pill(), u8::MAX),
+        (Corners::continuous(6.0), 6),
+        (equal, 3),
+    ] {
+        assert_eq!(
+            rounded(corners)?,
+            (egui::CornerRadius::same(want), false),
+            "{corners:?}"
+        );
+    }
+    Ok(())
+}
+
+/// `text_area_frame` rounds the field by the corners egui can draw, a pill and per-corner radii
+/// that are one, and returns a `Note::Unmapped` at `text_area.field(NONE).corners` for
+/// per-corner radii that differ, which keep the scope's radius.
+#[test]
+fn the_text_area_frame_notes_the_corners_it_cannot_draw() -> Result<(), Box<dyn std::error::Error>>
+{
+    use native_theme::next::{CornerCurve, CornerRadius, Corners, InputRule};
+
+    let per_corner = |top_left: f32, others: f32| Corners {
+        radius: CornerRadius::PerCorner {
+            top_left,
+            top_right: others,
+            bottom_right: others,
+            bottom_left: others,
+        },
+        curve: CornerCurve::Circular,
+    };
+    let ctx = egui::Context::default();
+    let id = egui::Id::unique("text-area-corners");
+    let mut frames = Vec::new();
+    for corners in [per_corner(4.0, 4.0), Corners::pill(), per_corner(2.0, 6.0)] {
+        let patch =
+            ThemePatch::new().text_area(InputRule::new().field(PartPatch::new().corners(corners)));
+        let r = Theme::preset(Preset::KdeBreeze)
+            .with_patch(patch)
+            .resolve(&ThemeContext::light());
+        let _ = crate::install_tests::pass(&ctx, egui::RawInput::default(), |ui| {
+            frames.push(super::text_area_frame(ui, id, &r));
+        });
+    }
+    let [equal, pill, differ] = <[_; 3]>::try_from(frames).map_err(|_| "three frames")?;
+    let (equal, pill, (_, differ)) = (equal?, pill?, differ?);
+    assert_eq!(
+        (equal.0.corner_radius, equal.1),
+        (egui::CornerRadius::same(4), Vec::new())
+    );
+    assert_eq!(
+        (pill.0.corner_radius, pill.1),
+        (egui::CornerRadius::same(u8::MAX), Vec::new())
+    );
+    assert_eq!(
+        differ,
+        [crate::Note::unmapped("text_area.field(NONE).corners")]
+    );
+    Ok(())
+}
+
 /// The primary button in a disabled scope takes the fill and the label a rule states for the
 /// primary button's disabled state (`button.body(primary + DISABLED)`,
 /// `button.label(primary + DISABLED)`), not the plain button's.
@@ -968,7 +1119,8 @@ fn a_stated_drop_shadow_is_drawn_as_stated() -> Result<(), Box<dyn std::error::E
 
 /// The ring's second stroke and its own corners are drawn where the theme states them: the
 /// plugin's ring holds the inner stroke and the corners at the ring's inner edge (the stated
-/// outer corners less the width); unstated, neither.
+/// outer corners less the width, a continuous curve drawn circular); unstated, neither;
+/// concentric corners are unmapped.
 #[test]
 fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn std::error::Error>> {
     use native_theme::next::Corners;
@@ -996,6 +1148,21 @@ fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn st
         Some(egui::Stroke::new(1.0, egui::Color32::WHITE))
     );
     assert_eq!(drawn.corners, Some(egui::CornerRadius::same(4)));
+    light.focus_ring.corners = Some(Corners::continuous(width + 4.0));
+    let drawn = ring(&light)?.ok_or("the ring")?;
+    assert_eq!(drawn.corners, Some(egui::CornerRadius::same(4)));
+    light.focus_ring.corners = Some(Corners {
+        radius: native_theme::next::CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        },
+        ..Corners::default()
+    });
+    assert_eq!(
+        ring(&light).err(),
+        Some(super::Unmapped("focus_ring.corners"))
+    );
+    light.focus_ring.corners = None;
     light.focus_ring.inner_stroke = Stroke::sides(
         StrokeSide::default(),
         StrokeSide::default(),
