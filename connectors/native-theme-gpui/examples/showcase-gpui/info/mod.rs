@@ -190,6 +190,19 @@ impl WidgetInfo {
             ),
         )
     }
+    /// The "variant" line for the `next::variants` builder named `builder`
+    /// where the installed 0.8.0 theme states the value at `unstated`'s home
+    /// in a form gpui cannot take, which the builder needs: the widget takes
+    /// `variants::ghost_button`, the variant the builder starts from.
+    pub fn next_variant_unmapped(self, builder: &'static str, unstated: Unmapped) -> Self {
+        self.config(
+            "variant",
+            format!(
+                "native_theme_gpui::variants::ghost_button: the theme states no value gpui can take at {}, which next::variants::{builder} needs",
+                unstated.home()
+            ),
+        )
+    }
     pub fn title(&self) -> String {
         match &self.variant {
             Some(v) => format!("{} · {v}", self.kind),

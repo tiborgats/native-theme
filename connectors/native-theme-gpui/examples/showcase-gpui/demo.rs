@@ -1675,9 +1675,10 @@ pub(crate) fn toolbar_button(
         glyph_at(icon, size)
     });
     let dispatched = action.boxed_clone();
+    let variant = toolbar_variant(cx, &mut button_info);
     let button = next_native_info(
         refined(
-            Button::new(id).custom(toolbar_variant(cx)),
+            Button::new(id).custom(variant),
             tool_button_box(cx).as_ref(),
         ),
         cx,
@@ -1786,9 +1787,10 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
         );
         glyph_at(icon, size)
     });
+    let variant = toolbar_variant(cx, &mut button_info);
     let button = next_native_info(
         refined(
-            Button::new(id).custom(toolbar_variant(cx)),
+            Button::new(id).custom(variant),
             tool_button_box(cx).as_ref(),
         ),
         cx,
@@ -11257,9 +11259,10 @@ pub(crate) fn icon_button(
         );
         glyph_at(icon, size)
     });
+    let variant = toolbar_variant(cx, &mut button_info);
     let button = next_native_info(
         refined(
-            Button::new(id).custom(toolbar_variant(cx)),
+            Button::new(id).custom(variant),
             tool_button_box(cx).as_ref(),
         ),
         cx,

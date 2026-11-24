@@ -31,7 +31,7 @@ use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme};
 use native_theme_showcase_support::rows;
 
 use crate::demo::{self, BodyRow, DataTableRow};
-use crate::info::InfoRegistry;
+use crate::info::{InfoRegistry, WidgetInfo};
 
 // ---------------------------------------------------------------------------
 // Sample content (Carousel slides, code editor, Markdown)
@@ -347,12 +347,19 @@ pub(crate) fn next_resolved(cx: &App) -> Option<&native_theme::next::ResolvedThe
 
 /// The tool buttons' variant for the installed 0.8.0 theme,
 /// `next::variants::toolbar_button`; where no theme is installed, or it
-/// lacks a source the builder reads, `variants::ghost_button`, the variant
-/// that builder starts from, with no state of the theme's over it.
-pub(crate) fn toolbar_variant(cx: &App) -> ButtonCustomVariant {
-    next_resolved(cx)
-        .and_then(|r| native_theme_gpui::next::variants::toolbar_button(r, cx).ok())
-        .unwrap_or_else(|| native_theme_gpui::variants::ghost_button(cx))
+/// states a home the builder reads in a form gpui cannot take,
+/// `variants::ghost_button`, the variant that builder starts from, with no
+/// state of the theme's over it. The home lacked is reported on `info`, the
+/// tool button's (`WidgetInfo::next_variant_unmapped`).
+pub(crate) fn toolbar_variant(cx: &App, info: &mut WidgetInfo) -> ButtonCustomVariant {
+    match next_resolved(cx).map(|r| native_theme_gpui::next::variants::toolbar_button(r, cx)) {
+        Some(Ok(variant)) => variant,
+        Some(Err(unstated)) => {
+            *info = std::mem::take(info).next_variant_unmapped("toolbar_button", unstated);
+            native_theme_gpui::variants::ghost_button(cx)
+        }
+        None => native_theme_gpui::variants::ghost_button(cx),
+    }
 }
 
 /// The installed 0.8.0 theme resolved for an inactive window

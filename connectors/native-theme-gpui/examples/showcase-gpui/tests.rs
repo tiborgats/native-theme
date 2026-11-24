@@ -4755,6 +4755,60 @@ fn a_tool_buttons_info_names_its_icon_theme(cx: &mut TestAppContext) {
     );
 }
 
+/// Where the installed theme states a home `next::variants::toolbar_button`
+/// reads in a form gpui cannot take -- kde-breeze light with
+/// `toolbar.button(HOVER).fill` patched to a gradient, which has no colour
+/// to fall back on (spec §10 rule 2) -- the tool button takes
+/// `variants::ghost_button` and its info says which home it lacked.
+#[gpui::test]
+fn a_tool_button_whose_variant_gpui_cannot_take_says_so(cx: &mut TestAppContext) {
+    use native_theme::next::{
+        BlendMode, Paint, PaintLayer, PartPatch, ThemePatch, ToolbarRule, WidgetState,
+    };
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: Vec::new().into(),
+        blend: BlendMode::Normal,
+    }]);
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(
+            ThemePatch::new().toolbar(
+                ToolbarRule::new()
+                    .states(WidgetState::HOVER)
+                    .button(PartPatch::new().fill(gradient)),
+            ),
+        )
+    });
+    let Some(r) = r else { return };
+    let (unmapped, variant, ghost, info) = cx.update(|_window, cx| {
+        let unmapped = native_theme_gpui::next::variants::toolbar_button(&r, cx)
+            .err()
+            .map(|unstated| unstated.home());
+        let mut info = crate::info::WidgetInfo::new("Tool button");
+        let variant = crate::support::toolbar_variant(cx, &mut info);
+        let ghost = native_theme_gpui::variants::ghost_button(cx);
+        (unmapped, variant, ghost, info.to_text())
+    });
+    assert_eq!(
+        unmapped,
+        Some("toolbar.button(HOVER).fill"),
+        "the patched theme is one next::variants::toolbar_button takes, so the test proves nothing"
+    );
+    assert_eq!(
+        format!("{variant:?}"),
+        format!("{ghost:?}"),
+        "the tool button did not fall back on variants::ghost_button"
+    );
+    assert!(
+        info.contains(
+            "native_theme_gpui::variants::ghost_button: the theme states no value gpui can take \
+             at toolbar.button(HOVER).fill, which next::variants::toolbar_button needs"
+        ),
+        "the tool button's info does not say its variant fell back: {info}"
+    );
+}
+
 /// A page change keeps an info whose target is still drawn, as chrome is
 /// (spec §4.3.4 as ruled: only what left the screen is cleared).
 #[gpui::test]
