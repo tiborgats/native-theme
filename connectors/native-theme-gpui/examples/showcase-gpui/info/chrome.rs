@@ -1629,19 +1629,34 @@ pub fn resize_handle(
         )
 }
 
+/// How a Dialog enters, as `geometry::dialog_entrance` gives the installed
+/// 0.8.0 theme's `dialog.entrance` (`demo::next_entrance_of`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ThemedEntrance {
+    /// The theme states an entrance without motion, which the Dialog takes
+    /// as `DialogEntrance::None`.
+    NoneStated,
+    /// No 0.8.0 theme is installed, it states no `dialog.entrance`, or one
+    /// gpui cannot take: the Dialog keeps upstream's default entrance.
+    Unstated,
+    /// The theme states an entrance with motion, which the Dialog takes as
+    /// `DialogEntrance::Fade`.
+    Stated,
+}
+
 /// The Dialog's own colours, which every Dialog the showcase opens paints:
 /// the surface, its edge, and the backdrop behind it; and what upstream
 /// builds around the parts it is given. `close_button` is whether the Dialog
 /// draws its close button, `reported` the parts that report it,
 /// `reduce_motion` gpui's reduced motion while it is drawn, `entrance`
-/// whether it enters as `geometry::dialog_entrance` gives the theme's
+/// how it enters as `geometry::dialog_entrance` gives the theme's
 /// `dialog.entrance`, and `styled` whether `geometry::dialog` refined it,
 /// whose geometry line then names the surface's fill and edge.
 pub(super) fn dialog_surface(
     info: WidgetInfo,
     t: &Theme,
     reduce_motion: bool,
-    entrance: bool,
+    entrance: ThemedEntrance,
     styled: bool,
     close_button: bool,
     reported: &str,
@@ -1655,7 +1670,7 @@ pub(super) fn dialog_surface(
         info
     };
     // geometry::dialog paints the surface and its edge with
-    // dialog.background_color and dialog.border.color, which no ThemeColor
+    // dialog.panel.fill and dialog.panel.stroke.color, which no ThemeColor
     // field holds, over upstream's.
     let info = if styled {
         info
@@ -1674,7 +1689,7 @@ pub(super) fn dialog_surface(
         ))
         .not_themeable(
             "fill",
-            "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog); geometry::dialog gives it dialog.background_color where a native theme is installed",
+            "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog); geometry::dialog gives it dialog.panel.fill where a native theme is installed",
         )
     };
     info.color(claim(
@@ -1685,7 +1700,7 @@ pub(super) fn dialog_surface(
     ))
     .not_themeable(
         "width",
-        "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog holds it at least dialog.min_width and geometry::dialog_max_width caps it",
+        "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog holds it at least dialog.panel.min_size[0] and geometry::dialog_max_width caps it at dialog.panel.max_size[0]",
     )
     .not_themeable(
         "placement",
@@ -1694,10 +1709,11 @@ pub(super) fn dialog_surface(
     .not_themeable(
         "animation",
         match (entrance, reduce_motion) {
-            (false, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would slide and fade in as it opens, and out as it closes, over 0.25s on a literal curve, the same both ways, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-            (false, false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens, in as the Dialog opens and out as it closes, on the same curve and duration both ways: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-            (true, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would fade in place as it opens, and out as it closes, over the motion tokens' duration_normal on their easing_enter, the same both ways, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp) -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-            (true, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp), not a literal, in as the Dialog opens and out as it closes, on the same curve and duration both ways: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::NoneStated, _) => "none: the theme states an entrance without motion (dialog.entrance), which geometry::dialog_entrance gives as DialogEntrance::None, so the Dialog appears at rest at once and leaves at once, reduced motion on or off (dialog/entrance.rs, DialogEntrance::None; dialog/dialog.rs, Dialog::exit_duration)",
+            (ThemedEntrance::Unstated, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would slide and fade in as it opens, and out as it closes, over 0.25s on a literal curve, the same both ways, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::Unstated, false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens, in as the Dialog opens and out as it closes, on the same curve and duration both ways: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::Stated, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would fade in place as it opens, and out as it closes, over the motion tokens' duration_normal on their easing_enter, the same both ways, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp) -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::Stated, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp), not a literal, in as the Dialog opens and out as it closes, on the same curve and duration both ways: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
         },
     )
     .instance(
@@ -1719,7 +1735,12 @@ pub(super) fn dialog_surface(
 /// `demo::command_palette` applies the builders; its info target is the
 /// title, because the Command fills the rest of its content. `entrance` as
 /// `dialog_surface`'s.
-pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bool) -> WidgetInfo {
+pub fn palette_dialog(
+    t: &Theme,
+    reduce_motion: bool,
+    entrance: ThemedEntrance,
+    styled: bool,
+) -> WidgetInfo {
     dialog_surface(
         WidgetInfo::new("Dialog").variant("Command Palette"),
         t,
@@ -2092,7 +2113,7 @@ pub fn about_dialog(
     t: &Theme,
     gapped: bool,
     reduce_motion: bool,
-    entrance: bool,
+    entrance: ThemedEntrance,
     styled: bool,
 ) -> WidgetInfo {
     dialog_surface(

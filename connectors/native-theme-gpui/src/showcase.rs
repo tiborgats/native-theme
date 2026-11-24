@@ -994,7 +994,8 @@ fn the_tooltip_notes_name_the_edge_and_the_shadow() {
 
 /// Spec §5.2: every `next_native_info(w, cx, next::geometry::X, "Y", info)`
 /// and `next_native_value(cx, next::geometry::X, "Y", info)` records the
-/// builder it applies, `X == Y`.
+/// builder it applies, `X == Y`, and every `next_built(cx, next::geometry::X,
+/// "Y")`, whose value records it later, too.
 #[test]
 fn native_info_names_the_builder_it_applies() {
     let mut findings = Vec::new();
@@ -1002,19 +1003,24 @@ fn native_info_names_the_builder_it_applies() {
     for (file, raw) in SHOWCASE_FILES {
         let starts = line_offsets(raw);
         // Each call and the index of its builder argument.
-        let opens = [("next_native_info", 2), ("next_native_value", 1)]
-            .into_iter()
-            .flat_map(|(name, at)| {
-                code_calls(raw, name)
-                    .into_iter()
-                    .map(move |open| (open, at))
-            });
+        let opens = [
+            ("next_native_info", 2),
+            ("next_native_value", 1),
+            ("next_built", 1),
+        ]
+        .into_iter()
+        .flat_map(|(name, at)| {
+            code_calls(raw, name)
+                .into_iter()
+                .map(move |open| (open, at))
+        });
         for (open, at) in opens {
             calls += usize::from(*file != TEST_MODULE);
             let args = call_args(raw, open).unwrap_or_default();
             let applied = args.get(at).map(|a| a.trim());
             let recorded = args.get(at + 1).map(|a| a.trim());
-            // `next_native_info` hands its own builder and name on.
+            // `next_native_info` and `next_native_value` hand their own
+            // builder and name on.
             if *file == NEXT_GEOMETRY_NOTES_FILE
                 && applied == Some("build")
                 && recorded == Some("name")
@@ -1049,9 +1055,10 @@ fn native_info_names_the_builder_it_applies() {
 
 /// Every call in `raw` that records a builder on the 0.8.0 model, which takes
 /// its line from `NEXT_GEOMETRY_NOTES`: a `.next_geometry(` method call, and
-/// a `next_native_info` or `next_native_value` call, as the line it is on,
-/// what it is, and the name it records when that is a single string literal.
-/// `next_native_info` hands its own `name` on, which yields `None`.
+/// a `next_native_info`, `next_native_value` or `next_built` call, as the
+/// line it is on, what it is, and the name it records when that is a single
+/// string literal. `next_native_info` and `next_native_value` hand their own
+/// `name` on, which yields `None`.
 fn next_geometry_line_calls(raw: &str) -> Vec<(usize, &'static str, Option<&str>)> {
     let starts = &line_offsets(raw);
     let method = method_calls(raw, "next_geometry").into_iter().map(|open| {
@@ -1061,16 +1068,20 @@ fn next_geometry_line_calls(raw: &str) -> Vec<(usize, &'static str, Option<&str>
             .and_then(unquote);
         (line_at(starts, open), ".next_geometry", literal)
     });
-    let applied = [("next_native_info", 3), ("next_native_value", 2)]
-        .into_iter()
-        .flat_map(|(name, at)| {
-            code_calls(raw, name).into_iter().map(move |open| {
-                let literal = call_args(raw, open)
-                    .and_then(|args| args.get(at).copied())
-                    .and_then(|arg| unquote(arg.trim()));
-                (line_at(starts, open), name, literal)
-            })
-        });
+    let applied = [
+        ("next_native_info", 3),
+        ("next_native_value", 2),
+        ("next_built", 2),
+    ]
+    .into_iter()
+    .flat_map(|(name, at)| {
+        code_calls(raw, name).into_iter().map(move |open| {
+            let literal = call_args(raw, open)
+                .and_then(|args| args.get(at).copied())
+                .and_then(|arg| unquote(arg.trim()));
+            (line_at(starts, open), name, literal)
+        })
+    });
     method.chain(applied).collect()
 }
 
@@ -1227,7 +1238,8 @@ fn the_geometry_note_parsers_do_their_jobs() {
                 let a = info.next_geometry(\"button_disabled\");\n\
                 let b = next_native_info(w, cx, next::geometry::button, \"button\", &mut info);\n\
                 let c = next_native_value(cx, next::geometry::icon_size_small, \"icon_size_small\", &mut info);\n\
-                let d = info.geometry(\"button\");\n";
+                let d = info.geometry(\"button\");\n\
+                let e = info::next_built(cx, next::geometry::dialog, \"dialog\");\n";
     assert_eq!(
         next_geometry_line_calls(next),
         vec![
@@ -1235,6 +1247,7 @@ fn the_geometry_note_parsers_do_their_jobs() {
             (5, ".next_geometry", Some("button_disabled")),
             (6, "next_native_info", Some("button")),
             (7, "next_native_value", Some("icon_size_small")),
+            (9, "next_built", Some("dialog")),
         ]
     );
     let table = "pub const OTHER_NOTES: &[(&str, &str)] = &[\n\

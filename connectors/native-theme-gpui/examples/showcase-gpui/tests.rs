@@ -9205,6 +9205,48 @@ fn the_dialog_entrance_and_the_tooltip_delay_follow_the_theme(cx: &mut TestAppCo
     }
 }
 
+/// A theme stating `dialog.entrance` as an entrance without motion, which
+/// `geometry::dialog_entrance` gives as `DialogEntrance::None` and no
+/// bundled preset states, is told apart from one with motion and from none
+/// (`demo::next_entrance_of`), and the Dialog's animation note then says it
+/// appears at once with reduced motion off as well, not that it fades.
+#[test]
+fn a_dialog_entrance_stated_without_motion_says_the_dialog_appears_at_once() {
+    use crate::info::chrome::{ThemedEntrance, about_dialog};
+    use gpui_component::dialog::DialogEntrance;
+    assert_eq!(
+        crate::demo::next_entrance_of(&Some(Ok(Some(DialogEntrance::None)))),
+        ThemedEntrance::NoneStated
+    );
+    assert_eq!(
+        crate::demo::next_entrance_of(&Some(Ok(Some(DialogEntrance::Fade)))),
+        ThemedEntrance::Stated
+    );
+    assert_eq!(
+        crate::demo::next_entrance_of(&Some(Ok(None))),
+        ThemedEntrance::Unstated
+    );
+    assert_eq!(
+        crate::demo::next_entrance_of(&None),
+        ThemedEntrance::Unstated
+    );
+    let t = Theme::default();
+    for reduce_motion in [false, true] {
+        let info = about_dialog(&t, false, reduce_motion, ThemedEntrance::NoneStated, true);
+        let animation = info
+            .not_themeable
+            .iter()
+            .find(|n| n.what == "animation")
+            .map(|n| n.text.clone());
+        assert!(
+            animation.as_deref().is_some_and(|t| t.starts_with("none")
+                && t.contains("DialogEntrance::None")
+                && !t.contains("DialogEntrance::Fade")),
+            "reduced motion {reduce_motion}: the animation note of an entrance stated without motion: {animation:?}"
+        );
+    }
+}
+
 /// Each dialog the showcase builds reads the theme's entrance once
 /// (`demo::themed_entrance`), and its info and its drawing take that one
 /// value: the command palette, the About dialog, the Overlays page's Dialog
@@ -10574,7 +10616,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("Preferences Sheet", chrome::preferences_sheet(&t, false)),
         (
             "About Dialog",
-            chrome::about_dialog(&t, false, false, false, false),
+            chrome::about_dialog(&t, false, false, chrome::ThemedEntrance::Unstated, false),
         ),
         ("Settings", layout::settings(&t)),
         ("Pagination", data::pagination(&t, false, 1, 12, false)),
@@ -10600,7 +10642,14 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ),
         (
             "Dialog",
-            overlays::dialog(&t, false, false, false, false, &icon),
+            overlays::dialog(
+                &t,
+                false,
+                chrome::ThemedEntrance::Unstated,
+                false,
+                false,
+                &icon,
+            ),
         ),
         ("Sheet", overlays::sheet(&t, SheetSide::Right, false)),
         ("Editor", typography::editor(&t)),

@@ -6,7 +6,7 @@ use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_
 
 use super::{
     WidgetInfo, buttons,
-    chrome::{dialog_surface, popup_menu, sheet_surface},
+    chrome::{ThemedEntrance, dialog_surface, popup_menu, sheet_surface},
     claim, edge_claim, px_text, state_stroke_color_of, stated_claim, stroke_color_of,
     stroke_width_of,
 };
@@ -74,7 +74,7 @@ fn dialog_corners(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
 pub fn dialog(
     t: &Theme,
     reduce_motion: bool,
-    entrance: bool,
+    entrance: ThemedEntrance,
     styled: bool,
     described: bool,
     icon: &SampleIcon,
@@ -150,7 +150,7 @@ pub fn dialog_close(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
 pub fn alert_dialog(
     t: &Theme,
     reduce_motion: bool,
-    entrance: bool,
+    entrance: ThemedEntrance,
     styled: bool,
     icon: &SampleIcon,
 ) -> WidgetInfo {

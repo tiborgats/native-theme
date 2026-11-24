@@ -482,16 +482,60 @@ pub fn next_native_value<T>(
     name: &'static str,
     info: &mut WidgetInfo,
 ) -> Option<T> {
-    match next_value(cx, build) {
-        Some(Ok(value)) => {
-            *info = std::mem::take(info).next_geometry(name);
-            Some(value)
+    next_built(cx, build, name).record(info)
+}
+
+/// The value `build`, a builder of `native_theme_gpui::next::geometry`
+/// named `name`, gives for the installed 0.8.0 theme, evaluated once for a
+/// widget that reads it before its info is made and records it there after
+/// ([`NextBuilt::record`]).
+pub fn next_built<T>(
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> Mapped<T>,
+    name: &'static str,
+) -> NextBuilt<T> {
+    NextBuilt {
+        built: next_value(cx, build),
+        name,
+    }
+}
+
+/// A builder's value as [`next_built`] evaluated it: `None` before `apply`
+/// ran.
+pub struct NextBuilt<T> {
+    built: Option<Mapped<T>>,
+    name: &'static str,
+}
+
+impl<T> NextBuilt<T> {
+    /// The value, `None` where the theme leaves a value the builder needs
+    /// without a value gpui can take, and before `apply` ran.
+    pub fn value(&self) -> Option<&T> {
+        self.built.as_ref().and_then(|built| built.as_ref().ok())
+    }
+
+    /// Whether the builder applies: a theme is installed and states every
+    /// value it reads.
+    pub fn applies(&self) -> bool {
+        self.value().is_some()
+    }
+
+    /// What [`next_native_value`] applies: the value, and `info` given the
+    /// builder's geometry line; where the theme leaves a value the builder
+    /// needs without a value gpui can take, `None`, and `info` says at which
+    /// home (spec §10, rule 0); `None` before `apply` ran, naming no builder.
+    pub fn record(self, info: &mut WidgetInfo) -> Option<T> {
+        match self.built {
+            Some(Ok(value)) => {
+                *info = std::mem::take(info).next_geometry(self.name);
+                Some(value)
+            }
+            Some(Err(unstated)) => {
+                *info = std::mem::take(info).next_unmapped(self.name, unstated);
+                None
+            }
+            None => None,
         }
-        Some(Err(unstated)) => {
-            *info = std::mem::take(info).next_unmapped(name, unstated);
-            None
-        }
-        None => None,
     }
 }
 

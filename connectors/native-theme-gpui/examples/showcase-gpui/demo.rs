@@ -281,6 +281,16 @@ impl SampleIcon {
         self.glyph().map(|glyph| next_sized_glyph(cx, glyph, role))
     }
 
+    /// The glyph at `size`, a size builder's value as
+    /// [`info::next_built`] evaluated it; its own size where that is `None`
+    /// (spec §10, rule 0), and `None` where the chosen icon theme has none.
+    fn glyph_at(&self, size: Option<&Size>) -> Option<Glyph> {
+        self.glyph().map(|glyph| match size {
+            Some(size) => glyph.with_size(*size),
+            None => glyph,
+        })
+    }
+
     /// This sample for a widget that takes an `Icon` alone
     /// (`ChromeIcon::svg_only`), whose info then says what it shows.
     fn svg_only(&self) -> Self {
@@ -3096,10 +3106,17 @@ fn next_themed_entrance(cx: &App) -> Option<next::Mapped<Option<DialogEntrance>>
     next_value(cx, next::geometry::dialog_entrance)
 }
 
-/// Whether `entrance`, as [`next_themed_entrance`] reads it, is one the
-/// dialog enters as.
-fn next_entrance_applies(entrance: &Option<next::Mapped<Option<DialogEntrance>>>) -> bool {
-    matches!(entrance, Some(Ok(Some(_))))
+/// How the dialog enters where `entrance` is what [`next_themed_entrance`]
+/// reads: without motion where the theme states `DialogEntrance::None`,
+/// upstream's default where it states none gpui can take.
+pub(crate) fn next_entrance_of(
+    entrance: &Option<next::Mapped<Option<DialogEntrance>>>,
+) -> info::ThemedEntrance {
+    match entrance {
+        Some(Ok(Some(DialogEntrance::None))) => info::ThemedEntrance::NoneStated,
+        Some(Ok(Some(_))) => info::ThemedEntrance::Stated,
+        Some(Ok(None) | Err(_)) | None => info::ThemedEntrance::Unstated,
+    }
 }
 
 /// Whether the `next::geometry` builder `build` applies to the installed
@@ -3120,7 +3137,8 @@ thread_local! {
         const { std::cell::Cell::new(0) };
 }
 
-/// `dialog` refined by `next::geometry::dialog`, capped at
+/// `dialog` refined by `frame`, `next::geometry::dialog` as
+/// [`info::next_built`] evaluated it, capped at
 /// `next::geometry::dialog_max_width`
 /// where the theme states a maximum width, and entering as `entrance`, the
 /// theme's ([`next_themed_entrance`]), each recorded in `info` where it
@@ -3128,11 +3146,12 @@ thread_local! {
 /// named (spec §10, rule 0).
 fn next_dialog_frame(
     dialog: Dialog,
+    frame: info::NextBuilt<StyleRefinement>,
     entrance: Option<next::Mapped<Option<DialogEntrance>>>,
     cx: &App,
     info: &mut WidgetInfo,
 ) -> Dialog {
-    let dialog = next_native_info(dialog, cx, next::geometry::dialog, "dialog", info);
+    let dialog = refined(dialog, frame.record(info).as_ref());
     let dialog = match entrance {
         Some(Ok(Some(entrance))) => {
             *info = std::mem::take(info).next_geometry("dialog_entrance");
@@ -3228,13 +3247,14 @@ pub(crate) fn command_palette(
 ) -> Dialog {
     let groups = palette_groups(groups);
     let entrance = next_themed_entrance(cx);
+    let frame = info::next_built(cx, next::geometry::dialog, "dialog");
     let mut dialog_info = info::palette_dialog(
         cx.theme(),
         cx.reduce_motion(),
-        next_entrance_applies(&entrance),
-        next_applies(cx, next::geometry::dialog),
+        next_entrance_of(&entrance),
+        frame.applies(),
     );
-    let dialog = next_dialog_frame(dialog, entrance, cx, &mut dialog_info);
+    let dialog = next_dialog_frame(dialog, frame, entrance, cx, &mut dialog_info);
     let title = next_dialog_title(cx, "Command Palette", &mut dialog_info)
         .info(ui, "overlay-palette-dialog", dialog_info)
         .debug_selector(|| OVERLAY_PALETTE_TITLE.into());
@@ -3271,14 +3291,15 @@ pub(crate) fn about(
 ) -> Dialog {
     let gapped = next_metric(cx, next::geometry::widget_gap).is_some();
     let entrance = next_themed_entrance(cx);
+    let frame = info::next_built(cx, next::geometry::dialog, "dialog");
     let mut dialog_info = info::about_dialog(
         cx.theme(),
         gapped,
         cx.reduce_motion(),
-        next_entrance_applies(&entrance),
-        next_applies(cx, next::geometry::dialog),
+        next_entrance_of(&entrance),
+        frame.applies(),
     );
-    let dialog = next_dialog_frame(dialog, entrance, cx, &mut dialog_info);
+    let dialog = next_dialog_frame(dialog, frame, entrance, cx, &mut dialog_info);
     let title = next_dialog_title(cx, "About", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
     // refinement records is recorded once, here, and applied there.
@@ -6827,20 +6848,14 @@ pub(crate) fn attachment(
         description,
     } = spec;
     let mut card_info = info::data::attachment(cx.theme(), status, file, on_click.is_some(), &icon);
+    let small = info::next_built(cx, next::geometry::icon_size_small, "icon_size_small");
+    let drawn = icon.glyph_at(small.value());
     if icon.shown() {
-        let _ = info::next_native_value(
-            cx,
-            next::geometry::icon_size_small,
-            "icon_size_small",
-            &mut card_info,
-        );
+        let _ = small.record(&mut card_info);
     }
     let card = Attachment::new()
         .status(status)
-        .media(
-            AttachmentMedia::new()
-                .children(icon.next_glyph_sized(cx, next::geometry::icon_size_small)),
-        )
+        .media(AttachmentMedia::new().children(drawn))
         .content(
             AttachmentContent::new()
                 .title(AttachmentTitle::new(file).status(status))
@@ -7207,15 +7222,12 @@ pub(crate) fn empty(
 ) -> Stateful<Div> {
     // The size `icon.sized` draws the icon at where a native theme is
     // installed.
-    let large = next_value(cx, next::geometry::icon_size_large).and_then(Result::ok);
-    let mut empty_info = info::feedback::empty(cx.theme(), title, description, icon, large);
+    let large = info::next_built(cx, next::geometry::icon_size_large, "icon_size_large");
+    let drawn = icon.glyph_at(large.value());
+    let mut empty_info =
+        info::feedback::empty(cx.theme(), title, description, icon, large.value().copied());
     if icon.shown() {
-        let _ = info::next_native_value(
-            cx,
-            next::geometry::icon_size_large,
-            "icon_size_large",
-            &mut empty_info,
-        );
+        let _ = large.record(&mut empty_info);
     }
     Empty::new()
         .header(
@@ -7225,7 +7237,7 @@ pub(crate) fn empty(
                         .with_variant(EmptyMediaVariant::Icon)
                         // An empty state's icon is the large one; `EmptyMedia`
                         // takes it as a plain child, so the size survives.
-                        .children(icon.next_glyph_sized(cx, next::geometry::icon_size_large)),
+                        .children(drawn),
                 )
                 .title(EmptyTitle::new().child(title))
                 .description(EmptyDescription::new().child(description)),
@@ -7382,18 +7394,16 @@ pub(crate) fn marker(
         info::feedback::marker(cx.theme(), kind, text, cx.reduce_motion(), plain_icon);
     let marker = Marker::new();
     let marker = match kind {
-        MarkerKind::Plain => match icon.next_glyph_sized(cx, next::geometry::icon_size_small) {
-            Some(drawn) => {
-                let _ = info::next_native_value(
-                    cx,
-                    next::geometry::icon_size_small,
-                    "icon_size_small",
-                    &mut marker_info,
-                );
-                marker.icon(MarkerIcon::new().child(drawn))
+        MarkerKind::Plain => {
+            let small = info::next_built(cx, next::geometry::icon_size_small, "icon_size_small");
+            match icon.glyph_at(small.value()) {
+                Some(drawn) => {
+                    let _ = small.record(&mut marker_info);
+                    marker.icon(MarkerIcon::new().child(drawn))
+                }
+                None => marker,
             }
-            None => marker,
-        },
+        }
         MarkerKind::Separator => marker.with_variant(MarkerVariant::Separator),
         MarkerKind::Border => marker.with_variant(MarkerVariant::Border),
         MarkerKind::Spinner => marker.id(id).loading(true),
@@ -7936,7 +7946,7 @@ pub(crate) fn link(
         next::geometry::link(r).ok().map(|_| {
             (
                 label.decoration.kind == native_theme::next::DecorationKind::Underline,
-                px(label.size_px * r.typography.line_height_multiplier),
+                px(line_box(&r.typography, &label)),
             )
         })
     })
@@ -9446,35 +9456,30 @@ pub(crate) fn confirm_dialog(
     icon: &SampleIcon,
 ) -> Dialog {
     let gap = next_metric(cx, next::geometry::widget_gap);
-    let styled = next_applies(cx, next::geometry::dialog);
-    let described = next_applies(cx, next::geometry::dialog_description);
+    let frame = info::next_built(cx, next::geometry::dialog, "dialog");
+    let description =
+        info::next_built(cx, next::geometry::dialog_description, "dialog_description");
     let entrance = next_themed_entrance(cx);
     let mut dialog_info = info::overlays::dialog(
         cx.theme(),
         cx.reduce_motion(),
-        next_entrance_applies(&entrance),
-        styled,
-        described,
+        next_entrance_of(&entrance),
+        frame.applies(),
+        description.applies(),
         icon,
     );
-    let dialog = next_dialog_frame(dialog, entrance, cx, &mut dialog_info);
+    let dialog = next_dialog_frame(dialog, frame, entrance, cx, &mut dialog_info);
     let title = next_dialog_title(cx, "Confirm Action", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
     // refinement records is recorded once, here, and applied there.
-    let description_style = next_native_info(
+    let description_style = refined(
         StyleRefinement::default(),
-        cx,
-        next::geometry::dialog_description,
-        "dialog_description",
-        &mut dialog_info,
+        description.record(&mut dialog_info).as_ref(),
     );
+    let size = info::next_built(cx, next::geometry::icon_size_dialog, "icon_size_dialog");
+    let drawn = icon.glyph_at(size.value());
     if icon.shown() {
-        let _ = info::next_native_value(
-            cx,
-            next::geometry::icon_size_dialog,
-            "icon_size_dialog",
-            &mut dialog_info,
-        );
+        let _ = size.record(&mut dialog_info);
     }
     if icon.shown() && gap.is_some() {
         dialog_info = dialog_info.next_geometry("widget_gap");
@@ -9522,15 +9527,14 @@ pub(crate) fn confirm_dialog(
         .info(ui, OVERLAYS_DIALOG_FOOTER, dialog_info.clone())
         .debug_selector(|| OVERLAYS_DIALOG_FOOTER.into());
     let ui = ui.clone();
-    let icon = icon.clone();
     dialog
         .title(title)
         .footer(footer)
-        .content(move |content, _window, cx| {
+        .content(move |content, _window, _cx| {
             content.child(
                 with_gap(h_flex(), gap)
                     .items_start()
-                    .children(icon.next_glyph_sized(cx, next::geometry::icon_size_dialog))
+                    .children(drawn.clone())
                     .child(
                         DialogDescription::new()
                             .refine_style(&description_style)
@@ -9554,16 +9558,16 @@ pub(crate) fn alert_dialog(
     alert: AlertDialog,
     icon: &SampleIcon,
 ) -> AlertDialog {
-    let styled = next_applies(cx, next::geometry::dialog);
+    let frame = info::next_built(cx, next::geometry::dialog, "dialog");
     let entrance = next_themed_entrance(cx);
     let mut alert_info = info::overlays::alert_dialog(
         cx.theme(),
         cx.reduce_motion(),
-        next_entrance_applies(&entrance),
-        styled,
+        next_entrance_of(&entrance),
+        frame.applies(),
         icon,
     );
-    let alert = next_native_info(alert, cx, next::geometry::dialog, "dialog", &mut alert_info);
+    let alert = refined(alert, frame.record(&mut alert_info).as_ref());
     let alert = match entrance {
         Some(Ok(Some(entrance))) => {
             alert_info = alert_info.next_geometry("dialog_entrance");
@@ -9584,14 +9588,10 @@ pub(crate) fn alert_dialog(
         }
         _ => alert,
     };
-    let drawn = icon.next_glyph_sized(cx, next::geometry::icon_size_dialog);
+    let size = info::next_built(cx, next::geometry::icon_size_dialog, "icon_size_dialog");
+    let drawn = icon.glyph_at(size.value());
     if drawn.is_some() {
-        let _ = info::next_native_value(
-            cx,
-            next::geometry::icon_size_dialog,
-            "icon_size_dialog",
-            &mut alert_info,
-        );
+        let _ = size.record(&mut alert_info);
     }
     let alert = match drawn {
         Some(drawn) => alert.icon(
