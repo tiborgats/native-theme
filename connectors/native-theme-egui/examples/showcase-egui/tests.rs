@@ -3712,17 +3712,16 @@ fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() -> Resul
                 ),
             )
         })?;
-    let old = harness
+    let plain = open_page_under(Page::Overlays, egui::Theme::Light, UNSTATED_PRESET);
+    let unpatched = plain
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .dialog
-        .border
-        .padding;
+        .next_resolved(egui::Theme::Light)
+        .map(|r| padding_of(&r.dialog.panel))
+        .ok_or("no 0.8.0 theme installed")?;
     assert_eq!(
-        (old.top, old.right, old.bottom, old.left),
-        (None, None, None, None),
-        "the 0.7.2 {UNSTATED_PRESET} states a dialog padding, so the patch proves nothing"
+        unpatched, [None; 4],
+        "the unpatched {UNSTATED_PRESET} states a dialog padding, so the patch proves nothing"
     );
     assert_eq!(
         padding_of(&r.dialog.panel),
@@ -3946,17 +3945,16 @@ fn the_icons_placeholder_takes_the_08_button_fill() -> Result<(), String> {
     harness.run_steps(SETTLE);
     let fill = native_theme_egui::next::fill_of(&r.button.body(WidgetState::NONE))
         .ok_or("the patch states no button.body(NONE).fill")?;
-    let old = native_theme_egui::convert::to_color32(
-        harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .button
-            .background_color,
-    );
+    let unpatched = open_page_under(Page::Icons, egui::Theme::Light, TEST_PRESET)
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .map(|r| native_theme_egui::next::fill_of(&r.button.body(WidgetState::NONE)))
+        .ok_or("no 0.8.0 theme installed")?;
     assert_ne!(
-        fill, old,
-        "the patched fill is the 0.7.2 button.background_color"
+        Some(fill),
+        unpatched,
+        "the patched fill is the unpatched button.body(NONE).fill, so the patch proves nothing"
     );
     let absent: Vec<egui::Rect> = harness
         .state()
@@ -4543,16 +4541,16 @@ fn the_modal_takes_the_08_button_order_or_says_it_is_unstated() -> Result<(), St
         assert!(!said.contains("states no"), "a stated order said unstated");
     }
 
-    let old = open_page_under(Page::Overlays, egui::Theme::Light, "kde-breeze")
+    let unpatched = open_page_under(Page::Overlays, egui::Theme::Light, "kde-breeze")
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .dialog
-        .button_order;
+        .next_resolved(egui::Theme::Light)
+        .map(|r| r.dialog.button_order)
+        .ok_or("no 0.8.0 theme installed")?;
     assert_eq!(
-        old,
-        native_theme_egui::DialogButtonOrder::PrimaryLeft,
-        "the 0.7.2 kde-breeze is not primary left, so the patch proves nothing"
+        unpatched,
+        Some(DialogButtonOrder::PrimaryLeft),
+        "the unpatched kde-breeze is not primary left, so the patch proves nothing"
     );
     let (mut harness, r) = open_patched(Page::Overlays, egui::Theme::Light, "kde-breeze", |_| {
         Some(
@@ -4604,12 +4602,8 @@ fn the_menu_icons_take_the_08_menu_icon_size() -> Result<(), String> {
 
     let mut plain = open_page_under(Page::Overlays, egui::Theme::Light, "kde-breeze");
     material(&mut plain);
-    let old = plain
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .menu
-        .icon_size;
+    let old = menu_icon_size(plain.state().atlas.next_resolved(egui::Theme::Light))
+        .ok_or("the unpatched kde-breeze states no menu.icon(NONE).size")?;
     let (mut harness, r) = open_patched(Page::Overlays, egui::Theme::Light, "kde-breeze", |r| {
         let size = menu_icon_size(Some(r))?;
         Some(ThemePatch::new().menu(MenuRule::new().icon(IconPatch::new().size(2.0 * size))))
@@ -4619,7 +4613,7 @@ fn the_menu_icons_take_the_08_menu_icon_size() -> Result<(), String> {
     assert_eq!(size, r.menu.icon(WidgetState::NONE).size);
     assert!(
         (size - old).abs() > 0.5,
-        "the patched {size} is the 0.7.2 menu.icon_size {old}"
+        "the patched {size} is the unpatched menu.icon(NONE).size {old}"
     );
     // the button holds its icon and padding alone, so it grows by what the icon grows
     let (unpatched, patched) = (width(&plain)?, width(&harness)?);
@@ -4636,8 +4630,8 @@ fn the_menu_icons_take_the_08_menu_icon_size() -> Result<(), String> {
 /// 0.7.2 theme's beside it: under kde-breeze with `button.body(NONE).min_size[0]` patched to
 /// half as wide again as the preset's own, which the first row of the Buttons page still holds
 /// (a `Button` is no wider than the room its row has left), and `input.field(NONE).min_size[1]`
-/// to twice the preset's own ([`open_patched`]), so neither is the 0.7.2 `button.min_width` or
-/// `input.min_height` any more, every button the
+/// to twice the preset's own ([`open_patched`]), so neither is the unpatched theme's any more,
+/// every button the
 /// Buttons page builds with `Button::new` is at least the patched width and every field of the
 /// Inputs page at least the patched height, where unpatched the plain button is narrower and
 /// the single-line field lower than that.
@@ -4659,9 +4653,9 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
     let old_width = plain
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .button
-        .min_width;
+        .next_resolved(egui::Theme::Light)
+        .and_then(|r| r.button.body(WidgetState::NONE).min_size[0])
+        .ok_or("the unpatched kde-breeze states no button.body(NONE).min_size[0]")?;
     let wider =
         |r: &native_theme::next::ResolvedTheme| {
             let [width, _] = r.button.body(WidgetState::NONE).min_size;
@@ -4675,7 +4669,8 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
     let width = width.ok_or("the patch states no button.body(NONE).min_size[0]")?;
     assert!(
         width > old_width,
-        "the patched {width} is not wider than the 0.7.2 button.min_width {old_width}"
+        "the patched {width} is not wider than the unpatched button.body(NONE).min_size[0] \
+         {old_width}"
     );
     let unpatched = rect_of(&plain, "button (enabled)")?.width();
     assert!(
@@ -4715,9 +4710,9 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
     let old_height = plain
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .input
-        .min_height;
+        .next_resolved(egui::Theme::Light)
+        .and_then(|r| r.input.field(WidgetState::NONE).min_size[1])
+        .ok_or("the unpatched kde-breeze states no input.field(NONE).min_size[1]")?;
     let taller =
         |r: &native_theme::next::ResolvedTheme| {
             let [_, height] = r.input.field(WidgetState::NONE).min_size;
@@ -4731,7 +4726,8 @@ fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
     let height = height.ok_or("the patch states no input.field(NONE).min_size[1]")?;
     assert!(
         height > old_height,
-        "the patched {height} is not taller than the 0.7.2 input.min_height {old_height}"
+        "the patched {height} is not taller than the unpatched input.field(NONE).min_size[1] \
+         {old_height}"
     );
     let unpatched = rect_of(&plain, "TextEdit (single line)")?.height();
     assert!(
@@ -6576,16 +6572,10 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() -> Res
                 .menu_bar(MenuBarRule::new().bar(PartPatch::new().fill(Paint::Solid(magenta)))),
         )
     })?;
-    let old = harness
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .toolbar
-        .background_color;
     assert_ne!(
-        native_theme_egui::convert::to_color32(old),
+        fill,
         egui::Color32::from_rgb(255, 0, 255),
-        "the 0.7.2 toolbar.background_color is the patched fill, so the patch proves nothing"
+        "the unpatched menu_bar.bar(NONE).fill is the patched fill, so the patch proves nothing"
     );
     check(&mut harness, egui::Color32::from_rgb(255, 0, 255))
 }
@@ -6714,25 +6704,24 @@ fn the_open_menu_insets_its_first_item_by_the_panel_padding() -> Result<(), Stri
                 )))),
         )
     })?;
-    let old = harness
+    let plain = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    let old = plain
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?;
     let patched = stroke_color_of(&r.popover.panel);
     assert_ne!(
         patched,
-        Some(native_theme_egui::convert::to_color32(
-            old.popover.border.color
-        )),
-        "the patched popover stroke is the 0.7.2 popover.border.color, so the patch proves nothing"
+        stroke_color_of(&old.popover.panel),
+        "the patched popover stroke is the unpatched popover.panel's, so the patch proves nothing"
     );
     let menu = padding_of(&r.menu.panel(WidgetState::NONE));
     assert_eq!(menu, [Some(6.0); 4], "the patched menu.panel(NONE).padding");
     assert_ne!(
-        old.menu.panel_padding_vertical,
-        Some(6.0),
-        "the 0.7.2 menu.panel_padding_vertical is the patched one"
+        padding_of(&old.menu.panel(WidgetState::NONE)),
+        menu,
+        "the unpatched menu.panel(NONE).padding is the patched one"
     );
     let (inset, want) = inset(&mut harness, &r, "patched kde-breeze")?;
     assert!(
@@ -7337,7 +7326,7 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() -> Result<(), Stri
 
 /// The Containers page's `CollapsingHeader` draws its arrow with `next::expander_icon` of the
 /// installed 0.8.0 theme: under kde-breeze with `expander.arrow(NONE).color` patched to
-/// `colors.window.border`, a colour of the same theme the 0.7.2 `expander.arrow_color` beside it
+/// `colors.window.border`, a colour of the same theme the unpatched `expander.arrow(NONE).color`
 /// is not, a shape in the header is filled with it.
 #[test]
 fn the_containers_expander_takes_the_08_arrow_colour() -> Result<(), String> {
@@ -7350,17 +7339,22 @@ fn the_containers_expander_takes_the_08_arrow_colour() -> Result<(), String> {
             ))
         })?;
     let colour = native_theme_egui::next::border_color(&r).map_err(|e| e.to_string())?;
-    let old = harness
+    let old = open_page_under(Page::Containers, egui::Theme::Light, "kde-breeze")
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .expander
-        .arrow_color
-        .map(native_theme_egui::convert::to_color32);
+        .next_resolved(egui::Theme::Light)
+        .map(|r| {
+            let arrow = r.expander.arrow(native_theme::next::WidgetState::NONE);
+            arrow
+                .stated
+                .contains(native_theme::next::IconStated::COLOR)
+                .then(|| native_theme_egui::next::to_color32(arrow.color))
+        })
+        .ok_or("no 0.8.0 theme installed")?;
     assert_ne!(
         Some(colour),
         old,
-        "the patched arrow is the 0.7.2 expander.arrow_color"
+        "the patched arrow is the unpatched expander.arrow(NONE).color"
     );
     harness
         .get_by_label("CollapsingHeader with expander_icon")
