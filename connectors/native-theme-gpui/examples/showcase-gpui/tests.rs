@@ -25327,16 +25327,16 @@ fn an_svg_in_several_colours_is_an_image_in_the_chrome() {
 #[gpui::test]
 fn a_role_icon_in_several_colours_is_an_image(cx: &mut TestAppContext) {
     use native_theme::icons::IconRole;
-    let colours = native_theme::theme::Theme::preset("kde-breeze")
-        .and_then(|theme| theme.resolve(native_theme::theme::ColorMode::Light))
-        .map(|r| {
-            (
-                r.variant.defaults.text_color,
-                r.variant.defaults.accent_color,
-            )
-        });
-    assert!(colours.is_ok(), "kde-breeze does not resolve: {colours:?}");
-    let Ok((text, accent)) = colours else { return };
+    use native_theme::next::{Preset, Scheme, Theme as NextTheme, ThemeContext};
+    let colors = NextTheme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::default().with_scheme(Scheme::Light))
+        .colors;
+    let (text, accent) = (colors.window.foreground, colors.accent.fill);
+    assert!(
+        text.is_some(),
+        "kde-breeze light states no colors.window.foreground"
+    );
+    let Some(text) = text else { return };
     let svg = two_colour_svg(&text.to_string(), &accent.to_string());
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     choose_icon_theme(&mut cx, &showcase, &IconSetChoice::Lucide.to_string());

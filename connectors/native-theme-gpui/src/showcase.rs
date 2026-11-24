@@ -449,6 +449,35 @@ const OLD_MODEL_READS: &[&str] = &[
     "GEOMETRY_NOTES",
     "OldModel",
     "resolved_theme",
+    "OldChoice",
+    "OldResolved",
+    "keep_system",
+    "keep_preset",
+    "unread_font",
+    "old_resolution_context",
+    "resolution_context_for_test",
+];
+
+/// The 0.7.2 model's reads and installs of a theme, which no showcase file
+/// names: the desktop's theme (`SystemTheme`, `apply_system_theme`), a
+/// preset loaded or resolved (`theme::Theme::preset`, `from_toml`,
+/// `resolve_with`, `into_resolved`, `ResolutionContext`, the resolved
+/// `native_theme::Resolved` and its `ResolvedFontSpec`), and the pipeline's
+/// preset guess (`platform_preset_name`). What the connector's own 0.7.2
+/// widgets still hand the showcase until M5 (`TabIndicatorSide`,
+/// `ResolvedPadding`) and what reads no theme (the preset list, the icon
+/// loaders' `Rgba`, `detect`, `fonts`) are not reads.
+const OLD_MODEL_THEME_READS: &[&str] = &[
+    "SystemTheme",
+    "apply_system_theme",
+    "theme::Theme::preset",
+    "theme::Theme::from_toml",
+    "resolve_with",
+    "into_resolved",
+    "ResolutionContext",
+    "native_theme::Resolved",
+    "ResolvedFontSpec",
+    "platform_preset_name",
 ];
 
 /// Whether `code` names `module::name` of the 0.7.2 model: a path of its
@@ -470,7 +499,8 @@ fn names_old_path(code: &str, module: &str, name: &str) -> bool {
 }
 
 /// The gpui showcase reads no 0.7.2 theme: no file of it, the tests
-/// included, names a helper of [`OLD_MODEL_READS`], reads the installed
+/// included, names a helper of [`OLD_MODEL_READS`] or a read or install of
+/// [`OLD_MODEL_THEME_READS`], reads the installed
 /// 0.7.2 theme (`ActiveNativeTheme::native`, `.native(`), or calls a 0.7.2
 /// builder that reads it -- a `geometry::` builder, or a `variants::` one
 /// but `ghost_button`, which reads gpui-component's theme alone -- other
@@ -494,6 +524,11 @@ fn the_showcase_reads_no_0_7_2_theme() {
         for name in OLD_MODEL_READS {
             if mentions(&code, name) {
                 findings.push(format!("{file}: names {name}"));
+            }
+        }
+        for name in OLD_MODEL_THEME_READS {
+            if mentions(&code, name) {
+                findings.push(format!("{file}: reads or installs a 0.7.2 theme, {name}"));
             }
         }
         for (at, _) in code.match_indices(".native(") {
