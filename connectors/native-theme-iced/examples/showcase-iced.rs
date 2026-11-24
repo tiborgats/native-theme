@@ -82,8 +82,6 @@ use native_theme::theme::{FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedThem
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::next as iced_next;
 use native_theme_iced::palette::to_color;
-#[cfg(test)]
-use native_theme_iced::scaled_text_size;
 use native_theme_iced::styles;
 use native_theme_iced::{AccessibilityPreferences, SystemThemeExt, at_least};
 // The colour-mode picker's rows: its `Display` is the Mode drop-down's and
@@ -21698,28 +21696,6 @@ impl ShowDelay for iced::widget::Tooltip<'_, Message> {
     }
 }
 
-/// How a theme font is drawn.
-#[cfg(test)]
-fn font_drawn(font: &ResolvedFontSpec) -> Drawn {
-    font_from_database(font, false)
-}
-
-/// How the theme's monospace font is drawn.
-#[cfg(test)]
-fn mono_drawn(resolved: &ResolvedTheme) -> Drawn {
-    font_from_database(&resolved.defaults.mono_font, true)
-}
-
-/// A Widget Info row for text in a 0.7.2 theme font, given how it is
-/// drawn: the field it comes from, and the family, weight and style it is
-/// drawn in where they are not the ones stated ([`stated_font_row`], which
-/// [`next_font_row`] takes too). An upright font drawn upright names no
-/// style.
-#[cfg(test)]
-fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn) -> String {
-    stated_font_row(field, &font.family, font.weight, font.style, drawn)
-}
-
 /// A Widget Info row for text on the 0.8.0 model: `style`, a text style of the installed
 /// 0.8.0 theme read at `home`, by what iced draws it in
 /// ([`next_font_from_database`]); where it gives no font iced can draw, its
@@ -21740,7 +21716,11 @@ fn next_font_row(home: &str, style: &TextStyle) -> String {
     }
 }
 
-/// [`font_row_drawn`] of a font stated as `family`, `weight` and `style`.
+/// A Widget Info row for text in a font stated as `stated_family`,
+/// `stated_weight` and `stated_style`, given how it is `drawn`: the field
+/// it comes from, and the family, weight and style it is drawn in where
+/// they are not the ones stated ([`next_font_row`]'s). An upright font
+/// drawn upright names no style.
 fn stated_font_row(
     field: &str,
     stated_family: &str,
@@ -21792,8 +21772,8 @@ fn family_label(stated: &str, drawn: &Drawn) -> String {
 
 /// The family of `font`, the theme font at the registry path `path`, as
 /// Widget Info's listed rows show it (`values::leaf_value`'s lookup): the
-/// [`family_label`] of how iced draws it, in its monospace family for
-/// `defaults.mono_font` ([`mono_drawn`]), as text otherwise ([`font_drawn`]).
+/// [`family_label`] of how iced draws it ([`font_from_database`]), in its
+/// monospace family for `defaults.mono_font`, as text otherwise.
 fn listed_family(path: &str, font: &ResolvedFontSpec) -> String {
     family_label(
         &font.family,
@@ -22607,21 +22587,21 @@ mod tests {
     use native_theme_iced::icons::animated_frames_to_svg_handles_for;
     use std::collections::BTreeSet;
 
-    /// The macOS system UI font, stated "SF Pro", is a family iced's font
-    /// database holds under the name `system_font_family` gives, and the
+    /// The macOS system UI font, the installed 0.8.0 theme's
+    /// `typography.body`, stated "SF Pro", is a family iced's font database
+    /// holds under the name `next::system_font_family` gives, and the
     /// inspector shows the stated name alone (egui spec §8.8). Runs on the
     /// screenshot workflow's `macos-latest` runner (plan Task 39).
     #[test]
     #[ignore = "needs macOS: run with --ignored on the macos-latest runner"]
-    fn macos_system_font_is_in_the_font_database() {
+    fn macos_system_font_is_in_the_font_database() -> Result<(), String> {
         if !cfg!(target_os = "macos") {
             eprintln!("macos_system_font_is_in_the_font_database: not macOS, nothing to check");
-            return;
+            return Ok(());
         }
-        let (_, resolved) = native_theme_iced::from_preset("macos-monterey", false)
-            .expect("macos-monterey resolves");
-        let font = &resolved.defaults.font;
-        let family = native_theme_iced::system_font_family(font);
+        let state = page_state("macos-monterey", Tab::Display);
+        let font = &state.next_shown().typography.body;
+        let family = iced_next::system_font_family(font).map_err(|e| e.to_string())?;
         let held = {
             let mut system = iced::advanced::graphics::text::font_system()
                 .write()
@@ -22633,11 +22613,15 @@ mod tests {
             "iced's font database holds {family:?} for the stated {:?}",
             font.family
         );
+        let Some(drawn) = next_font_from_database(font, false) else {
+            return Err(format!("iced draws no font of {:?}", font.family));
+        };
         assert_eq!(
-            family_label(&font.family, &font_drawn(font)),
+            family_label(&font.family, &drawn),
             font.family.as_ref(),
             "the inspector shows the stated name alone"
         );
+        Ok(())
     }
 
     /// Whether the same holds for the monospace font, "SF Mono": printed,
@@ -23274,10 +23258,14 @@ mod tests {
         // open, so the click that opens it and the click that picks an entry
         // share one simulator.
         assert_eq!(state.pick_list_selected.as_deref(), Some("Rust"));
-        let size = scaled_text_size(
-            state.current_resolved.combo_box.font.size,
-            &state.accessibility,
-        );
+        // The Selection page's drop-down and combo box are sized in the
+        // installed 0.8.0 theme's `combo_box.label(NONE)`, its size already
+        // scaled by the text scale the theme was resolved for.
+        let size = state
+            .next_shown()
+            .combo_box
+            .label(WidgetState::NONE)
+            .size_px;
         let messages = drive(&mut state, |ui| {
             pick_option(
                 ui,
@@ -23299,10 +23287,6 @@ mod tests {
         );
 
         assert_eq!(state.combo_selected, None);
-        let size = scaled_text_size(
-            state.current_resolved.combo_box.font.size,
-            &state.accessibility,
-        );
         let messages = drive(&mut state, |ui| {
             pick_option(
                 ui,
@@ -41100,7 +41084,7 @@ mod tests {
             value("button.font").0,
             format!(
                 "{} {size} {}",
-                family_label(&font.family, &font_drawn(font)),
+                family_label(&font.family, &font_from_database(font, false)),
                 font.weight
             )
         );
@@ -41164,8 +41148,8 @@ mod tests {
     /// Widget Info's listed font rows name the family iced draws, as its own
     /// font rows do: `defaults.font.family` and the family part of
     /// `defaults.font` are [`family_label`] of what iced draws the stated
-    /// family in ([`font_drawn`]), and `defaults.mono_font`'s of what it
-    /// draws the monospace font in ([`mono_drawn`]), under windows-11 set
+    /// family in, and `defaults.mono_font`'s of what it draws the monospace
+    /// font in ([`font_from_database`], as [`listed_family`]), under windows-11 set
     /// directly. Conditioned on the host: where the system lacks "Segoe UI"
     /// or "Cascadia Mono", the rows name what is drawn instead; where it has
     /// them, the stated names alone.
@@ -41187,8 +41171,8 @@ mod tests {
             ..State::default()
         };
         let d = &resolved.defaults;
-        let label = family_label(&d.font.family, &font_drawn(&d.font));
-        let mono = family_label(&d.mono_font.family, &mono_drawn(&resolved));
+        let label = family_label(&d.font.family, &font_from_database(&d.font, false));
+        let mono = family_label(&d.mono_font.family, &font_from_database(&d.mono_font, true));
         println!("windows-11's fonts are named {label:?} and {mono:?}");
         let value = |id: &str, leaf: &str| {
             let Some(element) = elements::element(id) else {
@@ -43121,20 +43105,29 @@ mod tests {
     /// says what is drawn instead: the platform's substitute for a family
     /// the system lacks (docs/todo.md, *iced showcase: Widget Info claims a
     /// substituted family*), and the face an italic font is drawn in
-    /// (M9-092).
+    /// (M9-092). On a text style of the installed 0.8.0 theme,
+    /// `button.label(NONE)`, its family, weight and slant set.
     #[test]
-    fn a_font_row_claims_only_what_is_drawn() {
-        let mut font = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok((_, resolved)) => resolved.button.font.clone(),
-            Err(error) => panic!("kde-breeze: {error}"),
+    fn a_font_row_claims_only_what_is_drawn() -> Result<(), String> {
+        let state = page_state("kde-breeze", Tab::Buttons);
+        let mut font = state.next_shown().button.label(WidgetState::NONE);
+        let row = |font: &TextStyle, drawn: &Drawn| match next_slant(font.style) {
+            Some(slant) => Ok(stated_font_row(
+                "button.label(NONE)",
+                &font.family,
+                font.weight,
+                slant,
+                drawn,
+            )),
+            None => Err(format!("no slant iced draws: {:?}", font.style)),
         };
         font.family = "Theme Sans".into();
         font.weight = 700;
         let db = database(&[("Theme Sans", 700, false)]);
         let held = drawable_font(&db, &[], asked("Theme Sans", 700), true, false);
         assert_eq!(
-            font_row_drawn("button.font", &font, &held),
-            "button.font, family, size and weight"
+            row(&font, &held)?,
+            "button.label(NONE), family, size and weight"
         );
         let db = database(&[("System Sans", 400, false)]);
         let generic = drawable_font(
@@ -43145,21 +43138,21 @@ mod tests {
             false,
         );
         assert_eq!(
-            font_row_drawn("button.font", &font, &generic),
-            "button.font, size; family Theme Sans (not on this system; drawn in cosmic-text's \
-             common fallback, System Sans); weight 700 (drawn at 400: System Sans has no \
-             normal-width upright 700 face)"
+            row(&font, &generic)?,
+            "button.label(NONE), size; family Theme Sans (not on this system; drawn in \
+             cosmic-text's common fallback, System Sans); weight 700 (drawn at 400: System Sans \
+             has no normal-width upright 700 face)"
         );
         let mut segoe = font.clone();
         segoe.family = "Segoe UI".into();
         let db = database(&[("Adwaita Sans", 700, false)]);
         let substitute = drawable_font(&db, &[], asked("Adwaita Sans", 700), false, false);
         assert_eq!(
-            font_row_drawn("button.font", &segoe, &substitute),
-            "button.font, size and weight; family Segoe UI (not on this system; drawn in the \
-             platform's substitute, Adwaita Sans)"
+            row(&segoe, &substitute)?,
+            "button.label(NONE), size and weight; family Segoe UI (not on this system; drawn in \
+             the platform's substitute, Adwaita Sans)"
         );
-        font.style = FontStyle::Italic;
+        font.style = native_theme::next::FontStyle::Italic;
         let mut db = database(&[("Theme Sans", 700, false)]);
         push_face(&mut db, "Theme Sans", 700, fontdb::Style::Italic, false);
         let italic = iced::Font {
@@ -43168,16 +43161,17 @@ mod tests {
         };
         let drawn = drawable_font(&db, &[], italic, true, false);
         assert_eq!(
-            font_row_drawn("button.font", &font, &drawn),
-            "button.font, family, size, weight and style"
+            row(&font, &drawn)?,
+            "button.label(NONE), family, size, weight and style"
         );
         let db = database(&[("Theme Sans", 700, false)]);
         let upright = drawable_font(&db, &[], italic, true, false);
         assert_eq!(
-            font_row_drawn("button.font", &font, &upright),
-            "button.font, family, size and weight; style italic (drawn upright: Theme Sans \
-             has no normal-width italic face)"
+            row(&font, &upright)?,
+            "button.label(NONE), family, size and weight; style italic (drawn upright: Theme \
+             Sans has no normal-width italic face)"
         );
+        Ok(())
     }
 
     /// A family is shown as the name alone where text is drawn in a face of
