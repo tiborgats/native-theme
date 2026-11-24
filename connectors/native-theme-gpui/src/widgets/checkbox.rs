@@ -205,8 +205,8 @@ impl CheckboxLook {
     /// stated as its minimum and maximum, its fill at rest, checked, hovered
     /// where a rule states it for `HOVER`, and disabled where one states it
     /// for `DISABLED` (at the control's checked state), its stroke at rest
-    /// (width, and the unchecked control's colour), checked, and hovered where
-    /// a rule states it, and its padding, of `radio.indicator`; the dot's
+    /// (width, the unchecked control's colour), checked, hovered and disabled
+    /// where a rule states it, and its padding, of `radio.indicator`; the dot's
     /// colour, `radio.dot(CHECKED).fill`; the label's colour at rest and
     /// disabled, `radio.label`; and `radio.label_gap` and
     /// `radio.disabled_opacity`. The fields 0.7.2 keeps for both controls in
@@ -412,6 +412,24 @@ impl CheckboxLook {
                             &mark(WidgetState::DISABLED | WidgetState::CHECKED),
                         )?
                     },
+                    disabled_border: if indicator(WidgetState::DISABLED)
+                        .from_state
+                        .contains(PartStated::STROKE)
+                    {
+                        Some(stroke_color(
+                            &indicator(WidgetState::DISABLED | shown),
+                            match (radio, checked) {
+                                (false, false) => "checkbox.indicator(DISABLED).stroke.color",
+                                (false, true) => {
+                                    "checkbox.indicator(DISABLED|CHECKED).stroke.color"
+                                }
+                                (true, false) => "radio.indicator(DISABLED).stroke.color",
+                                (true, true) => "radio.indicator(DISABLED|CHECKED).stroke.color",
+                            },
+                        )?)
+                    } else {
+                        None
+                    },
                 },
                 checked,
                 disabled,
@@ -427,10 +445,16 @@ impl CheckboxLook {
             _ => enabled_fill,
         };
         let hover_fill = (!checked && !disabled).then(|| c.hover.unwrap_or(c.unchecked));
-        let border = if checked {
+        let enabled_border = if checked {
             c.border
         } else {
             c.unchecked_border
+        };
+        // Disabled, the stroke a rule states for `DISABLED`; else the
+        // border at the control's checked state, as 0.7.2 draws it.
+        let border = match (disabled, c.disabled_border) {
+            (true, Some(border)) => border,
+            _ => enabled_border,
         };
         // Disabled, the mark where a rule states it for `DISABLED`; else, where
         // the platform's disabled look is a fill of its own, the label's
@@ -513,6 +537,9 @@ struct CheckboxReads {
     border: Hsla,
     unchecked_border: Hsla,
     hover_border: Option<Hsla>,
+    /// The stroke disabled (at the control's checked state), where a rule
+    /// states it for `DISABLED`.
+    disabled_border: Option<Hsla>,
     mark: Hsla,
     label: Hsla,
     disabled_text: Hsla,

@@ -6115,3 +6115,65 @@ fn a_checked_disabled_mark_is_read_only_where_stated() {
         Err(Unmapped("checkbox.checkmark(DISABLED|CHECKED).color"))
     );
 }
+
+/// A disabled check box and radio, checked or not, are edged in the stroke a
+/// rule states for `DISABLED` (spec §2, `from_state`), read at the control's
+/// checked state, and in their enabled border where no rule does: kde-breeze,
+/// which states none, and the same theme patched to state one for each
+/// control, a sentinel colour at the rest stroke's width, so the patch states
+/// no value the theme lacks but the colour under test.
+#[test]
+fn a_disabled_indicator_takes_the_stroke_stated_for_the_disabled_state() -> crate::next::Mapped<()>
+{
+    use native_theme::next::{
+        CheckboxRule, Color, PartPatch, Preset, RadioRule, Stroke, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let look = |r: &native_theme::next::ResolvedTheme, radio: bool, checked, disabled| {
+        if radio {
+            CheckboxLook::next_radio(r, checked, disabled)
+        } else {
+            CheckboxLook::next_of(r, checked, disabled)
+        }
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        assert_eq!(
+            look(&r, radio, checked, true)?.border,
+            look(&r, radio, checked, false)?.border,
+            "unpatched, radio {radio}, checked {checked}"
+        );
+    }
+    let width = crate::next::stroke_width_of(&r.checkbox.indicator(WidgetState::NONE));
+    let radio_width = crate::next::stroke_width_of(&r.radio.indicator(WidgetState::NONE));
+    let (Some(width), Some(radio_width)) = (width, radio_width) else {
+        return Err(Unmapped("checkbox.indicator(NONE).stroke.width"));
+    };
+    let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    r.apply_patch(
+        &ThemePatch::new()
+            .checkbox(
+                CheckboxRule::new()
+                    .states(WidgetState::DISABLED)
+                    .indicator(PartPatch::new().stroke(Stroke::uniform(width, sentinel))),
+            )
+            .radio(
+                RadioRule::new()
+                    .states(WidgetState::DISABLED)
+                    .indicator(PartPatch::new().stroke(Stroke::uniform(radio_width, sentinel))),
+            ),
+    );
+    for (radio, checked) in [(false, false), (false, true), (true, false), (true, true)] {
+        assert_eq!(
+            look(&r, radio, checked, true)?.border,
+            crate::next::hsla(sentinel),
+            "patched, disabled, radio {radio}, checked {checked}"
+        );
+        assert_ne!(
+            look(&r, radio, checked, false)?.border,
+            crate::next::hsla(sentinel),
+            "patched, enabled, radio {radio}, checked {checked}"
+        );
+    }
+    Ok(())
+}
