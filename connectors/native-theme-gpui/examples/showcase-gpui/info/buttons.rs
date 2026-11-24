@@ -785,18 +785,56 @@ pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 /// The variant line of a tool Button built with
 /// `native_theme_gpui::variants::toolbar_button`.
 fn toolbar_variant(info: WidgetInfo) -> WidgetInfo {
-    info.instance("variant", "native_theme_gpui::next::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where a rule of the theme states them for the state, toolbar.button(HOVER).fill, toolbar.button(PRESSED).fill and the outline toolbar.button(HOVER).stroke.color, ghost_button's colour for each fill it leaves unstated, and no edge where it states no outline (support::toolbar_variant). It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar)")
+    info.instance("variant", "native_theme_gpui::next::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where a rule of the theme states them for the state, toolbar.button(HOVER).fill, toolbar.button(PRESSED).fill and the outline toolbar.button(HOVER).stroke.color; for each fill it leaves unstated gpui-component's own toolbar button's, the ghost one a Toolbar makes of a Button it takes by child (accent, at half alpha in dark mode, under the pointer, button_active pressed; button/button.rs, Button::prepare_for_toolbar and ButtonVariant::hovered / active, Ghost arms), not the flat button's; and no edge where it states no outline (support::toolbar_variant). It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem), whose hover would recolour the label too")
+}
+
+/// What a tool Button built from the theme's toolbar states
+/// ([`ToolVariant::Toolbar`]) is filled with under the pointer where no rule
+/// states `toolbar.button(HOVER).fill`: gpui-component's own toolbar
+/// button's, the ghost's accent, at half alpha in dark mode
+/// (`next::variants::toolbar_button`).
+fn own_toolbar_hover(t: &Theme) -> ColorClaim {
+    if t.is_dark() {
+        claim(
+            "hover bg",
+            "accent",
+            t.accent.opacity(0.5),
+            "native-theme-gpui/next/variants.rs:68",
+        )
+    } else {
+        claim(
+            "hover bg",
+            "accent",
+            t.accent,
+            "native-theme-gpui/next/variants.rs:66",
+        )
+    }
+}
+
+/// What a tool Button built from the theme's toolbar states
+/// ([`ToolVariant::Toolbar`]) is filled with while pressed where no rule
+/// states `toolbar.button(PRESSED).fill`: gpui-component's own toolbar
+/// button's, the ghost's `button_active` (`next::variants::toolbar_button`).
+fn own_toolbar_active(t: &Theme) -> ColorClaim {
+    claim(
+        "active bg",
+        "button_active",
+        t.button_active,
+        "native-theme-gpui/next/variants.rs:75",
+    )
 }
 
 /// `info` with what a tool Button built with
 /// `native_theme_gpui::next::variants::toolbar_button` paints, and its
 /// variant line: the hover and pressed fills `toolbar.button(HOVER).fill`
 /// and `toolbar.button(PRESSED).fill` where a rule of `native` states them
-/// for the state, else the Ghost's tokens, and the outline under the pointer
-/// and while pressed, `toolbar.button(HOVER).stroke.color`, at the width
-/// `next::geometry::toolbar_button_rest` gives the border ([`rest_border`]).
-/// Each state's colour is the theme's only where the variant is built from
-/// it (`from`); where it fell back on `variants::ghost_button`, the Ghost's.
+/// for the state, else gpui-component's own toolbar button's
+/// ([`own_toolbar_hover`], [`own_toolbar_active`]), and the outline under
+/// the pointer and while pressed, `toolbar.button(HOVER).stroke.color`, at
+/// the width `next::geometry::toolbar_button_rest` gives the border
+/// ([`rest_border`]). Each state's colour is the theme's or gpui-component's
+/// own only where the variant is built from it (`from`); where it fell back
+/// on `variants::ghost_button`, the flat button's tokens.
 /// The window's toolbar buttons, the Buttons page's toolbar items and the
 /// Basic page's icon buttons take it from here so they cannot drift apart.
 pub(super) fn native_toolbar(
@@ -819,6 +857,7 @@ pub(super) fn native_toolbar(
         "native-theme-gpui/next/builders.rs:712",
     ) {
         Some(hover) => info.color(hover),
+        None if from == ToolVariant::Toolbar => info.color(own_toolbar_hover(t)),
         None => info.color(claim(
             "hover bg",
             "secondary_hover",
@@ -833,6 +872,7 @@ pub(super) fn native_toolbar(
         "native-theme-gpui/next/builders.rs:716",
     ) {
         Some(active) => info.color(active),
+        None if from == ToolVariant::Toolbar => info.color(own_toolbar_active(t)),
         None => info.color(claim(
             "active bg",
             "secondary_active",
@@ -867,7 +907,8 @@ pub(super) fn rest_border(native: Option<&NextTheme>) -> Option<f32> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ToolVariant {
     /// `next::variants::toolbar_button`: the installed theme's toolbar
-    /// states over `variants::ghost_button`.
+    /// states over `variants::ghost_button`, gpui-component's own toolbar
+    /// button's fill for each state they leave unstated.
     Toolbar,
     /// `variants::ghost_button` alone, with no state of the theme's over it:
     /// no 0.8.0 theme is installed (`None`), or it states the home it holds
@@ -900,20 +941,24 @@ impl ToolVariant {
 /// `native_theme_gpui::next::variants::toolbar_button`: what it fills with
 /// at rest, under the pointer and while pressed under `native`, each state
 /// the toolbar's home where a rule of `native` states it and the variant is
-/// built from it (`from`), else the Ghost's token, as [`native_toolbar`]
-/// claims them.
+/// built from it (`from`), else, where the variant is built from the
+/// theme, gpui-component's own toolbar button's token, and where it fell
+/// back, the flat button's, as [`native_toolbar`] claims them.
 pub(super) fn toolbar_fill(native: Option<&NextTheme>, from: ToolVariant) -> String {
     let states = from.states(native);
     let ruled = |state| states.is_some_and(|r| state_fill_of(&r.toolbar.button(state)).is_some());
-    let hover = if ruled(WidgetState::HOVER) {
-        "toolbar.button(HOVER).fill"
-    } else {
-        "ghost_button's secondary_hover"
+    let own = from == ToolVariant::Toolbar;
+    let hover = match (ruled(WidgetState::HOVER), own) {
+        (true, _) => "toolbar.button(HOVER).fill",
+        (false, true) => {
+            "gpui-component's own toolbar button's, the ghost's accent (at half alpha in dark mode)"
+        }
+        (false, false) => "ghost_button's secondary_hover",
     };
-    let pressed = if ruled(WidgetState::PRESSED) {
-        "toolbar.button(PRESSED).fill"
-    } else {
-        "ghost_button's secondary_active"
+    let pressed = match (ruled(WidgetState::PRESSED), own) {
+        (true, _) => "toolbar.button(PRESSED).fill",
+        (false, true) => "gpui-component's own toolbar button's, the ghost's button_active",
+        (false, false) => "ghost_button's secondary_active",
     };
     if rest_border(native).is_some() {
         format!(
@@ -965,8 +1010,10 @@ pub(crate) enum CheckedFill {
     /// gpui-component replays over the selected style (button/button.rs,
     /// RenderOnce for Button) and no checked fill replaces.
     Rest,
-    /// The custom variant's selected fill, `secondary_active`, under its
-    /// text.
+    /// The custom variant's selected fill, its pressed one, under its text:
+    /// gpui-component's own toolbar button's `button_active` where the
+    /// variant is built from the theme's toolbar states, else the flat
+    /// button's `secondary_active`.
     Variant,
 }
 
@@ -1077,6 +1124,12 @@ fn toolbar_checked_colors(
                     "selected bg",
                     "none: next::geometry::toolbar_button_rest's transparent fill, which gpui-component replays over the selected style (button/button.rs, RenderOnce for Button) and next::geometry::toolbar_button_checked replaces only where it applies and states a fill",
                 ),
+                (None, _) if from == ToolVariant::Toolbar => info.color(claim(
+                    "selected bg",
+                    "button_active",
+                    t.button_active,
+                    "native-theme-gpui/next/variants.rs:75",
+                )),
                 (None, _) => info.color(claim(
                     "selected bg",
                     "secondary_active",

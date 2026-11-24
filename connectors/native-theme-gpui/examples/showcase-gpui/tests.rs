@@ -23169,6 +23169,61 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
     );
 }
 
+/// A Basic icon button under the pointer, where no rule states the
+/// toolbar's hovered fill (macos-tahoe, both modes), is filled as
+/// gpui-component's own toolbar button, its ghost one: `accent`, at half
+/// alpha in dark mode (spec §10, rule 0), not the flat button's
+/// `secondary_hover`; and its info claims that.
+#[gpui::test]
+fn a_hovered_tool_button_with_no_stated_fill_is_gpui_components_own(cx: &mut TestAppContext) {
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::state_fill_of;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let button = "basic-icon-copy";
+    for mode in [AppColorMode::Light, AppColorMode::Dark] {
+        use_preset(&mut cx, &showcase, "macos-tahoe");
+        cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(mode)), cx));
+        cx.run_until_parked();
+        show(&mut cx, &showcase, Page::Basic);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{mode:?}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        assert!(
+            state_fill_of(&r.toolbar.button(WidgetState::HOVER)).is_none(),
+            "{mode:?}: macos-tahoe states the toolbar's hovered fill, so this test proves nothing"
+        );
+        let (own, flat) = cx.update(|_w, cx| {
+            let t = Theme::global(cx);
+            let own = if t.mode.is_dark() {
+                t.accent.opacity(0.5)
+            } else {
+                t.accent
+            };
+            (own, t.secondary_hover)
+        });
+        assert_ne!(
+            own, flat,
+            "{mode:?}: the ghost's hover is the flat button's, so this test proves nothing"
+        );
+        let at = bounds_of(&mut cx, button).center();
+        hover(&mut cx, at);
+        draw(&mut cx);
+        assert_eq!(
+            painted_fill(&mut cx, button),
+            Some(own),
+            "{mode:?}: a hovered tool button is not filled as gpui-component's own toolbar button"
+        );
+        let info = settle_on(&mut cx, &showcase, button);
+        assert_eq!(
+            info.as_ref().and_then(|info| claim_of(info, "accent")),
+            Some(own),
+            "{mode:?}: the tool button's info does not claim the ghost's accent: {info:?}"
+        );
+        hover(&mut cx, point(px(4.), px(4.)));
+        draw(&mut cx);
+    }
+}
+
 /// The Basic page's edit-mode switch is checked at start and a click
 /// switches it: under kde-breeze light and windows-11 light it is filled
 /// with `toolbar.button(CHECKED).fill` and its info, titled a checked
@@ -23305,7 +23360,7 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
 /// builder applies, the checked, the toolbar's pressed, then the pressed
 /// body's fill, in that order; else none where the rest fill is cleared;
 /// else the variant's selected fill, the toolbar's pressed fill where the
-/// variant takes it, else `secondary_active`. No bundled preset leaves the three unstated, so a
+/// variant takes it, else the variant's own pressed fill. No bundled preset leaves the three unstated, so a
 /// part stating nothing is built, and kde-breeze's stated checked part
 /// stands for a stated fill. Dropping a condition or swapping two arms
 /// fails a row.
