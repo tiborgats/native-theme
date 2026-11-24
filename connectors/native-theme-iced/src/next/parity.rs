@@ -490,6 +490,15 @@ const MONTEREY_RADIO_HOVER: &str = "the hovered radio's fill: 0.7.2's macos-mont
      native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed difference, \
      \"unstated\" there), so the fill is iced's own for the status, as HOVER's other options";
 
+/// The reason of ios-13's hovered box and circle, whose fill 0.7.2 states.
+const IOS_BOX_HOVER: &str = "the hovered box's and circle's fill: 0.7.2's ios-13 states \
+     checkbox.hover_background #d1d1d6 / #3a3a3c, uncited, which its connector drew on the \
+     radio button too; the 0.8.0 preset states no fill for checkbox.indicator(HOVER) or \
+     radio.indicator(HOVER), as WebKit's iOS checkboxRadioBackgroundColor reads no hover state \
+     (RenderThemeIOS.mm:1370-1395 at WebKit 31adf9d; native-theme/tests/next_homes.toml, row \
+     checkbox.hover_background, a listed difference, \"unstated\" there), so the fill is \
+     iced's own for the status, the outline the stated rest one";
+
 /// A style function whose stroke lies inside the box on `presets`.
 const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Difference {
     Difference {
@@ -2155,16 +2164,20 @@ const DIFFERENCES: &[Difference] = &[
     // The FS4 presets state kde-breeze's hovered box as 0.7.2 drew it,
     // adwaita's and material-3's hovered stroke, windows-11's hovered fill
     // and stroke, and material-3's disabled label (`label(DISABLED)`).
-    stated_fields(
+    hover(
         "checkbox",
         &["ios-13"],
         LineAlign::Outside,
+        hovered(true, true, false),
+    )
+    .stating(
         &[
             &IOS_CHECK_FILL,
             &IOS_CHECK,
             &IOS_CHECK_DISABLED,
             &IOS_CHECK_DISABLED_COLORS,
         ],
+        &[HOVER, STATED, IOS_BOX_HOVER],
     ),
     stated_fields(
         "checkbox",
@@ -2232,11 +2245,15 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Inside,
         hovered(true, true, true),
     ),
-    stated_fields(
+    hover(
         "radio",
         &["ios-13"],
         LineAlign::Outside,
+        hovered(true, true, false),
+    )
+    .stating(
         &[&IOS_RADIO_FILL, &IOS_RADIO],
+        &[HOVER, STATED, IOS_BOX_HOVER],
     ),
     // combo_box.field: the open stroke (`field(OPEN)`), which kde-breeze
     // alone states. The FS4 presets state the hovered stroke as the rest

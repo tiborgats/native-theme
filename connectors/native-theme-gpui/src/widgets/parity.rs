@@ -446,6 +446,23 @@ const FROM_HOME: &[Difference] = &[
                  radio.indicator(NONE).fill",
     },
     Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 states checkbox.hover_background #d1d1d6 / #3a3a3c, uncited; \
+                 the 0.8.0 preset states no fill for checkbox.indicator(HOVER), as WebKit's iOS \
+                 checkboxRadioBackgroundColor reads no hover state (RenderThemeIOS.mm:1370-1395 \
+                 at WebKit 31adf9d; native-theme/tests/next_homes.toml, row \
+                 checkbox.hover_background, a listed difference, \"unstated\" there), so the \
+                 look's hovered fill is the rest fill checkbox.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_fill",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of hover_fill): WebKit draws the radio \
+                 button's circle by the same checkboxRadioBackgroundColor, so the look's \
+                 hovered fill is the rest fill radio.indicator(NONE).fill",
+    },
+    Difference {
         leaf: "SliderLook::thumb_color",
         presets: &["ios-13"],
         reason: "0.7.2's ios-13 leaves slider.thumb_color unset, so it is \
@@ -935,13 +952,15 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 outline.map(|(_, hover)| hover),
             );
             // `CheckboxLook::next_of`: the hovered box's stated fill, whole,
-            // where it is enabled and unchecked.
+            // else the rest fill, where it is enabled and unchecked.
+            let indicator = |at| new.checkbox.indicator(at);
             r.home_leaf(
                 "CheckboxLook::of hover_fill",
                 &state,
                 old_box.map(|look| look.hover_fill),
                 new_box.map(|look| look.hover_fill),
-                crate::next::state_fill_of(&new.checkbox.indicator(WidgetState::HOVER))
+                crate::next::state_fill_of(&indicator(WidgetState::HOVER))
+                    .or_else(|| crate::next::fill_of(&indicator(WidgetState::NONE)))
                     .map(|hover| (!checked && !disabled).then_some(hover)),
             );
             let (old_radio, new_radio) = (

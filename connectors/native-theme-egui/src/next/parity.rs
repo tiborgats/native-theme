@@ -1566,6 +1566,22 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         ".visuals.widgets.active.bg_fill",
         home!(scrollbar.thumb(PRESSED).fill),
     ),
+    // ios-13 states no hovered fill for the box (WebKit's checkboxRadioBackgroundColor reads no
+    // hover state; next_homes.toml, row checkbox.hover_background, "unstated" there); the
+    // checked box's takes the combined state's only where a rule states one for HOVER alone
+    // (`build::variant_source`)
+    r0(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(checkbox.indicator(HOVER).fill),
+    ),
+    r0(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(checkbox.indicator(HOVER).fill),
+    ),
     r0(
         "Expander",
         &[I],

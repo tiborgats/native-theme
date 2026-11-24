@@ -675,7 +675,6 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#3a3a3c",
             "stroke": {
               "width": 1.5,
               "color": "#ebebf599"
@@ -847,7 +846,6 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#3a3a3c",
             "stroke": {
               "width": 1.5,
               "color": "#ebebf599"

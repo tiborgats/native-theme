@@ -381,7 +381,7 @@ const LIGHT: SchemeColors = SchemeColors {
     // radio's fill (RenderThemeIOS.mm:1387-1388, :1502, :1561-1563; tertiarySystemFillColor made
     // opaque over white, :1046, :1085-1086); rgb(238, 238, 239) (ios-18 expected.txt:90-91)
     tertiary_fill: srgb8(0xeeee_efff),
-    // `button.hover_background`, `checkbox.hover_background`, `combo_box.hover_background`,
+    // `button.hover_background`, `combo_box.hover_background`,
     // `segmented_control.hover_background`: 0.7.2 ios-13.toml (uncited)
     control_hover: srgb8(0xd1d1_d6ff),
     // `button.active_background`: 0.7.2 ios-13.toml (uncited)
@@ -555,7 +555,7 @@ const DARK: SchemeColors = SchemeColors {
     // radio's fill (RenderThemeIOS.mm:1387-1388, :1502, :1561-1563; tertiarySystemFillColor made
     // opaque over black, :1046, :1085-1086); rgb(28, 28, 30) (ios-18 expected.txt:90, :93)
     tertiary_fill: srgb8(0x1c1c_1eff),
-    // `button.hover_background`, `checkbox.hover_background`, `combo_box.hover_background`,
+    // `button.hover_background`, `combo_box.hover_background`,
     // `segmented_control.hover_background`: 0.7.2 ios-13.toml (uncited)
     control_hover: srgb8(0x3a3a_3cff),
     // `button.active_background`: 0.7.2 ios-13.toml (uncited)
@@ -1537,8 +1537,8 @@ fn button(
 /// The box of a check box or the circle of a radio button, which 0.7.2's
 /// `checkbox.*` serves both, `CHECKBOX_INDICATOR_SIZE` across (0.7.2:
 /// `radio_indicator_width` is `indicator_width` where unstated): its
-/// unchecked fill in WebKit's outline, no shadow; under the pointer its
-/// hover fill; checked, the accent (0.7.2: `checkbox.checked_background` is
+/// unchecked fill in WebKit's outline, no shadow; under the pointer its rest
+/// outline and no fill of its own, as WebKit reads no hover state; checked, the accent (0.7.2: `checkbox.checked_background` is
 /// `defaults.accent_color` where unstated) with no outline; disabled, WebKit's
 /// empty box in its outline at [`CHECKBOX_BORDER_DISABLED_OPACITY`], and
 /// checked, WebKit's `opaqueTertiaryFill` with no outline.
@@ -1569,10 +1569,11 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, Par
             PartProp::MinSize(size),
             PartProp::MaxSize(size),
         ])
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
-            [fill(c.control_hover), rest_edge],
-        )
+        // (WebKit) checkboxRadioBackgroundColor reads no hover state (RenderThemeIOS.mm:1370-1395
+        // at WebKit 31adf9d), so HOVER states no fill, where 0.7.2 took its uncited
+        // `checkbox.hover_background`: a connector draws its toolkit's own hovered fill (spec
+        // §10, rule 0); the outline stays the rest one, stated.
+        .rule(RuleSelector::on(WidgetState::HOVER), [rest_edge])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(roles.accent.fill), no_edge.clone()],
