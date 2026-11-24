@@ -15004,7 +15004,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         "Separator",
         container(tagged(
             "basic.separator.line",
-            rule::horizontal(next.separator.thickness).style(styles::rule(resolved)),
+            rule::horizontal(next.separator.thickness).style(iced_next::styles::rule(next)),
         ))
         .width(Length::Fixed(BASIC_WIDE))
         .into(),
@@ -16367,9 +16367,10 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
     ]
     .spacing(gap.widget);
 
-    // The rules between the groups `separator.thickness` thick, their
-    // colour still `styles::rule`'s.
-    let divider = || rule::horizontal(next.separator.thickness).style(styles::rule(resolved));
+    // The rules between the groups `separator.thickness` thick, in
+    // `iced_next::styles::rule`'s colour.
+    let divider =
+        || rule::horizontal(next.separator.thickness).style(iced_next::styles::rule(next));
     column![
         header,
         primary_row,
@@ -16631,9 +16632,10 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
         .into(),
     );
 
-    // The rules between the groups `separator.thickness` thick, their
-    // colour still `styles::rule`'s.
-    let divider = || rule::horizontal(next.separator.thickness).style(styles::rule(resolved));
+    // The rules between the groups `separator.thickness` thick, in
+    // `iced_next::styles::rule`'s colour.
+    let divider =
+        || rule::horizontal(next.separator.thickness).style(iced_next::styles::rule(next));
     column![
         header,
         single_line,
@@ -17292,17 +17294,17 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         .into(),
     );
 
-    // The rules between the groups `separator.thickness` thick, their
-    // colour still `styles::rule`'s.
+    // The rules between the groups `separator.thickness` thick, in
+    // `iced_next::styles::rule`'s colour.
     let thickness = next.separator.thickness;
-    let divider = || rule::horizontal(thickness).style(styles::rule(resolved));
+    let divider = || rule::horizontal(thickness).style(iced_next::styles::rule(next));
     column![
         header,
         row![
             column![checkboxes, divider(), togglers]
                 .spacing(gap.section)
                 .width(Fill),
-            rule::vertical(thickness).style(styles::rule(resolved)),
+            rule::vertical(thickness).style(iced_next::styles::rule(next)),
             column![radios, divider(), pickers, divider(), combos]
                 .spacing(gap.section)
                 .width(Fill),
@@ -17453,7 +17455,6 @@ fn vertical_slider_info(state: &State) -> String {
 }
 
 fn view_range(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     let title =
@@ -17575,9 +17576,10 @@ fn view_range(state: &State) -> Element<'_, Message> {
         .into(),
     );
 
-    // The rules between the groups `separator.thickness` thick, their
-    // colour still `styles::rule`'s.
-    let divider = || rule::horizontal(next.separator.thickness).style(styles::rule(resolved));
+    // The rules between the groups `separator.thickness` thick, in
+    // `iced_next::styles::rule`'s colour.
+    let divider =
+        || rule::horizontal(next.separator.thickness).style(iced_next::styles::rule(next));
     column![
         header,
         horiz_slider,
@@ -17734,7 +17736,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
     // `styles::container_card`'s.
     let card_pad = next_card_padding(next);
     let thickness = next.separator.thickness;
-    let divider = || rule::horizontal(thickness).style(styles::rule(resolved));
+    let divider = || rule::horizontal(thickness).style(iced_next::styles::rule(next));
 
     let header = next_section_header(
         "Display Widgets",
@@ -18248,7 +18250,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     let gap = Gaps::from_next(&next.layout);
     let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
     let thickness = next.separator.thickness;
-    let divider = || rule::horizontal(thickness).style(styles::rule(resolved));
+    let divider = || rule::horizontal(thickness).style(iced_next::styles::rule(next));
     let split_width = next.splitter.divider_width;
     // The panes and their title bars are drawn as cards, and padded as every
     // card is, as the Basic card on the installed 0.8.0 theme
@@ -21953,7 +21955,7 @@ fn section_header<'a>(
 /// [`section_header`] on the installed 0.8.0 theme: the title in
 /// [`next_page_title`], the description in `typography.body`, a
 /// `layout.widget_gap` apart (none where unstated), over a rule
-/// `separator.thickness` thick, its colour still `styles::rule`'s.
+/// `separator.thickness` thick, in `iced_next::styles::rule`'s colour.
 fn next_section_header<'a>(
     title: &'a str,
     description: &'a str,
@@ -21963,7 +21965,7 @@ fn next_section_header<'a>(
     column![
         text(title).next_text(next_page_title(next), &next.typography),
         text(description).next_body(next),
-        rule::horizontal(next.separator.thickness).style(styles::rule(&state.current_resolved)),
+        rule::horizontal(next.separator.thickness).style(iced_next::styles::rule(next)),
     ]
     .spacing(Gaps::from_next(&next.layout).widget)
     .into()
@@ -36713,6 +36715,7 @@ mod tests {
         "view_range",
         "view_display",
         "view_layout",
+        "next_section_header",
     ];
 
     /// The style functions those pages draw with on the installed 0.8.0
@@ -36726,6 +36729,7 @@ mod tests {
         "expander",
         "expander_frame",
         "toggler",
+        "rule",
     ];
 
     /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`] on the
