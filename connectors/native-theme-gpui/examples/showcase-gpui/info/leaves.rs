@@ -2,7 +2,7 @@
 //! lists (its `homes`): the muted line Widget Info shows under each
 //! `<home> <value>` row (the round-11 brief, section B). A line names the
 //! route the value takes -- the connector's `ThemeColor` field (`colors.rs`),
-//! its `geometry::` builder, its `widgets::` control, or the showcase helper
+//! its `next::geometry::` builder, its `widgets::` control, or the showcase helper
 //! that sets it -- or says "not reachable" with the upstream line that keeps
 //! it out. Where the showcase could apply a home and does not, the line says
 //! so and names what is drawn instead. Upstream citations are to
@@ -18,22 +18,22 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.buttons.toggle_on",
         &["button.body(CHECKED).fill"],
-        "gpui: geometry::button_checked's bg, replayed over the selected Button's style (demo::toggle_button)",
+        "gpui: next::geometry::button_checked's bg, replayed over the selected Button's style (demo::toggle_button)",
     ),
     (
         "basic.buttons.toggle_on",
         &["button.label(CHECKED).color"],
-        "gpui: geometry::button_checked's text colour, over the selected Button's style (demo::toggle_button)",
+        "gpui: next::geometry::button_checked's text colour, over the selected Button's style (demo::toggle_button)",
     ),
     (
         "basic.buttons.toggle_on",
         &["button.body(PRESSED).fill"],
-        "gpui: geometry::button_checked's bg where button.body(CHECKED).fill is unstated (demo::toggle_button)",
+        "gpui: next::geometry::button_checked's bg where button.body(CHECKED).fill is unstated (demo::toggle_button)",
     ),
     (
         "basic.buttons.toggle_on",
         &["button.label(PRESSED).color"],
-        "gpui: geometry::button_checked's text colour where button.label(CHECKED).color is unstated (demo::toggle_button)",
+        "gpui: next::geometry::button_checked's text colour where button.label(CHECKED).color is unstated (demo::toggle_button)",
     ),
     (
         "basic.buttons.toggle_on",
@@ -43,26 +43,26 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         ],
         "not reachable: a selected Button takes no hover or press style, so the toggle that is on draws no hover border (gpui-component/button/button.rs, RenderOnce for Button)",
     ),
-    // --- button: a dialog's default button, variants::default_button ----------
+    // --- button: a dialog's default button, next::variants::default_button ----------
     (
         "basic.buttons.dialog_default",
         &["button.body(DEFAULT).fill"],
-        "gpui: geometry::default_button_rest's bg at rest, after geometry::button, and variants::default_button's hover fill; where unstated the Button is .primary(), ThemeColor primary",
+        "gpui: next::geometry::default_button_rest's bg at rest, after next::geometry::button, and next::variants::default_button's hover fill; where unstated the Button is .primary(), ThemeColor primary",
     ),
     (
         "basic.buttons.dialog_default",
         &["button.label(DEFAULT).color"],
-        "gpui: variants::default_button's foreground, in every state; where the theme states no button.body(DEFAULT).fill the Primary Button's button_primary_foreground",
+        "gpui: next::variants::default_button's foreground, in every state; where the theme states no button.body(DEFAULT).fill the Primary Button's button_primary_foreground",
     ),
     (
         "basic.buttons.dialog_default",
         &["button.body(DEFAULT).stroke.color"],
-        "gpui: geometry::default_button_rest's border colour at rest, after geometry::button; under the pointer and pressed variants::default_button's color, button.body(HOVER).stroke.color where stated",
+        "gpui: next::geometry::default_button_rest's border colour at rest, after next::geometry::button; under the pointer and pressed next::variants::default_button's color, button.body(HOVER).stroke.color where stated",
     ),
     (
         "basic.buttons.dialog_default",
         &["button.body(NONE).stroke.color"],
-        "gpui: geometry::button's border colour at rest where the Button is .primary(); where the theme states button.body(DEFAULT).fill, the fallback of geometry::default_button_rest's frame and of variants::default_button's colour where button.body(DEFAULT).stroke.color and button.body(HOVER).stroke.color are unstated",
+        "gpui: next::geometry::button's border colour at rest where the Button is .primary(); where the theme states button.body(DEFAULT).fill, the fallback of next::geometry::default_button_rest's frame and of next::variants::default_button's colour where button.body(DEFAULT).stroke.color and button.body(HOVER).stroke.color are unstated",
     ),
     (
         "basic.buttons.dialog_default",
@@ -70,26 +70,26 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(HOVER).stroke.color",
             "button.body(PRESSED).stroke.color",
         ],
-        "gpui: variants::default_button's color, the border under the pointer and pressed, where the theme states button.body(DEFAULT).fill; elsewhere the Button is .primary(), whose hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary) and whose rest border is geometry::button's button.body(NONE).stroke.color (native-theme-gpui/geometry.rs:285, border_color)",
+        "gpui: next::variants::default_button's color, the border under the pointer and pressed, where the theme states button.body(DEFAULT).fill; elsewhere the Button is .primary(), whose hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary) and whose rest border is next::geometry::button's button.body(NONE).stroke.color (native-theme-gpui/geometry.rs:285, border_color)",
     ),
     (
         "basic.buttons.dialog_default",
         &["button.label(NONE).color"],
-        "gpui: variants::default_button_states's label where the theme states button.body(DEFAULT).fill and no button.label(DEFAULT).color, the variant's foreground in every state; elsewhere the Button is .primary(), lettered in ThemeColor button_primary_foreground (gpui-component 0.10.0 button/button.rs:1055, button_primary_foreground)",
+        "gpui: next::variants::default_button_states's label where the theme states button.body(DEFAULT).fill and no button.label(DEFAULT).color, the variant's foreground in every state; elsewhere the Button is .primary(), lettered in ThemeColor button_primary_foreground (gpui-component 0.10.0 button/button.rs:1055, button_primary_foreground)",
     ),
     (
         "basic.buttons.dialog_default",
         &["button.body(PRESSED).fill"],
-        "gpui: variants::default_button's active, ThemeColor button_active (colors.rs), the pressed fill, where the theme states button.body(DEFAULT).fill; elsewhere the Button is .primary(), pressed in ThemeColor button_primary_active (gpui-component 0.10.0 button/button.rs:1271, button_primary_active), which the connector sets to primary_active, a shade of primary (colors.rs)",
+        "gpui: next::variants::default_button's active, ThemeColor button_active (colors.rs), the pressed fill, where the theme states button.body(DEFAULT).fill; elsewhere the Button is .primary(), pressed in ThemeColor button_primary_active (gpui-component 0.10.0 button/button.rs:1271, button_primary_active), which the connector sets to primary_active, a shade of primary (colors.rs)",
     ),
-    // --- button: the Basic page's buttons, variants::bordered_button -----------
+    // --- button: the Basic page's buttons, next::variants::bordered_button -----------
     (
         "basic.buttons.default",
         &[
             "button.body(HOVER).stroke.color",
             "button.body(PRESSED).stroke.color",
         ],
-        "gpui: variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
+        "gpui: next::variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is next::geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
     ),
     (
         "basic.buttons.tooltip",
@@ -97,7 +97,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(HOVER).stroke.color",
             "button.body(PRESSED).stroke.color",
         ],
-        "gpui: variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
+        "gpui: next::variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is next::geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
     ),
     (
         "basic.buttons.toggle_off",
@@ -105,7 +105,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(HOVER).stroke.color",
             "button.body(PRESSED).stroke.color",
         ],
-        "gpui: variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
+        "gpui: next::variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is next::geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
     ),
     (
         "basic.buttons.primary",
@@ -113,7 +113,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "button.body(HOVER).stroke.color",
             "button.body(PRESSED).stroke.color",
         ],
-        "not reachable: a Primary Button's hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary); at rest it is geometry::button's button.body(NONE).stroke.color (native-theme-gpui/geometry.rs:285, border_color)",
+        "not reachable: a Primary Button's hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary); at rest it is next::geometry::button's button.body(NONE).stroke.color (native-theme-gpui/geometry.rs:285, border_color)",
     ),
     // --- button: the Copy box of Widget Info -----------------------------------
     (
@@ -222,7 +222,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         &["icons.set"],
         "gpui: the ChevronDown of the chosen set, none mixed in (Showcase::sample_icon)",
     ),
-    // --- button: the icon-only buttons, variants::toolbar_button and ghost_button
+    // --- button: the icon-only buttons, next::variants::toolbar_button and ghost_button
     (
         "basic.icons.edit",
         &["toolbar.button(CHECKED).fill"],
@@ -420,7 +420,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         &["button.body(NONE).padding.left"],
         "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
-    // --- button: a Default Button refined by geometry::button ------------------
+    // --- button: a Default Button refined by next::geometry::button ------------------
     (
         "",
         &["button.body(PRESSED).fill"],
@@ -439,37 +439,37 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["button.body(NONE).stroke.color"],
-        "gpui: geometry::button's border colour",
+        "gpui: next::geometry::button's border colour",
     ),
     (
         "",
         &["button.body(NONE).corners"],
-        "gpui: geometry::button's corner radius",
+        "gpui: next::geometry::button's corner radius",
     ),
     (
         "",
         &["button.body(NONE).stroke.width"],
-        "gpui: geometry::button's border width",
+        "gpui: next::geometry::button's border width",
     ),
     (
         "",
         &["button.body(NONE).padding.top"],
-        "gpui: geometry::button pads the stated side",
+        "gpui: next::geometry::button pads the stated side",
     ),
     (
         "",
         &["button.body(NONE).padding.right"],
-        "gpui: geometry::button pads the stated side",
+        "gpui: next::geometry::button pads the stated side",
     ),
     (
         "",
         &["button.body(NONE).padding.bottom"],
-        "gpui: geometry::button pads the stated side",
+        "gpui: next::geometry::button pads the stated side",
     ),
     (
         "",
         &["button.body(NONE).padding.left"],
-        "gpui: geometry::button pads the stated side",
+        "gpui: next::geometry::button pads the stated side",
     ),
     (
         "",
@@ -479,17 +479,17 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["button.body(DISABLED).fill"],
-        "gpui: geometry::button_disabled fills a disabled Button with it",
+        "gpui: next::geometry::button_disabled fills a disabled Button with it",
     ),
     (
         "",
         &["button.disabled_opacity"],
-        "gpui: geometry::button_disabled fades a disabled Button by it",
+        "gpui: next::geometry::button_disabled fades a disabled Button by it",
     ),
     (
         "",
         &["button.label(DISABLED).color"],
-        "gpui: geometry::button_disabled letters a disabled Button in it",
+        "gpui: next::geometry::button_disabled letters a disabled Button in it",
     ),
     (
         "",
@@ -499,7 +499,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["button.label(NONE)"],
-        "gpui: `geometry::button_label` gives the label, the Button's child, `button.label(NONE)`'s family, size, weight and style (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (gpui-component/sizing.rs:337-343, button_text_size)",
+        "gpui: `next::geometry::button_label` gives the label, the Button's child, `button.label(NONE)`'s family, size, weight and style (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (gpui-component/sizing.rs:337-343, button_text_size)",
     ),
     (
         "",
@@ -519,12 +519,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["button.body(NONE).min_size[1]"],
-        "gpui: geometry::button's height, by the control-height rule",
+        "gpui: next::geometry::button's height, by the control-height rule",
     ),
     (
         "",
         &["button.body(NONE).min_size[0]"],
-        "gpui: geometry::button's min_w",
+        "gpui: next::geometry::button's min_w",
     ),
     (
         "",
@@ -743,7 +743,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         &["combo_box.label(NONE)"],
-        "gpui: geometry::combobox's family, size, weight and style",
+        "gpui: next::geometry::combobox's family, size, weight and style",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -820,7 +820,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["combo_box.field(NONE).corners"],
-        "gpui: geometry::select's radius, and the surface's (demo::combo_surface)",
+        "gpui: next::geometry::select's radius, and the surface's (demo::combo_surface)",
     ),
     (
         "",
@@ -830,22 +830,22 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["combo_box.field(NONE).padding.top"],
-        "gpui: geometry::select pads the stated side",
+        "gpui: next::geometry::select pads the stated side",
     ),
     (
         "",
         &["combo_box.field(NONE).padding.right"],
-        "gpui: geometry::select pads it, unless an arrow column is stated",
+        "gpui: next::geometry::select pads it, unless an arrow column is stated",
     ),
     (
         "",
         &["combo_box.field(NONE).padding.bottom"],
-        "gpui: geometry::select pads the stated side",
+        "gpui: next::geometry::select pads the stated side",
     ),
     (
         "",
         &["combo_box.field(NONE).padding.left"],
-        "gpui: geometry::select pads the stated side",
+        "gpui: next::geometry::select pads the stated side",
     ),
     (
         "",
@@ -855,12 +855,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["combo_box.label(NONE)"],
-        "gpui: geometry::select's family, size, weight and style",
+        "gpui: next::geometry::select's family, size, weight and style",
     ),
     (
         "",
         &["combo_box.label(NONE).color"],
-        "gpui: geometry::select's text colour",
+        "gpui: next::geometry::select's text colour",
     ),
     (
         "",
@@ -891,12 +891,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["combo_box.field(NONE).min_size[1]"],
-        "gpui: geometry::select's height, by the control-height rule",
+        "gpui: next::geometry::select's height, by the control-height rule",
     ),
     (
         "",
         &["combo_box.field(NONE).min_size[0]"],
-        "gpui: geometry::select's min_w",
+        "gpui: next::geometry::select's min_w",
     ),
     // --- defaults ----------------------------------------------------------------
     (
@@ -1027,7 +1027,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.buttons",
         &["typography.line_height_multiplier"],
-        "gpui: geometry::button's line height (control-height rule)",
+        "gpui: next::geometry::button's line height (control-height rule)",
     ),
     (
         "basic.checkboxes",
@@ -1082,12 +1082,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         &["typography.line_height_multiplier"],
-        "gpui: geometry::combobox's line height (control-height rule)",
+        "gpui: next::geometry::combobox's line height (control-height rule)",
     ),
     (
         "chrome.side_panel.settings",
         &["typography.line_height_multiplier"],
-        "gpui: geometry::select's line height (control-height rule)",
+        "gpui: next::geometry::select's line height (control-height rule)",
     ),
     (
         "chrome.side_panel.inspector_tabs",
@@ -1112,7 +1112,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.list",
         &["typography.line_height_multiplier"],
-        "gpui: geometry::list_item's line height (control-height rule)",
+        "gpui: next::geometry::list_item's line height (control-height rule)",
     ),
     (
         "basic.table",
@@ -1448,7 +1448,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.card",
         &["layout.container_margin"],
-        "gpui: pads a side card.border.padding leaves unstated (demo::card)",
+        "gpui: pads a side card.container(NONE).padding leaves unstated (demo::card)",
     ),
     (
         "",
@@ -2113,7 +2113,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
             "scrollbar.thumb(NONE).fill",
             "scrollbar.thumb(UNFOCUSED_VIEW).fill",
         ],
-        "gpui: gpui-base's thumb at rest (base_layer::scrollbar_styles)",
+        "gpui: gpui-base's thumb at rest is scrollbar.thumb(UNFOCUSED_VIEW).fill, the handle of a view without the focus, which is the plain thumb, scrollbar.thumb(NONE).fill, on a theme with no rule for that state (native-theme-gpui next/mod.rs, thumb_at_rest; base_layer::scrollbar_styles)",
     ),
     (
         "",
@@ -2405,22 +2405,22 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["status_bar.bar.padding.top"],
-        "gpui: next::geometry::status_barpads the stated side; upstream's py_1 the rest",
+        "gpui: next::geometry::status_bar pads the stated side; upstream's py_1 the rest",
     ),
     (
         "",
         &["status_bar.bar.padding.right"],
-        "gpui: next::geometry::status_barpads the stated side; upstream's px_2 the rest",
+        "gpui: next::geometry::status_bar pads the stated side; upstream's px_2 the rest",
     ),
     (
         "",
         &["status_bar.bar.padding.bottom"],
-        "gpui: next::geometry::status_barpads the stated side; upstream's py_1 the rest",
+        "gpui: next::geometry::status_bar pads the stated side; upstream's py_1 the rest",
     ),
     (
         "",
         &["status_bar.bar.padding.left"],
-        "gpui: next::geometry::status_barpads the stated side; upstream's px_2 the rest",
+        "gpui: next::geometry::status_bar pads the stated side; upstream's px_2 the rest",
     ),
     (
         "",
@@ -2706,32 +2706,32 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["text_area.field(NONE).corners"],
-        "gpui: geometry::text_area's corner radius",
+        "gpui: next::geometry::text_area's corner radius",
     ),
     (
         "",
         &["text_area.field(NONE).stroke.width"],
-        "gpui: geometry::text_area's border width",
+        "gpui: next::geometry::text_area's border width",
     ),
     (
         "",
         &["text_area.field(NONE).padding.top"],
-        "gpui: geometry::text_area pads past the editor's own padding",
+        "gpui: next::geometry::text_area pads past the editor's own padding",
     ),
     (
         "",
         &["text_area.field(NONE).padding.right"],
-        "gpui: geometry::text_area pads past the editor's own padding",
+        "gpui: next::geometry::text_area pads past the editor's own padding",
     ),
     (
         "",
         &["text_area.field(NONE).padding.bottom"],
-        "gpui: geometry::text_area pads past the editor's own padding",
+        "gpui: next::geometry::text_area pads past the editor's own padding",
     ),
     (
         "",
         &["text_area.field(NONE).padding.left"],
-        "gpui: geometry::text_area pads past the editor's own padding",
+        "gpui: next::geometry::text_area pads past the editor's own padding",
     ),
     (
         "",

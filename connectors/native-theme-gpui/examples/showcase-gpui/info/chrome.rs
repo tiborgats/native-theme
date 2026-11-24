@@ -1364,10 +1364,11 @@ pub fn icon_set_select(
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
 /// showing `icon` of the icon theme named `set`, coloured as
 /// `buttons::native_toolbar` says and sized as `buttons::tool_button_size`
-/// says under the installed 0.8.0 theme `native`. Its icon-size line is
-/// recorded where `demo::toolbar_button` applies the builder;
-/// `tooltip_delay` is the delay its tooltip is given, the theme's
-/// `timings.tooltip_show_ms`.
+/// says under the installed 0.8.0 theme `native`, its variant built from
+/// `from`. Its icon-size line is recorded where `demo::toolbar_button`
+/// applies the builder; `tooltip_delay` is the delay its tooltip is given,
+/// the theme's `timings.tooltip_show_ms`.
+#[allow(clippy::too_many_arguments)]
 pub fn toolbar_button(
     t: &Theme,
     action: &'static str,
@@ -1376,6 +1377,7 @@ pub fn toolbar_button(
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
     native: Option<&NextTheme>,
+    from: super::buttons::ToolVariant,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -1384,12 +1386,12 @@ pub fn toolbar_button(
         "Toolbar, labelled"
     });
     let info = action_tooltip(
-        super::buttons::native_toolbar(info, t, native),
+        super::buttons::native_toolbar(info, t, native, from),
         t,
         tooltip_styled,
         tooltip_delay,
     )
-    .not_themeable("fill", super::buttons::toolbar_fill(native));
+    .not_themeable("fill", super::buttons::toolbar_fill(native, from));
     let info = if drawn {
         info.not_themeable("icon", child_icon_line(icon))
     } else {
@@ -1465,7 +1467,7 @@ pub(crate) fn child_icon_line(icon: &ChromeIcon) -> String {
 
 /// The colour a raster icon of the chosen set is drawn in
 /// (`ChromeIcon::Raster`), which no widget's colour reaches.
-pub(crate) const RASTER_ICON_COLOUR: &str = "which takes no text colour: it shows the colour its loader drew it in -- an SF Symbol or a Segoe Fluent glyph in defaults.font.color where a native theme is installed (the showcase's icon_tint), else in the loader's own (SF Symbols black, Segoe Fluent white: native-theme icons.rs, SfSymbolsLoader, SegoeFluentLoader); a freedesktop theme's raster icon, or its SVG in several colours, in its own colours";
+pub(crate) const RASTER_ICON_COLOUR: &str = "which takes no text colour: it shows the colour its loader drew it in -- an SF Symbol or a Segoe Fluent glyph in typography.body.color where a native theme is installed (the showcase's icon_tint), else in the loader's own (SF Symbols black, Segoe Fluent white: native-theme icons.rs, SfSymbolsLoader, SegoeFluentLoader); a freedesktop theme's raster icon, or its SVG in several colours, in its own colours";
 
 /// What a chrome icon's info says it is: `icon` as the icon theme named
 /// `set` gives it, and `absent` what its widget shows where the icon theme
@@ -1547,7 +1549,7 @@ pub fn status_bar(t: &Theme, styled: bool, edge: bool, environment: &str) -> Wid
         if cfg!(target_os = "linux") {
             "the side-panel toggle at the bar's left end, then the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- next::Theme::from_system reads the desktop with the reader of the platform's preset (Preset::detect), and the preset names the one it read; the installed preset and colour mode; the font the installed theme states as typography.body, in the unit its source stated, or (family not stated); the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         } else {
-            "the side-panel toggle at the bar's left end, then the operating system; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+            "the side-panel toggle at the bar's left end, then the operating system; the installed preset and colour mode; the font the installed theme states as typography.body, in the unit its source stated, or (family not stated); the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         },
     )
     .instance(

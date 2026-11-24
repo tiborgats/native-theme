@@ -1669,6 +1669,7 @@ pub(crate) fn toolbar_button(
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
     let delay = next_tooltip_delay(cx);
+    let (variant, from) = toolbar_variant(cx);
     let mut button_info = info::toolbar_button(
         cx.theme(),
         about,
@@ -1677,6 +1678,7 @@ pub(crate) fn toolbar_button(
         styled,
         delay,
         next_resolved(cx),
+        from,
     );
     if styled {
         button_info = button_info.next_geometry("tooltip");
@@ -1691,7 +1693,6 @@ pub(crate) fn toolbar_button(
         glyph_at(icon, size)
     });
     let dispatched = action.boxed_clone();
-    let variant = toolbar_variant(cx, &mut button_info);
     let button = next_native_info(
         refined(
             Button::new(id).custom(variant),
@@ -1793,7 +1794,9 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
         drawn,
         label,
     } = item;
-    let mut button_info = info::buttons::toolbar_item(cx.theme(), &drawn, set, next_resolved(cx));
+    let (variant, from) = toolbar_variant(cx);
+    let mut button_info =
+        info::buttons::toolbar_item(cx.theme(), &drawn, set, next_resolved(cx), from);
     let icon = chrome_glyph(&drawn, &icon).map(|icon| {
         let size = info::next_native_value(
             cx,
@@ -1803,7 +1806,6 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
         );
         glyph_at(icon, size)
     });
-    let variant = toolbar_variant(cx, &mut button_info);
     let button = next_native_info(
         refined(
             Button::new(id).custom(variant),
@@ -11253,11 +11255,13 @@ pub(crate) fn icon_button(
         selected,
     } = spec;
     let icon = role_glyph_of(drawn);
+    let (variant, from) = toolbar_variant(cx);
     let mut button_info = info::buttons::icon_button(
         cx.theme(),
         icon.is_some(),
         on_click.as_ref().map(|_| selected),
         next_resolved(cx),
+        from,
     )
     .instance("icon", format!("{name}, at toolbar.button_icon(NONE).size"));
     if drawn.0.is_raster() {
@@ -11278,7 +11282,6 @@ pub(crate) fn icon_button(
         );
         glyph_at(icon, size)
     });
-    let variant = toolbar_variant(cx, &mut button_info);
     let button = next_native_info(
         refined(
             Button::new(id).custom(variant),

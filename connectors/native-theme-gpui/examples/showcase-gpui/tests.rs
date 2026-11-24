@@ -4786,7 +4786,11 @@ fn a_tool_buttons_info_names_its_icon_theme(cx: &mut TestAppContext) {
 /// reads in a form gpui cannot take -- kde-breeze light with
 /// `toolbar.button(HOVER).fill` patched to a gradient, which has no colour
 /// to fall back on (spec §10 rule 2) -- the tool button takes
-/// `variants::ghost_button` and its info says which home it lacked.
+/// `variants::ghost_button` and its info says which home it lacked; the
+/// drawn Basic icon button's info then claims the Ghost's hover and pressed
+/// fills, `secondary_hover` and `secondary_active`, and none of the toolbar
+/// states kde-breeze states (`toolbar.button(PRESSED).fill`,
+/// `toolbar.button(HOVER).stroke.color`), which the Ghost does not paint.
 #[gpui::test]
 fn a_tool_button_whose_variant_gpui_cannot_take_says_so(cx: &mut TestAppContext) {
     use native_theme::next::{
@@ -4808,14 +4812,22 @@ fn a_tool_button_whose_variant_gpui_cannot_take_says_so(cx: &mut TestAppContext)
         )
     });
     let Some(r) = r else { return };
-    let (unmapped, variant, ghost, info) = cx.update(|_window, cx| {
+    let (unmapped, variant, ghost, info, tokens) = cx.update(|_window, cx| {
         let unmapped = native_theme_gpui::next::variants::toolbar_button(&r, cx)
             .err()
             .map(|unstated| unstated.home());
-        let mut info = crate::info::WidgetInfo::new("Tool button");
-        let variant = crate::support::toolbar_variant(cx, &mut info);
+        let (variant, from) = crate::support::toolbar_variant(cx);
+        let t = Theme::global(cx);
+        let info = crate::info::buttons::icon_button(t, true, None, Some(&r), from);
         let ghost = native_theme_gpui::variants::ghost_button(cx);
-        (unmapped, variant, ghost, info.to_text())
+        let t = Theme::global(cx);
+        (
+            unmapped,
+            variant,
+            ghost,
+            info.to_text(),
+            (t.secondary_hover, t.secondary_active),
+        )
     });
     assert_eq!(
         unmapped,
@@ -4834,6 +4846,38 @@ fn a_tool_button_whose_variant_gpui_cannot_take_says_so(cx: &mut TestAppContext)
         ),
         "the tool button's info does not say its variant fell back: {info}"
     );
+    use native_theme_gpui::next::{state_fill_of, state_stroke_color_of};
+    assert!(
+        state_fill_of(&r.toolbar.button(WidgetState::PRESSED)).is_some()
+            && state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER)).is_some(),
+        "kde-breeze light no longer states the toolbar's pressed fill and hover outline, so \
+         the claims below prove nothing"
+    );
+    let drawn = settle_on(&mut cx, &showcase, "basic-icon-copy");
+    assert!(drawn.is_some(), "the Basic icon button shows no info");
+    let Some(drawn) = drawn else { return };
+    let (hover, active) = tokens;
+    assert_eq!(
+        claim_of(&drawn, "secondary_hover"),
+        Some(hover),
+        "the fallen-back tool button does not claim the Ghost's hover fill: {drawn:?}"
+    );
+    assert_eq!(
+        claim_of(&drawn, "secondary_active"),
+        Some(active),
+        "the fallen-back tool button does not claim the Ghost's pressed fill: {drawn:?}"
+    );
+    for home in [
+        "toolbar.button(HOVER).fill",
+        "toolbar.button(PRESSED).fill",
+        "toolbar.button(HOVER).stroke.color",
+    ] {
+        assert_eq!(
+            claim_of(&drawn, home),
+            None,
+            "the fallen-back tool button claims {home}, which the Ghost does not paint: {drawn:?}"
+        );
+    }
 }
 
 /// A page change keeps an info whose target is still drawn, as chrome is
@@ -23001,41 +23045,238 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
     }
 }
 
-/// A checked tool Button under a theme that states none of the fills
-/// `next::geometry::toolbar_button_checked` reads --
+/// Every arm of `checked_fill`, the fill a checked tool Button claims from
+/// the fills `next::geometry::toolbar_button_checked` reads --
 /// `toolbar.button(CHECKED).fill`, `toolbar.button(PRESSED).fill`,
-/// `button.body(PRESSED).fill` -- keeps the custom variant's selected fill,
-/// `secondary_active`, under the variant's text, whether the builder
-/// applies or not; and a bundled preset that states the checked fill takes
-/// it. No bundled preset leaves all three unstated, so the parts are built
-/// stating nothing.
+/// `button.body(PRESSED).fill` -- each stated or not, the builder applying
+/// or not, the rest refinement's transparent fill there or not, the variant
+/// built from the toolbar's states or fallen back on the Ghost: where the
+/// builder applies, the checked, the toolbar's pressed, then the pressed
+/// body's fill, in that order; else none where the rest fill is cleared;
+/// else the variant's selected fill, the toolbar's pressed fill where the
+/// variant takes it, else `secondary_active`. No bundled preset leaves the three unstated, so a
+/// part stating nothing is built, and kde-breeze's stated checked part
+/// stands for a stated fill. Dropping a condition or swapping two arms
+/// fails a row.
 #[test]
-fn a_checked_tool_button_with_no_stated_fill_takes_the_variants_selected_fill() -> Result<(), String>
-{
+fn a_checked_tool_buttons_claimed_fill_takes_each_source_in_order() -> Result<(), String> {
     use crate::info::buttons::{CheckedFill, checked_fill};
     use native_theme::next::{PartStyle, WidgetState};
     let none = PartStyle::default();
-    for applied in [true, false] {
-        assert_eq!(
-            checked_fill(&none, &none, &none, applied),
-            CheckedFill::Variant,
-            "applied {applied}: a checked tool Button whose theme states no fill does not keep \
-             the variant's selected fill"
-        );
-    }
     let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
         .resolve(&native_theme::next::ThemeContext::default());
-    let checked = r.toolbar.button(WidgetState::CHECKED);
+    let stated = r.toolbar.button(WidgetState::CHECKED);
     assert!(
-        native_theme_gpui::next::state_fill_of(&checked).is_some(),
-        "kde-breeze no longer states toolbar.button(CHECKED).fill, so this part proves nothing"
+        native_theme_gpui::next::state_fill_of(&stated).is_some(),
+        "kde-breeze no longer states toolbar.button(CHECKED).fill, so this test proves nothing"
     );
-    assert_eq!(
-        checked_fill(&checked, &none, &none, true),
-        CheckedFill::Checked,
-        "kde-breeze's stated checked fill is not taken"
-    );
+    let part = |is: bool| if is { &stated } else { &none };
+    // (checked, pressed, body pressed stated; builder applies; rest fill
+    // cleared; variant from the toolbar's states; the fill claimed)
+    let rows = [
+        (
+            [true, false, false],
+            [true, false, false],
+            CheckedFill::Checked,
+        ),
+        (
+            [true, false, false],
+            [false, false, true],
+            CheckedFill::Variant,
+        ),
+        (
+            [true, true, false],
+            [true, false, false],
+            CheckedFill::Checked,
+        ),
+        (
+            [true, false, true],
+            [true, false, false],
+            CheckedFill::Checked,
+        ),
+        (
+            [false, true, false],
+            [true, false, false],
+            CheckedFill::Pressed,
+        ),
+        (
+            [false, true, true],
+            [true, false, false],
+            CheckedFill::Pressed,
+        ),
+        (
+            [false, false, true],
+            [true, false, false],
+            CheckedFill::BodyPressed,
+        ),
+        (
+            [false, false, true],
+            [false, false, true],
+            CheckedFill::Variant,
+        ),
+        (
+            [false, true, false],
+            [true, true, false],
+            CheckedFill::Pressed,
+        ),
+        ([false, false, false], [true, true, true], CheckedFill::Rest),
+        ([false, true, false], [false, true, true], CheckedFill::Rest),
+        (
+            [false, true, false],
+            [false, false, true],
+            CheckedFill::Pressed,
+        ),
+        (
+            [false, true, false],
+            [false, false, false],
+            CheckedFill::Variant,
+        ),
+        (
+            [false, false, false],
+            [false, false, false],
+            CheckedFill::Variant,
+        ),
+        (
+            [true, true, true],
+            [false, false, true],
+            CheckedFill::Pressed,
+        ),
+    ];
+    for ([checked, pressed, body], [applied, cleared, states], expected) in rows {
+        assert_eq!(
+            checked_fill(
+                part(checked),
+                part(pressed),
+                part(body),
+                applied,
+                cleared,
+                states
+            ),
+            expected,
+            "stated checked {checked}, pressed {pressed}, body pressed {body}; builder applies \
+             {applied}; rest fill cleared {cleared}; variant from the toolbar's states {states}"
+        );
+    }
     Ok(())
+}
+
+/// The checked edit button paints the fill its info claims where
+/// `next::geometry::toolbar_button_checked` does not apply -- kde-breeze
+/// light with `toolbar.button(CHECKED).fill` patched to a gradient, which
+/// gpui cannot take: none where `next::geometry::toolbar_button_rest`
+/// clears the fill (kde-breeze outlines its tool buttons), and, where that
+/// builder does not apply either (`button.body(NONE).stroke` patched to
+/// sides of their own), the variant's selected fill, its pressed one
+/// (button/button.rs, ButtonVariant::selected): the toolbar's
+/// `toolbar.button(PRESSED).fill` where the variant is built from the
+/// toolbar's states, and the Ghost's `secondary_active` where it fell back
+/// on the Ghost (`toolbar.button(HOVER).fill` a gradient as well).
+#[gpui::test]
+fn a_checked_tool_button_paints_the_fill_it_claims(cx: &mut TestAppContext) {
+    use crate::info::buttons::ToolVariant;
+    use native_theme::next::{
+        BlendMode, ButtonRule, Paint, PaintLayer, PartPatch, Stroke, StrokeAlign, StrokeSide,
+        ThemePatch, ToolbarRule, WidgetState,
+    };
+    use native_theme_gpui::next::state_fill_of;
+    let button = "basic-icon-edit";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let gradient = || {
+        Paint::layers(vec![PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: Vec::new().into(),
+            blend: BlendMode::Normal,
+        }])
+    };
+    let away = point(px(4.), px(4.));
+    let sides = || {
+        Stroke::sides(
+            StrokeSide::default(),
+            StrokeSide::default(),
+            StrokeSide::default(),
+            StrokeSide::default(),
+            StrokeAlign::default(),
+        )
+    };
+    // (the case, whether the rest builder is kept from applying, whether
+    // the variant is)
+    for (case, unrest, ghost) in [
+        ("rest fill", false, false),
+        ("variant's pressed fill", true, false),
+        ("Ghost's pressed fill", true, true),
+    ] {
+        let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+            let mut patch = ThemePatch::new().toolbar(
+                ToolbarRule::new()
+                    .states(WidgetState::CHECKED)
+                    .button(PartPatch::new().fill(gradient())),
+            );
+            if unrest {
+                patch = patch.button(ButtonRule::new().body(PartPatch::new().stroke(sides())));
+            }
+            if ghost {
+                patch = patch.toolbar(
+                    ToolbarRule::new()
+                        .states(WidgetState::HOVER)
+                        .button(PartPatch::new().fill(gradient())),
+                );
+            }
+            Some(patch)
+        });
+        let Some(r) = r else { return };
+        let (applies, rest, from, active) = cx.update(|_window, cx| {
+            (
+                native_theme_gpui::next::geometry::toolbar_button_checked(&r).is_ok(),
+                native_theme_gpui::next::geometry::toolbar_button_rest(&r).is_ok(),
+                crate::support::toolbar_variant(cx).1,
+                Theme::global(cx).secondary_active,
+            )
+        });
+        let pressed = state_fill_of(&r.toolbar.button(WidgetState::PRESSED));
+        assert!(
+            !applies && rest != unrest && pressed.is_some_and(|p| p != active),
+            "{case}: the patched theme leaves toolbar_button_checked applying or \
+             toolbar_button_rest not as the case needs, or kde-breeze no longer states a \
+             pressed toolbar fill apart from secondary_active, so this test proves nothing"
+        );
+        assert_eq!(
+            from == ToolVariant::Toolbar,
+            !ghost,
+            "{case}: the variant is not built from what the patch leaves"
+        );
+        let (home, fill) = match (unrest, ghost) {
+            (false, _) => ("toolbar.button(PRESSED).fill", None),
+            (true, false) => ("toolbar.button(PRESSED).fill", pressed),
+            (true, true) => ("secondary_active", Some(active)),
+        };
+        assert!(
+            read(&mut cx, &showcase, |this, _| this.basic_edit),
+            "{case}: the edit button is not checked"
+        );
+        hover(&mut cx, away);
+        draw(&mut cx);
+        assert_eq!(
+            painted_fill(&mut cx, button),
+            fill,
+            "{case}: the checked edit button is not filled as its info claims, {home} or none"
+        );
+        let info = settle_on(&mut cx, &showcase, button);
+        assert_eq!(
+            info.as_ref().and_then(|info| claim_of(info, home)),
+            fill,
+            "{case}: the checked edit button's info does not claim {home} as painted: {info:?}"
+        );
+        if !unrest {
+            assert!(
+                info.as_ref()
+                    .is_some_and(|info| claim_of(info, "secondary_active").is_none()
+                        && info
+                            .to_text()
+                            .contains("toolbar_button_rest's transparent fill")),
+                "{case}: the checked edit button's info claims a fill it does not paint: {info:?}"
+            );
+        }
+    }
 }
 
 /// A disabled refined field's edge swatch is the colour painted: the
@@ -23840,16 +24081,20 @@ fn the_tool_buttons_info_names_upstreams_size_only_where_unstated(cx: &mut TestA
 /// the Basic page's icon buttons, which `demo::tool_box_of` sizes alike.
 #[test]
 fn every_tool_buttons_size_note_follows_the_stated_padding() {
+    use crate::info::buttons::ToolVariant;
     use native_theme::next::WidgetState;
     use native_theme_gpui::next::{padding_of, radius_of};
     let icon = ChromeIcon::Builtin("Search".into());
     let infos = |t: &Theme, native: Option<&native_theme::next::ResolvedTheme>| {
+        // The size notes do not follow the variant's outcome, only its
+        // colour claims do.
+        let from = native.map_or(ToolVariant::Ghost(None), |_| ToolVariant::Toolbar);
         [
             (
                 "toolbar button",
                 "h_8",
                 "px_2p5",
-                crate::info::toolbar_button(t, "a", &icon, "set", false, None, native),
+                crate::info::toolbar_button(t, "a", &icon, "set", false, None, native, from),
             ),
             (
                 "panel toggle",
@@ -23877,13 +24122,13 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
                 "toolbar item",
                 "h_8",
                 "px_2p5",
-                crate::info::buttons::toolbar_item(t, &icon, "set", native),
+                crate::info::buttons::toolbar_item(t, &icon, "set", native, from),
             ),
             (
                 "Basic icon button",
                 "h_8",
                 "px_2p5",
-                crate::info::buttons::icon_button(t, true, None, native),
+                crate::info::buttons::icon_button(t, true, None, native, from),
             ),
         ]
     };

@@ -190,6 +190,13 @@ const VARIANTS: &str = include_str!("variants.rs");
 /// `NEXT_GEOMETRY_NOTES` holds.
 const NEXT_GEOMETRY: &str = include_str!("next/geometry.rs");
 
+/// The 0.8.0 model's variants, `next::variants`.
+const NEXT_VARIANTS: &str = include_str!("next/variants.rs");
+
+/// The bodies of the 0.8.0 builders and variants, which `next::geometry`'s
+/// `builders!` entries and `next::variants`' functions call by their names.
+const NEXT_BUILDERS: &str = include_str!("next/builders.rs");
+
 /// The builders `next/geometry.rs` declares: each `pub fn` and each entry
 /// `name -> Type;` of its `builders!` invocation, which declares one apiece.
 fn next_builder_fns(source: &str) -> Vec<&str> {
@@ -459,53 +466,343 @@ const OLD_MODEL_READS: &[&str] = &[
 ];
 
 /// The 0.7.2 model's reads and installs of a theme, which no showcase file
-/// names: the desktop's theme (`SystemTheme`, `apply_system_theme`), a
-/// preset loaded or resolved (`theme::Theme::preset`, `from_toml`,
-/// `resolve_with`, `into_resolved`, `ResolutionContext`, the resolved
-/// `native_theme::Resolved` and its `ResolvedFontSpec`), and the pipeline's
-/// preset guess (`platform_preset_name`). What the connector's own 0.7.2
-/// widgets still hand the showcase until M5 (`TabIndicatorSide`,
-/// `ResolvedPadding`) and what reads no theme (the preset list, the icon
-/// loaders' `Rgba`, `detect`, `fonts`) are not reads.
+/// reads through a path other than the 0.8.0 model's ([`is_next_path`]): the
+/// desktop's theme (`SystemTheme`, `apply_system_theme`, the connector's
+/// `from_system`), a preset loaded or resolved (`Theme::preset`,
+/// `Theme::from_toml`, the connector's `from_preset`, `resolve_with`,
+/// `into_resolved`, `ResolutionContext`, the resolved `native_theme::Resolved`,
+/// `ResolvedTheme` and its `ResolvedFontSpec`), its modes (`ThemeMode`,
+/// `ColorMode`), the connector's installs of it (`to_theme`,
+/// `apply_accessibility`), and the pipeline's preset guess
+/// (`platform_preset_name`). Each is matched as a whole path, wherever it
+/// stands: after `::` (`native_theme::Theme::preset`), at a crate root
+/// (`native_theme_gpui::ResolvedTheme`), or bare and imported by a `use`.
+/// What the connector's own 0.7.2 widgets still hand the showcase until M5
+/// (`TabIndicatorSide`, `ResolvedPadding`) and what reads no theme (the
+/// preset list, the icon loaders' `Rgba`, `detect`, `fonts`) are not reads.
 const OLD_MODEL_THEME_READS: &[&str] = &[
     "SystemTheme",
     "apply_system_theme",
-    "theme::Theme::preset",
-    "theme::Theme::from_toml",
+    "Theme::preset",
+    "Theme::from_toml",
+    "from_preset",
+    "from_system",
     "resolve_with",
     "into_resolved",
     "ResolutionContext",
     "native_theme::Resolved",
+    "ResolvedTheme",
     "ResolvedFontSpec",
+    "ThemeMode",
+    "ColorMode",
+    "to_theme",
+    "apply_accessibility",
     "platform_preset_name",
 ];
 
-/// Whether `code` names `module::name` of the 0.7.2 model: a path of its
-/// own, as [`references`] reads one, with no `next::` before the module.
-fn names_old_path(code: &str, module: &str, name: &str) -> bool {
-    let path = format!("{module}::{name}");
-    code.match_indices(path.as_str()).any(|(at, m)| {
-        let head = code.get(..at).unwrap_or("");
-        let whole = head
-            .chars()
-            .next_back()
-            .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
-            && code
-                .get(at + m.len()..)
-                .and_then(|t| t.chars().next())
-                .is_none_or(|c| !(c.is_alphanumeric() || c == '_'));
-        whole && !head.ends_with("next::")
-    })
+/// The 0.7.2 model's reads that no path makes 0.8.0's, refused wherever they
+/// stand: the installed theme (`ActiveNativeTheme::native`, `.native(`, its
+/// `Native<'_>` view, `NativeTheme::resolved` as `.resolved(`) and the
+/// connector's 0.7.2 install, `native_theme_gpui::apply(`.
+const OLD_MODEL_LITERAL_READS: &[&str] = &[
+    "ActiveNativeTheme::native",
+    ".native(",
+    "Native<'",
+    ".resolved(",
+    "native_theme_gpui::apply(",
+];
+
+/// Whether `c` can stand in an identifier.
+fn is_ident_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_'
+}
+
+/// Every offset at which `code` holds `pattern` as a whole: no identifier
+/// character before a pattern that begins with one, none after a pattern
+/// that ends with one.
+fn whole_matches(code: &str, pattern: &str) -> Vec<usize> {
+    let starts_ident = pattern.chars().next().is_some_and(is_ident_char);
+    let ends_ident = pattern.chars().next_back().is_some_and(is_ident_char);
+    code.match_indices(pattern)
+        .map(|(at, _)| at)
+        .filter(|&at| {
+            let before_ok = !starts_ident
+                || code
+                    .get(..at)
+                    .and_then(|t| t.chars().next_back())
+                    .is_none_or(|c| !is_ident_char(c));
+            let after_ok = !ends_ident
+                || code
+                    .get(at + pattern.len()..)
+                    .and_then(|t| t.chars().next())
+                    .is_none_or(|c| !is_ident_char(c));
+            before_ok && after_ok
+        })
+        .collect()
+}
+
+/// One name a `use` declaration brings in: the declaration's span, the
+/// item's full path and the name it binds.
+struct UseItem {
+    span: std::ops::Range<usize>,
+    path: Vec<String>,
+    binds: String,
+}
+
+/// Every item of every `use` declaration in `code`, in source order.
+fn use_items(code: &str) -> Vec<UseItem> {
+    let mut out = Vec::new();
+    for at in whole_matches(code, "use") {
+        let head = code.get(..at).unwrap_or("").trim_end_matches([' ', '\t']);
+        let head_ok = head.ends_with("pub")
+            || head
+                .chars()
+                .next_back()
+                .is_none_or(|c| matches!(c, '\n' | ';' | '{' | '}' | ')'));
+        let tail = code.get(at + "use".len()..).unwrap_or("");
+        if !head_ok || !tail.starts_with([' ', '\n']) {
+            continue;
+        }
+        let Some(len) = tail.find(';') else { continue };
+        let tree = tail
+            .get(..len)
+            .unwrap_or("")
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        let span = at..at + "use".len() + len;
+        let mut items = Vec::new();
+        use_tree_items(&tree, &[], &mut items);
+        out.extend(items.into_iter().map(|(path, binds)| UseItem {
+            span: span.clone(),
+            path,
+            binds,
+        }));
+    }
+    out
+}
+
+/// The parts of `tree`, a `use` tree, split at its top-level commas and
+/// trimmed.
+fn top_level_parts(tree: &str) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut depth = 0usize;
+    let mut from = 0usize;
+    for (ix, c) in tree.char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => {
+                parts.push(tree.get(from..ix).unwrap_or(""));
+                from = ix + 1;
+            }
+            _ => {}
+        }
+    }
+    parts.push(tree.get(from..).unwrap_or(""));
+    parts
+        .into_iter()
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .collect()
+}
+
+/// The segments of `path`, a written path such as `a :: b::c`.
+fn path_segments(path: &str) -> impl Iterator<Item = String> + '_ {
+    path.split("::")
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
+/// The (full path, bound name) of every item of `tree`, under `prefix`.
+fn use_tree_items(tree: &str, prefix: &[String], out: &mut Vec<(Vec<String>, String)>) {
+    for part in top_level_parts(tree) {
+        let part = part.trim_start_matches("::");
+        if let Some(open) = part.find('{') {
+            let mut path = prefix.to_vec();
+            path.extend(path_segments(part.get(..open).unwrap_or("")));
+            let inner = part
+                .get(open + 1..)
+                .and_then(|t| t.trim_end().strip_suffix('}'))
+                .unwrap_or("");
+            use_tree_items(inner, &path, out);
+            continue;
+        }
+        let (named, alias) = match part.split_once(" as ") {
+            Some((named, alias)) => (named, Some(alias.trim())),
+            None => (part, None),
+        };
+        let mut path = prefix.to_vec();
+        path.extend(path_segments(named));
+        if path.last().is_some_and(|leaf| leaf == "self") {
+            path.pop();
+        }
+        let binds = alias
+            .map(str::to_string)
+            .or_else(|| path.last().cloned())
+            .unwrap_or_default();
+        out.push((path, binds));
+    }
+}
+
+/// Whether `path` is the 0.8.0 model's -- it passes through a `next` module
+/// -- or gpui-component's own, whose `Theme` and `ThemeMode` the 0.7.2
+/// model's names share.
+fn is_next_path<S: AsRef<str>>(path: &[S]) -> bool {
+    path.iter().any(|s| s.as_ref() == "next")
+        || path.first().is_some_and(|s| s.as_ref() == "gpui_component")
+}
+
+/// The path written right before offset `at` of `code`, as segments: the
+/// `a::b::` that qualifies whatever begins at `at`.
+fn written_qualifier(code: &str, at: usize) -> Vec<String> {
+    let mut head = code.get(..at).unwrap_or("");
+    let mut segments = Vec::new();
+    while let Some(rest) = head.strip_suffix("::") {
+        let segment = trailing_ident(rest);
+        if segment.is_empty() {
+            break;
+        }
+        segments.push(segment.to_string());
+        head = rest.get(..rest.len() - segment.len()).unwrap_or("");
+    }
+    segments.reverse();
+    segments
+}
+
+/// The full path of the name written at offset `at` of `code` as `written`:
+/// its written qualifier, and its first segment resolved through the
+/// nearest `use` before it that binds that name.
+fn full_path(code: &str, uses: &[UseItem], at: usize, written: &str) -> Vec<String> {
+    let mut path = written_qualifier(code, at);
+    path.extend(written.split("::").map(str::to_string));
+    let first = path.first().cloned().unwrap_or_default();
+    match uses
+        .iter()
+        .rfind(|item| item.span.end <= at && item.binds == first)
+    {
+        Some(item) => {
+            let mut full = item.path.clone();
+            full.extend(path.into_iter().skip(1));
+            full
+        }
+        None => path,
+    }
+}
+
+/// What `code`, a showcase file's code, reads of the 0.7.2 model, as (offset,
+/// what it reads): a name of [`OLD_MODEL_THEME_READS`] through a path that is
+/// not 0.8.0's, in code or imported by a `use` (with the first segment of a
+/// longer name, as `use native_theme::Theme;` for `Theme::preset`); a read of
+/// [`OLD_MODEL_LITERAL_READS`]; a `.resolve(` that is 0.7.2's -- 0.8.0's
+/// `Theme::resolve` takes a `&ThemeContext` (`next/preset.rs`), 0.7.2's a
+/// `ColorMode` (`ThemeSpec::resolve`, `model/mod.rs`) or nothing
+/// (`ThemeVariant::resolve`, `resolve/mod.rs`), so its argument does not
+/// begin with `&`; a 0.7.2 builder of `old_builders` / `old_variants` called
+/// other than through `next::`; and a `use` of one of them or of a whole
+/// 0.7.2 `geometry` or `variants` module's items (`::*`).
+fn old_model_reads(
+    code: &str,
+    old_builders: &[&str],
+    old_variants: &[&str],
+) -> Vec<(usize, String)> {
+    let uses = use_items(code);
+    let in_use = |at: usize| uses.iter().any(|item| item.span.contains(&at));
+    let mut findings = Vec::new();
+    for name in OLD_MODEL_THEME_READS {
+        for at in whole_matches(code, name) {
+            if !in_use(at) && !is_next_path(&full_path(code, &uses, at, name)) {
+                findings.push((at, format!("reads or installs a 0.7.2 theme, {name}")));
+            }
+        }
+    }
+    for item in &uses {
+        if is_next_path(&item.path) {
+            continue;
+        }
+        let joined = item.path.join("::");
+        let leaf = item.path.last().map_or("", String::as_str);
+        let imports_a_read = OLD_MODEL_THEME_READS.iter().any(|name| {
+            let segments: Vec<&str> = name.split("::").collect();
+            let ends_with_it = item.path.len() >= segments.len()
+                && item
+                    .path
+                    .iter()
+                    .rev()
+                    .zip(segments.iter().rev())
+                    .all(|(have, want)| have == want);
+            let its_type = segments.len() > 1
+                && segments
+                    .first()
+                    .is_some_and(|first| *first == leaf && first.starts_with(char::is_uppercase));
+            ends_with_it || its_type
+        });
+        if imports_a_read {
+            findings.push((item.span.start, format!("imports a 0.7.2 name, {joined}")));
+        }
+        let module = item
+            .path
+            .len()
+            .checked_sub(2)
+            .and_then(|ix| item.path.get(ix));
+        let builders = match module.map(String::as_str) {
+            Some("geometry") => old_builders,
+            Some("variants") => old_variants,
+            _ => &[],
+        };
+        if module.is_some_and(|m| m == "geometry" || m == "variants")
+            && (leaf == "*" || builders.contains(&leaf))
+        {
+            findings.push((
+                item.span.start,
+                format!("imports the 0.7.2 builders {joined}"),
+            ));
+        }
+    }
+    for pattern in OLD_MODEL_LITERAL_READS {
+        for at in whole_matches(code, pattern) {
+            findings.push((at, format!("reads the installed 0.7.2 theme, {pattern}")));
+        }
+    }
+    for (at, m) in code.match_indices(".resolve(") {
+        let argument = code.get(at + m.len()..).unwrap_or("").trim_start();
+        if !argument.starts_with('&') {
+            findings.push((
+                at,
+                "resolves a 0.7.2 theme, .resolve( without a &ThemeContext".to_string(),
+            ));
+        }
+    }
+    for (module, names) in [("geometry", old_builders), ("variants", old_variants)] {
+        for name in names {
+            for at in old_path_offsets(code, module, name) {
+                findings.push((at, format!("calls the 0.7.2 builder {module}::{name}")));
+            }
+        }
+    }
+    findings.sort();
+    findings
+}
+
+/// Every offset at which `code` names `module::name` of the 0.7.2 model: a
+/// path of its own, as [`references`] reads one, with no `next::` before the
+/// module.
+fn old_path_offsets(code: &str, module: &str, name: &str) -> Vec<usize> {
+    whole_matches(code, &format!("{module}::{name}"))
+        .into_iter()
+        .filter(|&at| !code.get(..at).unwrap_or("").ends_with("next::"))
+        .collect()
 }
 
 /// The gpui showcase reads no 0.7.2 theme: no file of it, the tests
 /// included, names a helper of [`OLD_MODEL_READS`] or a read or install of
-/// [`OLD_MODEL_THEME_READS`], reads the installed
-/// 0.7.2 theme (`ActiveNativeTheme::native`, `.native(`), or calls a 0.7.2
-/// builder that reads it -- a `geometry::` builder, or a `variants::` one
-/// but `ghost_button`, which reads gpui-component's theme alone -- other
-/// than through `next::`. Comments and strings are not read: a note may
-/// name what the 0.7.2 model did.
+/// [`OLD_MODEL_THEME_READS`] or [`OLD_MODEL_LITERAL_READS`], or calls or
+/// imports a 0.7.2 builder that reads the theme -- a `geometry::` builder,
+/// or a `variants::` one but `ghost_button`, which reads gpui-component's
+/// theme alone -- other than through `next::` ([`old_model_reads`]).
+/// Comments and strings are not read: a note may name what the 0.7.2 model
+/// did.
 #[test]
 fn the_showcase_reads_no_0_7_2_theme() {
     let old_variants: Vec<&str> = public_fns(VARIANTS)
@@ -526,23 +823,8 @@ fn the_showcase_reads_no_0_7_2_theme() {
                 findings.push(format!("{file}: names {name}"));
             }
         }
-        for name in OLD_MODEL_THEME_READS {
-            if mentions(&code, name) {
-                findings.push(format!("{file}: reads or installs a 0.7.2 theme, {name}"));
-            }
-        }
-        for (at, _) in code.match_indices(".native(") {
-            findings.push(format!(
-                "{file}:{}: reads the installed 0.7.2 theme, .native(",
-                line_at(&starts, at)
-            ));
-        }
-        for (module, names) in [("geometry", &old_builders), ("variants", &old_variants)] {
-            for name in names.iter() {
-                if names_old_path(&code, module, name) {
-                    findings.push(format!("{file}: calls the 0.7.2 builder {module}::{name}"));
-                }
-            }
+        for (at, what) in old_model_reads(&code, &old_builders, &old_variants) {
+            findings.push(format!("{file}:{}: {what}", line_at(&starts, at)));
         }
     }
     assert!(
@@ -552,7 +834,7 @@ fn the_showcase_reads_no_0_7_2_theme() {
     );
 }
 
-/// [`names_old_path`] takes a 0.7.2 path, spelt out or not, and no
+/// [`old_path_offsets`] takes a 0.7.2 path, spelt out or not, and no
 /// `next::` path, longer name or longer module.
 #[test]
 fn names_old_path_tells_the_models_apart() {
@@ -560,12 +842,91 @@ fn names_old_path_tells_the_models_apart() {
                 let b = native_theme_gpui::variants::default_button(n, cx);\n\
                 let c = next::variants::bordered_button(r, cx);\n\
                 let d = my_variants::switch_color(n);\n";
-    assert!(names_old_path(code, "variants", "toolbar_button"));
-    assert!(names_old_path(code, "variants", "default_button"));
-    assert!(!names_old_path(code, "variants", "bordered_button"));
-    assert!(!names_old_path(code, "variants", "switch_color"));
+    assert!(!old_path_offsets(code, "variants", "toolbar_button").is_empty());
+    assert!(!old_path_offsets(code, "variants", "default_button").is_empty());
+    assert!(old_path_offsets(code, "variants", "bordered_button").is_empty());
+    assert!(old_path_offsets(code, "variants", "switch_color").is_empty());
     let longer = "let e = variants::toolbar_button_from(s, cx);\n";
-    assert!(!names_old_path(longer, "variants", "toolbar_button"));
+    assert!(old_path_offsets(longer, "variants", "toolbar_button").is_empty());
+}
+
+/// [`old_model_reads`] refuses each 0.7.2 read, however it is written, and
+/// takes its 0.8.0 or gpui-component namesake: one refused and one taken
+/// snippet per pattern.
+#[test]
+fn old_model_reads_refuses_each_pattern() {
+    let builders = ["toolbar_button"];
+    let variants = ["default_button"];
+    let refused = [
+        "let t = native_theme::Theme::preset(\"x\")?;",
+        "use native_theme::Theme;\nfn f() { let t = Theme::preset(\"x\"); }",
+        "use native_theme_gpui::Theme as Old;",
+        "let t = native_theme::theme::Theme::from_toml(s);",
+        "let t = native_theme_gpui::from_preset(p, cx);",
+        "let t = native_theme_gpui::from_system();",
+        "let s = native_theme::SystemTheme::from_system();",
+        "apply_system_theme(&s, cx);",
+        "let r = v.resolve_with(m, &c);",
+        "let r = v.into_resolved(c);",
+        "let c = native_theme::ResolutionContext::default();",
+        "fn f(r: &native_theme::Resolved) {}",
+        "fn f(r: &native_theme::ResolvedTheme) {}",
+        "fn f(r: &native_theme_gpui::ResolvedTheme) {}",
+        "use native_theme_gpui::{ColorMode, ResolvedTheme};",
+        "fn f(r: &ResolvedTheme) {}",
+        "fn f(f: &native_theme::theme::ResolvedFontSpec) {}",
+        "let m = native_theme::ThemeMode::default();",
+        "let m = native_theme_gpui::ColorMode::Dark;",
+        "let t = native_theme_gpui::to_theme(r, n, cx);",
+        "native_theme_gpui::apply_accessibility(&p, cx);",
+        "let p = native_theme::platform_preset_name();",
+        "let n = ActiveNativeTheme::native(cx);",
+        "let n = cx.native();",
+        "fn f(n: Native<'_>) {}",
+        "let r = cx.native_theme()?.resolved(cx);",
+        "native_theme_gpui::apply(&r, cx);",
+        "let r = theme.resolve(native_theme::ColorMode::Dark);",
+        "variant.resolve();",
+        "let b = variants::default_button(cx);",
+        "let b = native_theme_gpui::geometry::toolbar_button(n);",
+        "use native_theme_gpui::geometry::{toolbar_button};",
+        "use native_theme_gpui::geometry::*;",
+        "use native_theme_gpui::variants::{default_button, ghost_button};",
+        "use native_theme_gpui::variants::*;",
+    ];
+    for code in refused {
+        assert!(
+            !old_model_reads(code, &builders, &variants).is_empty(),
+            "takes a 0.7.2 read: {code}"
+        );
+    }
+    let taken = [
+        "let t = native_theme::next::Theme::preset(p);",
+        "use native_theme::next::{Preset, Theme};\nfn f() { let t = Theme::preset(p); }",
+        "let t = NextTheme::preset(p).resolve(&ctx);",
+        "let t = native_theme::next::Theme::from_system();",
+        "use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};",
+        "fn f(r: &native_theme::next::ResolvedTheme) {}",
+        "use gpui_component::theme::Theme;",
+        "fn f() -> gpui_component::theme::ThemeMode { m }",
+        "enum AppColorMode { System }\nlet a = SetColorMode(m);",
+        "let t = native_theme_gpui::next::to_theme(&r);",
+        "native_theme_gpui::next::apply(&r, cx);",
+        "let r = cx.native_theme()?.next_resolved(cx);",
+        "let r = system\n    .resolve(\n        &ctx);",
+        "let b = next::variants::default_button(r, cx);",
+        "let b = native_theme_gpui::next::geometry::toolbar_button(r);",
+        "use native_theme_gpui::variants::{ghost_button};",
+        "use native_theme_gpui::next::geometry::{toolbar_button};",
+        "let n = cx.native_theme();",
+    ];
+    for code in taken {
+        assert_eq!(
+            old_model_reads(code, &builders, &variants),
+            Vec::new(),
+            "refuses a 0.8.0 or gpui-component read: {code}"
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -2766,14 +3127,45 @@ fn mentions_home(haystack: &str, home: &str) -> bool {
     })
 }
 
-/// Whether the cited `span` names the home `home`: spelt whole
-/// ([`mentions_home`]), or, for a global's path (`colors.focus_ring`), read
+/// `text` with each line's `//` comment, doc comments included, removed: a
+/// `//` inside a string literal is kept, and the strings are kept.
+fn without_line_comments(text: &str) -> String {
+    text.lines()
+        .map(|line| {
+            let mut in_string = false;
+            let mut escaped = false;
+            let mut previous = None;
+            let mut end = line.len();
+            for (ix, c) in line.char_indices() {
+                if in_string {
+                    match c {
+                        _ if escaped => escaped = false,
+                        '\\' => escaped = true,
+                        '"' => in_string = false,
+                        _ => {}
+                    }
+                } else if c == '"' {
+                    in_string = true;
+                } else if c == '/' && previous == Some('/') {
+                    end = ix.saturating_sub(1);
+                    break;
+                }
+                previous = Some(c);
+            }
+            line.get(..end).unwrap_or(line)
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Whether the cited `span` names the home `home` in code, not in a comment:
+/// spelt whole ([`mentions_home`]), or, for a global's path (`colors.focus_ring`), read
 /// in code at that path off a binding of a 0.8.0 theme, one of the names
 /// the connector gives it ([`THEME_BINDINGS`]), `r.colors.focus_ring`, the
 /// binding no field of a longer path and no longer name after it -- a
 /// global has no query for its reader to spell.
 fn names_home(span: &str, home: &str) -> bool {
-    if mentions_home(span, home) {
+    if mentions_home(&without_line_comments(span), home) {
         return true;
     }
     if home.contains('(') {
@@ -4625,7 +5017,9 @@ fn impl_bodies(code: &str, name: &str) -> Vec<std::ops::Range<usize>> {
 
 /// What a `HOW` line says applies its leaf: each showcase function it names
 /// (`demo::name`, or a `demo::Type`'s methods), each showcase file it names
-/// whole (`(inspector.rs)`), each connector builder (`geometry::name`) and
+/// whole (`(inspector.rs)`), each 0.8.0 builder or variant of the connector
+/// (`next::geometry::name`, `next::variants::name`, read in `next/builders.rs`
+/// where its body is, else in its own module) and
 /// each connector control (`widgets::Name`, its file), as (the route, its
 /// code). A route this cannot find is listed with no code.
 fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<String>)> {
@@ -4661,15 +5055,21 @@ fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<S
             out.push(((*path).to_string(), Some(blanked(raw))));
         }
     }
-    let code = blanked(GEOMETRY);
-    let items = fn_items(GEOMETRY, &code);
-    for name in paths_after(text, "geometry") {
-        let body = items
-            .iter()
-            .find(|f| f.name == name)
-            .and_then(|f| code.get(f.body.clone()))
-            .map(str::to_string);
-        out.push((format!("geometry::{name}"), body));
+    for (module, sources) in [
+        ("next::geometry", [NEXT_BUILDERS, NEXT_GEOMETRY]),
+        ("next::variants", [NEXT_VARIANTS, NEXT_BUILDERS]),
+    ] {
+        for name in paths_after(text, module) {
+            let body = sources.iter().find_map(|source| {
+                let code = blanked(source);
+                fn_items(source, &code)
+                    .iter()
+                    .find(|f| f.name == name)
+                    .and_then(|f| code.get(f.body.clone()))
+                    .map(str::to_string)
+            });
+            out.push((format!("{module}::{name}"), body));
+        }
     }
     for name in paths_after(text, "widgets") {
         let declared = format!("pub struct {name}");
@@ -5396,6 +5796,11 @@ fn a_claim_in_the_0_8_0_form_names_a_home() {
         ("hsla(r.other.colors.focus_ring)", "colors.focus_ring"),
         ("hsla(.colors.focus_ring)", "colors.focus_ring"),
         ("// r.colors.focus_ring", "colors.focus_ring"),
+        ("    /// `separator.color` and", "separator.color"),
+        (
+            "let x = 1; // state_fill(&d, \"button.body(DEFAULT).fill\")",
+            "button.body(DEFAULT).fill",
+        ),
         (
             "fill(&r.button.body(WidgetState::DEFAULT))",
             "button.body(DEFAULT).fill",

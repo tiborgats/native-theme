@@ -90,7 +90,7 @@ pub fn native_separator(t: &Theme, look: &SeparatorLook, room: bool) -> WidgetIn
             "line",
             "separator.color",
             look.color,
-            "native-theme-gpui/widgets/separator.rs:36",
+            "native-theme-gpui/widgets/separator.rs:45",
         ))
         .config(
             "thickness",
@@ -1086,7 +1086,7 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
             "tab.tab(SELECTED).stroke.color",
             stroke_color_of(&r.tab.tab(WidgetState::SELECTED)),
             Some(f32::from(look.border_width)),
-            "native-theme-gpui/widgets/tab_bar.rs:369-370",
+            "native-theme-gpui/widgets/tab_bar.rs:370",
         ))
         .color(claim(
             "rule under the bar",
