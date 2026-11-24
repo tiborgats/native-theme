@@ -61,6 +61,9 @@ pub struct RingLook {
 /// `styles::text_editor` already draw as the focused field's border.
 pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLook> {
     let d = &resolved.defaults;
+    if d.focus_ring_offset == -d.focus_ring_width {
+        return None;
+    }
     ring_look_from(
         to_color(d.focus_ring_color),
         d.focus_ring_width,
@@ -70,8 +73,11 @@ pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLoo
     )
 }
 
-/// [`ring_look`] of a ring `width` wide in `color`, `offset` out from the
-/// field's edge, round a field of corner `radius`.
+/// The look of a ring `width` wide in `color`, `offset` out from the
+/// field's edge, round a field of corner `radius`; `None` where the width
+/// is not positive, or the width or the offset not finite. A ring inset at
+/// the edge (`offset` minus `width`) is the band over the field's
+/// outermost `width` ([`RingLook::quad`]; spec §2, `FocusIndicator`).
 pub(crate) fn ring_look_from(
     color: Color,
     width: f32,
@@ -79,7 +85,7 @@ pub(crate) fn ring_look_from(
     radius: f32,
     keyboard_only: bool,
 ) -> Option<RingLook> {
-    let drawn = width.is_finite() && offset.is_finite() && width > 0.0 && offset != -width;
+    let drawn = width.is_finite() && offset.is_finite() && width > 0.0;
     drawn.then(|| RingLook {
         color,
         width,

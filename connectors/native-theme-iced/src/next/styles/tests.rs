@@ -1683,38 +1683,45 @@ fn a_field_stroke_no_hover_or_focus_rule_states_is_iceds_own() -> TestResult {
     Ok(())
 }
 
-/// The field styles read the focus ring's colour from its stroke
-/// (`focus_ring.stroke`), as `next::focus_ring` does, not from the colour
-/// role: an inset ring of a stated colour is the focused field's border in
-/// that colour, whatever `colors.focus_ring` is.
+/// A focus ring inset at the field's edge (offset minus its width) is
+/// painted over the field, not drawn as its border (spec §2,
+/// `FocusIndicator`): the focused field's border is the one it has with
+/// the ring off its edge, and the ring is the band over the field's
+/// outermost width, its outer corners the field's, in the colour of the
+/// ring's stroke (`focus_ring.stroke`), whatever `colors.focus_ring` is.
 #[test]
-fn a_field_takes_its_inset_rings_colour_from_the_rings_stroke() -> TestResult {
+fn an_inset_ring_is_the_band_over_the_field_not_its_border() -> TestResult {
+    use iced_core::border::Radius;
+    use iced_core::{Point, Rectangle, Size};
     use iced_widget::{text_editor, text_input};
     let opaque = Color::new(0.6, 0.1, 0.4, 1.0);
-    let mut covered = 0;
+    let field = Rectangle::new(Point::new(10.0, 20.0), Size::new(100.0, 30.0));
     for (preset, mut r) in every_preset() {
         r.colors.focus_ring = DISTINCT;
         r.focus_ring.stroke = Stroke::uniform(2.0, opaque);
+        let borders = |r: &ResolvedTheme| -> Result<_, super::super::Unmapped> {
+            let theme = to_theme(r)?;
+            let focused = |is_hovered| text_input::Status::Focused { is_hovered };
+            let editor = |is_hovered| text_editor::Status::Focused { is_hovered };
+            Ok([false, true].map(|hovered| {
+                (
+                    super::text_input(r).map(|s| s(&theme, focused(hovered)).border),
+                    super::text_editor(r).map(|s| s(&theme, editor(hovered)).border),
+                )
+            }))
+        };
+        r.focus_ring.offset = 1.0;
+        let off_the_edge = borders(&r)?;
         r.focus_ring.offset = -2.0;
-        let theme = to_theme(&r)?;
-        let input =
-            super::text_input(&r)?(&theme, text_input::Status::Focused { is_hovered: false })
-                .border;
-        let editor =
-            super::text_editor(&r)?(&theme, text_editor::Status::Focused { is_hovered: false })
-                .border;
-        let unstated =
-            |part: native_theme::next::PartStyle| !part.from_state.contains(PartStated::STROKE);
-        if unstated(r.input.field(WidgetState::FOCUSED)) {
-            covered += 1;
-            assert_eq!(input.color, to_color(opaque), "text_input {preset:?}");
-        }
-        if unstated(r.text_area.field(WidgetState::FOCUSED)) {
-            covered += 1;
-            assert_eq!(editor.color, to_color(opaque), "text_editor {preset:?}");
-        }
+        assert_eq!(borders(&r)?, off_the_edge, "{preset:?}");
+
+        let look = super::super::ring_look(&r, 5.0)?.ok_or("the inset ring")?;
+        let (ring, _) = look.quad(field).ok_or("the inset ring's quad")?;
+        assert_eq!(ring.bounds, field, "{preset:?}");
+        assert_eq!(ring.border.width, 2.0, "{preset:?}");
+        assert_eq!(ring.border.color, to_color(opaque), "{preset:?}");
+        assert_eq!(ring.border.radius, Radius::from(5.0), "{preset:?}");
     }
-    assert!(covered > 0, "a field with no focused stroke covered");
     Ok(())
 }
 

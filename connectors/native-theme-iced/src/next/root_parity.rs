@@ -68,6 +68,72 @@ fn body_padding(new: &native_theme::next::ResolvedTheme) -> Option<iced_core::Pa
     })
 }
 
+/// `focus_ring` round a field of corner `radius`, where the 0.8.0 theme
+/// states a ring inset at the edge (its offset minus its stroke's width)
+/// of one uniform stroke and no inner stroke or corners: the ring of
+/// `focus_ring.stroke`'s colour and width at `focus_ring.offset`, shown for
+/// keyboard focus only where `focus_ring.trigger` says so; `None` where it
+/// states another.
+#[cfg(feature = "widgets")]
+fn stated_inset_ring(new: &native_theme::next::ResolvedTheme, radius: f32) -> Option<String> {
+    use native_theme::next::{FocusKind, FocusTrigger, Stroke};
+    let f = &new.focus_ring;
+    let Stroke::Uniform { width, color, .. } = f.stroke else {
+        return None;
+    };
+    let plain =
+        f.kind == FocusKind::Ring && matches!(f.inner_stroke, Stroke::None) && f.corners.is_none();
+    (plain && width > 0.0 && f.offset == -width).then(|| {
+        format!(
+            "{:?}",
+            ok(Some(crate::focus_ring::RingLook {
+                color: super::to_color(color),
+                width,
+                offset: f.offset,
+                radius,
+                keyboard_only: f.trigger == Some(FocusTrigger::KeyboardOnly),
+                inner: None,
+                corners: None,
+            }))
+        )
+    })
+}
+
+/// [`stated_inset_ring`] round a square field.
+#[cfg(feature = "widgets")]
+fn stated_inset_ring_square(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    stated_inset_ring(new, 0.0)
+}
+
+/// [`stated_inset_ring`] round a field of the default corner radius
+/// (`layout.corner_radius`, which `border_corner_radius` gives on both
+/// models alike).
+#[cfg(feature = "widgets")]
+fn stated_inset_ring_rounded(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    stated_inset_ring(new, super::border_corner_radius(new))
+}
+
+/// `focus_ring` is compared with the `widgets` feature only, which builds
+/// it: no value to assert without it.
+#[cfg(not(feature = "widgets"))]
+fn stated_inset_ring_square(_: &native_theme::next::ResolvedTheme) -> Option<String> {
+    None
+}
+
+/// As [`stated_inset_ring_square`].
+#[cfg(not(feature = "widgets"))]
+fn stated_inset_ring_rounded(_: &native_theme::next::ResolvedTheme) -> Option<String> {
+    None
+}
+
+/// The reason of adwaita's focus ring, which the 0.8.0 side draws.
+const INSET_RING: &str = "adwaita's focus ring is inset at the field's edge (2 wide at offset \
+     -2, libadwaita 1.10.0 src/stylesheet/_drawing.scss, focus-ring), which 0.7.2's connector \
+     drew as the focused field's border and so not round it (crate::focus_ring::ring_look: \
+     None); the 0.8.0 side paints it over the field as the band over its outermost 2 px, the \
+     field's styles leaving it to the ring (docs/v0.8.0-spec.md §2, FocusIndicator: the \
+     geometry of a Ring)";
+
 /// `button_padding` as [`body_padding`] computes it.
 fn stated_button_padding(new: &native_theme::next::ResolvedTheme) -> Option<String> {
     Some(format!("{:?}", ok(body_padding(new)?)))
@@ -209,6 +275,18 @@ const DIFFERENCES: &[Difference] = &[
         preset: "macos-tahoe",
         new: New::Computed(stated_combo_box_padding),
         reason: NO_POPUP_LINE,
+    },
+    Difference {
+        name: "focus_ring",
+        preset: "adwaita",
+        new: New::Computed(stated_inset_ring_square),
+        reason: INSET_RING,
+    },
+    Difference {
+        name: "focus_ring",
+        preset: "adwaita",
+        new: New::Computed(stated_inset_ring_rounded),
+        reason: INSET_RING,
     },
 ];
 
@@ -614,11 +692,11 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
         }
     }
     for d in DIFFERENCES {
-        // The button's and the combo box's helpers are compared with the
-        // `widgets` feature only.
+        // The button's and the combo box's helpers and the focus ring are
+        // compared with the `widgets` feature only.
         if matches!(
             d.name,
-            "button_content_min_size" | "button_padding" | "combo_box_padding"
+            "button_content_min_size" | "button_padding" | "combo_box_padding" | "focus_ring"
         ) && !cfg!(feature = "widgets")
         {
             continue;

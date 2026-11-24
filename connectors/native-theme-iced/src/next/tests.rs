@@ -473,26 +473,26 @@ fn a_radio_of_no_stated_width_is_iceds_own_size() -> TestResult {
     Ok(())
 }
 
-/// A field's focus indicator that is not a ring is none the field can draw: the text input
-/// and the text editor are `Unmapped` at `focus_ring.kind`, as the ring is.
+/// A focus indicator that is not a ring is `Unmapped` at `focus_ring.kind` where the ring is
+/// mapped (`ring_look`), and nowhere else: the text input and the text editor draw no ring
+/// (`focus_ring` paints it over them), so their styles do not read the indicator.
 #[cfg(feature = "widgets")]
 #[test]
-fn a_fields_focus_indicator_that_is_not_a_ring_is_unmapped() -> TestResult {
+fn a_focus_indicator_that_is_not_a_ring_is_unmapped_at_the_ring_alone() -> TestResult {
     use native_theme::next::FocusKind;
 
     for (preset, mut r) in every_preset() {
-        assert!(super::styles::text_input(&r).is_ok(), "{preset:?}");
+        assert!(super::ring_look(&r, 4.0).is_ok(), "{preset:?}");
         for kind in [FocusKind::Fill, FocusKind::Underline] {
             r.focus_ring.kind = kind;
-            let unmapped = Some(Unmapped("focus_ring.kind"));
             assert_eq!(
-                super::styles::text_input(&r).err(),
-                unmapped,
+                super::ring_look(&r, 4.0).err(),
+                Some(Unmapped("focus_ring.kind")),
                 "{preset:?} {kind:?}"
             );
-            assert_eq!(
-                super::styles::text_editor(&r).err(),
-                unmapped,
+            assert!(super::styles::text_input(&r).is_ok(), "{preset:?} {kind:?}");
+            assert!(
+                super::styles::text_editor(&r).is_ok(),
                 "{preset:?} {kind:?}"
             );
         }

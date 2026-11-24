@@ -405,7 +405,9 @@ pub(crate) enum Added {
 /// stroke and label, a focused field's and an open drop-down's stroke, a
 /// switch's hovered thumb, a slider's filled rail under the pointer and
 /// dragged, a checked button's fill (`checked`: drawn as the primary
-/// button's, spec §10, rule 0a), and a disabled check box's stroke.
+/// button's, spec §10, rule 0a), a disabled check box's stroke, and a
+/// focused field's inset ring (`ring_over`: drawn over the field by
+/// `next::focus_ring`, not as its border).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct States {
     pub hover_fill: bool,
@@ -420,6 +422,7 @@ pub(crate) struct States {
     pub rail: bool,
     pub checked: bool,
     pub disabled_stroke: bool,
+    pub ring_over: bool,
 }
 
 impl States {
@@ -437,6 +440,7 @@ impl States {
         rail: false,
         checked: false,
         disabled_stroke: false,
+        ring_over: false,
     };
 }
 
@@ -739,6 +743,35 @@ const fn field(
             LineAlign::Inside => &[INSIDE, FIELD_FOCUS],
             LineAlign::Center => &[CENTER, FIELD_FOCUS],
         },
+    }
+}
+
+/// The reason of a focused text field whose inset focus ring the 0.8.0 side
+/// paints over it.
+const RING_OVER: &str = "the focus ring is inset at the field's edge (adwaita: 2 wide at \
+     offset -2, libadwaita 1.10.0 src/stylesheet/_drawing.scss, focus-ring): 0.7.2's connector \
+     drew it as the focused field's border (src/styles.rs, InputColors::new); the 0.8.0 side \
+     paints the ring over the field as the band over its outermost 2 px (next::focus_ring, \
+     docs/v0.8.0-spec.md §2, FocusIndicator: the geometry of a Ring), as GTK draws the \
+     outline last over the border box, which no focus rule of libadwaita's changes, so the \
+     focused field keeps its own border, the stroke adwaita states for FOCUSED \
+     (input.field(FOCUSED), text_area.field(FOCUSED): 0 wide, in colors.focus_ring, inside)";
+
+/// A text field on adwaita whose inset focus ring the 0.8.0 side paints
+/// over it, not as its focused border ([`States::ring_over`]).
+const fn ring_over(leaf: &'static str) -> Difference {
+    Difference {
+        leaf,
+        presets: &["adwaita"],
+        listed: Listed {
+            states: States {
+                ring_over: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Inside)
+        },
+        stated: &[],
+        reason: &[INSIDE, RING_OVER],
     }
 }
 
@@ -1734,6 +1767,10 @@ const DIFFERENCES: &[Difference] = &[
     // drew it.
     field("text_input", MACOS, LineAlign::Inside),
     field("text_editor", MACOS, LineAlign::Inside),
+    // adwaita's inset focus ring, which 0.7.2 drew as the focused field's
+    // border, is painted over the field by `next::focus_ring`.
+    ring_over("text_input"),
+    ring_over("text_editor"),
     // tooltip.panel, dialog.panel, progress_bar.track(NONE).
     inside("tooltip", MACOS_WINDOWS),
     inside("dialog", MACOS_WINDOWS),

@@ -9,8 +9,8 @@ use iced_core::border::Radius;
 use iced_core::theme::Theme;
 use iced_core::{Shadow, Vector};
 use native_theme::next::{
-    ButtonQuery, FocusKind, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme,
-    Stroke, StyleQuery, WidgetState, WindowState,
+    ButtonQuery, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke,
+    StyleQuery, WidgetState, WindowState,
 };
 
 use super::borders::{
@@ -321,22 +321,13 @@ pub fn button_link(
 }
 
 /// [`InputSource`] of the 0.8.0 model, of the field `$w` of `$r` (`input`
-/// or `text_area`, each its own widget), every home under `$home`, and the
-/// focus indicator.
+/// or `text_area`, each its own widget), every home under `$home`. The
+/// field draws no focus ring: [`super::focus_ring`] paints the ring over
+/// it, an inset one too (spec §2, `FocusIndicator`).
 macro_rules! input_source {
     ($r:expr, $w:ident, $home:literal) => {{
         let r: &ResolvedTheme = $r;
         let i = &r.$w;
-        let ring = &r.focus_ring;
-        // a fill or an underline is no ring the field can draw, as `ring_look` finds
-        if ring.kind != FocusKind::Ring {
-            return Err(Unmapped("focus_ring.kind"));
-        }
-        // A ring the theme states none of is 0 wide, which no field draws
-        // ([`crate::styles::text_input`]'s inset ring), so its colour is
-        // never shown.
-        let (ring_width, ring_color) = super::ring_stroke(&ring.stroke, "focus_ring.stroke")?
-            .unwrap_or((0.0, iced_core::Color::TRANSPARENT));
         let rest = i.field(WidgetState::NONE);
         Ok::<InputSource, Unmapped>(InputSource {
             background: fill(&rest, concat!($home, ".field(NONE).fill"))?,
@@ -362,9 +353,7 @@ macro_rules! input_source {
                 &i.field(WidgetState::FOCUSED),
                 concat!($home, ".field(FOCUSED).stroke.color"),
             )?,
-            focus_ring_color: ring_color,
-            focus_ring_width: ring_width,
-            focus_ring_offset: ring.offset,
+            focus_ring: None,
             placeholder: text_color(
                 &i.placeholder(WidgetState::NONE),
                 concat!($home, ".placeholder(NONE).color"),
@@ -377,13 +366,13 @@ macro_rules! input_source {
 /// [`crate::styles::text_input`]: a hovered or focused field's stroke the
 /// theme states nothing for is iced's own field's (`text_input::default`
 /// recolours the border under the pointer and when focused), its width and
-/// corners the theme's at rest (spec §2, `from_state`); an inset focus ring
-/// is still drawn as the focused field's border.
+/// corners the theme's at rest (spec §2, `from_state`). The field draws no
+/// focus ring, an inset one included: [`super::focus_ring`] paints it over
+/// the field.
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the field needs, or
-/// its focus indicator is not a ring (`focus_ring.kind`).
+/// [`super::Unmapped`] where the theme states no value the field needs.
 pub fn text_input(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -394,12 +383,12 @@ pub fn text_input(
 
 /// [`crate::styles::text_editor`]: the text area's own colours and border,
 /// a hovered or focused stroke the theme states nothing for as
-/// [`text_input`]'s, against iced's own `text_editor::default`.
+/// [`text_input`]'s, against iced's own `text_editor::default`; no focus
+/// ring, as [`text_input`].
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the field needs, or
-/// its focus indicator is not a ring (`focus_ring.kind`).
+/// [`super::Unmapped`] where the theme states no value the field needs.
 pub fn text_editor(
     r: &ResolvedTheme,
 ) -> Mapped<

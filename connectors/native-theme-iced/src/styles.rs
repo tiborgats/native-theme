@@ -1450,11 +1450,13 @@ impl InputColors {
         // with a gap (an offset below minus the width) is not a border iced
         // can draw; there a focused field takes its focused stroke
         // ([`Self::focused`]), and `crate::focus_ring` draws the ring round
-        // the field it wraps.
-        let focus_color = i.focus_border_color.map_or(i.focus_ring_color, |l| l.color);
-        let focus_ring = inset_ring(i.focus_ring_width, i.focus_ring_offset).then(|| Border {
-            color: composite_over(focus_color, idle),
-            width: border.width.max(i.focus_ring_width),
+        // the field it wraps. On the 0.8.0 model no field draws the ring:
+        // `crate::next::focus_ring` paints every ring over the field, an
+        // inset one as the band over its outermost width (spec §2,
+        // `FocusIndicator`), so its source states none.
+        let focus_ring = i.focus_ring.map(|(ring_color, ring_width)| Border {
+            color: composite_over(i.focus_border_color.map_or(ring_color, |l| l.color), idle),
+            width: border.width.max(ring_width),
             radius: border.radius,
         });
         // A field the theme states no opacity for is faded as iced's own
@@ -1520,9 +1522,9 @@ pub(crate) struct InputSource {
     pub border: Outline,
     pub hover_border_color: Option<Line>,
     pub focus_border_color: Option<Line>,
-    pub focus_ring_color: Color,
-    pub focus_ring_width: f32,
-    pub focus_ring_offset: f32,
+    /// The inset focus ring a focused field draws as its border: the
+    /// ring's colour and width; `None` where the field draws none.
+    pub focus_ring: Option<(Color, f32)>,
     pub placeholder: Color,
     pub selection: Color,
 }
@@ -1553,17 +1555,16 @@ impl InputSource {
                 .focus_border_color
                 .map(line)
                 .or((!inset).then_some(border.line)),
-            focus_ring_color: to_color(d.focus_ring_color),
-            focus_ring_width: d.focus_ring_width,
-            focus_ring_offset: d.focus_ring_offset,
+            focus_ring: inset.then(|| (to_color(d.focus_ring_color), d.focus_ring_width)),
             placeholder: to_color(i.placeholder_color),
             selection: to_color(i.selection_background),
         }
     }
 
-    /// Every stroke where it lies as `listed` says, and the hovered and the
-    /// focused stroke unset where it names them, for the parity test's
-    /// expected values.
+    /// Every stroke where it lies as `listed` says, the hovered and the
+    /// focused stroke unset where it names them, and no inset ring drawn as
+    /// the focused border where it names the ring drawn over the field, for
+    /// the parity test's expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
         let (align, s) = (listed.align, listed.states);
@@ -1572,6 +1573,7 @@ impl InputSource {
             border: self.border.aligned(align),
             hover_border_color: line(self.hover_border_color, s.hover_stroke),
             focus_border_color: line(self.focus_border_color, s.focus_stroke),
+            focus_ring: self.focus_ring.filter(|_| !s.ring_over),
             ..self
         }
     }

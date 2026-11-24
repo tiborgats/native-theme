@@ -34245,8 +34245,7 @@ mod tests {
     }
 
     /// M9x CI item I4 (M9-172): the Basic page's focused field is drawn with
-    /// the installed 0.8.0 theme's focus ring round it, where the ring is not
-    /// inset at its edge: `focus_ring.stroke`'s width wide, from
+    /// the installed 0.8.0 theme's focus ring: `focus_ring.stroke`'s width wide, from
     /// `focus_ring.offset` out from the field's edge, in its colour
     /// ([`next_focus_ring`]). Under macos-tahoe (3 at -1) and
     /// windows-11 (2 at +1), in both modes, with the field clicked into, a
@@ -34260,7 +34259,10 @@ mod tests {
     /// Under macos-tahoe with the indicator made a fill, which iced's ring
     /// cannot draw (`iced_next::ring_look` is `Unmapped`), the field is
     /// drawn alone: it is laid out, and the pixel in the band is the
-    /// ground's. The
+    /// ground's. Under adwaita (2 at -2, inset at the edge) the ring is the
+    /// band over the field's outermost 2 px (spec §2, `FocusIndicator`): a
+    /// pixel in it is the ring's colour over the field's fill, read past
+    /// the band. The
     /// Simulator runs no operation that gives a widget the focus, so the key
     /// path is the connector's tests' (`focus_ring.rs`,
     /// `where_the_theme_says_keyboard_only_a_click_draws_no_ring`,
@@ -34275,6 +34277,7 @@ mod tests {
             ("windows-11", true, false, true),
             ("windows-11", false, false, false),
             ("macos-tahoe", false, true, false),
+            ("adwaita", false, false, true),
         ];
         for (preset, rule_off, unmapped, ringed) in runs {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
@@ -34328,9 +34331,16 @@ mod tests {
                 };
                 // The band outside the field, in physical pixels: from the
                 // ring's outer edge in to the field's edge, or to the ring's
-                // inner edge where that lies outside the field.
+                // inner edge where that lies outside the field; a ring inset
+                // at the edge, the band over the field, from its edge to the
+                // ring's inner edge, over the field's fill, read past it.
+                let inset = ring.offset + ring_width <= 0.0;
                 let outer = (field.x - (ring.offset + ring_width)) * scale;
-                let inner = (field.x - ring.offset.max(0.0)) * scale;
+                let inner = if inset {
+                    (field.x - ring.offset) * scale
+                } else {
+                    (field.x - ring.offset.max(0.0)) * scale
+                };
                 let x = outer.ceil();
                 if x + 1.0 > inner {
                     faults.push(format!(
@@ -34338,9 +34348,14 @@ mod tests {
                     ));
                     continue;
                 }
+                let ground_x = if inset {
+                    inner.ceil() + 2.0
+                } else {
+                    outer.floor() - 3.0
+                };
                 let y = ((field.y + field.height / 2.0) * scale) as u32;
                 let pixel = |x: f32| image.get_pixel_checked(x as u32, y).map(|p| p.0);
-                let (Some(drawn), Some(ground)) = (pixel(x), pixel(outer.floor() - 3.0)) else {
+                let (Some(drawn), Some(ground)) = (pixel(x), pixel(ground_x)) else {
                     faults.push(format!("{what}: the band is outside the frame"));
                     continue;
                 };

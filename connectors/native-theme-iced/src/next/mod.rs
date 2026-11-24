@@ -1261,8 +1261,10 @@ pub(crate) fn ring_stroke(stroke: &Stroke, home: &'static str) -> Mapped<Option<
 /// second ring inside it (`focus_ring.inner_stroke`) and the corners of the
 /// line the offset places, between the two (`focus_ring.corners`, the
 /// field's grown by the offset where the theme states none; spec §2,
-/// `FocusIndicator`); `None` where the theme states no stroke, or one inset
-/// at the field's edge.
+/// `FocusIndicator`); `None` where the theme states no stroke. The ring is
+/// painted over the field: one inset at the field's edge (offset minus its
+/// width, libadwaita's) is the band over the field's outermost width, which
+/// the field styles leave to it ([`styles::text_input`]).
 ///
 /// # Errors
 ///
@@ -1298,7 +1300,8 @@ pub fn ring_look(r: &ResolvedTheme, radius: f32) -> Mapped<Option<RingLook>> {
 /// [`crate::focus_ring()`]: `field`, and round it while it holds the keyboard
 /// focus, the theme's focus ring, its curves the field's `corner_radius`
 /// grown by the ring's offset, or the ring's own corners where the theme
-/// states them, and the second ring inside it where the theme states one.
+/// states them, and the second ring inside it where the theme states one;
+/// painted over the field, a ring inset at its edge included.
 ///
 /// # Errors
 ///
