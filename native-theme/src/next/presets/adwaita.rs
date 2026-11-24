@@ -744,6 +744,29 @@ const FOCUS_RING_WIDTH: f32 = 2.0;
 // inset (`$offset: -$width`, _drawing.scss at libadwaita 1.10.0)
 const FOCUS_RING_OFFSET: f32 = -2.0;
 
+/// The primary (suggested-action) button's ring offset: `%opaque_button`
+/// includes `focus-ring($outer: true, $offset: 1px)` (_buttons.scss:158 at
+/// libadwaita 1.10.0), which `.suggested-action` extends (:220-221).
+const PRIMARY_BUTTON_FOCUS_RING_OFFSET: f32 = 1.0;
+
+/// The switch's ring offset: `switch` includes `focus-ring($offset: 1px,
+/// $outer: true)` (_switch.scss:18 at libadwaita 1.10.0), outside the track.
+const SWITCH_FOCUS_RING_OFFSET: f32 = 1.0;
+
+/// The slider thumb's ring offset: `scale` includes `focus-ring("> trough >
+/// slider", $offset: 0)` (_scale.scss:29 at libadwaita 1.10.0).
+const SLIDER_THUMB_FOCUS_RING_OFFSET: f32 = 0.0;
+
+/// A segment's ring offset: a toggle group's `> toggle` includes
+/// `focus-ring($outer: true, $offset: 0)` (_toggle-group.scss:28, :63 at
+/// libadwaita 1.10.0).
+const SEGMENT_FOCUS_RING_OFFSET: f32 = 0.0;
+
+/// The expander header's ring offset: the header is a `%boxed_list_row`
+/// (_lists.scss:524-526 at libadwaita 1.10.0), which includes
+/// `focus-ring($offset: -1px)` (:343-344).
+const EXPANDER_HEADER_FOCUS_RING_OFFSET: f32 = -1.0;
+
 /// The focus ring's alpha: libadwaita's `$focus_border_color`, the
 /// standalone accent at 50 % (libadwaita 1.10.0 `_colors.scss:260`, `:307`;
 /// `_drawing.scss:20`), as 0.7.2's GNOME reader states it for the system's
@@ -1580,7 +1603,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         combo_box: combo_box(c, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout, ctx.direction),
         card: card(c, &colors),
-        expander: expander(c, &typography, ctx.direction),
+        expander: expander(c, &colors, &typography, ctx.direction),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
@@ -1910,6 +1933,22 @@ fn corners(radius: f32) -> PartProp {
     PartProp::Corners(Corners::uniform(radius))
 }
 
+/// A part's own focus ring: the global one's width and colour
+/// (`$focus_border_color`, `colors.focus_ring`) at the part's `offset`, where
+/// libadwaita includes `focus-ring` with an `$offset` of its own (the global
+/// ring is the mixin's default, `-$width`, _drawing.scss:12 at libadwaita
+/// 1.10.0); its trigger unstated, as the global ring's.
+fn focus_ring(roles: &ColorRoles, offset: f32) -> PartProp {
+    PartProp::Focus(Some(Arc::new(FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(FOCUS_RING_WIDTH, roles.focus_ring),
+        Stroke::None,
+        offset,
+        None,
+        None,
+    ))))
+}
+
 /// A widget's label: the UI font (0.7.2: a widget's font is `defaults.font`
 /// where unstated, `resolve_font_inheritance`) without its line height, which
 /// no 0.7.2 widget font has, in `color` where given, else in the UI font's.
@@ -1979,7 +2018,13 @@ fn button(
                 }),
             border(roles, BUTTON_BORDER_WIDTH),
         )
-        .rule(primary(), [fill(roles.accent.fill)])
+        .rule(
+            primary(),
+            [
+                fill(roles.accent.fill),
+                focus_ring(roles, PRIMARY_BUTTON_FOCUS_RING_OFFSET),
+            ],
+        )
         .build();
     // `button.hover_text_color`, `active_text_color`: 0.7.2 adwaita.toml (uncited);
     // `checked_text_color`: platform-facts.md (§2.3), "no :checked rule sets a label colour"; each
@@ -2496,6 +2541,7 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             fill(c.slider_thumb),
             PartProp::MinSize([Some(SLIDER_THUMB_DIAMETER); 2]),
             PartProp::MaxSize([Some(SLIDER_THUMB_DIAMETER); 2]),
+            focus_ring(roles, SLIDER_THUMB_FOCUS_RING_OFFSET),
         ])
         .rules(
             [
@@ -2949,6 +2995,7 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
             corners(SWITCH_TRACK_RADIUS),
             PartProp::MinSize(size),
             PartProp::MaxSize(size),
+            focus_ring(roles, SWITCH_FOCUS_RING_OFFSET),
         ])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
@@ -3190,6 +3237,7 @@ fn segmented_control(
                 Edges::symmetric(SEGMENT_PADDING_VERTICAL, SEGMENT_PADDING_HORIZONTAL),
                 direction,
             )),
+            focus_ring(roles, SEGMENT_FOCUS_RING_OFFSET),
         ])
         // Hovered and pressed, no outline: a toggle's :hover, :active and .keyboard-activating
         // set only its background (_toggle-group.scss:65-71 at libadwaita 1.10.0), its inset
@@ -3252,9 +3300,15 @@ fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
 }
 
 /// The expander: the boxed list's outline and corners; a header of a least
-/// height, padded, its hover fill; the arrow's size and colour, side and gap;
-/// the content unindented; the frame drawn.
-fn expander(c: &SchemeColors, typography: &Typography, direction: Direction) -> ExpanderWidget {
+/// height, padded, its hover fill, its own focus ring 1 px inside it; the
+/// arrow's size and colour, side and gap; the content unindented; the frame
+/// drawn.
+fn expander(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    direction: Direction,
+) -> ExpanderWidget {
     let container = RuleBuilder::new(PartStyle::default())
         .base([
             stroke(EXPANDER_BORDER_WIDTH, EXPANDER_BORDER),
@@ -3268,6 +3322,7 @@ fn expander(c: &SchemeColors, typography: &Typography, direction: Direction) -> 
                 Edges::symmetric(EXPANDER_PADDING_VERTICAL, EXPANDER_PADDING_HORIZONTAL),
                 direction,
             )),
+            focus_ring(roles, EXPANDER_HEADER_FOCUS_RING_OFFSET),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
         // Pressed: the header is a %boxed_list_row (_lists.scss:524-526), whose activatable

@@ -5357,6 +5357,15 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       hover, toolbar, switch) keep their values (no rule recomputes them); white status text on dark palettes' status
       fills falls as low as 1.27:1 (spec §7 keeps a status role's text from the layer below); the light placeholder is
       2.42:1 on its field; GNOME without the `portal` feature gives `FeatureDisabled` where 0.7.2 gave the preset.
+- [ ] [0.8.x] **adwaita**'s focus rings the model cannot place (M2.FS4, 2026-11-24): libadwaita 1.10.0 rings a check
+      box and a radio button on `checkbutton`, the box of the indicator and its label (`border-radius: $check_radius +
+      3px`, 9 px; `padding: 3px`, 4 px with `.text-button`; `_checks.scss:3-12`),
+      not on the indicator, and `CheckboxParts` has no part for that box, so the check box and the radio keep the
+      global ring (2 at -2), drawn round the indicator; a colour swatch's ring (`colorswatch`, 4 at -2,
+      `_color-chooser.scss`) has no widget in the model; a checked toggle in a toggle group is ringed 1 px outside in
+      white at 75 % mixed 50 % with transparent (`_toggle-group.scss:118`), which the preset does not state (a segment
+      states the normal toggle's ring at 0, `:63`, checked or not); OSD and opaque buttons, card buttons and boxed
+      rows have no part of their own (`_buttons.scss:116`, `:158`, `:334`, `_lists.scss:344`).
 - [ ] [0.8.x] **windows-11**: a checked toolbar button's label has no checked colour (window text on the accent fill);
       under an explicit accent the selection text stays white (1.72:1 on #ffb900); `colors.info`'s origin stays `Native`
       when only an explicit accent sets it; under high contrast with a palette kept, high-contrast colours no palette

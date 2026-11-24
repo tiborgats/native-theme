@@ -78,6 +78,49 @@ fn under_high_contrast_the_focus_ring_is_at_alpha_0_8() {
         same.segmented_control.disabled_opacity = normal.segmented_control.disabled_opacity;
         same.colors.focus_ring = normal.colors.focus_ring;
         same.focus_ring = normal.focus_ring.clone();
+        // The parts' own rings take the ring's colour too
+        // (`a_part_with_its_own_ring_offset_states_its_ring`); in every state their rules
+        // name, the parts are otherwise the same.
+        let unringed = |mut part: PartStyle| {
+            part.focus = None;
+            part
+        };
+        let states = [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+            WidgetState::SELECTED,
+            WidgetState::DISABLED,
+            WidgetState::FOCUSED,
+            WidgetState::HOVER | WidgetState::CHECKED,
+            WidgetState::PRESSED | WidgetState::CHECKED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+        ];
+        for state in states {
+            for query in [ButtonQuery::new(state), ButtonQuery::primary().state(state)] {
+                assert_eq!(
+                    unringed(high.button.body(query)),
+                    unringed(normal.button.body(query)),
+                    "{state:?}"
+                );
+            }
+            let pairs = [
+                (high.slider.thumb(state), normal.slider.thumb(state)),
+                (
+                    high.segmented_control.segment(state),
+                    normal.segmented_control.segment(state),
+                ),
+                (high.expander.header(state), normal.expander.header(state)),
+            ];
+            for (high_part, normal_part) in pairs {
+                assert_eq!(unringed(high_part), unringed(normal_part), "{state:?}");
+            }
+        }
+        same.button.body = normal.button.body.clone();
+        same.slider.thumb = normal.slider.thumb.clone();
+        same.segmented_control.segment = normal.segmented_control.segment.clone();
+        same.expander.header = normal.expander.header.clone();
         same.input = normal.input.clone();
         same.text_area = normal.text_area.clone();
         same.context = normal.context.clone();
@@ -583,4 +626,53 @@ fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
         assert_eq!(colors.error, palette_only.colors.error);
         assert_eq!(colors.info.origin, RoleOrigin::Custom);
     }
+}
+
+/// The parts whose libadwaita `focus-ring` takes an offset of its own state
+/// their ring there, in the global ring's width and colour: the primary
+/// button and the switch 1 px outside, the slider thumb and a segment at
+/// their edge, the expander header 1 px inside (_buttons.scss:158,
+/// _switch.scss:18, _scale.scss:29, _toggle-group.scss:63, _lists.scss:344 at
+/// libadwaita 1.10.0); a standard button and the check box keep the global
+/// ring, 2 px inside.
+#[test]
+fn a_part_with_its_own_ring_offset_states_its_ring() -> TestResult {
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        for contrast in [Contrast::Normal, Contrast::High] {
+            let theme =
+                Theme::preset(Preset::Adwaita).resolve(&ctx.clone().with_contrast(contrast));
+            let none = WidgetState::NONE;
+            for (what, part, offset) in [
+                (
+                    "primary button",
+                    theme.button.body(ButtonQuery::primary().state(none)),
+                    1.0,
+                ),
+                ("switch track", theme.switch.track(none), 1.0),
+                ("slider thumb", theme.slider.thumb(none), 0.0),
+                ("segment", theme.segmented_control.segment(none), 0.0),
+                ("expander header", theme.expander.header(none), -1.0),
+            ] {
+                let Some(ring) = part.focus.as_deref() else {
+                    return Err(format!("{what} states no focus ring").into());
+                };
+                assert_eq!(
+                    ring,
+                    &FocusIndicator::new(
+                        FocusKind::Ring,
+                        theme.focus_ring.stroke.clone(),
+                        Stroke::None,
+                        offset,
+                        None,
+                        None,
+                    ),
+                    "{what} {contrast:?}"
+                );
+            }
+            assert_eq!(theme.button.body(ButtonQuery::new(none)).focus, None);
+            assert_eq!(theme.checkbox.indicator(none).focus, None);
+            assert_eq!(theme.focus_ring.offset, FOCUS_RING_OFFSET);
+        }
+    }
+    Ok(())
 }

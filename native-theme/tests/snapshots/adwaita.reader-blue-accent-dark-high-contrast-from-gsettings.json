@@ -384,7 +384,18 @@
         {
           "variant": "primary",
           "body": {
-            "fill": "#3584e4"
+            "fill": "#3584e4",
+            "focus": {
+              "kind": "ring",
+              "stroke": {
+                "width": 2.0,
+                "color": "#81d0ffcc"
+              },
+              "inner_stroke": "none",
+              "offset": 1.0,
+              "corners": null,
+              "trigger": null
+            }
           }
         }
       ]
@@ -917,7 +928,18 @@
         "max_size": [
           46.0,
           26.0
-        ]
+        ],
+        "focus": {
+          "kind": "ring",
+          "stroke": {
+            "width": 2.0,
+            "color": "#81d0ffcc"
+          },
+          "inner_stroke": "none",
+          "offset": 1.0,
+          "corners": null,
+          "trigger": null
+        }
       },
       "rules": [
         {
@@ -1089,7 +1111,18 @@
         "max_size": [
           20.0,
           20.0
-        ]
+        ],
+        "focus": {
+          "kind": "ring",
+          "stroke": {
+            "width": 2.0,
+            "color": "#81d0ffcc"
+          },
+          "inner_stroke": "none",
+          "offset": 0.0,
+          "corners": null,
+          "trigger": null
+        }
       },
       "rules": [
         {
@@ -1929,7 +1962,18 @@
         "min_size": [
           "none",
           28.0
-        ]
+        ],
+        "focus": {
+          "kind": "ring",
+          "stroke": {
+            "width": 2.0,
+            "color": "#81d0ffcc"
+          },
+          "inner_stroke": "none",
+          "offset": 0.0,
+          "corners": null,
+          "trigger": null
+        }
       },
       "rules": [
         {
@@ -2048,7 +2092,18 @@
         "min_size": [
           "none",
           50.0
-        ]
+        ],
+        "focus": {
+          "kind": "ring",
+          "stroke": {
+            "width": 2.0,
+            "color": "#81d0ffcc"
+          },
+          "inner_stroke": "none",
+          "offset": -1.0,
+          "corners": null,
+          "trigger": null
+        }
       },
       "rules": [
         {
