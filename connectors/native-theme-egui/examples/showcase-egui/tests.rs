@@ -10442,19 +10442,49 @@ fn every_role_and_surface_is_demonstrated() {
 }
 
 #[test]
-fn the_chrome_reports_itself() {
-    // Under UNSTATED_PRESET, installed on any platform, where every part below keeps a point of
-    // its own with and without `system-fonts` (measured): under TEST_PRESET without
-    // `system-fonts` the page tabs fill their bar, and under adwaita, kde-breeze and windows-11
-    // the side panel's rows and margins leave it no point outside its children's interact
-    // radius, nor the page tabs theirs.
-    let mut harness = open_page_under(Page::Buttons, egui::Theme::Light, UNSTATED_PRESET);
+fn the_chrome_reports_itself() -> Result<(), String> {
+    // Under every bundled preset, installed on any platform.
+    let mut ownless = Vec::new();
+    for preset in native_theme::next::Preset::ALL.iter().map(|p| p.as_str()) {
+        ownless.extend(
+            chrome_reports_itself_under(preset)?
+                .into_iter()
+                .map(|kind| (preset, kind)),
+        );
+    }
+    assert_eq!(
+        ownless, CHROME_WITHOUT_A_POINT,
+        "the chrome parts with no point of their own"
+    );
+    Ok(())
+}
+
+/// The chrome parts egui leaves no point of their own, by preset: macos-tahoe's page tab row
+/// (measured at 1280 × 720: the strip 304-1280 × 63-87, no margin, `layout.container_margin`
+/// unstated; its twelve tabs as tall as the strip and `item_spacing.x` 8 apart, the Pages
+/// button 1241-1280, 63.5-86.5), where every gap, narrower than twice egui's interact radius
+/// of 5, is within the radius of a tab or the button, which egui so counts under the pointer.
+const CHROME_WITHOUT_A_POINT: &[(&str, &str)] = &[("macos-tahoe", "TabBar · Pages")];
+
+/// Each chrome part under `preset` light has a point of its own, and hovered there Widget Info
+/// shows it: a point inside the part, inside no smaller record and outside the interact radius
+/// of every smaller one that senses a click or a drag. egui counts a widget under the pointer
+/// where its interact rect contains the pointer (`hit_test`'s `contains_pointer`,
+/// `interact_rect.contains(pos)`, `egui-0.37.0/src/hit_test.rs`), and also the one widget a
+/// click or a drag would go to, the closest within the interact radius (`hit_test_on_close`;
+/// `interact`, `egui-0.37.0/src/interaction.rs`, chains `hits.click` and `hits.drag` into
+/// `contains_pointer`), so the radius keeps a point from a clickable record alone, not from a
+/// container. The points are each point's centre of the part, fine enough for the few points a
+/// margin leaves. The parts with no such point come back.
+fn chrome_reports_itself_under(preset: &str) -> Result<Vec<&'static str>, String> {
+    let mut harness = open_page_under(Page::Buttons, egui::Theme::Light, preset);
     let radius = harness.ctx.global_style().interaction.interact_radius;
     // The inspector's content is the hold zone, where nothing is chosen (§10.4).
     let hold = harness
         .state()
         .hold_zone
-        .expect("the inspector reports its content rect");
+        .ok_or("the inspector reports no content rect")?;
+    let mut ownless = Vec::new();
     for kind in [
         "Menu bar",
         "Toolbar",
@@ -10470,47 +10500,59 @@ fn the_chrome_reports_itself() {
             .iter()
             .map(|r| (r.id, r.rect))
             .collect();
-        let target = harness
+        let (id, rect) = harness
             .state()
             .registry
             .records()
             .iter()
             .find(|r| r.info.kind == kind)
-            .unwrap_or_else(|| panic!("no {kind} record"));
-        let (id, rect) = (target.id, target.rect);
+            .map(|r| (r.id, r.rect))
+            .ok_or_else(|| format!("{preset}: no {kind} record"))?;
         // A point inside the target and inside no smaller record: the element's own surface.
         // The records around it (the chrome bar around the menu bar and the toolbar, the side
         // panel around the inspector's tabs, the central panel around the page tabs) contain it
         // too, and lose to it by area (§10.4, innermost hovered wins).
-        let point = (0..40)
-            .flat_map(|x| (0..40).map(move |y| (x, y)))
-            .map(|(x, y)| {
-                rect.left_top()
-                    + egui::vec2(
-                        rect.width() * (x as f32 + 0.5) / 40.0,
-                        rect.height() * (y as f32 + 0.5) / 40.0,
-                    )
+        let smaller: Vec<egui::Rect> = records
+            .iter()
+            .filter(|(other, r)| *other != id && r.area() <= rect.area())
+            .map(|(other, r)| {
+                let sense = harness.ctx.read_response(*other).map(|r| r.sense);
+                if sense.is_some_and(|s| s.senses_click() || s.senses_drag()) {
+                    r.expand(radius)
+                } else {
+                    *r
+                }
             })
-            .find(|p| {
-                // egui counts a widget within its interact radius as under the pointer too
-                // (`egui/src/hit_test.rs`, §10.4's `contains_pointer`).
-                !hold.expand(radius).contains(*p)
-                    && !records.iter().any(|(other, r)| {
-                        *other != id && r.expand(radius).contains(*p) && r.area() <= rect.area()
-                    })
-            })
-            .unwrap_or_else(|| panic!("{kind} has no point of its own"));
+            .filter(|r| r.intersects(rect))
+            .collect();
+        let along = |from: f32, to: f32| {
+            (0_u16..)
+                .map(move |i| from + f32::from(i) + 0.5)
+                .take_while(move |v| *v < to)
+        };
+        let Some(point) = along(rect.left(), rect.right())
+            .flat_map(|x| along(rect.top(), rect.bottom()).map(move |y| egui::pos2(x, y)))
+            .find(|p| !hold.contains(*p) && !smaller.iter().any(|r| r.contains(*p)))
+        else {
+            ownless.push(kind);
+            continue;
+        };
         hover_and_settle(&mut harness, point);
-        assert_eq!(shown_kind(&harness), Some(kind));
+        assert_eq!(
+            shown_kind(&harness),
+            Some(kind),
+            "{preset}: hovered at {point:?}"
+        );
     }
     let pos = centre_of(&harness, "button (enabled)");
     hover_and_settle(&mut harness, pos);
     let title = harness.state().status_title();
-    assert_eq!(title, "button (enabled)");
+    assert_eq!(title, "button (enabled)", "{preset}");
     assert!(
         harness.query_all_by_label(&title).next().is_some(),
-        "the status bar does not show the title"
+        "{preset}: the status bar does not show the title"
     );
+    Ok(ownless)
 }
 
 /// The exact call list of §13.2; a numeric literal among a call's arguments is the finding.
