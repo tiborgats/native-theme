@@ -25,6 +25,10 @@ pub struct ShowcaseElement {
     /// The `docs/property-registry.toml` paths it draws, in Widget Info
     /// order.
     pub leaves: Vec<String>,
+    /// Where those leaves live in the 0.8.0 model, in the order of
+    /// `leaves`: homes in the grammar of the list's header ("A home is one
+    /// of"), each once.
+    pub homes: Vec<String>,
     /// The state or variant the page shows.
     pub states: Vec<String>,
     /// A part of a control: dumped and compared, never a Widget Info target
@@ -86,6 +90,7 @@ fn parse(text: &str) -> Result<Vec<ShowcaseElement>, String> {
                 name: text("name")?,
                 parent: text("parent")?,
                 leaves: list("leaves")?,
+                homes: list("homes")?,
                 states: list("states")?,
                 part: row
                     .get("part")
@@ -210,6 +215,7 @@ mod tests {
             name = "Checkbox"
             parent = "basic.checkboxes.unchecked"
             leaves = ["checkbox.font", "checkbox.checked_background"]
+            homes = ["checkbox.label(NONE)", "checkbox.indicator(CHECKED).fill"]
             states = ["Checked", "Hovered"]
             part = true
             when = "a widget is hovered"
@@ -220,6 +226,7 @@ mod tests {
             name = "Toolbar"
             parent = "window"
             leaves = []
+            homes = []
             states = []
             "#,
         )
@@ -232,6 +239,10 @@ mod tests {
                     name: "Checkbox".into(),
                     parent: "basic.checkboxes.unchecked".into(),
                     leaves: vec!["checkbox.font".into(), "checkbox.checked_background".into()],
+                    homes: vec![
+                        "checkbox.label(NONE)".into(),
+                        "checkbox.indicator(CHECKED).fill".into(),
+                    ],
                     states: vec!["Checked".into(), "Hovered".into()],
                     part: true,
                     when: Some("a widget is hovered".into()),
@@ -241,6 +252,7 @@ mod tests {
                     name: "Toolbar".into(),
                     parent: "window".into(),
                     leaves: Vec::new(),
+                    homes: Vec::new(),
                     states: Vec::new(),
                     part: false,
                     when: None,
@@ -254,19 +266,31 @@ mod tests {
         assert_eq!(toolbar.title(), "Toolbar");
     }
 
-    /// A list without elements, an element without a field, and a leaf that
-    /// is no string do not parse.
+    /// A list without elements, an element without a field, and a leaf or
+    /// a home that is no string do not parse.
     #[test]
     fn a_broken_list_does_not_parse() {
         assert!(parse("").is_err());
-        let missing = parse("[[element]]\nid = \"a\"\nname = \"A\"\nleaves = []\nstates = []\n");
+        let missing =
+            parse("[[element]]\nid = \"a\"\nname = \"A\"\nleaves = []\nhomes = []\nstates = []\n");
         assert_eq!(missing, Err("an element has no `parent`".to_string()));
+        let no_homes = parse(
+            "[[element]]\nid = \"a\"\nname = \"A\"\nparent = \"window\"\nleaves = []\nstates = []\n",
+        );
+        assert_eq!(no_homes, Err("an element has no `homes`".to_string()));
         let bad = parse(
-            "[[element]]\nid = \"a\"\nname = \"A\"\nparent = \"window\"\nleaves = [1]\nstates = []\n",
+            "[[element]]\nid = \"a\"\nname = \"A\"\nparent = \"window\"\nleaves = [1]\nhomes = []\nstates = []\n",
         );
         assert_eq!(
             bad,
             Err("`leaves` holds a value that is not a string".to_string())
+        );
+        let bad_home = parse(
+            "[[element]]\nid = \"a\"\nname = \"A\"\nparent = \"window\"\nleaves = []\nhomes = [1]\nstates = []\n",
+        );
+        assert_eq!(
+            bad_home,
+            Err("`homes` holds a value that is not a string".to_string())
         );
     }
 

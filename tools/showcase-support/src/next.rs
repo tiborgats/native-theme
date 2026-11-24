@@ -6,7 +6,8 @@
 //! model (the family labels, the pickers' rows, the element list) has no
 //! counterpart and is used from its own module.
 //!
-//! - [`values`]: a leaf's value, read from the serialised form;
+//! - [`values`]: a home's value, read by a typed query and from the
+//!   serialised form;
 //! - [`info`]: a listed element's Widget Info rows;
 //! - [`rows`]: a table row's height under the text scale;
 //! - [`status`]: the status bar's font and accessibility items.
