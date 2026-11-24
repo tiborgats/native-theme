@@ -2,9 +2,10 @@
 // mode): launches the app with the run's name (IOS_HOST_RUN, which run.sh
 // passes as TEST_RUNNER_IOS_HOST_RUN) and its specimen set (IOS_HOST_SET, as
 // `set=<name>`) and presses each element the app arms, `press-0`, `press-1`,
-// … (a button, a bar item, a list cell, a segmented control at its centre, a
-// switch: any element type), by a real touch held for `holdSeconds`, until
-// the app shows `press-done`.
+// … (a button, a bar item, or the list set's marker over a list cell, a
+// segmented control, a tab bar item, a switch: any element type), by a real
+// touch at its centre held for `holdSeconds`, until the app shows
+// `press-done`.
 
 import XCTest
 
@@ -39,7 +40,10 @@ final class PressTests: XCTestCase {
                 XCTAssertEqual(done.label, "press-done", "the app reported failures")
                 break
             }
-            target.press(forDuration: holdSeconds)
+            // At the element's centre as a coordinate: the list set's
+            // identifier is on a marker that takes no touch, over the view
+            // pressed (IosHost.swift, armNext).
+            target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: holdSeconds)
             index += 1
         }
         app.terminate()

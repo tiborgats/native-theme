@@ -38,7 +38,11 @@ def hexa(p):
 
 
 def renders(run):
-    data = tomllib.load(open(root / run / "index.toml", "rb"))
+    path = root / run / "index.toml"
+    if not path.exists():
+        print(f'# {run}: not measured (no {run}/index.toml)\n')
+        return []
+    data = tomllib.load(open(path, "rb"))
     return [r for r in data.get("render", []) if r.get("backdrop") == "system"]
 
 
@@ -77,7 +81,11 @@ for render in entries:
     if render["state"] == "normal":
         continue
     normal = normals.get((render["appearance"], render["specimen"]))
-    if normal is None or not solved("press1", render).exists() or not solved("press1", normal).exists():
+    if normal is None:
+        print(f'# {render["appearance"]} {render["specimen"]} {render["state"]}: not measured (no normal render)\n')
+        continue
+    if not solved("press1", render).exists() or not solved("press1", normal).exists():
+        print(f'# {render["appearance"]} {render["specimen"]} {render["state"]}: not measured (no solved layer)\n')
         continue
     a, scale = crop(solved("press1", normal), normal, part(normal))
     b, _ = crop(solved("press1", render), render, part(render))

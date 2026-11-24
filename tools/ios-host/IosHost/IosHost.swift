@@ -244,13 +244,14 @@ final class Sample {
     /// harness size then gives the height alone).
     let spansWidth: Bool
     /// The list set's press: the view whose touches the press mode's long
-    /// press recognizer reports, the element the UI test presses (its
-    /// accessibilityIdentifier set while armed), whether UIKit reports the
-    /// pressed part highlighted, and what restores the rest state before each
-    /// press (a release selects a row, a segment or a tab, or turns a switch).
+    /// press recognizer reports, the view the UI test presses at its centre
+    /// (while armed, a marker over it carries the identifier: armNext),
+    /// whether UIKit reports the pressed part highlighted (nil where it
+    /// cannot say), and what restores the rest state before each press (a
+    /// release selects a row, a segment or a tab, or turns a switch).
     let pressView: (@MainActor () -> UIView?)?
-    let pressTarget: (@MainActor () -> UIAccessibilityIdentification?)?
-    let highlighted: (@MainActor () -> Bool)?
+    let pressTarget: (@MainActor () -> UIView?)?
+    let highlighted: (@MainActor () -> Bool?)?
     let reset: (@MainActor () -> Void)?
     /// Sets a state on the sample where the specimen sets its own (false
     /// where it cannot take it).
@@ -265,8 +266,8 @@ final class Sample {
     init(
         view: UIView, control: UIControl? = nil, button: UIButton? = nil, barItem: UIBarButtonItem? = nil,
         harnessSize: CGSize? = nil, spansWidth: Bool = false, pressView: (@MainActor () -> UIView?)? = nil,
-        pressTarget: (@MainActor () -> UIAccessibilityIdentification?)? = nil,
-        highlighted: (@MainActor () -> Bool)? = nil, reset: (@MainActor () -> Void)? = nil,
+        pressTarget: (@MainActor () -> UIView?)? = nil,
+        highlighted: (@MainActor () -> Bool?)? = nil, reset: (@MainActor () -> Void)? = nil,
         applyState: (@MainActor (ButtonState) -> Bool)? = nil,
         reads: (@MainActor (UITraitCollection) -> String)? = nil, keep: [AnyObject] = []
     ) {
@@ -803,16 +804,20 @@ func firstView<T: UIView>(_ type: T.Type, in root: UIView, where accepts: (T) ->
 /// What UIKit reports for each list or table cell among `cells`, top first:
 /// its configuration state, its background configuration (the one set, else
 /// the cell's default) resolved for that state, its content configuration's
-/// text, and the cell's default content configuration resolved for the state
-/// with `isDisabled` set (UIKit's own disabled text).
+/// text, and, where `uikitDefaults` is set and the cell is a UIKit list or
+/// table cell, the cell's default content configuration resolved for the
+/// state and with `isDisabled` set (UIKit's own disabled text). A SwiftUI
+/// list's cells (`uikitDefaults` false) and other collection view cells get
+/// no default_* reads: their default configuration is UIKit's, not what
+/// SwiftUI draws.
 @MainActor
-func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection) -> String {
+func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection, uikitDefaults: Bool = true) -> String {
     var text = ""
     for (index, view) in cells.sorted(by: { $0.frame.minY < $1.frame.minY }).enumerated() {
         let state: UICellConfigurationState
         let background: UIBackgroundConfiguration?
         let content: UIContentConfiguration?
-        let fallback: UIListContentConfiguration
+        let fallback: UIListContentConfiguration?
         if let cell = view as? UICollectionViewListCell {
             state = cell.configurationState
             background = cell.backgroundConfiguration ?? cell.defaultBackgroundConfiguration()
@@ -827,7 +832,7 @@ func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection) ->
             state = cell.configurationState
             background = cell.backgroundConfiguration ?? cell.defaultBackgroundConfiguration()
             content = cell.contentConfiguration
-            fallback = UIListContentConfiguration.cell()
+            fallback = nil
         } else {
             continue
         }
@@ -865,15 +870,17 @@ func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection) ->
                 "content_insets_pt = \(insets(resolved.directionalLayoutMargins))",
             ]
         }
-        var disabled = state
-        disabled.isDisabled = true
-        let disabledContent = fallback.updated(for: disabled)
-        fields += [
-            "default_text_font = \(fontValue(fallback.updated(for: state).textProperties.font))",
-            "default_text_color = \(colorValue(fallback.updated(for: state).textProperties.resolvedColor(), traits))",
-            "default_disabled_text_font = \(fontValue(disabledContent.textProperties.font))",
-            "default_disabled_text_color = \(colorValue(disabledContent.textProperties.resolvedColor(), traits))",
-        ]
+        if uikitDefaults, let fallback {
+            var disabled = state
+            disabled.isDisabled = true
+            let disabledContent = fallback.updated(for: disabled)
+            fields += [
+                "default_text_font = \(fontValue(fallback.updated(for: state).textProperties.font))",
+                "default_text_color = \(colorValue(fallback.updated(for: state).textProperties.resolvedColor(), traits))",
+                "default_disabled_text_font = \(fontValue(disabledContent.textProperties.font))",
+                "default_disabled_text_color = \(colorValue(disabledContent.textProperties.resolvedColor(), traits))",
+            ]
+        }
         text += fields.joined(separator: "\n") + "\n\n"
     }
     return text
@@ -889,7 +896,8 @@ func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection) ->
 /// outline-disclosure header (`headerMode = .firstItemInSection`, the
 /// accessory's `.header` style, expanded); the switch of an `.insetGrouped`
 /// list row (the cell's default content configuration "Label", the switch its
-/// trailing custom-view accessory). Drawn in the render mode:
+/// trailing custom-view accessory); the UISwitch of SwiftUI's `Toggle` in a
+/// `Form`. Drawn in the render mode:
 /// each at rest, an `.insetGrouped` list's one row (the card), SwiftUI's
 /// `Toggle("Label")` in a `Form`, and both switch
 /// rows off and on, the switch disabled, and (UIKit) the row's cell disabled
@@ -916,7 +924,7 @@ func listSpecimens() -> [Specimen] {
                 return Sample(
                     view: table, harnessSize: CGSize(width: 0, height: 88), spansWidth: true, pressView: { table },
                     pressTarget: { table.cellForRow(at: first) },
-                    highlighted: { table.cellForRow(at: first)?.isHighlighted ?? false },
+                    highlighted: { table.cellForRow(at: first)?.isHighlighted },
                     reset: {
                         for path in table.indexPathsForSelectedRows ?? [] { table.deselectRow(at: path, animated: false) }
                     },
@@ -928,9 +936,13 @@ func listSpecimens() -> [Specimen] {
             make: { _ in
                 let control = UISegmentedControl(items: ["One", "Two", "Three"])
                 control.selectedSegmentIndex = 0
+                // No highlighted read: the control's isHighlighted stayed
+                // false while the middle segment was held (run 45230061151,
+                // all four captures), and UIKit has no public read of a
+                // segment's highlight.
                 return Sample(
                     view: control, pressView: { control }, pressTarget: { control },
-                    highlighted: { control.isHighlighted }, reset: { control.selectedSegmentIndex = 0 })
+                    reset: { control.selectedSegmentIndex = 0 })
             }),
         Specimen(
             name: "tab_bar", kind: "tab_bar", style: "default", variant: [], sizes: [noSize], states: pressStates,
@@ -962,7 +974,7 @@ func listSpecimens() -> [Specimen] {
                 }
                 return Sample(
                     view: bar, spansWidth: true, pressView: { bar }, pressTarget: { middle() },
-                    highlighted: { (middle() as? UIControl)?.isHighlighted ?? false },
+                    highlighted: { (middle() as? UIControl)?.isHighlighted },
                     reset: { bar.selectedItem = items.first })
             }),
         Specimen(
@@ -1005,7 +1017,7 @@ func listSpecimens() -> [Specimen] {
                     fill(view, items, outline: outline)
                     return Sample(
                         view: view, harnessSize: rowHeight, spansWidth: true, pressView: { view },
-                        pressTarget: { firstCell(view) }, highlighted: { firstCell(view)?.isHighlighted ?? false },
+                        pressTarget: { firstCell(view) }, highlighted: { firstCell(view)?.isHighlighted },
                         reset: {
                             deselectAll(view)
                             fill(view, items, outline: outline)
@@ -1073,10 +1085,11 @@ func listSpecimens() -> [Specimen] {
     list.append(
         Specimen(
             name: "switch_form", kind: "swiftui", style: "form_toggle", variant: [], sizes: [noSize],
-            // Not pressed: the identifier set on the UISwitch in its tree
-            // did not reach the accessibility tree (run 45220318789, the
-            // test waited for it in vain).
-            states: [.normal, .selected, .disabled, .disabledSelected],
+            // Pressed at the UISwitch in its tree through the marker over it
+            // (the identifier set on the UISwitch itself did not reach the
+            // accessibility tree, run 45220318789); the touch is reported by
+            // the hosting view, an ancestor of every view SwiftUI hit-tests.
+            states: [.normal, .selected, .disabled, .disabledSelected, .pressed],
             make: { _ in
                 let model = ToggleModel()
                 let host = UIHostingController(rootView: ToggleForm(model: model))
@@ -1084,9 +1097,9 @@ func listSpecimens() -> [Specimen] {
                 let view: UIView = host.view
                 return Sample(
                     view: view, harnessSize: rowHeight, spansWidth: true,
-                    pressView: { firstView(UISwitch.self, in: view) },
+                    pressView: { view },
                     pressTarget: { firstView(UISwitch.self, in: view) },
-                    highlighted: { firstView(UISwitch.self, in: view)?.isHighlighted ?? false },
+                    highlighted: { firstView(UISwitch.self, in: view)?.isHighlighted },
                     reset: { model.isOn = false },
                     applyState: { state in
                         switch state {
@@ -1104,7 +1117,7 @@ func listSpecimens() -> [Specimen] {
                         guard let collection = firstView(UICollectionView.self, in: view) else {
                             return "list_cells = \(absent)\n"
                         }
-                        return cellReads(collection.visibleCells, in: view, traits: traits)
+                        return cellReads(collection.visibleCells, in: view, traits: traits, uikitDefaults: false)
                     }, keep: [host, model])
             }))
     return list
@@ -1379,8 +1392,10 @@ final class HostViewController: UIViewController {
     private var rearm = false
     private var pressRetakes = 0
     private var aloneWritten = false
-    private var highlightedAtCapture = false
-    private var trackingAtCapture = false
+    private var highlightedAtCapture: Bool?
+    private var trackingAtCapture: Bool?
+    /// The list set's armed press target's marker (armNext).
+    private var pressMarker: UIView?
     /// The press mode's [[motion]] tables (IP-motion).
     private var motions: [String] = []
 
@@ -1908,9 +1923,7 @@ final class HostViewController: UIViewController {
 
     private func armNext() {
         guard !finished else { return }
-        armed?.sample?.button?.accessibilityIdentifier = nil
-        armed?.sample?.barItem?.accessibilityIdentifier = nil
-        armed?.sample?.pressTarget?()?.accessibilityIdentifier = nil
+        disarm()
         armed = nil
         guard let cell = pressQueue.first, let sample = cell.sample else {
             if pageIndex + 1 < pages.count {
@@ -1942,14 +1955,16 @@ final class HostViewController: UIViewController {
             sample.reset?()
             sample.view.layoutIfNeeded()
             guard let touched = pressView(), let target = sample.pressTarget?() else {
+                let reason = "the specimen has no view to press (pressView or pressTarget nil)"
                 entries.append(
                     """
                     [[press_skipped]]
                     page = \(quoted(pages[pageIndex].path))
                     cell = \(quoted(cell.name))
-                    reason = \(quoted("the specimen has no view to press (pressView or pressTarget nil)"))
+                    reason = \(quoted(reason))
 
                     """)
+                failures.append("\(pages[pageIndex].path)/\(cell.name): not pressed: \(reason)")
                 if !pressQueue.isEmpty { pressQueue.removeFirst() }
                 armed = nil
                 DispatchQueue.main.async { [weak self] in self?.armNext() }
@@ -1967,7 +1982,20 @@ final class HostViewController: UIViewController {
             recognizer.delegate = self
             touched.addGestureRecognizer(recognizer)
             recordMotion(touched, phase: "rest", times: [0])
-            target.accessibilityIdentifier = "press-\(armedNumber)"
+            // The identifier goes on a marker over the target, not on the
+            // target: a tab bar item's (outside a tab bar controller) and a
+            // SwiftUI Toggle's UISwitch's did not reach the accessibility
+            // tree (run 45230061151 on iOS 26.5, run 45220318789). The
+            // marker takes no touch
+            // (isUserInteractionEnabled false), so the UI test's press at its
+            // centre lands on the target.
+            let marker = UIView(frame: target.convert(target.bounds, to: view))
+            marker.backgroundColor = .clear
+            marker.isUserInteractionEnabled = false
+            marker.isAccessibilityElement = true
+            marker.accessibilityIdentifier = "press-\(armedNumber)"
+            view.addSubview(marker)
+            pressMarker = marker
         } else if let item = sample.barItem {
             for old in sample.view.gestureRecognizers ?? [] where old.name == "press" {
                 sample.view.removeGestureRecognizer(old)
@@ -2061,10 +2089,17 @@ final class HostViewController: UIViewController {
         }
     }
 
-    private func scheduleArm() {
+    /// Takes the armed cell's identifier away: off its button or bar item,
+    /// and the list set's marker out of the view.
+    private func disarm() {
         armed?.sample?.button?.accessibilityIdentifier = nil
         armed?.sample?.barItem?.accessibilityIdentifier = nil
-        armed?.sample?.pressTarget?()?.accessibilityIdentifier = nil
+        pressMarker?.removeFromSuperview()
+        pressMarker = nil
+    }
+
+    private func scheduleArm() {
+        disarm()
         DispatchQueue.main.asyncAfter(deadline: .now() + pressRearmSeconds) { [weak self] in self?.armNext() }
     }
 
@@ -2074,8 +2109,8 @@ final class HostViewController: UIViewController {
             retakePress("the touch ended before the capture")
             return
         }
-        highlightedAtCapture = sample.button?.isHighlighted ?? sample.highlighted?() ?? false
-        trackingAtCapture = sample.button?.isTracking ?? false
+        highlightedAtCapture = sample.button?.isHighlighted ?? sample.highlighted?()
+        trackingAtCapture = sample.button?.isTracking
         _ = drawCell(cell, to: "draw/\(pages[pageIndex].path)/\(cell.name).png")
         requestScreenshot(sequence: shots, attempt: 0)
         shots += 1
@@ -2133,9 +2168,12 @@ final class HostViewController: UIViewController {
             renderEntry(
                 page: page, cell: cell, draw: "draw/\(page.path)/\(cell.name).png", screen: name,
                 screenshot: "pages/\(sequence).png", frame: frame,
-                press: "press_number = \(armedNumber)\nhighlighted_at_capture = \(highlightedAtCapture)\n"
-                    + "tracking_at_capture = \(trackingAtCapture)\nheld_until_screenshot = \(heldThrough)\n"
-                    + "selected_at_screenshot = \(sample.button?.isSelected ?? sample.barItem?.isSelected ?? false)\n"))
+                press: "press_number = \(armedNumber)\n"
+                    + "highlighted_at_capture = \(highlightedAtCapture.map { "\($0)" } ?? absent)\n"
+                    + "tracking_at_capture = \(trackingAtCapture.map { "\($0)" } ?? absent)\n"
+                    + "held_until_screenshot = \(heldThrough)\n"
+                    + ((sample.button?.isSelected ?? sample.barItem?.isSelected).map { "selected_at_screenshot = \($0)\n" }
+                        ?? "")))
         if !aloneWritten {
             aloneWritten = true
             // The pattern alone, and the list set's specimens at rest.

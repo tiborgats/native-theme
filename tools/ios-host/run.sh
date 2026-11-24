@@ -138,6 +138,17 @@ mkdir -p "$headers"
         echo "  XCTest.framework/Headers/$name: absent"
       fi
     done
+    # Xcode 16's XCTest headers only import XCUIAutomation's: every
+    # XCUIElement.h and XCUICoordinate.h under the platform's developer
+    # library, kept as <framework>-<name>.
+    found=0
+    while IFS= read -r file; do
+      found=1
+      framework=$(basename "$(dirname "$(dirname "$file")")" .framework)
+      cp "$file" "$headers/$kind/$framework-$(basename "$file")"
+      echo "  ${file#"$platform"/}: sha256 $(shasum -a 256 <"$file" | cut -d' ' -f1)"
+    done < <(find "$platform/Developer/Library" \( -name XCUIElement.h -o -name XCUICoordinate.h \) -type f 2>/dev/null | sort)
+    [ $found -eq 1 ] || echo "  XCUIElement.h, XCUICoordinate.h under $platform/Developer/Library: absent"
     found=0
     for file in "$path"/System/Library/Frameworks/UIKit.framework/Modules/UIKit.swiftmodule/arm64*.swiftinterface; do
       [ -f "$file" ] || continue

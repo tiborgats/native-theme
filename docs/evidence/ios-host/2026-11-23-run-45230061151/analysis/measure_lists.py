@@ -48,6 +48,7 @@ def hexa(p):
 def renders(run):
     path = root / run / "index.toml"
     if not path.exists():
+        print(f'# {run}: not measured (no {run}/index.toml)\n')
         return []
     data = tomllib.load(open(path, "rb"))
     return [r for r in data.get("render", []) if r.get("backdrop") == "system"]
@@ -141,7 +142,8 @@ for run in ("press1", "run1"):
         rect = part(render)
         print(f"part_pt = {[round(v, 3) for v in rect]}")
         if render.get("press_number") is not None:
-            print(f'highlighted_at_capture = {str(render.get("highlighted_at_capture")).lower()}')
+            value = render.get("highlighted_at_capture", "absent")
+            print(f'highlighted_at_capture = {str(value).lower() if isinstance(value, bool) else chr(34) + value + chr(34)}')
         if solved_path.exists():
             solved = Image.open(solved_path).convert("RGBA")
             inner, scale = region(solved, render, rect, INSET)
