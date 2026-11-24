@@ -26812,6 +26812,86 @@ fn a_menu_property_the_theme_leaves_unstated_alone_takes_upstreams_own() -> Resu
     Ok(())
 }
 
+/// A stroke a rule states for a menu row's hover or pressed state in a form
+/// gpui cannot draw (`Stroke::Complex`, a stroke per side) is reported
+/// unmapped, not unstated (`demo::state_stroke_unmapped`), and the row keeps
+/// gpui-component's own outline for the state (spec §10, rule 0): kde-breeze
+/// light's menu parts with `menu.item(HOVER)` and `menu.item(PRESSED)`
+/// stroked per side by a rule for the state draw no hover outline and no
+/// pressed one, and the Overlays row's info says each is not mapped; the
+/// parts as stated say neither.
+#[test]
+fn a_menu_row_stroke_gpui_cannot_draw_for_a_state_is_reported_unmapped() -> Result<(), String> {
+    use crate::demo::{MenuRowsLook, MenuRowsParts, state_stroke_unmapped};
+    use native_theme::next::{
+        PartStated, Preset, Stroke, StrokeAlign, StrokeSide, Theme as NextTheme, ThemeContext,
+    };
+    let r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let t = native_theme_gpui::next::to_theme(&r).map_err(|u| u.home().to_string())?;
+    let icon = crate::support::SampleIcon {
+        icon: IconName::Copy,
+        drawn: ChromeIcon::Missing("Copy"),
+        set: "material".into(),
+    };
+    let notes = |parts: &MenuRowsParts| {
+        let look = MenuRowsLook::of(parts, &t, px(1.));
+        let info = crate::info::overlays::menu_row(&t, Some(&r), parts, &look, "Copy", &icon);
+        (
+            look.edge,
+            look.pressed_edge,
+            note_of(&info.config, "hovered item edge").map(str::to_string),
+            note_of(&info.config, "pressed item edge").map(str::to_string),
+        )
+    };
+    let stated = MenuRowsParts::of(&r);
+    let (.., hovered, pressed) = notes(&stated);
+    assert!(
+        !hovered
+            .as_deref()
+            .is_some_and(|n| n.starts_with("not mapped"))
+            && !pressed
+                .as_deref()
+                .is_some_and(|n| n.starts_with("not mapped")),
+        "kde-breeze light's stated strokes are reported unmapped: {hovered:?}, {pressed:?}"
+    );
+    let side = StrokeSide::default();
+    let mut parts = stated.clone();
+    for part in [&mut parts.hovered, &mut parts.pressed] {
+        part.stroke = Stroke::sides(
+            side.clone(),
+            side.clone(),
+            side.clone(),
+            side.clone(),
+            StrokeAlign::Inside,
+        );
+        part.stated = part.stated.union(PartStated::STROKE);
+        part.from_state = part.from_state.union(PartStated::STROKE);
+    }
+    assert!(
+        state_stroke_unmapped(&parts.hovered) && state_stroke_unmapped(&parts.pressed),
+        "a per-side stroke stated for the state is not unmapped"
+    );
+    let (edge, pressed_edge, hovered, pressed) = notes(&parts);
+    assert_eq!(
+        (edge, pressed_edge),
+        (None, None),
+        "an unmapped stroke draws an outline"
+    );
+    assert!(
+        hovered
+            .as_deref()
+            .is_some_and(|n| n.starts_with("not mapped: a rule states menu.item(HOVER).stroke")),
+        "the hovered row's unmapped stroke is not reported: {hovered:?}"
+    );
+    assert!(
+        pressed
+            .as_deref()
+            .is_some_and(|n| n.starts_with("not mapped: a rule states menu.item(PRESSED).stroke")),
+        "the pressed row's unmapped stroke is not reported: {pressed:?}"
+    );
+    Ok(())
+}
+
 /// A hovered menu row, in the menus (`demo::MenuLook`) and the Overlays
 /// page's rows (`demo::MenuRowsLook`), is filled and lettered in what a rule
 /// states for `menu.item(HOVER)` and `menu.item_label(HOVER)` (spec §2,

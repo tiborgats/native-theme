@@ -586,11 +586,16 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
         pressed_edge.map(|(_, width)| width.as_f32()),
         "showcase",
     ));
-    let info = pressed_menu_edge(info, pressed_edge, edge.is_some() && edge_width.is_some());
+    let info = pressed_menu_edge(
+        info,
+        pressed_edge,
+        edge.is_some() && edge_width.is_some(),
+        &m.item(WidgetState::PRESSED),
+    );
     let info = match (edge, edge_width) {
         (Some(_), Some(width)) => info.config("hovered item edge", format!("the stroke a rule states for menu.item(HOVER), {}px, a box over the highlighted item, its padding included, so nothing moves, rounded as the highlight", px_text(width))),
         (Some(_), None) => info.config("hovered item edge", "none: the stroke a rule states for menu.item(HOVER) is 0 wide"),
-        (None, _) => info,
+        (None, _) => hovered_menu_edge_unmapped(info, &hovered),
     };
     let info = match stated_sides(
         "menu_bar.item(NONE)",
@@ -1763,6 +1768,23 @@ pub fn resize_handle(
         )
 }
 
+/// `info` saying where a rule states `hovered`'s stroke (`menu.item(HOVER)`)
+/// in a form gpui cannot draw, which no outline then takes: the home is
+/// unmapped, not unstated (`demo::state_stroke_unmapped`).
+pub(super) fn hovered_menu_edge_unmapped(
+    info: WidgetInfo,
+    hovered: &native_theme::next::PartStyle,
+) -> WidgetInfo {
+    if crate::demo::state_stroke_unmapped(hovered) {
+        info.config(
+            "hovered item edge",
+            "not mapped: a rule states menu.item(HOVER).stroke for the hover state in a form gpui cannot draw (not one stroke of one colour, nor none), so a hovered item has no outline, as gpui-component's own has none (spec §10, rule 0; menu/menu_item.rs, MenuItemElement::render)",
+        )
+    } else {
+        info
+    }
+}
+
 /// What a menu row's outline is while the mouse button is held on it, where
 /// `edge` is `demo::menu_pressed_edge`'s: the stroke a rule states for
 /// `menu.item(PRESSED)`, or where none does, the hover outline, which
@@ -1771,8 +1793,18 @@ pub(super) fn pressed_menu_edge(
     info: WidgetInfo,
     edge: Option<(Hsla, Pixels)>,
     hovered: bool,
+    pressed: &native_theme::next::PartStyle,
 ) -> WidgetInfo {
+    let unmapped = crate::demo::state_stroke_unmapped(pressed);
     match edge {
+        None if unmapped => info.config(
+            "pressed item edge",
+            if hovered {
+                "not mapped: a rule states menu.item(PRESSED).stroke for the pressed state in a form gpui cannot draw (not one stroke of one colour, nor none), so a pressed item keeps the hover outline, gpui-component's own, which draws a pressed item as a hovered one (spec §10, rule 0; menu/menu_item.rs, MenuItemElement::render)"
+            } else {
+                "not mapped: a rule states menu.item(PRESSED).stroke for the pressed state in a form gpui cannot draw (not one stroke of one colour, nor none), so a pressed item has no outline, as gpui-component's own has none (spec §10, rule 0; menu/menu_item.rs, MenuItemElement::render)"
+            },
+        ),
         Some((_, width)) if width.as_f32() > 0.0 => info.config(
             "pressed item edge",
             format!(

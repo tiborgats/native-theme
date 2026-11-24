@@ -479,6 +479,16 @@ pub(crate) fn menu_pressed_edge(pressed: &native_theme::next::PartStyle) -> Opti
         .map(|(colour, width)| (colour, px(width)))
 }
 
+/// Whether a rule states `part`'s stroke for the queried state (spec §2,
+/// `from_state`) in a form gpui cannot draw, not one stroke of one colour
+/// nor none (`Stroke::Complex`): the home is then unmapped, not unstated,
+/// and the row keeps gpui's own outline for the state (spec §10, rule 0).
+pub(crate) fn state_stroke_unmapped(part: &native_theme::next::PartStyle) -> bool {
+    part.from_state
+        .contains(native_theme::next::PartStated::STROKE)
+        && next::state_stroke_color_of(part).is_none()
+}
+
 /// A hovered menu row's fill and text, as the connector's hover rule writes
 /// them into gpui's `accent` and `accent_foreground` (native-theme-gpui
 /// next/mod.rs, `menu_hover_fill`, `menu_hover_label`): the fill a rule
