@@ -375,6 +375,40 @@
           "body": {
             "fill": "#e6e0e91f"
           }
+        },
+        {
+          "variant": "flat",
+          "body": {
+            "fill": "#00000000",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "srgb(0.8156863, 0.7372549, 1, 0.08)"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "srgb(0.8156863, 0.7372549, 1, 0.12)"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "srgb(0.9019608, 0.8784314, 0.9137255, 0.1)"
+          }
         }
       ]
     },
@@ -426,6 +460,39 @@
           ],
           "label": {
             "color": "#e6e0e961"
+          }
+        },
+        {
+          "variant": "flat",
+          "label": {
+            "color": "#d0bcff"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#d0bcff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "#d0bcff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "variant": "flat",
+          "label": {
+            "color": "srgb(0.9019608, 0.8784314, 0.9137255, 0.38)"
           }
         }
       ]

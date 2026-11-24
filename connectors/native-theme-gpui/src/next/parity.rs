@@ -626,6 +626,40 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "variants::ghost_button",
+        presets: &["material-3"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 \
+                 material-3 states as M3's text button draws it, the state layer primary at \
+                 the hover and the pressed state layer opacity, 0.08 and 0.12, over no \
+                 container (_md-comp-button-text.scss:45-48, :57-60 at material-web 2.5.0), \
+                 where 0.7.2 gives the push button's hovered and pressed fills to every \
+                 variant; secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["material-3"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 material-3 states the text button's \
+                 own, hovered-state-layer-color primary at hovered-state-layer-opacity 0.08 \
+                 (_md-comp-button-text.scss:45-48 at material-web 2.5.0), so the \
+                 secondary_hover slot, its token and its stored config string are \
+                 button.body(HOVER; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["material-3"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 material-3 states the text \
+                 button's own, pressed-state-layer-color primary at pressed-state-layer-opacity \
+                 0.12 (_md-comp-button-text.scss:57-60 at material-web 2.5.0), so the \
+                 secondary_active slot, its token and its stored config string are \
+                 button.body(PRESSED; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
         presets: &["windows-11"],
         reason: "the ghost variant reads secondary_hover and secondary_active beside \
                  secondary_foreground, the flat button's home (button.body(HOVER; \

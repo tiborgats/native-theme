@@ -1125,6 +1125,11 @@ const PRESSED_STATE_LAYER_OPACITY: f32 = 0.12;
 /// (`_md-comp-filled-tonal-button.scss:42-46`).
 const DISABLED_CONTAINER_OPACITY: f32 = 0.12;
 
+/// The text button's disabled container's opacity of `on-surface`, 0.1
+/// (`md.comp.button.text.disabled.container.opacity`,
+/// `_md-comp-button-text.scss:21-22, :27-28` at material-web 2.5.0).
+const TEXT_BUTTON_DISABLED_CONTAINER_OPACITY: f32 = 0.1;
+
 /// The disabled content's opacity of `on-surface`, 0.38
 /// (`_md-comp-filled-button.scss:45-46`).
 const DISABLED_CONTENT_OPACITY: f32 = 0.38;
@@ -1756,6 +1761,12 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
             shape: None,
         })
     };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
+            shape: None,
+        })
+    };
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(c.secondary_container)])
         .base(border(roles, BUTTON_BORDER_WIDTH))
@@ -1786,6 +1797,32 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_container)],
         )
+        // The flat button, M3's text button, after the push button's rules so that its own win
+        // (`_md-comp-button-text.scss` at material-web 2.5.0; `docs/facts/material/button.toml`
+        // on `v0.8.0-rc1` at `78ee0efd`): no container and no outline (no container colour token,
+        // :21-60; Compose's TextButton, containerColor = Color.Transparent, Button.kt:1412 at
+        // androidx e4d933c9); hovered and pressed the state layer, primary at the hover and the
+        // pressed state layer opacity (:45-48, :57-60); disabled the container on-surface at
+        // TEXT_BUTTON_DISABLED_CONTAINER_OPACITY (:21-22, :27-28).
+        .rule(
+            flat(WidgetState::NONE),
+            [fill(TRANSPARENT), PartProp::Stroke(Stroke::None)],
+        )
+        .rule(
+            flat(WidgetState::HOVER),
+            [fill(c.primary.mul_alpha(HOVER_STATE_LAYER_OPACITY))],
+        )
+        .rule(
+            flat(WidgetState::PRESSED),
+            [fill(c.primary.mul_alpha(PRESSED_STATE_LAYER_OPACITY))],
+        )
+        .rule(
+            flat(WidgetState::DISABLED),
+            [fill(
+                c.on_surface
+                    .mul_alpha(TEXT_BUTTON_DISABLED_CONTAINER_OPACITY),
+            )],
+        )
         .build();
     // `button.hover_text_color`, `active_text_color`: 0.7.2 material-3.toml (uncited), the rest
     // colour, each stated for its state (spec §2, `from_state`), before the rules of the states
@@ -1809,6 +1846,24 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
     .rule(
         RuleSelector::on(WidgetState::DISABLED),
         [TextProp::Color(roles.disabled_text)],
+    )
+    // The text button's label: primary at rest, hovered and pressed (label-text-color,
+    // hovered-label-text-color, pressed-label-text-color, `_md-comp-button-text.scss:52`, :44,
+    // :56 at material-web 2.5.0), on-surface at the disabled content opacity disabled (:25-26,
+    // :31-32).
+    .rules(
+        [
+            flat(WidgetState::NONE),
+            flat(WidgetState::HOVER),
+            flat(WidgetState::PRESSED),
+        ],
+        [TextProp::Color(c.primary)],
+    )
+    .rule(
+        flat(WidgetState::DISABLED),
+        [TextProp::Color(
+            c.on_surface.mul_alpha(DISABLED_CONTENT_OPACITY),
+        )],
     )
     .build();
     ButtonWidget::new(
