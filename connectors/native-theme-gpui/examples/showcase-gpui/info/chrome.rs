@@ -299,7 +299,7 @@ pub fn menu_bar(
 /// where a native theme is installed (`demo::app_menus`).
 pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&NextTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Menus").variant("drawn by the showcase");
-    let (info, unstated) = match native.map(|r| (r, crate::demo::MenuLook::next_of(r))) {
+    let (info, unstated) = match native.map(|r| (r, crate::demo::MenuLook::next_of(r, t))) {
         Some((r, Ok(_))) => (menu_look(info, t, r), None),
         Some((_, Err(home))) => (info, Some(home)),
         None => (info, None),
@@ -371,6 +371,16 @@ fn stated_sides(home: &str, sides: [Option<f32>; 4]) -> Option<String> {
     (!named.is_empty()).then(|| named.join(", "))
 }
 
+/// Where a hovered menu row's text is from (`demo::menu_hover_of`): the
+/// colour a rule states for `menu.item_label(HOVER)`; over a hover fill a
+/// rule states, the text at rest; else gpui-component's `accent_foreground`.
+#[derive(Clone, Copy)]
+pub(super) enum HoverText {
+    Stated,
+    AtRest,
+    Accent,
+}
+
 /// What the menus painted in the menu look the installed 0.8.0 theme `r`
 /// states (`demo::MenuLook::next_of`) claim and say.
 fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
@@ -395,43 +405,109 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
         text_color_of(&r.menu.item_label(WidgetState::NONE)),
         "showcase",
     ));
-    let info = match (bar_hover, bar_open) {
-        (None, None) => info.colors(stated_claim(
+    // A hovered item's fill and text where a rule states them for the hover
+    // state, else what gpui-component paints, the accent the connector
+    // writes (demo::menu_hover_of).
+    let hover_stated = state_fill_of(&hovered).is_some();
+    let hover_text_from = match (
+        state_text_color_of(&m.item_label(WidgetState::HOVER)).is_some(),
+        hover_stated,
+    ) {
+        (true, _) => HoverText::Stated,
+        (false, true) => HoverText::AtRest,
+        (false, false) => HoverText::Accent,
+    };
+    let info = match (bar_hover, bar_open, hover_stated) {
+        (None, None, true) => info.colors(stated_claim(
             "hovered or open title, hovered item",
             "menu.item(HOVER).fill",
-            fill_of(&r.menu.item(WidgetState::HOVER)),
+            state_fill_of(&r.menu.item(WidgetState::HOVER)),
             "showcase",
         )),
-        (None, Some(_)) => info.colors(stated_claim(
+        (None, None, false) => info.color(claim(
+            "hovered or open title, hovered item, none stated: gpui-component's own",
+            "accent",
+            t.accent,
+            "showcase",
+        )),
+        (None, Some(_), true) => info.colors(stated_claim(
             "hovered title, hovered item",
             "menu.item(HOVER).fill",
-            fill_of(&r.menu.item(WidgetState::HOVER)),
+            state_fill_of(&r.menu.item(WidgetState::HOVER)),
             "showcase",
         )),
-        (Some(_), _) => info.colors(stated_claim(
+        (None, Some(_), false) => info.color(claim(
+            "hovered title, hovered item, none stated: gpui-component's own",
+            "accent",
+            t.accent,
+            "showcase",
+        )),
+        (Some(_), _, true) => info.colors(stated_claim(
             "hovered item",
             "menu.item(HOVER).fill",
-            fill_of(&r.menu.item(WidgetState::HOVER)),
+            state_fill_of(&r.menu.item(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (Some(_), _, false) => info.color(claim(
+            "hovered item, none stated: gpui-component's own",
+            "accent",
+            t.accent,
             "showcase",
         )),
     };
-    let info = match (bar_hover_text, bar_open_text) {
-        (None, None) => info.colors(stated_claim(
+    let info = match (bar_hover_text, bar_open_text, hover_text_from) {
+        (None, None, HoverText::Stated) => info.colors(stated_claim(
             "a hovered or open title's text, a hovered item's",
             "menu.item_label(HOVER).color",
-            text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
             "showcase",
         )),
-        (None, Some(_)) => info.colors(stated_claim(
+        (None, None, HoverText::AtRest) => info.colors(stated_claim(
+            "a hovered or open title's text, a hovered item's, none stated over the stated hover fill: the text at rest",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        (None, None, HoverText::Accent) => info.color(claim(
+            "a hovered or open title's text, a hovered item's, none stated: gpui-component's own",
+            "accent_foreground",
+            t.accent_foreground,
+            "showcase",
+        )),
+        (None, Some(_), HoverText::Stated) => info.colors(stated_claim(
             "a hovered title's text, a hovered item's",
             "menu.item_label(HOVER).color",
-            text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
             "showcase",
         )),
-        (Some(_), _) => info.colors(stated_claim(
+        (None, Some(_), HoverText::AtRest) => info.colors(stated_claim(
+            "a hovered title's text, a hovered item's, none stated over the stated hover fill: the text at rest",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        (None, Some(_), HoverText::Accent) => info.color(claim(
+            "a hovered title's text, a hovered item's, none stated: gpui-component's own",
+            "accent_foreground",
+            t.accent_foreground,
+            "showcase",
+        )),
+        (Some(_), _, HoverText::Stated) => info.colors(stated_claim(
             "a hovered item's text",
             "menu.item_label(HOVER).color",
-            text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (Some(_), _, HoverText::AtRest) => info.colors(stated_claim(
+            "a hovered item's text, none stated over the stated hover fill: the text at rest",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        (Some(_), _, HoverText::Accent) => info.color(claim(
+            "a hovered item's text, none stated: gpui-component's own",
+            "accent_foreground",
+            t.accent_foreground,
             "showcase",
         )),
     };

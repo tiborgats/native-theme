@@ -6,7 +6,9 @@ use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_
 
 use super::{
     WidgetInfo, buttons,
-    chrome::{ThemedEntrance, dialog_surface, popup_menu, pressed_menu_edge, sheet_surface},
+    chrome::{
+        HoverText, ThemedEntrance, dialog_surface, popup_menu, pressed_menu_edge, sheet_surface,
+    },
     claim, edge_claim, px_text, state_stroke_color_of, stated_claim, stroke_color_of,
     stroke_width_of,
 };
@@ -475,10 +477,13 @@ pub fn menu_row(
             "menu.item_label(NONE).color",
             text_color_of(&parts.label).is_none(),
         ),
-        ("menu.item(HOVER).fill", fill_of(&parts.hovered).is_none()),
+        (
+            "menu.item(HOVER).fill",
+            state_fill_of(&parts.hovered).is_none(),
+        ),
         (
             "menu.item_label(HOVER).color",
-            text_color_of(&parts.hovered_label).is_none(),
+            matches!(hover_text_from(parts), HoverText::Accent),
         ),
         ("popover.panel.stroke.width", look.frame_width.1.is_none()),
         ("popover.panel.corners", look.frame_radius.1.is_none()),
@@ -508,6 +513,19 @@ pub fn menu_row(
         "plain text rather than a Label: a Label paints foreground on its own element and sets its own line height (gpui-component/label.rs, Label::render), which would hide the frame's text colour; plain text takes menu.item_label(NONE)'s font from the row",
     )
     .instance("icon", icon.note("the row shows its label alone"))
+}
+
+/// Where the menu rows' hovered text is from, for `parts`
+/// (`demo::menu_hover_of`).
+fn hover_text_from(parts: &MenuRowsParts) -> HoverText {
+    match (
+        state_text_color_of(&parts.hovered_label).is_some(),
+        state_fill_of(&parts.hovered).is_some(),
+    ) {
+        (true, _) => HoverText::Stated,
+        (false, true) => HoverText::AtRest,
+        (false, false) => HoverText::Accent,
+    }
 }
 
 /// What a menu row painted with `look`, the menu rows' look the `parts` of
@@ -557,21 +575,28 @@ fn menu_row_look(
                 stated_claim(
                     "hover",
                     "menu.item(HOVER).fill",
-                    fill_of(&r.menu.item(WidgetState::HOVER)),
+                    state_fill_of(&r.menu.item(WidgetState::HOVER)),
                     "showcase",
                 )
             })
             .unwrap_or_else(|| claim("hover", "accent", t.accent, "showcase")),
         )
         .color(
-            r.and_then(|r| {
-                stated_claim(
+            match (r, hover_text_from(parts)) {
+                (Some(r), HoverText::Stated) => stated_claim(
                     "hover text",
                     "menu.item_label(HOVER).color",
-                    text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+                    state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
                     "showcase",
-                )
-            })
+                ),
+                (Some(r), HoverText::AtRest) => stated_claim(
+                    "hover text",
+                    "menu.item_label(NONE).color",
+                    text_color_of(&r.menu.item_label(WidgetState::NONE)),
+                    "showcase",
+                ),
+                _ => None,
+            }
             .unwrap_or_else(|| {
                 claim(
                     "hover text",

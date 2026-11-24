@@ -13489,7 +13489,10 @@ fn menu_rows_drawn(look: &crate::demo::MenuRowsLook) -> MenuRowsDrawn {
 /// `demo::MenuRowsLook::of`), which no bundled preset does: kde-breeze
 /// light's menu parts with one property cleared from its part --
 /// `menu.panel(NONE).fill`, `menu.item_label(NONE).color`,
-/// `menu.item(HOVER).fill`, `menu.item_label(HOVER).color`, the stroke of
+/// `menu.item(HOVER).fill`, it with `menu.item_label(HOVER).color` (the
+/// label alone over a stated hover fill takes the text at rest, spec §10,
+/// rule 0a, which kde-breeze light's hover text equals:
+/// `a_hovered_menu_row_takes_a_hover_only_a_rule_for_the_state_states`), the stroke of
 /// `menu.panel(NONE)` and `popover.panel`, their corners, and
 /// `menu.item(NONE).corners` -- draw that property alone as the showcase's
 /// own (`popover`, `popover_foreground`, `accent`, `accent_foreground`, the
@@ -13568,8 +13571,11 @@ fn a_menu_row_property_the_theme_leaves_unstated_alone_takes_the_showcases_own(
             "accent",
         ),
         (
-            "menu.item_label(HOVER).color",
-            |p| p.hovered_label.stated = p.hovered_label.stated.difference(TextStated::COLOR),
+            "menu.item(HOVER).fill and menu.item_label(HOVER).color",
+            |p| {
+                p.hovered.stated = p.hovered.stated.difference(PartStated::FILL);
+                p.hovered_label.stated = p.hovered_label.stated.difference(TextStated::COLOR);
+            },
             3,
             "accent_foreground",
         ),
@@ -13608,7 +13614,7 @@ fn a_menu_row_property_the_theme_leaves_unstated_alone_takes_the_showcases_own(
             0 => expected.0 = own.0,
             1 => expected.1 = own.1,
             2 => expected.2 = own.2,
-            3 => expected.3 = own.3,
+            3 => (expected.2, expected.3) = (own.2, own.3),
             4 => (expected.4, expected.5) = (own.4, own.5),
             6 => expected.6 = own.6,
             _ => expected.7 = own.7,
@@ -13816,7 +13822,7 @@ fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
             color: None,
             ..style.text.clone()
         };
-        let look = crate::demo::MenuLook::next_of(&resolved);
+        let look = menu_look_of(&resolved);
         assert!(look.is_ok(), "adwaita's menu has no look: {:?}", look.err());
         let Ok(look) = look else { return };
         for lit in [false, true] {
@@ -14602,7 +14608,7 @@ fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
             side(bottom, None),
             side(left, x),
         );
-        let look = crate::demo::MenuLook::next_of(&r);
+        let look = menu_look_of(&r);
         assert!(
             look.is_ok(),
             "{name}: the menu has no look: {:?}",
@@ -14669,7 +14675,7 @@ fn a_menu_popup_rows_fallback_height_follows_the_control_height_rule() {
                 && bottom.is_none(),
             "ios-13 now states a menu.item(NONE) height or a top or bottom padding, which this test needs unstated"
         );
-        let look = crate::demo::MenuLook::next_of(&resolved);
+        let look = menu_look_of(&resolved);
         assert!(look.is_ok(), "ios-13's menu has no look: {:?}", look.err());
         let Ok(look) = look else { return };
         let mut row = look.row(false);
@@ -26719,4 +26725,130 @@ fn a_disabled_checkboxs_info_claims_the_border_it_draws() {
             "patched, checked {checked}"
         );
     }
+}
+
+/// The menus' look under `r` over the gpui theme the connector builds from
+/// it (`next::to_theme`), as the showcase draws them with that theme
+/// installed; the home either leaves without a value gpui can take.
+fn menu_look_of(
+    r: &native_theme::next::ResolvedTheme,
+) -> Result<crate::demo::MenuLook, &'static str> {
+    let t = native_theme_gpui::next::to_theme(r).map_err(|unmapped| unmapped.home())?;
+    crate::demo::MenuLook::next_of(r, &t)
+}
+
+/// A hovered menu row, in the menus (`demo::MenuLook`) and the Overlays
+/// page's rows (`demo::MenuRowsLook`), is filled and lettered in what a rule
+/// states for `menu.item(HOVER)` and `menu.item_label(HOVER)` (spec §2,
+/// `from_state`), and where none does in gpui-component's own `accent` and
+/// `accent_foreground`, the colours the connector writes there
+/// (`next::to_theme`): kde-breeze light, which states both for the hover
+/// state, and the same theme patched by a rule with no required state that
+/// writes the item's fill and label colour, so the hover query still finds
+/// a value but no longer one stated for the state (spec §2: a later rule
+/// without required states clears the `from_state` bit), and the rows do
+/// not take it.
+#[test]
+fn a_hovered_menu_row_takes_a_hover_only_a_rule_for_the_state_states() -> Result<(), String> {
+    use crate::demo::{MenuRowsLook, MenuRowsParts};
+    use crate::info::next_stated;
+    use native_theme::next::{
+        Color, MenuRule, Paint, PartPatch, Preset, TextPatch, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_color_of};
+    let drawn = |r: &native_theme::next::ResolvedTheme| -> Result<_, String> {
+        let t = native_theme_gpui::next::to_theme(r).map_err(|u| u.home().to_string())?;
+        let look = menu_look_of(r)?;
+        let mut row = look.row(true);
+        let style = row.style();
+        let menu = (style.background.clone(), style.text.color);
+        let rows = MenuRowsLook::of(&MenuRowsParts::of(r), &t, px(1.));
+        Ok((
+            t.accent,
+            t.accent_foreground,
+            menu,
+            (rows.hover, rows.hover_text),
+        ))
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let (fill, text) = (
+        state_fill_of(&r.menu.item(WidgetState::HOVER)),
+        state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+    );
+    let (Some(fill), Some(text)) = (fill, text) else {
+        return Err("kde-breeze light no longer states a hovered menu row's fill and text".into());
+    };
+    let (_, _, menu, rows) = drawn(&r)?;
+    assert_eq!(menu, (Some(fill.into()), Some(text)), "stated: the menus");
+    assert_eq!(rows, (fill, text), "stated: the Overlays rows");
+
+    let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    r.apply_patch(
+        &ThemePatch::new().menu(
+            MenuRule::new()
+                .item(PartPatch::new().fill(Paint::solid(sentinel)))
+                .item_label(TextPatch::new().color(sentinel)),
+        ),
+    );
+    let hovered = r.menu.item(WidgetState::HOVER);
+    let hovered_label = r.menu.item_label(WidgetState::HOVER);
+    assert_eq!(
+        (fill_of(&hovered), text_color_of(&hovered_label)),
+        (Some(next_stated(sentinel)), Some(next_stated(sentinel))),
+        "the patch does not write the hovered row's fill and text"
+    );
+    assert_eq!(
+        (state_fill_of(&hovered), state_text_color_of(&hovered_label)),
+        (None, None),
+        "the patch leaves a value stated for the hover state"
+    );
+    let (accent, accent_text, menu, rows) = drawn(&r)?;
+    assert_ne!(
+        accent,
+        next_stated(sentinel),
+        "the connector's accent is the rest fill"
+    );
+    assert_eq!(
+        menu,
+        (Some(accent.into()), Some(accent_text)),
+        "unstated: the menus"
+    );
+    assert_eq!(rows, (accent, accent_text), "unstated: the Overlays rows");
+
+    // A hover fill stated again for the state, its label not: the label at
+    // rest, the sentinel, which is not gpui-component's accent_foreground.
+    r.apply_patch(
+        &ThemePatch::new().menu(
+            MenuRule::new().states(WidgetState::HOVER).item(
+                PartPatch::new().fill(Paint::solid(Color::from_srgb8(0x65, 0x43, 0x21, 0xff))),
+            ),
+        ),
+    );
+    let fill = state_fill_of(&r.menu.item(WidgetState::HOVER));
+    let Some(fill) = fill else {
+        return Err("the HOVER rule states no hovered menu row fill".into());
+    };
+    let (_, accent_text, menu, rows) = drawn(&r)?;
+    assert_eq!(
+        accent_text,
+        next_stated(sentinel),
+        "the connector does not letter a stated hover fill in the label at rest"
+    );
+    assert_ne!(
+        gpui_component::theme::ThemeColor::light().accent_foreground,
+        next_stated(sentinel),
+        "gpui-component's own accent_foreground is the label at rest"
+    );
+    assert_eq!(
+        menu,
+        (Some(fill.into()), Some(next_stated(sentinel))),
+        "a stated fill, its label unstated: the menus"
+    );
+    assert_eq!(
+        rows,
+        (fill, next_stated(sentinel)),
+        "a stated fill, its label unstated: the Overlays rows"
+    );
+    Ok(())
 }

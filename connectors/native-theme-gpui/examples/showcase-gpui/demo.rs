@@ -479,6 +479,31 @@ pub(crate) fn menu_pressed_edge(pressed: &native_theme::next::PartStyle) -> Opti
         .map(|(colour, width)| (colour, px(width)))
 }
 
+/// A hovered menu row's fill and text, as the connector's hover rule writes
+/// them into gpui's `accent` and `accent_foreground` (native-theme-gpui
+/// next/mod.rs, `menu_hover_fill`, `menu_hover_label`): the fill a rule
+/// states for `menu.item(HOVER)` (spec §2, `from_state`), else `t`'s
+/// `accent`, the hovered item's fill gpui-component paints (gpui-component
+/// 0.10.0 `menu/menu_item.rs:134-137`); the text a rule states for
+/// `menu.item_label(HOVER)`, else over a stated hover fill the label at
+/// rest, `label` (spec §10, rule 0a: a label is chosen for the fill it lies
+/// on), else `t`'s `accent_foreground` (spec §10, rule 0). The value at rest
+/// is never taken for a hover no rule states.
+pub(crate) fn menu_hover_of(
+    hovered: &native_theme::next::PartStyle,
+    hovered_label: &native_theme::next::TextStyle,
+    label: &native_theme::next::TextStyle,
+    t: &gpui_component::theme::Theme,
+) -> (Hsla, Hsla) {
+    let fill = next::state_fill_of(hovered);
+    let text = next::state_text_color_of(hovered_label)
+        .or_else(|| fill.and_then(|_| next::text_color_of(label)));
+    (
+        fill.unwrap_or(t.accent),
+        text.unwrap_or(t.accent_foreground),
+    )
+}
+
 /// The pressed outline a row's edge box draws: `pressed` where the row
 /// has a hover outline it replaces, or is itself a line; `None` where
 /// there is neither, so a pressed outline of no width adds no box.
@@ -507,7 +532,9 @@ pub(crate) struct MenuLook {
     item: StyleRefinement,
     /// `menu.item_label(NONE).color`, a row's text and a title's.
     text: Hsla,
-    /// `menu.item(HOVER).fill` and `menu.item_label(HOVER).color`.
+    /// A lit row's fill and text ([`menu_hover_of`]): `menu.item(HOVER).fill`
+    /// and `menu.item_label(HOVER).color` where a rule states each for the
+    /// hover state, else gpui-component's own.
     hover: Hsla,
     hover_text: Hsla,
     /// A lit row's outline, the stroke a rule states for `menu.item(HOVER)`,
@@ -561,18 +588,25 @@ pub(crate) struct MenuLook {
 }
 
 impl MenuLook {
-    /// The menu's look under `r`, or the home `r` leaves without a value
-    /// gpui can take that the look needs, where the menus keep upstream's
-    /// look (spec §10, rule 0).
-    pub(crate) fn next_of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
+    /// The menu's look under `r`, the hovered row's fill and text as
+    /// [`menu_hover_of`] gives them over `t`, the installed gpui theme; or
+    /// the home `r` leaves without a value gpui can take that the look
+    /// needs, where the menus keep upstream's look (spec §10, rule 0).
+    pub(crate) fn next_of(
+        r: &native_theme::next::ResolvedTheme,
+        t: &gpui_component::theme::Theme,
+    ) -> Result<Self, &'static str> {
         let (m, bar) = (&r.menu, &r.menu_bar);
         let hovered = m.item(WidgetState::HOVER);
         let rest = m.item(WidgetState::NONE);
         let panel = m.panel(WidgetState::NONE);
         let edge_width = next::stroke_width_of(&hovered).filter(|width| *width > 0.0);
-        let hover = next::fill_of(&hovered).ok_or("menu.item(HOVER).fill")?;
-        let hover_text = next::text_color_of(&m.item_label(WidgetState::HOVER))
-            .ok_or("menu.item_label(HOVER).color")?;
+        let (hover, hover_text) = menu_hover_of(
+            &hovered,
+            &m.item_label(WidgetState::HOVER),
+            &m.item_label(WidgetState::NONE),
+            t,
+        );
         let bar_hover = next::state_fill_of(&bar.item(WidgetState::HOVER)).unwrap_or(hover);
         let bar_hover_text =
             next::state_text_color_of(&bar.item_label(WidgetState::HOVER)).unwrap_or(hover_text);
@@ -1188,7 +1222,7 @@ const MENU_TITLES: [&str; 4] = [
 
 impl Render for MenuBar {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let look = next_resolved(cx).and_then(|r| MenuLook::next_of(r).ok());
+        let look = next_resolved(cx).and_then(|r| MenuLook::next_of(r, cx.theme()).ok());
         let open = self.open;
         let menus = app_menu_rows();
         let mut popup = open.and_then(|ix| menus.get(ix)).map(|(_, rows)| {
@@ -9980,9 +10014,12 @@ pub(crate) struct MenuRowsLook {
     pub(crate) background: Hsla,
     /// `menu.item_label(NONE).color`, else `popover_foreground`.
     pub(crate) text: Hsla,
-    /// `menu.item(HOVER).fill`, else `accent`, as a PopupMenu's item.
+    /// `menu.item(HOVER).fill` where a rule states it for the hover state,
+    /// else `accent`, as a PopupMenu's item ([`menu_hover_of`]).
     pub(crate) hover: Hsla,
-    /// `menu.item_label(HOVER).color`, else `accent_foreground`.
+    /// `menu.item_label(HOVER).color` where a rule states it, else over a
+    /// stated hover fill `menu.item_label(NONE).color`, else
+    /// `accent_foreground` ([`menu_hover_of`]).
     pub(crate) hover_text: Hsla,
     /// A hovered row's outline, the stroke a rule states for
     /// `menu.item(HOVER)`, at its width; `None` where no rule states one,
@@ -10035,11 +10072,12 @@ impl MenuRowsLook {
             None => t.border,
         };
         let radius = menu_frame_value(&p.panel, &p.popover, next::radius_of);
+        let (hover, hover_text) = menu_hover_of(&p.hovered, &p.hovered_label, &p.label, t);
         Self {
             background: next::fill_of(&p.panel).unwrap_or(t.popover),
             text: next::text_color_of(&p.label).unwrap_or(t.popover_foreground),
-            hover: next::fill_of(&p.hovered).unwrap_or(t.accent),
-            hover_text: next::text_color_of(&p.hovered_label).unwrap_or(t.accent_foreground),
+            hover,
+            hover_text,
             edge: next::state_stroke_color_of(&p.hovered)
                 .zip(edge_width)
                 .map(|(colour, width)| (colour, px(width))),

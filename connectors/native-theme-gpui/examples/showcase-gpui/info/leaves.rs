@@ -1888,12 +1888,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.menu_bar.",
         &["menu.item(HOVER).fill"],
-        "gpui: menu.item(HOVER).fill, the title's fill under the pointer where no rule states menu_bar.item(HOVER).fill, and while open where none states menu_bar.item(OPEN).fill either (MenuLook::next_of, demo::MenuTitle)",
+        "gpui: menu.item(HOVER).fill where a rule states it for the hover state (else gpui-component's own accent, demo::menu_hover_of), the title's fill under the pointer where no rule states menu_bar.item(HOVER).fill, and while open where none states menu_bar.item(OPEN).fill either (MenuLook::next_of, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         &["menu.item_label(HOVER).color"],
-        "gpui: menu.item_label(HOVER).color, the title's text under the pointer where no rule states menu_bar.item_label(HOVER).color, and while open where none states menu_bar.item_label(OPEN).color either (MenuLook::next_of, demo::MenuTitle)",
+        "gpui: menu.item_label(HOVER).color where a rule states it for the hover state (else as demo::menu_hover_of gives it), the title's text under the pointer where no rule states menu_bar.item_label(HOVER).color, and while open where none states menu_bar.item_label(OPEN).color either (MenuLook::next_of, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
@@ -2012,12 +2012,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["menu.item(HOVER).fill"],
-        "gpui: menu.item(HOVER).fill, the highlighted row's fill (MenuLook::next_of, MenuBar::popup)",
+        "gpui: menu.item(HOVER).fill where a rule states it for the hover state, the highlighted row's fill, else gpui-component's own accent (MenuLook::next_of, demo::menu_hover_of, MenuBar::popup)",
     ),
     (
         "",
         &["menu.item_label(HOVER).color"],
-        "gpui: menu.item_label(HOVER).color, the highlighted row's text (MenuLook::next_of, MenuBar::popup)",
+        "gpui: menu.item_label(HOVER).color where a rule states it for the hover state, the highlighted row's text, else over a stated hover fill menu.item_label(NONE).color, else gpui-component's own accent_foreground (MenuLook::next_of, demo::menu_hover_of, MenuBar::popup)",
     ),
     (
         "",
