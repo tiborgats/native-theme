@@ -13738,10 +13738,9 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
 /// is one line, centred in it, as a menu row's label. Its arrow is
 /// [`next_expander_arrow_size`] across, on `expander.arrow_side`
 /// (docs/platform-facts.md §2.27), before the title where the side is
-/// unstated; it is drawn in `styles::expander` and the arrow's colour of
-/// `resolved`.
+/// unstated; it is drawn in [`next_expander_style`] and
+/// `iced_next::expander_arrow_color`.
 fn expander_header<'a>(
-    resolved: &'a ResolvedTheme,
     r: &'a native_theme::next::ResolvedTheme,
     arrow_gap: f32,
     id: &'static str,
@@ -13753,7 +13752,11 @@ fn expander_header<'a>(
     let x_pad = next_expander_header_padding(r);
     let label = x.header_label(WidgetState::NONE);
     let x_height = next_expander_header_height(r, x_pad);
-    let arrow_color = native_theme_iced::expander_arrow_color(resolved);
+    // Where the theme states no arrow or title colour, the title iced's own
+    // header draws, `button::Style::default()`'s black (iced_widget 0.14.2
+    // `src/button.rs`, `impl Default for Style`), and the arrow with it.
+    let arrow_color =
+        iced_next::expander_arrow_color(r).unwrap_or(button::Style::default().text_color);
     let trailing = x.arrow_side == Some(native_theme::next::ArrowSide::Trailing);
     let arrow_size = next_expander_arrow_size(r);
     let arrow = || {
@@ -13793,12 +13796,41 @@ fn expander_header<'a>(
     .padding(x_pad)
     .width(Fill)
     .height(Length::Fixed(x_height))
-    .style(styles::expander(resolved))
+    .next_style(next_expander_style(r), |head, style| head.style(style))
     .on_press(toggle);
     match listed_part(id, "header") {
         Some(header_id) => Element::from(tagged(header_id, head)),
         None => head.into(),
     }
+}
+
+/// An expander header's style on `r`, the installed 0.8.0 theme:
+/// `iced_next::styles::expander`'s, its pressed title
+/// `expander.header_label(PRESSED).color` where a rule states the colour for
+/// the pressed state (spec §2, `from_state`, asked with that flag alone);
+/// else the title at rest, which iced's own header style,
+/// `button::Style::default()` in every status, does not change (spec §10,
+/// rule 0).
+fn next_expander_style(
+    r: &native_theme::next::ResolvedTheme,
+) -> native_theme_iced::next::Mapped<impl Fn(&Theme, button::Status) -> button::Style + use<>> {
+    let pressed = r.expander.header_label(WidgetState::PRESSED);
+    let pressed = pressed
+        .from_state
+        .contains(TextStated::COLOR)
+        .then(|| next_colour(pressed.color));
+    iced_next::styles::expander(r).map(|style| {
+        move |theme: &Theme, status: button::Status| {
+            let drawn = style(theme, status);
+            match (status, pressed) {
+                (button::Status::Pressed, Some(text_color)) => button::Style {
+                    text_color,
+                    ..drawn
+                },
+                _ => drawn,
+            }
+        }
+    })
 }
 
 /// An expander header's padding on the installed 0.8.0 theme: the header
@@ -14671,7 +14703,10 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 container(space())
                     .width(sc.separator_width)
                     .height(Fill)
-                    .style(styles::segment_separator(resolved, false))
+                    .next_style(
+                        iced_next::styles::segment_separator(next, false),
+                        |line, style| line.style(style),
+                    )
                     .into(),
             );
         }
@@ -14681,11 +14716,14 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 seg_min,
             ))
             .padding(seg_pad)
-            .style(styles::segment(
-                resolved,
-                i == state.basic_segment,
-                styles::SegmentPosition::of(i, BASIC_SEGMENTS.len()),
-            ))
+            .next_style(
+                iced_next::styles::segment(
+                    next,
+                    i == state.basic_segment,
+                    styles::SegmentPosition::of(i, BASIC_SEGMENTS.len()),
+                ),
+                |segment, style| segment.style(style),
+            )
             .on_press(Message::BasicSegmentSelected(i))
             .into(),
         );
@@ -14722,8 +14760,10 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 // `Shrink` over the separators' `Fill`, which a row would
                 // otherwise take for its own height: the separators then
                 // span the segments' height.
-                outlined(container(row(segments).height(Length::Shrink)), sc.outline)
-                    .style(styles::segmented_control(resolved, false)),
+                outlined(container(row(segments).height(Length::Shrink)), sc.outline).next_style(
+                    iced_next::styles::segmented_control(next, false),
+                    |frame, style| frame.style(style),
+                ),
             )
             .loose()
             .part("basic.segmented.day", segment_at(0))
@@ -14874,7 +14914,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // expander.arrow_gap; the widget gap where it is unstated.
     let arrow_gap = x.arrow_gap.unwrap_or(gap.widget);
     let header = move |id: &'static str, title: &'a str, expanded: bool, toggle: Message| {
-        expander_header(resolved, next, arrow_gap, id, title, expanded, toggle)
+        expander_header(next, arrow_gap, id, title, expanded, toggle)
     };
     // The body sits expander.content_indent in, or under the title, past
     // the arrow and its gap, where the theme states no indent.
@@ -14899,7 +14939,9 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         let item: Element<'a, Message> = match x.frame_enabled {
             Some(true) => outlined(container(item), frame_line)
                 .width(Length::Fixed(BASIC_WIDE))
-                .style(styles::expander_frame(resolved))
+                .next_style(iced_next::styles::expander_frame(next), |frame, style| {
+                    frame.style(style)
+                })
                 .into(),
             _ => container(item).width(Length::Fixed(BASIC_WIDE)).into(),
         };
@@ -25449,6 +25491,7 @@ mod tests {
                 "styles::toolbar_button",
                 "styles::segment",
                 "styles::expander",
+                "next_expander_style",
                 "ghost_button",
                 "menu_row",
                 "menu_title",
@@ -31632,7 +31675,6 @@ mod tests {
         const TITLE: &str = "Details of a header title long enough to wrap";
         const HEADER: &str = "probe-test-expander-header";
         let state = loaded("kde-breeze", false);
-        let resolved = state.current_resolved.clone();
         let next = state.next_shown().clone();
         let pad = next_expander_header_padding(&next);
         let line = next_line_box(
@@ -31652,7 +31694,6 @@ mod tests {
             let want = next_expander_header_height(&r, pad);
             let arrow_gap = r.expander.arrow_gap.unwrap_or_default();
             let header = expander_header(
-                &resolved,
                 &r,
                 arrow_gap,
                 "test.expander",
@@ -36648,7 +36689,15 @@ mod tests {
 
     /// The style functions those pages draw with on the installed 0.8.0
     /// theme alone (`iced_next::styles::<fn>`), never the 0.7.2 namesake.
-    const NEXT_PAGE_STYLES: &[&str] = &["slider", "progress_bar"];
+    const NEXT_PAGE_STYLES: &[&str] = &[
+        "slider",
+        "progress_bar",
+        "segmented_control",
+        "segment",
+        "segment_separator",
+        "expander",
+        "expander_frame",
+    ];
 
     /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`] on the
     /// 0.7.2 model (`styles::<fn>(` not under `iced_next::`).
@@ -36728,6 +36777,48 @@ mod tests {
         ] {
             if row != expected {
                 faults.push(format!("{row:?}, not {expected:?}"));
+            }
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(faults.join("\n"))
+        }
+    }
+
+    /// The expander header's pressed title is the theme's
+    /// `expander.header_label(PRESSED).color` where a rule states it, and
+    /// the title at rest where none does (iced's own header keeps its text
+    /// colour in every status), on every preset.
+    #[test]
+    fn the_pressed_expander_title_is_the_stated_pressed_label() -> Result<(), String> {
+        let title = |r: &native_theme::next::ResolvedTheme,
+                     status: button::Status|
+         -> Result<Color, String> {
+            let theme = native_theme_iced::next::to_theme(r).map_err(|e| format!("{e:?}"))?;
+            let style = next_expander_style(r).map_err(|e| format!("{e:?}"))?;
+            Ok(style(&theme, status).text_color)
+        };
+        let mut faults = Vec::new();
+        for (label, r) in next_combinations() {
+            let pressed = r.expander.header_label(WidgetState::PRESSED);
+            let rest = title(&r, button::Status::Active)?;
+            let want = if pressed.from_state.contains(TextStated::COLOR) {
+                next_colour(pressed.color)
+            } else {
+                rest
+            };
+            if title(&r, button::Status::Pressed)? != want {
+                faults.push(format!("{label}: the pressed title is not {want:?}"));
+            }
+            let patched = with_home(&r, "expander.header_label(PRESSED).color", "#13579b")
+                .ok_or(format!("{label}: no patch reaches the pressed label"))?;
+            let stated = Color::from_rgb8(0x13, 0x57, 0x9b);
+            if title(&patched, button::Status::Pressed)? != stated {
+                faults.push(format!("{label}: a stated pressed label is not drawn"));
+            }
+            if title(&patched, button::Status::Active)? != rest {
+                faults.push(format!("{label}: a pressed label moves the title at rest"));
             }
         }
         if faults.is_empty() {
