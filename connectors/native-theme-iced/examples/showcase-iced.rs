@@ -5570,6 +5570,28 @@ fn next_menu_row_height(r: &native_theme::next::ResolvedTheme, pad: Padding) -> 
     }
 }
 
+/// A Basic list row's padding on the installed 0.8.0 theme: the sides
+/// `list.row(NONE).padding` states, `iced_aw`'s list's own padding,
+/// [`AW_LIST_PADDING`], on a side it leaves unstated, as the list stands in
+/// for `iced_aw`'s `SelectionList` (`view_basic`).
+fn next_list_row_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    stated_sides(
+        &r.list.row(WidgetState::NONE),
+        Padding::from(AW_LIST_PADDING),
+    )
+}
+
+/// A Basic list row's height on the installed 0.8.0 theme, whose text
+/// styles hold the text scale already: at least `list.row(NONE).min_size[1]`
+/// where stated, grown to hold the row's label, `list.item_label(NONE)`'s
+/// line box ([`next_line_box`]), and its padding `pad`; else the label's
+/// line box and the padding, the row its content's height.
+fn next_list_row_height(r: &native_theme::next::ResolvedTheme, pad: Padding) -> f32 {
+    let line = next_line_box(&r.typography, &r.list.item_label(WidgetState::NONE));
+    let content = line + pad.y();
+    r.list.row(WidgetState::NONE).min_size[1].map_or(content, |min| min.max(content))
+}
+
 /// The font iced draws `style`, a 0.8.0 text style, in
 /// ([`next_font_from_database`]), for a text measured as it is drawn
 /// ([`menu_width`]); `None` where it gives none iced can draw: the text is
@@ -9710,7 +9732,8 @@ fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) ->
 /// the fill's corners, `list.highlight(<state>).corners` where stated, else
 /// the frame's inner radius, which the frame's line width rounds; the fill's
 /// inset, `list.highlight(<state>).margin` on the side where stated; the
-/// row's padding, which stays 0.7.2's until the Basic page moves.
+/// row's padding, `list.row(NONE).padding` on the side
+/// ([`next_list_row_padding`]).
 fn list_shape_route(r: &native_theme::next::ResolvedTheme, leaf: &str, selected: bool) -> String {
     let (state, name) = if selected {
         (WidgetState::SELECTED, "SELECTED")
@@ -9748,12 +9771,14 @@ fn list_shape_route(r: &native_theme::next::ResolvedTheme, leaf: &str, selected:
              being unstated"
         ),
         (_, Some((side, bit))) if part.stated.contains(bit) => format!(
-            "a row's padding; iced_aw's list's 5 px where unstated; list_row_fill: the fill \
-             inset by list.highlight({name}).margin.{side} (highlight_box)"
+            "next_list_row_padding: a row's padding, list.row(NONE).padding.{side}, iced_aw's \
+             list's 5 px where unstated; list_row_fill: the fill inset by \
+             list.highlight({name}).margin.{side} (highlight_box)"
         ),
         (_, Some((side, _))) => format!(
-            "a row's padding; iced_aw's list's 5 px where unstated; list_row_fill: the fill \
-             spans the row's {side} side, list.highlight({name}).margin.{side} being unstated"
+            "next_list_row_padding: a row's padding, list.row(NONE).padding.{side}, iced_aw's \
+             list's 5 px where unstated; list_row_fill: the fill spans the row's {side} side, \
+             list.highlight({name}).margin.{side} being unstated"
         ),
         _ => format!("list_row_fill: draws nothing of {leaf}"),
     }
@@ -10919,6 +10944,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("list", "background_color") => {
             "list_frame: the list container's background, under the row".into()
         }
+        ("list", "item_font") if under("basic.list.") => {
+            "next_text: the row label's size, line box and font, list.item_label(NONE)".into()
+        }
         ("list", "item_font") => "the row label's size and theme_font".into(),
         ("list", "item_font.color") if under("basic.table.") => {
             "basic_table: a cell's text colour".into()
@@ -10997,6 +11025,12 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              a text scale of 1; the label's line box and padding where both are"
                 .into()
         }
+        ("list", "row_height_px") if under("basic.list.") => {
+            "next_list_row_height: a row's height, at least list.row(NONE).min_size[1], grown to \
+             hold its label's line box, list.item_label(NONE) (next_line_box), and its padding \
+             (next_list_row_padding); that content where no minimum is stated"
+                .into()
+        }
         ("list", "row_height_px") => {
             "a row's height, grown above a text scale of 1 to hold its label and padding \
              (rows::scaled_height); the label's line box and padding where unstated"
@@ -11068,7 +11102,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("list", f) if side(f).is_some() && under("basic.table.") => {
             "a cell's padding; none where unstated".into()
         }
-        ("list", f) if side(f).is_some() && under("basic.list.row_") => {
+        ("list", f) if side(f).is_some() && under("basic.list.") => {
             list_shape_route(state.next_shown(), leaf, under("basic.list.row_2")).into()
         }
         ("list", f) if side(f).is_some() => {
@@ -11237,6 +11271,12 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "status_line_box: the text's LineHeight, status_bar.label's line box \
              (next_line_box) rounded to a whole pixel, as gpui rounds a line of text \
              (gpui-pre style.rs:553-556)"
+                .into()
+        }
+        ("defaults", "line_height") if under("basic.list.") => {
+            "next_text: the row label's line box, list.item_label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box); \
+             next_list_row_height: the row grown to hold it"
                 .into()
         }
         ("defaults", "line_height") => {
@@ -14061,26 +14101,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // draws its rows' text at their left edge whatever padding it is given
     // (iced_aw 0.14.1 `src/widget/selection_list/list.rs:263-276`), rounds
     // nothing and styles no scrollbar, so it could not reach `list.*`.
-    let list_t = &resolved.list;
-    let label = scaled_text_size(list_t.item_font.size, a11y);
-    let row_pad =
-        native_theme_iced::padding_or(&list_t.border.padding, Padding::from(AW_LIST_PADDING));
-    // KDE's rows size to their content: the label's line box and the padding
-    // the theme states above and below it.
-    // A stated height grows above a text scale of 1 to hold the label and
-    // its padding, as gpui's list rows do (`rows::scaled_height`).
-    let label_line = label * resolved.defaults.line_height;
-    let row_height = match list_t.row_height {
-        Some(h) => rows::scaled_height(
-            h,
-            a11y,
-            list_t.item_font.size,
-            resolved.defaults.line_height,
-            row_pad.y(),
-            0.0,
-        ),
-        None => label_line + row_pad.y(),
-    };
+    let next = state.next_shown();
+    let item_label = next.list.item_label(WidgetState::NONE);
+    let row_pad = next_list_row_padding(next);
+    let row_height = next_list_row_height(next, row_pad);
     const LIST_ROW_IDS: [(&str, &str); 3] = [
         ("basic.list.row_1", "basic.list.row_1.text"),
         ("basic.list.row_2", "basic.list.row_2.text"),
@@ -14100,8 +14124,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             button(
                 container(
                     text(format!("Item {}", i.saturating_add(1)))
-                        .typeset(&list_t.item_font, a11y)
-                        .line_height(iced::Pixels(label_line)),
+                        .next_text(&item_label, &next.typography),
                 )
                 .height(Fill)
                 .align_y(iced::Center),
@@ -27209,15 +27232,17 @@ mod tests {
     /// M9-150 (theme-data): a stated row height holds its text at every
     /// text scale, as gpui's list and menu rows do (`geometry::list_item`,
     /// `geometry::menu_item`: the stated height at a factor of 1 or less, a
-    /// minimum around the drawn text and padding above it). At 1 the Basic
-    /// list's rows are `list.row_height` (macos-tahoe) and the window's
-    /// menu rows the installed 0.8.0 theme's `menu.item(NONE).max_size[1]`
-    /// (adwaita, macos-monterey, material-3); at 1.5 each is at least the
-    /// line box of its font at its scaled size, rounded up, plus its padding
-    /// (`list.border.padding` and `defaults.line_height`;
-    /// `menu.item(NONE).padding` and [`next_line_box`] of
-    /// `menu.item_label(NONE)`, resolved at 1.5), computed from the theme at
-    /// test time.
+    /// minimum around the drawn text and padding above it). The Basic list's
+    /// rows, on the installed 0.8.0 theme, are at every scale at least
+    /// `list.row(NONE).min_size[1]` (macos-tahoe, macos-monterey), grown to
+    /// the line box of `list.item_label(NONE)` ([`next_line_box`]) and the
+    /// row's padding, `list.row(NONE).padding` or iced_aw's 5 px on a side
+    /// it leaves unstated. At 1 the window's menu rows are the installed
+    /// 0.8.0 theme's `menu.item(NONE).max_size[1]` (adwaita, macos-monterey,
+    /// material-3); at 1.5 each is at least the line box of its font at its
+    /// scaled size, rounded up, plus its padding (`menu.item(NONE).padding`
+    /// and [`next_line_box`] of `menu.item_label(NONE)`, resolved at 1.5),
+    /// computed from the theme at test time.
     #[test]
     fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
         recording(|| {
@@ -27232,15 +27257,6 @@ mod tests {
                 let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
                     Ok(installed) => installed,
                     Err(error) => panic!("{preset}: {error}"),
-                };
-                let r = resolved.clone();
-                let grown = |height: f32, size: f32, pad_y: f32| {
-                    if factor > 1.0 {
-                        let line = scaled_text_size(size, &accessibility) * r.defaults.line_height;
-                        height.max(line.ceil() + pad_y)
-                    } else {
-                        height
-                    }
                 };
                 let mut state = State {
                     current_theme: theme,
@@ -27268,13 +27284,14 @@ mod tests {
                         .or_else(|| surveyed.get(id))
                         .map(|rect| rect.height)
                 };
-                let l = &r.list;
-                if let Some(h) = l.row_height {
-                    let pad = native_theme_iced::padding_or(
-                        &l.border.padding,
-                        Padding::from(AW_LIST_PADDING),
-                    );
-                    let want = grown(h, l.item_font.size, pad.y());
+                let next = state.next_shown();
+                let row_part = next.list.row(WidgetState::NONE);
+                if let Some(min) = row_part.min_size[1] {
+                    let [top, _, bottom, _] = iced_next::padding_of(&row_part);
+                    let pad_y = top.unwrap_or(AW_LIST_PADDING) + bottom.unwrap_or(AW_LIST_PADDING);
+                    let line =
+                        next_line_box(&next.typography, &next.list.item_label(WidgetState::NONE));
+                    let want = min.max(line + pad_y);
                     match height_of("basic.list.row_1") {
                         Some(height) if (height - want).abs() < 0.01 => {}
                         Some(height) => faults.push(format!(
@@ -27285,7 +27302,6 @@ mod tests {
                         )),
                     }
                 }
-                let next = state.next_shown();
                 if let Some(h) = next.menu.item(WidgetState::NONE).max_size[1] {
                     let pad = next_menu_row_padding(next);
                     let line =
@@ -28699,24 +28715,29 @@ mod tests {
     /// the sizes the theme states: three of the theme's lines inside the
     /// field's padding; `segmented_control.segment_height` as an outer
     /// height, where the label fits; `expander.header_height` as one,
-    /// verbatim; three rows of the list, each `list.row_height` or its
-    /// content.
+    /// verbatim; three rows of the list, each at least the 0.8.0 home
+    /// `list.row(NONE).min_size[1]`, grown to its content (macos-tahoe's
+    /// 24 px, which its label and iced_aw's padding outgrow; windows-11's
+    /// 40 px, which holds them).
     #[test]
     fn basic_composites_take_the_stated_sizes() {
-        for preset in ["kde-breeze", "material-3", "adwaita"] {
-            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            let r = resolved.clone();
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
+        for preset in [
+            "kde-breeze",
+            "material-3",
+            "adwaita",
+            "macos-tahoe",
+            "windows-11",
+        ] {
+            let mut state = State {
                 accessibility: native_theme_iced::AccessibilityPreferences::default(),
                 active_tab: Tab::Basic,
-                basic_spinner: native_theme_iced::Spinner::new(&r, IconSet::Material, None),
                 ..State::default()
             };
+            assert!(
+                state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light)
+            );
+            let r = state.current_resolved.clone();
+            state.basic_spinner = native_theme_iced::Spinner::new(&r, IconSet::Material, None);
             let mut ui = interface(&state);
 
             let area = probe_bounds(&mut ui, probes::BASIC_TEXT_AREA);
@@ -28756,14 +28777,25 @@ mod tests {
                 header.height
             );
 
+            // Each row at least `list.row(NONE).min_size[1]`, grown to its
+            // label's line box and padding, `list.row(NONE).padding` or
+            // iced_aw's 5 px on a side it leaves unstated; the rows inside
+            // the frame's line, `list.container(NONE).stroke.width`.
             let list = probe_bounds(&mut ui, probes::BASIC_LIST);
-            let l = &r.list;
-            let stated =
-                native_theme_iced::padding_or(&l.border.padding, Padding::from(AW_LIST_PADDING));
-            let row = l
-                .row_height
-                .unwrap_or(l.item_font.size * r.defaults.line_height + stated.y());
-            let expected = BASIC_LIST_VISIBLE * row + 2.0 * l.border.line_width;
+            let next = state.next_shown();
+            let row_part = next.list.row(WidgetState::NONE);
+            let [top, _, bottom, _] = iced_next::padding_of(&row_part);
+            let label = next.list.item_label(WidgetState::NONE);
+            let line = if label.stated.contains(TextStated::LINE_HEIGHT) {
+                label.line_height
+            } else {
+                label.size_px * next.typography.line_height_multiplier
+            };
+            let content = line + top.unwrap_or(AW_LIST_PADDING) + bottom.unwrap_or(AW_LIST_PADDING);
+            let row = row_part.min_size[1].map_or(content, |min| min.max(content));
+            let frame = next.list.container(WidgetState::NONE);
+            let line_width = iced_next::stroke_width_of(&frame).unwrap_or_default();
+            let expected = BASIC_LIST_VISIBLE * row + 2.0 * line_width;
             assert!(
                 (list.height - expected).abs() < 0.01,
                 "{preset}: the list is {}px tall, expected {expected}px",
@@ -32526,7 +32558,8 @@ mod tests {
     /// windows-11, whose rows are `list.row_height` 40 with no vertical
     /// padding, the Screenshots run 40209162435 showed each label at its
     /// row's top. Under windows-11 in both modes, each row's label is a text
-    /// node as tall as its line, `list.item_font` on `defaults.line_height`,
+    /// node as tall as its line, the installed 0.8.0 theme's
+    /// `list.item_label(NONE)` line box,
     /// which iced draws where it lies, and that line is centred in its row
     /// to half a pixel.
     #[test]
@@ -32538,9 +32571,13 @@ mod tests {
                 state.install_in_mode(ThemeChoice::Preset("windows-11".to_owned()), mode),
                 "windows-11 does not install"
             );
-            let resolved = &state.current_resolved;
-            let line = scaled_text_size(resolved.list.item_font.size, &state.accessibility)
-                * resolved.defaults.line_height;
+            let next = state.next_shown();
+            let label = next.list.item_label(WidgetState::NONE);
+            let line = if label.stated.contains(TextStated::LINE_HEIGHT) {
+                label.line_height
+            } else {
+                label.size_px * next.typography.line_height_multiplier
+            };
             let (rects, found) = drawn_frame(&state);
             for (i, id) in ["basic.list.row_1", "basic.list.row_2", "basic.list.row_3"]
                 .into_iter()
