@@ -1646,10 +1646,12 @@ fn load_material(role: IconRole) -> Option<IconData> {
 }
 
 /// Pre-load all 42 icons for the given choice, tracking source, each with
-/// the handle the Icons page draws it with.
+/// the handle the Icons page draws it with, coloured in the installed 0.8.0
+/// theme's `colors.window.foreground`; where it is unstated, each in the
+/// colour its loader or its SVG gives it.
 fn load_all_icons(
     choice: &IconSetChoice,
-    resolved: &native_theme::theme::ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
     theme_icon_set: IconSet,
 ) -> Vec<LoadedIcon> {
     let set = choice.effective_icon_set(theme_icon_set);
@@ -1660,11 +1662,11 @@ fn load_all_icons(
     );
 
     // Foreground color for GTK symbolic icons (Adwaita, Yaru, etc.), SF Symbols, Segoe glyphs
-    let tc = resolved.defaults.text_color;
-    let fg = Some(tc);
+    let tc = r.colors.window.foreground;
+    let fg = tc.map(|c| native_theme::color::Rgba::from_f32(c.r, c.g, c.b, c.a));
     // A bundled monochrome set's SVG is coloured in the same colour as it
     // becomes a handle; a system set's loader has coloured its icon.
-    let color = (!is_system_set).then(|| to_color(tc));
+    let color = tc.filter(|_| !is_system_set).map(next_colour);
 
     IconRole::ALL
         .iter()
@@ -2236,7 +2238,6 @@ impl State {
         let icon_set_choice = default_icon_choice(init_icon_set, init_icon_theme_opt);
         let icon_set_choices =
             rows::icon_rows(init_icon_set, init_icon_theme_opt, &installed_themes);
-        let loaded_icons = load_all_icons(&icon_set_choice, &resolved, init_icon_set);
 
         let anim_set = icon_set_choice.effective_icon_set(init_icon_set);
 
@@ -2284,6 +2285,7 @@ impl State {
         };
         let start_choice = fallback_choice
             .unwrap_or_else(|| ThemeChoice::OsTheme(rows::default_label(&system_preset)));
+        let loaded_icons = load_all_icons(&icon_set_choice, &start_next.resolved, init_icon_set);
         let chrome_icons = load_chrome_icons(&icon_set_choice, &start_next.resolved, init_icon_set);
         let indicator = Indicator::load(
             anim_set,
@@ -2600,12 +2602,22 @@ impl State {
             }
         };
         let is_dark = next.resolved.is_dark();
-        let icon_theme = match self.load_theme(&choice, is_dark) {
-            Ok(icon_theme) => icon_theme,
-            Err(error) => {
-                self.error_message = Some(error);
-                return false;
-            }
+        if let Err(error) = self.load_theme(&choice, is_dark) {
+            self.error_message = Some(error);
+            return false;
+        }
+        // The icon set and the icon theme of the installed 0.8.0 theme; the
+        // `default` icon row follows a preset's icon theme only where the
+        // preset states it (`icons.theme_explicit`), the desktop's always.
+        let icons = &next.resolved.icons;
+        self.current_icon_set = icons.set;
+        self.current_icon_theme = icons.theme.as_deref().map(str::to_owned);
+        let icon_theme = match choice {
+            ThemeChoice::OsTheme(_) => self.current_icon_theme.clone(),
+            ThemeChoice::Preset(_) => self
+                .current_icon_theme
+                .clone()
+                .filter(|_| icons.theme_explicit),
         };
         self.keep_next(next);
         self.current_choice = match choice {
@@ -2827,18 +2839,13 @@ impl State {
 
     /// Load the 0.7.2 theme of `choice` in the mode `is_dark` names into the
     /// theme fields the pages not yet on the 0.8.0 model read
-    /// (`current_resolved`, `layout`, the icon set and theme); the iced
-    /// theme installed is the 0.8.0 one's ([`State::keep_next`]).
+    /// (`current_resolved`, `layout`); the iced theme installed is the 0.8.0
+    /// one's ([`State::keep_next`]), and the icon set and theme are its
+    /// ([`State::install_in_mode`]).
     ///
-    /// `Ok` holds the icon theme the theme states (`None` where its TOML
-    /// states none); `Err` the error, with the theme fields untouched. The
-    /// OS theme is the kept read's variant (`os_theme`): a mode switch reads
-    /// nothing.
-    fn load_theme(
-        &mut self,
-        choice: &ThemeChoice,
-        is_dark: bool,
-    ) -> Result<Option<String>, String> {
+    /// `Err` holds the error, with the theme fields untouched. The OS theme
+    /// is the kept read's variant (`os_theme`): a mode switch reads nothing.
+    fn load_theme(&mut self, choice: &ThemeChoice, is_dark: bool) -> Result<(), String> {
         let mode = if is_dark {
             native_theme_iced::ColorMode::Dark
         } else {
@@ -2850,19 +2857,14 @@ impl State {
                 // nothing installed yet; here a failed read leaves the
                 // installed theme.
                 let system = self.os_theme()?;
-                let icon_set = system.icon_set;
                 let layout = system.layout.clone();
-                // Each variant's own icon theme: KDE names one per variant.
-                let icon_theme = system.icon_theme_for(mode).map(str::to_owned);
                 let resolved = system.pick(mode).clone();
-                self.current_icon_set = icon_set;
                 self.layout = layout;
-                self.current_icon_theme = icon_theme;
                 self.theme_json = theme_json(&resolved);
                 self.current_resolved = resolved;
                 self.label_widths.clear();
                 self.error_message = None;
-                Ok(self.current_icon_theme.clone())
+                Ok(())
             }
             ThemeChoice::Preset(name) => {
                 let nt = native_theme::theme::Theme::preset(name)
@@ -2870,19 +2872,12 @@ impl State {
                 let r = nt
                     .resolve(mode)
                     .map_err(|e| format!("Theme '{name}' resolution failed: {e}"))?;
-                let icon_theme_explicit = r.icon_theme_explicit;
-                self.current_icon_theme = r.icon_theme.map(Cow::into_owned);
-                let icon_theme = self
-                    .current_icon_theme
-                    .clone()
-                    .filter(|_| icon_theme_explicit);
-                self.current_icon_set = r.icon_set;
                 self.theme_json = theme_json(&r.variant);
                 self.current_resolved = r.variant;
                 self.label_widths.clear();
                 self.layout = nt.layout.clone();
                 self.error_message = None;
-                Ok(icon_theme)
+                Ok(())
             }
         }
     }
@@ -2905,7 +2900,7 @@ impl State {
     fn reload_icons(&mut self) {
         self.loaded_icons = load_all_icons(
             &self.icon_set_choice,
-            &self.current_resolved,
+            &self.next_resolved,
             self.current_icon_set,
         );
         self.chrome_icons = load_chrome_icons(
@@ -21544,7 +21539,8 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
 
 /// One of the Theme Map's resolved colours: its name, the 0.8.0 home it is
 /// read from, and its colour there, `None` where the theme leaves the home
-/// unstated.
+/// unstated or iced draws none for it (a fill stated as layers that are all
+/// gradients, [`drawn_fill`]): no swatch is drawn for it.
 type ThemeMapColour = (&'static str, &'static str, Option<Color>);
 
 /// The Theme Map's resolved colours on the installed 0.8.0 theme `r`, each
@@ -25691,7 +25687,7 @@ mod tests {
     /// so there is no substitute to tell a system icon from.
     #[test]
     fn a_system_set_loads_no_material_icon() {
-        let resolved = State::default().current_resolved;
+        let resolved = State::default().next_resolved;
         let choice = IconSetChoice::Default("no-such-icon-theme".to_owned());
         let loads = |set| {
             MATERIAL_LOADS.with(|loads| loads.set(0));
@@ -27909,17 +27905,12 @@ mod tests {
                     (true, _, _) => return Err(format!("{case}: no stroked bubble")),
                     (false, _, _) => None,
                 };
-                let old = &state.current_resolved.tooltip;
                 if max_width != width
                     || shown_delay != delay.map(|ms| Duration::from_millis(u64::from(ms)))
                     || padding != want_padding
-                    || Some(old.max_width) == width
-                    || old.show_delay.map(u32::from) == delay
-                    || old.border.padding.top == Some(7.0)
                 {
                     return Err(format!(
-                        "{case}: the splice reads {max_width:?}, {shown_delay:?}, {padding:?}, or \
-                         states 0.7.2's"
+                        "{case}: the splice reads {max_width:?}, {shown_delay:?}, {padding:?}"
                     ));
                 }
             }
@@ -30585,6 +30576,43 @@ mod tests {
         Ok(())
     }
 
+    /// A Theme Map fill stated as layers that are all gradients, which iced
+    /// cannot paint (`iced_next::fill_of`'s `Unmapped`), has no colour there
+    /// ([`theme_map_colours`]), so no swatch: kde-breeze's
+    /// `card.container(NONE).fill`, which it states, patched to one.
+    #[test]
+    fn an_all_gradient_theme_map_fill_has_no_swatch() {
+        use native_theme::next::{
+            CardRule, GradientStop, Paint, PaintLayer, PartPatch, ThemePatch,
+        };
+        let stop = |offset, color| GradientStop { offset, color };
+        let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: std::sync::Arc::from(vec![
+                stop(0.0, native_theme::next::Color::rgb(1.0, 0.0, 0.0)),
+                stop(1.0, native_theme::next::Color::rgb(0.0, 0.0, 1.0)),
+            ]),
+            blend: Default::default(),
+        }]);
+        let installed = page_state("kde-breeze", Tab::ThemeMap).next_resolved;
+        let card_bg = |r: &native_theme::next::ResolvedTheme| {
+            theme_map_colours(r)
+                .into_iter()
+                .find(|(name, _, _)| *name == "card_bg")
+                .map(|(_, _, colour)| colour)
+        };
+        assert!(
+            matches!(card_bg(&installed), Some(Some(_))),
+            "kde-breeze states no card.container(NONE).fill: {:?}",
+            card_bg(&installed)
+        );
+        let mut patched = installed.clone();
+        patched.apply_patch(
+            &ThemePatch::new().card(CardRule::new().container(PartPatch::new().fill(gradient))),
+        );
+        assert_eq!(card_bg(&patched), Some(None));
+    }
+
     /// M9-098 (info-truth): the Grid's Widget Info names what spaces it,
     /// the swatch table's `SWATCH_GAP_Y` between two rows (the M9b final
     /// fix's residuals: the Grid and the Theme Map lay their swatches out by
@@ -30668,10 +30696,6 @@ mod tests {
             let mut state = page_state(preset, Tab::Buttons);
             if raised {
                 splice_next(&mut state, |r| r.apply_patch(&raise));
-                let old = &state.current_resolved.button;
-                if old.min_width == 120.0 || old.min_height == 48.0 {
-                    return Err("the splice states 0.7.2's least size".into());
-                }
             }
             let next = state.next_shown();
             let [min_width, min_height] = next.button.body(WidgetState::NONE).min_size;
@@ -30742,19 +30766,7 @@ mod tests {
             r.layout.section_gap = Some(19.0);
             r.separator.thickness = 4.0;
         });
-        let old = &state.current_resolved;
-        if old.button.min_width >= 150.0
-            || old.button.font.size == 20.0
-            || state.layout.widget_gap == Some(13.0)
-            || state.layout.section_gap == Some(19.0)
-            || old.separator.line_width == 4.0
-        {
-            return Err("the splice states 0.7.2's sizes".into());
-        }
         let pad = next_button_padding(state.next_shown());
-        if pad == native_theme_iced::button_padding(old) {
-            return Err(format!("the 0.8.0 padding {pad:?} is 0.7.2's"));
-        }
         let mut faults = Vec::new();
         let near = |a: f32, b: f32| (a - b).abs() < 0.01;
         let mut ui = interface(&state);
@@ -30834,24 +30846,14 @@ mod tests {
             r.separator.thickness = 4.0;
         });
         let next = state.next_shown();
-        let old = &state.current_resolved;
         if native_theme_iced::next::text_scale(next)
             .caption
             .line_height
             != 29.0
-            || old.input.font.size == 20.0
-            || old.input.min_height == 60.0
-            || old.text_scale.caption.line_height == 29.0
-            || state.layout.widget_gap == Some(13.0)
-            || state.layout.section_gap == Some(19.0)
-            || old.separator.line_width == 4.0
         {
-            return Err("the splice states 0.7.2's sizes, or no caption".into());
+            return Err("the splice states no caption".into());
         }
         let pad = next_input_padding(next);
-        if pad == native_theme_iced::input_padding(old) {
-            return Err(format!("the 0.8.0 padding {pad:?} is 0.7.2's"));
-        }
         let own = 20.0 * next.typography.line_height_multiplier;
         let field_height = own.max(60.0 - pad.y()) + pad.y();
         let mut faults = Vec::new();
@@ -30951,29 +30953,14 @@ mod tests {
             r.separator.thickness = 4.0;
         });
         let next = state.next_shown();
-        let old = &state.current_resolved;
         if native_theme_iced::next::text_scale(next)
             .caption
             .line_height
             != 29.0
             || next_check_box_size(next) != 21.0
-            || old.checkbox.label_gap == 17.0
-            || old.checkbox.indicator_width == 21.0
-            || old.checkbox.font.size == 20.0
-            || old.combo_box.font.size == 20.0
-            || old.defaults.font.size * old.defaults.line_height == 23.0
-            || state.layout.widget_gap == Some(13.0)
-            || state.layout.section_gap == Some(19.0)
-            || old.separator.line_width == 4.0
-            || [33.0, 43.0].contains(
-                &old.checkbox
-                    .radio_indicator_width
-                    .unwrap_or(old.checkbox.indicator_width),
-            )
-            || [old.switch.track_width, old.switch.track_height] == [50.0, 26.0]
             || TOGGLER_LABEL_GAP == 15.0
         {
-            return Err("the splice states 0.7.2's sizes, or no caption".into());
+            return Err("the splice states no caption, or the showcase's own gap".into());
         }
         let own = 20.0 * next.typography.line_height_multiplier;
         let field = |pad: Padding| own.max(50.0 - pad.y()) + pad.y();
@@ -31287,7 +31274,6 @@ mod tests {
             r.separator.thickness = 4.0;
         });
         let next = state.next_shown();
-        let old = &state.current_resolved;
         if native_theme_iced::next::text_scale(next)
             .caption
             .line_height
@@ -31295,13 +31281,8 @@ mod tests {
             || next_progress_girth(next) != 13.0
             || next_slider_girth(next, Orientation::Horizontal) != 30.0
             || next_slider_girth(next, Orientation::Vertical) != 30.0
-            || old.progress_bar.track_height == 13.0
-            || old.defaults.font.size * old.defaults.line_height == 23.0
-            || state.layout.widget_gap == Some(15.0)
-            || state.layout.section_gap == Some(21.0)
-            || old.separator.line_width == 4.0
         {
-            return Err("the splice states 0.7.2's sizes, or no caption".into());
+            return Err("the splice states no caption or none of its sizes".into());
         }
         let mut faults = Vec::new();
         let near = |a: f32, b: f32| (a - b).abs() < 0.01;
@@ -31391,19 +31372,13 @@ mod tests {
             r.separator.thickness = 4.0;
         });
         let next = state.next_shown();
-        let old = &state.current_resolved;
         if native_theme_iced::next::text_scale(next)
             .caption
             .line_height
             != 29.0
             || next_card_padding(next).top != 11.0
-            || old.card.border.padding.top == Some(9.0)
-            || old.defaults.font.size * old.defaults.line_height == 23.0
-            || state.layout.widget_gap == Some(15.0)
-            || state.layout.section_gap == Some(21.0)
-            || old.separator.line_width == 4.0
         {
-            return Err("the splice states 0.7.2's sizes, or no caption".into());
+            return Err("the splice states no caption or no card padding".into());
         }
         let mut faults = Vec::new();
         let near = |a: f32, b: f32| (a - b).abs() < 0.01;
@@ -31480,20 +31455,13 @@ mod tests {
             r.splitter.divider_width = 9.0;
         });
         let next = state.next_shown();
-        let old = &state.current_resolved;
         if native_theme_iced::next::text_scale(next)
             .caption
             .line_height
             != 29.0
             || next_card_padding(next).left != 11.0
-            || old.card.border.padding.left == Some(9.0)
-            || old.defaults.font.size * old.defaults.line_height == 23.0
-            || state.layout.widget_gap == Some(15.0)
-            || state.layout.section_gap == Some(21.0)
-            || old.separator.line_width == 4.0
-            || old.splitter.divider_width == 9.0
         {
-            return Err("the splice states 0.7.2's sizes, or no caption".into());
+            return Err("the splice states no caption or no card padding".into());
         }
         let mut faults = Vec::new();
         let near = |a: f32, b: f32| (a - b).abs() < 0.01;
@@ -31584,7 +31552,6 @@ mod tests {
             }
         });
         let next = state.next_shown();
-        let old = &state.current_resolved;
         let is = |value: Option<f32>, want: f32| value.is_some_and(|value| value == want);
         if !is(
             next.typography.caption.as_ref().map(|c| c.line_height),
@@ -31592,13 +31559,8 @@ mod tests {
         ) || !is(next.typography.headline.as_ref().map(|h| h.size_px), 23.0)
             || next_layout_cell_padding(next).left != 11.0
             || !is(iced_next::list_header_height(next), 41.0)
-            || old.text_scale.caption.line_height == 17.0
-            || old.text_scale.section_heading.size == 23.0
-            || is(old.list.border.padding.left, 11.0)
-            || is(native_theme_iced::list_header_height(old), 41.0)
-            || state.accessibility.scaled(old.defaults.font.size) * SWATCH_LABEL_GAP_REMS == 9.0
         {
-            return Err("the splice states 0.7.2's sizes, or no caption or headline".into());
+            return Err("the splice states none of its sizes, or no caption or headline".into());
         }
         let mut faults = Vec::new();
         let near = |a: f32, b: f32| (a - b).abs() < 0.01;
@@ -31613,7 +31575,7 @@ mod tests {
                 .find(|(content, _)| content == label)
                 .map(|(_, bounds)| *bounds)
         };
-        let hex = color_to_hex(to_color(old.defaults.accent_color));
+        let hex = color_to_hex(next_colour(next.colors.accent.fill));
         match (at(&hex), at("accent_color")) {
             (Some(swatch), Some(label))
                 if near(label.height, 17.0) && near(label.y - (swatch.center_y() + 16.0), 9.0) => {}
@@ -31761,10 +31723,6 @@ mod tests {
             }
             let next = state.next_shown();
             let (body, mono) = (&next.typography.body, &next.typography.monospace);
-            let old = &state.current_resolved.defaults;
-            if factor == 1.0 && (old.font.size == 17.5 || old.mono_font.size == 11.5) {
-                return Err("the splice states 0.7.2's sizes".into());
-            }
             let family = |style: &TextStyle, mono: bool| {
                 next_family_drawing(next_font_from_database(style, mono).as_ref())
                     .label(&style.family)
@@ -31808,9 +31766,6 @@ mod tests {
                 .map_err(|error| format!("the patch: {error:?}"))?;
         let mut state = page_state("kde-breeze", Tab::Display);
         splice_next(&mut state, |r| r.apply_patch(&patch));
-        if state.current_resolved.tooltip.border.corner_radius == 7.0 {
-            return Err("kde-breeze's 0.7.2 tooltip is rounded 7 px".into());
-        }
         let info = tooltip_info(&state);
         let want = "border-radius: 7px, tooltip.panel.corners";
         if !info.lines().any(|line| line.trim() == want) {
@@ -31875,10 +31830,6 @@ mod tests {
             }
             let next = state.next_shown();
             let (body, mono) = (&next.typography.body, &next.typography.monospace);
-            let old = &state.current_resolved.defaults;
-            if factor == 1.0 && (old.font.size == 17.5 || old.mono_font.size == 11.5) {
-                return Err("the splice states 0.7.2's sizes".into());
-            }
             let family = |style: &TextStyle, mono: bool| {
                 next_family_drawing(next_font_from_database(style, mono).as_ref())
                     .label(&style.family)
@@ -32134,13 +32085,6 @@ mod tests {
         state.basic_details_open = true;
         splice_next(&mut state, |r| r.apply_patch(&patch));
         let r = state.next_shown().clone();
-        let old = &state.current_resolved;
-        if old.segmented_control.separator_width == 3.0
-            || old.expander.header_height == 44.0
-            || old.separator.line_width == 5.0
-        {
-            return Err("the patch states 0.7.2's sizes".into());
-        }
         let (segmented, header, laid) = recording(|| {
             let mut ui = interface(&state);
             let segmented = probe_bounds(&mut ui, probes::BASIC_SEGMENTED);
@@ -32225,20 +32169,6 @@ mod tests {
             r.icons.sizes.toolbar = Some(21.0);
             r.icons.sizes.large = Some(41.0);
         });
-        let old = &state.current_resolved;
-        let ts = &old.text_scale;
-        if [
-            ts.caption.line_height,
-            ts.section_heading.line_height,
-            ts.dialog_title.line_height,
-        ]
-        .iter()
-        .any(|&line| [29.0, 33.0, 37.0].contains(&line))
-            || old.toolbar.item_gap == Some(13.0)
-            || old.defaults.icon_sizes.small == 11.0
-        {
-            return Err("the splice states 0.7.2's sizes".into());
-        }
         let laid = recording(|| {
             let mut ui = interface(&state);
             let _ = texts(&mut ui);
@@ -32307,12 +32237,6 @@ mod tests {
             body.line_height = 23.0;
             body.stated = body.stated.union(TextStated::LINE_HEIGHT);
         });
-        let old = &state.current_resolved;
-        if old.card.border.padding.top == Some(9.0)
-            || old.defaults.font.size * old.defaults.line_height == 23.0
-        {
-            return Err("the splice states 0.7.2's sizes".into());
-        }
         let mut faults = Vec::new();
         let near = |a: f32, b: f32| (a - b).abs() < 0.01;
         recording(|| {
@@ -32441,15 +32365,6 @@ mod tests {
         }
         splice_next(&mut state, |r| r.apply_patch(&patch));
         let r = state.next_shown().clone();
-        let old = &state.current_resolved;
-        if next_input_padding(&r) == native_theme_iced::input_padding(old)
-            || r.input.field(WidgetState::NONE).min_size[1] == Some(old.input.min_height)
-            || next_drop_down_width(&r) == BASIC_WIDTH.max(old.combo_box.min_width)
-            || next_text_area_padding(&r) == native_theme_iced::text_area_padding(old)
-            || r.text_area.text(WidgetState::NONE).size_px == old.input.font.size
-        {
-            return Err("the patch states 0.7.2's sizes".into());
-        }
         let (mut faults, laid) = recording(|| {
             let mut ui = interface(&state);
             let faults = basic_field_faults(&mut ui, &r);
@@ -32515,13 +32430,6 @@ mod tests {
             r.typography.body.line_height = 26.0;
         });
         let r = state.next_shown().clone();
-        let old = &state.current_resolved;
-        if [old.slider.track_height, old.slider.thumb_diameter] == [9.0, 22.0]
-            || old.progress_bar.track_height == 13.0
-            || [old.switch.track_width, old.switch.track_height] == [50.0, 26.0]
-        {
-            return Err("the patch states 0.7.2's sizes".into());
-        }
         let line = next_line_box(&r.typography, &r.switch.label(WidgetState::CHECKED));
         if line != 27.0 || next_line_box(&r.typography, &r.typography.body) == line {
             return Err("the switch label's line box is unpatched".into());
@@ -33060,9 +32968,6 @@ mod tests {
         let mut state = page_state("kde-breeze", Tab::Basic);
         state.icon_set_choice = IconSetChoice::Material;
         splice_next(&mut state, |r| r.spinner.diameter = 37.0);
-        if state.current_resolved.spinner.diameter == 37.0 {
-            return Err("the splice states 0.7.2's diameter".into());
-        }
         state.reload_icons();
         let spinner = probe_bounds(&mut interface(&state), probes::BASIC_SPINNER);
         if (spinner.width - 37.0).abs() > 0.01 || (spinner.height - 37.0).abs() > 0.01 {
@@ -33112,9 +33017,6 @@ mod tests {
                 0x13, 0x57, 0x9b, 0xff,
             ));
         });
-        if state.current_resolved.defaults.text_color == mark {
-            return Err("the splice states 0.7.2's text colour".into());
-        }
         state.reload_icons();
         let (image, rects, scale) =
             frame_of(&state, view(&state), Size::new(WINDOW_SIZE.0, 2000.0));
@@ -36725,14 +36627,6 @@ mod tests {
             r.layout.window_margin = Some(31.0);
             r.layout.section_gap = Some(17.0);
         });
-        let old = &state.current_resolved;
-        if state.layout.window_margin == Some(31.0)
-            || state.layout.section_gap == Some(17.0)
-            || old.scrollbar.groove_width == 14.0
-            || old.combo_box.min_width >= 300.0
-        {
-            return Err("the splice states 0.7.2's distances".into());
-        }
         let count = basic_column_count(
             state.next_shown(),
             basic_tabs_width(&state),
@@ -38875,10 +38769,6 @@ mod tests {
         let mut state = page_state("kde-breeze", Tab::Range);
         splice_next(&mut state, |r| r.apply_patch(&stated));
         let next = state.next_shown();
-        let old = &state.current_resolved.slider;
-        if [old.track_height, old.thumb_diameter] == [9.0, 23.0] {
-            return Err("the splice states 0.7.2's sizes".into());
-        }
         let theme = native_theme_iced::next::to_theme(next).map_err(|e| format!("{e:?}"))?;
         let style = iced_next::styles::slider(next).map_err(|e| format!("{e:?}"))?(
             &theme,
@@ -38935,9 +38825,6 @@ mod tests {
         .map_err(|error| format!("the patch: {error:?}"))?;
         let mut state = page_state("kde-breeze", Tab::Selection);
         splice_next(&mut state, |r| r.apply_patch(&patch));
-        if state.current_resolved.switch.track_height == 31.0 {
-            return Err("the splice states 0.7.2's track height".into());
-        }
         let next = state.next_shown();
         if let Err(unmapped) = iced_next::styles::toggler(next) {
             return Err(format!("the toggler is iced's own: {unmapped}"));
