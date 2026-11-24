@@ -12,7 +12,7 @@ use native_theme::icons::IconRole;
 use native_theme::icons::IconSet;
 use native_theme::next::WidgetState as NextState;
 use native_theme::next::{ListKind, ListQuery, ListVariant, PartStated, ResolvedTheme};
-use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin};
+use native_theme_egui::convert::{to_corner_radius, to_margin};
 use native_theme_egui::{Role, RoleVariant, Surface, TextRole, next};
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
@@ -1381,15 +1381,46 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &
     list(reg, state, atlas, ui);
 }
 
+/// A tool button's icon size, `toolbar.button_icon(NONE).size`, where the installed 0.8.0 theme
+/// `r` states it; `None` where it does not, or none is installed.
+fn tool_icon_size(r: Option<&ResolvedTheme>) -> Option<f32> {
+    let icon = r?.toolbar.button_icon(NextState::NONE);
+    icon.stated
+        .contains(native_theme::next::IconStated::SIZE)
+        .then_some(icon.size)
+}
+
+/// The outline a rule of the installed 0.8.0 theme `r` states for a toolbar button in `state`
+/// (`toolbar.button(<state>).stroke`, its `from_state` bit set), one stroke of one colour; none
+/// where its width is not positive; `None` where no rule states one, or in a form egui cannot
+/// draw.
+fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
+    let part = r.toolbar.button(state);
+    if !part.from_state.contains(PartStated::STROKE) {
+        return None;
+    }
+    match (
+        next::stroke_width_of(&part),
+        next::state_stroke_color_of(&part),
+    ) {
+        (Some(width), _) if width <= 0.0 => Some(egui::Stroke::NONE),
+        (Some(width), Some(colour)) => Some(egui::Stroke::new(width, colour)),
+        _ => None,
+    }
+}
+
 /// The Icons group's first row: four icon-only tool buttons, as the toolbar's
 /// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste, Delete and Edit at
-/// `toolbar.icon_size`, in the toolbar's scope, Ghost. Edit is an edit-mode switch
-/// (`DemoState::basic_edit`), on at start: while on it is filled with the toolbar's checked
-/// fill (`toolbar_button_checked_background`), lettered in the checked text, or, where the theme
-/// states no checked fill, with the selected flat button's fill, `widgets.active.weak_bg_fill`;
-/// and lined at rest in the checked pen (`toolbar_button_checked_border_color`,
-/// `button.border.line_width` wide) where the theme states it, under the pointer and pressed in
-/// the toolbar's hover outline, or that pen where the theme states no hover outline (E9).
+/// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme ([`tool_icon_size`]; where it
+/// states none, each button's label in place of its icon, which its Widget Info names), in the
+/// toolbar's scope, its items the scope's `item_spacing.x` apart (`toolbar.item_gap`, else the
+/// connector's `layout.widget_gap`, else egui's own), each a tool button
+/// ([`demo::next_tool_button`]). Edit is an edit-mode switch (`DemoState::basic_edit`), on at
+/// start: while on it is egui's selected button (`Button::selected`) in the colours of
+/// [`edit_look`], each one the theme leaves unstated egui's own, which its Widget Info names; and
+/// lined in the pen a rule states for the checked state at rest (`toolbar.button(CHECKED)`),
+/// under the pointer (`CHECKED | HOVER`) and pressed (`CHECKED | PRESSED`), each unstated one the
+/// scope's own ([`tool_pen`]).
 fn icon_buttons(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -1397,9 +1428,24 @@ fn icon_buttons(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.old_resolved(ui.ctx().theme());
-    let size = t.toolbar.icon_size;
+    let r = atlas.next_shown(ui.ctx());
+    let size = tool_icon_size(r);
+    let padding = r.map_or([None; 4], |r| {
+        next::padding_of(&r.button.body(NextState::NONE))
+    });
     let (set, icon_theme) = chosen;
+    let image_at = |ui: &egui::Ui, role| {
+        size.and_then(|size| demo::role_image(ui, role, *set, icon_theme.as_deref(), size))
+    };
+    let unsized_note = |reg: &mut Registry| {
+        if size.is_none() {
+            reg.note_last(
+                "icon size",
+                "not stated by the theme (toolbar.button_icon(NONE).size): the button's label \
+                 in place of its icon",
+            );
+        }
+    };
     demo::scoped_container(
         reg,
         ui,
@@ -1415,7 +1461,6 @@ fn icon_buttons(
             ui.spacing_mut().interact_size.y = 0.0;
             // Wrapping onto a further line where the column is too narrow for the four.
             ui.horizontal_wrapped(|ui| {
-                demo::toolbar_gap(ui, t, atlas.layout());
                 let spacing = ui.spacing_mut();
                 spacing.item_spacing.y = spacing.item_spacing.x;
                 for (role, label, id) in [
@@ -1423,14 +1468,14 @@ fn icon_buttons(
                     (IconRole::ActionPaste, "Paste", "basic.icons.paste"),
                     (IconRole::ActionDelete, "Delete", "basic.icons.delete"),
                 ] {
-                    let image = demo::role_image(ui, role, *set, icon_theme.as_deref(), size);
+                    let image = image_at(ui, role);
                     let drawn = image.is_some();
                     wrap_before(ui, id);
                     let response = ui
                         .scope(|ui| {
                             // One line, as `text_button`'s label.
                             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                            demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
+                            demo::next_tool_button(ui, padding);
                             bar.add(reg, ui, "icon button", |ui| {
                                 let button = match image {
                                     Some(image) => Button::image(image),
@@ -1445,48 +1490,46 @@ fn icon_buttons(
                         })
                         .inner;
                     reg.ghost_last();
+                    unsized_note(reg);
                     reg.tag(id, &response);
                     remember_width(ui, id, response.rect);
-                    if drawn {
+                    if let Some(size) = size.filter(|_| drawn) {
                         crate::chrome::place_icon(reg, ui, id, &response, size);
                     }
                 }
                 // The edit-mode switch: the one toolbar button that is ever checked.
                 let id = "basic.icons.edit";
                 let on = state.basic_edit;
+                let look = edit_look(r);
                 let mut drawn = false;
                 wrap_before(ui, id);
                 let response = ui
                     .scope(|ui| {
                         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                        demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
-                        // E9: a checked button's pen at rest; under the pointer and pressed the
-                        // toolbar's hover outline where the theme states one, else the pen (S8).
-                        // `Button::fill` leaves the stroke to the scope; only `Button::stroke`
-                        // overrides it (`egui-0.37.0/src/widgets/button.rs:161`).
-                        if let Some(pen) =
-                            native_theme_egui::toolbar_button_checked_border_color(t).filter(|_| on)
-                        {
-                            let line = egui::Stroke::new(t.button.border.line_width, pen);
+                        demo::next_tool_button(ui, padding);
+                        // E9: while on, the pens a rule states for the checked state at rest,
+                        // under the pointer and pressed. `Button::fill` leaves the stroke to the
+                        // scope; only `Button::stroke` overrides it
+                        // (`egui-0.37.0/src/widgets/button.rs:161`).
+                        if let Some(r) = r.filter(|_| on) {
                             let w = &mut ui.visuals_mut().widgets;
-                            w.inactive.bg_stroke = line;
-                            if demo::toolbar_edge(t).is_none() {
-                                (w.hovered.bg_stroke, w.active.bg_stroke) = (line, line);
+                            for (entry, state) in [
+                                (&mut w.inactive, NextState::CHECKED),
+                                (&mut w.hovered, NextState::CHECKED.union(NextState::HOVER)),
+                                (&mut w.active, NextState::CHECKED.union(NextState::PRESSED)),
+                            ] {
+                                if let Some(pen) = tool_pen(r, state) {
+                                    entry.bg_stroke = pen;
+                                }
                             }
                         }
-                        let (fill, text) = edit_look(t, ui.visuals(), on);
-                        // The checked text, before the icon is loaded in the scope's text
-                        // colour.
-                        if text.is_some() {
-                            ui.visuals_mut().override_text_color = text;
+                        // The text while on, egui's selected button's where unstated, before the
+                        // icon is loaded in the scope's text colour.
+                        if on {
+                            let own = ui.visuals().selection.stroke.color;
+                            ui.visuals_mut().override_text_color = Some(look.text.unwrap_or(own));
                         }
-                        let image = demo::role_image(
-                            ui,
-                            IconRole::ActionEdit,
-                            *set,
-                            icon_theme.as_deref(),
-                            size,
-                        );
+                        let image = image_at(ui, IconRole::ActionEdit);
                         drawn = image.is_some();
                         let kind = if on {
                             "icon button, checked"
@@ -1497,8 +1540,9 @@ fn icon_buttons(
                             let button = match image {
                                 Some(image) => Button::image(image),
                                 None => Button::new("Edit"),
-                            };
-                            let button = match fill {
+                            }
+                            .selected(on);
+                            let button = match look.fill.filter(|_| on) {
                                 Some(fill) => button.fill(fill),
                                 None => button,
                             };
@@ -1517,9 +1561,33 @@ fn icon_buttons(
                 if !on {
                     reg.ghost_last();
                 }
+                unsized_note(reg);
+                if on {
+                    for (what, home, unstated, own) in [
+                        (
+                            "fill while on",
+                            "toolbar.button(CHECKED).fill",
+                            look.fill.is_none(),
+                            ToggleOn::OWN_FILL,
+                        ),
+                        (
+                            "text colour while on",
+                            "button.label(CHECKED).color",
+                            look.text.is_none(),
+                            ToggleOn::OWN_TEXT,
+                        ),
+                    ] {
+                        if unstated {
+                            reg.note_last(
+                                what,
+                                &format!("not stated by the theme ({home}): {own}"),
+                            );
+                        }
+                    }
+                }
                 reg.tag(id, &response);
                 remember_width(ui, id, response.rect);
-                if drawn {
+                if let Some(size) = size.filter(|_| drawn) {
                     crate::chrome::place_icon(reg, ui, id, &response, size);
                 }
             })
@@ -1528,29 +1596,17 @@ fn icon_buttons(
     );
 }
 
-/// The fill handed to the Basic page's edit-mode switch and the text colour its scope takes,
-/// while `on`: the toolbar's checked fill (`toolbar_button_checked_background`) and the checked
-/// text, `button.checked_text_color` (`button.active_text_color` where that is unset), where the
-/// theme states the fill; else the selected flat button's fill, `visuals`'
-/// `widgets.active.weak_bg_fill`, and the scope's own text. Neither while off.
-pub(crate) fn edit_look(
-    t: &native_theme_egui::ResolvedTheme,
-    visuals: &egui::Visuals,
-    on: bool,
-) -> (Option<egui::Color32>, Option<egui::Color32>) {
-    if !on {
-        return (None, None);
-    }
-    match native_theme_egui::toolbar_button_checked_background(t) {
-        Some(fill) => (
-            Some(fill),
-            Some(to_color32(
-                t.button
-                    .checked_text_color
-                    .unwrap_or(t.button.active_text_color),
-            )),
-        ),
-        None => (Some(visuals.widgets.active.weak_bg_fill), None),
+/// The Basic page's edit-mode switch's colours while on, of the installed 0.8.0 theme `r`, each
+/// asked with the checked flag alone and `None` where no rule states it: the fill
+/// `toolbar.button(CHECKED).fill`, the toolbar's checked fill, and the text colour
+/// `button.label(CHECKED).color`, the checked button text (the table of homes'
+/// `toolbar.button_checked_background` and `button.checked_text_color`). Neither falls back to
+/// another state's: what the theme leaves unstated, and both without an installed 0.8.0 theme,
+/// is egui's own selected button's, as the toggle's ([`toggle_on`], spec §10, rules 0 and 0a).
+pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
+    ToggleOn {
+        fill: r.and_then(|r| next::state_fill_of(&r.toolbar.button(NextState::CHECKED))),
+        text: r.and_then(|r| next::state_text_color_of(&r.button.label(NextState::CHECKED))),
     }
 }
 

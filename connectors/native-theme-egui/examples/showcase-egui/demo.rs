@@ -1686,26 +1686,21 @@ pub(crate) fn next_metric(
     next_value(ui, |r| build(&r.layout)).flatten()
 }
 
-/// [`unstated_as`] on the 0.8.0 model: the sides of `padding` (`next::padding_of`, top, right,
-/// bottom, left) with each unstated one `fallback`.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
-pub(crate) fn next_unstated_as(
-    padding: [Option<f32>; 4],
-    fallback: f32,
-) -> native_theme::theme::ResolvedPadding {
-    let [top, right, bottom, left] = padding.map(|side| Some(side.unwrap_or(fallback)));
-    native_theme::theme::ResolvedPadding {
-        top,
-        right,
-        bottom,
-        left,
-    }
+/// [`tool_button`] on the 0.8.0 model: the rest of `ui`, a «toolbar» scope, a tool button's:
+/// Ghost ([`ghost`]), padded by `padding`, the sides of `button.body(NONE).padding`
+/// (`next::padding_of`: top, right, bottom, left) of the installed 0.8.0 theme, and with no
+/// minimum height, so it is its icon and that padding. egui pads a button by one pair
+/// (`Spacing::button_padding`), so the left side pads left and right and the top side top and
+/// bottom; a side the theme leaves unstated keeps the scope's own. Its outline under the pointer
+/// and while pressed is the scope's: the connector writes `toolbar.button(HOVER)` and
+/// `toolbar.button(PRESSED)`'s stroke where a rule states it, and leaves the scope's own
+/// hovered and pressed button's where none does (spec §10, rule 0).
+pub(crate) fn next_tool_button(ui: &mut egui::Ui, [top, _, _, left]: [Option<f32>; 4]) {
+    ghost(ui);
+    let own = ui.spacing().button_padding;
+    let spacing = ui.spacing_mut();
+    spacing.button_padding = egui::vec2(left.unwrap_or(own.x), top.unwrap_or(own.y));
+    spacing.interact_size.y = 0.0;
 }
 
 /// Text in the installed 0.8.0 theme's text role `role`, its

@@ -11659,33 +11659,39 @@ fn a_tool_buttons_outline_has_the_borders_width() {
 /// not the toolbar's own, Edit's label, under an icon theme that gives no icon, is painted in the
 /// checked text while on, and Copy's beside it is not.
 #[test]
-fn the_basic_edit_button_starts_checked_and_switches() {
-    let mut harness = open_scaled("kde-breeze", "basic", 1.0);
+fn the_basic_edit_button_starts_checked_and_switches() -> Result<(), String> {
+    use crate::pages::basic::{ToggleOn, edit_look};
+    use native_theme::next::WidgetState;
+    use native_theme_egui::next::{state_fill_of, state_stroke_color_of, state_text_color_of};
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     harness.run_steps(SETTLE);
-    let t = harness
+    let r = harness
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
-    let fill = native_theme_egui::toolbar_button_checked_background(&t);
-    assert!(
-        fill.is_some() && t.button.checked_text_color.is_some(),
-        "kde-breeze no longer states the checked toolbar fill and text, so this test proves nothing"
-    );
-    let text = t
-        .button
-        .checked_text_color
-        .map(native_theme_egui::convert::to_color32);
-    let visuals = harness.ctx.global_style().visuals.clone();
+        .next_resolved(egui::Theme::Light)
+        .cloned()
+        .ok_or("kde-breeze's 0.8.0 theme is not installed")?;
+    let fill = state_fill_of(&r.toolbar.button(WidgetState::CHECKED));
+    let text = state_text_color_of(&r.button.label(WidgetState::CHECKED));
+    if fill.is_none() || text.is_none() {
+        return Err(
+            "kde-breeze no longer states the checked toolbar fill and text, so this test \
+             proves nothing"
+                .to_owned(),
+        );
+    }
     assert_eq!(
-        crate::pages::basic::edit_look(&t, &visuals, true),
-        (fill, text),
-        "Edit while on: (the fill handed to the button, the scope's text colour)"
+        edit_look(Some(&r)),
+        ToggleOn { fill, text },
+        "Edit while on: (the fill handed to the button, the text colour)"
     );
     assert_eq!(
-        crate::pages::basic::edit_look(&t, &visuals, false),
-        (None, None),
-        "Edit while off"
+        edit_look(None),
+        ToggleOn {
+            fill: None,
+            text: None
+        },
+        "Edit without an installed 0.8.0 theme: egui's own selected button"
     );
     let selected = |harness: &Harness<'_, App>| {
         harness
@@ -11724,15 +11730,22 @@ fn the_basic_edit_button_starts_checked_and_switches() {
         filled(&harness),
         "Edit while on is not filled with the toolbar's checked fill"
     );
-    // E9: at rest, while on, lined in the checked pen at the button's line width: kde-breeze
-    // light's #d1d1d2, 1 px
+    // E9: at rest, while on, lined in the pen `toolbar.button(CHECKED)` states: kde-breeze
+    // light's #d1d1d2, 1 px; under the pointer in the one `CHECKED | HOVER` states, #3daee9
+    let pen_of = |state: WidgetState| {
+        let part = r.toolbar.button(state);
+        native_theme_egui::next::stroke_width_of(&part)
+            .zip(state_stroke_color_of(&part))
+            .map(|(width, colour)| egui::Stroke::new(width, colour))
+    };
     let pen = egui::Stroke::new(1.0, egui::Color32::from_rgb(0xd1, 0xd1, 0xd2));
-    assert_eq!(
-        native_theme_egui::toolbar_button_checked_border_color(&t),
-        Some(pen.color)
+    assert_eq!(pen_of(WidgetState::CHECKED), Some(pen));
+    let hover_pen = pen_of(WidgetState::CHECKED.union(WidgetState::HOVER));
+    assert!(
+        hover_pen.is_some() && hover_pen != Some(pen),
+        "kde-breeze states the hovered checked pen apart from the one at rest: {hover_pen:?}"
     );
-    assert_eq!(t.button.border.line_width, pen.width);
-    let lined = |harness: &Harness<'_, App>| {
+    let lined_in = |harness: &Harness<'_, App>, pen: egui::Stroke| {
         let edit = harness.state().registry.places()["basic.icons.edit"];
         harness
             .output()
@@ -11743,9 +11756,17 @@ fn the_basic_edit_button_starts_checked_and_switches() {
                 _ => false,
             })
     };
+    let lined = |harness: &Harness<'_, App>| lined_in(harness, pen);
     assert!(
         lined(&harness),
         "Edit while on, at rest, is not lined in the checked pen"
+    );
+    let edit_place = harness.state().registry.places()["basic.icons.edit"];
+    harness.hover_at(edit_place.center());
+    harness.run_steps(3);
+    assert!(
+        hover_pen.is_some_and(|hover| lined_in(&harness, hover)),
+        "Edit while on, hovered, is not lined in the hovered checked pen {hover_pen:?}"
     );
 
     harness.get_by_role_and_label(Role::Button, "Edit").click();
@@ -11774,22 +11795,16 @@ fn the_basic_edit_button_starts_checked_and_switches() {
     // the colour Edit's label is painted in tells them apart. A freedesktop theme that does not
     // exist gives no icon on any platform (`find_icon` never falls back to hicolor), so Copy and
     // Edit show their labels.
-    let mut harness = open_scaled("windows-11", "basic", 1.0);
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
     harness.state_mut().settings.icon = IconSetChoice::Freedesktop("no-such-icon-theme".into());
     harness.run_steps(SETTLE);
-    let t = harness
+    let r = harness
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
-    assert!(
-        native_theme_egui::toolbar_button_checked_background(&t).is_some(),
-        "windows-11 no longer states the checked toolbar fill, so Edit takes no checked text"
-    );
-    let checked = t
-        .button
-        .checked_text_color
-        .map(native_theme_egui::convert::to_color32);
+        .next_resolved(egui::Theme::Light)
+        .cloned()
+        .ok_or("windows-11's 0.8.0 theme is not installed")?;
+    let checked = edit_look(Some(&r)).text;
     assert!(
         harness.state().demo_state.basic_edit,
         "Edit is not on at start"
@@ -11807,8 +11822,75 @@ fn the_basic_edit_button_starts_checked_and_switches() {
     );
     assert_eq!(
         edit, checked,
-        "windows-11: Edit while on is not lettered in button.checked_text_color"
+        "windows-11: Edit while on is not lettered in button.label(CHECKED).color"
     );
+    Ok(())
+}
+
+/// The Basic page's icon buttons on the 0.8.0 model, under every bundled preset in light: Copy,
+/// Paste and Delete stand the toolbar scope's item gap apart, `toolbar.item_gap` where the theme
+/// states it, else `layout.widget_gap`, which the connector's base style carries, and so no
+/// gap of the showcase's own is needed (the 0.7.2 `demo::toolbar_gap`). Under kde-breeze, which
+/// states
+/// `toolbar.button(HOVER)`'s outline, a hovered Copy is lined in it.
+#[test]
+fn the_basic_icon_buttons_are_the_toolbars_gap_apart_and_outlined_on_hover() -> Result<(), String> {
+    use native_theme::next::{Preset, WidgetState};
+    use native_theme_egui::next::{state_stroke_color_of, stroke_width_of};
+    for preset in Preset::ALL.iter().map(|p| p.as_str()) {
+        let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        harness.state_mut().settings.icon = IconSetChoice::Freedesktop("no-such-icon-theme".into());
+        harness.run_steps(SETTLE);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .cloned()
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+        let gap =
+            r.toolbar.item_gap.or(r.layout.widget_gap).ok_or_else(|| {
+                format!("{preset} states neither toolbar.item_gap nor widget_gap")
+            })?;
+        let places = harness.state().registry.places();
+        let [copy, paste, delete] = ["copy", "paste", "delete"].map(|id| {
+            places
+                .get(&format!("basic.icons.{id}"))
+                .copied()
+                .unwrap_or(egui::Rect::NOTHING)
+        });
+        assert!(
+            copy.is_positive() && paste.is_positive() && delete.is_positive(),
+            "{preset}: an icon button is not placed"
+        );
+        if near(copy.top(), paste.top()) {
+            assert!(
+                near(paste.left() - copy.right(), gap),
+                "{preset}: Copy and Paste {} apart, the toolbar's gap is {gap}",
+                paste.left() - copy.right()
+            );
+        }
+        let hovered = r.toolbar.button(WidgetState::HOVER);
+        if preset == "kde-breeze" {
+            let pen = stroke_width_of(&hovered)
+                .zip(state_stroke_color_of(&hovered))
+                .map(|(width, colour)| egui::Stroke::new(width, colour))
+                .ok_or("kde-breeze no longer states the toolbar's hover outline")?;
+            harness.hover_at(copy.center());
+            harness.run_steps(3);
+            let lined = harness
+                .output()
+                .shapes
+                .iter()
+                .any(|clipped| match &clipped.shape {
+                    egui::Shape::Rect(s) => {
+                        s.stroke == pen && copy.expand(1.0).contains_rect(s.rect)
+                    }
+                    _ => false,
+                });
+            assert!(lined, "kde-breeze: a hovered Copy is not lined in {pen:?}");
+        }
+    }
+    Ok(())
 }
 
 /// The colour the label `text` is painted in inside the place `id` (the first such galley's first
@@ -12373,8 +12455,7 @@ fn a_failed_desktop_read_starts_the_platform_preset_and_says_so() {
 
 /// The page groups' helpers on the 0.8.0 model read the installed 0.8.0 theme the window shows:
 /// `next_value` its values, `next_lined` its line height, `next_role_text` a text role's size and
-/// line height, `next_metric` a layout gap; beside it the theme for an inactive window, and
-/// `next_unstated_as` fills the unstated sides only.
+/// line height, `next_metric` a layout gap; beside it the theme for an inactive window.
 #[test]
 fn the_next_helpers_read_the_installed_08_theme() -> Result<(), String> {
     use native_theme_egui::{TextRole, next};
@@ -12437,10 +12518,5 @@ fn the_next_helpers_read_the_installed_08_theme() -> Result<(), String> {
         ))
     );
     assert_eq!(gap, active.layout.widget_gap);
-    let padding = crate::demo::next_unstated_as([Some(1.0), None, Some(3.0), None], 7.0);
-    assert_eq!(
-        [padding.top, padding.right, padding.bottom, padding.left],
-        [Some(1.0), Some(7.0), Some(3.0), Some(7.0)]
-    );
     Ok(())
 }
