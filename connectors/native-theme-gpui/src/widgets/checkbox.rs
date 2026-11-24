@@ -205,8 +205,8 @@ impl CheckboxLook {
     /// stated as its minimum and maximum, its fill at rest, checked, hovered
     /// where a rule states it for `HOVER`, and disabled where one states it
     /// for `DISABLED` (at the control's checked state), its stroke at rest
-    /// (width, and the unchecked control's colour), checked, and hovered where
-    /// a rule states it, and its padding, of `radio.indicator`; the dot's
+    /// (width, the unchecked control's colour), checked, hovered and disabled
+    /// where a rule states it, and its padding, of `radio.indicator`; the dot's
     /// colour, `radio.dot(CHECKED).fill`; the label's colour at rest and
     /// disabled, `radio.label`; and `radio.label_gap` and
     /// `radio.disabled_opacity`. The fields 0.7.2 keeps for both controls in
@@ -412,6 +412,25 @@ impl CheckboxLook {
                             &mark(WidgetState::DISABLED | WidgetState::CHECKED),
                         )?
                     },
+                    disabled_border: if indicator(WidgetState::DISABLED)
+                        .from_state
+                        .contains(PartStated::STROKE)
+                    {
+                        Some(stroke_color(
+                            &indicator(WidgetState::DISABLED | shown),
+                            match (radio, checked) {
+                                (false, false) => "checkbox.indicator(DISABLED).stroke.color",
+                                (false, true) => {
+                                    "checkbox.indicator(DISABLED|CHECKED).stroke.color"
+                                }
+                                (true, false) => "radio.indicator(DISABLED).stroke.color",
+                                (true, true) => "radio.indicator(DISABLED|CHECKED).stroke.color",
+                            },
+                        )?)
+                    } else {
+                        None
+                    },
+                    radio,
                 },
                 checked,
                 disabled,
@@ -422,15 +441,28 @@ impl CheckboxLook {
 
     fn from_reads(c: &CheckboxReads, checked: bool, disabled: bool) -> Option<Self> {
         let enabled_fill = if checked { c.checked } else { c.unchecked };
+        // Disabled, the fill a rule states for `DISABLED`; else
+        // gpui-component's own disabled fill (spec §10, rule 0): a checked
+        // box's and a radio's, checked or not, the enabled one at
+        // `DISABLED_INDICATOR_ALPHA`; an unchecked box keeps its fill.
         let fill = match (disabled, c.disabled_fill) {
             (true, Some(fill)) => fill,
+            (true, None) if checked || c.radio => enabled_fill.opacity(DISABLED_INDICATOR_ALPHA),
             _ => enabled_fill,
         };
         let hover_fill = (!checked && !disabled).then(|| c.hover.unwrap_or(c.unchecked));
-        let border = if checked {
+        let enabled_border = if checked {
             c.border
         } else {
             c.unchecked_border
+        };
+        // Disabled, the stroke a rule states for `DISABLED`; else
+        // gpui-component's own disabled border, the enabled one at
+        // `DISABLED_INDICATOR_ALPHA` (spec §10, rule 0).
+        let border = match (disabled, c.disabled_border) {
+            (true, Some(border)) => border,
+            (true, None) => enabled_border.opacity(DISABLED_INDICATOR_ALPHA),
+            (false, _) => enabled_border,
         };
         // Disabled, the mark where a rule states it for `DISABLED`; else, where
         // the platform's disabled look is a fill of its own, the label's
@@ -500,6 +532,17 @@ impl CheckboxLook {
     }
 }
 
+/// The alpha factor gpui-component dims a disabled indicator by, which a
+/// 0.8.0 theme takes where no rule states the stroke or the fill for
+/// `DISABLED`: the check box's `disabled_indicator_color`, the enabled
+/// border's colour at `opacity(0.5)`, checked or not, and a checked
+/// (filled) box's fill too (gpui-component 0.10.0 checkbox.rs:286-290,
+/// :359-362: `.when(filled, ..)`, an unchecked box keeping its
+/// `input_background`), and the radio's `border_color.opacity(0.5)` and
+/// `bg.opacity(0.5)`, checked or not (gpui-component 0.10.0
+/// radio.rs:193-200).
+pub(super) const DISABLED_INDICATOR_ALPHA: f32 = 0.5;
+
 /// The values a 0.8.0 constructor of [`CheckboxLook`] builds the look from: the
 /// indicator's fills (the disabled one at the control's checked state, where
 /// stated), its strokes, the mark's and the label's colours, and the sizes;
@@ -513,6 +556,12 @@ struct CheckboxReads {
     border: Hsla,
     unchecked_border: Hsla,
     hover_border: Option<Hsla>,
+    /// The stroke disabled (at the control's checked state), where a rule
+    /// states it for `DISABLED`.
+    disabled_border: Option<Hsla>,
+    /// Whether the look is a radio's, which gpui-component dims disabled
+    /// checked or not, where it dims a check box's fill only checked.
+    radio: bool,
     mark: Hsla,
     label: Hsla,
     disabled_text: Hsla,

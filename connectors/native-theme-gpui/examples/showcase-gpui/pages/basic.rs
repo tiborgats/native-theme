@@ -16,10 +16,10 @@ use gpui::{
     AnyElement, AvailableSpace, Axis, Context, IntoElement, ParentElement, Pixels, Styled, Window,
     div, prelude::*, px, size,
 };
-use gpui_component::{IconName, h_flex, v_flex};
+use gpui_component::{ActiveTheme as _, IconName, h_flex, v_flex};
 
 use native_theme::icons::IconRole;
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{
@@ -27,7 +27,7 @@ use crate::demo::{
     SeparatorKind, SpinnerKind, StepIcons, TypeRole,
 };
 use crate::elements;
-use crate::support::{native_value, with_gap, with_padding};
+use crate::support::{next_metric, next_value, with_gap, with_padding};
 
 /// The width, in logical pixels, of the Basic page's text fields, drop-down,
 /// number input, slider and progress bar. The model states no such width;
@@ -139,13 +139,17 @@ const TABLE_SELECTED: usize = 1;
 /// egui showcases' too.
 type SizedIcon = (
     &'static str,
-    fn(native_theme_gpui::Native<'_>) -> gpui_component::Size,
+    fn(&native_theme::next::ResolvedTheme) -> next::Mapped<gpui_component::Size>,
     &'static str,
 );
 const ICONS: [SizedIcon; 3] = [
-    ("basic-icon-small", geometry::icon_size_small, "Small"),
-    ("basic-icon-toolbar", geometry::icon_size_toolbar, "Toolbar"),
-    ("basic-icon-large", geometry::icon_size_large, "Large"),
+    ("basic-icon-small", next::geometry::icon_size_small, "Small"),
+    (
+        "basic-icon-toolbar",
+        next::geometry::icon_size_toolbar,
+        "Toolbar",
+    ),
+    ("basic-icon-large", next::geometry::icon_size_large, "Large"),
 ];
 
 /// A group of the page, as `(heading id, heading)`.
@@ -238,18 +242,24 @@ fn segmented_in_last_column(columns: usize) -> bool {
         .is_some_and(|column| column.contains(&SEGMENTED_GROUP))
 }
 
-/// How many columns the page lays its groups out in, from the theme alone,
-/// as the iced and egui Basic pages count them: the most, of five down to
-/// one, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds the
-/// widest fixed-width control the theme states on the page --
-/// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart with room for both of the selected tab's flares,
-/// `2 * tab.active_outward_corner_radius` where `widgets::TabBar` draws them
-/// (`TabLook::outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH` -- where
-/// `page` is
-/// `content_width` less `layout.window_margin` on both sides and, where
-/// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
-/// scrolling page keeps free. The column also holds `segmented`, the
+/// How many columns the page lays its groups out in, from the installed
+/// 0.8.0 theme `r` alone, as the iced and egui Basic pages count them: the
+/// most, of five down to one, whose width,
+/// `(page - (n - 1) * layout.section_gap) / n`, holds the widest fixed-width
+/// control the theme states on the page --
+/// `combo_box.field(NONE).min_size[0]`, the two tabs at
+/// `tab.tab(NONE).min_size[0]` `tab.item_gap` apart with room for both of
+/// the selected tab's flares, `2 * tab.active_outward_corner_radius` where
+/// `widgets::TabBar` draws them (`TabLook::outward_radius`), `BASIC_WIDE`
+/// and `BASIC_WIDTH` -- where `page` is `content_width` less
+/// `layout.window_margin` on both sides and, where `scrollbar.overlay_mode`
+/// is false, the groove a scrolling page keeps free,
+/// `scrollbar.track(NONE; orientation=Vertical).min_size[0]`
+/// (`next::scrollbar_groove_width`). A width or a metric the theme leaves
+/// unstated takes no room: gpui-component's tabs and drop-down have no
+/// minimum width of their own, and the page sets no gap, margin or gutter
+/// the theme does not state (`support::with_gap`, `next_metric`). The
+/// column also holds `segmented`, the
 /// Segmented control's own width (`demo::segmented_width`, as gpui measures
 /// its labels), whose segments stay on one row: the control may reach into
 /// the section gap after its column, but keeps `layout.widget_gap`, the gap
@@ -258,39 +268,35 @@ fn segmented_in_last_column(columns: usize) -> bool {
 /// reach into the page's right margin, `layout.window_margin`, keeping
 /// `layout.widget_gap` from the scroll area's edge or its scroll bar: where
 /// `scrollbar.overlay_mode` is true the bar floats over that margin, its
-/// `scrollbar.groove_width` taken off the room. One
+/// groove width taken off the room. One
 /// where not even one does: the page is then wider than its area.
 pub(crate) fn basic_column_count(
-    resolved: &native_theme::theme::ResolvedTheme,
-    layout: &native_theme::theme::LayoutTheme,
+    r: &native_theme::next::ResolvedTheme,
     content_width: f32,
     segmented: f32,
 ) -> usize {
-    let margin = layout.window_margin.unwrap_or_default();
-    let gap = layout.section_gap.unwrap_or_default();
-    let bar = &resolved.scrollbar;
-    let gutter = if bar.overlay_mode {
-        0.0
-    } else {
-        bar.groove_width
+    use native_theme::next::WidgetState;
+    let metric = |build: fn(&native_theme::next::ResolvedTheme) -> next::Mapped<Option<Pixels>>| {
+        build(r).ok().flatten().map(f32::from).unwrap_or_default()
     };
+    let margin = metric(next::geometry::window_margin);
+    let gap = metric(next::geometry::section_gap);
+    let groove = next::scrollbar_groove_width(r).unwrap_or_default();
+    let overlay_mode = r.scrollbar.overlay_mode;
+    let gutter = if overlay_mode { 0.0 } else { groove };
     // a floating bar takes no width of the page, and is drawn over its right margin
-    let overlay = if bar.overlay_mode {
-        bar.groove_width
-    } else {
-        0.0
-    };
+    let overlay = if overlay_mode { groove } else { 0.0 };
     let page = content_width - margin - margin - gutter;
-    let t = &resolved.tab;
-    let flare = outward_radius(resolved);
-    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default() + flare + flare;
-    let widest = resolved
-        .combo_box
-        .min_width
+    let t = &r.tab;
+    let tab_width = t.tab(WidgetState::NONE).min_size[0].unwrap_or_default();
+    let flare = outward_radius(r);
+    let tabs = tab_width + tab_width + t.item_gap.unwrap_or_default() + flare + flare;
+    let widest = r.combo_box.field(WidgetState::NONE).min_size[0]
+        .unwrap_or_default()
         .max(tabs)
         .max(BASIC_WIDE)
         .max(BASIC_WIDTH);
-    let widget_gap = layout.widget_gap.unwrap_or_default();
+    let widget_gap = metric(next::geometry::widget_gap);
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -308,20 +314,23 @@ pub(crate) fn basic_column_count(
         .unwrap_or(MIN_COLUMNS)
 }
 
-/// The radius of the selected tab's flares as `widgets::TabBar` draws them,
-/// 0 where it draws none: a radius the theme leaves unstated, states as 0,
-/// or states as a length the bar does not take, or a build without the
-/// `widgets` feature, whose Basic tabs are gpui-component's.
-fn outward_radius(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+/// The radius of the selected tab's flares as `widgets::TabBar` draws them
+/// (`TabLook::next_of`), 0 where it draws none: a radius the theme leaves
+/// unstated, states as 0, or states as a length the bar does not take, a
+/// theme the bar cannot be drawn from, or a build without the `widgets`
+/// feature, whose Basic tabs are gpui-component's.
+fn outward_radius(r: &native_theme::next::ResolvedTheme) -> f32 {
     #[cfg(feature = "widgets")]
     {
-        native_theme_gpui::widgets::TabLook::of(resolved)
+        native_theme_gpui::widgets::TabLook::next_of(r)
+            .ok()
             .and_then(|look| look.outward_radius)
-            .map_or(0.0, f32::from)
+            .map(f32::from)
+            .unwrap_or_default()
     }
     #[cfg(not(feature = "widgets"))]
     {
-        let _ = resolved;
+        let _ = r;
         0.0
     }
 }
@@ -352,16 +361,14 @@ impl Showcase {
         let wide = px(BASIC_WIDE);
         let list_height = self.basic_list_height(window, cx, wide);
         let ui = &self.info_ui;
-        let widget_gap = geometry::widget_gap(&self.layout);
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
         // The space between the columns, between the groups, and round the
         // page: the theme's section gap and window margin, as the iced and
         // egui Basic pages lay them out.
-        let section_gap = geometry::section_gap(&self.layout);
-        let window_margin = geometry::window_margin(&self.layout);
+        let section_gap = next_metric(cx, next::geometry::section_gap);
+        let window_margin = next_metric(cx, next::geometry::window_margin);
         let width = px(BASIC_WIDTH);
-        let tool_gap = native_value(cx, |n| n.resolved.toolbar.item_gap)
-            .flatten()
-            .map(px);
+        let tool_gap = next_value(cx, |r| r.toolbar.item_gap).flatten().map(px);
 
         let on_radio = cx.listener(|this, ix: &usize, _w, cx| {
             this.basic_radio = Some(*ix);
@@ -520,11 +527,17 @@ impl Showcase {
                         "basic-select",
                         &self.basic_select,
                         "Pick a fruit",
-                        // At least `combo_box.min_width`, which `geometry::select`
-                        // sets on the trigger inside: the box round it too, as
+                        // At least `combo_box.field(NONE).min_size[0]`, which
+                        // `next::geometry::select` sets on the trigger inside
+                        // where the theme states it: the box round it too, as
                         // the iced and egui pages size theirs.
-                        native_value(cx, |n| px(BASIC_WIDTH.max(n.resolved.combo_box.min_width)))
-                            .unwrap_or(width),
+                        next_value(cx, |r| {
+                            r.combo_box
+                                .field(native_theme::next::WidgetState::NONE)
+                                .min_size[0]
+                        })
+                        .flatten()
+                        .map_or(width, |min| px(BASIC_WIDTH.max(min))),
                     )
                     .into_any_element(),
                 ],
@@ -776,7 +789,7 @@ impl Showcase {
                     "basic-card-text",
                     "Card content",
                     wide,
-                    geometry::container_margin(&self.layout),
+                    next_metric(cx, next::geometry::container_margin),
                 )
                 .into_any_element(),
             ],
@@ -864,14 +877,9 @@ impl Showcase {
             .map(Some)
             .collect();
         let content_width = self.content_width(window, cx);
-        let count = native_value(cx, |n| {
-            let segmented = demo::segmented_width(window, &n, &BASIC_SEGMENTS);
-            basic_column_count(
-                n.resolved,
-                &self.layout,
-                f32::from(content_width),
-                segmented,
-            )
+        let count = next_value(cx, |r| {
+            let segmented = demo::segmented_width(window, cx.theme(), r, &BASIC_SEGMENTS);
+            basic_column_count(r, f32::from(content_width), segmented)
         })
         .unwrap_or(MAX_COLUMNS);
         // The width is the last frame's: where this frame lays the content
@@ -922,7 +930,9 @@ impl Showcase {
     /// frame. A row is measured as the List measures its own
     /// (list/list.rs, `ListState::prepare_items_if_needed`), `wide` wide, so
     /// the height is the row the theme gives, stated or not; the frame is
-    /// `list.border.line_width` above and below.
+    /// `list.container(NONE).stroke.width` above and below, which
+    /// `next::geometry::list` draws, none where the theme states no width
+    /// gpui can take.
     fn basic_list_height(
         &self,
         window: &mut Window,
@@ -936,7 +946,11 @@ impl Showcase {
             window,
             cx,
         );
-        let frame = px(native_value(cx, |n| n.resolved.list.border.line_width).unwrap_or_default());
+        let frame = px(next_value(cx, |r| {
+            crate::info::stroke_width_of(&r.list.container(native_theme::next::WidgetState::NONE))
+        })
+        .flatten()
+        .unwrap_or_default());
         px(f32::from(measured.height) * BASIC_LIST_VISIBLE + f32::from(frame) + f32::from(frame))
     }
 }

@@ -15,7 +15,7 @@ use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
 use super::{Part, PartBounds, ThemeSource, color, length, outer_edge, over, part_bounds_above};
-use crate::next::{Mapped, Unmapped, fill, hsla, radius, state_fill, stated, text_color};
+use crate::next::{Mapped, Unmapped, fill, radius, state_fill, stated, text_color};
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:112-118,
@@ -366,7 +366,10 @@ fn selected_outline(part: &native_theme::next::PartStyle) -> Mapped<(Hsla, f32)>
     }
     match &part.stroke {
         Stroke::None => Ok((transparent_black(), 0.)),
-        Stroke::Uniform { color, width, .. } => Ok((hsla(*color), *width)),
+        Stroke::Uniform { width, .. } => Ok((
+            crate::next::stroke_color(part, "tab.tab(SELECTED).stroke.color")?,
+            *width,
+        )),
         _ => Err(Unmapped("tab.tab(SELECTED).stroke")),
     }
 }

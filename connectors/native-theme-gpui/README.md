@@ -603,6 +603,14 @@ and `Select` (an open combo box's fill and frame: it shows `ring` while
 open). The showcase draws the first four with its own elements; the
 `widgets` module's `Slider` draws the thumb's outline.
 
+A pressed button's border: the bordered, default and toolbar variants are
+custom variants, and a custom variant has one border colour for hover and
+press (gpui-component 0.10.0 `button/button.rs:1134`, `border_color`'s
+`Custom` arm). A pressed bordered or default button keeps
+`button.body(HOVER).stroke.color`, and a pressed tool button
+`toolbar.button(HOVER).stroke.color`; a `PRESSED` stroke the theme states
+apart from its hover one is not drawn.
+
 ## Theme-drawn widgets
 
 With the `widgets` feature (on by default), `native_theme_gpui::widgets` has

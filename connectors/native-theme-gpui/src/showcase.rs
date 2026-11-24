@@ -190,6 +190,13 @@ const VARIANTS: &str = include_str!("variants.rs");
 /// `NEXT_GEOMETRY_NOTES` holds.
 const NEXT_GEOMETRY: &str = include_str!("next/geometry.rs");
 
+/// The 0.8.0 model's variants, `next::variants`.
+const NEXT_VARIANTS: &str = include_str!("next/variants.rs");
+
+/// The bodies of the 0.8.0 builders and variants, which `next::geometry`'s
+/// `builders!` entries and `next::variants`' functions call by their names.
+const NEXT_BUILDERS: &str = include_str!("next/builders.rs");
+
 /// The builders `next/geometry.rs` declares: each `pub fn` and each entry
 /// `name -> Type;` of its `builders!` invocation, which declares one apiece.
 fn next_builder_fns(source: &str) -> Vec<&str> {
@@ -436,28 +443,512 @@ fn the_showcase_exercises_every_builder() {
     );
 }
 
+/// The showcase's helpers that read the 0.7.2 theme, gone with the move to
+/// the 0.8.0 model, which no showcase file names again.
+const OLD_MODEL_READS: &[&str] = &[
+    "old_native",
+    "old_resolved",
+    "native_value",
+    "native_geometry",
+    "native_color",
+    "native_info",
+    "keep_old_beside_next",
+    "GEOMETRY_NOTES",
+    "OldModel",
+    "resolved_theme",
+    "OldChoice",
+    "OldResolved",
+    "keep_system",
+    "keep_preset",
+    "unread_font",
+    "old_resolution_context",
+    "resolution_context_for_test",
+];
+
+/// The 0.7.2 model's reads and installs of a theme, which no showcase file
+/// reads through a path other than the 0.8.0 model's ([`is_next_path`]): the
+/// desktop's theme (`SystemTheme`, `apply_system_theme`, the connector's
+/// `from_system`), a preset loaded or resolved (`Theme::preset`,
+/// `Theme::from_toml`, the connector's `from_preset`, `resolve_with`,
+/// `into_resolved`, `ResolutionContext`, the resolved `native_theme::Resolved`,
+/// `ResolvedTheme` and its `ResolvedFontSpec`), its modes (`ThemeMode`,
+/// `ColorMode`), the connector's installs of it (`to_theme`,
+/// `apply_accessibility`), and the pipeline's preset guess
+/// (`platform_preset_name`). Each is matched as a whole path, wherever it
+/// stands: after `::` (`native_theme::Theme::preset`), at a crate root
+/// (`native_theme_gpui::ResolvedTheme`), or bare and imported by a `use`.
+/// What the connector's own 0.7.2 widgets still hand the showcase until M5
+/// (`TabIndicatorSide`, `ResolvedPadding`) and what reads no theme (the
+/// preset list, the icon loaders' `Rgba`, `detect`, `fonts`) are not reads.
+const OLD_MODEL_THEME_READS: &[&str] = &[
+    "SystemTheme",
+    "apply_system_theme",
+    "Theme::preset",
+    "Theme::from_toml",
+    "from_preset",
+    "from_system",
+    "resolve_with",
+    "into_resolved",
+    "ResolutionContext",
+    "native_theme::Resolved",
+    "ResolvedTheme",
+    "ResolvedFontSpec",
+    "ThemeMode",
+    "ColorMode",
+    "to_theme",
+    "apply_accessibility",
+    "platform_preset_name",
+];
+
+/// The 0.7.2 model's reads that no path makes 0.8.0's, refused wherever they
+/// stand: the installed theme (`ActiveNativeTheme::native`, `.native(`, its
+/// `Native<'_>` view, `NativeTheme::resolved` as `.resolved(`) and the
+/// connector's 0.7.2 install, `native_theme_gpui::apply(`.
+const OLD_MODEL_LITERAL_READS: &[&str] = &[
+    "ActiveNativeTheme::native",
+    ".native(",
+    "Native<'",
+    ".resolved(",
+    "native_theme_gpui::apply(",
+];
+
+/// Whether `c` can stand in an identifier.
+fn is_ident_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_'
+}
+
+/// Every offset at which `code` holds `pattern` as a whole: no identifier
+/// character before a pattern that begins with one, none after a pattern
+/// that ends with one.
+fn whole_matches(code: &str, pattern: &str) -> Vec<usize> {
+    let starts_ident = pattern.chars().next().is_some_and(is_ident_char);
+    let ends_ident = pattern.chars().next_back().is_some_and(is_ident_char);
+    code.match_indices(pattern)
+        .map(|(at, _)| at)
+        .filter(|&at| {
+            let before_ok = !starts_ident
+                || code
+                    .get(..at)
+                    .and_then(|t| t.chars().next_back())
+                    .is_none_or(|c| !is_ident_char(c));
+            let after_ok = !ends_ident
+                || code
+                    .get(at + pattern.len()..)
+                    .and_then(|t| t.chars().next())
+                    .is_none_or(|c| !is_ident_char(c));
+            before_ok && after_ok
+        })
+        .collect()
+}
+
+/// One name a `use` declaration brings in: the declaration's span, the
+/// item's full path and the name it binds.
+struct UseItem {
+    span: std::ops::Range<usize>,
+    path: Vec<String>,
+    binds: String,
+}
+
+/// Every item of every `use` declaration in `code`, in source order.
+fn use_items(code: &str) -> Vec<UseItem> {
+    let mut out = Vec::new();
+    for at in whole_matches(code, "use") {
+        let head = code.get(..at).unwrap_or("").trim_end_matches([' ', '\t']);
+        let head_ok = head.ends_with("pub")
+            || head
+                .chars()
+                .next_back()
+                .is_none_or(|c| matches!(c, '\n' | ';' | '{' | '}' | ')'));
+        let tail = code.get(at + "use".len()..).unwrap_or("");
+        if !head_ok || !tail.starts_with([' ', '\n']) {
+            continue;
+        }
+        let Some(len) = tail.find(';') else { continue };
+        let tree = tail
+            .get(..len)
+            .unwrap_or("")
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        let span = at..at + "use".len() + len;
+        let mut items = Vec::new();
+        use_tree_items(&tree, &[], &mut items);
+        out.extend(items.into_iter().map(|(path, binds)| UseItem {
+            span: span.clone(),
+            path,
+            binds,
+        }));
+    }
+    out
+}
+
+/// The parts of `tree`, a `use` tree, split at its top-level commas and
+/// trimmed.
+fn top_level_parts(tree: &str) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut depth = 0usize;
+    let mut from = 0usize;
+    for (ix, c) in tree.char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => {
+                parts.push(tree.get(from..ix).unwrap_or(""));
+                from = ix + 1;
+            }
+            _ => {}
+        }
+    }
+    parts.push(tree.get(from..).unwrap_or(""));
+    parts
+        .into_iter()
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .collect()
+}
+
+/// The segments of `path`, a written path such as `a :: b::c`.
+fn path_segments(path: &str) -> impl Iterator<Item = String> + '_ {
+    path.split("::")
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
+/// The (full path, bound name) of every item of `tree`, under `prefix`.
+fn use_tree_items(tree: &str, prefix: &[String], out: &mut Vec<(Vec<String>, String)>) {
+    for part in top_level_parts(tree) {
+        let part = part.trim_start_matches("::");
+        if let Some(open) = part.find('{') {
+            let mut path = prefix.to_vec();
+            path.extend(path_segments(part.get(..open).unwrap_or("")));
+            let inner = part
+                .get(open + 1..)
+                .and_then(|t| t.trim_end().strip_suffix('}'))
+                .unwrap_or("");
+            use_tree_items(inner, &path, out);
+            continue;
+        }
+        let (named, alias) = match part.split_once(" as ") {
+            Some((named, alias)) => (named, Some(alias.trim())),
+            None => (part, None),
+        };
+        let mut path = prefix.to_vec();
+        path.extend(path_segments(named));
+        if path.last().is_some_and(|leaf| leaf == "self") {
+            path.pop();
+        }
+        let binds = alias
+            .map(str::to_string)
+            .or_else(|| path.last().cloned())
+            .unwrap_or_default();
+        out.push((path, binds));
+    }
+}
+
+/// Whether `path` is the 0.8.0 model's -- it passes through a `next` module
+/// -- or gpui-component's own, whose `Theme` and `ThemeMode` the 0.7.2
+/// model's names share.
+fn is_next_path<S: AsRef<str>>(path: &[S]) -> bool {
+    path.iter().any(|s| s.as_ref() == "next")
+        || path.first().is_some_and(|s| s.as_ref() == "gpui_component")
+}
+
+/// The path written right before offset `at` of `code`, as segments: the
+/// `a::b::` that qualifies whatever begins at `at`.
+fn written_qualifier(code: &str, at: usize) -> Vec<String> {
+    let mut head = code.get(..at).unwrap_or("");
+    let mut segments = Vec::new();
+    while let Some(rest) = head.strip_suffix("::") {
+        let segment = trailing_ident(rest);
+        if segment.is_empty() {
+            break;
+        }
+        segments.push(segment.to_string());
+        head = rest.get(..rest.len() - segment.len()).unwrap_or("");
+    }
+    segments.reverse();
+    segments
+}
+
+/// The full path of the name written at offset `at` of `code` as `written`:
+/// its written qualifier, and its first segment resolved through the
+/// nearest `use` before it that binds that name.
+fn full_path(code: &str, uses: &[UseItem], at: usize, written: &str) -> Vec<String> {
+    let mut path = written_qualifier(code, at);
+    path.extend(written.split("::").map(str::to_string));
+    let first = path.first().cloned().unwrap_or_default();
+    match uses
+        .iter()
+        .rfind(|item| item.span.end <= at && item.binds == first)
+    {
+        Some(item) => {
+            let mut full = item.path.clone();
+            full.extend(path.into_iter().skip(1));
+            full
+        }
+        None => path,
+    }
+}
+
+/// What `code`, a showcase file's code, reads of the 0.7.2 model, as (offset,
+/// what it reads): a name of [`OLD_MODEL_THEME_READS`] through a path that is
+/// not 0.8.0's, in code or imported by a `use` (with the first segment of a
+/// longer name, as `use native_theme::Theme;` for `Theme::preset`); a read of
+/// [`OLD_MODEL_LITERAL_READS`]; a `.resolve(` that is 0.7.2's -- 0.8.0's
+/// `Theme::resolve` takes a `&ThemeContext` (`next/preset.rs`), 0.7.2's a
+/// `ColorMode` (`ThemeSpec::resolve`, `model/mod.rs`) or nothing
+/// (`ThemeVariant::resolve`, `resolve/mod.rs`), so its argument does not
+/// begin with `&`; a 0.7.2 builder of `old_builders` / `old_variants` called
+/// other than through `next::`; and a `use` of one of them or of a whole
+/// 0.7.2 `geometry` or `variants` module's items (`::*`).
+fn old_model_reads(
+    code: &str,
+    old_builders: &[&str],
+    old_variants: &[&str],
+) -> Vec<(usize, String)> {
+    let uses = use_items(code);
+    let in_use = |at: usize| uses.iter().any(|item| item.span.contains(&at));
+    let mut findings = Vec::new();
+    for name in OLD_MODEL_THEME_READS {
+        for at in whole_matches(code, name) {
+            if !in_use(at) && !is_next_path(&full_path(code, &uses, at, name)) {
+                findings.push((at, format!("reads or installs a 0.7.2 theme, {name}")));
+            }
+        }
+    }
+    for item in &uses {
+        if is_next_path(&item.path) {
+            continue;
+        }
+        let joined = item.path.join("::");
+        let leaf = item.path.last().map_or("", String::as_str);
+        let imports_a_read = OLD_MODEL_THEME_READS.iter().any(|name| {
+            let segments: Vec<&str> = name.split("::").collect();
+            let ends_with_it = item.path.len() >= segments.len()
+                && item
+                    .path
+                    .iter()
+                    .rev()
+                    .zip(segments.iter().rev())
+                    .all(|(have, want)| have == want);
+            let its_type = segments.len() > 1
+                && segments
+                    .first()
+                    .is_some_and(|first| *first == leaf && first.starts_with(char::is_uppercase));
+            ends_with_it || its_type
+        });
+        if imports_a_read {
+            findings.push((item.span.start, format!("imports a 0.7.2 name, {joined}")));
+        }
+        let module = item
+            .path
+            .len()
+            .checked_sub(2)
+            .and_then(|ix| item.path.get(ix));
+        let builders = match module.map(String::as_str) {
+            Some("geometry") => old_builders,
+            Some("variants") => old_variants,
+            _ => &[],
+        };
+        if module.is_some_and(|m| m == "geometry" || m == "variants")
+            && (leaf == "*" || builders.contains(&leaf))
+        {
+            findings.push((
+                item.span.start,
+                format!("imports the 0.7.2 builders {joined}"),
+            ));
+        }
+    }
+    for pattern in OLD_MODEL_LITERAL_READS {
+        for at in whole_matches(code, pattern) {
+            findings.push((at, format!("reads the installed 0.7.2 theme, {pattern}")));
+        }
+    }
+    for (at, m) in code.match_indices(".resolve(") {
+        let argument = code.get(at + m.len()..).unwrap_or("").trim_start();
+        if !argument.starts_with('&') {
+            findings.push((
+                at,
+                "resolves a 0.7.2 theme, .resolve( without a &ThemeContext".to_string(),
+            ));
+        }
+    }
+    for (module, names) in [("geometry", old_builders), ("variants", old_variants)] {
+        for name in names {
+            for at in old_path_offsets(code, module, name) {
+                findings.push((at, format!("calls the 0.7.2 builder {module}::{name}")));
+            }
+        }
+    }
+    findings.sort();
+    findings
+}
+
+/// Every offset at which `code` names `module::name` of the 0.7.2 model: a
+/// path of its own, as [`references`] reads one, with no `next::` before the
+/// module.
+fn old_path_offsets(code: &str, module: &str, name: &str) -> Vec<usize> {
+    whole_matches(code, &format!("{module}::{name}"))
+        .into_iter()
+        .filter(|&at| !code.get(..at).unwrap_or("").ends_with("next::"))
+        .collect()
+}
+
+/// The gpui showcase reads no 0.7.2 theme: no file of it, the tests
+/// included, names a helper of [`OLD_MODEL_READS`] or a read or install of
+/// [`OLD_MODEL_THEME_READS`] or [`OLD_MODEL_LITERAL_READS`], or calls or
+/// imports a 0.7.2 builder that reads the theme -- a `geometry::` builder,
+/// or a `variants::` one but `ghost_button`, which reads gpui-component's
+/// theme alone -- other than through `next::` ([`old_model_reads`]).
+/// Comments and strings are not read: a note may name what the 0.7.2 model
+/// did.
+#[test]
+fn the_showcase_reads_no_0_7_2_theme() {
+    let old_variants: Vec<&str> = public_fns(VARIANTS)
+        .into_iter()
+        .filter(|name| *name != "ghost_button")
+        .collect();
+    let old_builders = public_fns(GEOMETRY);
+    assert!(
+        !old_variants.is_empty() && !old_builders.is_empty(),
+        "geometry.rs or variants.rs declares no builder, so this test would pass vacuously"
+    );
+    let mut findings = Vec::new();
+    for (file, raw) in SHOWCASE_FILES {
+        let code = without_comments_or_strings(raw);
+        let starts = line_offsets(&code);
+        for name in OLD_MODEL_READS {
+            if mentions(&code, name) {
+                findings.push(format!("{file}: names {name}"));
+            }
+        }
+        for (at, what) in old_model_reads(&code, &old_builders, &old_variants) {
+            findings.push(format!("{file}:{}: {what}", line_at(&starts, at)));
+        }
+    }
+    assert!(
+        findings.is_empty(),
+        "the gpui showcase still reads the 0.7.2 theme:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// [`old_path_offsets`] takes a 0.7.2 path, spelt out or not, and no
+/// `next::` path, longer name or longer module.
+#[test]
+fn names_old_path_tells_the_models_apart() {
+    let code = "let a = variants::toolbar_button(cx);\n\
+                let b = native_theme_gpui::variants::default_button(n, cx);\n\
+                let c = next::variants::bordered_button(r, cx);\n\
+                let d = my_variants::switch_color(n);\n";
+    assert!(!old_path_offsets(code, "variants", "toolbar_button").is_empty());
+    assert!(!old_path_offsets(code, "variants", "default_button").is_empty());
+    assert!(old_path_offsets(code, "variants", "bordered_button").is_empty());
+    assert!(old_path_offsets(code, "variants", "switch_color").is_empty());
+    let longer = "let e = variants::toolbar_button_from(s, cx);\n";
+    assert!(old_path_offsets(longer, "variants", "toolbar_button").is_empty());
+}
+
+/// [`old_model_reads`] refuses each 0.7.2 read, however it is written, and
+/// takes its 0.8.0 or gpui-component namesake: one refused and one taken
+/// snippet per pattern.
+#[test]
+fn old_model_reads_refuses_each_pattern() {
+    let builders = ["toolbar_button"];
+    let variants = ["default_button"];
+    let refused = [
+        "let t = native_theme::Theme::preset(\"x\")?;",
+        "use native_theme::Theme;\nfn f() { let t = Theme::preset(\"x\"); }",
+        "use native_theme_gpui::Theme as Old;",
+        "let t = native_theme::theme::Theme::from_toml(s);",
+        "let t = native_theme_gpui::from_preset(p, cx);",
+        "let t = native_theme_gpui::from_system();",
+        "let s = native_theme::SystemTheme::from_system();",
+        "apply_system_theme(&s, cx);",
+        "let r = v.resolve_with(m, &c);",
+        "let r = v.into_resolved(c);",
+        "let c = native_theme::ResolutionContext::default();",
+        "fn f(r: &native_theme::Resolved) {}",
+        "fn f(r: &native_theme::ResolvedTheme) {}",
+        "fn f(r: &native_theme_gpui::ResolvedTheme) {}",
+        "use native_theme_gpui::{ColorMode, ResolvedTheme};",
+        "fn f(r: &ResolvedTheme) {}",
+        "fn f(f: &native_theme::theme::ResolvedFontSpec) {}",
+        "let m = native_theme::ThemeMode::default();",
+        "let m = native_theme_gpui::ColorMode::Dark;",
+        "let t = native_theme_gpui::to_theme(r, n, cx);",
+        "native_theme_gpui::apply_accessibility(&p, cx);",
+        "let p = native_theme::platform_preset_name();",
+        "let n = ActiveNativeTheme::native(cx);",
+        "let n = cx.native();",
+        "fn f(n: Native<'_>) {}",
+        "let r = cx.native_theme()?.resolved(cx);",
+        "native_theme_gpui::apply(&r, cx);",
+        "let r = theme.resolve(native_theme::ColorMode::Dark);",
+        "variant.resolve();",
+        "let b = variants::default_button(cx);",
+        "let b = native_theme_gpui::geometry::toolbar_button(n);",
+        "use native_theme_gpui::geometry::{toolbar_button};",
+        "use native_theme_gpui::geometry::*;",
+        "use native_theme_gpui::variants::{default_button, ghost_button};",
+        "use native_theme_gpui::variants::*;",
+    ];
+    for code in refused {
+        assert!(
+            !old_model_reads(code, &builders, &variants).is_empty(),
+            "takes a 0.7.2 read: {code}"
+        );
+    }
+    let taken = [
+        "let t = native_theme::next::Theme::preset(p);",
+        "use native_theme::next::{Preset, Theme};\nfn f() { let t = Theme::preset(p); }",
+        "let t = NextTheme::preset(p).resolve(&ctx);",
+        "let t = native_theme::next::Theme::from_system();",
+        "use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};",
+        "fn f(r: &native_theme::next::ResolvedTheme) {}",
+        "use gpui_component::theme::Theme;",
+        "fn f() -> gpui_component::theme::ThemeMode { m }",
+        "enum AppColorMode { System }\nlet a = SetColorMode(m);",
+        "let t = native_theme_gpui::next::to_theme(&r);",
+        "native_theme_gpui::next::apply(&r, cx);",
+        "let r = cx.native_theme()?.next_resolved(cx);",
+        "let r = system\n    .resolve(\n        &ctx);",
+        "let b = next::variants::default_button(r, cx);",
+        "let b = native_theme_gpui::next::geometry::toolbar_button(r);",
+        "use native_theme_gpui::variants::{ghost_button};",
+        "use native_theme_gpui::next::geometry::{toolbar_button};",
+        "let n = cx.native_theme();",
+    ];
+    for code in taken {
+        assert_eq!(
+            old_model_reads(code, &builders, &variants),
+            Vec::new(),
+            "refuses a 0.8.0 or gpui-component read: {code}"
+        );
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Geometry lines come from one table
 // ---------------------------------------------------------------------------
 //
 // Showcase spec §3.3 and §5.2. A widget's "geometry" line is not written by
-// hand: `WidgetInfo::geometry` takes it from `GEOMETRY_NOTES` in
-// `info/mod.rs`, which says what each builder carries, and `native_info`
-// applies a builder and records it in one call. Two things can still drift.
-// The table can fall behind geometry.rs -- a builder added there has no line,
-// one renamed or removed leaves a line about nothing -- and a `native_info`
-// call takes the builder it applies and the name it records as two separate
-// arguments, which nothing but this ties together.
+// hand: `WidgetInfo::next_geometry` takes it from `NEXT_GEOMETRY_NOTES` in
+// `info/mod.rs`, which says what each builder carries, and
+// `next_native_info` applies a builder and records it in one call. Two
+// things can still drift. The table can fall behind the builders -- a
+// builder added has no line, one renamed or removed leaves a line about
+// nothing -- and a `next_native_info` call takes the builder it applies and
+// the name it records as two separate arguments, which nothing but this ties
+// together.
 
-/// The showcase file that holds `GEOMETRY_NOTES`.
-const GEOMETRY_NOTES_FILE: &str = "info/mod.rs";
+/// The showcase file that holds `NEXT_GEOMETRY_NOTES`.
+const NEXT_GEOMETRY_NOTES_FILE: &str = "info/mod.rs";
 
-/// The table's declaration, up to the `[` its entries follow.
-const GEOMETRY_NOTES_OPEN: &str = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[";
-
-/// The declaration of the 0.8.0 model's table, `NEXT_GEOMETRY_NOTES`, in the
-/// same file, which `next_native_value` and `WidgetInfo::next_geometry` take
-/// a widget's geometry line from.
+/// The declaration of the table, `NEXT_GEOMETRY_NOTES`, up to the `[` its
+/// entries follow, which `next_native_value` and `WidgetInfo::next_geometry`
+/// take a widget's geometry line from.
 const NEXT_GEOMETRY_NOTES_OPEN: &str = "pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[";
 
 /// The byte offset of `inner` in `outer`, which it is a slice of.
@@ -465,56 +956,30 @@ fn offset_in(outer: &str, inner: &str) -> usize {
     (inner.as_ptr() as usize).saturating_sub(outer.as_ptr() as usize)
 }
 
-/// The text of the file that holds `GEOMETRY_NOTES`, or nothing if
-/// `SHOWCASE_FILES` has lost it -- which `geometry_note_names` reports.
+/// The text of the file that holds `NEXT_GEOMETRY_NOTES`, or nothing if
+/// `SHOWCASE_FILES` has lost it -- which `next_geometry_note_entries`
+/// reports.
 fn geometry_notes_source() -> &'static str {
     SHOWCASE_FILES
         .iter()
-        .find(|(path, _)| *path == GEOMETRY_NOTES_FILE)
+        .find(|(path, _)| *path == NEXT_GEOMETRY_NOTES_FILE)
         .map_or("", |(_, text)| *text)
 }
 
-/// The builder each `GEOMETRY_NOTES` entry names, with the line it is on, and
-/// a line for every part of the table that could not be read.
-fn geometry_note_names(info: &str) -> (Vec<(usize, &str)>, Vec<String>) {
-    let (entries, unreadable) = geometry_note_entries(info);
-    let names = entries
-        .into_iter()
-        .map(|(line, name, _)| (line, name))
-        .collect();
-    (names, unreadable)
-}
-
-/// Every `GEOMETRY_NOTES` entry as the line it is on, the builder it names and
-/// its text as written, and a line for every part of the table that could not
-/// be read.
+/// Every `NEXT_GEOMETRY_NOTES` entry as the line it is on, the builder it
+/// names and its text as written, and a line for every part of the table that
+/// could not be read: every geometry line a widget can show.
 ///
 /// An entry is read as a tuple whose first element is a string literal,
 /// wherever rustfmt breaks its lines; anything else in the array is reported,
 /// so an entry the parse cannot see is never silently missing. The text is
 /// `""` for an entry that has none, which leaves nothing to cite.
-fn geometry_note_entries(info: &str) -> (Vec<(usize, &str, &str)>, Vec<String>) {
-    note_table_entries(info, GEOMETRY_NOTES_OPEN)
-}
-
-/// [`geometry_note_entries`] of `NEXT_GEOMETRY_NOTES`.
 fn next_geometry_note_entries(info: &str) -> (Vec<(usize, &str, &str)>, Vec<String>) {
     note_table_entries(info, NEXT_GEOMETRY_NOTES_OPEN)
 }
 
-/// The entries of both tables, `GEOMETRY_NOTES` first, and a line for every
-/// part of either that could not be read: every geometry line a widget can
-/// show.
-fn all_geometry_note_entries(info: &str) -> (Vec<(usize, &str, &str)>, Vec<String>) {
-    let (mut entries, mut unreadable) = geometry_note_entries(info);
-    let (next, next_unreadable) = next_geometry_note_entries(info);
-    entries.extend(next);
-    unreadable.extend(next_unreadable);
-    (entries, unreadable)
-}
-
 /// The entries of the table `table_open` declares, as
-/// [`geometry_note_entries`] reads them.
+/// [`next_geometry_note_entries`] reads them.
 fn note_table_entries<'a>(
     info: &'a str,
     table_open: &str,
@@ -523,13 +988,15 @@ fn note_table_entries<'a>(
     let mut entries = Vec::new();
     let mut unreadable = Vec::new();
     let Some(open) = info.find(table_open) else {
-        unreadable.push(format!("{GEOMETRY_NOTES_FILE}: no `{table_open}` found"));
+        unreadable.push(format!(
+            "{NEXT_GEOMETRY_NOTES_FILE}: no `{table_open}` found"
+        ));
         return (entries, unreadable);
     };
     let bracket = open + table_open.len() - 1;
     let Some(table) = call_args(info, bracket) else {
         unreadable.push(format!(
-            "{GEOMETRY_NOTES_FILE}:{}: the table never closes",
+            "{NEXT_GEOMETRY_NOTES_FILE}:{}: the table never closes",
             line_at(&starts, bracket)
         ));
         return (entries, unreadable);
@@ -554,7 +1021,7 @@ fn note_table_entries<'a>(
                 entries.push((line, name, text));
             }
             None => unreadable.push(format!(
-                "{GEOMETRY_NOTES_FILE}:{line}: not a (\"builder\", \"what\") entry: {}",
+                "{NEXT_GEOMETRY_NOTES_FILE}:{line}: not a (\"builder\", \"what\") entry: {}",
                 entry.trim()
             )),
         }
@@ -613,12 +1080,12 @@ fn code_calls(raw: &str, name: &str) -> Vec<usize> {
     out
 }
 
-/// Spec §3.3: every `pub fn` of geometry.rs has an entry in `GEOMETRY_NOTES`
-/// or in `NEXT_GEOMETRY_NOTES`, the 0.8.0 model's table, whose builders
-/// (`next::geometry`) bear the same names; neither table has an entry for
-/// anything but a builder of its own model, nor two for one builder -- the
+/// Spec §3.3: every `pub fn` of geometry.rs has an entry in
+/// `NEXT_GEOMETRY_NOTES`, the table of the 0.8.0 model's builders
+/// (`next::geometry`), which bear the same names; the table has no entry for
+/// anything but a builder of next/geometry.rs, nor two for one builder -- the
 /// value builders as well as the refinements, because an icon size or a gap
-/// is recorded with `.geometry(name)` too.
+/// is recorded through `next_native_value` too.
 #[test]
 fn every_geometry_builder_has_a_note() {
     let builders = public_fns(GEOMETRY);
@@ -631,9 +1098,7 @@ fn every_geometry_builder_has_a_note() {
         next_builders.contains(&"button") && next_builders.contains(&"input_fill"),
         "next/geometry.rs's builders could not be read: {next_builders:?}"
     );
-    let (noted, mut findings) = geometry_note_names(geometry_notes_source());
-    let (next_entries, next_unreadable) = next_geometry_note_entries(geometry_notes_source());
-    findings.extend(next_unreadable);
+    let (next_entries, mut findings) = next_geometry_note_entries(geometry_notes_source());
     let next_noted: Vec<(usize, &str)> = next_entries
         .into_iter()
         .map(|(line, name, _)| (line, name))
@@ -644,11 +1109,7 @@ fn every_geometry_builder_has_a_note() {
     );
 
     for builder in &builders {
-        if !noted
-            .iter()
-            .chain(&next_noted)
-            .any(|(_, name)| name == builder)
-        {
+        if !next_noted.iter().any(|(_, name)| name == builder) {
             let at = GEOMETRY
                 .lines()
                 .position(|l| {
@@ -661,36 +1122,30 @@ fn every_geometry_builder_has_a_note() {
                     |ix| format!("geometry.rs:{}", ix + 1),
                 );
             findings.push(format!(
-                "{at}: geometry::{builder} has no GEOMETRY_NOTES or NEXT_GEOMETRY_NOTES entry"
+                "{at}: geometry::{builder} has no NEXT_GEOMETRY_NOTES entry"
             ));
         }
     }
-    for (table, entries, declared, source) in [
-        ("GEOMETRY_NOTES", &noted, &builders, "geometry.rs"),
-        (
-            "NEXT_GEOMETRY_NOTES",
-            &next_noted,
-            &next_builders,
-            "next/geometry.rs",
-        ),
-    ] {
-        for (ix, (line, name)) in entries.iter().enumerate() {
-            if !declared.contains(name) {
-                findings.push(format!(
-                    "{GEOMETRY_NOTES_FILE}:{line}: a {table} entry for geometry::{name}, \
-                     which {source} does not declare"
-                ));
-            } else if entries.iter().take(ix).any(|(_, earlier)| earlier == name) {
-                findings.push(format!(
-                    "{GEOMETRY_NOTES_FILE}:{line}: a second {table} entry for geometry::{name}"
-                ));
-            }
+    for (ix, (line, name)) in next_noted.iter().enumerate() {
+        if !next_builders.contains(name) {
+            findings.push(format!(
+                "{NEXT_GEOMETRY_NOTES_FILE}:{line}: a NEXT_GEOMETRY_NOTES entry for geometry::{name}, \
+                 which next/geometry.rs does not declare"
+            ));
+        } else if next_noted
+            .iter()
+            .take(ix)
+            .any(|(_, earlier)| earlier == name)
+        {
+            findings.push(format!(
+                "{NEXT_GEOMETRY_NOTES_FILE}:{line}: a second NEXT_GEOMETRY_NOTES entry for geometry::{name}"
+            ));
         }
     }
 
     assert!(
         findings.is_empty(),
-        "GEOMETRY_NOTES or NEXT_GEOMETRY_NOTES and geometry.rs disagree, so a widget's geometry line \
+        "NEXT_GEOMETRY_NOTES and geometry.rs disagree, so a widget's geometry line \
          would describe the wrong builder or none:\n  {}",
         findings.join("\n  ")
     );
@@ -761,7 +1216,7 @@ fn understated_font_notes(entries: &[(usize, &str, &str)], builders: &[&str]) ->
         })
         .map(|(line, name, _)| {
             format!(
-                "{GEOMETRY_NOTES_FILE}:{line}: geometry::{name} sets its font's {WHOLE_FONT} \
+                "{NEXT_GEOMETRY_NOTES_FILE}:{line}: geometry::{name} sets its font's {WHOLE_FONT} \
                  (geometry.rs, with_text), but its note names only some of them"
             )
         })
@@ -770,7 +1225,7 @@ fn understated_font_notes(entries: &[(usize, &str, &str)], builders: &[&str]) ->
 
 /// A builder that sets a font's text sets all of it -- `with_text` gives the
 /// family, size, weight and style (and `with_coloured_text` the colour) --
-/// so its `GEOMETRY_NOTES` entry, where it lists the font's parts at all (it
+/// so its `NEXT_GEOMETRY_NOTES` entry, where it lists the font's parts at all (it
 /// names the family, the weight or the style), lists every one: a note that
 /// names a size and a weight alone hides the family the KDE reader states
 /// for the menu, toolbar and title-bar fonts (M9-039). A note naming the
@@ -783,10 +1238,10 @@ fn every_text_builders_note_names_the_whole_font() {
         !builders.is_empty(),
         "no geometry.rs builder calls with_text, so this test would pass vacuously"
     );
-    let (entries, unreadable) = all_geometry_note_entries(geometry_notes_source());
+    let (entries, unreadable) = next_geometry_note_entries(geometry_notes_source());
     assert!(
         unreadable.is_empty(),
-        "GEOMETRY_NOTES or NEXT_GEOMETRY_NOTES could not be read:\n  {}",
+        "NEXT_GEOMETRY_NOTES could not be read:\n  {}",
         unreadable.join("\n  ")
     );
     let findings = understated_font_notes(&entries, &builders);
@@ -815,7 +1270,7 @@ fn the_font_note_rule_does_its_job() {
     let caught: Vec<usize> = understated_font_notes(&planted, &builders)
         .iter()
         .filter_map(|line| {
-            line.strip_prefix(&format!("{GEOMETRY_NOTES_FILE}:"))
+            line.strip_prefix(&format!("{NEXT_GEOMETRY_NOTES_FILE}:"))
                 .and_then(|rest| rest.split(':').next())
                 .and_then(|n| n.parse().ok())
         })
@@ -855,18 +1310,18 @@ fn the_text_builder_reader_does_its_job() {
 }
 
 /// The tooltip builders' notes name what geometry.rs sets beyond the font
-/// and the colours: `geometry::tooltip` draws the edge
-/// `tooltip.border.line_width` wide over upstream's `border_1`, and
-/// `shadow_md`'s layers in `defaults.shadow_color` where
-/// `tooltip.border.shadow_enabled` holds; `geometry::tooltip_content`
-/// subtracts that width on each side, which a `1px border` would misstate
-/// under any other (material-3 states 0) (M9-038, M9-039).
+/// and the colours: `next::geometry::tooltip` draws the edge
+/// `tooltip.panel.stroke.width` wide over upstream's `border_1`, and
+/// `shadow_md`'s layers in `colors.shadow` where `tooltip.panel` states no
+/// shadows; `next::geometry::tooltip_content` subtracts that width on each
+/// side, which a `1px border` would misstate under any other (material-3
+/// states 0) (M9-038, M9-039).
 #[test]
 fn the_tooltip_notes_name_the_edge_and_the_shadow() {
-    let (entries, unreadable) = geometry_note_entries(geometry_notes_source());
+    let (entries, unreadable) = next_geometry_note_entries(geometry_notes_source());
     assert!(
         unreadable.is_empty(),
-        "GEOMETRY_NOTES could not be read:\n  {}",
+        "NEXT_GEOMETRY_NOTES could not be read:\n  {}",
         unreadable.join("\n  ")
     );
     let note = |builder: &str| {
@@ -877,31 +1332,31 @@ fn the_tooltip_notes_name_the_edge_and_the_shadow() {
     };
     let tooltip = note("tooltip");
     let missing: Vec<&str> = [
-        "tooltip.border.line_width",
+        "tooltip.panel.stroke.width",
         "border_1",
         "shadow_md",
-        "defaults.shadow_color",
-        "tooltip.border.shadow_enabled",
+        "colors.shadow",
+        "tooltip.panel states no shadows",
     ]
     .into_iter()
     .filter(|part| !tooltip.contains(part))
     .collect();
     assert!(
         missing.is_empty(),
-        "geometry::tooltip's note does not name {missing:?}: {tooltip}"
+        "next::geometry::tooltip's note does not name {missing:?}: {tooltip}"
     );
     let content = note("tooltip_content");
     assert!(
-        content.contains("tooltip.border.line_width on each side")
+        content.contains("tooltip.panel.stroke.width on each side")
             && !content.contains("1px border"),
-        "geometry::tooltip_content's note does not subtract tooltip.border.line_width on each side: {content}"
+        "next::geometry::tooltip_content's note does not subtract tooltip.panel.stroke.width on each side: {content}"
     );
 }
 
-/// Spec §5.2: every `native_info(w, cx, geometry::X, "Y", info)` records the
-/// builder it applies, `X == Y`, and so do its 0.8.0 forms,
-/// `next_native_info(w, cx, next::geometry::X, "Y", info)` and
-/// `next_native_value(cx, next::geometry::X, "Y", info)`.
+/// Spec §5.2: every `next_native_info(w, cx, next::geometry::X, "Y", info)`
+/// and `next_native_value(cx, next::geometry::X, "Y", info)` records the
+/// builder it applies, `X == Y`, and every `next_built(cx, next::geometry::X,
+/// "Y")`, whose value records it later, too.
 #[test]
 fn native_info_names_the_builder_it_applies() {
     let mut findings = Vec::new();
@@ -910,9 +1365,9 @@ fn native_info_names_the_builder_it_applies() {
         let starts = line_offsets(raw);
         // Each call and the index of its builder argument.
         let opens = [
-            ("native_info", 2),
             ("next_native_info", 2),
             ("next_native_value", 1),
+            ("next_built", 1),
         ]
         .into_iter()
         .flat_map(|(name, at)| {
@@ -925,8 +1380,11 @@ fn native_info_names_the_builder_it_applies() {
             let args = call_args(raw, open).unwrap_or_default();
             let applied = args.get(at).map(|a| a.trim());
             let recorded = args.get(at + 1).map(|a| a.trim());
-            // `next_native_info` hands its own builder and name on.
-            if *file == GEOMETRY_NOTES_FILE && applied == Some("build") && recorded == Some("name")
+            // `next_native_info` and `next_native_value` hand their own
+            // builder and name on.
+            if *file == NEXT_GEOMETRY_NOTES_FILE
+                && applied == Some("build")
+                && recorded == Some("name")
             {
                 continue;
             }
@@ -956,34 +1414,12 @@ fn native_info_names_the_builder_it_applies() {
     );
 }
 
-/// Every `.geometry(` method call in `raw` that is code, as the line it is on
-/// and its argument when that is a single string literal.
-///
-/// A method call only: the path `geometry::x` and the declaration
-/// `fn geometry(` are not calls of it. A call whose argument is not a literal
-/// yields `None`; the two such calls are `native_info`'s own
-/// `.geometry(name)` and `next_native_value`'s, through which
-/// `next_native_info` records, whose `name`
-/// `native_info_names_the_builder_it_applies` holds instead.
-fn geometry_line_calls(raw: &str) -> Vec<(usize, Option<&str>)> {
-    let starts = line_offsets(raw);
-    method_calls(raw, "geometry")
-        .into_iter()
-        .map(|open| {
-            let literal = call_args(raw, open)
-                .filter(|args| args.len() == 1)
-                .and_then(|args| args.first().copied())
-                .and_then(unquote);
-            (line_at(&starts, open), literal)
-        })
-        .collect()
-}
-
 /// Every call in `raw` that records a builder on the 0.8.0 model, which takes
 /// its line from `NEXT_GEOMETRY_NOTES`: a `.next_geometry(` method call, and
-/// a `next_native_info` or `next_native_value` call, as the line it is on,
-/// what it is, and the name it records when that is a single string literal.
-/// `next_native_info` hands its own `name` on, which yields `None`.
+/// a `next_native_info`, `next_native_value` or `next_built` call, as the
+/// line it is on, what it is, and the name it records when that is a single
+/// string literal. `next_native_info` and `next_native_value` hand their own
+/// `name` on, which yields `None`.
 fn next_geometry_line_calls(raw: &str) -> Vec<(usize, &'static str, Option<&str>)> {
     let starts = &line_offsets(raw);
     let method = method_calls(raw, "next_geometry").into_iter().map(|open| {
@@ -993,37 +1429,31 @@ fn next_geometry_line_calls(raw: &str) -> Vec<(usize, &'static str, Option<&str>
             .and_then(unquote);
         (line_at(starts, open), ".next_geometry", literal)
     });
-    let applied = [("next_native_info", 3), ("next_native_value", 2)]
-        .into_iter()
-        .flat_map(|(name, at)| {
-            code_calls(raw, name).into_iter().map(move |open| {
-                let literal = call_args(raw, open)
-                    .and_then(|args| args.get(at).copied())
-                    .and_then(|arg| unquote(arg.trim()));
-                (line_at(starts, open), name, literal)
-            })
-        });
+    let applied = [
+        ("next_native_info", 3),
+        ("next_native_value", 2),
+        ("next_built", 2),
+    ]
+    .into_iter()
+    .flat_map(|(name, at)| {
+        code_calls(raw, name).into_iter().map(move |open| {
+            let literal = call_args(raw, open)
+                .and_then(|args| args.get(at).copied())
+                .and_then(|arg| unquote(arg.trim()));
+            (line_at(starts, open), name, literal)
+        })
+    });
     method.chain(applied).collect()
 }
 
-/// Spec §3.3: a builder named straight to `.geometry("x")` -- the way a value
-/// builder such as `icon_size_small` or `widget_gap` is recorded, since only a
-/// refinement can go through `native_info` -- names a `GEOMETRY_NOTES` entry,
-/// so "(no GEOMETRY_NOTES entry)" never reaches the inspector; and a builder
-/// recorded on the 0.8.0 model (`.next_geometry("x")`, `next_native_info`,
-/// `next_native_value`) names a `NEXT_GEOMETRY_NOTES` entry.
+/// Spec §3.3: a builder recorded (`.next_geometry("x")`, `next_native_info`,
+/// `next_native_value`) names a `NEXT_GEOMETRY_NOTES` entry, so
+/// "(no NEXT_GEOMETRY_NOTES entry)" never reaches the inspector.
 ///
 /// The test module is left out: it names a builder that does not exist on
 /// purpose, to see that line.
 #[test]
 fn every_recorded_builder_has_a_note() {
-    let (noted, unreadable) = geometry_note_names(geometry_notes_source());
-    assert!(
-        unreadable.is_empty() && !noted.is_empty(),
-        "GEOMETRY_NOTES could not be read, so no recorded builder can be checked \
-         against it:\n  {}",
-        unreadable.join("\n  ")
-    );
     let (next_entries, next_unreadable) = next_geometry_note_entries(geometry_notes_source());
     assert!(
         next_unreadable.is_empty() && !next_entries.is_empty(),
@@ -1032,35 +1462,8 @@ fn every_recorded_builder_has_a_note() {
         next_unreadable.join("\n  ")
     );
     let mut findings = Vec::new();
-    let mut recorded = 0usize;
     let mut next_recorded = 0usize;
     for (file, raw) in demo_files() {
-        for (line, literal) in geometry_line_calls(raw) {
-            recorded += usize::from(literal.is_some());
-            if let Some(name) = literal
-                && !noted.iter().any(|(_, noted)| *noted == name)
-            {
-                findings.push(format!(
-                    "{file}:{line}: .geometry(\"{name}\") names no GEOMETRY_NOTES entry"
-                ));
-            }
-        }
-        let starts = line_offsets(raw);
-        for open in code_calls(raw, "native_info") {
-            let literal = call_args(raw, open)
-                .and_then(|args| args.get(3).copied())
-                .and_then(|arg| unquote(arg.trim()));
-            recorded += usize::from(literal.is_some());
-            if let Some(name) = literal
-                && !noted.iter().any(|(_, noted)| *noted == name)
-            {
-                findings.push(format!(
-                    "{file}:{}: native_info records \"{name}\", which names no \
-                     GEOMETRY_NOTES entry",
-                    line_at(&starts, open)
-                ));
-            }
-        }
         for (line, call, literal) in next_geometry_line_calls(raw) {
             next_recorded += usize::from(literal.is_some());
             if let Some(name) = literal
@@ -1074,14 +1477,14 @@ fn every_recorded_builder_has_a_note() {
         }
     }
     assert!(
-        recorded > 0 && next_recorded > 0,
-        "no `.geometry(\"x\")` call, or no builder recorded on the 0.8.0 model, found \
-         outside the test module, so this test would pass vacuously"
+        next_recorded > 0,
+        "no builder recorded found outside the test module, so this test would pass \
+         vacuously"
     );
     assert!(
         findings.is_empty(),
-        "a widget records a builder GEOMETRY_NOTES does not describe, so its \
-         geometry line reads \"(no GEOMETRY_NOTES entry)\":\n  {}",
+        "a widget records a builder NEXT_GEOMETRY_NOTES does not describe, so its \
+         geometry line reads \"(no NEXT_GEOMETRY_NOTES entry)\":\n  {}",
         findings.join("\n  ")
     );
 }
@@ -1105,37 +1508,24 @@ fn names_builder(code: &str, name: &str, next: bool) -> bool {
     })
 }
 
-/// Every note has a caller of its model in a demo: a `GEOMETRY_NOTES` entry
-/// a `geometry::<name>` not preceded by `next::`, a `NEXT_GEOMETRY_NOTES`
+/// Every note has a caller of its model in a demo: a `NEXT_GEOMETRY_NOTES`
 /// entry a `next::geometry::<name>`. A note whose builder no demo calls any
-/// more -- its last 0.7.2 caller ported -- describes nothing the inspector
-/// can show, and goes.
+/// more describes nothing the inspector can show, and goes.
 #[test]
 fn every_geometry_note_has_a_caller_of_its_model() {
-    let source = geometry_notes_source();
-    let (noted, mut findings) = geometry_note_names(source);
-    let (next_entries, next_unreadable) = next_geometry_note_entries(source);
-    findings.extend(next_unreadable);
+    let (next_entries, mut findings) = next_geometry_note_entries(geometry_notes_source());
     assert!(
-        !noted.is_empty() && !next_entries.is_empty(),
-        "GEOMETRY_NOTES or NEXT_GEOMETRY_NOTES has no entry, so this test would pass vacuously"
+        !next_entries.is_empty(),
+        "NEXT_GEOMETRY_NOTES has no entry, so this test would pass vacuously"
     );
     let code: Vec<String> = demo_files()
         .map(|(_, raw)| without_comments_or_strings(raw))
         .collect();
-    let next_noted = next_entries.into_iter().map(|(line, name, _)| (line, name));
-    let tables = noted
-        .into_iter()
-        .map(|(line, name)| ("GEOMETRY_NOTES", "geometry", false, line, name))
-        .chain(
-            next_noted
-                .map(|(line, name)| ("NEXT_GEOMETRY_NOTES", "next::geometry", true, line, name)),
-        );
-    for (table, model, next, line, name) in tables {
-        if !code.iter().any(|text| names_builder(text, name, next)) {
+    for (line, name, _) in next_entries {
+        if !code.iter().any(|text| names_builder(text, name, true)) {
             findings.push(format!(
-                "{GEOMETRY_NOTES_FILE}:{line}: the {table} entry for {name}, which no demo \
-                 calls as {model}::{name}"
+                "{NEXT_GEOMETRY_NOTES_FILE}:{line}: the NEXT_GEOMETRY_NOTES entry for {name}, \
+                 which no demo calls as next::geometry::{name}"
             ));
         }
     }
@@ -1168,7 +1558,13 @@ fn names_builder_tells_the_models_apart() {
 /// text, a comment, a longer name, a path or the declaration.
 #[test]
 fn the_geometry_note_parsers_do_their_jobs() {
-    let table = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
+    let names = |(entries, _): (Vec<(usize, &'static str, &'static str)>, Vec<String>)| {
+        entries
+            .into_iter()
+            .map(|(line, name, _)| (line, name))
+            .collect::<Vec<_>>()
+    };
+    let table = "pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
                  \x20   (\"button\", \"a, b (c)\"),\n\
                  \x20   (\n\
                  \x20       \"input\",\n\
@@ -1176,43 +1572,25 @@ fn the_geometry_note_parsers_do_their_jobs() {
                  \x20   ),\n\
                  \x20   \"stray\",\n\
                  ];\n";
-    let (names, unreadable) = geometry_note_names(table);
-    assert_eq!(names, vec![(2, "button"), (3, "input")]);
     assert_eq!(
-        unreadable,
+        names(next_geometry_note_entries(table)),
+        vec![(2, "button"), (3, "input")]
+    );
+    assert_eq!(
+        next_geometry_note_entries(table).1,
         vec!["info/mod.rs:7: not a (\"builder\", \"what\") entry: \"stray\"".to_string()]
     );
 
-    let source = "pub fn native_info<W>(w: W) -> W { w }\n\
-                  fn native_info(w: W) -> W { w }\n\
-                  // native_info(w, cx, geometry::button, \"input\", info)\n\
-                  let s = \"native_info(w)\";\n\
-                  my_native_info(w);\n\
-                  let w = native_info(w, cx, geometry::button, \"button\", &mut info);\n";
-    let calls = code_calls(source, "native_info");
+    let source = "pub fn next_native_info<W>(w: W) -> W { w }\n\
+                  fn next_native_info(w: W) -> W { w }\n\
+                  // next_native_info(w, cx, next::geometry::button, \"input\", info)\n\
+                  let s = \"next_native_info(w)\";\n\
+                  my_next_native_info(w);\n\
+                  let w = next_native_info(w, cx, next::geometry::button, \"button\", &mut info);\n";
+    let calls = code_calls(source, "next_native_info");
     let starts = line_offsets(source);
     let lines: Vec<usize> = calls.iter().map(|&at| line_at(&starts, at)).collect();
     assert_eq!(lines, vec![6]);
-
-    let recorded = "pub fn geometry(self, builder: &'static str) -> Self {\n\
-                    \x20   *info = std::mem::take(info).geometry(name);\n\
-                    }\n\
-                    // info.geometry(\"commented\")\n\
-                    let s = \".geometry(\\\"quoted\\\")\";\n\
-                    let r = geometry::button(n);\n\
-                    let a = WidgetInfo::new(\"Icon\").geometry(\"icon_size_small\");\n\
-                    let b = WidgetInfo::new(\"Icon\")\n\
-                    \x20   .geometry(\n\
-                    \x20       \"icon_size_smal\",\n\
-                    \x20   );\n";
-    assert_eq!(
-        geometry_line_calls(recorded),
-        vec![
-            (2, None),
-            (7, Some("icon_size_small")),
-            (9, Some("icon_size_smal"))
-        ]
-    );
 
     let next = "pub fn next_geometry(self, builder: &'static str) -> Self {\n\
                 \x20   *info = std::mem::take(info).next_geometry(name);\n\
@@ -1221,7 +1599,8 @@ fn the_geometry_note_parsers_do_their_jobs() {
                 let a = info.next_geometry(\"button_disabled\");\n\
                 let b = next_native_info(w, cx, next::geometry::button, \"button\", &mut info);\n\
                 let c = next_native_value(cx, next::geometry::icon_size_small, \"icon_size_small\", &mut info);\n\
-                let d = info.geometry(\"button\");\n";
+                let d = info.geometry(\"button\");\n\
+                let e = info::next_built(cx, next::geometry::dialog, \"dialog\");\n";
     assert_eq!(
         next_geometry_line_calls(next),
         vec![
@@ -1229,21 +1608,15 @@ fn the_geometry_note_parsers_do_their_jobs() {
             (5, ".next_geometry", Some("button_disabled")),
             (6, "next_native_info", Some("button")),
             (7, "next_native_value", Some("icon_size_small")),
+            (9, "next_built", Some("dialog")),
         ]
     );
-    let table = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
+    let table = "pub const OTHER_NOTES: &[(&str, &str)] = &[\n\
                  \x20   (\"button\", \"a\"),\n\
                  ];\n\
                  pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
                  \x20   (\"toggle\", \"b\"),\n\
                  ];\n";
-    let names = |(entries, _): (Vec<(usize, &'static str, &'static str)>, Vec<String>)| {
-        entries
-            .into_iter()
-            .map(|(line, name, _)| (line, name))
-            .collect::<Vec<_>>()
-    };
-    assert_eq!(names(geometry_note_entries(table)), vec![(2, "button")]);
     assert_eq!(
         names(next_geometry_note_entries(table)),
         vec![(5, "toggle")]
@@ -2562,11 +2935,13 @@ fn value_reads_field(value: &str, field: &str) -> bool {
 /// (`info/mod.rs`), by the property: the part's or the text's value where the
 /// theme states it. At a state other than `NONE` the helper's `state_` form
 /// may stand in its place, which reads the value only where a rule states it
-/// for that state, as 0.7.2's soft option of a state.
+/// for that state, as 0.7.2's soft option of a state. A text's `color` and an
+/// icon's (`expander.arrow(NONE).color`) each have a helper of their own.
 const HOME_PROPERTIES: &[(&str, &str)] = &[
     ("fill", "fill_of"),
     ("stroke.color", "stroke_color_of"),
     ("color", "text_color_of"),
+    ("color", "icon_color_of"),
 ];
 
 /// Whether a claim's `field` is in the 0.8.0 form: a home as the table of
@@ -2683,15 +3058,18 @@ fn home_value_finding(value: &str, field: &str) -> Option<String> {
                 .to_string(),
         );
     };
-    let Some(&(_, helper)) = HOME_PROPERTIES.iter().find(|(p, _)| *p == property) else {
+    let mut helpers: Vec<String> = Vec::new();
+    for (_, helper) in HOME_PROPERTIES.iter().filter(|(p, _)| *p == property) {
+        helpers.push(helper.to_string());
+        if states != ["NONE"] {
+            helpers.push(format!("state_{helper}"));
+        }
+    }
+    if helpers.is_empty() {
         return Some(format!("no helper of HOME_PROPERTIES reads `{property}`"));
-    };
+    }
     let mut wanted: Vec<String> = states.iter().map(|s| format!("WidgetState::{s}")).collect();
     wanted.sort();
-    let mut helpers = vec![helper.to_string()];
-    if states != ["NONE"] {
-        helpers.push(format!("state_{helper}"));
-    }
     let read = helpers.iter().any(|helper| {
         calls_of(&code, helper)
             .iter()
@@ -2749,14 +3127,45 @@ fn mentions_home(haystack: &str, home: &str) -> bool {
     })
 }
 
-/// Whether the cited `span` names the home `home`: spelt whole
-/// ([`mentions_home`]), or, for a global's path (`colors.focus_ring`), read
+/// `text` with each line's `//` comment, doc comments included, removed: a
+/// `//` inside a string literal is kept, and the strings are kept.
+fn without_line_comments(text: &str) -> String {
+    text.lines()
+        .map(|line| {
+            let mut in_string = false;
+            let mut escaped = false;
+            let mut previous = None;
+            let mut end = line.len();
+            for (ix, c) in line.char_indices() {
+                if in_string {
+                    match c {
+                        _ if escaped => escaped = false,
+                        '\\' => escaped = true,
+                        '"' => in_string = false,
+                        _ => {}
+                    }
+                } else if c == '"' {
+                    in_string = true;
+                } else if c == '/' && previous == Some('/') {
+                    end = ix.saturating_sub(1);
+                    break;
+                }
+                previous = Some(c);
+            }
+            line.get(..end).unwrap_or(line)
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Whether the cited `span` names the home `home` in code, not in a comment:
+/// spelt whole ([`mentions_home`]), or, for a global's path (`colors.focus_ring`), read
 /// in code at that path off a binding of a 0.8.0 theme, one of the names
 /// the connector gives it ([`THEME_BINDINGS`]), `r.colors.focus_ring`, the
 /// binding no field of a longer path and no longer name after it -- a
 /// global has no query for its reader to spell.
 fn names_home(span: &str, home: &str) -> bool {
-    if mentions_home(span, home) {
+    if mentions_home(&without_line_comments(span), home) {
         return true;
     }
     if home.contains('(') {
@@ -3721,7 +4130,7 @@ fn the_omission_report() {
                 .flat_map(|(_, what, text)| [what, text]),
         );
     }
-    let (notes, _) = all_geometry_note_entries(geometry_notes_source());
+    let (notes, _) = next_geometry_note_entries(geometry_notes_source());
     said.extend(notes.into_iter().map(|(_, _, text)| text));
     let said = said.join("\n");
 
@@ -4213,7 +4622,7 @@ fn the_prose_citation_readers_do_their_jobs() {
 ///
 /// A note written as a call is read whichever section it fills -- a config
 /// line or an instance note citing upstream is as exposed to a deletion -- and
-/// so is every `GEOMETRY_NOTES` text, which reaches the inspector as a config
+/// so is every `NEXT_GEOMETRY_NOTES` text, which reaches the inspector as a config
 /// line, and every `HOW` line, which Widget Info shows under a listed leaf.
 /// Both forms are read: `file.rs, Symbol` holds where exactly one file of
 /// that name has the symbol, `file.rs:N-M, Symbol` where exactly one has the
@@ -4253,14 +4662,14 @@ fn every_prose_citation_still_exists() {
     // call of its own (spec §3.3).
     let info = geometry_notes_source();
     let starts = line_offsets(info);
-    let (notes, _) = all_geometry_note_entries(info);
+    let (notes, _) = next_geometry_note_entries(info);
     let geometry_citations: usize = notes
         .iter()
         .map(|(_, _, text)| prose_citations(text).len())
         .sum();
     for (_, name, text) in notes {
         let line = line_at(&starts, offset_in(info, text));
-        prose.push((GEOMETRY_NOTES_FILE, line, name, text));
+        prose.push((NEXT_GEOMETRY_NOTES_FILE, line, name, text));
     }
     // The route lines, which a listed element's info shows under each leaf.
     let how = how_lines(how_source());
@@ -4275,7 +4684,12 @@ fn every_prose_citation_still_exists() {
         .map(|h| line_citations(h.text).len() + prose_citations(h.text).len())
         .sum();
     for h in &how {
-        prose.push((HOW_FILE, h.line, h.leaf, h.text));
+        prose.push((
+            HOW_FILE,
+            h.line,
+            h.homes.first().copied().unwrap_or(h.prefix),
+            h.text,
+        ));
     }
 
     let unreadable: Vec<String> = SHOWCASE_FILES
@@ -4327,7 +4741,7 @@ fn every_prose_citation_still_exists() {
     );
     assert!(
         geometry_citations > 0,
-        "no `file.rs, Symbol` citation found in GEOMETRY_NOTES, so its texts \
+        "no `file.rs, Symbol` citation found in NEXT_GEOMETRY_NOTES, so its texts \
          went unchecked"
     );
     assert!(
@@ -4346,9 +4760,9 @@ fn every_prose_citation_still_exists() {
 // The route lines: info::leaves::HOW
 // ---------------------------------------------------------------------------
 //
-// Under each `<leaf> <value>` row of a listed element, Widget Info shows how
-// gpui applies the leaf: the first `HOW` entry whose prefix the element's id
-// starts with and whose leaf matches (`info::leaves::how`). The table is a
+// Under each `<home> <value>` row of a listed element, Widget Info shows how
+// gpui applies the home: the first `HOW` entry whose prefix the element's id
+// starts with and whose homes hold it (`info::leaves::how`). The table is a
 // `const` of string tuples, so no note call carries its texts and the prose
 // gates would not read them; it is read here, from the file as written.
 
@@ -4356,13 +4770,13 @@ fn every_prose_citation_still_exists() {
 const HOW_FILE: &str = "info/leaves.rs";
 
 /// The line that opens `HOW`.
-const HOW_OPEN: &str = "pub const HOW: &[(&str, &str, &str)] = &[";
+const HOW_OPEN: &str = "pub const HOW: &[(&str, &[&str], &str)] = &[";
 
 /// One entry of `HOW`, and the line its first string is written on.
 struct HowLine<'a> {
     line: usize,
     prefix: &'a str,
-    leaf: &'a str,
+    homes: Vec<&'a str>,
     text: &'a str,
 }
 
@@ -4374,9 +4788,10 @@ fn how_source() -> &'static str {
         .map_or("", |(_, text)| *text)
 }
 
-/// Every entry of the `HOW` table in `raw`, in order: its strings read three
-/// at a time, comments skipped. An error where the table is missing, does
-/// not close, or holds a string count that is no multiple of three.
+/// Every entry of the `HOW` table in `raw`, in order: each tuple's prefix,
+/// the strings of its `&[...]` list as its homes and its line, comments
+/// skipped. An error where the table is missing or does not close, or where
+/// an entry is not a prefix, a list of one home or more, and a line.
 fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
     let open = raw
         .find(HOW_OPEN)
@@ -4388,7 +4803,10 @@ fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
         .map(|ix| open + ix)
         .ok_or_else(|| format!("{HOW_FILE}'s HOW does not close"))?;
     let starts = line_offsets(raw);
-    let mut strings = Vec::new();
+    // Each entry's strings, each with its line and whether the list holds it.
+    let mut entries: Vec<Vec<(usize, &str, bool)>> = Vec::new();
+    let mut entry = Vec::new();
+    let mut in_list = false;
     let mut at = open;
     while let Some(rest) = raw.get(at..close).filter(|rest| !rest.is_empty()) {
         if let Some(after) = rest.strip_prefix("//") {
@@ -4396,43 +4814,67 @@ fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
         } else if let Some(body) = rest.strip_prefix('"') {
             let len = end_of_string(body, "\"");
             let text = body.get(..len.saturating_sub(1)).unwrap_or("");
-            strings.push((line_at(&starts, at), text));
+            entry.push((line_at(&starts, at), text, in_list));
             at += 1 + len;
         } else {
+            if rest.starts_with("&[") {
+                in_list = true;
+            } else if rest.starts_with(']') {
+                in_list = false;
+            } else if rest.starts_with(')') && !in_list {
+                entries.push(std::mem::take(&mut entry));
+            }
             at += char_len(rest);
         }
     }
-    if strings.len() % 3 != 0 {
+    if !entry.is_empty() {
         return Err(format!(
-            "{HOW_FILE}'s HOW holds {} strings, not three to an entry",
-            strings.len()
+            "{HOW_FILE}'s HOW holds strings after its last entry: {entry:?}"
         ));
     }
-    Ok(strings
-        .as_chunks::<3>()
-        .0
+    entries
         .iter()
-        .map(|&[(line, prefix), (_, leaf), (_, text)]| HowLine {
-            line,
-            prefix,
-            leaf,
-            text,
+        .map(|strings| {
+            how_entry(strings).ok_or_else(|| {
+                format!(
+                    "{HOW_FILE}'s HOW holds an entry that is not (prefix, &[home, ...], line): \
+                     {strings:?}"
+                )
+            })
         })
-        .collect())
+        .collect()
 }
 
-/// The index in `lines` of the entry `info::leaves::how` picks for `leaf` of
-/// the element `element`: the first whose leaf matches and whose prefix the
-/// id starts with.
-fn chosen_how(lines: &[HowLine<'_>], element: &str, leaf: &str) -> Option<usize> {
+/// The `HOW` entry of `strings`, one tuple's strings as [`how_lines`] reads
+/// them: a prefix outside the list, one home or more in it, and a line
+/// outside it; `None` for any other shape.
+fn how_entry<'a>(strings: &[(usize, &'a str, bool)]) -> Option<HowLine<'a>> {
+    let (&(line, prefix, prefix_listed), rest) = strings.split_first()?;
+    let (&(_, text, text_listed), homes) = rest.split_last()?;
+    let shaped = !prefix_listed
+        && !text_listed
+        && !homes.is_empty()
+        && homes.iter().all(|&(_, _, listed)| listed);
+    shaped.then(|| HowLine {
+        line,
+        prefix,
+        homes: homes.iter().map(|&(_, home, _)| home).collect(),
+        text,
+    })
+}
+
+/// The index in `lines` of the entry `info::leaves::how` picks for `home`
+/// of the element `element`: the first whose homes hold it and whose prefix
+/// the id starts with.
+fn chosen_how(lines: &[HowLine<'_>], element: &str, home: &str) -> Option<usize> {
     lines
         .iter()
-        .position(|h| h.leaf == leaf && element.starts_with(h.prefix))
+        .position(|h| h.homes.contains(&home) && element.starts_with(h.prefix))
 }
 
-/// Every `HOW` entry is the line Widget Info shows for at least one leaf of
+/// Every `HOW` entry is the line Widget Info shows for at least one home of
 /// one element of docs/showcase-elements.toml. An entry every lister of its
-/// leaf reaches a more specific entry before is a line no reader ever sees,
+/// homes reaches a more specific entry before is a line no reader ever sees,
 /// and one nobody reads either, so it drifts unnoticed.
 #[test]
 fn every_how_entry_is_shown() {
@@ -4458,65 +4900,86 @@ fn every_how_entry_is_shown() {
     );
     let shown: BTreeSet<usize> = elements
         .iter()
-        .flat_map(|e| e.leaves.iter().map(move |leaf| (e.id.as_str(), leaf)))
-        .filter_map(|(id, leaf)| chosen_how(&lines, id, leaf))
+        .flat_map(|e| e.homes.iter().map(move |home| (e.id.as_str(), home)))
+        .filter_map(|(id, home)| chosen_how(&lines, id, home))
         .collect();
     let unseen: Vec<String> = lines
         .iter()
         .enumerate()
         .filter(|(ix, _)| !shown.contains(ix))
-        .map(|(_, h)| format!("{HOW_FILE}:{}: (\"{}\", \"{}\")", h.line, h.prefix, h.leaf))
+        .map(|(_, h)| format!("{HOW_FILE}:{}: (\"{}\", {:?})", h.line, h.prefix, h.homes))
         .collect();
     assert!(
         unseen.is_empty(),
-        "{} of {} HOW entries are the shown line for no listed element's leaf -- every \
-         element that lists the leaf takes an earlier entry:\n  {}",
+        "{} of {} HOW entries are the shown line for no listed element's home -- every \
+         element that lists its homes takes an earlier entry:\n  {}",
         unseen.len(),
         lines.len(),
         unseen.join("\n  ")
     );
 }
 
-/// The `HOW` reader reads each entry, written on three lines or one, and
-/// skips a comment between them; a stray string is an error.
+/// The `HOW` reader reads each entry, written on several lines or one, its
+/// list of one home or more, the parentheses and brackets inside a string
+/// left to the string, and skips a comment between them; an entry of
+/// another shape is an error.
 #[test]
 fn the_how_reader_does_its_job() {
-    let source = "x\npub const HOW: &[(&str, &str, &str)] = &[\n    // --- a \"b\" ---\n    (\n        \"basic.a\",\n        \"a.b\",\n        \"gpui: c (demo::d)\",\n    ),\n    (\"\", \"a.b\", \"gpui: e\"),\n];\n";
+    let source = "x\npub const HOW: &[(&str, &[&str], &str)] = &[\n    // --- a \"b\" ---\n    (\n        \"basic.a\",\n        &[\"a.b(NONE).fill\", \"c.d(NONE).min_size[1]\"],\n        \"gpui: c (demo::d)\",\n    ),\n    (\"\", &[\"a.b(NONE).fill\"], \"gpui: e\"),\n];\n";
     let lines = how_lines(source).unwrap_or_default();
-    let read: Vec<(usize, &str, &str, &str)> = lines
+    let read: Vec<(usize, &str, Vec<&str>, &str)> = lines
         .iter()
-        .map(|h| (h.line, h.prefix, h.leaf, h.text))
+        .map(|h| (h.line, h.prefix, h.homes.clone(), h.text))
         .collect();
     assert_eq!(
         read,
         [
-            (5, "basic.a", "a.b", "gpui: c (demo::d)"),
-            (9, "", "a.b", "gpui: e")
+            (
+                5,
+                "basic.a",
+                vec!["a.b(NONE).fill", "c.d(NONE).min_size[1]"],
+                "gpui: c (demo::d)"
+            ),
+            (9, "", vec!["a.b(NONE).fill"], "gpui: e")
         ]
     );
-    assert_eq!(chosen_how(&lines, "basic.a.x", "a.b"), Some(0));
-    assert_eq!(chosen_how(&lines, "chrome.y", "a.b"), Some(1));
-    assert_eq!(chosen_how(&lines, "chrome.y", "a.c"), None);
-    assert!(
-        how_lines("pub const HOW: &[(&str, &str, &str)] = &[\n    (\"a\", \"b\"),\n];\n").is_err()
+    assert_eq!(chosen_how(&lines, "basic.a.x", "a.b(NONE).fill"), Some(0));
+    assert_eq!(
+        chosen_how(&lines, "basic.a.x", "c.d(NONE).min_size[1]"),
+        Some(0)
     );
+    assert_eq!(chosen_how(&lines, "chrome.y", "a.b(NONE).fill"), Some(1));
+    assert_eq!(
+        chosen_how(&lines, "chrome.y", "c.d(NONE).min_size[1]"),
+        None
+    );
+    let open = "pub const HOW: &[(&str, &[&str], &str)] = &[\n";
+    for entry in [
+        "    (\"a\", \"b\"),\n",
+        "    (\"a\", \"b\", \"c\"),\n",
+        "    (\"a\", &[], \"c\"),\n",
+        "    (&[\"a\"], \"b\", \"c\"),\n",
+    ] {
+        assert!(
+            how_lines(&format!("{open}{entry}];\n")).is_err(),
+            "{entry:?} is read as an entry"
+        );
+    }
     assert!(how_lines("const NOT: u8 = 1;").is_err());
 }
 
-/// The field a leaf names, as code reads it: its last segment without the
-/// unit suffix, and `padding` for a padding side (`border.padding_top_px`
-/// is read as `padding.top`).
-fn leaf_field(leaf: &str) -> &str {
-    let last = leaf.rsplit('.').next().unwrap_or(leaf);
-    let bare = last
-        .strip_suffix("_px")
-        .or_else(|| last.strip_suffix("_ms"))
-        .unwrap_or(last);
-    if bare.starts_with("padding_") {
-        "padding"
-    } else {
-        bare
+/// The field a home names, as code reads it: its last segment without an
+/// index (`min_size[1]` is read as `min_size`), `padding` for a padding side
+/// (`padding.top`), and a whole text style's part (`button.label(NONE)`) by
+/// the part's name.
+fn home_field(home: &str) -> &str {
+    let mut segments = home.rsplit('.');
+    let last = segments.next().unwrap_or(home);
+    if segments.next() == Some("padding") {
+        return "padding";
     }
+    let bare = last.split('[').next().unwrap_or(last);
+    bare.split('(').next().unwrap_or(bare)
 }
 
 /// The identifiers that follow `module::` in `text`, in order.
@@ -4552,12 +5015,81 @@ fn impl_bodies(code: &str, name: &str) -> Vec<std::ops::Range<usize>> {
         .collect()
 }
 
+/// The connector's 0.8.0 module: its read helpers (`fill_of`, `padding_of`,
+/// `radius_of`), through which a builder reads a part's field.
+const NEXT_MOD: &str = include_str!("next/mod.rs");
+
+/// Every function with a body in `sources`, as (its name, its [`blanked`]
+/// body), in source order.
+fn fn_bodies(sources: &[&str]) -> Vec<(String, String)> {
+    sources
+        .iter()
+        .flat_map(|source| {
+            let code = blanked(source);
+            fn_items(source, &code)
+                .iter()
+                .filter_map(|f| Some((f.name.to_string(), code.get(f.body.clone())?.to_string())))
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+/// The names `code` calls: each identifier an opening parenthesis follows,
+/// a free function's, a path's last segment or a method's.
+fn called_names(code: &str) -> Vec<&str> {
+    code.match_indices('(')
+        .filter_map(|(ix, _)| {
+            let before = code.get(..ix)?;
+            let start = before
+                .trim_end_matches(|c: char| c.is_alphanumeric() || c == '_')
+                .len();
+            let name = before.get(start..)?;
+            name.starts_with(|c: char| c.is_alphabetic() || c == '_')
+                .then_some(name)
+        })
+        .collect()
+}
+
+/// `start` with the body of every function of `table` it calls, directly or
+/// through another, as one text: what a route runs, where it reads a field
+/// through a read helper (`next::fill_of`) or another builder rather than in
+/// its own body.
+fn reach(start: String, table: &[(String, String)]) -> String {
+    let mut seen: Vec<&str> = Vec::new();
+    let mut queue = vec![start];
+    let mut out = String::new();
+    while let Some(body) = queue.pop() {
+        for name in called_names(&body) {
+            for (callee, callee_body) in table.iter().filter(|(n, _)| n == name) {
+                if !seen.contains(&callee.as_str()) {
+                    queue.push(callee_body.clone());
+                }
+            }
+            if let Some((callee, _)) = table.iter().find(|(n, _)| n == name)
+                && !seen.contains(&callee.as_str())
+            {
+                seen.push(callee.as_str());
+            }
+        }
+        out.push_str(&body);
+        out.push('\n');
+    }
+    out
+}
+
 /// What a `HOW` line says applies its leaf: each showcase function it names
 /// (`demo::name`, or a `demo::Type`'s methods), each showcase file it names
-/// whole (`(inspector.rs)`), each connector builder (`geometry::name`) and
+/// whole (`(inspector.rs)`), each 0.8.0 builder or variant of the connector
+/// (`next::geometry::name`, `next::variants::name`, read in `next/builders.rs`
+/// where its body is, else in its own module) and
 /// each connector control (`widgets::Name`, its file), as (the route, its
-/// code). A route this cannot find is listed with no code.
-fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<String>)> {
+/// code). A function's code is what it [`reach`]es in `table`. A route this
+/// cannot find is listed with no code.
+fn how_routes(
+    text: &str,
+    widgets: &[(String, String)],
+    table: &[(String, String)],
+) -> Vec<(String, Option<String>)> {
     let file = |path: &str| {
         SHOWCASE_FILES
             .iter()
@@ -4582,7 +5114,10 @@ fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<S
                 .iter()
                 .filter_map(|range| code.get(range.clone()))
                 .collect();
-            out.push((format!("demo::{name}"), (!body.is_empty()).then_some(body)));
+            out.push((
+                format!("demo::{name}"),
+                (!body.is_empty()).then(|| reach(body, table)),
+            ));
         }
     }
     for (path, raw) in SHOWCASE_FILES {
@@ -4590,15 +5125,24 @@ fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<S
             out.push(((*path).to_string(), Some(blanked(raw))));
         }
     }
-    let code = blanked(GEOMETRY);
-    let items = fn_items(GEOMETRY, &code);
-    for name in paths_after(text, "geometry") {
-        let body = items
-            .iter()
-            .find(|f| f.name == name)
-            .and_then(|f| code.get(f.body.clone()))
-            .map(str::to_string);
-        out.push((format!("geometry::{name}"), body));
+    for (module, sources) in [
+        ("next::geometry", [NEXT_BUILDERS, NEXT_GEOMETRY]),
+        ("next::variants", [NEXT_VARIANTS, NEXT_BUILDERS]),
+    ] {
+        for name in paths_after(text, module) {
+            let body = sources.iter().find_map(|source| {
+                let code = blanked(source);
+                fn_items(source, &code)
+                    .iter()
+                    .find(|f| f.name == name)
+                    .and_then(|f| code.get(f.body.clone()))
+                    .map(str::to_string)
+            });
+            out.push((
+                format!("{module}::{name}"),
+                body.map(|body| reach(body, table)),
+            ));
+        }
     }
     for name in paths_after(text, "widgets") {
         let declared = format!("pub struct {name}");
@@ -4617,13 +5161,18 @@ fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<S
     out
 }
 
-/// Evidence for the reviewer, not a gate: for every `HOW` line that names
-/// what applies its leaf -- a showcase function, file, builder or control --
-/// whether that code reads the leaf's field. A route's text is prose and a
-/// read is a substring, so a line that reads it by coincidence passes and
-/// one that reaches it through a helper does not; the list says which is
-/// which for a human to judge. A line saying "not applied" or "not
-/// reachable" names no route that applies the leaf, and is listed apart.
+/// For every `HOW` line that names what applies its leaf -- a showcase
+/// function, file, builder or control -- whether that code, with what its
+/// functions call in demo.rs and the connector's `next` module ([`reach`]),
+/// reads the leaf's field. Every route is found, and every 0.8.0 builder or
+/// variant a line names (`next::geometry::`, `next::variants::`) reads the
+/// field of each of its homes: those fail the test. For the other routes it
+/// is evidence for the reviewer: a route's text is prose and a read is a
+/// substring, so a line that reads it by coincidence passes and one that
+/// reaches it through a helper of another file, or a function passed as a
+/// value, does not; the list says which is which for a human to judge. A
+/// line saying "not applied" or "not reachable" names no route that applies
+/// the leaf, and is listed apart.
 #[test]
 fn every_how_route_reads_its_leaf() {
     let lines = how_lines(how_source());
@@ -4646,29 +5195,46 @@ fn every_how_route_reads_its_leaf() {
         })
         .collect();
     widgets.sort();
+    let demo = SHOWCASE_FILES
+        .iter()
+        .find(|(path, _)| *path == "demo.rs")
+        .map_or("", |(_, raw)| *raw);
+    let table = fn_bodies(&[demo, NEXT_BUILDERS, NEXT_GEOMETRY, NEXT_VARIANTS, NEXT_MOD]);
     let mut read = Vec::new();
     let mut unread = Vec::new();
+    let mut failed = Vec::new();
     let mut exempt = Vec::new();
     for h in &lines {
-        let at = format!("{HOW_FILE}:{} (\"{}\", {})", h.line, h.prefix, h.leaf);
+        let at = format!("{HOW_FILE}:{} (\"{}\", {:?})", h.line, h.prefix, h.homes);
         if h.text.contains("not applied") || h.text.contains("not reachable") {
             exempt.push(format!("{at}: {}", h.text));
             continue;
         }
-        let field = leaf_field(h.leaf);
-        for (route, code) in how_routes(h.text, &widgets) {
-            match code {
-                Some(code) if mentions(&code, field) => {
-                    read.push(format!("{at}: {route} reads `{field}`"));
+        let routes = how_routes(h.text, &widgets, &table);
+        for field in h.homes.iter().map(|home| home_field(home)) {
+            for (route, code) in &routes {
+                match code {
+                    Some(code) if mentions(code, field) => {
+                        read.push(format!("{at}: {route} reads `{field}`"));
+                    }
+                    Some(_) if route.starts_with("next::") => {
+                        failed.push(format!("{at}: {route} does not read `{field}`"));
+                    }
+                    Some(_) => unread.push(format!("{at}: {route} does not read `{field}`")),
+                    None => failed.push(format!("{at}: {route} not found")),
                 }
-                Some(_) => unread.push(format!("{at}: {route} does not read `{field}`")),
-                None => unread.push(format!("{at}: {route} not found")),
             }
         }
     }
     assert!(
         !read.is_empty() && !widgets.is_empty(),
         "no HOW route was found reading its leaf, so the list below says nothing"
+    );
+    assert!(
+        failed.is_empty(),
+        "HOW routes not found, or 0.8.0 builders and variants that do not read their \
+         leaf's field:\n{}",
+        failed.join("\n")
     );
     println!(
         "HOW routes: {} read their leaf's field, {} do not or were not found, {} lines \
@@ -4685,6 +5251,17 @@ fn every_how_route_reads_its_leaf() {
     for line in &exempt {
         println!("    {line}");
     }
+}
+
+/// [`reach`] takes in what a body calls, and what that calls, from the
+/// table, and nothing it does not call.
+#[test]
+fn reach_follows_the_calls_of_a_route() {
+    assert_eq!(called_names("x.y(z(1), w)"), ["y", "z"]);
+    let table = fn_bodies(&["fn a() { b(); }\nfn b() { c.fill }\nfn d() { e.corners }\n"]);
+    let reached = reach("{ a(); }".to_string(), &table);
+    assert!(mentions(&reached, "fill"), "{reached}");
+    assert!(!mentions(&reached, "corners"), "{reached}");
 }
 
 /// The `pub(crate)` constants of gpui-base the showcase names again, as
@@ -4851,7 +5428,7 @@ config("free", "fn, not a method");
         .collect();
     assert_eq!(cited, vec![("tag.rs", "Tag"), ("tag.rs", "Tag::render")]);
 
-    let table = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
+    let table = "pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
                  \x20   (\"button\", \"a (button.rs, Button)\"),\n\
                  \x20   (\n\
                  \x20       \"input\",\n\
@@ -4859,7 +5436,7 @@ config("free", "fn, not a method");
                  \x20   ),\n\
                  \x20   (\"bare\"),\n\
                  ];\n";
-    let (entries, unreadable) = geometry_note_entries(table);
+    let (entries, unreadable) = next_geometry_note_entries(table);
     assert_eq!(
         entries,
         vec![
@@ -5323,6 +5900,11 @@ fn a_claim_in_the_0_8_0_form_names_a_home() {
         ("hsla(r.other.colors.focus_ring)", "colors.focus_ring"),
         ("hsla(.colors.focus_ring)", "colors.focus_ring"),
         ("// r.colors.focus_ring", "colors.focus_ring"),
+        ("    /// `separator.color` and", "separator.color"),
+        (
+            "let x = 1; // state_fill(&d, \"button.body(DEFAULT).fill\")",
+            "button.body(DEFAULT).fill",
+        ),
         (
             "fill(&r.button.body(WidgetState::DEFAULT))",
             "button.body(DEFAULT).fill",
