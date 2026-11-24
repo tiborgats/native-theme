@@ -12192,6 +12192,31 @@ fn the_basic_icon_buttons_are_the_toolbars_gap_apart_and_outlined_on_hover() -> 
     Ok(())
 }
 
+/// The widget visuals of a `role` scope, `RoleVariant::Normal`, in light, of the atlas
+/// installed in `harness`, as `demo::scoped` applies the scope: in a context of their own, so
+/// the harness's passes stay as they are.
+fn scope_widgets(
+    harness: &Harness<'_, App>,
+    role: native_theme_egui::Role,
+) -> Result<egui::style::Widgets, String> {
+    let atlas =
+        native_theme_egui::ThemeAtlas::from_ctx(&harness.ctx).ok_or("no atlas installed")?;
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    ctx.set_theme(egui::Theme::Light);
+    let mut reg = crate::demo::Registry::default();
+    let mut widgets = None;
+    let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+        crate::demo::scoped(&mut reg, ui, role, RoleVariant::Normal, "scope", |ui| {
+            widgets = Some(ui.style().visuals.widgets.clone());
+            ui.label("")
+        });
+    });
+    // The font atlas's upload, which no renderer takes here (`epaint/src/textures.rs:337`).
+    out.textures_delta.clear();
+    widgets.ok_or_else(|| format!("the {role:?} scope ran no pass"))
+}
+
 /// The chrome toolbar's tool buttons are outlined hovered and pressed in the «toolbar» scope's
 /// hovered and pressed button's stroke, which `demo::next_tool_button` leaves to the scope: where
 /// a rule states `toolbar.button(HOVER)` and `toolbar.button(PRESSED)`'s stroke, its width
@@ -12288,17 +12313,7 @@ fn a_chrome_tool_buttons_outline_is_the_toolbar_scopes() -> Result<(), String> {
             "adwaita now states toolbar.button({state:?})'s stroke"
         );
     }
-    let atlas = native_theme_egui::ThemeAtlas::from_ctx(&harness.ctx)
-        .ok_or("adwaita: no atlas installed")?;
-    let mut scope = egui::Style::default();
-    atlas
-        .role_modifier(
-            egui::Theme::Light,
-            native_theme_egui::Role::Toolbar,
-            RoleVariant::Normal,
-        )
-        .apply(&mut scope);
-    let own = &scope.visuals.widgets;
+    let own = scope_widgets(&harness, native_theme_egui::Role::Toolbar)?;
     let (hovered, pressed) = (own.hovered.bg_stroke, own.active.bg_stroke);
     assert!(
         hovered.width > 0.0 && pressed.width > 0.0,
@@ -13038,8 +13053,9 @@ fn the_page_tabs_hide_no_tab_behind_the_page_menu() -> Result<(), String> {
             .position(|p| *p == page)
             .and_then(|i| tabs.get(i))
             .ok_or_else(|| format!("{page:?}: no tab of its own"))?;
+        // within half a point: the view's edge and a tab's fractional width round apart
         assert!(
-            near_rect(open.0, open.1),
+            open.0.expand(0.5).contains_rect(open.1),
             "{page:?}: the open tab shows {:?} of {:?}",
             open.0,
             open.1
@@ -13107,17 +13123,9 @@ fn the_basic_tables_record_names_egui_own_row() -> Result<(), String> {
                 _ => None,
             })
             .collect();
-        let atlas = native_theme_egui::ThemeAtlas::from_ctx(&harness.ctx)
-            .ok_or_else(|| format!("{preset}: no atlas installed"))?;
-        let mut scope = egui::Style::default();
-        atlas
-            .role_modifier(
-                egui::Theme::Light,
-                native_theme_egui::Role::List,
-                RoleVariant::Normal,
-            )
-            .apply(&mut scope);
-        let own = scope.visuals.widgets.inactive.bg_stroke;
+        let own = scope_widgets(&harness, native_theme_egui::Role::List)?
+            .inactive
+            .bg_stroke;
         let drawn = own.width > 0.0 && own.color.a() > 0;
         assert_eq!(
             lines,
