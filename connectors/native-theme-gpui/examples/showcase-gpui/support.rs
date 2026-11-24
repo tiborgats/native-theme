@@ -513,11 +513,12 @@ pub(crate) trait NativeStyled: Styled + Sized {
 }
 impl<W: Styled> NativeStyled for W {}
 
-/// The line width of a frame the showcase draws: the platform's own, or the
-/// 1 px `border_1()` asks for where no native theme is installed yet. The
-/// fallback is gpui's own width, never a theme value.
+/// The line width of a frame the showcase draws: the installed 0.8.0
+/// theme's `layout.border_width`, or the 1 px `border_1()` asks for where no
+/// native theme is installed yet. The fallback is gpui's own width, never a
+/// theme value.
 pub(crate) fn demo_border_width(cx: &App) -> Pixels {
-    native_value(cx, |n| px(n.resolved.defaults.border.line_width)).unwrap_or(px(1.0))
+    next_value(cx, |r| px(r.layout.border_width)).unwrap_or(px(1.0))
 }
 
 /// Hand the images a cache is about to replace back to gpui.

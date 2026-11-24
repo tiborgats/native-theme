@@ -7636,22 +7636,22 @@ pub(crate) fn gallery_label(
 }
 
 /// Body text reading `text`: a plain `Label` in the theme's line box,
-/// `defaults.line_height` times the text size, where upstream lays a Label out
-/// at `rems(1.25)` (label.rs, `Label::render`, before the caller's
-/// refinement). Without an installed native theme, upstream's.
+/// `typography.line_height_multiplier` times the text size, where upstream
+/// lays a Label out at `rems(1.25)` (label.rs, `Label::render`, before the
+/// caller's refinement). Without an installed native theme, upstream's.
 pub(crate) fn body_label(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    let line_height = native_value(cx, |n| n.resolved.defaults.line_height);
+    let line_height = next_value(cx, |r| r.typography.line_height_multiplier);
     let mut label_info = info::text::gallery_label(cx.theme(), LabelKind::Plain, text);
     let label = match line_height {
         Some(ratio) => {
             label_info = label_info.config(
                 "line height",
-                format!("defaults.line_height, {ratio} times the text size"),
+                format!("typography.line_height_multiplier, {ratio} times the text size"),
             );
             Label::new(text).line_height(relative(ratio))
         }

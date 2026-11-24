@@ -469,6 +469,47 @@ fn upstreams_band_follows_the_focus_in_the_showcase(cx: &mut TestAppContext) {
     );
 }
 
+/// The frames the showcase draws take the installed 0.8.0 theme's
+/// `layout.border_width` (`support::demo_border_width`), under kde-breeze
+/// light and with it set to the same theme's `layout.corner_radius`, which
+/// differs; the Basic expander's body Label claims its line box as
+/// `typography.line_height_multiplier` times the text size, with the
+/// installed theme's ratio (`demo::body_label`).
+#[gpui::test]
+fn the_demo_frames_and_body_text_read_the_08_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "kde-breeze light installed no 0.8.0 theme");
+    let Some(r) = r else { return };
+    let width =
+        |cx: &mut VisualTestContext| cx.update(|_window, cx| crate::support::demo_border_width(cx));
+    assert_eq!(width(&mut cx), px(r.layout.border_width));
+    show(&mut cx, &showcase, Page::Basic);
+    let info = settle_on(&mut cx, &showcase, "basic-expander-body");
+    let line = info
+        .as_ref()
+        .and_then(|info| note_of(&info.config, "line height").map(str::to_string));
+    assert_eq!(
+        line.as_deref(),
+        Some(
+            format!(
+                "typography.line_height_multiplier, {} times the text size",
+                r.typography.line_height_multiplier
+            )
+            .as_str()
+        ),
+        "the expander body's line height claim: {info:?}"
+    );
+    let radius = r.layout.corner_radius;
+    assert!(
+        (radius - r.layout.border_width).abs() > f32::EPSILON,
+        "kde-breeze light's corner radius is its border width, so the test could not tell them apart"
+    );
+    install_next_layout(&mut cx, &showcase, |layout| layout.border_width = radius);
+    assert_eq!(width(&mut cx), px(radius));
+}
+
 /// A Settings row keeps off the page's scrollbar.
 ///
 /// The Layout page's scroll area scrolls its content inside its frame: the
