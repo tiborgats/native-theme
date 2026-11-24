@@ -3403,9 +3403,9 @@ fn compare_styles(
         surface(o::progress_bar(old)),
         n::progress_bar(new).map(surface),
         |a| surface(o::progress_bar_from(
-            to_color(p.track_color),
-            to_color(p.fill_color),
-            Outline::of(&p.border).aligned(a),
+            Some(to_color(p.track_color)),
+            Some(to_color(p.fill_color)),
+            Outline::of(&p.border).aligned(a).into(),
         )),
         [()]
     );

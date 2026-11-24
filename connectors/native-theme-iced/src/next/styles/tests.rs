@@ -2328,3 +2328,308 @@ fn a_radio_keeps_iceds_own_per_property() -> TestResult {
     }
     Ok(())
 }
+
+/// The switch keeps iced's own switch's look per property (spec §10, rule
+/// 0), on and off: with the track at rest unstated, iced's own track and
+/// the theme's thumb; with the thumb at rest unstated, iced's own thumb and
+/// the theme's track.
+#[test]
+fn a_switch_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{SwitchSource, toggler_from};
+    use iced_widget::toggler::{Status, default};
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let source = super::switch_source(&r)?;
+        for is_toggled in [false, true] {
+            let status = Status::Active { is_toggled };
+            let at = |source: &SwitchSource| toggler_from(source, IcedColor::WHITE)(&theme, status);
+            let stated = at(&source);
+            let own = default(&theme, status);
+
+            let s = at(&SwitchSource {
+                checked_background: None,
+                unchecked_background: None,
+                ..source
+            });
+            assert_eq!(
+                s.background, own.background,
+                "{preset:?} {is_toggled} track"
+            );
+            assert_eq!(
+                s.foreground, stated.foreground,
+                "{preset:?} {is_toggled} thumb"
+            );
+
+            let s = at(&SwitchSource {
+                thumb_background: None,
+                unchecked_thumb_background: None,
+                ..source
+            });
+            assert_eq!(
+                s.foreground, own.foreground,
+                "{preset:?} {is_toggled} thumb"
+            );
+            assert_eq!(
+                s.background, stated.background,
+                "{preset:?} {is_toggled} track"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The combo box's field keeps iced's own field's look per property (spec
+/// §10, rule 0): with the fill at rest unstated, iced's own fill and the
+/// theme's label; with the label unstated, iced's own and the theme's fill;
+/// with the placeholder unstated, iced's own; with the stroke and the
+/// corners unstated, iced's own border and the theme's fill.
+#[test]
+fn a_pick_list_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{PartOutline, PickListSource, pick_list_from};
+    use iced_widget::pick_list::{Status, default};
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let c = super::pick_list_source(&r)?;
+        let at = |source: &PickListSource| pick_list_from(source)(&theme, Status::Active);
+        let stated = at(&c);
+        let own = default(&theme, Status::Active);
+
+        let s = at(&PickListSource {
+            background: None,
+            ..c
+        });
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+
+        let s = at(&PickListSource { label: None, ..c });
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+
+        let s = at(&PickListSource {
+            placeholder: None,
+            ..c
+        });
+        assert_eq!(
+            s.placeholder_color, own.placeholder_color,
+            "{preset:?} placeholder"
+        );
+
+        let s = at(&PickListSource {
+            border: PartOutline {
+                stroke: None,
+                radius: None,
+            },
+            ..c
+        });
+        assert_eq!(s.border, own.border, "{preset:?} border");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The drop-down menu keeps iced's own menu's look per property (spec §10,
+/// rule 0): with the panel's fill unstated, iced's own fill and the theme's
+/// label; with the label unstated, iced's own label and the theme's fill.
+#[test]
+fn a_menu_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{MenuSource, menu_from};
+    use iced_widget::overlay::menu::default;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let m = super::menu_source(&r)?;
+        let stated = menu_from(&m)(&theme);
+        let own = default(&theme);
+
+        let s = menu_from(&MenuSource {
+            background: None,
+            ..m
+        })(&theme);
+        assert_eq!(s.background, own.background, "{preset:?} fill");
+        assert_eq!(s.text_color, stated.text_color, "{preset:?} label");
+
+        let s = menu_from(&MenuSource { label: None, ..m })(&theme);
+        assert_eq!(s.text_color, own.text_color, "{preset:?} label");
+        assert_eq!(s.background, stated.background, "{preset:?} fill");
+    }
+    Ok(())
+}
+
+/// The text area and the text field keep iced's own field's look per
+/// property (spec §10, rule 0): with the fill at rest unstated, iced's own
+/// fill and the theme's value; with the value unstated, iced's own and the
+/// theme's fill; with the disabled value or the placeholder unstated,
+/// iced's own; with the stroke and the corners unstated, iced's own border
+/// and the theme's fill.
+#[test]
+fn a_text_area_and_a_text_field_keep_iceds_own_per_property() -> TestResult {
+    use crate::styles::{InputSource, PartOutline, text_editor_from, text_input_from};
+    macro_rules! per_property {
+        ($preset:expr, $theme:expr, $source:expr, $from:ident, $widget:ident) => {{
+            use iced_widget::$widget::{Status, default};
+            let (preset, theme, i) = ($preset, $theme, $source);
+            let at = |source: InputSource, status| $from(&source)(theme, status);
+            let stated = at(i, Status::Active);
+            let own = default(theme, Status::Active);
+            let what = stringify!($widget);
+
+            let s = at(
+                InputSource {
+                    background: None,
+                    ..i
+                },
+                Status::Active,
+            );
+            assert_eq!(s.background, own.background, "{preset:?} {what} fill");
+            assert_eq!(s.value, stated.value, "{preset:?} {what} value");
+
+            let s = at(InputSource { text: None, ..i }, Status::Active);
+            assert_eq!(s.value, own.value, "{preset:?} {what} value");
+            assert_eq!(s.background, stated.background, "{preset:?} {what} fill");
+
+            let s = at(
+                InputSource {
+                    placeholder: None,
+                    ..i
+                },
+                Status::Active,
+            );
+            assert_eq!(
+                s.placeholder, own.placeholder,
+                "{preset:?} {what} placeholder"
+            );
+
+            let s = at(
+                InputSource {
+                    disabled_text: None,
+                    ..i
+                },
+                Status::Disabled,
+            );
+            assert_eq!(
+                s.value,
+                default(theme, Status::Disabled).value,
+                "{preset:?} {what} disabled value"
+            );
+
+            let s = at(
+                InputSource {
+                    border: PartOutline {
+                        stroke: None,
+                        radius: None,
+                    },
+                    ..i
+                },
+                Status::Active,
+            );
+            assert_eq!(s.border, own.border, "{preset:?} {what} border");
+            assert_eq!(s.background, stated.background, "{preset:?} {what} fill");
+        }};
+    }
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        per_property!(
+            preset,
+            &theme,
+            super::text_area_source(&r)?,
+            text_editor_from,
+            text_editor
+        );
+        per_property!(
+            preset,
+            &theme,
+            super::text_input_source(&r)?,
+            text_input_from,
+            text_input
+        );
+    }
+    Ok(())
+}
+
+/// The slider keeps iced's own slider's look per property (spec §10, rule
+/// 0), along either axis: with the thumb's fill unstated, iced's own and
+/// the theme's rail; with the filled rail unstated, iced's own and the
+/// theme's thumb; with the rest of the rail unstated, iced's own.
+#[test]
+fn a_slider_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{SliderSource, slider_from};
+    use iced_widget::slider::{Status, default};
+    use native_theme::next::Orientation;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let own = default(&theme, Status::Active);
+        for orientation in [Orientation::Horizontal, Orientation::Vertical] {
+            let source = super::slider_source(&r, orientation)?;
+            let at = |source: &SliderSource| slider_from(source)(&theme, Status::Active);
+            let stated = at(&source);
+
+            let s = at(&SliderSource {
+                thumb_color: None,
+                ..source
+            });
+            assert_eq!(
+                s.handle.background, own.handle.background,
+                "{preset:?} {orientation:?} thumb"
+            );
+            assert_eq!(
+                s.rail.backgrounds, stated.rail.backgrounds,
+                "{preset:?} {orientation:?} rail"
+            );
+
+            let s = at(&SliderSource {
+                fill_color: None,
+                ..source
+            });
+            assert_eq!(
+                s.rail.backgrounds.0, own.rail.backgrounds.0,
+                "{preset:?} {orientation:?} filled rail"
+            );
+            assert_eq!(
+                s.handle.background, stated.handle.background,
+                "{preset:?} {orientation:?} thumb"
+            );
+
+            let s = at(&SliderSource {
+                track_color: None,
+                ..source
+            });
+            assert_eq!(
+                s.rail.backgrounds.1, own.rail.backgrounds.1,
+                "{preset:?} {orientation:?} rail"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The progress bar keeps iced's own bar's look per property (spec §10,
+/// rule 0): with the track's fill unstated, iced's own track and the
+/// theme's bar; with the bar's fill unstated, iced's own bar and the
+/// theme's track; with the stroke and the corners unstated, iced's own
+/// border.
+#[test]
+fn a_progress_bar_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{PartOutline, progress_bar_from};
+    use iced_widget::progress_bar::primary;
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let (track, filled, border) = super::progress_bar_source(&r)?;
+        let stated = progress_bar_from(track, filled, border)(&theme);
+        let own = primary(&theme);
+
+        let s = progress_bar_from(None, filled, border)(&theme);
+        assert_eq!(s.background, own.background, "{preset:?} track");
+        assert_eq!(s.bar, stated.bar, "{preset:?} bar");
+
+        let s = progress_bar_from(track, None, border)(&theme);
+        assert_eq!(s.bar, own.bar, "{preset:?} bar");
+        assert_eq!(s.background, stated.background, "{preset:?} track");
+
+        let unlined = PartOutline {
+            stroke: None,
+            radius: None,
+        };
+        let s = progress_bar_from(track, filled, unlined)(&theme);
+        assert_eq!(s.border, own.border, "{preset:?} border");
+    }
+    Ok(())
+}
