@@ -34,7 +34,10 @@
 //! a text style as its family, its size in the unit its source stated
 //! (`defined_size`, else `size_px`), its weight, and its style where that is
 //! not normal, each part the theme leaves unstated as [`NOT_STATED`]; a
-//! boolean, a name or an enum as it prints. [`NOT_STATED`] where the theme
+//! boolean, a name or an enum as it prints; rounded corners whose curve is
+//! continuous as their radius marked [`DRAWN_CIRCULAR`], `<value> (drawn
+//! circular)`, the toolkits' corner being circular (docs/v0.8.0-spec.md §10,
+//! rule 2). [`NOT_STATED`] where the theme
 //! states nothing: a property whose `stated` bit is clear, a size that is
 //! `None`, a global that is `null`, a part that states nothing; a value
 //! stated only at rest under a query with a state is marked
@@ -59,6 +62,11 @@ use crate::values::{LeafValue, NOT_STATED, number};
 /// The marker after a value that a query with a state shows as the part
 /// states it at rest (module doc): `<value> (stated at rest)`.
 pub const STATED_AT_REST: &str = "(stated at rest)";
+
+/// The marker after a rounded corners value whose curve is continuous,
+/// which every toolkit the showcases draw with rounds circular
+/// (docs/v0.8.0-spec.md §10, rule 2): `<value> (drawn circular)`.
+pub const DRAWN_CIRCULAR: &str = "(drawn circular)";
 
 /// A text style's font as the serialised form states it, which the family
 /// lookup is handed: the family, and the weight and the slant where the
@@ -598,8 +606,29 @@ fn value_of(
         },
         serde_json::Value::Object(o) if o.is_empty() => LeafValue::text(NOT_STATED.to_string()),
         serde_json::Value::Object(o) if is_text(o) => LeafValue::text(text_style(o, label)),
+        serde_json::Value::Object(o) => match continuous_radius(segments, o) {
+            Some(radius) => LeafValue::text(format!(
+                "{} {DRAWN_CIRCULAR}",
+                value_of(segments, radius, None)?.text
+            )),
+            None => LeafValue::text(value.to_string()),
+        },
         other => LeafValue::text(other.to_string()),
     })
+}
+
+/// The radius of `corners`, the serialised form's `{ radius, curve }` at
+/// `segments`, where the property is `corners`, the curve is continuous and
+/// the radius rounds a corner (not `none`); `None` otherwise.
+fn continuous_radius<'a>(
+    segments: &[&str],
+    corners: &'a serde_json::Map<String, serde_json::Value>,
+) -> Option<&'a serde_json::Value> {
+    let radius = corners.get("radius")?;
+    (segments.last() == Some(&"corners")
+        && corners.get("curve").and_then(serde_json::Value::as_str) == Some("continuous")
+        && radius.as_str() != Some("none"))
+    .then_some(radius)
 }
 
 /// The properties and fields measured in logical pixels (docs/v0.8.0-spec.md
@@ -1192,6 +1221,57 @@ mod tests {
         assert_eq!(value("button.body(NONE).opacity")?, "0.25");
         assert!(!pressed.stated.contains(PartStated::TRANSFORM));
         assert_eq!(value("button.body(PRESSED).transform")?, NOT_STATED);
+        Ok(())
+    }
+
+    /// Rounded corners whose curve is continuous read as their radius marked
+    /// drawn circular, a ruled part's and the focus ring's, at rest and
+    /// stated at rest under a state; square corners and a circular curve are
+    /// not marked.
+    #[test]
+    fn continuous_corners_are_marked_drawn_circular() -> Result {
+        use native_theme::next::{
+            ButtonRule, CornerCurve, CornerRadius, Corners, PartPatch, ThemePatch,
+        };
+
+        let mut r = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.apply_patch(
+            &ThemePatch::new()
+                .button(ButtonRule::new().body(PartPatch::new().corners(Corners::continuous(4.0)))),
+        );
+        r.focus_ring.corners = Some(Corners {
+            radius: CornerRadius::Pill,
+            curve: CornerCurve::Continuous,
+        });
+        let json = theme_json(&r)?;
+        let value = |home: &str| text(&r, &json, home);
+        assert_eq!(
+            value("button.body(NONE).corners")?,
+            format!("4 px {DRAWN_CIRCULAR}")
+        );
+        assert_eq!(
+            value("button.body(HOVER).corners")?,
+            format!("4 px {DRAWN_CIRCULAR} {STATED_AT_REST}")
+        );
+        assert_eq!(
+            value("focus_ring.corners")?,
+            format!("pill {DRAWN_CIRCULAR}")
+        );
+
+        r.apply_patch(
+            &ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().corners(Corners {
+                radius: CornerRadius::None,
+                curve: CornerCurve::Continuous,
+            }))),
+        );
+        r.focus_ring.corners = Some(Corners::uniform(3.0));
+        let json = theme_json(&r)?;
+        let value = |home: &str| text(&r, &json, home);
+        assert!(
+            !value("button.body(NONE).corners")?.contains(DRAWN_CIRCULAR),
+            "square corners have no curve"
+        );
+        assert_eq!(value("focus_ring.corners")?, "3 px");
         Ok(())
     }
 

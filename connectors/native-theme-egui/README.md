@@ -702,23 +702,32 @@ and each crate-root accessor has a twin there. Where egui has a receiver,
 listed here, and a value the theme leaves unstated is egui's own
 (docs/v0.8.0-spec.md §10, rule 0).
 
-- **The focus ring's kind and alignment.** The install plugin strokes one
-  ring round the focused widget's rect, outside it at the ring's offset
-  (src/plugin.rs, `paint_focus_ring`; `Painter::rect_stroke` with
+- **The focus ring's kind.** The install plugin strokes one ring round
+  the focused widget's rect grown by the ring's offset, outward from that
+  line (src/plugin.rs, `paint_focus_ring`; `Painter::rect_stroke` with
   `StrokeKind::Outside`, `egui-0.37.0/src/painter.rs`), in
   `focus_ring.stroke`'s colour and width, shown as `focus_ring.trigger`
-  says. Its corners are the widget's grown by the offset, or the ring's own
-  outer corners where the theme states `focus_ring.corners`; a second ring
-  inside the first is drawn where it states `inner_stroke` (a second
-  `rect_stroke`, `StrokeKind::Inside`). The stroke's alignment is not
-  drawn: every bundled preset states its ring with `Stroke::uniform`, whose
-  alignment is `Inside` by construction, while the presets describe a ring
-  outside the part at the offset, so the ring lies outside at the offset
-  whatever the alignment says. A `kind` of `Fill` or `Underline` is no
-  ring: `next::to_theme` returns `Unmapped("focus_ring.kind")` for it; a
-  ring or second ring stated per side is `Unmapped`, and so are continuous
-  or concentric corners, which `CornerRadius` (four circular radii,
-  `epaint-0.37.0/src/corner_radius.rs`) cannot hold.
+  says; a second ring is drawn inward from the same line where the theme
+  states `inner_stroke` (a second `rect_stroke`, `StrokeKind::Inside`), as
+  the model places a ring (spec §2, `FocusIndicator`). The line's corners
+  are the widget's grown by the offset, or `focus_ring.corners` where the
+  theme states them; each ring's far edge is concentric. A `kind` of
+  `Fill` or `Underline` is no ring: `next::to_theme` returns
+  `Unmapped("focus_ring.kind")` for it; a ring or second ring stated per
+  side is `Unmapped`, and so are concentric corners, which need the
+  container's radius.
+- **Corners.** egui rounds a rect with four circular radii, each a whole
+  point up to 255 (`epaint-0.37.0/src/corner_radius.rs`, `CornerRadius`). A
+  continuous corner (`CornerCurve::Continuous`, Apple's) is drawn as the
+  circular corner of the stated radius (spec §10, rule 2), and Widget Info
+  marks its value `(drawn circular)`. A pill is drawn as 255, which epaint
+  clamps to half the rect's shorter side (`epaint-0.37.0/src/tessellator.rs`,
+  `path::rounded_rectangle`), so a part whose shorter side passes 510
+  points is rounded by 255 only. A
+  concentric radius (`CornerRadius::Concentric`) is the container's radius
+  less an inset, which the atlas does not know, and per-corner radii that
+  differ reach no sink: the atlas carries one radius per part. Both leave
+  the part's radius egui's own; no preset states either.
 - **A stroke per side.** egui strokes a rect with one `Stroke`, one width
   and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
   `RectShape::stroke`). Where the theme states a part's stroke per side

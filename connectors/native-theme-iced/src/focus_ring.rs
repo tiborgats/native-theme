@@ -44,7 +44,8 @@ pub(crate) struct RingLook {
     /// colour and its positive, finite width, inside the first; `None`
     /// where the theme states none (0.7.2 states none).
     pub(crate) inner: Option<(Color, f32)>,
-    /// The 0.8.0 model's `focus_ring.corners`: the ring's outer corners as
+    /// The 0.8.0 model's `focus_ring.corners`: the corners of the ring's
+    /// inner edge, the line `offset` places (spec §2, `FocusIndicator`), as
     /// stated, in place of the field's grown; `None` where the theme states
     /// none (0.7.2 states none).
     pub(crate) corners: Option<Radius>,
@@ -94,7 +95,7 @@ pub(crate) fn ring_look_from(
 impl RingLook {
     /// This ring with a second ring inside it, `width` wide in `color`
     /// (`None`, and so no second ring, for a width that is not positive and
-    /// finite), and its outer corners `corners` where `Some`.
+    /// finite), and the corners of its inner edge `corners` where `Some`.
     pub(crate) fn with(self, inner: Option<(Color, f32)>, corners: Option<Radius>) -> Self {
         Self {
             inner: inner.filter(|(_, width)| width.is_finite() && *width > 0.0),
@@ -110,14 +111,22 @@ impl RingLook {
     /// border `width` wide and the radius the field's grown as much, the
     /// curve concentric with the field's, as the egui connector strokes the
     /// ring outside the field's grown by `offset` (its `plugin.rs`,
-    /// `paint_focus_ring`). Where the theme states the ring's corners
-    /// ([`corners`](Self::corners)), they are the quad's radius. `None` where
-    /// an inset ring leaves no room.
+    /// `paint_focus_ring`). Where the theme states the corners of the ring's
+    /// inner edge ([`corners`](Self::corners)), the quad's radius is each
+    /// grown by `width`, the outer edge concentric with the inner. `None`
+    /// where an inset ring leaves no room.
     pub(crate) fn quad(&self, field: Rectangle) -> Option<(Quad, Background)> {
         let out = self.offset + self.width;
-        let radius = self
-            .corners
-            .unwrap_or_else(|| Radius::from((self.radius + out).max(0.0)));
+        let grow = |corner: f32| corner.max(0.0) + self.width;
+        let radius = self.corners.map_or_else(
+            || Radius::from((self.radius + out).max(0.0)),
+            |r| Radius {
+                top_left: grow(r.top_left),
+                top_right: grow(r.top_right),
+                bottom_right: grow(r.bottom_right),
+                bottom_left: grow(r.bottom_left),
+            },
+        );
         ring_quad(
             field.expand(Padding::new(out)),
             self.color,

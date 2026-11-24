@@ -1045,18 +1045,20 @@ pub(crate) fn sources(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped<Sou
 /// [`FocusRingSource`] of the 0.8.0 model: the ring's stroke where it is one stroke of one
 /// colour (a stroke stated as none is a zero width, no ring; a per-side one gives no ring, as
 /// [`super::focus_ring_width`] cannot map it), its offset, its trigger, the second ring inside
-/// it (`inner_stroke`) and its outer corners (`corners`) where the theme states them. The
-/// plugin strokes the ring outside the widget's edge grown by the offset, whatever alignment
-/// the stroke states (README, what egui cannot draw).
+/// it (`inner_stroke`) and the corners of the line the offset places (`corners`) where the
+/// theme states them. The plugin strokes the ring outward from the widget's edge grown by the
+/// offset and the second ring inward from it (spec §2, `FocusIndicator`); a continuous curve
+/// is drawn as the circular corner of its radius (spec §10, rule 2).
 ///
 /// # Errors
 ///
 /// [`Unmapped`] `focus_ring.kind` where the indicator is not a ring (a fill, an underline),
 /// which the plugin's ring cannot draw, `focus_ring.inner_stroke` where the second ring is
-/// stated per side, and `focus_ring.corners` where the corners are continuous or concentric.
+/// stated per side, and `focus_ring.corners` where the corners are concentric, which needs
+/// the container's radius.
 pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
     use crate::plugin::RingCorners;
-    use native_theme::next::{CornerCurve, CornerRadius};
+    use native_theme::next::CornerRadius;
 
     let ring = &r.focus_ring;
     if ring.kind != FocusKind::Ring {
@@ -1074,25 +1076,22 @@ pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
         }
         _ => return Err(Unmapped("focus_ring.inner_stroke")),
     };
-    let corners = match ring.corners.map(|c| (c.radius, c.curve)) {
+    let corners = match ring.corners.map(|c| c.radius) {
         None => None,
-        Some((CornerRadius::None, _)) => Some(RingCorners::Radii([0.0; 4])),
-        Some((CornerRadius::Uniform(v), CornerCurve::Circular)) => Some(RingCorners::Radii([v; 4])),
-        Some((
-            CornerRadius::PerCorner {
-                top_left,
-                top_right,
-                bottom_right,
-                bottom_left,
-            },
-            CornerCurve::Circular,
-        )) => Some(RingCorners::Radii([
+        Some(CornerRadius::None) => Some(RingCorners::Radii([0.0; 4])),
+        Some(CornerRadius::Uniform(v)) => Some(RingCorners::Radii([v; 4])),
+        Some(CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        }) => Some(RingCorners::Radii([
             top_left,
             top_right,
             bottom_right,
             bottom_left,
         ])),
-        Some((CornerRadius::Pill, CornerCurve::Circular)) => Some(RingCorners::Pill),
+        Some(CornerRadius::Pill) => Some(RingCorners::Pill),
         Some(_) => return Err(Unmapped("focus_ring.corners")),
     };
     Ok(FocusRingSource {

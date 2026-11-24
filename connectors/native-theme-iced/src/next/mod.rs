@@ -74,7 +74,7 @@ use crate::extended::OverrideColors;
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to iced (a gradient fill, a per-side
-/// stroke, a squircle): its place in the 0.8.0 model, as a query and a
+/// stroke, a concentric radius): its place in the 0.8.0 model, as a query and a
 /// property (`button.body(NONE).stroke.width`). The 0.7.2 path has no such
 /// case, its resolved fields being always set; the 0.8.0 path reports it
 /// rather than inventing the value.
@@ -214,22 +214,33 @@ pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     }
 }
 
-/// A part's corner radius, where stated as one circular radius, as square
-/// corners, which are no radius, or as a pill, which iced rounds by a radius
-/// its renderers clamp to half the shorter side (`crate::styles::pill`);
-/// `None` where it is not stated, or stated in a form iced cannot draw
-/// (per-corner radii, a continuous curve).
+/// A part's corner radius as one radius: one radius stated for every
+/// corner, square corners, which are no radius, or a pill, which iced rounds
+/// by a radius its renderers clamp to half the shorter side
+/// (`crate::styles::pill`); `None` where it is not stated, or stated as
+/// per-corner radii that differ, or as a concentric radius, which needs the
+/// container's. iced's corner is circular, so a continuous curve is drawn as
+/// the circular corner of its radius (spec §10, rule 2).
 #[cfg(feature = "widgets")]
 pub fn radius_of(part: &PartStyle) -> Option<f32> {
-    use native_theme::next::{CornerCurve, CornerRadius};
+    use native_theme::next::CornerRadius;
 
     if !part.stated.contains(PartStated::CORNERS) {
         return None;
     }
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Some(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
-        (CornerRadius::Pill, CornerCurve::Circular) => Some(crate::styles::pill().top_left),
+    match part.corners.radius {
+        CornerRadius::None => Some(0.0),
+        CornerRadius::Uniform(r) => Some(r),
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => [top_right, bottom_right, bottom_left]
+            .iter()
+            .all(|&r| r == top_left)
+            .then_some(top_left),
+        CornerRadius::Pill => Some(crate::styles::pill().top_left),
         _ => None,
     }
 }
@@ -1245,15 +1256,16 @@ pub(crate) fn ring_stroke(stroke: &Stroke, home: &'static str) -> Mapped<Option<
 /// The ring [`focus_ring`] draws round a field of corner `radius`: the
 /// ring's stroke (`focus_ring.stroke`), its offset (`focus_ring.offset`),
 /// whether it shows for keyboard focus only (`focus_ring.trigger`), a
-/// second ring inside it (`focus_ring.inner_stroke`) and its outer corners
-/// (`focus_ring.corners`, the field's grown by the offset and the width
-/// where the theme states none); `None` where the theme states no stroke,
-/// or one inset at the field's edge.
+/// second ring inside it (`focus_ring.inner_stroke`) and the corners of the
+/// line the offset places, between the two (`focus_ring.corners`, the
+/// field's grown by the offset where the theme states none; spec §2,
+/// `FocusIndicator`); `None` where the theme states no stroke, or one inset
+/// at the field's edge.
 ///
 /// # Errors
 ///
 /// [`Unmapped`] where the indicator is not a ring (`focus_ring.kind`), or a
-/// stroke is per side or the corners a squircle.
+/// stroke is per side or the corners concentric ([`borders::corner_radii`]).
 #[cfg(feature = "widgets")]
 pub(crate) fn ring_look(
     r: &ResolvedTheme,
@@ -1292,7 +1304,7 @@ pub(crate) fn ring_look(
 /// # Errors
 ///
 /// [`Unmapped`] where the indicator is not a ring, a stroke is per side or
-/// the corners a squircle.
+/// the corners concentric.
 #[cfg(feature = "widgets")]
 pub fn focus_ring<'a, Message, Renderer>(
     r: &ResolvedTheme,

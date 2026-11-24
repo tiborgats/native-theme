@@ -46,8 +46,8 @@ use gpui_base::ResizableTheme;
 use gpui_base::input::CursorBlink;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig, ThemeMode};
 use native_theme::next::{
-    ButtonQuery, Color, Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FocusTrigger,
-    FontStyle, IconSizes, ListQuery, MotionPreference, Orientation, Paint, PartStated, PartStyle,
+    ButtonQuery, Color, Contrast, CornerRadius, DialogButtonOrder, FocusTrigger, FontStyle,
+    IconSizes, ListQuery, MotionPreference, Orientation, Paint, PartStated, PartStyle,
     ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
 
@@ -182,23 +182,42 @@ pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     }
 }
 
-/// A part's corner radius, where stated as one circular radius, or as square
-/// corners, which are no radius.
+/// A part's corner radius as [`radius_of`] reads it, where it is one radius.
 pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     stated(radius_of(part), home)
 }
 
-/// A part's corner radius as `radius` reads it, `None` where it is not
-/// stated, or stated in a form gpui cannot draw (not one circular radius,
-/// nor square corners: pill, per-corner or concentric corners, a continuous
-/// curve).
+/// The radius gpui-component rounds a pill or a circle by, past half any
+/// shape's shorter side, which gpui clamps to that half (gpui-component
+/// 0.10.0 `src/theme/mod.rs`, `RADIUS_FULL`, `px(9999.)`; gpui-pre 0.3.12
+/// `src/style.rs`, `Style::paint`, `clamp_radii_for_quad_size`).
+pub(crate) const PILL_RADIUS: f32 = 9999.0;
+
+/// A part's corner radius as one radius: one radius stated for every
+/// corner, square corners, which are no radius, or a pill, gpui-component's
+/// full radius (9999), which gpui clamps to half the shorter side
+/// (gpui-component 0.10.0 `src/theme/mod.rs`, `RADIUS_FULL`); `None` where
+/// it is not stated, or stated as per-corner radii that differ, or as a
+/// concentric radius, which needs the container's. gpui's corner is
+/// circular, so a continuous curve is drawn as the circular corner of its
+/// radius (spec §10, rule 2).
 pub fn radius_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return None;
     }
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Some(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+    match part.corners.radius {
+        CornerRadius::None => Some(0.0),
+        CornerRadius::Uniform(r) => Some(r),
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => [top_right, bottom_right, bottom_left]
+            .iter()
+            .all(|&r| r == top_left)
+            .then_some(top_left),
+        CornerRadius::Pill => Some(PILL_RADIUS),
         _ => None,
     }
 }
@@ -1886,6 +1905,74 @@ mod tests {
                 "{hover:?}"
             );
         }
+        Ok(())
+    }
+
+    /// Each form of a stated radius as the one-radius read takes it: a
+    /// continuous curve drawn as the circular corner of its radius (spec §10,
+    /// rule 2), a pill as gpui-component's full radius, per-corner radii where
+    /// the four are one; per-corner radii that differ and a concentric radius,
+    /// which needs the container's, not. On a patched theme a continuous
+    /// button's geometry is the circular button's of the same radius.
+    #[test]
+    fn every_radius_form_is_read_as_gpui_rounds_it() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, CornerCurve, Corners, PartPatch, Preset, Theme, ThemeContext, ThemePatch,
+        };
+
+        let part = |radius: CornerRadius, curve: CornerCurve| {
+            let mut part = PartStyle::default();
+            part.corners = Corners { radius, curve };
+            part.stated |= PartStated::CORNERS;
+            part
+        };
+        let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        };
+        for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
+            let read = |radius| radius_of(&part(radius, curve));
+            assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
+            assert_eq!(read(CornerRadius::None), Some(0.0));
+            assert_eq!(read(CornerRadius::Pill), Some(PILL_RADIUS));
+            assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
+            assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
+            assert_eq!(
+                read(CornerRadius::Concentric {
+                    inset: 2.0,
+                    min_radius: 1.0,
+                }),
+                None
+            );
+        }
+        assert_eq!(
+            radius(
+                &part(per_corner(1.0, 2.0, 3.0, 4.0), CornerCurve::Circular),
+                "h"
+            )
+            .err(),
+            Some(Unmapped("h"))
+        );
+
+        let patched = |corners: Corners| {
+            let mut r = Theme::preset(Preset::MacosTahoe).resolve(&ThemeContext::light());
+            r.apply_patch(
+                &ThemePatch::new()
+                    .button(ButtonRule::new().body(PartPatch::new().corners(corners))),
+            );
+            r
+        };
+        let continuous = patched(Corners::continuous(4.0));
+        assert_eq!(
+            radius_of(&continuous.button.body(WidgetState::NONE)),
+            Some(4.0)
+        );
+        assert_eq!(
+            builders::button(&continuous)?,
+            builders::button(&patched(Corners::uniform(4.0)))?
+        );
         Ok(())
     }
 }

@@ -509,11 +509,12 @@ fn a_stated_drop_shadow_is_drawn_as_stated() -> Result<(), Box<dyn std::error::E
 }
 
 /// The ring's second stroke and its own corners are drawn where the theme states them: the
-/// plugin's ring holds the inner stroke and the corners at the ring's inner edge (the stated
-/// outer corners less the width); unstated, neither.
+/// plugin's ring holds the inner stroke and the stated corners as its rect's, the line the
+/// offset places, between the two rings (a continuous curve drawn circular); unstated,
+/// neither; concentric corners are unmapped.
 #[test]
 fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn std::error::Error>> {
-    use native_theme::next::Corners;
+    use native_theme::next::{CornerRadius, Corners};
 
     let theme = Theme::preset(Preset::Windows11);
     let [mut light, light_inactive, dark, dark_inactive] = [
@@ -529,15 +530,29 @@ fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn st
     };
     let plain = ring(&light)?.ok_or("windows-11 states a ring")?;
     assert_eq!((plain.inner, plain.corners), (None, None));
-    let width = plain.stroke.width;
     light.focus_ring.inner_stroke = Stroke::uniform(1.0, Color::new(1.0, 1.0, 1.0, 1.0));
-    light.focus_ring.corners = Some(Corners::uniform(width + 4.0));
+    light.focus_ring.corners = Some(Corners::uniform(4.0));
     let drawn = ring(&light)?.ok_or("the ring")?;
     assert_eq!(
         drawn.inner,
         Some(egui::Stroke::new(1.0, egui::Color32::WHITE))
     );
     assert_eq!(drawn.corners, Some(egui::CornerRadius::same(4)));
+    light.focus_ring.corners = Some(Corners::continuous(4.0));
+    let drawn = ring(&light)?.ok_or("the ring")?;
+    assert_eq!(drawn.corners, Some(egui::CornerRadius::same(4)));
+    light.focus_ring.corners = Some(Corners {
+        radius: CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        },
+        ..Corners::default()
+    });
+    assert_eq!(
+        ring(&light).err(),
+        Some(super::Unmapped("focus_ring.corners"))
+    );
+    light.focus_ring.corners = None;
     light.focus_ring.inner_stroke = Stroke::sides(
         StrokeSide::default(),
         StrokeSide::default(),
@@ -810,6 +825,56 @@ fn the_menu_item_takes_the_panels_corners_on_material_3_alone()
     }
     assert!(unstated.contains(&Preset::Material3), "{unstated:?}");
     assert!(unstated.len() > 1, "{unstated:?}");
+    Ok(())
+}
+
+/// Each form of a stated radius as the one-radius read takes it: a continuous curve drawn as
+/// the circular corner of its radius (spec §10, rule 2), a pill as the largest radius egui
+/// holds, which epaint clamps to half the shorter side, per-corner radii where the four are
+/// one; per-corner radii that differ and a concentric radius, which needs the container's,
+/// not. On a patched theme a continuous panel's radius reaches material-3's menu outline.
+#[test]
+fn every_radius_form_is_read_as_egui_rounds_it() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{CornerCurve, CornerRadius, Corners, PartStated, PartStyle};
+
+    let part = |radius: CornerRadius, curve: CornerCurve| {
+        let mut part = PartStyle::default();
+        part.corners = Corners { radius, curve };
+        part.stated |= PartStated::CORNERS;
+        part
+    };
+    let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
+        top_left,
+        top_right,
+        bottom_right,
+        bottom_left,
+    };
+    for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
+        let read = |radius| super::radius_of(&part(radius, curve));
+        assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
+        assert_eq!(read(CornerRadius::None), Some(0.0));
+        assert_eq!(read(CornerRadius::Pill), Some(255.0));
+        assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
+        assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
+        assert_eq!(
+            read(CornerRadius::Concentric {
+                inset: 2.0,
+                min_radius: 1.0,
+            }),
+            None
+        );
+    }
+    assert_eq!(super::radius_of(&PartStyle::default()), None);
+
+    let panel =
+        "[[widgets.menu.rules]]\npanel.corners = { radius = 4.0, curve = \"continuous\" }\n";
+    let r = Theme::preset(Preset::Material3)
+        .with_patch(ThemePatch::from_toml(panel)?)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        super::build::cell_source(&r).menu.outline.edge.radius,
+        Some(4.0)
+    );
     Ok(())
 }
 
