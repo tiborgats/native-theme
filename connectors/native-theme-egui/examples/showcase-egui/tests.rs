@@ -4756,18 +4756,9 @@ fn open_scaled_in(
     harness
 }
 
-/// A stated row height under a text-scaling factor of `factor`, as the gpui connector's table,
-/// list and menu rows take one (`geometry::table_row_height`, `with_height_rule`): verbatim at a
-/// factor of 1 or less; above 1 at least the line box of `size` scaled, at `line_height`,
-/// rounded up, with `padding` (the row's top and bottom together) and `rule`.
-fn grown(stated: f32, factor: f32, size: f32, line_height: f32, padding: f32, rule: f32) -> f32 {
-    if factor <= 1.0 {
-        return stated;
-    }
-    stated.max((size * factor * line_height).ceil() + padding + rule)
-}
-
-/// [`grown`] on the 0.8.0 theme `r`, resolved at its text scale: a stated row height verbatim at
+/// A stated row height of the 0.8.0 theme `r`, resolved at its text scale, as the gpui
+/// connector's table, list and menu rows take one (`geometry::table_row_height`,
+/// `with_height_rule`): verbatim at
 /// a text scale of 1 or less; above 1 at least the line box of `label`, its own line height
 /// where the theme states one, else its size, which the resolve has scaled already, at the
 /// theme's line height (`next::line_height`), rounded up, with `padding` (the row's top and
@@ -4847,29 +4838,35 @@ fn galley_font(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) ->
     found.unwrap_or_else(|| panic!("no {text:?} galley was painted"))
 }
 
-/// M9-102, M9-103: a table's header is drawn in `list.header_font` at its weight and at the
-/// scaled size, on all three tables: under material-3 (`list.header_font.weight` 500 over a 400
-/// body) at a text-scaling factor of 1.5, the Basic table's "Name" is `list_header_font`'s size
-/// in the face registered at 500 (`demo::weighted_family`), and the Data and Theme Map tables'
-/// header labels, which read the installed 0.8.0 theme, are in `list.header_label(NONE)`'s
-/// size (`next::list_header_font`) and the face at its weight, stated apart from the body's.
+/// M9-102, M9-103: a table's header is drawn in its font at its weight and at the scaled size,
+/// on all three tables, each of the installed 0.8.0 theme: under material-3 at a text-scaling
+/// factor of 1.5, the Basic table's "Name" and the Data and Theme Map tables' header labels are
+/// in `list.header_label(NONE)`'s size (`next::list_header_font`) and the face registered at its
+/// weight (`demo::weighted_family`), stated apart from the body's.
 /// The faces are held on every host ([`hold_weights`]), so a header drawn at the body's weight
 /// fails here whatever faces the OS has.
 #[test]
 fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() -> Result<(), String> {
     let preset = "material-3";
-    let mut basic = open_scaled(preset, "basic", 1.5);
-    let t = basic.state().atlas.old_resolved(egui::Theme::Light).clone();
-    let header_weight = t.list.header_font.weight;
-    hold_weights(&mut basic, &[header_weight]);
-    let prefs = basic.state().atlas.accessibility().clone();
-    assert_eq!(prefs.text_scaling_factor, 1.5, "the override is installed");
+    let mut basic = open_page_scaled(Page::Basic, preset, 1.5);
+    let r = basic
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?
+        .clone();
+    let label = r.list.header_label(native_theme::next::WidgetState::NONE);
+    let body = native_theme_egui::next::font_weight(&r).map_err(|e| e.to_string())?;
+    hold_weights(&mut basic, &[label.weight]);
+    assert_eq!(r.context.text_scale, 1.5, "the override is installed");
     let want = egui::FontId::new(
-        native_theme_egui::list_header_font(&t, &prefs).size,
-        weighted(header_weight, t.defaults.font.weight),
+        native_theme_egui::next::list_header_font(&r)
+            .map_err(|e| e.to_string())?
+            .size,
+        weighted(label.weight, body),
     );
     assert_ne!(
-        t.list.header_font.weight, t.defaults.font.weight,
+        label.weight, body,
         "{preset}: the header's weight is not the body's"
     );
     let cell = basic.state().registry.places()["basic.table.header.name"];
@@ -5069,9 +5066,9 @@ fn the_text_role_labels_are_drawn_at_their_weight() -> Result<(), String> {
 /// The tables' header rows are `list_header_height` tall where the theme states one
 /// (material-3, macos-monterey), else a row's height where the theme states one, else a row
 /// ([`UNSTATED_PRESET`]): on the Basic page's painted table (its `basic.table.header` place) a row
-/// of the header font, `list.border.padding` above and below its line (`pages/basic.rs`,
-/// `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s, which read the installed
-/// 0.8.0 theme, its `list.header(NONE).min_size[1]`, else `list.row(NONE).min_size[1]`, else
+/// of the header font, `list.header(NONE)`'s padding above and below its line box
+/// (`pages/basic.rs`, `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s, all of
+/// the installed 0.8.0 theme, its `list.header(NONE).min_size[1]`, else `list.row(NONE).min_size[1]`, else
 /// egui's own `interact_size.y`, or the header font's line box rounded up, where that is taller
 /// ([`next_table_row`]). There
 /// the header pushes the first body row down by exactly its height: its cells are one line in
@@ -5079,7 +5076,7 @@ fn the_text_role_labels_are_drawn_at_their_weight() -> Result<(), String> {
 /// with no spacing between them, so a first-row cell's centre lies half the header and half a
 /// row below a header cell's, on egui's layout grid ([`CENTRE_SLACK`]). At a text-scaling
 /// factor of 1.5 a stated height grows to hold its label, as gpui's table rows grow
-/// ([`grown`]), and an unstated Basic header is a row of the header font at its scaled size.
+/// ([`next_rule`]), and an unstated Basic header is a row of the header font at its scaled size.
 #[test]
 fn the_tables_headers_take_the_themes_header_height() -> Result<(), String> {
     for (preset, factor) in [
@@ -5089,29 +5086,29 @@ fn the_tables_headers_take_the_themes_header_height() -> Result<(), String> {
         (UNSTATED_PRESET, 1.5),
         ("macos-monterey", 1.5),
     ] {
-        let basic = open_scaled(preset, "basic", factor);
-        let t = basic.state().atlas.old_resolved(egui::Theme::Light).clone();
-        let stated = native_theme_egui::list_header_height(&t);
+        let basic = open_page_scaled(Page::Basic, preset, factor);
+        let rb = basic
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or("no 0.8.0 theme installed")?
+            .clone();
+        let stated = native_theme_egui::next::list_header_height(&rb);
         assert_eq!(
             stated.is_some(),
             preset != UNSTATED_PRESET,
             "{preset}: the preset's header height"
         );
-        let l = &t.list;
-        let line_height = t.defaults.line_height;
-        let padding = l.border.padding.top.unwrap_or(0.0) + l.border.padding.bottom.unwrap_or(0.0);
-        let size =
-            native_theme_egui::list_header_font(&t, basic.state().atlas.accessibility()).size;
-        let want = match stated.or(l.row_height) {
-            Some(h) => grown(
-                h,
-                factor,
-                l.header_font.size,
-                line_height,
-                padding,
-                t.separator.line_width,
-            ),
-            None => size * line_height + padding,
+        let none = native_theme::next::WidgetState::NONE;
+        let header_label = rb.list.header_label(none);
+        let [top, _, bottom, _] = native_theme_egui::next::padding_of(&rb.list.header(none));
+        let padding = top.unwrap_or_default() + bottom.unwrap_or_default();
+        let size = native_theme_egui::next::list_header_font(&rb)
+            .map_err(|e| e.to_string())?
+            .size;
+        let want = match stated.or(rb.list.row(none).min_size[1]) {
+            Some(h) => next_rule(&rb, h, &header_label, padding + rb.separator.thickness),
+            None => crate::demo::next_line_box(&rb, &header_label, size) + padding,
         };
         let placed = basic.state().registry.places()["basic.table.header"];
         assert!(
@@ -5190,8 +5187,8 @@ fn galley_rect(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) ->
 
 /// Every table centres its text in its row's height, as the gpui showcase's table centres each
 /// cell's text in its row (`showcase-gpui/demo.rs`, `files_table`'s cells,
-/// `.h_full().flex().items_center()`): under material-3, whose `list.header_height` is taller
-/// than the header's line, the galleys of the Basic table's "Name", the Data table's "Theme"
+/// `.h_full().flex().items_center()`): under material-3, whose `list.header(NONE).min_size[1]`
+/// is taller than the header's line, the galleys of the Basic table's "Name", the Data table's "Theme"
 /// and the Theme Map's "Leaf" are each centred in their header row within half a pixel; under
 /// windows-11, whose `list.row_height` is taller than a body line, so are the Data table's and
 /// the Theme Map's first body texts in their row. The Basic header row is its place
@@ -5210,7 +5207,7 @@ fn the_tables_centre_their_text_in_its_row() -> Result<(), String> {
         }
     };
 
-    let basic = open_scaled("material-3", "basic", 1.0);
+    let basic = open_page_under(Page::Basic, egui::Theme::Light, "material-3");
     let places = basic.state().registry.places();
     let header = places["basic.table.header"];
     let name = galley_rect(&basic, "Name", &[places["basic.table.header.name"]]);
@@ -5818,7 +5815,7 @@ fn a_theme_map_cell_cut_short_shows_its_whole_text_on_hover() {
 /// in it to half a point.
 #[test]
 fn the_basic_list_labels_are_placed_as_painted_centred_down_their_rows() {
-    let harness = open_scaled("windows-11", "basic", 1.0);
+    let harness = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
     let places = harness.state().registry.places();
     let shapes = &harness.output().shapes;
     for n in 1..=3 {
@@ -5848,10 +5845,12 @@ fn the_basic_list_labels_are_placed_as_painted_centred_down_their_rows() {
     }
 }
 
-/// M9-110: the Basic list's and table's fills keep inside their frame's rounded corners. The
-/// frame (`pages/basic.rs`, `list_frame`) is rounded by `list.border.corner_radius` and has no
-/// margin, so its content lies inside its `list.border.line_width` stroke, where the frame's
-/// inner radius is the radius less the width. Under adwaita, kde-breeze and macos-tahoe set
+/// M9-110: the Basic list's and table's fills keep inside their frame's rounded corners, on the
+/// 0.8.0 model; a highlight that states its corners (kde-breeze's list, issue #4's L4, and its
+/// table, square) is the row inset by its margin, rounded by them, whatever it meets. The
+/// frame (`pages/basic.rs`, `list_frame`) is rounded by `list.container(NONE).corners` and has
+/// no margin, so its content lies inside its stroke, where the frame's inner radius is the
+/// radius less the width. Under adwaita, kde-breeze and macos-tahoe set
 /// directly, whose list frames are rounded: the table's header fill is rounded by the inner
 /// radius at the top and square at the bottom, the selected last row at the bottom and square
 /// at the top; the list's selected row at the corners where it meets the frame, the first row
@@ -5866,26 +5865,58 @@ fn the_basic_list_labels_are_placed_as_painted_centred_down_their_rows() {
 /// `Shape::Rect` at its element's place in its colour.
 #[test]
 fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
-    use crate::pages::basic::{LIST_VISIBLE, TABLE_ROWS, TABLE_SELECTED};
+    use crate::pages::basic::{LIST_VISIBLE, TABLE_ROWS, TABLE_SELECTED, header_section_fill};
+    use native_theme::next::{ListKind, ListQuery, ListVariant, PartStated, WidgetState};
+    use native_theme_egui::next::{fill_of, radius_of, stroke_width_of};
 
-    fn corners_of(harness: &Harness<'_, App>, id: &str, fill: egui::Color32) -> egui::CornerRadius {
-        let place = harness.state().registry.places()[id];
+    /// The corners of the one filled rectangle at `place`, in `fill` where given.
+    fn corners_of(
+        harness: &Harness<'_, App>,
+        place: egui::Rect,
+        fill: Option<egui::Color32>,
+    ) -> egui::CornerRadius {
         let found: Vec<egui::CornerRadius> = harness
             .output()
             .shapes
             .iter()
             .filter_map(|clipped| match &clipped.shape {
-                egui::Shape::Rect(r) if r.fill == fill && near_rect(r.rect, place) => {
+                egui::Shape::Rect(r)
+                    if fill.map_or(r.fill.a() > 0, |fill| r.fill == fill)
+                        && near_rect(r.rect, place) =>
+                {
                     Some(r.corner_radius)
                 }
                 _ => None,
             })
             .collect();
-        assert_eq!(found.len(), 1, "{id}: the fills at {place:?}");
+        assert_eq!(found.len(), 1, "the fills at {place:?}");
         found[0]
     }
+    /// `row` inset by the highlight `part`'s margin on each side it states.
+    fn lit(part: &native_theme::next::PartStyle, row: egui::Rect) -> egui::Rect {
+        let side = |bit: PartStated, v: f32| {
+            if part.stated.contains(bit) { v } else { 0.0 }
+        };
+        let m = &part.margin;
+        egui::Rect::from_min_max(
+            egui::pos2(
+                row.left() + side(PartStated::MARGIN_LEFT, m.left),
+                row.top() + side(PartStated::MARGIN_TOP, m.top),
+            ),
+            egui::pos2(
+                row.right() - side(PartStated::MARGIN_RIGHT, m.right),
+                row.bottom() - side(PartStated::MARGIN_BOTTOM, m.bottom),
+            ),
+        )
+    }
     let corners = |nw, ne, sw, se| egui::CornerRadius { nw, ne, sw, se };
-    let colour = native_theme_egui::convert::to_color32;
+    let radius = |r: f32| native_theme_egui::convert::to_corner_radius(egui::CornerRadius::ZERO, r);
+    let query = |variant: ListVariant, state: WidgetState| {
+        ListQuery::new(state).variant(ListKind {
+            variant,
+            alternate: false,
+        })
+    };
     assert_eq!(
         TABLE_SELECTED + 1,
         TABLE_ROWS.len(),
@@ -5895,49 +5926,65 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
     assert!(last > 1, "the list shows a row between its first and last");
     let mut bars = Vec::new();
     let mut off_grid = false;
+    let mut stated_corners = Vec::new();
     for preset in ["adwaita", "kde-breeze", "macos-tahoe"] {
-        let mut harness = open_scaled(preset, "basic", 1.0);
-        let t = harness
+        let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        let r = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
-        let l = &t.list;
-        let inner = native_theme_egui::convert::to_corner_radius(
-            egui::CornerRadius::ZERO,
-            (l.border.corner_radius - l.border.line_width).max(0.0),
-        )
-        .nw;
+            .next_resolved(egui::Theme::Light)
+            .cloned();
+        assert!(r.is_some(), "{preset}'s 0.8.0 theme is installed");
+        let Some(r) = r else { continue };
+        let l = &r.list;
+        let mut inner_of = |variant: ListVariant| {
+            let frame = l.container(query(variant, WidgetState::NONE));
+            let width = stroke_width_of(&frame).unwrap_or_default();
+            off_grid |= width.fract() != 0.0;
+            radius((radius_of(&frame).unwrap_or_default() - width).max(0.0)).nw
+        };
+        let (inner, table_inner) = (inner_of(ListVariant::Plain), inner_of(ListVariant::Table));
         assert!(
             inner > 0,
             "{preset}: the list's frame is rounded inside its line"
         );
-        let floats = t.scrollbar.overlay_mode;
+        let floats = r.scrollbar.overlay_mode;
         bars.push(floats);
-        off_grid |= l.border.line_width.fract() != 0.0;
+        let places = harness.state().registry.places().clone();
 
+        let table_rest = query(ListVariant::Table, WidgetState::NONE);
+        if fill_of(&l.header(table_rest)).is_some() {
+            assert_eq!(
+                corners_of(&harness, places["basic.table.header"], None),
+                corners(table_inner, table_inner, 0, 0),
+                "{preset}: the table's header"
+            );
+        }
+        let table_lit = l.highlight(query(ListVariant::Table, WidgetState::SELECTED));
+        let selected = places[format!("basic.table.row_{}", TABLE_SELECTED + 1).as_str()];
         assert_eq!(
-            corners_of(&harness, "basic.table.header", colour(l.header_background)),
-            corners(inner, inner, 0, 0),
-            "{preset}: the table's header"
-        );
-        let selected = format!("basic.table.row_{}", TABLE_SELECTED + 1);
-        assert_eq!(
-            corners_of(&harness, &selected, colour(l.selection_background)),
-            corners(0, 0, inner, inner),
+            corners_of(&harness, lit(&table_lit, selected), None),
+            radius_of(&table_lit).map_or(corners(0, 0, table_inner, table_inner), radius),
             "{preset}: the table's selected last row"
         );
 
+        let list_lit = l.highlight(query(ListVariant::Plain, WidgetState::SELECTED));
+        let stated = radius_of(&list_lit);
+        stated_corners.push(stated.is_some());
         for row in 0..=last {
             let left = |at: bool| if at { inner } else { 0 };
             let right = |at: bool| if at && floats { inner } else { 0 };
             let (top, bottom) = (row == 0, row == last);
-            let want = corners(left(top), right(top), left(bottom), right(bottom));
+            let want = stated.map_or(
+                corners(left(top), right(top), left(bottom), right(bottom)),
+                radius,
+            );
             harness.state_mut().demo_state.basic_list = row;
             harness.run_steps(4);
             let id = format!("basic.list.row_{}", row + 1);
+            let place = harness.state().registry.places()[id.as_str()];
             assert_eq!(
-                corners_of(&harness, &id, colour(l.selection_background)),
+                corners_of(&harness, lit(&list_lit, place), None),
                 want,
                 "{preset}: the list's selected {id}"
             );
@@ -5947,35 +5994,40 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
         // alone of the three): the first section's top-left corner, the last's top-right.
         // kde-breeze states both in one colour: which fill pressed takes is
         // `a_header_section_takes_the_pressed_fill_else_the_hovered_one`'s.
-        let (Some(hovered), Some(pressed)) =
-            (l.header_hover_background, l.header_active_background)
-        else {
+        let (Some(hovered), Some(pressed)) = (
+            header_section_fill(Some(&r), true, false),
+            header_section_fill(Some(&r), true, true),
+        ) else {
             assert_ne!(preset, "kde-breeze", "kde-breeze states both section fills");
             continue;
         };
         for (id, want) in [
-            ("basic.table.header.name", corners(inner, 0, 0, 0)),
-            ("basic.table.header.size", corners(0, inner, 0, 0)),
+            ("basic.table.header.name", corners(table_inner, 0, 0, 0)),
+            ("basic.table.header.size", corners(0, table_inner, 0, 0)),
         ] {
-            let at = harness.state().registry.places()[id].center();
-            harness.hover_at(at);
+            let place = places[id];
+            harness.hover_at(place.center());
             harness.run_steps(3);
             assert_eq!(
-                corners_of(&harness, id, colour(hovered)),
+                corners_of(&harness, place, Some(hovered)),
                 want,
                 "{preset}: the hovered {id}"
             );
-            harness.drag_at(at);
+            harness.drag_at(place.center());
             harness.run_steps(3);
             assert_eq!(
-                corners_of(&harness, id, colour(pressed)),
+                corners_of(&harness, place, Some(pressed)),
                 want,
                 "{preset}: the pressed {id}"
             );
-            harness.drop_at(at);
+            harness.drop_at(place.center());
             harness.run_steps(3);
         }
     }
+    assert!(
+        stated_corners.contains(&true) && stated_corners.contains(&false),
+        "a highlight with corners of its own and one without: {stated_corners:?}"
+    );
     assert!(
         bars.contains(&true) && bars.contains(&false),
         "a floating bar and one beside the rows: {bars:?}"
@@ -5983,29 +6035,20 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
     assert!(off_grid, "a list line off the whole-pixel grid");
 }
 
-/// E5 (issue #4's leftovers): a hovered, unselected row is outlined in
-/// `list.hover_border_color` at `defaults.border.line_width`, inside the row's fill and on its
-/// shape, where the theme states the colour: kde-breeze light states Breeze's `Highlight` at
-/// alpha 0.8 (docs/platform-facts.md §2.15), adwaita none. The Basic list's first row, item 2
-/// selected, and the command palette's second row, the first highlighted: each the one
-/// `Shape::Rect` so stroked, the list row's at its place with its fill's corners, the palette
-/// row's round it on the frame egui fills it in, at that frame's place and radius.
+/// E5 (issue #4's leftovers): a hovered, unselected row is outlined, inside the row's fill and
+/// on its shape. The Basic list's first row, item 2 selected, on the 0.8.0 model: in
+/// `list.highlight(HOVER).stroke` where a rule states it, kde-breeze light's 1 px line, else in
+/// egui's own hovered row's, the List scope's `widgets.hovered.bg_stroke` (spec §10, rule 0:
+/// adwaita states none), the one `Shape::Rect` so stroked inside its place, with its fill's
+/// corners. The command palette's second row, the first highlighted, still of the 0.7.2 theme:
+/// in `list.hover_border_color` at `defaults.border.line_width` where the theme states the
+/// colour, kde-breeze light Breeze's `Highlight` at alpha 0.8 (docs/platform-facts.md §2.15),
+/// round it on the frame egui fills it in, at that frame's place and radius.
 #[test]
 fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
-    fn rects_at(harness: &Harness<'_, App>, place: egui::Rect) -> Vec<egui::epaint::RectShape> {
-        harness
-            .output()
-            .shapes
-            .iter()
-            .filter_map(|clipped| match &clipped.shape {
-                egui::Shape::Rect(r) if near_rect(r.rect, place) => Some(r.clone()),
-                _ => None,
-            })
-            .collect()
-    }
-    let colour = native_theme_egui::convert::to_color32;
     for preset in ["kde-breeze", "adwaita"] {
-        let mut harness = open_scaled(preset, "basic", 1.0);
+        use native_theme::next::{PartStated, WidgetState};
+        let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
         let t = harness
             .state()
             .atlas
@@ -6019,15 +6062,31 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
                 t.defaults.border.line_width,
             )
         });
-        if preset == "kde-breeze" {
-            assert_eq!(
-                l.hover_border_color,
-                Some(native_theme::Rgba::new(0x3d, 0xae, 0xe9, 0xcc))
-            );
-            assert_eq!(outline.map(|s| s.width), Some(1.0));
+        // The list on the 0.8.0 model: the hovered row's outline where a rule states it, else
+        // egui's own hovered row's, the List scope's `widgets.hovered.bg_stroke`.
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .cloned();
+        assert!(r.is_some(), "{preset}'s 0.8.0 theme is installed");
+        let Some(r) = r else { continue };
+        let hover = r.list.highlight(WidgetState::HOVER);
+        let stated = hover.from_state.contains(PartStated::STROKE);
+        let list_outline = if stated {
+            let width = native_theme_egui::next::stroke_width_of(&hover);
+            let colour = native_theme_egui::next::state_stroke_color_of(&hover);
+            assert_eq!(width, Some(1.0), "{preset}");
+            colour.map(|c| egui::Stroke::new(1.0, c))
         } else {
-            assert_eq!(l.hover_border_color, None, "{preset} states no outline");
-        }
+            None
+        };
+        assert_eq!(
+            stated,
+            preset == "kde-breeze",
+            "{preset}: which preset states the outline"
+        );
+        let hover_fill = native_theme_egui::next::state_fill_of(&hover);
         let stroked = |r: &egui::epaint::RectShape| r.stroke.width > 0.0 && r.stroke.color.a() > 0;
 
         harness.state_mut().demo_state.basic_list = 1;
@@ -6035,14 +6094,22 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
         let place = harness.state().registry.places()["basic.list.row_1"];
         harness.hover_at(place.center());
         harness.run_steps(3);
-        let shapes = rects_at(&harness, place);
+        let shapes: Vec<egui::epaint::RectShape> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.contains_rect(r.rect) => Some(r.clone()),
+                _ => None,
+            })
+            .collect();
         let fills: Vec<_> = shapes
             .iter()
-            .filter(|r| r.fill == colour(l.hover_background))
+            .filter(|r| hover_fill.is_none_or(|fill| r.fill == fill) && r.fill.a() > 0)
             .collect();
         assert_eq!(fills.len(), 1, "{preset}: the hovered row's fill");
         let lines: Vec<_> = shapes.iter().filter(|r| stroked(r)).collect();
-        match outline {
+        match list_outline {
             Some(stroke) => {
                 assert_eq!(lines.len(), 1, "{preset}: the hovered row's outline");
                 assert_eq!(lines[0].stroke, stroke, "{preset}");
@@ -6052,7 +6119,26 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
                     "{preset}: the outline on the fill's shape"
                 );
             }
-            None => assert!(lines.is_empty(), "{preset}: {lines:?}"),
+            None => {
+                // egui's own hovered row's line, which the row's Widget Info names as egui's
+                // own where egui draws one, and nothing else
+                let named = harness
+                    .state()
+                    .registry
+                    .records()
+                    .iter()
+                    .filter(|r| r.info.kind == "List row" && near_rect(r.rect, place))
+                    .flat_map(|r| r.info.not_themeable.iter())
+                    .any(|(what, note)| {
+                        *what == crate::pages::basic::OWN_ROW && note.contains("stroke")
+                    });
+                assert!(lines.len() <= 1, "{preset}: {lines:?}");
+                assert_eq!(
+                    lines.len() == 1,
+                    named,
+                    "{preset}: egui's own outline {lines:?}, named in Widget Info {named}"
+                );
+            }
         }
 
         open_palette(&mut harness);
@@ -6128,8 +6214,10 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
 }
 
 /// E5: a hovered row the list's view cuts keeps its outline on its fill's shape: under
-/// kde-breeze light the first row scrolled partly out at the top, filled rounded where it meets
-/// the frame, draws no line along the view's edge and no line pixel outside the fill's arcs.
+/// kde-breeze light, on the 0.8.0 model, the first row scrolled partly out at the top, its
+/// highlight rounded by `list.highlight(HOVER).corners` and cut by the view, as Breeze clips a
+/// row to the view, draws no line along the view's edge and no line pixel outside the fill's
+/// arcs.
 /// Both shapes are tessellated as epaint draws them, each clipped to its clip rectangle, and
 /// sampled at every pixel's centre of the fill: the line covers no pixel more than the fill does.
 #[test]
@@ -6170,22 +6258,30 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
         }
         most
     }
-    let colour = native_theme_egui::convert::to_color32;
-    let mut harness = open_scaled("kde-breeze", "basic", 1.0);
-    let t = harness
+    use native_theme::next::WidgetState;
+    use native_theme_egui::next::{state_fill_of, state_stroke_color_of, stroke_width_of};
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    let r = harness
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
-    let l = &t.list;
-    let edge = l
-        .hover_border_color
-        .expect("kde-breeze outlines a hovered row");
-    let outline = native_theme_egui::convert::to_stroke(
-        egui::Stroke::NONE,
-        edge,
-        t.defaults.border.line_width,
+        .next_resolved(egui::Theme::Light)
+        .cloned();
+    assert!(r.is_some(), "kde-breeze's 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let hover = r.list.highlight(WidgetState::HOVER);
+    let parts = (
+        stroke_width_of(&hover),
+        state_stroke_color_of(&hover),
+        state_fill_of(&hover),
     );
+    assert!(
+        parts.0.is_some() && parts.1.is_some() && parts.2.is_some(),
+        "kde-breeze fills and outlines a hovered row: {parts:?}"
+    );
+    let (Some(width), Some(edge), Some(hover_fill)) = parts else {
+        return;
+    };
+    let outline = egui::Stroke::new(width, edge);
     harness.state_mut().demo_state.basic_list = 1;
     harness.run_steps(SETTLE);
     let place = harness.state().registry.places()["basic.list.row_1"];
@@ -6206,11 +6302,7 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
     let fills: Vec<_> = shapes
         .iter()
         .filter_map(|s| match &s.shape {
-            egui::Shape::Rect(r)
-                if r.fill == colour(l.hover_background) && r.rect.intersects(row) =>
-            {
-                Some((s, r))
-            }
+            egui::Shape::Rect(r) if r.fill == hover_fill && r.rect.intersects(row) => Some((s, r)),
             _ => None,
         })
         .collect();
@@ -6235,7 +6327,7 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
     assert_eq!(lines.len(), 1, "the hovered row's outline");
     let ctx = harness.ctx.clone();
     let ppp = ctx.pixels_per_point();
-    let fill_alpha = colour(l.hover_background).a();
+    let fill_alpha = hover_fill.a();
     let mut drawn = 0;
     let mut outside = Vec::new();
     let (x0, x1) = (
@@ -6486,24 +6578,31 @@ fn the_open_menu_insets_its_first_item_by_the_panel_padding() -> Result<(), Stri
 /// none, and every line is the grid's.
 #[test]
 fn the_table_headers_lines_take_the_header_separator_colour() {
-    let colour = native_theme_egui::convert::to_color32;
+    use native_theme::next::ListVariant;
     for preset in ["kde-breeze", "adwaita"] {
-        let harness = open_scaled(preset, "basic", 1.0);
-        let t = harness
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        let r = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
-        let l = &t.list;
-        let grid = colour(l.grid_color);
+            .next_resolved(egui::Theme::Light)
+            .cloned();
+        assert!(r.is_some(), "{preset}'s 0.8.0 theme is installed");
+        let Some(r) = r else { continue };
+        let grid = crate::demo::next_color32(r.list.grid_color);
+        let stated = native_theme_egui::next::fill_of(
+            &r.list
+                .header_separator(native_theme::next::ListQuery::from(ListVariant::Table)),
+        );
         let head = if preset == "kde-breeze" {
             assert_eq!(
-                l.header_separator_color,
-                Some(native_theme::Rgba::new(0x23, 0x26, 0x29, 0x33))
+                stated,
+                Some(egui::Color32::from_rgba_unmultiplied(
+                    0x23, 0x26, 0x29, 0x33
+                ))
             );
-            colour(native_theme::Rgba::new(0x23, 0x26, 0x29, 0x33))
+            stated.unwrap_or(grid)
         } else {
-            assert_eq!(l.header_separator_color, None, "{preset}");
+            assert_eq!(stated, None, "{preset}");
             grid
         };
         let header = place_of(&harness, "basic.table.header");
@@ -6557,108 +6656,108 @@ fn the_table_headers_lines_take_the_header_separator_colour() {
 }
 
 /// A table header section's fill (`pages::basic::header_section_fill`, decision 19 and 7.H.1 of
-/// `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md`), on kde-breeze light, which
-/// states its two section fills in one colour, so the page's pressed section
+/// `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md`), on the 0.8.0 model: kde-breeze
+/// light states its hovered section's fill, `list.header(HOVER)`, which also answers the
+/// pressed query, so the page's pressed section
 /// (`the_basic_list_and_table_fills_keep_inside_the_frames_corners`) does not tell them apart.
-/// With `list.header_active_background` set to the header's own fill, which differs from the
-/// hovered one, pressed takes the pressed fill; without it, pressed takes the hovered fill;
-/// without either, no state takes a fill; at rest none does.
+/// Patched with a fill of its own for `PRESSED`, which the query `HOVER | PRESSED` takes, its
+/// two flags of one exclusive group (spec §2's evaluation, step 1), and differs from the hovered one,
+/// pressed takes it and hovered keeps its own; at rest none does, nor any state without an
+/// installed 0.8.0 theme, egui's own header having no hover.
 #[test]
-fn a_header_section_takes_the_pressed_fill_else_the_hovered_one() {
+fn a_header_section_takes_the_pressed_fill_else_the_hovered_one() -> Result<(), String> {
     use crate::pages::basic::header_section_fill;
+    use native_theme::next::{ListRule, ListVariant, Paint, PartPatch, ThemePatch, WidgetState};
 
-    let colour = native_theme_egui::convert::to_color32;
-    let (atlas, _) = from_preset("kde-breeze", false, &AccessibilityPreferences::default())
-        .unwrap_or_else(|error| panic!("kde-breeze: {error}"));
-    let t = atlas.resolved_for(egui::Theme::Light).cloned();
-    assert!(t.is_some(), "kde-breeze's atlas holds its 0.7.2 themes");
-    let Some(mut t) = t else { return };
-    let Some(hovered) = t.list.header_hover_background else {
-        panic!("kde-breeze states the hovered section fill");
+    let (_harness, r) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |r| {
+        Some(
+            ThemePatch::new().list(
+                ListRule::new()
+                    .states(WidgetState::PRESSED)
+                    .header(PartPatch::new().fill(Paint::Solid(r.colors.window.border?))),
+            ),
+        )
+    })?;
+    let table = |state: WidgetState| {
+        let q = native_theme::next::ListQuery::new(state).variant(native_theme::next::ListKind {
+            variant: ListVariant::Table,
+            alternate: false,
+        });
+        native_theme_egui::next::state_fill_of(&r.list.header(q))
     };
-    assert_eq!(
-        t.list.header_active_background,
-        Some(hovered),
-        "kde-breeze states its two section fills in one colour"
-    );
-    let pressed = t.list.header_background;
-    assert_ne!(
-        pressed, hovered,
-        "the pressed fill differs from the hovered one"
-    );
-    t.list.header_active_background = Some(pressed);
+    let hovered = table(WidgetState::HOVER);
+    let pressed = table(WidgetState::HOVER.union(WidgetState::PRESSED));
+    let border = r.colors.window.border.map(crate::demo::next_color32);
+    if hovered.is_none() || pressed != border || hovered == pressed {
+        return Err(format!(
+            "kde-breeze states the hovered section {hovered:?}, the patched pressed one \
+             {pressed:?}, want the window border {border:?} and two fills"
+        ));
+    }
     let states = [(false, false), (true, false), (false, true), (true, true)];
-    let fills = |t: &native_theme_egui::ResolvedTheme| {
-        states.map(|(hover, press)| header_section_fill(t, hover, press))
+    let fills = |r: Option<&native_theme::next::ResolvedTheme>| {
+        states.map(|(hover, press)| header_section_fill(r, hover, press))
     };
-    let (hovered, pressed) = (Some(colour(hovered)), Some(colour(pressed)));
-    assert_eq!(fills(&t), [None, hovered, pressed, pressed], "both stated");
-    t.list.header_active_background = None;
-    assert_eq!(
-        fills(&t),
-        [None, hovered, hovered, hovered],
-        "the hovered alone"
-    );
-    t.list.header_hover_background = None;
-    assert_eq!(fills(&t), [None; 4], "neither stated");
+    assert_eq!(fills(Some(&r)), [None, hovered, pressed, pressed]);
+    assert_eq!(fills(None), [None; 4], "egui's own header has no hover");
+    Ok(())
 }
 
-/// The swap of `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md` 7.H.2: a selected
-/// list or table row takes the unfocused pair while the window is not active, where the theme's
-/// inactive fill differs from its selection. `selection_pair` with an active window is the
-/// list's pair on every bundled combination, and with an inactive one the defaults' inactive
-/// pair on exactly kde-breeze's, macos-monterey's and macos-tahoe's six and the list's pair on
-/// the others. A pass with `RawInput::focused` false, which egui_kittest otherwise keeps true,
-/// paints the table's and the list's selected rows under kde-breeze light in #c2e0f5 lettered
-/// #232629 (kde-breeze's `[light.defaults]`); a focused pass again in the list's pair.
+/// The swap of `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md` 7.H.2, on the 0.8.0
+/// model: a selected list or table row is asked with `UNFOCUSED_VIEW` while the window is not
+/// active (spec §5, the list's `highlight`). A pass with `RawInput::focused` false, which
+/// egui_kittest otherwise keeps true, paints the table's and the list's selected rows under
+/// kde-breeze light in `list.highlight(SELECTED | UNFOCUSED_VIEW).fill` lettered
+/// `list.item_label(SELECTED | UNFOCUSED_VIEW).color`, which differ from the focused pair; a
+/// focused pass again in `SELECTED`'s, each of the list's or the table's variant. Each fill is
+/// the one filled rectangle inside its row's place, the highlight inset by its margin.
 #[test]
 fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
-    use crate::pages::basic::{TABLE_SELECTED, selection_pair};
+    use crate::pages::basic::TABLE_SELECTED;
+    use native_theme::next::{ListKind, ListQuery, ListVariant, WidgetState};
+    use native_theme_egui::next::{state_fill_of, state_text_color_of};
 
-    let colour = native_theme_egui::convert::to_color32;
-    let mut swapped = Vec::new();
-    let mut kept = 0;
-    for preset in Theme::list_presets().iter().map(|p| p.key) {
-        let (atlas, _) = from_preset(preset, false, &AccessibilityPreferences::default())
-            .unwrap_or_else(|error| panic!("{preset}: {error}"));
-        for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-            let t = atlas.resolved_for(scheme);
-            assert!(t.is_some(), "{preset}'s atlas holds its 0.7.2 themes");
-            let Some(t) = t else { continue };
-            let d = &t.defaults;
-            let list = (
-                colour(t.list.selection_background),
-                colour(t.list.selection_text_color),
-            );
-            assert_eq!(selection_pair(t, true), list, "{preset} {scheme:?}");
-            if selection_pair(t, false) == list {
-                kept += 1;
-            } else {
-                assert_eq!(
-                    selection_pair(t, false),
-                    (
-                        colour(d.selection_inactive_background),
-                        colour(d.selection_inactive_text_color)
-                    ),
-                    "{preset} {scheme:?}"
-                );
-                swapped.push(format!("{preset} {scheme:?}"));
-            }
-        }
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .cloned();
+    assert!(r.is_some(), "kde-breeze's 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let pair = |variant: ListVariant, state: WidgetState| {
+        let q = ListQuery::new(state).variant(ListKind {
+            variant,
+            alternate: false,
+        });
+        (
+            state_fill_of(&r.list.highlight(q)),
+            state_text_color_of(&r.list.item_label(q)),
+        )
+    };
+    let unfocused = WidgetState::SELECTED.union(WidgetState::UNFOCUSED_VIEW);
+    for variant in [ListVariant::Plain, ListVariant::Table] {
+        let (lit, dim) = (
+            pair(variant, WidgetState::SELECTED),
+            pair(variant, unfocused),
+        );
+        assert!(
+            lit.0.is_some() && lit.1.is_some() && dim.0.is_some() && dim.1.is_some(),
+            "kde-breeze states both pairs: {lit:?} {dim:?}"
+        );
+        assert_ne!(lit, dim, "{variant:?}: the unfocused pair differs");
     }
-    let six: Vec<String> = ["kde-breeze", "macos-monterey", "macos-tahoe"]
-        .into_iter()
-        .flat_map(|p| [format!("{p} Light"), format!("{p} Dark")])
-        .collect();
-    assert_eq!(swapped, six, "the combinations the rule selects");
-    assert_eq!(kept, 28, "the combinations that keep the list's pair");
-
-    let mut harness = open_scaled("kde-breeze", "basic", 1.0);
     let rows = [
-        format!("basic.table.row_{}", TABLE_SELECTED + 1),
-        format!(
-            "basic.list.row_{}",
-            harness.state().demo_state.basic_list + 1
+        (
+            format!("basic.table.row_{}", TABLE_SELECTED + 1),
+            ListVariant::Table,
+        ),
+        (
+            format!(
+                "basic.list.row_{}",
+                harness.state().demo_state.basic_list + 1
+            ),
+            ListVariant::Plain,
         ),
     ];
     let painted = |harness: &Harness<'_, App>, id: &str| {
@@ -6667,7 +6766,9 @@ fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
         let fills: Vec<egui::Color32> = shapes
             .iter()
             .filter_map(|clipped| match &clipped.shape {
-                egui::Shape::Rect(r) if near_rect(r.rect, place) => Some(r.fill),
+                egui::Shape::Rect(r) if place.contains_rect(r.rect) && r.fill.a() > 0 => {
+                    Some(r.fill)
+                }
                 _ => None,
             })
             .collect();
@@ -6682,27 +6783,23 @@ fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
             .collect();
         (fills, inks)
     };
-    let rgb = egui::Color32::from_rgb;
-    let l = &harness
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .list
-        .clone();
-    // kde-breeze's `[light.defaults]`
-    for (focused, fill, ink) in [
-        (false, rgb(0xc2, 0xe0, 0xf5), rgb(0x23, 0x26, 0x29)),
-        (
-            true,
-            colour(l.selection_background),
-            colour(l.selection_text_color),
-        ),
-    ] {
+    for focused in [false, true] {
         harness.input_mut().focused = focused;
         harness.run_steps(3);
-        for id in &rows {
+        for (id, variant) in &rows {
+            let state = if focused {
+                WidgetState::SELECTED
+            } else {
+                unfocused
+            };
+            let (fill, ink) = pair(*variant, state);
             let (fills, inks) = painted(&harness, id);
-            assert_eq!(fills, [fill], "{id}, focused {focused}: its fill");
+            assert_eq!(
+                fills,
+                Vec::from_iter(fill),
+                "{id}, focused {focused}: its fill"
+            );
+            let ink = ink.unwrap_or_default();
             assert!(
                 !inks.is_empty() && inks.iter().all(|c| *c == ink),
                 "{id}, focused {focused}: its text {inks:?}"
@@ -6715,7 +6812,7 @@ fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
 /// list and menu rows do (`geometry::list_item`, `geometry::menu_item`: the stated height at a
 /// factor of 1 or less, a minimum around the drawn text and padding above it) and as the iced
 /// showcase's Basic list and window menu rows do. At 1 the Basic list's rows are
-/// `list.row_height` (macos-monterey, material-3) of the 0.7.2 theme the list still reads, and
+/// the installed 0.8.0 theme's `list.row(NONE).min_size[1]`, and
 /// the window's menu rows the installed 0.8.0 theme's `menu.item(NONE).min_size[1]` (adwaita,
 /// macos-monterey, material-3), macos-monterey's 22 px row too, whose 17.33 px menu font's line
 /// box and stated 3 + 3 padding overrun it: the connector narrows the padding to fit
@@ -6723,8 +6820,7 @@ fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
 /// its least (`interact_size.y`), drew the row 27 tall; at 1.5 and 1.75 each is the
 /// stated height or the line box of its font at its scaled size and line height, rounded up,
 /// plus its padding (`list.border.padding`, the menu's button padding), whichever is more,
-/// computed from the theme at test time ([`grown`], and [`next_rule`] for the 0.8.0 theme,
-/// whose sizes are scaled already): 1.75 puts macos-monterey's menu line box at 36.09, which
+/// computed from the 0.8.0 theme at test time ([`next_rule`], its sizes scaled already): 1.75 puts macos-monterey's menu line box at 36.09, which
 /// egui's own growth would leave a pixel short of the rounded-up 37.
 #[test]
 fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() -> Result<(), String> {
@@ -6739,18 +6835,12 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() -> Result<(),
         let mut harness = open_page_scaled(Page::Basic, preset, factor);
         harness.state_mut().open_menu = Some("theme".to_string());
         harness.run_steps(4);
-        let t = harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
         let r = harness
             .state()
             .atlas
             .next_resolved(egui::Theme::Light)
             .ok_or(format!("{preset}: no 0.8.0 theme installed"))?
             .clone();
-        let line_height = t.defaults.line_height;
         let places = harness.state().registry.places();
         let mut check = |id: &str, want: f32| match places.get(id) {
             Some(rect) if (rect.height() - want).abs() <= 0.05 => {}
@@ -6760,24 +6850,22 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() -> Result<(),
             )),
             None => faults.push(format!("{preset} at {factor}: {id} is not placed")),
         };
-        let l = &t.list;
-        if let Some(h) = l.row_height {
+        let row = r.list.row(WidgetState::NONE);
+        if let Some(h) = row.min_size[1] {
             seen.0 += 1;
             // the list's rows take the List scope's button padding on a side the theme leaves
             // unstated (`pages/basic.rs`, `row_metrics`), which the List role leaves the base
             // style's
             let own = harness.ctx.global_style().spacing.button_padding.y;
-            let padding =
-                l.border.padding.top.unwrap_or(own) + l.border.padding.bottom.unwrap_or(own);
+            let [top, _, bottom, _] = padding_of(&row);
+            let padding = top.unwrap_or(own) + bottom.unwrap_or(own);
             check(
                 "basic.list.row_1",
-                egui::emath::GuiRounding::round_ui(grown(
+                egui::emath::GuiRounding::round_ui(next_rule(
+                    &r,
                     h,
-                    factor,
-                    l.item_font.size,
-                    line_height,
+                    &r.list.item_label(WidgetState::NONE),
                     padding,
-                    0.0,
                 )),
             );
         }
