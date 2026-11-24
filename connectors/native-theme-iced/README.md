@@ -841,9 +841,9 @@ rule 0).
   `FOCUS_VISIBLE`, and `next::focus_rings_with`), and is `Unmapped` at the
   part's home (`input.field(FOCUSED).focus.kind`) where it is not a ring.
   A ring inset at the field's edge
-  (`offset` minus its width, adwaita's) is drawn by `next::styles::text_input`
-  and `text_editor` as the focused field's border, whose corners are the
-  field's, so its `inner_stroke` and `corners` are not drawn there.
+  (`offset` minus its width, adwaita's) is painted over the field by
+  `next::focus_ring` too, a band over the part's outermost width (FR2);
+  `next::styles::text_input` and `text_editor` draw no ring.
 - **A checked button.** iced's button has no checked status. iced marks a
   chosen button by its primary class: its own `todos` example draws the
   chosen filter with `button::primary` (iced 0.14.0

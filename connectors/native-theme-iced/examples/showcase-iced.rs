@@ -7651,6 +7651,14 @@ impl RingPart {
             Self::TextArea => iced_next::RingHomes::TEXT_AREA,
         }
     }
+
+    /// The home of its own ring, the focused part's `focus`.
+    fn focus_home(self) -> &'static str {
+        match self {
+            Self::Input => "input.field(FOCUSED).focus",
+            Self::TextArea => "text_area.field(FOCUSED).focus",
+        }
+    }
 }
 
 /// `field` with the installed 0.8.0 theme's focus ring round it while it
@@ -10455,20 +10463,67 @@ const SPINNER_NOT_DRAWN: &str = "not drawn: native_theme_iced::next::spinner dra
                                  where colors.window.foreground is unstated or \
                                  spinner.period_ms is 0";
 
-/// Whether `native_theme_iced::focus_ring` draws the theme's ring round a
-/// focused field under `resolved`: a ring is stated and is not inset at the
-/// field's edge, as the connector draws it (`focus_ring`'s doc).
-fn ring_round_the_field(resolved: &ResolvedTheme) -> bool {
-    let d = &resolved.defaults;
-    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
-    width.is_finite() && offset.is_finite() && width > 0.0 && offset != -width
-}
-
-/// Whether `styles::text_input` draws the theme's ring as a focused field's
-/// border under `resolved`: a ring inset at its edge (`styles::InputColors`).
-fn ring_as_the_border(resolved: &ResolvedTheme) -> bool {
-    let d = &resolved.defaults;
-    d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width
+/// Widget Info's line for the focus-ring leaf `leaf` (`focus_ring_color`,
+/// `_width_px`, `_offset_px`, `_keyboard_only`) of a focused field of
+/// `part`, as [`next_focus_ring`] draws the ring on the installed 0.8.0
+/// theme `r`: the indicator `iced_next::part_focus` picks for the part read
+/// at `FOCUSED`, the part's own or the global ring, named at its home;
+/// painted over the field by `native_theme_iced::next::focus_ring`, a ring
+/// inset at the field's edge as a band over the field (FR2); not drawn
+/// where the part states it has none, the theme states no ring, or the
+/// connector maps none (`next::Unmapped`). `None` for another leaf.
+fn focus_ring_route(
+    r: &native_theme::next::ResolvedTheme,
+    part: RingPart,
+    leaf: &str,
+) -> Option<String> {
+    let field = part.part(r, WidgetState::FOCUSED);
+    let Some((ring, homes)) = iced_next::part_focus(r, &field, part.homes()) else {
+        return Some(format!(
+            "not drawn: {} states that the field has no focus indicator",
+            part.focus_home()
+        ));
+    };
+    let home = if homes == iced_next::RingHomes::GLOBAL {
+        "focus_ring"
+    } else {
+        part.focus_home()
+    };
+    match iced_next::part_ring_look(r, &field, part.homes(), next_field_radius(&field)) {
+        Err(unmapped) => return Some(format!("not drawn: {unmapped}")),
+        Ok(None) => return Some(format!("not drawn: {home}.stroke states no ring")),
+        Ok(Some(_)) => {}
+    }
+    let inset = matches!(ring.stroke, Stroke::Uniform { width, .. } if ring.offset == -width);
+    let over = if inset {
+        "inset at its edge, a band over the field, painted over it"
+    } else {
+        "round the field, painted over it"
+    };
+    let line = match leaf {
+        "focus_ring_color" => format!("the ring's colour, {home}.stroke.color, {over}"),
+        "focus_ring_width_px" => format!("the ring's width, {home}.stroke.width, {over}"),
+        "focus_ring_offset_px" if inset => {
+            format!("{home}.offset, minus the ring's width: the ring {over}")
+        }
+        "focus_ring_offset_px" => format!(
+            "how far out from the field's edge the ring's inner edge lies (in where negative), \
+             {home}.offset, its curves the field's radius grown as much"
+        ),
+        "focus_ring_keyboard_only"
+            if ring.trigger == Some(native_theme::next::FocusTrigger::KeyboardOnly) =>
+        {
+            format!(
+                "the ring only for a focus that followed a key press ({home}.trigger), \
+                 decided when the field gains the focus"
+            )
+        }
+        "focus_ring_keyboard_only" => {
+            format!("the ring on any focus ({home}.trigger does not say keyboard only)")
+        }
+        _ => return None,
+    };
+    Some(format!("native_theme_iced::next::focus_ring: {line}"))
 }
 
 /// How iced applies `leaf` to `element` as `state` draws it: the
@@ -10486,7 +10541,6 @@ fn ring_as_the_border(resolved: &ResolvedTheme) -> bool {
 /// where the theme states its line, the arc where the icon set has no
 /// indicator, a flat button's label colours where it shows its label.
 fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
-    let resolved = &state.current_resolved;
     let id = element.id.as_str();
     if let Some(line) = tab_open(state, id).and_then(|open| shown_tab_route(id, leaf, open)) {
         return line.to_owned();
@@ -10503,8 +10557,17 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 (native_theme_iced::next::spinner)"
             .to_owned();
     }
-    if leaf == "defaults.focus_ring_color" && ring_round_the_field(resolved) {
-        return "native_theme_iced::focus_ring: the ring round the focused field".to_owned();
+    // The Basic page's focused field, the one element whose leaves are the
+    // ring's ([`focus_ring_route`]).
+    if let Some(line) = leaf
+        .strip_prefix("defaults.")
+        .and_then(|field| focus_ring_route(state.next_shown(), RingPart::Input, field))
+    {
+        return if line.starts_with("not drawn") {
+            line
+        } else {
+            format!("iced: {line}")
+        };
     }
     // The edit-mode switch while it is on, which
     // `iced_next::styles::toolbar_button` draws checked.
@@ -11751,52 +11814,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              where a rule states switch.label(DISABLED).color, else switch.label(CHECKED).color \
              times switch.disabled_opacity where stated"
                 .into()
-        }
-        ("defaults", "focus_ring_width_px") if ring_round_the_field(resolved) => {
-            "native_theme_iced::focus_ring: the ring's width round the focused field".into()
-        }
-        ("defaults", "focus_ring_width_px" | "focus_ring_offset_px")
-            if !ring_as_the_border(resolved) && !ring_round_the_field(resolved) =>
-        {
-            "not drawn: the theme states no focus ring (focus_ring_width 0)".into()
-        }
-        ("defaults", "focus_ring_width_px") => {
-            "styles::text_input: the Focused border's width, border.width.max(focus_ring_width), \
-             where focus_ring_offset is minus focus_ring_width (the ring inset at the edge): the \
-             ring drawn as the field's border"
-                .into()
-        }
-        ("defaults", "focus_ring_offset_px") if ring_round_the_field(resolved) => {
-            "native_theme_iced::focus_ring: how far out from the field's edge the ring's inner \
-             edge lies (in where negative), its curves the field's radius grown as much; the \
-             Focused border is the input's own line"
-                .into()
-        }
-        ("defaults", "focus_ring_offset_px") => {
-            "styles::text_input: the ring inset at the edge (focus_ring_offset is minus \
-             focus_ring_width), drawn as the Focused border"
-                .into()
-        }
-        ("defaults", "focus_ring_keyboard_only") if ring_as_the_border(resolved) => {
-            "styles::text_input: the ring is the Focused border here, which a style function \
-             draws on any focus, whatever the theme says of keyboard focus"
-                .into()
-        }
-        ("defaults", "focus_ring_keyboard_only")
-            if ring_round_the_field(resolved)
-                && resolved.defaults.focus_ring_keyboard_only == Some(true) =>
-        {
-            "native_theme_iced::focus_ring: the ring only for a focus that followed a key \
-             press, decided when the field gains the focus"
-                .into()
-        }
-        ("defaults", "focus_ring_keyboard_only") if ring_round_the_field(resolved) => {
-            "native_theme_iced::focus_ring: the ring on any focus (the theme does not say \
-             keyboard only)"
-                .into()
-        }
-        ("defaults", "focus_ring_keyboard_only") => {
-            "not drawn: the theme states no focus ring (focus_ring_width 0)".into()
         }
         ("defaults", "border.color") => {
             "swatch_frame: the swatch container's border.color, colors.window.border".into()
@@ -39061,73 +39078,103 @@ mod tests {
         }
     }
 
-    /// The focused field's focus-ring lengths and
-    /// `defaults.focus_ring_keyboard_only` route to what draws the ring
-    /// (M8 T16, M9-172): `styles::text_input`'s Focused border where the ring
-    /// is inset at the edge (adwaita), `native_theme_iced::focus_ring` round
-    /// the field where it is not (macos-tahoe, windows-11, kde-breeze). In
-    /// every bundled theme whose ring is inset, a ring 1 wider and still
-    /// inset draws that border 1 wider, and a ring moved off the edge moves
-    /// it.
+    /// The focused field's focus-ring leaves route to what draws the ring on
+    /// the installed 0.8.0 theme (M8 T16, M9-172, FR2):
+    /// `native_theme_iced::next::focus_ring`, which paints it over the
+    /// field, as a band over the field where the ring is inset at its edge
+    /// (adwaita), round it where it is not (macos-tahoe, windows-11,
+    /// kde-breeze), each at the home `iced_next::part_focus` picks, the
+    /// global ring's `focus_ring` here. The branches no preset reaches, read
+    /// directly ([`focus_ring_route`]) on kde-breeze patched: the field's
+    /// own ring, named at `input.field(FOCUSED).focus`; a field that states
+    /// none; a ring stated with no stroke; an indicator that is not a ring.
     #[test]
-    fn the_focus_ring_routes_name_the_border_that_draws_it() {
+    fn the_focus_ring_routes_name_the_ring_that_draws_it() -> Result<(), String> {
+        use native_theme::next::{FocusKind, InputRule, PartPatch, ThemePatch};
+
         let Some(element) = elements::element("basic.text_inputs.focused") else {
-            panic!("basic.text_inputs.focused is not listed");
+            return Err("basic.text_inputs.focused is not listed".into());
         };
-        let focused = text_input::Status::Focused { is_hovered: false };
-        for (preset, drawn_by) in [
-            ("adwaita", "iced: styles::text_input: "),
-            ("macos-tahoe", "iced: native_theme_iced::focus_ring: "),
-            ("windows-11", "iced: native_theme_iced::focus_ring: "),
-            ("kde-breeze", "iced: native_theme_iced::focus_ring: "),
+        let leaves = [
+            "defaults.focus_ring_color",
+            "defaults.focus_ring_width_px",
+            "defaults.focus_ring_offset_px",
+            "defaults.focus_ring_keyboard_only",
+        ];
+        let drawn_by = "iced: native_theme_iced::next::focus_ring: ";
+        for (preset, band) in [
+            ("adwaita", true),
+            ("macos-tahoe", false),
+            ("windows-11", false),
+            ("kde-breeze", false),
         ] {
             let state = loaded(preset, false);
-            for leaf in [
-                "defaults.focus_ring_width_px",
-                "defaults.focus_ring_offset_px",
-                "defaults.focus_ring_keyboard_only",
-            ] {
-                assert!(
-                    element.leaves.iter().any(|l| l == leaf),
-                    "{leaf} is not listed"
-                );
+            for leaf in leaves {
+                if !element.leaves.iter().any(|l| l == leaf) {
+                    return Err(format!("{leaf} is not listed"));
+                }
                 let route = iced_route(&state, element, leaf);
-                assert!(
-                    route.starts_with(drawn_by) && !route.contains("no focus ring"),
-                    "{preset} {leaf}: {route}"
-                );
+                if !route.starts_with(drawn_by) || !route.contains("focus_ring.") {
+                    return Err(format!("{preset} {leaf}: {route}"));
+                }
+            }
+            let width = iced_route(&state, element, "defaults.focus_ring_width_px");
+            if width.contains("a band over the field") != band {
+                return Err(format!("{preset}: the ring inset {band}: {width}"));
             }
         }
-        let mut inset = 0;
-        for (label, r) in bundled_combinations() {
-            let d = &r.defaults;
-            if !(d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width) {
-                continue;
+        let preset = Preset::from_name("kde-breeze").ok_or("kde-breeze is no 0.8.0 preset")?;
+        let prefs = AccessibilityPreferences::default();
+        let resolve = |patch: ThemePatch| {
+            native_theme::next::Theme::preset(preset)
+                .with_patch(patch)
+                .resolve(&next_context(None, false, &prefs))
+        };
+        let width = "focus_ring_width_px";
+        let r = resolve(ThemePatch::new());
+        let ring = r.focus_ring.clone();
+        let own = resolve(ThemePatch::new().input(
+            InputRule::new().field(PartPatch::new().focus(Some(std::sync::Arc::new(ring.clone())))),
+        ));
+        let none =
+            resolve(ThemePatch::new().input(InputRule::new().field(PartPatch::new().focus(None))));
+        let mut unstroked = r.clone();
+        unstroked.focus_ring.stroke = Stroke::None;
+        let mut fill = r.clone();
+        fill.focus_ring.kind = FocusKind::Fill;
+        for (what, r, want) in [
+            (
+                "own ring",
+                &own,
+                "native_theme_iced::next::focus_ring: the ring's width, \
+                 input.field(FOCUSED).focus.stroke.width, ",
+            ),
+            (
+                "none",
+                &none,
+                "not drawn: input.field(FOCUSED).focus states that the field has no focus \
+                 indicator",
+            ),
+            (
+                "no stroke",
+                &unstroked,
+                "not drawn: focus_ring.stroke states no ring",
+            ),
+            (
+                "fill",
+                &fill,
+                "not drawn: the theme states no value iced can take at focus_ring.kind",
+            ),
+        ] {
+            let route = focus_ring_route(r, RingPart::Input, width).ok_or(what)?;
+            if !route.starts_with(want) {
+                return Err(format!("{what}: {route}"));
             }
-            inset += 1;
-            let theme = native_theme_iced::to_theme(&r, "splice");
-            let border = |r: &ResolvedTheme| styles::text_input(r)(&theme, focused).border;
-            // A ring 1 wider and still inset at the edge: the Focused border
-            // is that wide.
-            let mut wider = r.clone();
-            wider.defaults.focus_ring_width += 1.0;
-            wider.defaults.focus_ring_offset -= 1.0;
-            assert_eq!(
-                border(&wider).width,
-                d.focus_ring_width + 1.0,
-                "{label}: the Focused border under a {}px inset ring",
-                d.focus_ring_width + 1.0
-            );
-            // A ring moved off the edge is not drawn.
-            let mut off = r.clone();
-            off.defaults.focus_ring_offset += 1.0;
-            assert_ne!(
-                border(&off),
-                border(&r),
-                "{label}: defaults.focus_ring_offset moves no Focused border"
-            );
         }
-        assert!(inset > 0, "no bundled theme's focus ring is inset");
+        if focus_ring_route(&r, RingPart::Input, "focus_ring_inner").is_some() {
+            return Err("a leaf not the ring's has a ring route".into());
+        }
+        Ok(())
     }
 
     /// The infos of the page widgets the pages of `state` wrap in
