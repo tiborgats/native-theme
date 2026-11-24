@@ -1,0 +1,48 @@
+aqua.hovered.scroller_knob_overlay
+    common: None -> [['#00000085', 198], ['#0000000c', 6], ['#00000073', 4], ['#0000006f', 2]]
+    diff_from_normal: {'differing_pixels': 0, 'max_byte_delta': 0} -> {'differing_pixels': 1242, 'max_byte_delta': 133}
+    drawn_box: none -> [431, 379, 6, 38]
+    edge_bottom: None -> ['#0000002d', '#00000073']
+    edge_left: None -> ['#00000085', '#00000085']
+    edge_right: None -> ['#00000085', '#00000085']
+    edge_top: None -> ['#0000002d', '#00000073']
+    fill: None -> #00000085
+    fill_share: None -> 1.0
+    ink: None -> #00000083
+    ink_pixels: None -> 18
+aqua.pressed.scroller_knob_overlay
+    common: None -> [['#00000085', 198], ['#0000000c', 6], ['#00000073', 4], ['#0000006f', 2]]
+    diff_from_normal: {'differing_pixels': 0, 'max_byte_delta': 0} -> {'differing_pixels': 1242, 'max_byte_delta': 133}
+    drawn_box: none -> [431, 379, 6, 38]
+    edge_bottom: None -> ['#0000002d', '#00000073']
+    edge_left: None -> ['#00000085', '#00000085']
+    edge_right: None -> ['#00000085', '#00000085']
+    edge_top: None -> ['#0000002d', '#00000073']
+    fill: None -> #00000085
+    fill_share: None -> 1.0
+    ink: None -> #00000083
+    ink_pixels: None -> 18
+darkAqua.hovered.scroller_knob_overlay
+    common: None -> [['#ffffff91', 198], ['#ffffff0c', 6], ['#ffffff30', 4], ['#ffffff7e', 4]]
+    diff_from_normal: {'differing_pixels': 0, 'max_byte_delta': 0} -> {'differing_pixels': 1242, 'max_byte_delta': 130}
+    drawn_box: none -> [431, 379, 6, 38]
+    edge_bottom: None -> ['#ffffff30', '#ffffff7e']
+    edge_left: None -> ['#ffffff91', '#ffffff91']
+    edge_right: None -> ['#ffffff91', '#ffffff91']
+    edge_top: None -> ['#ffffff30', '#ffffff7e']
+    fill: None -> #ffffff91
+    fill_share: None -> 1.0
+    ink: None -> #ffffff86
+    ink_pixels: None -> 18
+darkAqua.pressed.scroller_knob_overlay
+    common: None -> [['#ffffff91', 198], ['#ffffff0c', 6], ['#ffffff30', 4], ['#ffffff7e', 4]]
+    diff_from_normal: {'differing_pixels': 0, 'max_byte_delta': 0} -> {'differing_pixels': 1242, 'max_byte_delta': 130}
+    drawn_box: none -> [431, 379, 6, 38]
+    edge_bottom: None -> ['#ffffff30', '#ffffff7e']
+    edge_left: None -> ['#ffffff91', '#ffffff91']
+    edge_right: None -> ['#ffffff91', '#ffffff91']
+    edge_top: None -> ['#ffffff30', '#ffffff7e']
+    fill: None -> #ffffff91
+    fill_share: None -> 1.0
+    ink: None -> #ffffff86
+    ink_pixels: None -> 18

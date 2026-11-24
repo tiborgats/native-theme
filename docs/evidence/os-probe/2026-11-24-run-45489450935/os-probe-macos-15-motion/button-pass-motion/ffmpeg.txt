@@ -1,0 +1,149 @@
+==> Downloading bottle manifests
+✔︎ Bottle Manifest ffmpeg (9.0.2_1)
+==> Would install 1 formula:
+ffmpeg 9.0.2_1
+==> Would install 11 dependencies for ffmpeg:
+dav1d        1.5.5
+mpg123       1.33.7
+lame         4.0
+libvmaf      3.2.1
+libvpx       1.17.0
+opus         1.6.1
+sdl3         3.4.20
+sdl2-compat  2.32.74
+svt-av1      4.3.0
+x264         r3222
+x265         4.3
+==> Fetching downloads for: ffmpeg
+✔︎ Bottle Manifest dav1d (1.5.5)
+✔︎ Bottle Manifest mpg123 (1.33.7)
+✔︎ Bottle Manifest lame (4.0)
+✔︎ Bottle Manifest libvmaf (3.2.1)
+✔︎ Bottle Manifest libvpx (1.17.0)
+✔︎ Bottle Manifest opus (1.6.1)
+✔︎ Bottle dav1d (1.5.5)
+✔︎ Bottle Manifest sdl3 (3.4.20)
+✔︎ Bottle lame (4.0)
+✔︎ Bottle mpg123 (1.33.7)
+✔︎ Bottle Manifest sdl2-compat (2.32.74)
+✔︎ Bottle Manifest svt-av1 (4.3.0)
+✔︎ Bottle libvmaf (3.2.1)
+✔︎ Bottle Manifest x264 (r3222)
+✔︎ Bottle Manifest x265 (4.3)
+✔︎ Bottle libvpx (1.17.0)
+✔︎ Bottle ffmpeg (9.0.2_1)
+✔︎ Bottle opus (1.6.1)
+✔︎ Bottle sdl2-compat (2.32.74)
+✔︎ Bottle x264 (r3222)
+✔︎ Bottle svt-av1 (4.3.0)
+✔︎ Bottle sdl3 (3.4.20)
+✔︎ Bottle x265 (4.3)
+==> Installing dependencies for ffmpeg: dav1d, mpg123, lame, libvmaf, libvpx, opus, sdl3, sdl2-compat, svt-av1, x264 and x265
+==> Installing ffmpeg dependency: dav1d (1.5.5)
+==> Pouring dav1d--1.5.5.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/dav1d/1.5.5: 16 files, 978.3KB
+==> Installing ffmpeg dependency: mpg123 (1.33.7)
+==> Pouring mpg123--1.33.7.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/mpg123/1.33.7: 34 files, 1.9MB
+==> Installing ffmpeg dependency: lame (4.0)
+==> Pouring lame--4.0.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/lame/4.0: 29 files, 1.9MB
+==> Installing ffmpeg dependency: libvmaf (3.2.1)
+==> Pouring libvmaf--3.2.1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/libvmaf/3.2.1: 243 files, 8.2MB
+==> Installing ffmpeg dependency: libvpx (1.17.0)
+==> Pouring libvpx--1.17.0.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/libvpx/1.17.0: 22 files, 4.4MB
+==> Installing ffmpeg dependency: opus (1.6.1)
+==> Pouring opus--1.6.1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/opus/1.6.1: 16 files, 1.1MB
+==> Installing ffmpeg dependency: sdl3 (3.4.20)
+==> Pouring sdl3--3.4.20.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/sdl3/3.4.20: 103 files, 6.3MB
+==> Installing ffmpeg dependency: sdl2-compat (2.32.74)
+==> Pouring sdl2-compat--2.32.74.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/sdl2-compat/2.32.74: 117 files, 3.3MB
+==> Installing ffmpeg dependency: svt-av1 (4.3.0)
+==> Pouring svt-av1--4.3.0.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/svt-av1/4.3.0: 23 files, 3.4MB
+==> Installing ffmpeg dependency: x264 (r3222)
+==> Pouring x264--r3222.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/x264/r3222: 12 files, 4.4MB
+==> Installing ffmpeg dependency: x265 (4.3)
+==> Pouring x265--4.3.arm64_sequoia.bottle.1.tar.gz
+/opt/homebrew/Cellar/x265/4.3: 12 files, 17.4MB
+==> Installing ffmpeg
+==> Pouring ffmpeg--9.0.2_1.arm64_sequoia.bottle.tar.gz
+/opt/homebrew/Cellar/ffmpeg/9.0.2_1: 290 files, 54.4MB
+==> Caveats
+==> ffmpeg
+ffmpeg-full includes additional tools and libraries that are not included in the regular ffmpeg formula.
+brew install ffmpeg: exit 0
+ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2377
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2378
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2379
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2380
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2381
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2382
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2383
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2384
+[image2 @ 0x14de05080] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 2385 >= 2385
+ffmpeg os-probe-out/button-pass-motion/aqua/caret-long.mov crop=104:54:208:436: exit 0,     2379 frames
+ffprobe os-probe-out/button-pass-motion/aqua/caret-long.mov: exit 0
+[image2 @ 0x14d607260] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 11 >= 11
+ffmpeg os-probe-out/button-pass-motion/aqua/caret-mixed.mov crop=144:54:328:436: exit 0,      457 frames
+ffprobe os-probe-out/button-pass-motion/aqua/caret-mixed.mov: exit 0
+[image2 @ 0x1347048e0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 11 >= 11
+ffmpeg os-probe-out/button-pass-motion/aqua/caret-read-only.mov crop=104:54:488:436: exit 0,      461 frames
+ffprobe os-probe-out/button-pass-motion/aqua/caret-read-only.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/aqua/focus-deactivate.mov crop=99:56:208:274: exit 0,      515 frames
+ffprobe os-probe-out/button-pass-motion/aqua/focus-deactivate.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/aqua/focus-interrupt.mov crop=99:56:208:274: exit 0,      697 frames
+ffprobe os-probe-out/button-pass-motion/aqua/focus-interrupt.mov: exit 0
+[image2 @ 0x139e06970] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 32 >= 32
+ffmpeg os-probe-out/button-pass-motion/aqua/press-push.mov crop=99:56:208:274: exit 0,      627 frames
+ffprobe os-probe-out/button-pass-motion/aqua/press-push.mov: exit 0
+[image2 @ 0x14ff047b0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 6 >= 5
+[image2 @ 0x14ff047b0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 6 >= 6
+ffmpeg os-probe-out/button-pass-motion/aqua/radio.mov crop=175:42:208:338: exit 0,      523 frames
+ffprobe os-probe-out/button-pass-motion/aqua/radio.mov: exit 0
+[image2 @ 0x13d606eb0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 12 >= 12
+ffmpeg os-probe-out/button-pass-motion/aqua/search-cancel.mov crop=204:46:208:384: exit 0,      559 frames
+ffprobe os-probe-out/button-pass-motion/aqua/search-cancel.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/caret-long.mov crop=104:54:208:436: exit 0,     2344 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/caret-long.mov: exit 0
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 0
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 2
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 3
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 4
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 5
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 6
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 7
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 8
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 9
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 10
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 11
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 12
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 13
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 14
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 15
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 16
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 17
+[image2 @ 0x137606930] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 18 >= 18
+ffmpeg os-probe-out/button-pass-motion/darkAqua/caret-mixed.mov crop=144:54:328:436: exit 0,      429 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/caret-mixed.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/caret-read-only.mov crop=104:54:488:436: exit 0,      453 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/caret-read-only.mov: exit 0
+[image2 @ 0x124e04590] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 10 >= 10
+ffmpeg os-probe-out/button-pass-motion/darkAqua/focus-deactivate.mov crop=99:56:208:274: exit 0,      518 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/focus-deactivate.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/focus-interrupt.mov crop=99:56:208:274: exit 0,      678 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/focus-interrupt.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/press-push.mov crop=99:56:208:274: exit 0,      701 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/press-push.mov: exit 0
+ffmpeg os-probe-out/button-pass-motion/darkAqua/radio.mov crop=175:42:208:338: exit 0,      514 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/radio.mov: exit 0
+[image2 @ 0x132e072d0] Application provided invalid, non monotonically increasing dts to muxer in stream 0: 13 >= 13
+ffmpeg os-probe-out/button-pass-motion/darkAqua/search-cancel.mov crop=204:46:208:384: exit 0,      571 frames
+ffprobe os-probe-out/button-pass-motion/darkAqua/search-cancel.mov: exit 0

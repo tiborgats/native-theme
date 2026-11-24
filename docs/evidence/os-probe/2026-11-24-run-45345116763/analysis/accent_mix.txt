@@ -1,0 +1,29 @@
+macos-15 blue aqua     checkbox_on fill      rest #ffffffff pressed #ffffffff predicted #e6e6e6 max_delta 25
+macos-15 blue aqua     source_list_row fill  rest #ddddddff pressed #2d92fbff predicted #c7c7c7 max_delta 154
+macos-15 blue aqua     slider track          rest #00000000 pressed #00000000 predicted #000000 max_delta 0
+macos-15 blue darkAqua checkbox_on fill      rest #1664daff pressed #247af2ff predicted #2d73de max_delta 20
+macos-15 blue darkAqua source_list_row fill  rest #424242ff pressed #378ce5ff predicted #545454 max_delta 145
+macos-15 blue darkAqua slider track          rest #00000000 pressed #00000000 predicted #191919 max_delta 25
+macos-15 red  aqua     checkbox_on fill      rest #ffffffff pressed #ca161cff predicted #e6e6e6 max_delta 208
+macos-15 red  aqua     source_list_row fill  rest #ddddddff pressed #de3f45ff predicted #c7c7c7 max_delta 136
+macos-15 red  aqua     slider track          rest #00000000 pressed #00000000 predicted #000000 max_delta 0
+macos-15 red  darkAqua checkbox_on fill      rest #ec3f44ff pressed #fc4e55ff predicted #ee5256 max_delta 14
+macos-15 red  darkAqua source_list_row fill  rest #424242ff pressed #ed5a5eff predicted #545454 max_delta 153
+macos-15 red  darkAqua slider track          rest #00000000 pressed #00000000 predicted #191919 max_delta 25
+macos-26 blue aqua     checkbox_on fill      rest #0077f9ff pressed #006be1ff predicted #006be1 max_delta 0
+macos-26 blue aqua     source_list_row fill  rest #ddddddff pressed #0069eeff predicted #c7c7c7 max_delta 199
+macos-26 blue aqua     slider track          rest #0077f9ff pressed #006be1ff predicted #006be1 max_delta 0
+macos-26 blue darkAqua checkbox_on fill      rest #077dffff pressed #1f8affff predicted #1f8aff max_delta 0
+macos-26 blue darkAqua source_list_row fill  rest #424242ff pressed #219bffff predicted #545454 max_delta 171
+macos-26 blue darkAqua slider track          rest #067dffff pressed #1e8affff predicted #1e8aff max_delta 0
+macos-26 red  aqua     checkbox_on fill      rest #db373cff pressed #c53236ff predicted #c63236 max_delta 1
+macos-26 red  aqua     source_list_row fill  rest #ddddddff pressed #cf272dff predicted #c7c7c7 max_delta 160
+macos-26 red  aqua     slider track          rest #da363cff pressed #c53136ff predicted #c53136 max_delta 0
+macos-26 red  darkAqua checkbox_on fill      rest #ff575bff pressed #ff676bff predicted #ff676b max_delta 0
+macos-26 red  darkAqua source_list_row fill  rest #424242ff pressed #ff7378ff predicted #545454 max_delta 171
+macos-26 red  darkAqua slider track          rest #ff565aff pressed #ff676aff predicted #ff666a max_delta 1
+
+macos-26 blue aqua     source_list_row pressed #0069eeff accent #007aff k per channel [None, 0.14, 0.068]
+macos-26 blue darkAqua source_list_row pressed #219bffff accent #017aff k per channel [0.127, 0.25, None]
+macos-26 red  aqua     source_list_row pressed #cf272dff accent #e1383e k per channel [0.078, 0.309, 0.269]
+macos-26 red  darkAqua source_list_row pressed #ff7378ff accent #ff5357 k per channel [None, 0.188, 0.197]

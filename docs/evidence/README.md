@@ -19,6 +19,13 @@ What each GitHub runner image's OS reported to `tools/os-probe`
 `renders/darkAqua/` (and, from run 40320895749, the key window's captures under
 `renders/key_window/` and one directory per extra pass).
 
+From the 0.8.0 controls pass on (the runs of 2026-11-23 and after), a run's raw PNG captures are not kept in the
+tree: they would add some 320 MB to the repository's history. Their directory holds `CAPTURES.sha256` instead, the
+SHA-256 and path of every capture, beside the `probe.toml` reads, the analysis scripts and their outputs; the
+captures themselves are on the branch `m2-fs4c` (at `354f4166`) until 0.8.0 is released, and a run of the workflow at
+the probe commit its README names takes them again (the rest captures were the same pixel for pixel from run to run,
+2026-11-24). An analysis script that reads captures needs them in place to run.
+
 | Run | Date | Commit | Why |
 |-----|------|--------|-----|
 | [`2026-10-11-run-38129819806/`](os-probe/2026-10-11-run-38129819806/) ([run](https://github.com/tiborgats/native-theme/actions/runs/38129819806)) | 2026-10-11 | `05f6c11d` on `v0.7.0-rc1` | the platform-fidelity review, M2 Step 3 of `docs/archive/todo_v0.7.0_code-review-plan.md` |
@@ -28,6 +35,11 @@ What each GitHub runner image's OS reported to `tools/os-probe`
 | [`2026-10-26-run-40348854007/`](os-probe/2026-10-26-run-40348854007/) ([run](https://github.com/tiborgats/native-theme/actions/runs/40348854007)) | 2026-10-26 | `d14ce711` on `v0.7.0-rc1` | disabled and enabled switches and sliders in the macOS key window, disabled renders of the push button, checkbox, radio, switch and slider, and a pass with a red accent (D10, D12 of the D round); every value the previous run reported is the same |
 | [`2026-10-31-run-41195846264/`](os-probe/2026-10-31-run-41195846264/) ([run](https://github.com/tiborgats/native-theme/actions/runs/41195846264)) | 2026-10-31 | `18d2a5d8` on `v0.8.0-tools-probe-m2` | the unemphasized table selection on macOS 26, for the label colour on an unfocused selection (issue #4, step 7); only `probe.toml`, the two unemphasized renders and the README are kept here |
 | [`2026-11-06-run-42215651196/`](os-probe/2026-11-06-run-42215651196/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42215651196)) | 2026-11-06 | `20d56259` on `v0.8.0-tools-probe-m2` | the unemphasized table selection on macOS 15, for the label colour on an unfocused selection (issue #4, step 7); only `probe.toml`, the two unemphasized renders and the README are kept here |
+| [`2026-11-23-run-45198750893/`](os-probe/2026-11-23-run-45198750893/) ([run](https://github.com/tiborgats/native-theme/actions/runs/45198750893)) | 2026-11-23 | `c4f33eef` on `m2-fs4c` | the controls pass on macOS 15 and 26: check boxes, a pop-up, disclosure buttons, a text field, tables, a segmented control, a slider, a switch, a tab view, a split view, a box and a toolbar button, hovered and pressed (M2.FS4 of the 0.8.0 plan) |
+| [`2026-11-23-run-45208260830/`](os-probe/2026-11-23-run-45208260830/) ([run](https://github.com/tiborgats/native-theme/actions/runs/45208260830)) | 2026-11-23 | `63257682` on `m2-fs4c` | the controls pass again, its parts read once the window is settled, the pop-up highlighted without its menu and the titled disclosure button widened (M2.FS4); macOS 26 captured nothing (every `screencapture` exited 1); `analysis/` holds the measuring script, with the label taken out of a translucent fill, and its re-reading of run 45198750893 |
+| [`2026-11-23-run-45217592058/`](os-probe/2026-11-23-run-45217592058/) ([run](https://github.com/tiborgats/native-theme/actions/runs/45217592058)) | 2026-11-23 | `39ce861d` on `m2-fs4c` | the controls pass on macOS 26 only, repeating run 45208260830's macOS 26 job, which captured nothing; this one captured (M2.FS4); `analysis/` holds its comparison with run 45198750893 and the pressed slider's layer diff |
+| [`2026-11-23-run-45226132792/`](os-probe/2026-11-23-run-45226132792/) ([run](https://github.com/tiborgats/native-theme/actions/runs/45226132792)) | 2026-11-23 | `a9c0e2ee` on `m2-fs4c` | the controls pass on macOS 15 and 26 with the text field and the split divider pressed, two scroll views (both legacy on the runners) and the toolbar sheet (the toolbar button over the backdrops; on macOS 26 in the overflow menu) (M2.FS4); `analysis/measure_controls.py` reads the text field's focus ring and the toolbar sheet |
+| [`2026-11-23-run-45231684209/`](os-probe/2026-11-23-run-45231684209/) ([run](https://github.com/tiborgats/native-theme/actions/runs/45231684209)) | 2026-11-23 | `08b46ea5` on `m2-fs4c` | the controls pass again on macOS 15 and 26, the overlay scroller now in the overlay style and the toolbar sheet 900 pt wide, its button in the toolbar on macOS 26 too (M2.FS4) |
 
 A citation links the run directory it reads, with the file and, for
 `probe.toml`, the line (`evidence/os-probe/<run>/<image>/probe.toml#L29-L33`),

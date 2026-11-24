@@ -1,0 +1,317 @@
+[os]
+platform = "macOS"
+version = "15.8.2"
+major = 15
+minor = 8
+patch = 2
+operatingSystemVersionString = "Version 15.8.2 (Build 24H232)"
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "macos15"
+runner_image_version = "20261118.0550.1"
+
+[macos.environment]
+effectiveAppearance = "NSAppearanceNameAqua"
+
+[macos.environment.mainScreen]
+backingScaleFactor = 1.0
+frame_xywh = [0.0, 0.0, 1024.0, 768.0]
+
+[macos.environment.accessibility]
+accessibilityDisplayShouldIncreaseContrast = false
+accessibilityDisplayShouldReduceTransparency = true
+accessibilityDisplayShouldReduceMotion = true
+accessibilityDisplayShouldDifferentiateWithoutColor = false
+
+[macos.environment.accent]
+AppleAccentColor = "absent (objectForKey: is nil)"
+
+[macos.environment.accent.aqua]
+controlAccentColor = "#007affff"
+controlAccentColor_srgb_rgba = [0.0, 0.47843137254901963, 1.0, 1.0]
+
+[macos.environment.accent.darkAqua]
+controlAccentColor = "#007affff"
+controlAccentColor_srgb_rgba = [0.0, 0.47843137254901963, 1.0, 1.0]
+
+[macos.button_pass]
+mode = "focus_transition"
+mode_method = "no sheet is captured; the push sheet's window made key, and two of its buttons focused and unfocused while screencapture -v records the screen (focus_transition)"
+method = "activation policy set to Regular, finishLaunching and activation as in the key-window section; each sheet is a titled NSWindow (closable, miniaturizable, resizable, empty title) holding a backdrop (an NSBox, custom, no border, no title, over the whole content view, hidden for the window's own background) and a grid of controls, each given setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize: and sized to fit, centred in its row on whole points; the window is made key with makeKeyAndOrderFront: and makeFirstResponder: nil, the run loop pumped until isKeyWindow, then the mode's condition is set (mode_method); per appearance the window's appearance is set and the run loop pumped 10 steps of 50 ms, then each state is set (states) and per backdrop the window displayed, the run loop pumped 10 steps (20 after a cursor move) and the window captured with screencapture -x -o -l <windowNumber> to <appearance>/[<sheet>/]<state>[-<button>][-over-<backdrop>].png (the push sheet's captures in <appearance>/, as spike M wrote them); isKeyWindow and NSApp isActive are read just before and just after each capture (key_at_capture: both reads of isKeyWindow are true); each capture over the window's background is compared with the same appearance's normal one inside each button's frame grown by 6 pt (diff_from_normal: the pixels whose bytes differ and the largest difference of one byte); the cursor is parked (inside the window on the middle of its content view's left margin (park_point_in_content_xy), where windowNumberAtPoint: there gives the probe's window and hitTest: the content view itself, every caller parking with the backdrop box hidden (view_at_park_point), else not moved and the error, which names the other window's owner, layer and bounds (CGWindowListCopyWindowInfo); the button and controls passes' sheets park on the middle of the left margin, 10 pt from the content view's left edge and half its height up (left of every control and every frame compared), the motion, events and transition passes on the middle of the bottom margin, half the content view's width across and 10 pt from its bottom edge (below every control, outside every recording's crop round one)) before the normal capture and after the hovered and clicked ones; every cursor move warps the cursor and posts its mouse-moved only where windowNumberAtPoint: at its target, read before, gives the probe's window (window_at_target, window_at_target_is_ours), else nothing is moved or posted and the move is the error"
+backdrops = "every state but hovered and clicked is captured four times: over the window's own background (window: the capture's file is <state>.png, its keys beside these), and with the backdrop box filled with colorWithSRGBRed:green:blue:alpha: of the bytes 0 (over_black), 255 (over_white) and 128 (over_grey) in each channel; backdrop_raw is the capture's pixel at the middle of the content view's left margin (10 pt in, half the content's height up), as #rrggbbaa; in the key mode the normal state is captured once more with the backdrop box filled with colorWithPatternImage: of a 8 x 8 px image (one pixel a point at the runner's backing scale 1), a checkerboard of black (0) and white (255) squares 4 px on a side, the top-left square black, tiled as AppKit tiles a pattern colour (normal.over_pattern, normal-over-pattern.png); and in the key mode the normal, pressed and disabled states are also drawn offscreen, the backdrop hidden: the content view with cacheDisplayInRect:toBitmapImageRep: into 8-bit RGBA bitmaps of its bounds at 1 and 2 pixels a point (<state>.renders, <state>-render-<1x|2x>.png; content_from_top_left_xywh places the content view in the window frame's points from its top left), so the buttons are drawn over transparency at a backing scale of 2 the runner's screen lacks; what an offscreen draw leaves out of a control (a layer AppKit composites only on screen) the 1x render's comparison with the capture's layer shows"
+layer_method = "layer: per pixel, from the over_black and over_white captures and their backdrop_raw bytes B, alpha a = 1 - (C_white - C_black) / (B_white - B_black) per channel, averaged over r, g, b (alpha_channel_spread_max_bytes: the largest difference of the three, times 255) and clamped to 0..1, and the premultiplied colour P = C_black - (1 - a) B_black clamped to 0..a; the layer is written as a PNG of straight (not premultiplied) colour and alpha, tagged sRGB, to <stem>-layer.png (a focused button's: its region only); check_grey and check_window composite the layer over the over_grey and window captures' backdrop_raw and compare it with those captures' opaque pixels (max_byte_delta, pixels_over_2; not_opaque_pixels, the window's rounded corners, are not compared), for the whole file and per button; per button (buttons), in the frame and the frame grown by 6 pt (region): alpha_max; body_alpha, the median alpha of the frame's middle row's pixels of alpha >= 8/255; fill_mode, the most frequent straight colour and alpha among the frame's pixels whose alpha is within 8/255 of body_alpha; bezel, the bounds of the region's pixels of alpha >= half body_alpha; fill, the straight colour and alpha at fill_point_px_xy, on the bezel's middle row two pixels inside the first pixel from its left edge whose alpha reaches 0.98 of the row's median (clear of the corner and the label; a gradient bezel's colour on that row); corner_top_left and corner_top_right, per row from the bezel's top the missing coverage (1 - alpha / the row's median alpha of its pixels of alpha >= 8/255, clamped to 0..1) summed from the bezel's edge inward to the first pixel at 0.98 coverage, up to two rows under 0.02, half the bezel's height or 40 rows, and the radius of the circle whose insets fit those rows best (least squares, 0.25 px steps; fit_rms_px says how well a circle fits); ink, the bezel's pixels of alpha >= half body_alpha whose straight colour or alpha differs from the fill's by more than 48 of 255 in a channel, their bounds and the one farthest from the fill (farthest_from_fill: the label's colour where a glyph covers a whole pixel); outside_frame, the region's pixels outside the frame with alpha >= 8/255, their bounds and the one of the largest alpha; diff_from_unfocused (focus mode), the region's pixels whose premultiplied colour or alpha differs from the unfocused layer's by more than 2 of 255, their bounds and the straight colour where the alpha grew most"
+activationPolicy_regular_set = true
+CGPreflightPostEventAccess = true
+isFullKeyboardAccessEnabled = true
+all_captures_key = true
+any_capture_key = false
+
+[macos.button_pass.states]
+normal = "nothing set; on the push sheet the cursor parked as the method says, inside the window over no control"
+pressed = "-[NSButton highlight:] YES on every NSButton (an NSComboButton has no highlight:), as NSButtonCell's mouse tracking does, then the run loop pumped; the cells' isHighlighted read back (cells_highlighted)"
+disabled = "setEnabled: NO on every control"
+disabled_pressed = "setEnabled: NO on every control and -[NSButton highlight:] YES on every NSButton, as pressed; the cells' isHighlighted read back (cells_highlighted); diff_from_disabled compares it with the disabled capture as diff_from_normal does with the normal one"
+hovered = "push sheet and the three style sheets (styles_a to styles_c), key mode, over the window's background: per button the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)"
+clicked = "push sheet and the style sheets' NSComboButtons, key mode, over the window's background: per plain and default push button and per combo button at the regular size the cursor moved there as for hovered, a left mouse-down CGEvent posted at the HID tap, and from a second thread the window captured after the delay and a mouse-up posted after the capture, while the main thread's run loop runs NSButtonCell's tracking; the window's key status is read before the mouse-down and after the mouse-up"
+focused = "focus mode: per button makeFirstResponder: with the button, captured over every backdrop, then makeFirstResponder: nil after the sheet's buttons"
+
+[macos.button_pass.activation]
+activateIgnoringOtherApps_isActive = false
+activateIgnoringOtherApps_steps = 20
+activate_available = true
+activate_steps = 20
+activate_isActive = false
+activated_by = "none"
+
+[macos.button_pass.focus_transition]
+method = "the push sheet's window presented as in the key mode (made key, the application active) and the cursor parked inside the window on the middle of its content view's bottom margin (park_point_in_content_xy), where windowNumberAtPoint: there gives the probe's window and hitTest: the content view itself, every caller parking with the backdrop box hidden (view_at_park_point), else not moved and the error, which names the other window's owner, layer and bounds (CGWindowListCopyWindowInfo); the button and controls passes' sheets park on the middle of the left margin, 10 pt from the content view's left edge and half its height up (left of every control and every frame compared), the motion, events and transition passes on the middle of the bottom margin, half the content view's width across and 10 pt from its bottom edge (below every control, outside every recording's crop round one); per appearance (the window's appearance set, the run loop pumped 10 steps) and per button (regular-plain, regular-default): makeFirstResponder: nil and the run loop pumped 10 steps; `screencapture -x -v -V10 <appearance>/transition-<button>.mov` started (the whole main display); the run loop pumped in steps of 5 ms, before each the ticker (an NSBox, custom, no border, no title, at [584, 304, 8, 8] (x, y, width, height) in the content view, outside every crop) filled black or white in turn, so the screen changes at every step (ticker_flips) (pump_lead: the steps and the longest between two starts) until 3000 ms after starting screencapture; makeFirstResponder: with the button (focus_at_ms, counted from starting screencapture); pumped until 6000 ms (pump_hold); makeFirstResponder: nil (unfocus_at_ms); pumped until screencapture exits (pump_finish, at most until 25000 ms); <appearance>/transition-<button>.crop holds ffmpeg's crop=w:h:x:y in pixels for the button's frame grown by 12 pt, in the display's pixels (frame_quartz_xywh times mainScreen_backingScaleFactor), which the workflow cuts each frame of the recording to (<stem>-frames/NNNNN.png, their times in <stem>-frames.csv, ffprobe's pts_time); the recording starts some time after screencapture does, so its times are not the probe's"
+ticker_frame_xywh = [584.0, 304.0, 8.0, 8.0]
+makeFirstResponder_nil = true
+key_wait_steps = 1
+isKeyWindow_presented = true
+isKeyWindow = true
+isMainWindow = true
+NSApp_isActive = true
+mainScreen_backingScaleFactor = 1.0
+window_frame_xywh = [200.0, 200.0, 600.0, 348.0]
+
+[macos.button_pass.focus_transition.cursor]
+target_screen_xy = [500.0, 210.0]
+target_quartz_xy = [500.0, 558.0]
+window_at_target = 27
+window_at_target_is_ours = true
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [500.0, 210.0]
+window_under_cursor_is_ours = true
+park_point_in_content_xy = [300.0, 10.0]
+view_at_park_point = ["NSView"]
+
+[macos.button_pass.focus_transition.cursor.events]
+mouseMoved = 1
+mouseEntered = 1
+mouseExited = 0
+cursorUpdate = 0
+other = 1
+
+[macos.button_pass.focus_transition.aqua.regular-plain]
+makeFirstResponder_nil = true
+frame_screen_xywh = [220.0, 344.0, 75.0, 32.0]
+frame_quartz_xywh = [220.0, 392.0, 75.0, 32.0]
+crop_px_whxy = "99:56:208:380"
+crop_file = "aqua/transition-regular-plain.crop"
+makeFirstResponder = true
+firstResponder_is_the_control = true
+isKeyWindow_focused = true
+makeFirstResponder_nil_after = true
+ticker_flips = 482
+recording = "exit 0"
+focus_at_ms = 3006.124
+focus_returned_ms = 3006.3444170000002
+unfocus_at_ms = 6014.852083
+unfocus_returned_ms = 6014.965833
+recording_ended_ms = 10272.584583
+file = "aqua/transition-regular-plain.mov"
+file_bytes = 800563
+
+[macos.button_pass.focus_transition.aqua.regular-plain.pump_lead]
+steps = 189
+longest_step_ms = 35.786416
+until_ms = 3006.123833
+
+[macos.button_pass.focus_transition.aqua.regular-plain.pump_hold]
+steps = 120
+longest_step_ms = 41.575458000000005
+until_ms = 6014.851874999999
+
+[macos.button_pass.focus_transition.aqua.regular-plain.pump_finish]
+steps = 172
+longest_step_ms = 28.141583
+until_ms = 10272.578333
+
+[macos.button_pass.focus_transition.aqua.regular-default]
+makeFirstResponder_nil = true
+frame_screen_xywh = [360.0, 344.0, 75.0, 32.0]
+frame_quartz_xywh = [360.0, 392.0, 75.0, 32.0]
+crop_px_whxy = "99:56:348:380"
+crop_file = "aqua/transition-regular-default.crop"
+makeFirstResponder = true
+firstResponder_is_the_control = true
+isKeyWindow_focused = true
+makeFirstResponder_nil_after = true
+ticker_flips = 412
+recording = "exit 0"
+focus_at_ms = 3002.529333
+focus_returned_ms = 3002.7795
+unfocus_at_ms = 6019.453083
+unfocus_returned_ms = 6020.089583
+recording_ended_ms = 10454.270541
+file = "aqua/transition-regular-default.mov"
+file_bytes = 913449
+
+[macos.button_pass.focus_transition.aqua.regular-default.pump_lead]
+steps = 121
+longest_step_ms = 28.529667
+until_ms = 3002.529166
+
+[macos.button_pass.focus_transition.aqua.regular-default.pump_hold]
+steps = 121
+longest_step_ms = 27.943834000000003
+until_ms = 6019.4472909999995
+
+[macos.button_pass.focus_transition.aqua.regular-default.pump_finish]
+steps = 169
+longest_step_ms = 65.25479100000001
+until_ms = 10454.260041
+
+[macos.button_pass.focus_transition.darkAqua.regular-plain]
+makeFirstResponder_nil = true
+frame_screen_xywh = [220.0, 344.0, 75.0, 32.0]
+frame_quartz_xywh = [220.0, 392.0, 75.0, 32.0]
+crop_px_whxy = "99:56:208:380"
+crop_file = "darkAqua/transition-regular-plain.crop"
+makeFirstResponder = true
+firstResponder_is_the_control = true
+isKeyWindow_focused = true
+makeFirstResponder_nil_after = true
+ticker_flips = 418
+recording = "exit 0"
+focus_at_ms = 3022.041667
+focus_returned_ms = 3022.2548749999996
+unfocus_at_ms = 6005.396917
+unfocus_returned_ms = 6005.61275
+recording_ended_ms = 10380.814584
+file = "darkAqua/transition-regular-plain.mov"
+file_bytes = 805420
+
+[macos.button_pass.focus_transition.darkAqua.regular-plain.pump_lead]
+steps = 122
+longest_step_ms = 47.579791
+until_ms = 3022.0302920000004
+
+[macos.button_pass.focus_transition.darkAqua.regular-plain.pump_hold]
+steps = 119
+longest_step_ms = 36.151416999999995
+until_ms = 6005.396459
+
+[macos.button_pass.focus_transition.darkAqua.regular-plain.pump_finish]
+steps = 176
+longest_step_ms = 30.294
+until_ms = 10380.812959
+
+[macos.button_pass.focus_transition.darkAqua.regular-default]
+makeFirstResponder_nil = true
+frame_screen_xywh = [360.0, 344.0, 75.0, 32.0]
+frame_quartz_xywh = [360.0, 392.0, 75.0, 32.0]
+crop_px_whxy = "99:56:348:380"
+crop_file = "darkAqua/transition-regular-default.crop"
+makeFirstResponder = true
+firstResponder_is_the_control = true
+isKeyWindow_focused = true
+makeFirstResponder_nil_after = true
+ticker_flips = 412
+recording = "exit 0"
+focus_at_ms = 3011.4895
+focus_returned_ms = 3011.716834
+unfocus_at_ms = 6021.138459000001
+unfocus_returned_ms = 6021.22775
+recording_ended_ms = 10169.957124999999
+file = "darkAqua/transition-regular-default.mov"
+file_bytes = 809056
+
+[macos.button_pass.focus_transition.darkAqua.regular-default.pump_lead]
+steps = 121
+longest_step_ms = 29.859666999999998
+until_ms = 3011.486167
+
+[macos.button_pass.focus_transition.darkAqua.regular-default.pump_hold]
+steps = 122
+longest_step_ms = 29.965792
+until_ms = 6021.138292
+
+[macos.button_pass.focus_transition.darkAqua.regular-default.pump_finish]
+steps = 168
+longest_step_ms = 28.801916000000002
+until_ms = 10169.956709
+
+[macos.button_pass.focus_transition.caret]
+method = """after the buttons: a titled window (empty title, content [0, 0, 200, 80] (x, y, width, height) from [200, 300] (x, y)) holding an NSTextView (initWithFrame: [20, 20, 80, 30] (x, y, width, height), string "Ag", the insertion point at its end) and a ticker as the push sheet's, presented as the sheet was; per appearance recorded as a button is (the text view in the button's place, transition-caret.mov and .crop under <appearance>/), the caret blinking while the text view is first responder"""
+makeFirstResponder_nil = true
+key_wait_steps = 0
+isKeyWindow_presented = true
+isKeyWindow = true
+isMainWindow = true
+NSApp_isActive = true
+window_frame_xywh = [200.0, 300.0, 200.0, 108.0]
+
+[macos.button_pass.focus_transition.caret.aqua]
+makeFirstResponder_nil = true
+frame_screen_xywh = [220.0, 320.0, 80.0, 30.0]
+frame_quartz_xywh = [220.0, 418.0, 80.0, 30.0]
+crop_px_whxy = "104:54:208:406"
+crop_file = "aqua/transition-caret.crop"
+makeFirstResponder = true
+firstResponder_is_the_control = true
+isKeyWindow_focused = true
+makeFirstResponder_nil_after = true
+ticker_flips = 481
+recording = "exit 0"
+focus_at_ms = 3018.317917
+focus_returned_ms = 3018.98525
+unfocus_at_ms = 6009.5275
+unfocus_returned_ms = 6010.688083999999
+recording_ended_ms = 10179.365125
+file = "aqua/transition-caret.mov"
+file_bytes = 623330
+
+[macos.button_pass.focus_transition.caret.aqua.pump_lead]
+steps = 152
+longest_step_ms = 28.605208
+until_ms = 3018.3177090000004
+
+[macos.button_pass.focus_transition.caret.aqua.pump_hold]
+steps = 131
+longest_step_ms = 31.054417
+until_ms = 6009.52275
+
+[macos.button_pass.focus_transition.caret.aqua.pump_finish]
+steps = 197
+longest_step_ms = 40.101375000000004
+until_ms = 10179.364749999999
+
+[macos.button_pass.focus_transition.caret.darkAqua]
+makeFirstResponder_nil = true
+frame_screen_xywh = [220.0, 320.0, 80.0, 30.0]
+frame_quartz_xywh = [220.0, 418.0, 80.0, 30.0]
+crop_px_whxy = "104:54:208:406"
+crop_file = "darkAqua/transition-caret.crop"
+makeFirstResponder = true
+firstResponder_is_the_control = true
+isKeyWindow_focused = true
+makeFirstResponder_nil_after = true
+ticker_flips = 483
+recording = "exit 0"
+focus_at_ms = 3004.4598749999996
+focus_returned_ms = 3007.265625
+unfocus_at_ms = 6018.884333
+unfocus_returned_ms = 6019.594875
+recording_ended_ms = 10210.273916
+file = "darkAqua/transition-caret.mov"
+file_bytes = 624560
+
+[macos.button_pass.focus_transition.caret.darkAqua.pump_lead]
+steps = 151
+longest_step_ms = 45.956417
+until_ms = 3004.459416
+
+[macos.button_pass.focus_transition.caret.darkAqua.pump_hold]
+steps = 128
+longest_step_ms = 57.093416
+until_ms = 6018.879375
+
+[macos.button_pass.focus_transition.caret.darkAqua.pump_finish]
+steps = 203
+longest_step_ms = 45.071792
+until_ms = 10210.270790999999

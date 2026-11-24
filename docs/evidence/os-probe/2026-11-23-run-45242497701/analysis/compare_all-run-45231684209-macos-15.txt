@@ -1,0 +1,301 @@
+aqua.highlighted.toolbar_button
+    common: [['#e5e5e5ff', 930], ['#ffffffff', 227], ['#474747ff', 26], ['#dededeff', 10]] -> [['#d2d2d2ff', 930], ['#ecececff', 227], ['#343434ff', 26], ['#cbcbcbff', 10]]
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> ['#ecececff', '#ecececff']
+    edge_left: ['#ffffffff', '#e5e5e5ff'] -> ['#ecececff', '#d2d2d2ff']
+    edge_right: ['#ffffffff', '#e5e5e5ff'] -> ['#ecececff', '#d2d2d2ff']
+    edge_top: ['#ffffffff', '#e5e5e5ff'] -> ['#ecececff', '#d2d2d2ff']
+    fill: #e5e5e5ff -> #d2d2d2ff
+    fill_share: 0.784 -> 0.782
+    ink: #474747ff -> #343434ff
+    label: #474747ff -> #343434ff
+aqua.hovered.scroller_knob_overlay
+    common: [['#ffffffff', 468]] -> None
+    drawn_box: [428, 360, 12, 39] -> none
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> None
+    edge_left: ['#ffffffff', '#ffffffff'] -> None
+    edge_right: ['#ffffffff', '#ffffffff'] -> None
+    edge_top: ['#ffffffff', '#ffffffff'] -> None
+    fill: #ffffffff -> None
+    fill_share: 1.0 -> None
+    ink: #ffffffff -> None
+    ink_pixels: 0 -> None
+aqua.hovered.source_list_row
+    common: [['#f6f6f6ff', 4649], ['#595959ff', 10], ['#494949ff', 8], ['#b3b3b3ff', 7]] -> [['#ddddddff', 4649], ['#505050ff', 10], ['#424242ff', 8], ['#a1a1a1ff', 6]]
+    edge_bottom: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_left: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_right: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_top: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    fill: #f6f6f6ff -> #ddddddff
+    ink: #494949ff -> #424242ff
+    ink_pixels: 124 -> 123
+    label: #494949ff -> #424242ff
+aqua.hovered.toolbar_button
+    common: [['#f2f2f2ff', 928], ['#ffffffff', 227], ['#737373ff', 32], ['#fbfbfbff', 8]] -> [['#dfdfdfff', 928], ['#ecececff', 227], ['#606060ff', 33], ['#e8e8e8ff', 8]]
+    diff_from_normal: {'differing_pixels': 1005, 'max_byte_delta': 13} -> {'differing_pixels': 1014, 'max_byte_delta': 13}
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> ['#ecececff', '#ecececff']
+    edge_left: ['#ffffffff', '#f2f2f2ff'] -> ['#ecececff', '#dfdfdfff']
+    edge_right: ['#ffffffff', '#f2f2f2ff'] -> ['#ecececff', '#dfdfdfff']
+    edge_top: ['#ffffffff', '#f2f2f2ff'] -> ['#ecececff', '#dfdfdfff']
+    fill: #f2f2f2ff -> #dfdfdfff
+    ink: #737373ff -> #606060ff
+    label: #737373ff -> #606060ff
+aqua.normal.scroller_knob_overlay
+    common: [['#ffffffff', 468]] -> None
+    drawn_box: [428, 360, 12, 39] -> none
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> None
+    edge_left: ['#ffffffff', '#ffffffff'] -> None
+    edge_right: ['#ffffffff', '#ffffffff'] -> None
+    edge_top: ['#ffffffff', '#ffffffff'] -> None
+    fill: #ffffffff -> None
+    fill_share: 1.0 -> None
+    ink: #ffffffff -> None
+    ink_pixels: 0 -> None
+aqua.normal.source_list_row
+    common: [['#f6f6f6ff', 4649], ['#595959ff', 10], ['#494949ff', 8], ['#b3b3b3ff', 7]] -> [['#ddddddff', 4649], ['#505050ff', 10], ['#424242ff', 8], ['#a1a1a1ff', 6]]
+    edge_bottom: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_left: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_right: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_top: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    fill: #f6f6f6ff -> #ddddddff
+    ink: #494949ff -> #424242ff
+    ink_pixels: 124 -> 123
+    label: #494949ff -> #424242ff
+aqua.normal.toolbar_button
+    common: [['#ffffffff', 1013], ['#f2f2f2ff', 115], ['#737373ff', 32], ['#fbfbfbff', 19]] -> [['#ecececff', 1013], ['#dfdfdfff', 115], ['#606060ff', 32], ['#e8e8e8ff', 19]]
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> ['#ecececff', '#ecececff']
+    edge_left: ['#ffffffff', '#f2f2f2ff'] -> ['#ecececff', '#dfdfdfff']
+    edge_right: ['#ffffffff', '#f2f2f2ff'] -> ['#ecececff', '#dfdfdfff']
+    edge_top: ['#ffffffff', '#f2f2f2ff'] -> ['#ecececff', '#dfdfdfff']
+    fill: #ffffffff -> #ecececff
+    ink: #737373ff -> #606060ff
+    label: #737373ff -> #606060ff
+aqua.pressed.disclosure
+    diff_from_normal: {'differing_pixels': 74, 'max_byte_delta': 86} -> {'differing_pixels': 74, 'max_byte_delta': 82}
+aqua.pressed.popup
+    common: [['#0064e1ff', 1571], ['#ecececff', 486], ['#ffffffff', 54], ['#eeeff0ff', 12]] -> [['#2d92fbff', 1571], ['#dadbdaff', 485], ['#ffffffff', 54], ['#eeeff0ff', 12]]
+    diff_from_normal: {'differing_pixels': 3895, 'max_byte_delta': 255} -> {'differing_pixels': 3893, 'max_byte_delta': 217}
+    edge_bottom: ['#ecececff', '#ecececff'] -> ['#dadbdaff', '#dadbdaff']
+    edge_left: ['#83b4f0ff', '#f9fbfeff'] -> ['#99cafdff', '#fafcffff']
+    edge_top: ['#0064e1ff', '#0064e1ff'] -> ['#2d92fbff', '#2d92fbff']
+    fill: #0064e1ff -> #2d92fbff
+    fill_share: 0.647 -> 0.648
+    ink_pixels: 922 -> 984
+aqua.pressed.push
+    diff_from_normal: {'differing_pixels': 1314, 'max_byte_delta': 16} -> {'differing_pixels': 1312, 'max_byte_delta': 17}
+aqua.pressed.push_disclosure
+    diff_from_normal: {'differing_pixels': 388, 'max_byte_delta': 15} -> {'differing_pixels': 388, 'max_byte_delta': 16}
+aqua.pressed.scroller_knob_overlay
+    common: [['#ffffffff', 468]] -> None
+    drawn_box: [428, 360, 12, 39] -> none
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> None
+    edge_left: ['#ffffffff', '#ffffffff'] -> None
+    edge_right: ['#ffffffff', '#ffffffff'] -> None
+    edge_top: ['#ffffffff', '#ffffffff'] -> None
+    fill: #ffffffff -> None
+    fill_share: 1.0 -> None
+    ink: #ffffffff -> None
+    ink_pixels: 0 -> None
+aqua.pressed.segment
+    diff_from_normal: {'differing_pixels': 1538, 'max_byte_delta': 54} -> {'differing_pixels': 1538, 'max_byte_delta': 52}
+aqua.pressed.slider_knob
+    diff_from_normal: {'differing_pixels': 332, 'max_byte_delta': 15} -> {'differing_pixels': 332, 'max_byte_delta': 16}
+aqua.pressed.source_list_row
+    common: [['#0064e1ff', 4090], ['#f6f6f6ff', 484], ['#ffffffff', 29], ['#0768e2ff', 10]] -> [['#2d92fbff', 4090], ['#ddddddff', 484], ['#ffffffff', 29], ['#3496fbff', 12]]
+    diff_from_normal: {'differing_pixels': 4316, 'max_byte_delta': 246} -> {'differing_pixels': 4316, 'max_byte_delta': 189}
+    edge_bottom: ['#0064e1ff', '#0064e1ff'] -> ['#2d92fbff', '#2d92fbff']
+    edge_left: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_right: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_top: ['#0064e1ff', '#0064e1ff'] -> ['#2d92fbff', '#2d92fbff']
+    fill: #0064e1ff -> #2d92fbff
+    fill_share: 0.869 -> 0.87
+    ink_pixels: 664 -> 654
+aqua.pressed.switch_off
+    diff_from_normal: {'differing_pixels': 759, 'max_byte_delta': 15} -> {'differing_pixels': 760, 'max_byte_delta': 16}
+aqua.pressed.tab
+    diff_from_normal: {'differing_pixels': 1154, 'max_byte_delta': 54} -> {'differing_pixels': 1154, 'max_byte_delta': 51}
+aqua.pressed.toolbar_button
+    common: [['#e5e5e5ff', 930], ['#ffffffff', 227], ['#474747ff', 26], ['#dededeff', 10]] -> [['#d2d2d2ff', 930], ['#ecececff', 227], ['#343434ff', 26], ['#cbcbcbff', 10]]
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> ['#ecececff', '#ecececff']
+    edge_left: ['#ffffffff', '#e5e5e5ff'] -> ['#ecececff', '#d2d2d2ff']
+    edge_right: ['#ffffffff', '#e5e5e5ff'] -> ['#ecececff', '#d2d2d2ff']
+    edge_top: ['#ffffffff', '#e5e5e5ff'] -> ['#ecececff', '#d2d2d2ff']
+    fill: #e5e5e5ff -> #d2d2d2ff
+    fill_share: 0.784 -> 0.782
+    ink: #474747ff -> #343434ff
+    label: #474747ff -> #343434ff
+darkAqua.highlighted.toolbar_button
+    common: [['#404040ff', 904], ['#262626ff', 227], ['#ecececff', 52], ['#2e2e2eff', 8]] -> [['#4e4e4eff', 904], ['#343434ff', 227], ['#eeeeeeff', 52], ['#3c3c3cff', 8]]
+    edge_bottom: ['#262626ff', '#262626ff'] -> ['#343434ff', '#343434ff']
+    edge_left: ['#262626ff', '#404040ff'] -> ['#343434ff', '#4e4e4eff']
+    edge_right: ['#262626ff', '#404040ff'] -> ['#343434ff', '#4e4e4eff']
+    edge_top: ['#262626ff', '#404040ff'] -> ['#343434ff', '#4e4e4eff']
+    fill: #404040ff -> #4e4e4eff
+    ink: #ecececff -> #eeeeeeff
+    ink_pixels: 450 -> 447
+    label: #ecececff -> #eeeeeeff
+darkAqua.hovered.scroller_knob_legacy
+    common: [['#959595ff', 256], ['#2b2b2bff', 126], ['#232323ff', 56], ['#3e3e3eff', 38]] -> [['#fbfbfb89', 256], ['#c9c9c913', 118], ['#3232323d', 56], ['#dbdbdb2b', 38]]
+    diff_from_normal: {'differing_pixels': 284, 'max_byte_delta': 42} -> {'differing_pixels': 284, 'max_byte_delta': 41}
+    edge_bottom: ['#242424ff', '#8f8f8fff'] -> ['#3535353a', '#f4f4f487']
+    edge_left: ['#3e3e3eff', '#2b2b2bff'] -> ['#dbdbdb2b', '#c9c9c913']
+    edge_right: ['#2c2c2cff', '#2b2b2bff'] -> ['#c5c5c516', '#c9c9c913']
+    edge_top: ['#242424ff', '#8f8f8fff'] -> ['#3535353a', '#f4f4f487']
+    fill: #959595ff -> #fbfbfb89
+    ink: #232323ff -> #f2f2f287
+darkAqua.hovered.scroller_knob_overlay
+    common: [['#1e1e1eff', 468]] -> None
+    drawn_box: [428, 360, 12, 39] -> none
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> None
+    fill: #1e1e1eff -> None
+    fill_share: 1.0 -> None
+    ink: #1e1e1eff -> None
+    ink_pixels: 0 -> None
+darkAqua.hovered.source_list_row
+    common: [['#383838ff', 4626], ['#ebebebff', 33], ['#3f3f3fff', 10], ['#3a3a3aff', 5]] -> [['#424242ff', 4626], ['#ecececff', 33], ['#494949ff', 11], ['#e4e4e4ff', 5]]
+    edge_bottom: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_left: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_right: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_top: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    fill: #383838ff -> #424242ff
+    ink: #ebebebff -> #ecececff
+    ink_pixels: 141 -> 139
+    label: #ebebebff -> #ecececff
+darkAqua.hovered.table_row
+    common: [['#1e1e1eff', 4626], ['#ddddddff', 29], ['#252525ff', 10], ['#d3d3d3ff', 5]] -> [['#1b1b1bff', 4626], ['#dcdcdcff', 29], ['#222222ff', 10], ['#d2d2d2ff', 5]]
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    fill: #1e1e1eff -> #1b1b1bff
+    ink: #ddddddff -> #dcdcdcff
+    label: #ddddddff -> #dcdcdcff
+darkAqua.hovered.toolbar_button
+    common: [['#333333ff', 928], ['#262626ff', 227], ['#a6a6a6ff', 32], ['#2a2a2aff', 8]] -> [['#414141ff', 928], ['#343434ff', 227], ['#b4b4b4ff', 33], ['#383838ff', 8]]
+    diff_from_normal: {'differing_pixels': 1012, 'max_byte_delta': 13} -> {'differing_pixels': 1006, 'max_byte_delta': 13}
+    edge_bottom: ['#262626ff', '#262626ff'] -> ['#343434ff', '#343434ff']
+    edge_left: ['#262626ff', '#333333ff'] -> ['#343434ff', '#414141ff']
+    edge_right: ['#262626ff', '#333333ff'] -> ['#343434ff', '#414141ff']
+    edge_top: ['#262626ff', '#333333ff'] -> ['#343434ff', '#414141ff']
+    fill: #333333ff -> #414141ff
+    ink: #a6a6a6ff -> #b4b4b4ff
+    label: #a6a6a6ff -> #b4b4b4ff
+darkAqua.normal.scroller_knob_legacy
+    common: [['#6b6b6bff', 256], ['#2b2b2bff', 126], ['#232323ff', 56], ['#3e3e3eff', 38]] -> [['#f7f7f75a', 256], ['#c9c9c913', 118], ['#3232323d', 56], ['#dbdbdb2b', 38]]
+    edge_bottom: ['#242424ff', '#676767ff'] -> ['#3535353a', '#ebebeb5a']
+    edge_left: ['#3e3e3eff', '#2b2b2bff'] -> ['#dbdbdb2b', '#c9c9c913']
+    edge_right: ['#2c2c2cff', '#2b2b2bff'] -> ['#c5c5c516', '#c9c9c913']
+    edge_top: ['#242424ff', '#676767ff'] -> ['#3535353a', '#ebebeb5a']
+    fill: #6b6b6bff -> #f7f7f75a
+    ink: #232323ff -> #3232323d
+darkAqua.normal.scroller_knob_overlay
+    common: [['#1e1e1eff', 468]] -> None
+    drawn_box: [428, 360, 12, 39] -> none
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> None
+    fill: #1e1e1eff -> None
+    fill_share: 1.0 -> None
+    ink: #1e1e1eff -> None
+    ink_pixels: 0 -> None
+darkAqua.normal.source_list_row
+    common: [['#383838ff', 4626], ['#ebebebff', 33], ['#3f3f3fff', 10], ['#3a3a3aff', 5]] -> [['#424242ff', 4626], ['#ecececff', 33], ['#494949ff', 11], ['#e4e4e4ff', 5]]
+    edge_bottom: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_left: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_right: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_top: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    fill: #383838ff -> #424242ff
+    ink: #ebebebff -> #ecececff
+    ink_pixels: 141 -> 139
+    label: #ebebebff -> #ecececff
+darkAqua.normal.table_row
+    common: [['#1e1e1eff', 4626], ['#ddddddff', 29], ['#252525ff', 10], ['#d3d3d3ff', 5]] -> [['#1b1b1bff', 4626], ['#dcdcdcff', 29], ['#222222ff', 10], ['#d2d2d2ff', 5]]
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    fill: #1e1e1eff -> #1b1b1bff
+    ink: #ddddddff -> #dcdcdcff
+    label: #ddddddff -> #dcdcdcff
+darkAqua.normal.toolbar_button
+    common: [['#262626ff', 1012], ['#333333ff', 115], ['#a6a6a6ff', 32], ['#2a2a2aff', 19]] -> [['#343434ff', 1012], ['#414141ff', 115], ['#b4b4b4ff', 33], ['#383838ff', 19]]
+    edge_bottom: ['#262626ff', '#262626ff'] -> ['#343434ff', '#343434ff']
+    edge_left: ['#262626ff', '#333333ff'] -> ['#343434ff', '#414141ff']
+    edge_right: ['#262626ff', '#333333ff'] -> ['#343434ff', '#414141ff']
+    edge_top: ['#262626ff', '#333333ff'] -> ['#343434ff', '#414141ff']
+    fill: #262626ff -> #343434ff
+    ink: #a6a6a6ff -> #b4b4b4ff
+    label: #a6a6a6ff -> #b4b4b4ff
+darkAqua.pressed.checkbox_off
+    diff_from_normal: {'differing_pixels': 192, 'max_byte_delta': 45} -> {'differing_pixels': 192, 'max_byte_delta': 46}
+darkAqua.pressed.popup
+    common: [['#0059d1ff', 1571], ['#323232ff', 486], ['#ffffffff', 51], ['#ffffff5c', 16]] -> [['#378ce5ff', 1570], ['#515151ff', 486], ['#ffffffff', 51], ['#ffffff5c', 16]]
+    diff_from_normal: {'differing_pixels': 3907, 'max_byte_delta': 230} -> {'differing_pixels': 3905, 'max_byte_delta': 222}
+    edge_bottom: ['#323232ff', '#323232ff'] -> ['#515151ff', '#515151ff']
+    edge_left: ['#83aee9ff', '#f9fbfeff'] -> ['#9ec7f2ff', '#fafcfeff']
+    edge_top: ['#0059d1ff', '#0059d1ff'] -> ['#378ce5ff', '#378ce5ff']
+    fill: #0059d1ff -> #378ce5ff
+    fill_share: 0.647 -> 0.649
+    ink_pixels: 999 -> 909
+darkAqua.pressed.push
+    diff_from_normal: {'differing_pixels': 1246, 'max_byte_delta': 24} -> {'differing_pixels': 1209, 'max_byte_delta': 24}
+darkAqua.pressed.scroller_knob_legacy
+    common: [['#959595ff', 256], ['#2b2b2bff', 126], ['#232323ff', 56], ['#3e3e3eff', 38]] -> [['#fbfbfb89', 256], ['#c9c9c913', 118], ['#3232323d', 56], ['#dbdbdb2b', 38]]
+    diff_from_normal: {'differing_pixels': 284, 'max_byte_delta': 42} -> {'differing_pixels': 284, 'max_byte_delta': 41}
+    edge_bottom: ['#242424ff', '#8f8f8fff'] -> ['#3535353a', '#f4f4f487']
+    edge_left: ['#3e3e3eff', '#2b2b2bff'] -> ['#dbdbdb2b', '#c9c9c913']
+    edge_right: ['#2c2c2cff', '#2b2b2bff'] -> ['#c5c5c516', '#c9c9c913']
+    edge_top: ['#242424ff', '#8f8f8fff'] -> ['#3535353a', '#f4f4f487']
+    fill: #959595ff -> #fbfbfb89
+    ink: #232323ff -> #f2f2f287
+darkAqua.pressed.scroller_knob_overlay
+    common: [['#1e1e1eff', 468]] -> None
+    drawn_box: [428, 360, 12, 39] -> none
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> None
+    fill: #1e1e1eff -> None
+    fill_share: 1.0 -> None
+    ink: #1e1e1eff -> None
+    ink_pixels: 0 -> None
+darkAqua.pressed.segment
+    diff_from_normal: {'differing_pixels': 1438, 'max_byte_delta': 80} -> {'differing_pixels': 1438, 'max_byte_delta': 82}
+darkAqua.pressed.slider_knob
+    diff_from_normal: {'differing_pixels': 337, 'max_byte_delta': 26} -> {'differing_pixels': 335, 'max_byte_delta': 26}
+darkAqua.pressed.source_list_row
+    common: [['#0059d1ff', 4090], ['#383838ff', 492], ['#ffffffff', 29], ['#095fd3ff', 10]] -> [['#378ce5ff', 4090], ['#424242ff', 492], ['#ffffffff', 29], ['#3e90e6ff', 10]]
+    diff_from_normal: {'differing_pixels': 4308, 'max_byte_delta': 153} -> {'differing_pixels': 4308, 'max_byte_delta': 163}
+    edge_bottom: ['#0059d1ff', '#0059d1ff'] -> ['#378ce5ff', '#378ce5ff']
+    edge_left: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_right: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_top: ['#0059d1ff', '#0059d1ff'] -> ['#378ce5ff', '#378ce5ff']
+    fill: #0059d1ff -> #378ce5ff
+    fill_share: 0.869 -> 0.87
+    ink_pixels: 656 -> 654
+darkAqua.pressed.switch_off
+    diff_from_normal: {'differing_pixels': 756, 'max_byte_delta': 26} -> {'differing_pixels': 756, 'max_byte_delta': 27}
+darkAqua.pressed.tab
+    diff_from_normal: {'differing_pixels': 1073, 'max_byte_delta': 80} -> {'differing_pixels': 1071, 'max_byte_delta': 82}
+darkAqua.pressed.table_row
+    common: [['#0059d1ff', 4090], ['#1e1e1eff', 484], ['#ffffffff', 29], ['#095fd3ff', 10]] -> [['#0059d1ff', 4090], ['#1b1b1bff', 484], ['#ffffffff', 29], ['#095fd3ff', 10]]
+    diff_from_normal: {'differing_pixels': 4316, 'max_byte_delta': 179} -> {'differing_pixels': 4316, 'max_byte_delta': 182}
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    ink_pixels: 656 -> 664
+darkAqua.pressed.text_field
+    diff_from_normal: {'differing_pixels': 531, 'max_byte_delta': 205} -> {'differing_pixels': 532, 'max_byte_delta': 208}
+darkAqua.pressed.toolbar_button
+    common: [['#404040ff', 904], ['#262626ff', 227], ['#ecececff', 52], ['#2e2e2eff', 8]] -> [['#4e4e4eff', 904], ['#343434ff', 227], ['#eeeeeeff', 52], ['#3c3c3cff', 8]]
+    diff_from_normal: {'differing_pixels': 1198, 'max_byte_delta': 116} -> {'differing_pixels': 1198, 'max_byte_delta': 104}
+    edge_bottom: ['#262626ff', '#262626ff'] -> ['#343434ff', '#343434ff']
+    edge_left: ['#262626ff', '#404040ff'] -> ['#343434ff', '#4e4e4eff']
+    edge_right: ['#262626ff', '#404040ff'] -> ['#343434ff', '#4e4e4eff']
+    edge_top: ['#262626ff', '#404040ff'] -> ['#343434ff', '#4e4e4eff']
+    fill: #404040ff -> #4e4e4eff
+    ink: #ecececff -> #eeeeeeff
+    ink_pixels: 450 -> 447
+    label: #ecececff -> #eeeeeeff

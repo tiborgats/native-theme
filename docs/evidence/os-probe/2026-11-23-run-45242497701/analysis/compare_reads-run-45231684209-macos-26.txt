@@ -1,0 +1,246 @@
+keys in both: 134, the same: 100, differing: 34
+only in OLD: []
+only in NEW: []
+aqua.highlighted.toolbar_button
+    fill: #d9d9d9ff -> #e6e6e6ff
+    label: #414141ff -> #454545ff
+    ink: #414141ff -> #454545ff
+    edge_top: ['#e3e3e3ff', '#ddddddff'] -> ['#e6e6e6ff', '#e6e6e6ff']
+    edge_bottom: ['#e3e3e3ff', '#ddddddff'] -> ['#e6e6e6ff', '#e6e6e6ff']
+    edge_left: ['#e4e4e4ff', '#ddddddff'] -> ['#e7e7e7ff', '#e6e6e6ff']
+    edge_right: ['#e4e4e4ff', '#ddddddff'] -> ['#e7e7e7ff', '#e6e6e6ff']
+aqua.hovered.scroller_knob_legacy
+    fill: #7a7a7aff -> #00000085
+    ink: #f3f3f3ff -> #00000083
+    edge_top: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_bottom: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_left: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_right: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+aqua.hovered.scroller_knob_overlay
+    drawn_box: [431, 379, 6, 38] -> none
+    fill: #ffffffff -> None
+    ink: #ffffffff -> None
+    edge_top: ['#ffffffff', '#ffffffff'] -> None
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> None
+    edge_left: ['#ffffffff', '#ffffffff'] -> None
+    edge_right: ['#ffffffff', '#ffffffff'] -> None
+aqua.hovered.source_list_row
+    fill: #f6f6f6ff -> #ddddddff
+    edge_top: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_bottom: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_left: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_right: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+aqua.hovered.toolbar_button
+    fill: #e5e5e5ff -> #f2f2f2ff
+    label: #454545ff -> #494949ff
+    ink: #454545ff -> #494949ff
+    edge_top: ['#efefefff', '#e9e9e9ff'] -> ['#f2f2f2ff', '#f2f2f2ff']
+    edge_bottom: ['#efefefff', '#e9e9e9ff'] -> ['#f2f2f2ff', '#f2f2f2ff']
+    edge_left: ['#efefefff', '#e9e9e9ff'] -> ['#f2f2f2ff', '#f2f2f2ff']
+    edge_right: ['#f0f0f0ff', '#e9e9e9ff'] -> ['#f3f3f3ff', '#f2f2f2ff']
+aqua.normal.scroller_knob_legacy
+    fill: #7a7a7aff -> #00000085
+    ink: #f3f3f3ff -> #00000083
+    edge_top: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_bottom: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_left: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_right: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+aqua.normal.scroller_knob_overlay
+    drawn_box: [431, 379, 6, 38] -> none
+    fill: #ffffffff -> None
+    ink: #ffffffff -> None
+    edge_top: ['#ffffffff', '#ffffffff'] -> None
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> None
+    edge_left: ['#ffffffff', '#ffffffff'] -> None
+    edge_right: ['#ffffffff', '#ffffffff'] -> None
+aqua.normal.source_list_row
+    fill: #f6f6f6ff -> #ddddddff
+    edge_top: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_bottom: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_left: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_right: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+aqua.normal.toolbar_button
+    fill: #f2f2f2ff -> #ffffffff
+    label: #494949ff -> #4d4d4dff
+    ink: #494949ff -> #4d4d4dff
+    edge_top: ['#fcfcfcff', '#f6f6f6ff'] -> ['#ffffffff', '#ffffffff']
+    edge_bottom: ['#fcfcfcff', '#f6f6f6ff'] -> ['#ffffffff', '#ffffffff']
+    edge_left: ['#fcfcfcff', '#f6f6f6ff'] -> ['#ffffffff', '#ffffffff']
+    edge_right: ['#fcfcfcff', '#f6f6f6ff'] -> ['#ffffffff', '#ffffffff']
+aqua.pressed.popup
+    fill: #0064e1ff -> #2d92fbff
+    ink: #ffffffff -> #000000c5
+    edge_top: ['#0064e1ff', '#0064e1ff'] -> ['#2d92fbff', '#2d92fbff']
+    edge_bottom: ['#0064e1ff', '#0064e1ff'] -> ['#2d92fbff', '#2d92fbff']
+    edge_left: ['#0466e1ff', '#0064e1ff'] -> ['#3094fbff', '#2d92fbff']
+aqua.pressed.scroller_knob_legacy
+    fill: #7a7a7aff -> #00000085
+    ink: #f3f3f3ff -> #00000083
+    edge_top: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_bottom: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_left: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+    edge_right: ['#7a7a7aff', '#7a7a7aff'] -> ['#00000085', '#00000085']
+aqua.pressed.scroller_knob_overlay
+    drawn_box: [431, 379, 6, 38] -> none
+    fill: #ffffffff -> None
+    ink: #ffffffff -> None
+    edge_top: ['#ffffffff', '#ffffffff'] -> None
+    edge_bottom: ['#ffffffff', '#ffffffff'] -> None
+    edge_left: ['#ffffffff', '#ffffffff'] -> None
+    edge_right: ['#ffffffff', '#ffffffff'] -> None
+aqua.pressed.source_list_row
+    fill: #0076fbff -> #0069eeff
+    edge_top: ['#0076fbff', '#0076fbff'] -> ['#0069eeff', '#0069eeff']
+    edge_bottom: ['#0076fbff', '#0076fbff'] -> ['#0069eeff', '#0069eeff']
+    edge_left: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+    edge_right: ['#f6f6f6ff', '#f6f6f6ff'] -> ['#ddddddff', '#ddddddff']
+aqua.pressed.toolbar_button
+    fill: #d9d9d9ff -> #e6e6e6ff
+    label: #414141ff -> #454545ff
+    ink: #414141ff -> #454545ff
+    edge_top: ['#e3e3e3ff', '#ddddddff'] -> ['#e6e6e6ff', '#e6e6e6ff']
+    edge_bottom: ['#e3e3e3ff', '#ddddddff'] -> ['#e6e6e6ff', '#e6e6e6ff']
+    edge_left: ['#e4e4e4ff', '#ddddddff'] -> ['#e7e7e7ff', '#e6e6e6ff']
+    edge_right: ['#e4e4e4ff', '#ddddddff'] -> ['#e7e7e7ff', '#e6e6e6ff']
+darkAqua.highlighted.toolbar_button
+    fill: #373737ff -> #484848ff
+    label: #ebebebff -> #ecececff
+    ink: #ebebebff -> #ecececff
+    edge_top: ['#4c4c4cff', '#373737ff'] -> ['#616161ff', '#494949ff']
+    edge_bottom: ['#4c4c4cff', '#373737ff'] -> ['#616161ff', '#494949ff']
+    edge_left: ['#4a4a4aff', '#373737ff'] -> ['#5e5e5eff', '#494949ff']
+    edge_right: ['#4c4c4cff', '#373737ff'] -> ['#5f5f5fff', '#494949ff']
+darkAqua.hovered.scroller_knob_legacy
+    fill: #9f9f9fff -> #ffffff91
+    ink: #292929ff -> #ffffff80
+    edge_top: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_bottom: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_left: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_right: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+darkAqua.hovered.scroller_knob_overlay
+    drawn_box: [431, 379, 6, 38] -> none
+    fill: #1e1e1eff -> None
+    ink: #1e1e1eff -> None
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> None
+darkAqua.hovered.source_list_row
+    fill: #383838ff -> #424242ff
+    edge_top: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_bottom: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_left: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_right: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+darkAqua.hovered.table_row
+    fill: #1e1e1eff -> #1b1b1bff
+    label: #ddddddff -> #dcdcdcff
+    ink: #ddddddff -> #dcdcdcff
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+darkAqua.hovered.text_field
+    fill: #1e1e1eff -> #1b1b1bff
+    label: #dededeff -> #ddddddff
+    ink: #dededeff -> #ddddddff
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+darkAqua.hovered.toolbar_button
+    fill: #282828ff -> #393939ff
+    label: #e9e9e9ff -> #ebebebff
+    ink: #e9e9e9ff -> #ebebebff
+    edge_top: ['#3d3d3dff', '#282828ff'] -> ['#525252ff', '#3a3a3aff']
+    edge_bottom: ['#3d3d3dff', '#282828ff'] -> ['#525252ff', '#3a3a3aff']
+    edge_left: ['#3b3b3bff', '#282828ff'] -> ['#4f4f4fff', '#3a3a3aff']
+    edge_right: ['#3d3d3dff', '#282828ff'] -> ['#505050ff', '#3a3a3aff']
+darkAqua.normal.scroller_knob_legacy
+    fill: #9f9f9fff -> #ffffff91
+    ink: #292929ff -> #ffffff80
+    edge_top: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_bottom: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_left: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_right: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+darkAqua.normal.scroller_knob_overlay
+    drawn_box: [431, 379, 6, 38] -> none
+    fill: #1e1e1eff -> None
+    ink: #1e1e1eff -> None
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> None
+darkAqua.normal.source_list_row
+    fill: #383838ff -> #424242ff
+    edge_top: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_bottom: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_left: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_right: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+darkAqua.normal.table_row
+    fill: #1e1e1eff -> #1b1b1bff
+    label: #ddddddff -> #dcdcdcff
+    ink: #ddddddff -> #dcdcdcff
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+darkAqua.normal.text_field
+    fill: #1e1e1eff -> #1b1b1bff
+    label: #dededeff -> #ddddddff
+    ink: #dededeff -> #ddddddff
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+darkAqua.normal.toolbar_button
+    fill: #141414ff -> #252525ff
+    label: #e7e7e7ff -> #e9e9e9ff
+    ink: #e7e7e7ff -> #e9e9e9ff
+    edge_top: ['#292929ff', '#141414ff'] -> ['#3e3e3eff', '#262626ff']
+    edge_bottom: ['#292929ff', '#141414ff'] -> ['#3e3e3eff', '#262626ff']
+    edge_left: ['#282828ff', '#141414ff'] -> ['#3c3c3cff', '#262626ff']
+    edge_right: ['#2a2a2aff', '#141414ff'] -> ['#3d3d3dff', '#262626ff']
+darkAqua.pressed.popup
+    fill: #0052d2ff -> #377de6ff
+    edge_top: ['#0052d2ff', '#0052d2ff'] -> ['#377de6ff', '#377de6ff']
+    edge_bottom: ['#0052d2ff', '#0052d2ff'] -> ['#377de6ff', '#377de6ff']
+    edge_left: ['#0455d3ff', '#0052d2ff'] -> ['#3a7fe6ff', '#377de6ff']
+darkAqua.pressed.scroller_knob_legacy
+    fill: #9f9f9fff -> #ffffff91
+    ink: #292929ff -> #ffffff80
+    edge_top: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_bottom: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_left: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+    edge_right: ['#9f9f9fff', '#9f9f9fff'] -> ['#ffffff91', '#ffffff91']
+darkAqua.pressed.scroller_knob_overlay
+    drawn_box: [431, 379, 6, 38] -> none
+    fill: #1e1e1eff -> None
+    ink: #1e1e1eff -> None
+    edge_top: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_bottom: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> None
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> None
+darkAqua.pressed.source_list_row
+    fill: #1c96ffff -> #219bffff
+    edge_top: ['#1c96ffff', '#1c96ffff'] -> ['#219bffff', '#219bffff']
+    edge_bottom: ['#1c96ffff', '#1c96ffff'] -> ['#219bffff', '#219bffff']
+    edge_left: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+    edge_right: ['#383838ff', '#383838ff'] -> ['#424242ff', '#424242ff']
+darkAqua.pressed.table_row
+    edge_left: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+    edge_right: ['#1e1e1eff', '#1e1e1eff'] -> ['#1b1b1bff', '#1b1b1bff']
+darkAqua.pressed.text_field
+    fill: #1e1e1eff -> #1b1b1bff
+    label: #ddddddff -> #dcdcdcff
+    edge_top: ['#1c648eff', '#1e1e1eff'] -> ['#1b638dff', '#1b1b1bff']
+    edge_bottom: ['#1c648eff', '#1e1e1eff'] -> ['#1b638dff', '#1b1b1bff']
+    edge_left: ['#1c648eff', '#1e1e1eff'] -> ['#1b638dff', '#1b1b1bff']
+    edge_right: ['#1c648eff', '#1e1e1eff'] -> ['#1b638dff', '#1b1b1bff']
+darkAqua.pressed.toolbar_button
+    fill: #373737ff -> #484848ff
+    label: #ebebebff -> #ecececff
+    ink: #ebebebff -> #ecececff
+    edge_top: ['#4c4c4cff', '#373737ff'] -> ['#616161ff', '#494949ff']
+    edge_bottom: ['#4c4c4cff', '#373737ff'] -> ['#616161ff', '#494949ff']
+    edge_left: ['#4a4a4aff', '#373737ff'] -> ['#5e5e5eff', '#494949ff']
+    edge_right: ['#4c4c4cff', '#373737ff'] -> ['#5f5f5fff', '#494949ff']
