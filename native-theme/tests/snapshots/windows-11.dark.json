@@ -2124,6 +2124,14 @@
           "button_label": {
             "color": "#ffffffc5"
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button_label": {
+            "color": "#ffffff5d"
+          }
         }
       ]
     },

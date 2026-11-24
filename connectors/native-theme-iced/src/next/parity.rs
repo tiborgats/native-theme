@@ -2561,6 +2561,19 @@ const DIFFERENCES: &[Difference] = &[
             )],
         ],
     ),
+    // ios-13 states the toolbar's button label, toolbar.button_label(NONE),
+    // in the tint, a bar button item's colour, where 0.7.2 drew the body
+    // text.
+    stated_fields(
+        "toolbar",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&[set(
+            at!(NONE),
+            Field::TextColor,
+            home!(color, toolbar.button_label(NONE)),
+        )]],
+    ),
     // splitter.handle(HOVER), both splits' colour.
     stated_fields(
         "pane_grid",
@@ -3405,6 +3418,7 @@ impl Fields for iced_widget::container::Style {
     fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
         use iced_core::Background;
         match field {
+            Field::TextColor => self.text_color = Some(color_of(field, &value)?),
             Field::BorderWidth => self.border.width = width_of(field, &value)?,
             Field::Radius => self.border.radius = width_of(field, &value)?.into(),
             Field::BorderColor => {
@@ -3429,7 +3443,6 @@ impl Fields for iced_widget::container::Style {
             },
             Field::Background
             | Field::HandleBackground
-            | Field::TextColor
             | Field::IconColor
             | Field::InnerRadius
             | Field::PickedSplitColor
@@ -4217,13 +4230,15 @@ fn compare_styles(
         panel(dl.background_color, Some(dl.body_font.color), &dl.border),
         [()]
     );
-    plain!(
+    stated_surface!(
         report,
         themes,
+        new,
         "toolbar",
-        surface(o::toolbar(old)),
-        n::toolbar(new).map(surface),
-        [()]
+        o::toolbar(old),
+        n::toolbar(new),
+        |_: Listed| o::toolbar(old),
+        WidgetState::NONE
     );
     plain!(
         report,

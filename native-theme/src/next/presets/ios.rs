@@ -2232,7 +2232,8 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 
 /// The toolbar: the window's background (0.7.2: `toolbar.background_color`
 /// is `defaults.background_color` where unstated) in the default border at
-/// the default radius (the default shadow); its text the UI font; its
+/// the default radius (the default shadow); its text the UI font in the
+/// accent, the bar button item's tint; its
 /// buttons' icons at the toolbar's size (0.7.2: `toolbar.icon_size` is
 /// `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -> ToolbarWidget {
@@ -2244,11 +2245,15 @@ fn toolbar(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) 
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(ICON_TOOLBAR)])
         .build();
+    // The buttons' label: a plain bar button item is drawn in the tint, the accent (UIKit's
+    // `tintColor`), #007aff / #0a84ff with no tint set (measured, iOS host run 41020880059 and
+    // run 42276668803, `forms.<scheme>.bar_plain.normal.label_fill`; `docs/facts/ios/button.toml`
+    // on `v0.8.0-rc1` at `78ee0efd`, rows B-1, TB-4), not the body text.
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
         RuleBuilder::new(PartStyle::default()).build(),
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(label(&typography.body, Some(roles.accent.fill))).build(),
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),
         None,

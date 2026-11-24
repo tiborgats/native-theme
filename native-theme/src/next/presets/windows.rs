@@ -1637,7 +1637,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         menu: menu(c, &hc, &colors, &typography, units, fonts.menu),
         menu_bar: menu_bar(&colors),
         sidebar: sidebar(c, &colors, &typography, &layout),
-        toolbar: toolbar(c, &colors, &typography, direction),
+        toolbar: toolbar(c, &hc, &colors, &typography, direction),
         status_bar: status_bar(&colors, &typography, &layout, units, fonts.status_bar),
         tooltip: tooltip(&colors, &typography, units, &layout, fonts.tooltip),
         window: window(
@@ -3621,11 +3621,14 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 /// The toolbar: the window's background (0.7.2: `toolbar.background_color`
 /// is `defaults.background_color` where unstated) with no outline, in the
 /// default border colour, its own corners, no shadow, padded, of a least
-/// height; its buttons' hovered and pressed layers and checked fill; icons at
+/// height; its buttons' hovered and pressed layers and checked fill, their
+/// labels' pressed and disabled colours (the disabled one under high
+/// contrast `hc`'s grey text); icons at
 /// the toolbar's size (0.7.2: `toolbar.icon_size` is
 /// `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(
     c: &SchemeColors,
+    hc: &HighContrast,
     roles: &ColorRoles,
     typography: &Typography,
     direction: Direction,
@@ -3666,7 +3669,11 @@ fn toolbar(
         .build();
     // Hovered, the label as at rest: AppBarButtonForegroundPointerOver = TextFillColorPrimary
     // (AppBarButton_themeresources.xaml:80, :79 at microsoft-ui-xaml 8463f45); pressed,
-    // AppBarButtonForegroundPressed = TextFillColorSecondary (:81, set :257-259).
+    // AppBarButtonForegroundPressed = TextFillColorSecondary (:81, set :257-259); disabled,
+    // AppBarButtonForegroundDisabled = TextFillColorDisabled (:82, :12, set :268-270), under high
+    // contrast SystemControlDisabledBaseMediumLowBrush (:47), SystemColorGrayTextColor
+    // (generic.xaml:2026 at microsoft-ui-xaml 8463f45): the button's disabled opacity,
+    // `DISABLED_OPACITY`, is 1, so no fade draws it.
     let button_label = label(&typography.body, None);
     let (selectors, color) = rest_color_rules(&button_label, [WidgetState::HOVER]);
     let button_label = RuleBuilder::new(button_label)
@@ -3674,6 +3681,10 @@ fn toolbar(
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(c.window_foreground_muted)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
         )
         .build();
     ToolbarWidget::new(

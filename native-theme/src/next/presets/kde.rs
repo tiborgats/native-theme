@@ -358,6 +358,9 @@ struct SchemeColors {
     toolbar_border: Color,
     toolbar_button_pressed: Color,
     toolbar_button_checked: Color,
+    /// A disabled toolbar button's label: the tools area's Disabled
+    /// WindowText, the Header set's.
+    toolbar_button_disabled_foreground: Color,
     sidebar_hover: Color,
     popover_border: Color,
     switch_off: Color,
@@ -775,6 +778,13 @@ const LIGHT: SchemeColors = SchemeColors {
     // ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5) at 0.125
     // (breezehelper.cpp:681-684 at breeze f0b1d75)
     toolbar_button_checked: srgb8(0x2326_2920),
+    // `toolbar.button_label(DISABLED).color`: the flat button's label role, WindowText
+    // (breezestyle.cpp:5665-5674 at breeze 6.8.2), from the Disabled group of the palette Breeze
+    // gives a top tool bar, the Header set's (breezetoolsareamanager.cpp:147-149, :201-216;
+    // `docs/facts/kde/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row K1.150): #95979a, not the
+    // window's #a0a1a3 (measured, breeze 6.8.3 offscreen,
+    // `docs/evidence/breeze-offscreen/2026-11-24/toolbar_disabled_light.txt`)
+    toolbar_button_disabled_foreground: srgb8(0x9597_9aff),
     // `sidebar.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     sidebar_hover: srgb8(0x93ce_e9ff),
     // `popover.border.color`: platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup
@@ -1221,6 +1231,10 @@ const DARK: SchemeColors = SchemeColors {
     // ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5) at 0.125
     // (breezehelper.cpp:681-684 at breeze f0b1d75)
     toolbar_button_checked: srgb8(0xfcfc_fc20),
+    // `toolbar.button_label(DISABLED).color`: as in the light scheme, the top tool bar's
+    // Disabled WindowText, the Header set's: #6d6f72, not the window's #686a6c (measured, breeze
+    // 6.8.3 offscreen, `docs/evidence/breeze-offscreen/2026-11-24/toolbar_disabled_dark.txt`)
+    toolbar_button_disabled_foreground: srgb8(0x6d6f_72ff),
     // `sidebar.hover_background`: 0.7.2 kde-breeze.toml (uncited)
     sidebar_hover: srgb8(0x2e4a_5eff),
     // `popover.border.color`: platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup
@@ -4540,7 +4554,8 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 /// default border width (0.7.2: drawn at `button.border.line_width`, which
 /// is `defaults.border.line_width` where unstated). The labels in the
 /// toolbar font `font` (0.7.2: `toolbar.font` is `defaults.font` where
-/// unstated), the icons at the toolbar's icon size `icon_size` (0.7.2:
+/// unstated), disabled in the tool bar's Disabled WindowText, the icons at
+/// the toolbar's icon size `icon_size` (0.7.2:
 /// `toolbar.icon_size` is `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(
     c: &SchemeColors,
@@ -4592,7 +4607,9 @@ fn toolbar(
         .build();
     // Hovered and pressed, the label as at rest: drawToolButtonLabelControl letters an
     // auto-raised (toolbar) button in WindowText whatever the state (breezestyle.cpp:5666-5674 at
-    // breeze f0b1d75).
+    // breeze f0b1d75); disabled, in the tool bar's Disabled WindowText
+    // (`toolbar_button_disabled_foreground`): the button's disabled opacity, `DISABLED_OPACITY`,
+    // is 1, so no fade draws it.
     let button_label = label(font, None);
     let (selectors, color) =
         rest_color_rules(&button_label, [WidgetState::HOVER, WidgetState::PRESSED]);
@@ -4602,6 +4619,10 @@ fn toolbar(
         button,
         RuleBuilder::new(button_label)
             .rules(selectors, color)
+            .rule(
+                RuleSelector::on(WidgetState::DISABLED),
+                [TextProp::Color(c.toolbar_button_disabled_foreground)],
+            )
             .build(),
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),

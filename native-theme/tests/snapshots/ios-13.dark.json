@@ -1727,7 +1727,7 @@
     "button_label": {
       "base": {
         "family": "SF Pro",
-        "color": "#ffffff",
+        "color": "#0a84ff",
         "size_px": 17.0,
         "weight": 400,
         "style": "normal",

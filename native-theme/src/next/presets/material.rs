@@ -2680,7 +2680,9 @@ fn toolbar(roles: &ColorRoles, typography: &Typography, units: FontUnits) -> Too
         .build();
     // The buttons' text hovered and pressed as at rest: an on-surface label keeps its colour under
     // its state layer (text button: hover-label-text-color = pressed-label-text-color =
-    // label-text-color, _md-comp-text-button.scss:42, :67, :46).
+    // label-text-color, _md-comp-text-button.scss:42, :67, :46); disabled, on-surface at 0.38
+    // (disabled-label-text-color, disabled-label-text-opacity, :36-37), the disabled text: the
+    // button's disabled opacity is 1, so no fade draws it.
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
@@ -2696,6 +2698,10 @@ fn toolbar(roles: &ColorRoles, typography: &Typography, units: FontUnits) -> Too
                 RuleSelector::on(WidgetState::PRESSED),
             ],
             [TextProp::Color(typography.body.color)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(roles.disabled_text)],
         )
         .build(),
         button_icon,

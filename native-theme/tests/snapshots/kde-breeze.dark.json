@@ -2531,6 +2531,14 @@
           "button_label": {
             "color": "#fcfcfc"
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button_label": {
+            "color": "#6d6f72"
+          }
         }
       ]
     },

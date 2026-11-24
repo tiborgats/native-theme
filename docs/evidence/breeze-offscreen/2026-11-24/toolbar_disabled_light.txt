@@ -1,0 +1,11 @@
+[light] platform offscreen | style Breeze::Style | base style breeze Breeze::Style
+[light] screen logicalDPI 96.0 dpr 1.0 geometry 800 x 800
+[light] window active True | toolbar area top TopToolBarArea | toolbar in window x=0 y=0 w=480 h=42
+[light] palette mainwindow: Window A #eff0f1 D #e3e5e7 | WindowText A #232629 D #a0a1a3 | ButtonText A #232629 D #a8a9aa
+[light] palette toolbar: Window A #dee0e2 D #d3d6d8 | WindowText A #232629 D #95979a | ButtonText A #232629 D #a8a9aa | breeze_has_toolsarea_palette True
+[light] button New: enabled True autoRaise True style ToolButtonIconOnly rect x=16 y=6 w=47 h=30 | palette Window A #dee0e2 D #d3d6d8 | WindowText A #232629 D #95979a | ButtonText A #232629 D #a8a9aa | current group Active
+[light] button New: fill at its corner +1 #dee0e2 | label ink {'bbox': (27, 17, 52, 25), 'farthest': '#232629', 'at': (33, 25), 'same_count': 2, 'ink_pixels': 113, 'cols': [27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52]}
+[light] button Edit: enabled False autoRaise True style ToolButtonIconOnly rect x=63 y=6 w=42 h=30 | palette Window A #dee0e2 D #d3d6d8 | WindowText A #232629 D #95979a | ButtonText A #232629 D #a8a9aa | current group Disabled
+[light] button Edit: fill at its corner +1 #dee0e2 | label ink {'bbox': (74, 16, 94, 25), 'farthest': '#95979a', 'at': (74, 17), 'same_count': 19, 'ink_pixels': 61, 'cols': [74, 75, 76, 77, 78, 80, 81, 82, 83, 84, 85, 89, 91, 92, 93, 94]}
+[light] button Save: enabled True autoRaise True style ToolButtonIconOnly rect x=105 y=6 w=47 h=30 | palette Window A #dee0e2 D #d3d6d8 | WindowText A #232629 D #95979a | ButtonText A #232629 D #a8a9aa | current group Active
+[light] button Save: fill at its corner +1 #dee0e2 | label ink {'bbox': (115, 17, 141, 25), 'farthest': '#232629', 'at': (136, 22), 'same_count': 2, 'ink_pixels': 107, 'cols': [115, 116, 117, 118, 119, 120, 122, 123, 124, 125, 126, 127, 129, 130, 131, 132, 133, 134, 136, 137, 138, 139, 140, 141]}

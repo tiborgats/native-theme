@@ -1834,6 +1834,14 @@
           "button_label": {
             "color": "#e6e0e9"
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "button_label": {
+            "color": "#e6e0e961"
+          }
         }
       ]
     },

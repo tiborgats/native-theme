@@ -727,6 +727,17 @@ const DIFFERENCES: &[Difference] = &[
                  other field of the refinement is equal",
     },
     Difference {
+        leaf: "geometry::toolbar",
+        presets: &["ios-13"],
+        reason: "the 0.8.0 preset states the toolbar's button label, \
+                 toolbar.button_label(NONE).color, in the tint, a plain bar button item's \
+                 colour, #007aff / #0a84ff (docs/facts/ios/button.toml on v0.8.0-rc1 at \
+                 78ee0efd, rows B-1, TB-4; native-theme/tests/next_homes.toml, row \
+                 toolbar.font.color, a listed difference), where 0.7.2 gives the body text, \
+                 #000000 / #ffffff; so the refinement's text colour is the tint; every other \
+                 field of the refinement is equal",
+    },
+    Difference {
         leaf: "geometry::button",
         presets: &["macos-tahoe"],
         reason: "0.7.2's macos-tahoe outlines the push button in the default line (0.5 px, \
@@ -2237,7 +2248,31 @@ fn compare_builders(
         crate::geometry::title_bar_inactive(Native::unscaled(old)),
         super::builders::title_bar_inactive(new, inactive),
     );
-    builder!(report, old, new, toolbar);
+    let toolbar = "geometry::toolbar";
+    match report.listed(toolbar) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(toolbar, super::builders::toolbar(new)) {
+                use native_theme::next::{TextStated, WidgetState};
+                report.count(toolbar);
+                let o = crate::geometry::toolbar(Native::unscaled(old));
+                let label = new.toolbar.button_label(WidgetState::NONE);
+                let stated = label
+                    .stated
+                    .contains(TextStated::COLOR)
+                    .then(|| super::hsla(label.color));
+                let mut corrected = o.clone();
+                corrected.text.color = n.text.color;
+                if stated.is_none() || n.text.color != stated || corrected != n || o == n {
+                    report.failures.push(format!(
+                        "{}: {toolbar}: the listed difference ({}) no longer describes it: \
+                         0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, toolbar),
+    }
     builder!(report, old, new, icon_size_toolbar);
     builder!(report, old, new, toolbar_button_rest);
     let toolbar_checked = "geometry::toolbar_button_checked";

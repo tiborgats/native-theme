@@ -2240,6 +2240,10 @@ homes = ["toolbar.button_label(NONE).style"]
 [[row]]
 key = "toolbar.font.color"
 homes = ["toolbar.button_label(NONE).color"]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's black / white is the body text (uncited); a plain bar button item is drawn in the tint, the accent (UIKit's tintColor), which 0.8.0 states for the toolbar's button label"
+difference_citation = "docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, rows B-1, TB-4 (iOS host runs 41020880059 and 42276668803, `forms.<scheme>.bar_plain.normal.label_fill`, #007aff / #0a84ff with no tint set)"
+difference_values = { "ios-13" = { light = "#007aff", dark = "#0a84ff" } }
 
 [[row]]
 key = "toolbar.border.color"

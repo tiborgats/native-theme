@@ -1050,6 +1050,12 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.active.fg_stroke.color",
         home!(toolbar.button_label(PRESSED).color),
     ),
+    s(
+        "Toolbar",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.fg_stroke.color",
+        home!(toolbar.button_label(NONE).color),
+    ),
     d(
         "base",
         &[T],
