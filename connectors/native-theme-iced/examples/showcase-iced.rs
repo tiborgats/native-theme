@@ -13449,8 +13449,8 @@ const BASIC_TABLE_SELECTED: usize = 1;
 
 /// The padding iced gives a tooltip's bubble where the showcase sets none:
 /// `Tooltip::DEFAULT_PADDING` (iced_widget 0.14.2 `src/tooltip.rs:89`),
-/// which iced keeps private: [`bubble_padding`] where the theme's has no
-/// receiver.
+/// which iced keeps private: [`next_bubble_padding`] where the theme's has
+/// no receiver.
 const ICED_TOOLTIP_PADDING: f32 = 5.0;
 
 /// How a push button of the Basic page is dressed: the plain button, the
@@ -13510,31 +13510,10 @@ const AW_LIST_PADDING: f32 = 5.0;
 /// connector's `switch`.
 const TOGGLER_LABEL_GAP: f32 = iced::widget::Toggler::<'static, Message>::DEFAULT_SIZE / 2.0;
 
-/// The tooltip's padding, where iced can carry it: `Tooltip::padding` is one
-/// number for all four sides (iced_widget 0.14.2 `src/tooltip.rs`,
-/// `Tooltip::padding`), laid out in from the bubble's edge with the border
-/// painted over it, so a theme that states all four sides of
-/// `tooltip.border.padding` alike gets that side plus
-/// `tooltip.border.line_width`, as `native_theme_iced::padding_inside_border`
-/// computes it. Unequal or unstated sides (adwaita's 10 and 6, windows-11's
-/// 9, 6 and 8) have no receiver: `None`, and iced's own padding stands.
-fn tooltip_padding(resolved: &ResolvedTheme) -> Option<f32> {
-    let b = &resolved.tooltip.border;
-    let p = &b.padding;
-    let side = p.top?;
-    [p.right, p.bottom, p.left]
-        .iter()
-        .all(|s| *s == Some(side))
-        .then_some(side + b.line_width)
-}
-
-/// A tooltip's bubble padding as iced draws it: [`tooltip_padding`] where
-/// iced can carry the theme's, [`ICED_TOOLTIP_PADDING`] otherwise.
-fn bubble_padding(resolved: &ResolvedTheme) -> f32 {
-    tooltip_padding(resolved).unwrap_or(ICED_TOOLTIP_PADDING)
-}
-
-/// [`tooltip_padding`] on the installed 0.8.0 theme: where
+/// The tooltip's padding on the installed 0.8.0 theme, where iced can carry
+/// it: `Tooltip::padding` is one number for all four sides (iced_widget
+/// 0.14.2 `src/tooltip.rs`, `Tooltip::padding`), laid out in from the
+/// bubble's edge with the border painted over it, so where
 /// `tooltip.panel.padding` states all four sides alike, that side plus the
 /// width of the border the bubble draws over it,
 /// `tooltip.panel.stroke.width` where `iced_next::styles::tooltip` gives
@@ -13555,8 +13534,9 @@ fn next_tooltip_padding(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
         .then(|| border.map_or(side, |width| side + width))
 }
 
-/// [`bubble_padding`] on the installed 0.8.0 theme: [`next_tooltip_padding`]
-/// where iced can carry the theme's, [`ICED_TOOLTIP_PADDING`] otherwise.
+/// A tooltip's bubble padding as iced draws it on the installed 0.8.0
+/// theme: [`next_tooltip_padding`] where iced can carry the theme's,
+/// [`ICED_TOOLTIP_PADDING`] otherwise.
 fn next_bubble_padding(r: &native_theme::next::ResolvedTheme) -> f32 {
     next_tooltip_padding(r).unwrap_or(ICED_TOOLTIP_PADDING)
 }
@@ -15973,15 +15953,15 @@ fn next_switch_rows(r: &native_theme::next::ResolvedTheme) -> [(&'static str, St
 /// The Widget Info of the Selection page's switch, the connector's
 /// ([`next_switch`]).
 fn switch_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let sizes = next_switch_rows(state.next_shown());
+    let next = state.next_shown();
+    let sizes = next_switch_rows(next);
     let mut config: Vec<(&str, &str)> = sizes
         .iter()
         .map(|(what, value)| (*what, value.as_str()))
         .collect();
     let label = format!(
         "{} -- the model states no font for a switch",
-        font_row("defaults.font", &resolved.defaults.font)
+        next_font_row("typography.body", &next.typography.body)
     );
     config.extend([("track radius", "switch.track_radius"), ("label", &label)]);
     widget_tooltip(
@@ -16727,7 +16707,7 @@ fn radio_info(state: &State) -> String {
             "iced's own radio: its own dot, half the circle (radio.rs:409)",
         )),
     }
-    let label_s = font_row("checkbox.font", &resolved.checkbox.font);
+    let label_s = next_font_row("radio.label(NONE)", &radio_label);
     sizes.push(("label", label_s.as_str()));
     let mut colours = Vec::new();
     for (is_selected, rows) in [
@@ -16868,7 +16848,7 @@ fn iced_toggler_info(state: &State) -> String {
                 "label",
                 format!(
                     "{} — the model states no font for a switch",
-                    font_row("defaults.font", &resolved.defaults.font)
+                    next_font_row("typography.body", &state.next_shown().typography.body)
                 )
                 .as_str(),
             ),
@@ -17518,44 +17498,58 @@ fn card_info(state: &State) -> String {
 /// [`showcase_tooltip`] builds.
 fn tooltip_info(state: &State) -> String {
     let resolved = &state.current_resolved;
+    let next = state.next_shown();
     let tip_radius_s = format!("{:.0}px", resolved.tooltip.border.corner_radius);
-    let max_width_s = format!(
-        "{:.0}px, tooltip.max_width: the tip's container",
-        resolved.tooltip.max_width
-    );
-    let padding = tooltip_padding(resolved);
+    // What [`showcase_tooltip`] dresses the bubble in on the installed 0.8.0
+    // theme: its tip container's maximum width, its padding
+    // ([`next_tooltip_padding`]) and its show delay
+    // ([`ShowDelay::show_delay`]); iced's own where the theme states none.
+    let max_width = next.tooltip.panel.max_size[0];
+    let max_width_s = match max_width {
+        Some(width) => format!("{width:.0}px, tooltip.panel.max_size[0]: the tip's container"),
+        None => "none, iced's own: tooltip.panel.max_size[0] unstated".to_owned(),
+    };
+    let padding = next_tooltip_padding(next);
     let padding_s = format!(
         "{}, {}",
-        px_text(bubble_padding(resolved)),
+        px_text(next_bubble_padding(next)),
         match padding {
             Some(_) =>
-                "tooltip.border.padding's side, alike on all four, plus \
-                        tooltip.border.line_width, which iced paints over it",
+                "tooltip.panel.padding's side, alike on all four, plus \
+                 tooltip.panel.stroke.width where iced_next::styles::tooltip draws \
+                 the bubble's border, which iced paints over it",
             None =>
-                "iced's own: tooltip.border.padding states its sides unequal or not \
-                     at all, and iced's Tooltip::padding is one number for all four",
+                "iced's own, Tooltip::DEFAULT_PADDING: tooltip.panel.padding states \
+                 its sides unequal or not at all, and iced's Tooltip::padding is one \
+                 number for all four",
         }
     );
-    let delay = native_theme_iced::tooltip_show_delay(resolved)
-        .map(|delay| format!("{}ms, tooltip.show_delay", delay.as_millis()));
+    let delay = native_theme_iced::next::tooltip_show_delay(next)
+        .map(|delay| format!("{}ms, timings.tooltip_show_ms", delay.as_millis()));
     let gap_s = tooltip_gap_text(state);
-    let label_s = font_row("tooltip.font", &resolved.tooltip.font);
-    let buttons_min = next_button_min_size_row(state.next_shown());
+    let label_s = next_font_row("tooltip.text", &next.tooltip.text);
+    let buttons_min = next_button_min_size_row(next);
     let mut config = vec![
         ("positions", "Top / Bottom / Left / Right"),
         ("buttons' min size", buttons_min.as_str()),
         ("border-radius", tip_radius_s.as_str()),
         ("label", label_s.as_str()),
-        ("max width", max_width_s.as_str()),
     ];
     let mut unthemed = vec![("gap", gap_s.as_str())];
+    match max_width {
+        Some(_) => config.push(("max width", max_width_s.as_str())),
+        None => unthemed.push(("max width", max_width_s.as_str())),
+    }
     match padding {
         Some(_) => config.push(("padding", padding_s.as_str())),
         None => unthemed.push(("padding", padding_s.as_str())),
     }
     match &delay {
         Some(delay) => config.push(("delay", delay.as_str())),
-        None => unthemed.push(("delay", "none, iced's own (tooltip.show_delay unstated)")),
+        None => unthemed.push((
+            "delay",
+            "none, iced's own (timings.tooltip_show_ms unstated)",
+        )),
     }
     widget_tooltip(
         "Tooltip",
@@ -17578,7 +17572,6 @@ fn tooltip_info(state: &State) -> String {
 }
 
 fn view_display(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
     let resolved = &state.current_resolved;
     let next = state.next_shown();
     let typography = &next.typography;
@@ -17741,25 +17734,27 @@ fn view_display(state: &State) -> Element<'_, Message> {
         if state.is_dark { "Dark" } else { "Light" },
     );
 
-    // The sizes the showcase draws at: the theme's, times the OS text-scaling
-    // factor, which every text here takes alike. Where the factor is not 1 the
-    // theme's own size is shown beside it.
+    // The body and monospace styles of the installed 0.8.0 theme, by the
+    // family iced draws each in ([`next_family_drawing`]), at the sizes the
+    // theme resolved, the OS text-scaling factor already applied. Where the
+    // factor is not 1 the sizes their source states are shown beside them.
     let font_info = {
-        let r = &state.current_resolved;
-        let ff = family_label(
-            native_theme_iced::font_family(r),
-            &font_drawn(&r.defaults.font),
-        );
-        let mf = family_label(native_theme_iced::mono_font_family(r), &mono_drawn(r));
+        let body = &typography.body;
+        let mono = &typography.monospace;
+        let ff =
+            next_family_drawing(next_font_from_database(body, false).as_ref()).label(&body.family);
+        let mf =
+            next_family_drawing(next_font_from_database(mono, true).as_ref()).label(&mono.family);
         let drawn = format!(
             "Font: {ff} @ {:.1}px  |  Mono: {mf} @ {:.1}px",
-            native_theme_iced::font_size(r, a11y),
-            native_theme_iced::mono_font_size(r, a11y)
+            body.size_px, mono.size_px
         );
-        if native_theme_iced::font_size(r, a11y) != r.defaults.font.size {
+        if next.context.text_scale != 1.0 {
             format!(
-                "{drawn}  |  OS text scaling {:.2}: the theme states {:.1}px and {:.1}px",
-                a11y.text_scaling_factor, r.defaults.font.size, r.defaults.mono_font.size
+                "{drawn}  |  OS text scaling {:.2}: the theme states {} and {}",
+                next.context.text_scale,
+                next_status::defined_size(body),
+                next_status::defined_size(mono)
             )
         } else {
             drawn
@@ -21036,24 +21031,55 @@ fn font_row(field: &str, font: &ResolvedFontSpec) -> String {
 /// [`font_row`], given how the font is drawn. An upright font drawn upright
 /// names no style.
 fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn) -> String {
-    let family = family_label(&font.family, drawn);
-    let weight = weight_label(font.weight, drawn);
-    let style = style_label(font.style, drawn);
+    stated_font_row(field, &font.family, font.weight, font.style, drawn)
+}
+
+/// [`font_row`] on the 0.8.0 model: `style`, a text style of the installed
+/// 0.8.0 theme read at `home`, by what iced draws it in
+/// ([`next_font_from_database`]); where it gives no font iced can draw, its
+/// size and the family iced draws instead, its own ([`next_family_drawing`]),
+/// which [`Typeset::next_text`] leaves the text in.
+fn next_font_row(home: &str, style: &TextStyle) -> String {
+    match (
+        next_font_from_database(style, false),
+        next_slant(style.style),
+    ) {
+        (Some(drawn), Some(slant)) => {
+            stated_font_row(home, &style.family, style.weight, slant, &drawn)
+        }
+        _ => format!(
+            "{home}, size; family {}",
+            next_family_drawing(None).label(&style.family)
+        ),
+    }
+}
+
+/// [`font_row_drawn`] of a font stated as `family`, `weight` and `style`.
+fn stated_font_row(
+    field: &str,
+    stated_family: &str,
+    stated_weight: u16,
+    stated_style: FontStyle,
+    drawn: &Drawn,
+) -> String {
+    let family = family_label(stated_family, drawn);
+    let weight = weight_label(stated_weight, drawn);
+    let style = style_label(stated_style, drawn);
     let mut stated = Vec::new();
     let mut instead = Vec::new();
-    if family == *font.family {
+    if family == stated_family {
         stated.push("family");
     } else {
         instead.push(format!("family {family}"));
     }
     stated.push("size");
-    if weight == font.weight.to_string() {
+    if weight == stated_weight.to_string() {
         stated.push("weight");
     } else {
         instead.push(format!("weight {weight}"));
     }
-    if style == style_name(font.style) {
-        if font.style != FontStyle::Normal {
+    if style == style_name(stated_style) {
+        if stated_style != FontStyle::Normal {
             stated.push("style");
         }
     } else {
@@ -21337,12 +21363,7 @@ fn font_from_database(spec: &ResolvedFontSpec, mono: bool) -> Drawn {
 /// keeps iced's own font (spec §10, rule 0).
 fn next_font_from_database(style: &TextStyle, mono: bool) -> Option<Drawn> {
     let asked = native_theme_iced::next::font(style).ok()?;
-    let slant = match style.style {
-        native_theme::next::FontStyle::Normal => FontStyle::Normal,
-        native_theme::next::FontStyle::Italic => FontStyle::Italic,
-        native_theme::next::FontStyle::Oblique => FontStyle::Oblique,
-        _ => return None,
-    };
+    let slant = next_slant(style.style)?;
     let key = (
         style.family.clone(),
         style.weight,
@@ -21359,6 +21380,17 @@ fn next_font_from_database(style: &TextStyle, mono: bool) -> Option<Drawn> {
         || native_theme::fonts::system_face(&style.family, style.weight, slant).is_some(),
         mono,
     ))
+}
+
+/// A 0.8.0 slant as the 0.7.2 model's, which the font database is asked
+/// in; `None` for one the 0.7.2 model has no value of.
+fn next_slant(style: native_theme::next::FontStyle) -> Option<FontStyle> {
+    match style {
+        native_theme::next::FontStyle::Normal => Some(FontStyle::Normal),
+        native_theme::next::FontStyle::Italic => Some(FontStyle::Italic),
+        native_theme::next::FontStyle::Oblique => Some(FontStyle::Oblique),
+        _ => None,
+    }
 }
 
 /// How iced draws the font `asked` gives, kept under `key` ([`FONTS`]):
@@ -26365,9 +26397,9 @@ mod tests {
     }
 
     /// [`next_tooltip_padding`], which every tooltip takes: on the 0.8.0
-    /// model's presets the same as on 0.7.2's
-    /// ([`the_basic_tooltip_takes_a_uniform_stated_padding`]),
-    /// `tooltip.panel.padding` plus the stroke where all four sides are
+    /// model's presets the same as on 0.7.2's (0.7.2's
+    /// `tooltip.border.padding` plus its line width where its four sides are
+    /// alike), `tooltip.panel.padding` plus the stroke where all four sides are
     /// alike (kde-breeze's 3 and 1, macos-monterey's 4 and 0.5), iced's own
     /// where they are not (adwaita, windows-11); four sides of 6 a patch
     /// states give 6 plus the stroke, and with the panel's fill unstated the
@@ -26421,35 +26453,6 @@ mod tests {
             Ok(())
         } else {
             Err(format!("{failures:#?}"))
-        }
-    }
-
-    /// The Basic tab's tooltip takes `tooltip.border.padding` plus the border
-    /// line where the theme states all four sides alike (kde-breeze's 3,
-    /// macos-monterey's 4), and iced's own padding where it does not: iced's
-    /// `Tooltip::padding` is one number, and adwaita states 10 and 6,
-    /// windows-11 9, 6 and 8.
-    #[test]
-    fn the_basic_tooltip_takes_a_uniform_stated_padding() {
-        for (preset, expected) in [
-            ("kde-breeze", Some(3.0 + 1.0)),
-            ("macos-monterey", Some(4.0 + 0.5)),
-            ("adwaita", None),
-            ("windows-11", None),
-        ] {
-            let resolved = match native_theme_iced::from_preset(preset, false) {
-                Ok((_, resolved)) => resolved,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            let b = &resolved.tooltip.border;
-            if let Some(side) = expected {
-                assert_eq!(
-                    b.padding.top.map(|t| t + b.line_width),
-                    Some(side),
-                    "{preset}"
-                );
-            }
-            assert_eq!(tooltip_padding(&resolved), expected, "{preset}");
         }
     }
 
@@ -26677,54 +26680,122 @@ mod tests {
         );
     }
 
-    /// The tooltips' Widget Info names the gap's rule and its value, the
-    /// installed 0.8.0 theme's [`next_tooltip_gap`] (M9-083), resolved at
-    /// the text scale where the 0.8.0 model has the preset: the Basic bubble's "Not
-    /// themeable" line and the Display page's info, which gives
-    /// `tooltip.max_width` under Theme config and not under Not themeable
-    /// (M9-089), the bubble's padding and the show delay under Theme config
-    /// where the theme states them (kde-breeze's uniform padding, kde-breeze's
-    /// and adwaita's delay) and under Not themeable where it does not
-    /// (adwaita's unequal padding sides, catppuccin-mocha's padding and
-    /// delay), under the three at text scales 1 and 1.5.
+    /// The tooltips' Widget Info states what [`showcase_tooltip`] dresses the
+    /// bubble in on the installed 0.8.0 theme, resolved at the text scale:
+    /// the gap's rule and its value, [`next_tooltip_gap`] (M9-083), in the
+    /// Basic bubble's "Not themeable" line and the Display page's info; and
+    /// in that info the tip's maximum width (`tooltip.panel.max_size[0]`,
+    /// M9-089), the bubble's padding ([`next_bubble_padding`]) and the show
+    /// delay (`timings.tooltip_show_ms`) under Theme config where the theme
+    /// states them and under Not themeable, iced's own, where it does not,
+    /// and the label in `tooltip.text` ([`next_font_row`]): under kde-breeze
+    /// and adwaita at text scales 1 and 1.5, and under kde-breeze with, on
+    /// the 0.8.0 theme only, a 123 px maximum width, sides of 7 and a
+    /// 4321 ms delay, all three under Theme config, and with none of the
+    /// three stated (unequal sides of 2 and 7), all three iced's own.
     #[test]
-    fn the_tooltip_info_names_the_gap_and_the_max_width() {
-        let Some(bubble) = elements::element("basic.buttons.tooltip.bubble") else {
-            panic!("basic.buttons.tooltip.bubble is not listed");
+    fn the_tooltip_info_names_the_gap_and_the_max_width() -> Result<(), String> {
+        let bubble = elements::element("basic.buttons.tooltip.bubble")
+            .ok_or("basic.buttons.tooltip.bubble is not listed")?;
+        let patch = |toml: &str| {
+            native_theme::next::ThemePatch::from_toml(toml)
+                .map_err(|error| format!("the patch {toml:?}: {error:?}"))
         };
+        let even = patch(
+            "[widgets.tooltip]\npanel.padding = { top = 7.0, right = 7.0, bottom = 7.0, left = \
+             7.0 }\n",
+        )?;
+        let uneven = patch(
+            "[widgets.tooltip]\npanel.padding = { top = 2.0, right = 7.0, bottom = 2.0, left = \
+             7.0 }\n",
+        )?;
         let mut failures = Vec::new();
-        for (preset, factor) in ["kde-breeze", "adwaita", "catppuccin-mocha"]
-            .into_iter()
-            .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
-        {
-            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            let mut accessibility = AccessibilityPreferences::default();
-            accessibility.text_scaling_factor = factor;
-            let padding = (
-                format!("padding: {}, ", px_text(bubble_padding(&resolved))),
-                tooltip_padding(&resolved).is_some(),
-            );
-            let delay = match native_theme_iced::tooltip_show_delay(&resolved) {
-                Some(delay) => (
-                    format!("delay: {}ms, tooltip.show_delay", delay.as_millis()),
+        let cases = [
+            ("kde-breeze", 1.0, None),
+            ("kde-breeze", 1.5, None),
+            ("adwaita", 1.0, None),
+            ("adwaita", 1.5, None),
+            (
+                "kde-breeze",
+                1.0,
+                Some((&even, true, Some(123.0), Some(4321))),
+            ),
+            ("kde-breeze", 1.0, Some((&uneven, false, None, None))),
+        ];
+        for (preset, factor, splice) in cases {
+            let mut state = loaded(preset, false);
+            state.accessibility.text_scaling_factor = factor;
+            rescaled(&mut state, preset, false);
+            if let Some((sides, _, width, delay)) = splice {
+                splice_next(&mut state, |r| {
+                    r.apply_patch(sides);
+                    r.tooltip.panel.max_size[0] = width;
+                    r.timings.tooltip_show_ms = delay;
+                });
+            }
+            let case = format!("{preset} at {factor}, spliced {}", splice.is_some());
+            let r = state.next_shown();
+            let padding = next_tooltip_padding(r);
+            let max_width = r.tooltip.panel.max_size[0];
+            let shown_delay = native_theme_iced::next::tooltip_show_delay(r);
+            let rows = [
+                (
+                    match max_width {
+                        Some(width) => {
+                            format!("max width: {width:.0}px, tooltip.panel.max_size[0]")
+                        }
+                        None => "max width: none, iced's own".to_owned(),
+                    },
+                    max_width.is_some(),
+                ),
+                (
+                    format!(
+                        "padding: {}, {}",
+                        px_text(next_bubble_padding(r)),
+                        if padding.is_some() {
+                            "tooltip.panel.padding"
+                        } else {
+                            "iced's own"
+                        }
+                    ),
+                    padding.is_some(),
+                ),
+                (
+                    match shown_delay {
+                        Some(delay) => {
+                            format!("delay: {}ms, timings.tooltip_show_ms", delay.as_millis())
+                        }
+                        None => "delay: none, iced's own".to_owned(),
+                    },
+                    shown_delay.is_some(),
+                ),
+                (
+                    format!("label: {}", next_font_row("tooltip.text", &r.tooltip.text)),
                     true,
                 ),
-                None => ("delay: none, iced's own".to_string(), false),
-            };
-            let max_width = format!("{:.0}px", resolved.tooltip.max_width);
-            let mut state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                accessibility,
-                ..State::default()
-            };
-            if Preset::from_name(preset).is_some() {
-                rescaled(&mut state, preset, false);
+            ];
+            if let Some((_, even, width, delay)) = splice {
+                let stroke = iced_next::stroke_width_of(&r.tooltip.panel);
+                let want_padding = match (even, iced_next::styles::tooltip(r).is_ok(), stroke) {
+                    (true, true, Some(stroke)) => Some(7.0 + stroke),
+                    (true, _, _) => return Err(format!("{case}: no stroked bubble")),
+                    (false, _, _) => None,
+                };
+                let old = &state.current_resolved.tooltip;
+                if max_width != width
+                    || shown_delay != delay.map(|ms| Duration::from_millis(u64::from(ms)))
+                    || padding != want_padding
+                    || Some(old.max_width) == width
+                    || old.show_delay.map(u32::from) == delay
+                    || old.border.padding.top == Some(7.0)
+                {
+                    return Err(format!(
+                        "{case}: the splice reads {max_width:?}, {shown_delay:?}, {padding:?}, or \
+                         states 0.7.2's"
+                    ));
+                }
             }
-            let gap = px_text(next_tooltip_gap(state.next_shown()));
+            let gap = px_text(next_tooltip_gap(r));
             let lines = iced_not_themeable(&state, bubble);
             if !lines.iter().any(|line| {
                 line.starts_with("gap to its control: ")
@@ -26732,7 +26803,7 @@ mod tests {
                     && line.contains("m_3")
             }) {
                 failures.push(format!(
-                    "{preset} at {factor}: the bubble's lines {lines:?} name no {gap} gap"
+                    "{case}: the bubble's lines {lines:?} name no {gap} gap"
                 ));
             }
             let info = tooltip_info(&state);
@@ -26743,20 +26814,18 @@ mod tests {
                 (Some(config), Some(unthemed)) if config < unthemed => {
                     (&info[config..unthemed], &info[unthemed..])
                 }
-                _ => panic!(
-                    "{preset}: the Display tooltip info has no config and unthemed sections:\n{info}"
-                ),
+                _ => {
+                    return Err(format!(
+                        "{case}: the Display tooltip info has no config and unthemed sections:\n\
+                         {info}"
+                    ));
+                }
             };
-            if !config.contains(&format!("max width: {max_width}, tooltip.max_width")) {
-                failures.push(format!(
-                    "{preset} at {factor}: no {max_width} max width in\n{config}"
-                ));
-            }
-            for (row, stated) in [&padding, &delay] {
+            for (row, stated) in &rows {
                 let (in_config, in_unthemed) = (config.contains(row), unthemed.contains(row));
                 if (in_config, in_unthemed) != (*stated, !*stated) {
                     failures.push(format!(
-                        "{preset} at {factor}: \"{row}\" belongs under {}:\n{info}",
+                        "{case}: \"{row}\" belongs under {}:\n{info}",
                         if *stated {
                             "Theme config"
                         } else {
@@ -26765,13 +26834,15 @@ mod tests {
                     ));
                 }
             }
-            if unthemed.contains("max width") || !unthemed.contains(&format!("gap: {gap}")) {
-                failures.push(format!(
-                    "{preset} at {factor}: want the {gap} gap and no max width in\n{unthemed}"
-                ));
+            if !unthemed.contains(&format!("gap: {gap}")) {
+                failures.push(format!("{case}: want the {gap} gap in\n{unthemed}"));
             }
         }
-        assert!(failures.is_empty(), "{failures:#?}");
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
     }
 
     /// The Display page drawn under `preset` light on both models, as
@@ -29967,6 +30038,106 @@ mod tests {
                     15.0 + 4.0 + 21.0,
                 ) => {}
             pair => faults.push(format!("the description and the first title: {pair:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// The Selection page's radio and switch infos and the Display page's
+    /// Theme Information name the installed 0.8.0 theme's text styles, which
+    /// the pages draw their texts in: the radios' label row
+    /// `radio.label(NONE)`, the switch's and iced's toggler's
+    /// `typography.body` ([`next_font_row`]); and the font line
+    /// `typography.body`'s and `typography.monospace`'s families as iced
+    /// draws them ([`next_family_drawing`]) at their sizes, spliced to 17.5
+    /// and 11.5 px on the 0.8.0 theme only, with, at text scale 1.5, the
+    /// sizes their source states beside them (kde-breeze's).
+    #[test]
+    fn the_selection_and_display_infos_name_the_0_8_0_fonts() -> Result<(), String> {
+        let mut faults = Vec::new();
+        let state = page_state("kde-breeze", Tab::Selection);
+        let next = state.next_shown();
+        let label_rows = |info: &str| {
+            info.lines()
+                .filter_map(|line| line.trim().strip_prefix("label: ").map(str::to_owned))
+                .collect::<Vec<_>>()
+                .into_iter()
+        };
+        for (key, want) in [
+            (
+                UnlistedKey::Radios,
+                next_font_row("radio.label(NONE)", &next.radio.label(WidgetState::NONE)),
+            ),
+            (
+                UnlistedKey::Switch,
+                format!(
+                    "{} -- the model states no font for a switch",
+                    next_font_row("typography.body", &next.typography.body)
+                ),
+            ),
+            (
+                UnlistedKey::IcedToggler,
+                format!(
+                    "{} — the model states no font for a switch",
+                    next_font_row("typography.body", &next.typography.body)
+                ),
+            ),
+        ] {
+            let info = unlisted_info(&state, key);
+            if !label_rows(&info).any(|row| row == want) {
+                faults.push(format!("{key:?}: no label row {want:?} in\n{info}"));
+            }
+        }
+
+        for factor in [1.0, 1.5] {
+            let mut state = page_state("kde-breeze", Tab::Display);
+            state.accessibility.text_scaling_factor = factor;
+            rescaled(&mut state, "kde-breeze", false);
+            if factor == 1.0 {
+                splice_next(&mut state, |r| {
+                    r.typography.body.size_px = 17.5;
+                    r.typography.monospace.size_px = 11.5;
+                });
+            }
+            let next = state.next_shown();
+            let (body, mono) = (&next.typography.body, &next.typography.monospace);
+            let old = &state.current_resolved.defaults;
+            if factor == 1.0 && (old.font.size == 17.5 || old.mono_font.size == 11.5) {
+                return Err("the splice states 0.7.2's sizes".into());
+            }
+            let family = |style: &TextStyle, mono: bool| {
+                next_family_drawing(next_font_from_database(style, mono).as_ref())
+                    .label(&style.family)
+            };
+            let mut want = format!(
+                "Font: {} @ {:.1}px  |  Mono: {} @ {:.1}px",
+                family(body, false),
+                body.size_px,
+                family(mono, true),
+                mono.size_px
+            );
+            if factor != 1.0 {
+                want.push_str(&format!(
+                    "  |  OS text scaling 1.50: the theme states {} and {}",
+                    next_status::defined_size(body),
+                    next_status::defined_size(mono)
+                ));
+            }
+            let mut ui = interface(&state);
+            let found = texts(&mut ui);
+            drop(ui);
+            let line = found
+                .iter()
+                .find(|(content, _)| content.starts_with("Font: "))
+                .map(|(content, _)| content.as_str());
+            if line != Some(want.as_str()) {
+                faults.push(format!(
+                    "at {factor}: the font line is {line:?}, want {want:?}"
+                ));
+            }
         }
         if faults.is_empty() {
             Ok(())
