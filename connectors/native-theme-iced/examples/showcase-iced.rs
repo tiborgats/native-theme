@@ -9446,6 +9446,36 @@ fn ghost_route(
     route.to_owned()
 }
 
+/// The route of Widget Info's Copy button's colour leaf `leaf` under `r`:
+/// what [`copy_button`] draws, a [`ghost_button`] lettered at rest in the
+/// side panel's label colour, `sidebar.item_label(NONE).color`, where the
+/// theme states it; [`ghost_route`]'s for every other leaf and status.
+fn copy_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> String {
+    let sidebar = iced_next::text_color_of(&r.sidebar.item_label(WidgetState::NONE)).is_some();
+    let pressed_label =
+        iced_next::state_text_color_of(&r.button.label(flat(WidgetState::PRESSED))).is_some();
+    match leaf {
+        "sidebar.font.color" if sidebar => {
+            "copy_button: the label at rest, sidebar.item_label(NONE).color".to_owned()
+        }
+        "sidebar.font.color" => "not drawn: sidebar.item_label(NONE).color is unstated, so the \
+                                 label at rest is ghost_button's"
+            .to_owned(),
+        "button.font.color" if sidebar && pressed_label => {
+            "not drawn: copy_button letters the label at rest in \
+             sidebar.item_label(NONE).color, and ghost_button pressed in \
+             button.label(PRESSED;variant=Flat).color"
+                .to_owned()
+        }
+        "button.font.color" if sidebar => "ghost_button: the label's text_color pressed, where \
+             button.label(PRESSED;variant=Flat).color is unstated, \
+             button.label(NONE;variant=Flat).color; at rest copy_button letters it in \
+             sidebar.item_label(NONE).color"
+            .to_owned(),
+        _ => ghost_route(r, leaf, false, false, false),
+    }
+}
+
 /// The route of a colour leaf `leaf` of a tab [`tab_style`] draws under
 /// `r`: what it draws of the leaf's 0.8.0 home, naming it, or that the home
 /// is unstated and what is drawn in its place. `None` for a leaf it does
@@ -10207,6 +10237,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                              toolbar.button_checked_background is stated"
                 .into(),
         },
+        ("button", "font.color") if id == "chrome.info.copy" => {
+            copy_route(state.next_shown(), leaf).into()
+        }
         ("button", "font.color") if ghost => {
             ghost_route(state.next_shown(), leaf, selected, icon.is_some(), os_icon).into()
         }
@@ -10579,15 +10612,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("sidebar", "font") => "the text's size and theme_font".into(),
         ("sidebar", "font.color") if id == "chrome.info.copy" => {
-            if iced_next::text_color_of(&state.next_shown().sidebar.item_label(WidgetState::NONE))
-                .is_some()
-            {
-                "copy_button: the label at rest, sidebar.item_label(NONE).color".into()
-            } else {
-                "not drawn: sidebar.item_label(NONE).color is unstated, so the label at rest is \
-                 ghost_button's"
-                    .into()
-            }
+            copy_route(state.next_shown(), leaf).into()
         }
         ("sidebar", "font.color") if under("chrome.info.") => {
             "info_inks: the text's colour, sidebar.item_label(NONE).color".into()
@@ -29925,23 +29950,82 @@ mod tests {
     /// What the route `route` of a flat button's colour leaf `leaf` gets
     /// wrong under `r`, the 0.8.0 theme shown, the button `selected` or not,
     /// showing `shows`, its home `home` ([`ghost_home`]): [`ghost_route`]'s
-    /// route held to what [`ghost_drawn`] draws ([`home_route_faults`]).
+    /// route held to what [`ghost_drawn`] draws ([`home_route_faults`]); of
+    /// Widget Info's Copy button (`copy`), [`copy_route`]'s held to what
+    /// [`copy_button`] draws in every status.
     fn flat_route_faults(
         r: &native_theme::next::ResolvedTheme,
         leaf: &str,
         home: &str,
         route: &str,
-        selected: bool,
-        shows: Shows,
+        (selected, shows): (bool, Shows),
+        copy: bool,
     ) -> Vec<String> {
         let (icon, os_icon) = (shows != Shows::Label, shows == Shows::OsIcon);
         home_route_faults(
             r,
             home,
             route,
-            |patched| ghost_route(patched, leaf, selected, icon, os_icon),
-            |r| ghost_drawn(r, selected, shows),
+            |patched| {
+                if copy {
+                    copy_route(patched, leaf)
+                } else {
+                    ghost_route(patched, leaf, selected, icon, os_icon)
+                }
+            },
+            |r| {
+                if copy {
+                    next_drawn_by("copy_button", r).unwrap_or_default()
+                } else {
+                    ghost_drawn(r, selected, shows)
+                }
+            },
         )
+    }
+
+    /// The home of a colour leaf of Widget Info's Copy button
+    /// ([`copy_route`]): the side panel's label colour, which
+    /// [`copy_button`] letters it in at rest, or the flat button's
+    /// ([`ghost_home`]).
+    fn copy_home(leaf: &str) -> Option<&'static str> {
+        match leaf {
+            "sidebar.font.color" => Some("sidebar.item_label(NONE).color"),
+            _ => ghost_home(leaf),
+        }
+    }
+
+    /// Widget Info's Copy button's routes ([`copy_route`]) of its label at
+    /// rest, `button.font.color`, and of the side panel's label colour it
+    /// is lettered in, and of the states it takes from [`ghost_button`],
+    /// hold to what [`copy_button`] draws on every preset of the 0.8.0 model
+    /// in both schemes ([`flat_route_faults`]): each home stated in two
+    /// colours in turn moves the drawing where the route says it is drawn
+    /// and nothing where it says it is not, on the theme as shown and with
+    /// the home stated.
+    #[test]
+    fn the_copy_buttons_routes_hold_to_what_it_draws() -> Result<(), String> {
+        let mut failures = Vec::new();
+        for (label, r) in next_combinations() {
+            for leaf in [
+                "button.font.color",
+                "sidebar.font.color",
+                "button.hover_background",
+                "button.hover_text_color",
+                "button.active_background",
+                "button.active_text_color",
+            ] {
+                let home = copy_home(leaf).ok_or(format!("{leaf} has no home"))?;
+                let route = copy_route(&r, leaf);
+                for what in flat_route_faults(&r, leaf, home, &route, (false, Shows::Label), true) {
+                    failures.push(format!("{label}: {leaf}: {what}"));
+                }
+            }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
     }
 
     /// What the route `route` of a colour leaf whose 0.8.0 home is `home`
@@ -30151,11 +30235,30 @@ mod tests {
                     fault("the tool button's drawing");
                 }
             } else if let Some(home) = ghost_home(leaf) {
-                for what in
-                    flat_route_faults(state.next_shown(), leaf, home, route, selected, shows)
-                {
+                for what in flat_route_faults(
+                    state.next_shown(),
+                    leaf,
+                    home,
+                    route,
+                    (selected, shows),
+                    false,
+                ) {
                     fault(&what);
                 }
+            }
+        }
+        if id == "chrome.info.copy"
+            && let Some(home) = copy_home(leaf)
+        {
+            for what in flat_route_faults(
+                state.next_shown(),
+                leaf,
+                home,
+                route,
+                (false, Shows::Label),
+                true,
+            ) {
+                fault(&format!("copy_button: {what}"));
             }
         }
         if let Some(&open) = opens.get(id) {
