@@ -4092,40 +4092,6 @@ fn the_selected_page_tab_curves_out_where_the_theme_states_it(cx: &mut TestAppCo
     assert!(missing.is_empty(), "no flare quad at {missing:?}");
 }
 
-/// The smallest box that hovering `at` paints and that was not painted
-/// before, and that holds `at`: the hovered element's hover fill.
-fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pixels>> {
-    let painted = |cx: &mut VisualTestContext| {
-        cx.update(|window, _| {
-            let scale = window.scale_factor();
-            scene_quads(window)
-                .into_iter()
-                .filter(|q| !q.background.is_transparent())
-                .map(|q| Bounds {
-                    origin: point(
-                        px(q.bounds.origin.x.0 / scale),
-                        px(q.bounds.origin.y.0 / scale),
-                    ),
-                    size: size(
-                        px(q.bounds.size.width.0 / scale),
-                        px(q.bounds.size.height.0 / scale),
-                    ),
-                })
-                .collect::<Vec<_>>()
-        })
-    };
-    let before = painted(cx);
-    hover(cx, at);
-    draw(cx);
-    painted(cx)
-        .into_iter()
-        .filter(|b| !before.contains(b) && b.contains(&at))
-        .min_by(|a, b| {
-            let area = |b: &Bounds<Pixels>| b.size.width.as_f32() * b.size.height.as_f32();
-            area(a).total_cmp(&area(b))
-        })
-}
-
 /// Upstream's Underline TabBar pads neither itself nor its tabs
 /// (tab/tab.rs:121-122, tab/tab_bar.rs:412-421): it leaves the inset to the
 /// container it is in. So the page TabBar is inset by
@@ -4228,10 +4194,18 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
                     feature = "system-icons"
                 )) => {}
                 None => {
-                    let menu = hover_box(
-                        &mut cx,
-                        point(panel.right() - right - px(4.), tabs.center().y),
-                    );
+                    // Where the layout put it, its recorded bounds
+                    // (`chrome.page_tabs.menu`, demo::native_tab_bar's
+                    // suffix), not what a hover paints: a theme whose
+                    // hovered flat button draws no fill must not hide the
+                    // control from the test.
+                    let menu = read(&mut cx, &showcase, |this, cx| {
+                        this.info_ui
+                            .read(cx)
+                            .layout_drawn()
+                            .get("chrome.page_tabs.menu")
+                            .copied()
+                    });
                     assert!(
                         menu.is_some_and(
                             |menu| (panel.right() - menu.right() - right).abs() <= slack

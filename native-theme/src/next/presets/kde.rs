@@ -2095,6 +2095,13 @@ const SCROLLBAR_BAR_HOVER_HANDLE_ALPHA: f32 = 0.25;
 /// (breezehelper.cpp:681-684 at breeze f0b1d75; docs/platform-facts.md §2.13).
 const FLAT_CHECKED_ALPHA: f32 = 0.125;
 
+/// The alpha of the selection colour a flat Breeze button that is the
+/// default one is filled with under the pointer or the keyboard focus,
+/// `alphaColor(highlightColor, 0.125)` (breezehelper.cpp:685-687 at breeze
+/// 6.8.2; `docs/facts/kde/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row
+/// K1.24).
+const FLAT_DEFAULT_ALPHA: f32 = 0.125;
+
 /// How far a Qt Widgets menu's panel moves from `Window` towards `Base`:
 /// `frameBackgroundColor()`, `KColorUtils::mix(Window, Base,
 /// Metrics::Blend_Value)`, the `qreal` 0.3 (`drawPanelMenuPrimitive`,
@@ -3296,6 +3303,14 @@ fn button(
             shape: None,
         })
     };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
+            shape: None,
+        })
+    };
+    let no_fill = || PartProp::Fill(Paint::None);
+    let no_stroke = || PartProp::Stroke(Stroke::None);
     let body = RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_PRESSED_HOVER)
         .base([
             fill(c.button_background),
@@ -3350,6 +3365,60 @@ fn button(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.button_disabled_background)],
         )
+        // The flat button (QPushButton::flat, an auto-raised QToolButton), after the push
+        // button's rules so that its own win, each from Breeze's flat branch of the button frame
+        // (`docs/facts/kde/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row K1.24, breeze 6.8.2,
+        // the lines the toolbar's button cites at f0b1d75). At rest and disabled, nothing: "if
+        // (flat && !(hovered || down || checked || visualFocus) …) return;"
+        // (breezehelper.cpp:665-668).
+        .rule(flat(WidgetState::NONE), [no_fill(), no_stroke()])
+        // Hovered or keyboard-focused, alphaColor(highlightColor, 0), nothing, in a Highlight pen
+        // (breezehelper.cpp:688-691, :710-712), as the toolbar's hovered button.
+        .rules(
+            [flat(WidgetState::HOVER), flat(WidgetState::FOCUS_VISIBLE)],
+            [
+                fill(TOOLBAR_BUTTON_HOVER_BACKGROUND),
+                outline(layout, c.selection_background),
+            ],
+        )
+        // The default button so, Highlight at FLAT_DEFAULT_ALPHA (breezehelper.cpp:685-687).
+        .rules(
+            [
+                flat(WidgetState::DEFAULT | WidgetState::HOVER),
+                flat(WidgetState::DEFAULT | WidgetState::FOCUS_VISIBLE),
+            ],
+            [fill(translucent(
+                c.selection_background,
+                FLAT_DEFAULT_ALPHA,
+            ))],
+        )
+        // Checked, ButtonText at FLAT_CHECKED_ALPHA in the plain button pen
+        // (breezehelper.cpp:681-684), the pen Highlight under the pointer or the focus
+        // (:710-712); as the toolbar's checked button.
+        .rule(
+            flat(WidgetState::CHECKED),
+            [
+                fill(c.toolbar_button_checked),
+                outline(layout, c.button_frame),
+            ],
+        )
+        .rules(
+            [
+                flat(WidgetState::CHECKED | WidgetState::HOVER),
+                flat(WidgetState::CHECKED | WidgetState::FOCUS_VISIBLE),
+            ],
+            [outline(layout, c.selection_background)],
+        )
+        // Pressed, Highlight at Blend_Value in a Highlight pen (breezehelper.cpp:679-680,
+        // :710-712), as the toolbar's pressed button.
+        .rule(
+            flat(WidgetState::PRESSED),
+            [
+                fill(c.toolbar_button_pressed),
+                outline(layout, c.selection_background),
+            ],
+        )
+        .rule(flat(WidgetState::DISABLED), [no_fill(), no_stroke()])
         .build();
     // `button.hover_text_color` and `checked_text_color`: platform-facts.md (§2.3), a non-flat
     // button's label is ButtonText in every state; `default_button_text_color`: platform-facts.md
@@ -3370,6 +3439,24 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(c.button_disabled_foreground)],
+        )
+        // The flat button's label is WindowText in every state, "if (flat) { … textRole =
+        // QPalette::WindowText; }" (breezestyle.cpp:5349-5362 at breeze 6.8.2), the Disabled
+        // group's when disabled (`docs/facts/kde/button.toml` on `v0.8.0-rc1` at `78ee0efd`, row
+        // K1.24), each state the push button's label states stated for it too.
+        .rules(
+            [
+                flat(WidgetState::NONE),
+                flat(WidgetState::HOVER),
+                flat(WidgetState::PRESSED),
+                flat(WidgetState::CHECKED),
+                flat(WidgetState::DEFAULT),
+            ],
+            [TextProp::Color(c.window_foreground)],
+        )
+        .rule(
+            flat(WidgetState::DISABLED),
+            [TextProp::Color(c.disabled_text)],
         )
         .build();
     ButtonWidget::new(

@@ -556,6 +556,41 @@ const DIFFERENCES: &[Difference] = &[
                  secondary_foreground is equal",
     },
     Difference {
+        leaf: "variants::ghost_button",
+        presets: &["kde-breeze"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 \
+                 kde-breeze states as Breeze's flat button draws it, hovered \
+                 alphaColor(Highlight, 0), nothing, and pressed Highlight at Blend_Value 0.3 \
+                 (breezehelper.cpp:688-691, :679-680 at breeze 6.8.2; \
+                 docs/facts/kde/button.toml on v0.8.0-rc1 at 78ee0efd, row K1.24), where \
+                 0.7.2 gives the push button's hovered and pressed fills to every variant; \
+                 secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["kde-breeze"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 kde-breeze states the flat button's \
+                 own, alphaColor(Highlight, 0), nothing (breezehelper.cpp:688-691 at breeze \
+                 6.8.2; docs/facts/kde/button.toml on v0.8.0-rc1 at 78ee0efd, row K1.24), so \
+                 the secondary_hover slot, its token and its stored config string are \
+                 button.body(HOVER; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["kde-breeze"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 kde-breeze states the flat button's \
+                 own, Highlight at Blend_Value 0.3, a layer (breezehelper.cpp:679-680 at breeze \
+                 6.8.2; docs/facts/kde/button.toml on v0.8.0-rc1 at 78ee0efd, row K1.24), so \
+                 the secondary_active slot, its token and its stored config string are \
+                 button.body(PRESSED; variant=Flat)'s fill (flat_fill_of); every other leaf of \
+                 the theme is equal",
+    },
+    Difference {
         leaf: "geometry::button_checked",
         presets: &["macos-monterey"],
         reason: "neither model states a checked toggle on macos-monterey (a checked toggle in \
@@ -734,6 +769,38 @@ fn input_outline_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
     super::stroke_color(&field, "input.field(NONE).stroke.color").ok()
 }
 
+/// The leaf of [`DIFFERENCES`]' entries for the flat button's hovered fill:
+/// the `ThemeColor` slot `secondary_hover`, its token and its stored config
+/// string, compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const FLAT_HOVER: &str = "to_theme: secondary_hover";
+
+/// The leaf of [`DIFFERENCES`]' entries for the flat button's pressed fill:
+/// the `ThemeColor` slot `secondary_active`, its token and its stored
+/// config string, compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const FLAT_PRESSED: &str = "to_theme: secondary_active";
+
+/// The flat button's fill of `state` as the connector reads it for
+/// `secondary_hover` and `secondary_active` (`super::flat_button_states`):
+/// `button.body(<state>; variant=Flat)`'s fill where a rule states it for
+/// the state; `None` where none does.
+fn flat_fill_of(
+    new: &native_theme::next::ResolvedTheme,
+    state: native_theme::next::WidgetState,
+) -> Option<Hsla> {
+    let flat = native_theme::next::ButtonQuery::flat();
+    super::state_fill_of(&new.button.body(flat.state(state)))
+}
+
+/// The flat button's hovered and pressed fills ([`flat_fill_of`]), which
+/// `variants::ghost_button` reads; `None` where either is unstated.
+fn flat_states_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
+    use native_theme::next::WidgetState;
+    Some((
+        flat_fill_of(new, WidgetState::HOVER)?,
+        flat_fill_of(new, WidgetState::PRESSED)?,
+    ))
+}
+
 /// The slider's thumb as the connector reads it for the `slider_thumb` slot
 /// (`next::colors`): `slider.thumb(NONE)`'s fill, the form of
 /// [`SLIDER_THUMB`]'s entries; `None` where it is unstated.
@@ -786,6 +853,32 @@ const STATED_SLOTS: &[StatedSlot] = &[
             theme.tokens.slider_thumb = from.tokens.slider_thumb;
         },
         copy_config: |config, from| config.slider_thumb = from.slider_thumb.clone(),
+    },
+    StatedSlot {
+        leaf: FLAT_HOVER,
+        what: "the flat button's stated hovered fill",
+        of: |new| flat_fill_of(new, native_theme::next::WidgetState::HOVER),
+        color: |c| c.secondary_hover,
+        token: |t| t.secondary_hover,
+        config: |c| c.secondary_hover.clone(),
+        copy: |theme, from| {
+            theme.colors.secondary_hover = from.colors.secondary_hover;
+            theme.tokens.secondary_hover = from.tokens.secondary_hover;
+        },
+        copy_config: |config, from| config.secondary_hover = from.secondary_hover.clone(),
+    },
+    StatedSlot {
+        leaf: FLAT_PRESSED,
+        what: "the flat button's stated pressed fill",
+        of: |new| flat_fill_of(new, native_theme::next::WidgetState::PRESSED),
+        color: |c| c.secondary_active,
+        token: |t| t.secondary_active,
+        config: |c| c.secondary_active.clone(),
+        copy: |theme, from| {
+            theme.colors.secondary_active = from.colors.secondary_active;
+            theme.tokens.secondary_active = from.tokens.secondary_active;
+        },
+        copy_config: |config, from| config.secondary_active = from.secondary_active.clone(),
     },
 ];
 
@@ -1456,10 +1549,8 @@ fn compare_theme(
     match report.listed(ghost_button) {
         Some(listed) => {
             report.count(ghost_button);
-            let stated = button_states_of(new).map(|s| {
-                let (hover, pressed) = s.flat;
-                (o.colors.secondary_foreground, hover, pressed)
-            });
+            let stated = flat_states_of(new)
+                .map(|(hover, pressed)| (o.colors.secondary_foreground, hover, pressed));
             if stated != Some(new_ghost) {
                 report.failures.push(format!(
                     "{}: {ghost_button}: the listed difference ({}) no longer describes it: \
