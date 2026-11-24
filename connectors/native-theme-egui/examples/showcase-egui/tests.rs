@@ -636,11 +636,11 @@ fn the_chrome_is_where_the_layout_puts_it() {
 }
 
 /// The Basic page's column rule of the 0.8.0 theme `harness` installed in `theme`'s slot, with
-/// egui's scroll style of that scheme (`pages::basic::ColumnRule::of`).
+/// egui's style of that scheme (`pages::basic::ColumnRule::of`).
 fn column_rule(harness: &Harness<'_, App>, theme: egui::Theme) -> crate::pages::basic::ColumnRule {
     crate::pages::basic::ColumnRule::of(
         harness.state().atlas.next_resolved(theme),
-        &harness.ctx.style_of(theme).spacing.scroll,
+        &harness.ctx.style_of(theme),
     )
 }
 
@@ -7417,20 +7417,33 @@ fn groups_and_columns_are_a_section_gap_apart() {
     );
 }
 
-/// M9-105: under macos-tahoe, which states no `layout.section_gap`, the Basic page puts no gap
-/// between its columns and none between the groups of a column, as the gpui and iced Basic
-/// pages do (`with_gap(.., None)`, `spacing(0)`) and as `column_count` counts: adjacent
-/// columns' `Ui`s touch, and in each column the second group's heading starts at the first
-/// group's bottom, not `item_spacing` below it. macos-tahoe is a preset of another platform
-/// here, so it is installed directly.
+/// Spec §10 rule 0 (M9-105 had none): under macos-tahoe's 0.8.0 theme, which states no
+/// `layout.section_gap`, the Basic page puts egui's own gaps where the theme states none, as
+/// `column_count` counts: adjacent columns' `Ui`s the page style's `item_spacing.x` apart, egui's
+/// gap between columns (egui-0.37.0 `src/ui.rs:2665`), and in each column the second group's
+/// heading `item_spacing.y` below the first group's bottom, egui's gap between the widgets of a
+/// top-down `Ui` (`src/layout.rs:759`), and at its own `Ui`'s top.
 #[test]
-fn the_basic_columns_and_groups_touch_where_the_theme_states_no_section_gap() {
-    let harness = open_scaled("macos-tahoe", "basic", 1.0);
+fn the_basic_columns_and_groups_are_egui_s_own_gap_apart_where_the_theme_states_none() {
+    let harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
     let state = harness.state();
     assert_eq!(
-        state.atlas.layout().section_gap,
-        None,
+        state
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .map(|r| r.layout.section_gap),
+        Some(None),
         "macos-tahoe states no layout.section_gap"
+    );
+    let own = harness
+        .ctx
+        .style_of(egui::Theme::Light)
+        .spacing
+        .item_spacing;
+    assert_eq!(
+        column_rule(&harness, egui::Theme::Light).gap,
+        own.x,
+        "the rule counts egui's own gap between columns"
     );
     let places = state.registry.places();
     let columns: Vec<egui::Rect> = (1..)
@@ -7438,12 +7451,13 @@ fn the_basic_columns_and_groups_touch_where_the_theme_states_no_section_gap() {
         .collect();
     assert!(columns.len() >= 3, "the columns: {columns:?}");
     // Each column's left edge is on a whole pixel and its width is the page's share, fraction
-    // and all: two touching columns are less than a pixel apart.
+    // and all: two columns `own.x` apart are that within a pixel.
     for pair in columns.windows(2) {
         let gap = pair[1].left() - pair[0].right();
         assert!(
-            gap.abs() < 1.0,
-            "two adjacent columns are {gap} apart: {columns:?}"
+            (gap - own.x).abs() < 1.0,
+            "two adjacent columns are {gap} apart, not {}: {columns:?}",
+            own.x
         );
     }
     let records = state.registry.records();
@@ -7474,10 +7488,11 @@ fn the_basic_columns_and_groups_touch_where_the_theme_states_no_section_gap() {
             panic!("column {n}: the second group has no heading");
         };
         assert!(
-            (heading - first.bottom()).abs() < 0.5 && (heading - second.top()).abs() < 0.5,
+            (heading - first.bottom() - own.y).abs() < 0.5 && (heading - second.top()).abs() < 0.5,
             "column {n}: the second group's heading starts {} below the first group's bottom, \
-             {} below its own Ui's top",
+             not {}, {} below its own Ui's top",
             heading - first.bottom(),
+            own.y,
             heading - second.top()
         );
     }
@@ -8406,7 +8421,7 @@ fn a_bottom_indicator_lies_under_the_flares() {
 fn the_basic_page_makes_room_for_both_flares() -> Result<(), String> {
     use crate::pages::basic::{ColumnRule, column_count};
     use native_theme::next::{Preset, Theme, ThemeContext, WidgetState};
-    let own = egui::style::ScrollStyle::default();
+    let own = egui::Style::default();
     let mut stated = Theme::preset(Preset::Windows11).resolve(&ThemeContext::light());
     stated.tab.active_outward_corner_radius = Some(4.0);
     let mut unstated = stated.clone();
@@ -8478,6 +8493,58 @@ fn the_basic_page_makes_room_for_both_flares() -> Result<(), String> {
         laid(&patched),
         laid(&stock)
     );
+    Ok(())
+}
+
+/// Spec §10 rule 0, per length: the Basic page's column rule takes a layout length the theme
+/// leaves unstated as the space egui itself puts at that place, never 0 — the page margin as
+/// egui's own central panel margin (egui-0.37.0 `src/containers/frame.rs:191-193`,
+/// `inner_margin(8)`), the gap between columns and between a row's widgets as the page style's
+/// `item_spacing.x` (`Ui::columns`, `src/ui.rs:2665`) — under kde-breeze's 0.8.0 theme with its
+/// window margin, section gap and widget gap unstated, and without a 0.8.0 theme; a stated length
+/// is the theme's. The page style's item spacing is set apart from egui's default, so the rule is
+/// seen to read it.
+#[test]
+fn the_column_rule_takes_an_unstated_layout_length_as_egui_s_own() -> Result<(), String> {
+    use crate::pages::basic::ColumnRule;
+    use native_theme::next::{Preset, Theme, ThemeContext};
+    let mut own = egui::Style::default();
+    own.spacing.item_spacing = egui::vec2(5.0, 2.0);
+    let stated = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let mut unstated = stated.clone();
+    unstated.layout.window_margin = None;
+    unstated.layout.section_gap = None;
+    unstated.layout.widget_gap = None;
+    for (what, r) in [("unstated", Some(&unstated)), ("no 0.8.0 theme", None)] {
+        let rule = ColumnRule::of(r, &own);
+        assert_eq!(rule.margin, 8.0, "{what}: egui's own central panel margin");
+        assert_eq!(rule.gap, 5.0, "{what}: egui's own gap between columns");
+        assert_eq!(
+            rule.widget_gap, 5.0,
+            "{what}: egui's own gap between a row's widgets"
+        );
+    }
+    let rule = ColumnRule::of(Some(&stated), &own);
+    let layout = &stated.layout;
+    assert_eq!(
+        Some(rule.margin),
+        layout.window_margin,
+        "kde-breeze's window margin"
+    );
+    assert_eq!(
+        Some(rule.gap),
+        layout.section_gap,
+        "kde-breeze's section gap"
+    );
+    assert_eq!(
+        Some(rule.widget_gap),
+        layout.widget_gap,
+        "kde-breeze's widget gap"
+    );
+    let margin = layout
+        .window_margin
+        .ok_or("kde-breeze states no window margin")?;
+    assert_ne!(margin, 8.0, "kde-breeze's margin is not egui's own");
     Ok(())
 }
 

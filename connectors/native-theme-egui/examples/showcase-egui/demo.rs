@@ -1679,13 +1679,6 @@ pub(crate) fn next_value<T>(
 /// `container_margin`, `window_margin` or `section_gap`), as `build` reads it from the theme's
 /// layout: `None` where the theme states none, and without an installed 0.8.0 theme, as the
 /// gpui showcase's `support::next_metric`.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 pub(crate) fn next_metric(
     ui: &egui::Ui,
     build: fn(&native_theme::next::LayoutMetrics) -> Option<f32>,

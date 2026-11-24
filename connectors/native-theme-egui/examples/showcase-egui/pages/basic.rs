@@ -153,15 +153,20 @@ fn segmented_in_last_column(columns: usize) -> bool {
 }
 
 /// What the page's column rule ([`column_count`]) reads of the installed 0.8.0 theme, each
-/// length 0 where the theme states none, as the gpui and iced pages space theirs
-/// (`spacing(0)` where unstated), and without an installed 0.8.0 theme.
+/// length egui's own where the theme states none (spec §10, rule 0): the space egui itself
+/// puts at that place, and so too without an installed 0.8.0 theme.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct ColumnRule {
-    /// `layout.window_margin`.
+    /// `layout.window_margin`, the content panel's inner margin on each side; where unstated,
+    /// egui's own `Frame::central_panel` margin, which the panel then keeps (egui-0.37.0
+    /// `src/containers/frame.rs:191-193`, `inner_margin(8)`, the same on every side).
     pub(crate) margin: f32,
-    /// `layout.section_gap`.
+    /// `layout.section_gap`, between the columns; where unstated, the gap egui lays columns
+    /// out apart, `item_spacing.x` (egui-0.37.0 `src/ui.rs:2665`, `Ui::columns`).
     pub(crate) gap: f32,
-    /// `layout.widget_gap`.
+    /// `layout.widget_gap`, the gap between neighbouring widgets of a row; where unstated,
+    /// egui's own `item_spacing.x`, which the connector then leaves (egui-0.37.0
+    /// `src/style.rs:1565`).
     pub(crate) widget_gap: f32,
     /// `scrollbar.overlay_mode`; egui's own `ScrollStyle::floating` without a 0.8.0 theme.
     pub(crate) overlay: bool,
@@ -176,15 +181,15 @@ pub(crate) struct ColumnRule {
 }
 
 impl ColumnRule {
-    /// The rule of the installed 0.8.0 theme `r`, where `own` is egui's scroll style, which an
-    /// unstated scroll bar keeps.
-    pub(crate) fn of(
-        r: Option<&native_theme::next::ResolvedTheme>,
-        own: &egui::style::ScrollStyle,
-    ) -> Self {
-        let metric = |read: fn(&native_theme::next::LayoutMetrics) -> Option<f32>| {
-            r.and_then(|r| read(&r.layout)).unwrap_or_default()
+    /// The rule of the installed 0.8.0 theme `r`, where `own` is the page's egui style, whose
+    /// item spacing, central panel margin and scroll style an unstated length keeps.
+    pub(crate) fn of(r: Option<&native_theme::next::ResolvedTheme>, own: &egui::Style) -> Self {
+        let metric = |read: fn(&native_theme::next::LayoutMetrics) -> Option<f32>, own: f32| {
+            r.and_then(|r| read(&r.layout)).unwrap_or(own)
         };
+        let panel = egui::Frame::central_panel(own).inner_margin;
+        let rows = own.spacing.item_spacing;
+        let scroll = &own.spacing.scroll;
         let tab_min = r
             .and_then(|r| r.tab.tab(NextState::NONE).min_size[0])
             .unwrap_or_default();
@@ -192,13 +197,13 @@ impl ColumnRule {
         let flare = r.and_then(demo::next_outward_radius).unwrap_or_default();
         let tabs = tab_min + tab_min + item_gap + flare + flare;
         Self {
-            margin: metric(|l| l.window_margin),
-            gap: metric(|l| l.section_gap),
-            widget_gap: metric(|l| l.widget_gap),
-            overlay: r.map_or(own.floating, |r| r.scrollbar.overlay_mode),
+            margin: metric(|l| l.window_margin, panel.leftf()),
+            gap: metric(|l| l.section_gap, rows.x),
+            widget_gap: metric(|l| l.widget_gap, rows.x),
+            overlay: r.map_or(scroll.floating, |r| r.scrollbar.overlay_mode),
             groove: r
                 .and_then(|r| next::scrollbar_groove_width(r).ok())
-                .unwrap_or(own.bar_width),
+                .unwrap_or(scroll.bar_width),
             widest: combo_min_width(r)
                 .unwrap_or_default()
                 .max(tabs)
@@ -208,8 +213,8 @@ impl ColumnRule {
     }
 }
 
-/// How many columns the page lays its groups out in, from the theme alone (`rule`), as the gpui
-/// and iced pages count them: the most, of five down to one, whose width,
+/// How many columns the page lays its groups out in, from the theme alone (`rule`, each length
+/// egui's own where the theme states none), as the gpui and iced pages count them: the most, of five down to one, whose width,
 /// `(page - (n - 1) * layout.section_gap) / n`, holds the widest fixed-width control the theme
 /// states on the page (`ColumnRule::widest`), where `page` is `content_width` less
 /// `layout.window_margin` on both sides and, where `scrollbar.overlay_mode` is false, the groove
@@ -289,13 +294,14 @@ fn group(
 }
 
 /// Columns of equal width, as many as [`column_count`] counts from the content panel's width,
-/// `layout.section_gap` apart, the gap the count takes, and none where the theme states none,
-/// as the gpui and iced pages lay theirs out (`with_gap(.., section_gap)`, `spacing(0)` where
-/// unstated); each a stack of groups top-aligned, `layout.section_gap` apart and none where
-/// unstated too, each group in a top-down `Ui` of its own with its rows the connector's
-/// `item_spacing` apart (`layout.widget_gap`): each column is laid out in a `Ui` of its own at
-/// its place, so a group wider than its column shows as the overflow it is, and the next column
-/// does not move.
+/// `layout.section_gap` apart, the gap the count takes, and where the theme states none egui's
+/// own gap between columns, `item_spacing.x` (`ColumnRule::gap`); each a stack of groups
+/// top-aligned, `layout.section_gap` apart and, where unstated, egui's own gap between the
+/// widgets of a top-down `Ui`, `item_spacing.y` (egui-0.37.0 `src/layout.rs:759`,
+/// `Layout::advance_after_rects`), each group in a top-down `Ui` of its own with its rows the
+/// connector's `item_spacing` apart (`layout.widget_gap`, else egui's own): each column is laid
+/// out in a `Ui` of its own at its place, so a group wider than its column shows as the
+/// overflow it is, and the next column does not move.
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -303,8 +309,9 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let rule = ColumnRule::of(atlas.next_shown(ui.ctx()), &ui.spacing().scroll);
+    let rule = ColumnRule::of(atlas.next_shown(ui.ctx()), ui.style());
     let gap = rule.gap;
+    let below = demo::next_metric(ui, |l| l.section_gap).unwrap_or(ui.spacing().item_spacing.y);
     let origin = ui.cursor().min;
     let count = column_count(&rule, state.content_width, state.segmented_width);
     let columns = count as f32;
@@ -328,14 +335,14 @@ pub(crate) fn show(
                 .max_rect(rect)
                 .layout(egui::Layout::top_down(egui::Align::Min)),
         );
-        // The groups follow one another `gap` apart and no more: the column adds no
+        // The groups follow one another `below` apart and no more: the column adds no
         // `item_spacing` between them, each group's own `Ui` puts it between its rows, and a
         // group's heading, first in its `Ui`, adds nothing (`caption`).
         let rows = child.spacing().item_spacing;
         child.spacing_mut().item_spacing.y = 0.0;
         for (place, &ix) in members.iter().enumerate() {
             if place > 0 {
-                child.add_space(gap);
+                child.add_space(below);
             }
             let _laid = child.scope_builder(
                 egui::UiBuilder::new()
