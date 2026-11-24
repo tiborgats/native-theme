@@ -26,7 +26,8 @@ use crate::{next, scope};
 ///
 /// * The track is `switch.track_width` × `switch.track_height` at `switch.track_radius`, in
 ///   `checked_background` or `unchecked_background`, with `hover_checked_background` or
-///   `hover_unchecked_background` composited over it while hovered.
+///   `hover_unchecked_background` composited over it while hovered. Under the 0.8.0 model a
+///   hovered track's stated fill is the whole fill it shows, taken as it is (spec §9, step 2).
 /// * The thumb is a `switch.thumb_diameter` circle in `thumb_background`, centred on the
 ///   track's axis and inset `0.5 · (track_height − thumb_diameter)` from its ends; a thumb
 ///   taller than its track overhangs it above and below and sits flush with its ends, as
@@ -218,8 +219,12 @@ impl Geometry {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     pub(crate) checked_background: egui::Color32,
+    /// The hovered on track's whole fill: the 0.8.0 theme's stated fill as it is, or 0.7.2's
+    /// `hover_checked_background` composited over `checked_background`; `None`, the rest fill.
     pub(crate) hover_checked_background: Option<egui::Color32>,
     pub(crate) unchecked_background: egui::Color32,
+    /// The hovered off track's whole fill, as [`Self::hover_checked_background`] over
+    /// `unchecked_background`.
     pub(crate) hover_unchecked_background: Option<egui::Color32>,
     pub(crate) disabled_checked_background: Option<egui::Color32>,
     pub(crate) disabled_unchecked_background: Option<egui::Color32>,
@@ -300,11 +305,11 @@ impl Look {
     /// The colours as the switch paints them, so two looks that paint alike compare equal: the
     /// thumb at rest, which `None` gives as the checked one, given as that one; a disabled
     /// colour, which `None` gives as the one it stands for, given as that one; and a hover
-    /// layer that paints its track as it is at rest none.
+    /// fill that is the track's rest fill none.
     #[cfg(test)]
     pub(crate) fn painted(self) -> Self {
         let layer = |hover: Option<egui::Color32>, base: egui::Color32| {
-            hover.filter(|&hover| base.blend(hover) != base)
+            hover.filter(|&hover| hover != base)
         };
         let unchecked_thumb = self
             .unchecked_thumb_background
@@ -342,11 +347,15 @@ impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         let sw = &t.switch;
         let c = to_color32;
+        let over = |base, layer: Option<_>| layer.map(|layer| c(base).blend(c(layer)));
         Self {
             checked_background: c(sw.checked_background),
-            hover_checked_background: sw.hover_checked_background.map(c),
+            hover_checked_background: over(sw.checked_background, sw.hover_checked_background),
             unchecked_background: c(sw.unchecked_background),
-            hover_unchecked_background: sw.hover_unchecked_background.map(c),
+            hover_unchecked_background: over(
+                sw.unchecked_background,
+                sw.hover_unchecked_background,
+            ),
             disabled_checked_background: sw.disabled_checked_background.map(c),
             disabled_unchecked_background: sw.disabled_unchecked_background.map(c),
             thumb_background: c(sw.thumb_background),
@@ -539,7 +548,7 @@ fn switch_ui(
         ),
     };
     let fill = match hover {
-        Some(layer) if hovered => fill.blend(layer),
+        Some(hover) if hovered => hover,
         _ => fill,
     };
     let rest_edge = if checked {

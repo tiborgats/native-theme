@@ -2040,8 +2040,6 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                         se: 0,
                         ..idle.corner_radius
                     };
-                    let no_pen =
-                        egui::Stroke::new(idle.bg_stroke.width, egui::Color32::TRANSPARENT);
                     // The flares in the selected tab's own fill and outline.
                     let flare_paint = (ui.visuals().selection.bg_fill, idle.bg_stroke);
                     let gap = ui.spacing().item_spacing.x;
@@ -2052,17 +2050,33 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     let mut selected_tab = None;
                     for (index, (value, label)) in bar.tabs.iter().enumerate() {
                         let selected = *value == bar.current;
-                        let mut button = egui::Button::new((look.label)(ui, label))
+                        let button = egui::Button::new((look.label)(ui, label))
                             .selected(selected)
                             .min_size(egui::Vec2 {
                                 x: min_width,
                                 ..egui::Vec2::ZERO
                             })
                             .corner_radius(top);
-                        if !selected {
-                            button = button.stroke(no_pen);
-                        }
-                        let r = tab.add(reg, ui, bar.tab_kind, |ui| ui.add(button));
+                        let r = tab.add(reg, ui, bar.tab_kind, |ui| {
+                            if selected {
+                                return ui.add(button);
+                            }
+                            // An unselected tab's outline in no pen, each state's at its own
+                            // width: egui's frame takes each state's width out of its inner
+                            // margin (`Frame::apply_stroke_and_expansion_without_layout_shift`,
+                            // egui-0.37.0 `src/containers/frame.rs:313-323`, called by
+                            // `src/theme/default_style.rs:69-72`), which `Button::stroke` does not
+                            // put back (`src/widgets/button.rs:354-356`), so one pen for every
+                            // state would size the tab by the state's width.
+                            let kept = ui.visuals().widgets.clone();
+                            let w = &mut ui.visuals_mut().widgets;
+                            for state in [&mut w.inactive, &mut w.hovered, &mut w.active] {
+                                state.bg_stroke.color = egui::Color32::TRANSPARENT;
+                            }
+                            let response = ui.add(button);
+                            ui.visuals_mut().widgets = kept;
+                            response
+                        });
                         if selected {
                             tab_indicator(ui, r.rect, top, look.line);
                             selected_tab = Some(r.rect);

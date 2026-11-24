@@ -33,7 +33,8 @@ const EGUI_HANDLE_DIVISOR: f32 = 2.5;
 ///   theme states none); the trailing fill runs from its start to the knob's centre in
 ///   `fill_color`.
 /// * The knob is a `slider.thumb_diameter` circle, its outline included, in `thumb_color`,
-///   with `thumb_hover_color` composited over it while hovered. Where the theme states
+///   with `thumb_hover_color` composited over it while hovered (under the 0.8.0 model the
+///   hovered thumb's stated fill, taken as it is, spec §9, step 2). Where the theme states
 ///   `slider.thumb_border_line_width`, the outline is that wide inside the knob: at rest in
 ///   `thumb_border_color`, with the pointer on the knob or while it is dragged in
 ///   `thumb_hover_border_color`, while the slider has the focus in `thumb_focus_border_color`
@@ -167,6 +168,8 @@ pub(crate) struct Look {
     pub(crate) fill_color: Option<egui::Color32>,
     /// The knob; `None`, egui's own, the fill of the interaction state's visuals.
     pub(crate) thumb_color: Option<egui::Color32>,
+    /// The hovered knob's whole fill: the 0.8.0 theme's stated fill as it is, or 0.7.2's
+    /// `thumb_hover_color` composited over `thumb_color`; `None`, the rest fill.
     pub(crate) thumb_hover_color: Option<egui::Color32>,
     pub(crate) disabled_track_color: Option<egui::Color32>,
     pub(crate) disabled_fill_color: Option<egui::Color32>,
@@ -182,8 +185,8 @@ pub(crate) struct Look {
 impl Look {
     /// The colours of a slider of a 0.8.0 theme, at the homes of the 0.7.2 fields `of` reads:
     /// `slider.track`, `slider.active_track` and `slider.thumb`'s fills at `NONE`, and at
-    /// `DISABLED` where a rule for it states them; the thumb's hover layer
-    /// (`slider.thumb(HOVER)`'s fill) where a rule for `HOVER` states it (spec §2,
+    /// `DISABLED` where a rule for it states them; the hovered thumb's fill
+    /// (`slider.thumb(HOVER)`'s) where a rule for `HOVER` states it (spec §2,
     /// `from_state`); the thumb's outline colour at `NONE`, and at `HOVER` and `FOCUSED` where
     /// a rule states it; the window's background as the ground. Each `None` where the theme
     /// states none, which keeps egui's own (spec §10, rule 0).
@@ -213,7 +216,9 @@ impl Look {
             track_color: Some(to_color32(sl.track_color)),
             fill_color: Some(to_color32(sl.fill_color)),
             thumb_color: Some(to_color32(sl.thumb_color)),
-            thumb_hover_color: sl.thumb_hover_color.map(to_color32),
+            thumb_hover_color: sl
+                .thumb_hover_color
+                .map(|layer| to_color32(sl.thumb_color).blend(to_color32(layer))),
             disabled_track_color: sl.disabled_track_color.map(to_color32),
             disabled_fill_color: sl.disabled_fill_color.map(to_color32),
             disabled_thumb_color: sl.disabled_thumb_color.map(to_color32),
@@ -221,6 +226,18 @@ impl Look {
             thumb_hover_border_color: sl.thumb_hover_border_color.map(to_color32),
             thumb_focus_border_color: sl.thumb_focus_border_color.map(to_color32),
             background: Some(to_color32(t.defaults.background_color)),
+        }
+    }
+
+    /// The look as the slider paints it, so two looks that paint alike compare equal: a hover
+    /// fill that is the knob's rest fill given as none.
+    #[cfg(test)]
+    pub(crate) fn painted(self) -> Self {
+        Self {
+            thumb_hover_color: self
+                .thumb_hover_color
+                .filter(|&hover| Some(hover) != self.thumb_color),
+            ..self
         }
     }
 }
@@ -510,7 +527,7 @@ fn slider_ui(
         });
         let (track, fill, thumb) = if enabled {
             let thumb = match sl.thumb_hover_color {
-                Some(layer) if response.hovered() => rest_thumb.blend(layer),
+                Some(hover) if response.hovered() => hover,
                 _ => rest_thumb,
             };
             (rest_track, rest_fill, thumb)

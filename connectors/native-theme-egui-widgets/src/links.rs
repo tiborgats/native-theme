@@ -15,7 +15,8 @@
 //! same colour, so egui's own hover underline matches it. `link.underline_enabled` underlines
 //! the text at rest (`WidgetText::underline`, drawn in the text's colour), and
 //! `link.background_color`, with `link.hover_background` composited over it while hovered, is
-//! the text's background (`WidgetText::background_color`).
+//! the text's background (`WidgetText::background_color`); under the 0.8.0 model the hovered
+//! container's stated fill is that background, taken as it is (spec §9, step 2).
 //!
 //! A link wrapped over several rows answers on its first row only: a wrapped `Label` gives
 //! each further row an id of its own (`egui/src/widgets/label.rs:219-227`).
@@ -51,13 +52,15 @@ fn visited_key() -> egui::Id {
 
 /// What a link reads of a theme, every colour read in one place, so the crate's colour-leaf
 /// coverage test sees the widget's reads. Each is `None` where the theme states none: the
-/// text keeps egui's own colour there, the background none, the hover layer nothing, and the
+/// text keeps egui's own colour there, the background none, the hovered one the rest's, and the
 /// underline egui's own (spec §10, rule 0).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
     /// `link.font.color`: the text at rest.
     pub(crate) text_color: Option<egui::Color32>,
     pub(crate) background_color: Option<egui::Color32>,
+    /// The hovered background's whole fill: the 0.8.0 theme's stated fill as it is, or 0.7.2's
+    /// `link.hover_background` composited over `link.background_color`.
     pub(crate) hover_background: Option<egui::Color32>,
     pub(crate) hover_text_color: Option<egui::Color32>,
     pub(crate) active_text_color: Option<egui::Color32>,
@@ -73,7 +76,8 @@ impl Look {
         Self {
             text_color: c(l.font.color),
             background_color: c(l.background_color),
-            hover_background: c(l.hover_background),
+            hover_background: c(l.background_color)
+                .map(|rest| rest.blend(to_color32(l.hover_background))),
             hover_text_color: c(l.hover_text_color),
             active_text_color: c(l.active_text_color),
             visited_text_color: c(l.visited_text_color),
@@ -84,7 +88,7 @@ impl Look {
 
     /// The look of a link of a 0.8.0 theme, at the homes of the 0.7.2 fields `of` reads:
     /// `link.label`'s colour at `NONE`, `HOVER`, `PRESSED`, `VISITED` and `DISABLED`,
-    /// `link.container(NONE)`'s fill, the hover layer `link.container(HOVER)`'s fill where a
+    /// `link.container(NONE)`'s fill, the hovered fill `link.container(HOVER)`'s where a
     /// rule for `HOVER` states it (spec §2, `from_state`), and the underline at rest, whether
     /// `link.label(NONE)`'s stated decoration is an underline.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
@@ -108,17 +112,15 @@ impl Look {
     }
 
     /// The look as a link paints it, so two looks that paint alike compare equal: a
-    /// transparent background, which paints as none, given as none, and a hover layer that
-    /// paints the background as it is at rest given as none.
+    /// transparent background, which paints as none, given as none, and a hover fill that is
+    /// the background at rest given as none.
     #[cfg(test)]
     pub(crate) fn painted(self) -> Self {
         let clear = |c: Option<egui::Color32>| c.filter(|c| *c != egui::Color32::TRANSPARENT);
         let rest = self.background_color.unwrap_or(egui::Color32::TRANSPARENT);
         Self {
             background_color: clear(self.background_color),
-            hover_background: self
-                .hover_background
-                .filter(|&hover| rest.blend(hover) != rest),
+            hover_background: self.hover_background.filter(|&hover| hover != rest),
             ..self
         }
     }
@@ -224,10 +226,7 @@ fn themed(
             text = text.color(colour);
         }
         let hover = l.hover_background.filter(|_| hovered && enabled);
-        let background = match (hover, l.background_color) {
-            (Some(hover), rest) => Some(rest.unwrap_or(egui::Color32::TRANSPARENT).blend(hover)),
-            (None, rest) => rest,
-        };
+        let background = hover.or(l.background_color);
         if let Some(background) = background {
             text = text.background_color(background);
         }

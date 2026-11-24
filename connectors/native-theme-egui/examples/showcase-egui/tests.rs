@@ -12298,7 +12298,8 @@ fn scope_style(
 /// a rule states `toolbar.button(HOVER)` and `toolbar.button(PRESSED)`'s stroke, its width
 /// (kde-breeze light patched to twice its stated hover width, which the 0.7.2
 /// `button.border.line_width` beside it is not), and where none does, the scope's own hovered
-/// and pressed button's (adwaita light states neither, spec §10 rule 0). The Command Palette
+/// and pressed button's (windows-11 light states neither, and its scope's own button is
+/// outlined, spec §10 rule 0). The Command Palette
 /// button, hovered and then pressed, is painted in that pen.
 #[test]
 fn a_chrome_tool_buttons_outline_is_the_toolbar_scopes() -> Result<(), String> {
@@ -12374,31 +12375,31 @@ fn a_chrome_tool_buttons_outline_is_the_toolbar_scopes() -> Result<(), String> {
         "patched kde-breeze: [hovered, pressed] Command Palette lined in {hovered:?}, {pressed:?}"
     );
 
-    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "adwaita");
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
     let r = harness
         .state()
         .atlas
         .next_resolved(egui::Theme::Light)
-        .ok_or("adwaita: no 0.8.0 theme installed")?;
+        .ok_or("windows-11: no 0.8.0 theme installed")?;
     for state in [WidgetState::HOVER, WidgetState::PRESSED] {
         assert!(
             !r.toolbar
                 .button(state)
                 .from_state
                 .contains(PartStated::STROKE),
-            "adwaita now states toolbar.button({state:?})'s stroke"
+            "windows-11 now states toolbar.button({state:?})'s stroke"
         );
     }
     let own = scope_widgets(&harness, native_theme_egui::Role::Toolbar)?;
     let (hovered, pressed) = (own.hovered.bg_stroke, own.active.bg_stroke);
     assert!(
         hovered.width > 0.0 && pressed.width > 0.0,
-        "adwaita's toolbar scope draws no outline of its own, so this part proves nothing"
+        "windows-11's toolbar scope draws no outline of its own, so this part proves nothing"
     );
     assert_eq!(
         lined(&mut harness, [hovered, pressed]),
         [true; 2],
-        "adwaita: [hovered, pressed] Command Palette lined in the scope's own {hovered:?}, \
+        "windows-11: [hovered, pressed] Command Palette lined in the scope's own {hovered:?}, \
          {pressed:?}"
     );
     Ok(())

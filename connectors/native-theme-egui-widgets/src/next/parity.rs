@@ -84,6 +84,100 @@ const DIFFERENCES: &[Difference] = &[
                  icon_spacing; the 0.8.0 theme states radio.label_gap, the same space: drawn \
                  alike, next_drawn::the_radio_button_draws_alike_from_both_models",
     },
+    Difference {
+        leaf: "switch::Look.disabled_text",
+        presets: &["kde-breeze", "adwaita"],
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color; the \
+                 0.8.0 presets state the platform's disabled switch label: kde-breeze \
+                 qqc2-desktop-style's, the Disabled [Colors:Window] text at its opacity 0.6 \
+                 (#a0a1a399 / #686a6c99: Switch.qml:72, :75 at qqc2-desktop-style v6.31.0; \
+                 plasmadesktoptheme.cpp:273-274 at Kirigami 8319acc7), adwaita AdwSwitchRow's \
+                 title, the row's text at --disabled-opacity 50 % (#00000666 / #ffffff80: \
+                 _labels.scss:8-10, _colors.scss:37, :100, :320 at libadwaita 1.10.0)",
+    },
+    Difference {
+        leaf: "switch::Look.disabled_text",
+        presets: &["material-3"],
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color, \
+                 on-surface at 0.38; the 0.8.0 material-3 states Android's MaterialSwitch \
+                 text, on-background at material_emphasis_medium 0.6 when disabled \
+                 (#1d1b2099 / #e6e0e999: android:Widget.CompoundButton's textColor \
+                 ?attr/textColorPrimaryDisableOnly, AOSP core/res/res/values/styles.xml:386 at \
+                 android-15.0.0_r1; m3_primary_text_disable_only.xml:19, dimens.xml:21, \
+                 materialswitch/res/values/styles.xml:17-29 at material-components-android \
+                 66c334b)",
+    },
+    Difference {
+        leaf: "switch::Look.text",
+        presets: &["adwaita"],
+        reason: "0.7.2 has no switch label and the look took the window's text, #2e3436 in \
+                 light (no source at libadwaita, next/presets/adwaita.rs); the 0.8.0 adwaita \
+                 states AdwSwitchRow's title in the row's text, view_fg_color and \
+                 card_fg_color RGB(0 0 6 / 80%) (#000006cc: _lists.scss:5-7, :521; \
+                 _misc.scss:202-204; _colors.scss:37, :62 at libadwaita 1.10.0); in dark both \
+                 are white",
+    },
+    Difference {
+        leaf: "switch::Geometry.label_gap",
+        presets: &["kde-breeze", "adwaita", "windows-11"],
+        reason: "0.7.2 has no switch label gap, so the label lies at the scope's own \
+                 icon_spacing; the 0.8.0 presets state the platform's: kde-breeze 4, \
+                 qqc2-desktop-style's Switch spacing, Kirigami.Units.smallSpacing \
+                 (Switch.qml:26, :70 at qqc2-desktop-style v6.31.0; units.cpp:37 at Kirigami \
+                 8319acc7), the scope's own there, so drawn alike; adwaita 6, the least gap of \
+                 AdwSwitchRow's header box (_lists.scss:132 at libadwaita 1.10.0); windows-11 \
+                 12, ToggleSwitch's fixed column (ToggleSwitch_themeresources.xaml:499-503 at \
+                 microsoft-ui-xaml 8463f45): next_drawn lists both",
+    },
+    Difference {
+        leaf: "switch::Geometry.label_size",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+        ],
+        reason: "0.7.2's SwitchTheme states no label font, so the label is lettered in the \
+                 scope's own size; the 0.8.0 presets state switch.label as the platform's \
+                 switch label, the body font (kde-breeze qqc2-desktop-style's control.font, \
+                 adwaita AdwSwitchRow's title, windows-11 ToggleSwitch's content, macOS the \
+                 body font, material-3 Android's MaterialSwitch text), the size the scope's \
+                 own is: drawn alike, next_drawn::the_switch_draws_alike_from_both_models",
+    },
+    Difference {
+        leaf: "switch::Look.hover_checked_background",
+        presets: &["windows-11"],
+        reason: "0.7.2's switch.hover_checked_background is the window colour at alpha 0.1, \
+                 a layer the look composites over the on track; 0.8.0's windows-11 states \
+                 WinUI's whole hovered fill, which the look takes as it is (spec §9, step 2): \
+                 AccentFillColorSecondary, the accent's fill at 0.9 opacity, #0067c0e6 / \
+                 #4cc2ffe6 (ToggleSwitchFillOnPointerOver, ToggleSwitch_themeresources.xaml:144, \
+                 :24; Common_themeresources_any.xaml:330, :126 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row switch.hover_checked_background, a \
+                 listed difference); next_drawn::a_hovered_switch_track_is_its_stated_whole_fill",
+    },
+    Difference {
+        leaf: "slider::Look.thumb_hover_color",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita states an uncited slider.thumb_hover_color (#ebebeb / \
+                 #3a3a3e); 0.8.0's adwaita states libadwaita's $slider_hover_color, white in \
+                 both schemes (_scale.scss:62-76, _colors.scss:289 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row slider.thumb_hover_color, a listed \
+                 difference), so the hovered knob is white",
+    },
+    Difference {
+        leaf: "combo_box::Sides.border",
+        presets: &["macos-tahoe", "ios-13"],
+        reason: "macos-tahoe: 0.7.2 states the default line (0.5); 0.8.0 states the pop-up \
+                 button's outline as none, as macOS 26 draws it (os-probe run 45198750893, \
+                 macOS 26, `*.normal.popup` `edge_*`: every edge pixel is the fill); ios-13: \
+                 0.7.2 states the default border width (0.5, uncited); 0.8.0 states the border \
+                 WebKit draws round an iOS select, 1px (html.css:1101 at WebKit 31adf9d); \
+                 native-theme/tests/next_homes.toml, row combo_box.border.line_width, a listed \
+                 difference; next_drawn lists the drawn field",
+    },
 ];
 
 /// The leaves compared and the differences found, for one preset and scheme.
@@ -269,8 +363,8 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
         report,
         "slider::Look",
         SliderLook,
-        Some(SliderLook::of(old)),
-        Some(SliderLook::next_of(new)),
+        Some(SliderLook::of(old).painted()),
+        Some(SliderLook::next_of(new).painted()),
         [
             track_color,
             fill_color,

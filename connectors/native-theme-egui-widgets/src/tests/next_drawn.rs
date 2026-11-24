@@ -2,8 +2,8 @@
 //! spec §10, rule 4): each widget on the 0.8.0 model, drawn under the atlas of each model of
 //! every platform preset (`crate::next::parity::PRESETS`, asserted against `Preset::ALL`
 //! there), light and dark, in each of its states, paints the same shapes, every difference
-//! listed in [`DIFFERENCES`] with its cause, an outline colour, and a listed case still equal in
-//! every other value of every shape; an entry that no longer differs fails.
+//! listed in [`DIFFERENCES`] with its cause and what it lets differ ([`Differs`]), and a listed
+//! case still equal in every value that leaves; an entry that no longer differs fails.
 
 use super::*;
 
@@ -15,10 +15,24 @@ type Case<'a> = (&'static str, &'a dyn Fn(&mut egui::Ui) -> egui::Response);
 /// The cases that draw differently and are not listed, and the listed ones seen, by preset.
 type Drawn = (Vec<String>, Vec<(&'static str, &'static str)>);
 
-/// A listed difference: the widget's case, the presets on which it draws differently, and why.
+/// What a listed difference lets differ.
+#[derive(Clone, Copy, PartialEq)]
+enum Differs {
+    /// The outlines' colours alone ([`outlines_masked`]).
+    Outline,
+    /// The label's colour alone ([`labels_masked`]).
+    Label,
+    /// The values the 0.8.0 theme states where 0.7.2 states others, which the reason names:
+    /// any value of the case's shapes.
+    Stated,
+}
+
+/// A listed difference: the widget's case, the presets on which it draws differently, what may
+/// differ, and why.
 struct Difference {
     case: &'static str,
     presets: &'static [&'static str],
+    differs: Differs,
     reason: &'static str,
 }
 
@@ -27,44 +41,294 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "radio off",
         presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        differs: Differs::Outline,
         reason: RADIO_CELL,
     },
     Difference {
         case: "radio on",
         presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        differs: Differs::Outline,
         reason: RADIO_CELL,
     },
     Difference {
         case: "radio off disabled",
         presets: &["macos-monterey", "macos-tahoe"],
+        differs: Differs::Outline,
         reason: RADIO_CELL,
     },
     Difference {
         case: "radio on disabled",
         presets: &["macos-monterey", "macos-tahoe"],
+        differs: Differs::Outline,
         reason: RADIO_CELL,
     },
     Difference {
+        case: "radio off",
+        presets: &["ios-13"],
+        differs: Differs::Stated,
+        reason: IOS_RADIO,
+    },
+    Difference {
+        case: "radio on",
+        presets: &["ios-13"],
+        differs: Differs::Stated,
+        reason: IOS_RADIO,
+    },
+    Difference {
+        case: "radio off disabled",
+        presets: &["material-3"],
+        differs: Differs::Stated,
+        reason: M3_RADIO_DISABLED,
+    },
+    Difference {
+        case: "radio on disabled",
+        presets: &["material-3"],
+        differs: Differs::Stated,
+        reason: M3_RADIO_DISABLED,
+    },
+    Difference {
+        case: "radio off disabled",
+        presets: &["ios-13"],
+        differs: Differs::Stated,
+        reason: IOS_RADIO,
+    },
+    Difference {
+        case: "radio on disabled",
+        presets: &["ios-13"],
+        differs: Differs::Stated,
+        reason: IOS_RADIO,
+    },
+    Difference {
         case: "combo box",
-        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        presets: &["windows-11", "macos-monterey"],
+        differs: Differs::Outline,
         reason: COMBO_CELL,
     },
     Difference {
         case: "combo box disabled",
-        presets: &["macos-monterey", "macos-tahoe"],
+        presets: &["macos-monterey"],
+        differs: Differs::Outline,
         reason: COMBO_CELL,
     },
     Difference {
+        case: "combo box",
+        presets: &["macos-tahoe"],
+        differs: Differs::Stated,
+        reason: TAHOE_COMBO,
+    },
+    Difference {
+        case: "combo box disabled",
+        presets: &["macos-tahoe"],
+        differs: Differs::Stated,
+        reason: TAHOE_COMBO,
+    },
+    Difference {
+        case: "combo box",
+        presets: &["ios-13"],
+        differs: Differs::Stated,
+        reason: IOS_COMBO,
+    },
+    Difference {
+        case: "combo box disabled",
+        presets: &["ios-13"],
+        differs: Differs::Stated,
+        reason: IOS_COMBO,
+    },
+    Difference {
         case: "segmented control",
-        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        presets: &["windows-11", "macos-monterey"],
+        differs: Differs::Outline,
         reason: SEGMENTED_CELL,
     },
     Difference {
         case: "segmented control disabled",
-        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        presets: &["windows-11", "macos-monterey"],
+        differs: Differs::Outline,
         reason: SEGMENTED_CELL,
     },
+    Difference {
+        case: "segmented control",
+        presets: &["macos-tahoe"],
+        differs: Differs::Stated,
+        reason: TAHOE_SEGMENTED,
+    },
+    Difference {
+        case: "segmented control disabled",
+        presets: &["macos-tahoe"],
+        differs: Differs::Stated,
+        reason: TAHOE_SEGMENTED,
+    },
+    Difference {
+        case: "expander closed",
+        presets: &["macos-tahoe"],
+        differs: Differs::Stated,
+        reason: TAHOE_EXPANDER,
+    },
+    Difference {
+        case: "expander open",
+        presets: &["macos-tahoe"],
+        differs: Differs::Stated,
+        reason: TAHOE_EXPANDER,
+    },
+    Difference {
+        case: "expander closed disabled",
+        presets: &["macos-tahoe"],
+        differs: Differs::Stated,
+        reason: TAHOE_EXPANDER,
+    },
+    Difference {
+        case: "expander open disabled",
+        presets: &["macos-tahoe"],
+        differs: Differs::Stated,
+        reason: TAHOE_EXPANDER,
+    },
+    Difference {
+        case: "switch off disabled",
+        presets: &["kde-breeze", "material-3"],
+        differs: Differs::Label,
+        reason: SWITCH_DISABLED_LABEL,
+    },
+    Difference {
+        case: "switch on disabled",
+        presets: &["kde-breeze", "material-3"],
+        differs: Differs::Label,
+        reason: SWITCH_DISABLED_LABEL,
+    },
+    Difference {
+        case: "switch off",
+        presets: &["adwaita"],
+        differs: Differs::Stated,
+        reason: ADWAITA_SWITCH,
+    },
+    Difference {
+        case: "switch on",
+        presets: &["adwaita"],
+        differs: Differs::Stated,
+        reason: ADWAITA_SWITCH,
+    },
+    Difference {
+        case: "switch off disabled",
+        presets: &["adwaita"],
+        differs: Differs::Stated,
+        reason: ADWAITA_SWITCH,
+    },
+    Difference {
+        case: "switch on disabled",
+        presets: &["adwaita"],
+        differs: Differs::Stated,
+        reason: ADWAITA_SWITCH,
+    },
+    Difference {
+        case: "switch off",
+        presets: &["windows-11"],
+        differs: Differs::Stated,
+        reason: WINDOWS_SWITCH_GAP,
+    },
+    Difference {
+        case: "switch on",
+        presets: &["windows-11"],
+        differs: Differs::Stated,
+        reason: WINDOWS_SWITCH_GAP,
+    },
+    Difference {
+        case: "switch off disabled",
+        presets: &["windows-11"],
+        differs: Differs::Stated,
+        reason: WINDOWS_SWITCH_GAP,
+    },
+    Difference {
+        case: "switch on disabled",
+        presets: &["windows-11"],
+        differs: Differs::Stated,
+        reason: WINDOWS_SWITCH_GAP,
+    },
 ];
+
+/// kde-breeze's and material-3's disabled switch label.
+const SWITCH_DISABLED_LABEL: &str = "the label's colour alone differs: 0.7.2 has no switch \
+     label and takes defaults.disabled_text_color; the 0.8.0 presets state the platform's \
+     disabled switch label: kde-breeze qqc2-desktop-style's, the Disabled [Colors:Window] text \
+     at its opacity 0.6 (#a0a1a399 / #686a6c99: Switch.qml:72, :75 at qqc2-desktop-style \
+     v6.31.0; plasmadesktoptheme.cpp:273-274 at Kirigami 8319acc7), material-3 Android's \
+     MaterialSwitch text, on-background at material_emphasis_medium 0.6 (#1d1b2099 / #e6e0e999: \
+     android:Widget.CompoundButton's textColor ?attr/textColorPrimaryDisableOnly, AOSP \
+     core/res/res/values/styles.xml:386 at android-15.0.0_r1; m3_primary_text_disable_only.xml:19, \
+     dimens.xml:21, materialswitch/res/values/styles.xml:17-29 at material-components-android \
+     66c334b); crate::next::parity, switch::Look.disabled_text";
+
+/// adwaita's switch label.
+const ADWAITA_SWITCH: &str = "the label's gap and colour: the 0.8.0 adwaita states \
+     switch.label_gap 6, the least gap of AdwSwitchRow's header box (_lists.scss:132 at \
+     libadwaita 1.10.0), where 0.7.2 has none and the label lies at the scope's own \
+     icon_spacing, 2 pt farther; and the label in AdwSwitchRow's title colour, the row's text, \
+     #000006cc in light (_lists.scss:5-7, :521; _misc.scss:202-204; _colors.scss:37, :62 at \
+     libadwaita 1.10.0), at --disabled-opacity 50 % when disabled (#00000666 / #ffffff80: \
+     _labels.scss:8-10, _colors.scss:37, :100, :320 at libadwaita 1.10.0), where 0.7.2 took the \
+     window's text and defaults.disabled_text_color; crate::next::parity, switch::Look.text and \
+     .disabled_text, switch::Geometry.label_gap";
+
+/// windows-11's switch label.
+const WINDOWS_SWITCH_GAP: &str = "the label's gap: the 0.8.0 windows-11 states \
+     switch.label_gap 12, ToggleSwitch's fixed column (ToggleSwitch_themeresources.xaml:499-503 \
+     at microsoft-ui-xaml 8463f45), where 0.7.2 has none and the label lies at the scope's own \
+     icon_spacing, 4 pt nearer; crate::next::parity, switch::Geometry.label_gap";
+
+/// material-3's disabled radio.
+const M3_RADIO_DISABLED: &str = "the label's colour, and a checked radio's dot: 0.7.2 draws \
+     both in defaults.disabled_text_color, on-surface at 0.38; the 0.8.0 material-3 states \
+     Android's disabled label, the label's colour at material_emphasis_medium 0.6 (#1d1b2099 / \
+     #e6e0e999: android:Widget.CompoundButton's textColor ?attr/textColorPrimaryDisableOnly, AOSP \
+     core/res/res/values/styles.xml:386 at android-15.0.0_r1; radiobutton/res/values/styles.xml:19-33 \
+     sets none, m3_primary_text_disable_only.xml:19, dimens.xml:21 at material-components-android \
+     66c334b), and the radio states no dot for DISABLED, so the dot is the connector's \
+     Checkbox/SelectedDisabled cell's fg_stroke, checkbox.checkmark(DISABLED|CHECKED)'s colour, \
+     surface (selected-disabled-icon-color, _md-comp-checkbox.scss:50, v0_192 at material-web \
+     cbd34a8; native-theme-egui, next::parity, the Checkbox/Disabled and \
+     Checkbox/SelectedDisabled entries)";
+
+/// ios-13's radio circle.
+const IOS_RADIO: &str = "the circle's outline: 0.7.2's ios-13 outlines it in its uncited \
+     default line, 0.5 px in the separator, checked or not; the 0.8.0 ios-13 states the outline \
+     WebKit strokes round an empty iOS radio, checkboxRadioBorderColor (secondaryLabel), 1.5 px \
+     as it shows (checkboxRadioBorderWidth × 2 clipped to the edge), and none round a checked \
+     one (RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit 31adf9d; \
+     native-theme/tests/next_homes.toml, rows checkbox.unchecked_border_color and \
+     checkbox.border.line_width, listed differences); the circle's outer edge stays";
+
+/// macos-tahoe's drop-down field.
+const TAHOE_COMBO: &str = "the field's outline and the text's inset: 0.7.2's macos-tahoe \
+     states the default line (0.5); the 0.8.0 macos-tahoe states the pop-up button's outline as \
+     none, as macOS 26 draws it (os-probe run 45198750893, macOS 26, `*.normal.popup` `edge_*`: \
+     every edge pixel is the fill; native-theme/tests/next_homes.toml, rows \
+     combo_box.border.line_width and combo_box.border.color, listed differences), so the text \
+     and the arrow lie the line's 0.5 pt nearer the edge (native-theme-egui, next::parity, the \
+     ComboBox button_padding entry)";
+
+/// ios-13's drop-down field.
+const IOS_COMBO: &str = "the field's outline and the text's inset: 0.7.2's ios-13 states the \
+     default border (0.5 in the separator, uncited); the 0.8.0 ios-13 states the border WebKit \
+     draws round an iOS select, 1px of -webkit-control-background, systemBackground \
+     (html.css:1101 at WebKit 31adf9d; RenderThemeIOS.mm:1027; \
+     native-theme/tests/next_homes.toml, rows combo_box.border.line_width and \
+     combo_box.border.color, listed differences), so the text and the arrow lie 0.5 pt farther \
+     in";
+
+/// macos-tahoe's segmented control.
+const TAHOE_SEGMENTED: &str = "the frame: 0.7.2's macos-tahoe states the default line, which \
+     the control draws as a 1 pt frame; the 0.8.0 macos-tahoe states the segmented control's \
+     outline as none, as macOS 26 draws it (os-probe run 45198750893, macOS 26, \
+     `*.normal.segment` `edge_top`, `edge_bottom`; native-theme/tests/next_homes.toml, rows \
+     segmented_control.border.line_width and segmented_control.border.color, listed \
+     differences), so the control is the frame's width smaller on each side and its end \
+     segments take its corners";
+
+/// macos-tahoe's expander header.
+const TAHOE_EXPANDER: &str = "the header's side padding: the header pads a side it states none \
+     of by the base style's button_padding, which macos-tahoe's push button, its bezel stroked \
+     as none (M2.FS4, measured; native-theme/tests/next_homes.toml, row button.border.line_width, \
+     a listed difference), now leaves at its padding alone, where 0.7.2 added its 0.5 hairline \
+     (native-theme-egui, next::parity, the base button_padding entry): the arrow and the title \
+     lie 0.5 pt nearer the start";
 
 /// The drop-down is egui's `ComboBox`, outlined in its cell's stroke.
 const COMBO_CELL: &str = "the button's outline colour alone differs: it is the connector's \
@@ -152,14 +416,20 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
                 if a == b && ra.rect == rb.rect {
                     continue;
                 }
-                let is_listed = DIFFERENCES
+                let entry = DIFFERENCES
                     .iter()
-                    .any(|d| d.case == case && d.presets.contains(&key));
-                // A listed case differs in its outline colour alone: every other value of every
-                // shape is equal.
-                if is_listed {
+                    .find(|d| d.case == case && d.presets.contains(&key));
+                let is_listed = entry.is_some();
+                // A listed case differs in what its entry lets differ alone: every other value
+                // of every shape is equal.
+                if let Some(entry) = entry {
                     listed.push((key, case));
-                    if outlines_masked(&a) == outlines_masked(&b) && ra.rect == rb.rect {
+                    let alike = match entry.differs {
+                        Differs::Outline => outlines_masked(&a) == outlines_masked(&b),
+                        Differs::Label => labels_masked(&a) == labels_masked(&b),
+                        Differs::Stated => true,
+                    };
+                    if alike && (entry.differs == Differs::Stated || ra.rect == rb.rect) {
                         continue;
                     }
                 }
@@ -183,7 +453,7 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
                      different:{}",
                     if is_dark { "dark" } else { "light" },
                     if is_listed {
-                        " (listed: it differs beyond its outline colour)"
+                        " (listed: it differs beyond what its entry lets differ)"
                     } else {
                         ""
                     },
@@ -234,6 +504,24 @@ fn outlines_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
                 egui::Shape::LineSegment { stroke, .. } => stroke.color = none,
                 egui::Shape::Path(p) => p.stroke.color = egui::epaint::ColorMode::Solid(none),
                 _ => {}
+            }
+            shape
+        })
+        .collect()
+}
+
+/// `shapes` with each text's colours, the fallback a label without one of its own is lettered
+/// in and an override, made transparent, every other value kept: what a listed difference, a
+/// label's colour, leaves to compare.
+fn labels_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
+    let none = egui::Color32::TRANSPARENT;
+    shapes
+        .iter()
+        .cloned()
+        .map(|mut shape| {
+            if let egui::Shape::Text(t) = &mut shape {
+                t.fallback_color = none;
+                t.override_text_color = t.override_text_color.map(|_| none);
             }
             shape
         })
@@ -493,8 +781,8 @@ fn a_switch_track_stated_as_none_has_no_outline_and_no_fill() -> TestResult {
     Ok(())
 }
 
-/// `switch.label_gap`, which no preset states, puts the label that far after the track; the
-/// label is lettered in `switch.label`'s colour where stated.
+/// `switch.label_gap`, here a gap kde-breeze does not state, puts the label that far after the
+/// track; the label is lettered in `switch.label`'s colour where stated.
 #[test]
 fn a_switch_label_is_at_the_stated_gap_in_the_stated_colour() -> TestResult {
     let (parts, _) = drawn_switch(&patched_installed(Preset::KdeBreeze, "")?);
@@ -522,9 +810,10 @@ fn a_switch_label_is_at_the_stated_gap_in_the_stated_colour() -> TestResult {
     Ok(())
 }
 
-/// `switch.label(NONE).size_px`, which no preset states, letters the label at that size in egui's
-/// `Proportional` family, as the connector's role fonts are; a size that is not positive sends
-/// the switch to egui's own counterpart.
+/// `switch.label(NONE).size_px` letters the label at that size in egui's `Proportional` family,
+/// as the connector's role fonts are, here a size kde-breeze does not state; where it is
+/// unstated (ios-13 states no font of `switch.label`) the size is egui's own; a size that is not
+/// positive sends the switch to egui's own counterpart.
 #[test]
 fn a_switch_label_takes_its_stated_size() -> TestResult {
     use crate::switch::Geometry;
@@ -539,8 +828,13 @@ fn a_switch_label_takes_its_stated_size() -> TestResult {
             _ => None,
         })
     };
+    let unstated = Geometry::next_of(&patched(Preset::Ios13, "")?).ok_or("no geometry")?;
+    assert_eq!(unstated.label_size, None);
     let stock = Geometry::next_of(&patched(Preset::KdeBreeze, "")?).ok_or("no geometry")?;
-    assert_eq!(stock.label_size, None);
+    assert!(
+        stock.label_size.is_some_and(|size| size != 31.0),
+        "{stock:?}"
+    );
     let (_, shapes) = drawn_switch(&patched_installed(Preset::KdeBreeze, "")?);
     let own = font(&shapes).ok_or("no label drawn")?;
     assert!(
@@ -601,6 +895,38 @@ fn a_checked_switch_reads_its_checked_disabled_and_outlined_thumb() -> TestResul
         thumb.stroke,
         egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 255, 0))
     );
+    Ok(())
+}
+
+/// A hovered track's stated fill is the whole fill it shows, taken as it is (spec §9, step 2),
+/// not laid over its rest fill: windows-11's hovered on track is WinUI's
+/// AccentFillColorSecondary, the accent at 0.9 opacity, `#0067c0e6` in light
+/// (native-theme/tests/next_homes.toml, row `switch.hover_checked_background`).
+#[test]
+fn a_hovered_switch_track_is_its_stated_whole_fill() -> TestResult {
+    let ctx = patched_installed(Preset::Windows11, "")?;
+    let add = |ui: &mut egui::Ui| ui.add(Switch::new(&mut true).label("Wi-Fi"));
+    let _ = response(&ctx, at(1.0), add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    let track = Parts::of(&r)
+        .unwrap_or_default()
+        .get("track")
+        .ok_or("no track")?;
+    let rest = painted_rect(&flat(&out.shapes), track).ok_or("no track painted")?;
+    let hover = egui::RawInput {
+        events: vec![egui::Event::PointerMoved(track.center())],
+        ..at(1.0)
+    };
+    let _ = response(&ctx, hover, add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    assert!(r.hovered(), "the switch is not hovered");
+    let hovered = painted_rect(&flat(&out.shapes), track).ok_or("no hovered track painted")?;
+    let stated = egui::Color32::from_rgba_unmultiplied(0x00, 0x67, 0xc0, 0xe6);
+    assert_ne!(
+        rest.fill, stated,
+        "the rest fill is the hovered one: the test proves nothing"
+    );
+    assert_eq!(hovered.fill, stated);
     Ok(())
 }
 
