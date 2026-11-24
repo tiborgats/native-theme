@@ -18103,8 +18103,23 @@ const LAYOUT_GRID_COLUMNS: usize = 4;
 
 /// The Widget Info of the Layout page's grid.
 fn grid_info(state: &State) -> String {
-    let d = &state.current_resolved.defaults;
     let next = state.next_shown();
+    // The swatches' frame, [`swatch_frame`]: none where the theme states no
+    // border colour.
+    let border: Vec<Paint> = next
+        .colors
+        .window
+        .border
+        .map(|color| Paint::leaf("cell border", "colors.window.border", next_colour(color)))
+        .into_iter()
+        .collect();
+    let radius_s = match next.colors.window.border {
+        Some(_) => format!(
+            "{}, layout.corner_radius",
+            px_text(next.layout.corner_radius)
+        ),
+        None => "no frame: the theme states no colors.window.border".to_owned(),
+    };
     let swatches = next_swatches_line(next);
     let border_width_s = format!("{}, layout.border_width", px_text(next.layout.border_width));
     let labels_s = next_font_row(
@@ -18115,17 +18130,14 @@ fn grid_info(state: &State) -> String {
         format!("{LAYOUT_GRID_COLUMNS}, the showcase's own: the model states no column count");
     widget_tooltip(
         "Grid",
-        &[Paint::leaf(
-            "cell border",
-            "defaults.border.color",
-            to_color(d.border.color),
-        )],
+        &border,
         &[
             (
                 "cell fill",
-                "each cell's own: the ResolvedDefaults colour its caption names",
+                "each cell's own: the colour its caption names (its ResolvedDefaults name), \
+                 from its 0.8.0 home; a colour the theme leaves unstated has no cell",
             ),
-            ("cell radius", "defaults.border.corner_radius"),
+            ("cell radius", radius_s.as_str()),
             ("cell border width", border_width_s.as_str()),
             ("hex and label", labels_s.as_str()),
         ],
@@ -18351,7 +18363,6 @@ fn table_info(state: &State) -> String {
 /// Grid, PaneGrid and Table: the three `iced_widget` modules that arrange
 /// other widgets rather than paint a control.
 fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let typography = &next.typography;
     let gap = Gaps::from_next(&next.layout);
@@ -18361,8 +18372,10 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     let split_width = next.splitter.divider_width;
     // The panes and their title bars are drawn as cards, and padded as every
     // card is, as the Basic card on the installed 0.8.0 theme
-    // ([`next_card_padding`]); their colours and corners still
-    // `styles::container_card`'s.
+    // ([`next_card_padding`]); their colours and corners
+    // `iced_next::styles::container_card`'s, the grid's
+    // `iced_next::styles::pane_grid`'s, iced's own where the theme lacks a
+    // value one needs.
     let card_pad = next_card_padding(next);
 
     let header = next_section_header(
@@ -18373,17 +18386,29 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
 
     // ---- Grid: the platform's own colors, four to a row ----
 
-    // The swatches' frame `layout.border_width` wide on the installed 0.8.0
-    // theme; its colour and corners still the 0.7.2 theme's.
-    let swatch_frame = iced::Border {
-        color: native_theme_iced::border_color(resolved),
-        width: next.layout.border_width,
-        radius: native_theme_iced::border_corner_radius(resolved).into(),
-    };
+    // The swatches' frame on the installed 0.8.0 theme, as Widget Info's
+    // ([`swatch_frame`]): `colors.window.border`, `layout.border_width`
+    // wide, `layout.corner_radius` round, none where the theme states no
+    // border colour.
+    let frame = swatch_frame(next);
     let cell = |label: &'static str, color: Color| -> Element<'_, Message> {
-        next_color_swatch(label, color, swatch_frame, next)
+        next_color_swatch(label, color, frame, next)
     };
-    let d = &resolved.defaults;
+    // The eight colours by their 0.7.2 names, each from its 0.8.0 home; a
+    // colour the theme leaves unstated has no swatch.
+    let c = &next.colors;
+    let cells = [
+        ("accent_color", Some(c.accent.fill)),
+        ("danger_color", Some(c.error.fill)),
+        ("warning_color", Some(c.warning.fill)),
+        ("success_color", Some(c.success.fill)),
+        ("info_color", Some(c.info.fill)),
+        ("link_color", Some(c.link)),
+        ("muted_color", c.window.foreground_muted),
+        ("surface_color", c.view.background),
+    ]
+    .into_iter()
+    .filter_map(|(label, color)| color.map(|color| cell(label, next_colour(color))));
 
     let grid_demo = hoverable(
         UnlistedKey::Grid,
@@ -18397,27 +18422,18 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
             probe(
                 probes::LAYOUT_GRID,
                 Fill,
-                grid([
-                    cell("accent_color", to_color(d.accent_color)),
-                    cell("danger_color", to_color(d.danger_color)),
-                    cell("warning_color", to_color(d.warning_color)),
-                    cell("success_color", to_color(d.success_color)),
-                    cell("info_color", to_color(d.info_color)),
-                    cell("link_color", to_color(d.link_color)),
-                    cell("muted_color", to_color(d.muted_color)),
-                    cell("surface_color", to_color(d.surface_color)),
-                ])
-                .columns(LAYOUT_GRID_COLUMNS)
-                // The swatch table's rule (`swatches_line`): its rows
-                // `SWATCH_GAP_Y` apart; its columns split its width evenly.
-                .spacing(SWATCH_GAP_Y)
-                // `Grid::height` sets the height of the whole grid, not of a cell
-                // (`grid.rs:78-84`, `Sizing::EvenlyDistribute`): a fixed number
-                // here divides that number between the rows, and the swatch plus
-                // its caption did not fit in the share. `Shrink` is the one
-                // `Sizing` that lets each row be as tall as its content
-                // (`grid.rs:207-211`).
-                .height(Length::Shrink),
+                grid(cells)
+                    .columns(LAYOUT_GRID_COLUMNS)
+                    // The swatch table's rule (`swatches_line`): its rows
+                    // `SWATCH_GAP_Y` apart; its columns split its width evenly.
+                    .spacing(SWATCH_GAP_Y)
+                    // `Grid::height` sets the height of the whole grid, not of a cell
+                    // (`grid.rs:78-84`, `Sizing::EvenlyDistribute`): a fixed number
+                    // here divides that number between the rows, and the swatch plus
+                    // its caption did not fit in the share. `Shrink` is the one
+                    // `Sizing` that lets each row be as tall as its content
+                    // (`grid.rs:207-211`).
+                    .height(Length::Shrink),
             ),
         ]
         .spacing(gap.widget)
@@ -18438,7 +18454,8 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
         // Each control laid out as the Buttons page's push buttons, on the
         // installed 0.8.0 theme: its label `button.label(NONE)`, at least
         // [`next_button_floor`], padded by [`next_button_padding`]; their
-        // colours still the 0.7.2 styles'.
+        // colours `iced_next::styles::button`'s and `::button_danger`'s,
+        // iced's own where the theme lacks a value one needs.
         let button_label = next.button.label(WidgetState::NONE);
         let btn_min = next_button_floor(next);
         let button_pad = next_button_padding(next);
@@ -18460,7 +18477,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
                     btn_min
                 ))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Vertical, pane))
-                .style(styles::button(resolved))
+                .next_style(iced_next::styles::button(next), |b, s| b.style(s))
                 .padding(button_pad),
             ),
             probed_control(
@@ -18470,7 +18487,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
                     btn_min
                 ))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Horizontal, pane))
-                .style(styles::button(resolved))
+                .next_style(iced_next::styles::button(next), |b, s| b.style(s))
                 .padding(button_pad),
             ),
             probed_control(
@@ -18480,7 +18497,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
                     btn_min
                 ))
                 .on_press(Message::PaneClosed(pane))
-                .style(styles::button_danger(resolved))
+                .next_style(iced_next::styles::button_danger(next), |b, s| b.style(s))
                 .padding(button_pad),
             ),
         ]
@@ -18513,7 +18530,9 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
             .controls(controls)
             .always_show_controls()
             .padding(card_pad)
-            .style(styles::container_card(resolved));
+            .next_style(iced_next::styles::container_card(next), |bar, style| {
+                bar.style(style)
+            });
 
         let body = column![next_caption_text(
             state,
@@ -18535,7 +18554,9 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
 
         pane_grid::Content::new(body)
             .title_bar(title_bar)
-            .style(styles::container_card(resolved))
+            .next_style(iced_next::styles::container_card(next), |content, style| {
+                content.style(style)
+            })
     })
     .width(Fill)
     .height(Length::Fixed(220.0))
@@ -18543,7 +18564,9 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     .on_click(Message::PaneClicked)
     .on_drag(Message::PaneDragged)
     .on_resize(split_width, Message::PaneResized)
-    .style(styles::pane_grid(resolved));
+    .next_style(iced_next::styles::pane_grid(next), |panes, style| {
+        panes.style(style)
+    });
 
     let pane_demo = hoverable(
         UnlistedKey::PaneGrid,
@@ -18592,37 +18615,40 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     // the rows' cells are. The rule under the header is iced's
     // `separator_y`, which it draws between two rows (`:535-557`): it lies
     // outside the header's height, where the Basic table draws its header's
-    // line inside it. The cells' colours still the 0.7.2 theme's.
+    // line inside it. The header's ink and fill `list.header_label(NONE).color`
+    // and `list.header(NONE).fill`, the cells' ink `list.item_label(NONE).color`;
+    // where unstated, the text keeps the colour around it and the header
+    // no fill, as iced's table draws (`container::Style::default()`).
     let cell_pad = next_layout_cell_padding(next);
-    let l = &resolved.list;
     let header_height = next_layout_header_height(next, cell_pad);
     let header_label = next.list.header_label(WidgetState::NONE);
     let item_label = next.list.item_label(WidgetState::NONE);
     let (header_label, item_label) = (&header_label, &item_label);
-    let (head_ink, head_fill) = (to_color(l.header_font.color), to_color(l.header_background));
+    let head_ink = iced_next::text_color_of(header_label);
+    let head_fill = iced_next::fill_of(&next.list.header(WidgetState::NONE));
     let header_cell = |title: &'static str, width: f32| -> Element<'_, Message> {
-        container(
-            text(title)
-                .next_text(header_label, typography)
-                .color(head_ink),
-        )
+        let title = text(title).next_text(header_label, typography);
+        container(match head_ink {
+            Some(ink) => title.color(ink),
+            None => title,
+        })
         .padding(cell_pad)
         .width(Length::Fixed(width))
         .height(header_height.map_or(Length::Shrink, Length::Fixed))
         .align_y(iced::Center)
         .style(move |_: &Theme| container::Style {
-            background: Some(iced::Background::Color(head_fill)),
+            background: head_fill.map(iced::Background::Color),
             ..container::Style::default()
         })
         .into()
     };
-    let item_ink = to_color(l.item_font.color);
+    let item_ink = iced_next::text_color_of(item_label);
     let body_cell = move |content: String| -> Element<'_, Message> {
-        container(
-            text(content)
-                .next_text(item_label, typography)
-                .color(item_ink),
-        )
+        let content = text(content).next_text(item_label, typography);
+        container(match item_ink {
+            Some(ink) => content.color(ink),
+            None => content,
+        })
         .padding(cell_pad)
         .into()
     };
@@ -29441,7 +29467,8 @@ mod tests {
     /// Info has a row here, so a new one needs its own.
     ///
     /// The Layout page's Grid's one line, its swatches' frame
-    /// (`defaults.border.color`), is held here too. The other 16
+    /// (`colors.window.border` of the installed 0.8.0 theme, stated in a
+    /// colour of the test's own), is held here too. The other 16
     /// `Paint::leaf` lines are held elsewhere or need no splice: the Layout
     /// table's three by `the_layout_table_takes_the_lists_colours` (M9b
     /// T11); the table's "separators" line reads iced's `background.strong`
@@ -29589,7 +29616,7 @@ mod tests {
         if lines.len() != 1
             || !lines
                 .iter()
-                .all(|line| line.contains("defaults.border.color"))
+                .all(|line| line.contains("colors.window.border"))
         {
             faults.push(format!(
                 "Grid: its colour lines are not its one row: {lines:?}"
@@ -29597,14 +29624,18 @@ mod tests {
         }
         let (base, ..) = frame_after(&state, view(&state), size, |_| {});
         let mut spliced = page_state("kde-breeze", Tab::Layout);
-        spliced.current_resolved.defaults.border.color = spliced_colour("#13579b");
+        for next in [&mut spliced.next_resolved, &mut spliced.next_inactive] {
+            match with_home(next, "colors.window.border", "#13579b") {
+                Some(patched) => *next = patched,
+                None => faults.push("Grid: no patch reaches colors.window.border".to_owned()),
+            }
+        }
         let (image, _, scale) = frame_after(&spliced, view(&spliced), size, |ui| {
             probed = Some(probe_bounds(ui, probes::LAYOUT_GRID));
         });
         match probed.take() {
-            Some(rect) if pixels_in(&image, rect, scale) == pixels_in(&base, rect, scale) => {
-                faults.push("Grid: a splice of defaults.border.color does not move it".to_owned())
-            }
+            Some(rect) if pixels_in(&image, rect, scale) == pixels_in(&base, rect, scale) => faults
+                .push("Grid: a colour stated at colors.window.border does not move it".to_owned()),
             Some(_) => {}
             None => panic!("the Grid is not laid out"),
         }
@@ -29612,18 +29643,28 @@ mod tests {
     }
 
     /// M9-091 (theme-data): the Layout page's table draws its header in
-    /// `list.header_font.color` on `list.header_background` and its cells
-    /// in `list.item_font.color`, as the Basic table does. Under material-3
-    /// light (whose header colour is not the text colour), a splice of each
-    /// moves what the table draws, and the spliced header fill fills the
-    /// header cell, which spans its column from the table's left edge.
+    /// `list.header_label(NONE).color` on `list.header(NONE).fill` and its
+    /// cells in `list.item_label(NONE).color` on the installed 0.8.0 theme,
+    /// as the Basic table does. Under material-3 light (whose header colour
+    /// is not the text colour), a colour stated at each home moves what the
+    /// table draws, and the stated header fill fills the header cell, which
+    /// spans its column from the table's left edge.
     #[test]
     fn the_layout_table_takes_the_lists_colours() {
         let mut state = page_state("material-3", Tab::Layout);
-        let theirs = state.current_resolved.clone();
+        let theirs = (state.next_resolved.clone(), state.next_inactive.clone());
         let (base, table, header, cell, scale) = layout_table_frame(&state);
-        let [ink, item, fill] = ["#13579b", "#9b1357", "#579b13"].map(spliced_colour);
+        let fill = spliced_colour("#579b13");
         let mut faults = Vec::new();
+        // `state` with `colour` stated at `home` on both 0.8.0 themes.
+        let stated = |state: &mut State, home: &str, colour: &str| {
+            for next in [&mut state.next_resolved, &mut state.next_inactive] {
+                match with_home(next, home, colour) {
+                    Some(patched) => *next = patched,
+                    None => panic!("no patch reaches {home}"),
+                }
+            }
+        };
 
         // The first header cell, its fill, spans its column from the table's
         // left edge: the cell holds its padding, which iced's own table
@@ -29637,26 +29678,26 @@ mod tests {
             ));
         }
 
-        state.current_resolved.list.header_font.color = ink;
+        stated(&mut state, "list.header_label(NONE).color", "#13579b");
         let (image, ..) = layout_table_frame(&state);
         if pixels_in(&image, header, scale) == pixels_in(&base, header, scale) {
-            faults.push("list.header_font.color does not move the header".to_owned());
+            faults.push("list.header_label(NONE).color does not move the header".to_owned());
         }
 
-        state.current_resolved = theirs.clone();
-        state.current_resolved.list.item_font.color = item;
+        (state.next_resolved, state.next_inactive) = theirs.clone();
+        stated(&mut state, "list.item_label(NONE).color", "#9b1357");
         let (image, ..) = layout_table_frame(&state);
         if pixels_in(&image, cell, scale) == pixels_in(&base, cell, scale) {
-            faults.push("list.item_font.color does not move the cells".to_owned());
+            faults.push("list.item_label(NONE).color does not move the cells".to_owned());
         }
 
-        state.current_resolved = theirs;
-        state.current_resolved.list.header_background = fill;
+        (state.next_resolved, state.next_inactive) = theirs;
+        stated(&mut state, "list.header(NONE).fill", "#579b13");
         let (image, ..) = layout_table_frame(&state);
         let (filled, all) = inked_in(&image, header, scale, fill);
         if all == 0 || filled * 2 <= all {
             faults.push(format!(
-                "list.header_background fills {filled} of the header cell's {all} pixels"
+                "list.header(NONE).fill fills {filled} of the header cell's {all} pixels"
             ));
         }
         assert!(faults.is_empty(), "the Layout table: {faults:#?}");
@@ -36891,6 +36932,10 @@ mod tests {
             ],
         ),
         ("view_inputs", &["text_input", "text_editor"]),
+        (
+            "view_layout",
+            &["button", "button_danger", "container_card", "pane_grid"],
+        ),
         (
             "view_display",
             &[
