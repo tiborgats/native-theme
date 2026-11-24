@@ -2116,7 +2116,13 @@ fn reveal_selected_tab(
 /// `egui-0.37.0/src/containers/scroll_area.rs`; the request's target, `Context::create_widget`,
 /// `egui-0.37.0/src/context.rs`), so a widget the inner area scrolls to would stay where the page
 /// shows nothing, under the status bar. The page's area takes the inner area's rect as its own
-/// target here, after the inner one has ended.
+/// target here, after the inner one has ended, unanimated as the request's own target is
+/// (`ScrollAnimation::none()`). The inner area centres the widget in its view as clipped by the
+/// page's (`Prepared::end`'s `visible_range`, the size of `content_ui.clip_rect()`), so where the
+/// request came while the inner area lay outside the page's view, wholly or in part, it scrolled
+/// by the hidden part, and a widget at its top was left above its view: the request is handed to
+/// the inner area once more [`REPLAY_PASSES`] passes on, where the page's scroll has landed, and
+/// the inner area centres the widget in what the page shows of it.
 pub(crate) fn nested_scroll<R>(
     ui: &mut egui::Ui,
     show: impl FnOnce(&mut egui::Ui) -> egui::scroll_area::ScrollAreaOutput<R>,
@@ -2134,24 +2140,65 @@ pub(crate) fn nested_scroll_in<T>(
     show: impl FnOnce(&mut egui::Ui) -> T,
     rect: impl FnOnce(&T) -> egui::Rect,
 ) -> T {
-    let requests = |ui: &egui::Ui| {
+    let requests = |ui: &egui::Ui| -> Vec<egui::accesskit::ActionRequest> {
         ui.input(|i| {
             i.events
                 .iter()
-                .filter(|event| {
-                    matches!(event, egui::Event::AccessKitActionRequest(request)
-                        if request.action == egui::accesskit::Action::ScrollIntoView)
+                .filter_map(|event| match event {
+                    egui::Event::AccessKitActionRequest(request)
+                        if request.action == egui::accesskit::Action::ScrollIntoView =>
+                    {
+                        Some(request.clone())
+                    }
+                    _ => None,
                 })
-                .count()
+                .collect()
         })
     };
+    // The pass a request was taken on and the requests, handed back once, never again: an area
+    // taller than the page's view stays clipped after the page's scroll.
+    type Pending = (u64, Vec<egui::accesskit::ActionRequest>);
+    let replay_id = ui.scope_id().with("nested scroll replay");
+    let pass = ui.ctx().cumulative_pass_nr();
+    let due = ui
+        .data(|d| d.get_temp::<Pending>(replay_id))
+        .is_some_and(|(at, _)| pass >= at.saturating_add(u64::from(REPLAY_PASSES)));
+    let replay = if due {
+        ui.data_mut(|d| d.remove_temp::<Pending>(replay_id))
+    } else {
+        None
+    };
+    let replaying = replay.is_some();
+    if let Some((_, replay)) = replay {
+        ui.ctx().input_mut(|i| {
+            i.events
+                .extend(replay.into_iter().map(egui::Event::AccessKitActionRequest))
+        });
+    }
+    let view = ui.clip_rect();
     let before = requests(ui);
     let out = show(ui);
-    if requests(ui) < before {
-        ui.scroll_to_rect(rect(&out), None);
+    let after = requests(ui);
+    let taken: Vec<_> = before.into_iter().filter(|r| !after.contains(r)).collect();
+    if !taken.is_empty() {
+        let area = rect(&out);
+        ui.scroll_to_rect_animation(area, None, egui::style::ScrollAnimation::none());
+        if !replaying && !view.contains_rect(area) {
+            ui.data_mut(|d| d.insert_temp::<Pending>(replay_id, (pass, taken)));
+        }
+    }
+    if ui.data(|d| d.get_temp::<Pending>(replay_id)).is_some() {
+        ui.ctx().request_repaint();
     }
     out
 }
+
+/// How many passes after a scroll area takes a target its content lies at it: it takes the
+/// target at the end of a pass (`Prepared::end`), sets its offset at the start of the next one,
+/// after it has placed its content (`ScrollArea::begin`'s `content_max_rect` before its
+/// `offset_target`, `egui-0.37.0/src/containers/scroll_area.rs`), and places the content at it
+/// the pass after.
+pub(crate) const REPLAY_PASSES: u8 = 2;
 
 /// A row of tabs as the theme states them, in one `Role::Tab` scope (§10.4): each tab a
 /// `Button::new(label).selected(..)`, whose own flag picks the selected tab's colours (§6.2) —

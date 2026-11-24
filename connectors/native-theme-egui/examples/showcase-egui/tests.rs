@@ -1850,8 +1850,10 @@ fn every_widget_reports_itself_on(page: Page, theme: egui::Theme) -> Result<(), 
             continue;
         };
         node.scroll_to_me();
-        // The scroll lands on the third pass after the request (measured on the Text page).
-        harness.run_steps(3);
+        // The scroll lands on the third pass after the request (measured on the Text page), two
+        // passes later in a scroll area nested in the page's that lay outside its view, which
+        // `demo::nested_scroll` hands the request again `demo::REPLAY_PASSES` passes on.
+        harness.run_steps(3 + usize::from(crate::demo::REPLAY_PASSES));
         // A node egui creates itself, whose id no helper sees (§13.2): a scroll bar
         // (`egui-0.37.0/src/containers/scroll_area.rs:1473`), a window's resize handle or a
         // panel's (`Role::Splitter`: `egui-0.37.0/src/containers/window.rs:1087`,
@@ -1906,6 +1908,18 @@ fn every_widget_reports_itself_on(page: Page, theme: egui::Theme) -> Result<(), 
             .ok_or_else(|| format!("{page:?} {theme:?}: nothing shown for node {id:?}"))?;
         let node_recorded = records.iter().any(|r| r.id.accesskit_id() == id);
         let own = shown.id.accesskit_id() == id;
+        // A recorded node scrolled to is shown its whole height, which a hover at its centre
+        // alone does not prove: a row a nested scroll area left 2 points in view, its centre
+        // over the area above it. Not its whole width: a row wider than its area, the
+        // Containers page's "ScrollArea (both)", reaches past it on the right.
+        for r in records.iter().filter(|r| r.id.accesskit_id() == id) {
+            let shown_rows = r.rect.y_range().expand(0.5);
+            assert!(
+                shown_rows.contains(rect.top()) && shown_rows.contains(rect.bottom()),
+                "{page:?} {theme:?}: node {id:?} at {rect:?} is shown at {:?} alone",
+                r.rect
+            );
+        }
         // Else the info of a non-container widget whose rect contains the node's; for a
         // node egui creates itself (and no helper records), the innermost record's,
         // container or not (§13.2), which holds the node's centre where the node reaches
