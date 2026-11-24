@@ -819,7 +819,12 @@ rule 0).
   ring inside the first, its `corners` as those of the line between the
   two, the outer ring's edge grown by its width), so
   `next::focus_ring` returns `Unmapped("focus_ring.kind")` for `Fill` and
-  `Underline`; no preset states either. A ring inset at the field's edge
+  `Underline`; no preset states either. A ring a part states of its own
+  (`PartStyle.focus`, on `input.field` or `text_area.field`) is drawn in
+  place of the global one (`next::part_ring_look`, read at `FOCUSED` and at
+  `FOCUS_VISIBLE`, and `next::focus_rings_with`), and is `Unmapped` at the
+  part's home (`input.field(FOCUSED).focus.kind`) where it is not a ring.
+  A ring inset at the field's edge
   (`offset` minus its width, adwaita's) is drawn by `next::styles::text_input`
   and `text_editor` as the focused field's border, whose corners are the
   field's, so its `inner_stroke` and `corners` are not drawn there.

@@ -557,6 +557,12 @@ kind = "absent"
 reason = "iced's `next::focus_ring` keeps the field it is given, so iced's `next` maps the ring apart (`ring_look`) and wraps the field in a ring it mapped (`focus_ring_with`), for an application that draws the field alone where the ring is unmapped (connectors/native-theme-iced/src/next/mod.rs, `focus_ring_with`'s doc); gpui and egui have no `next::focus_ring`, each for the reason its `focus_ring` entry above gives: gpui-component draws a focused Input's ring itself, and the egui connector's install plugin strokes the ring with no call of the application's"
 
 [[exception]]
+connector = ["gpui", "egui"]
+name = ["next::part_focus", "next::part_ring_look", "next::focus_rings_with"]
+kind = "absent"
+reason = "iced's `next` maps the ring a part states of its own (`PartStyle.focus`, FR4) for the field the application wraps, read at FOCUSED and at FOCUS_VISIBLE (`part_ring_look`), and wraps the field in the two (`focus_rings_with`; connectors/native-theme-iced/src/next/mod.rs); gpui's theme-drawn controls pick a part's own ring themselves (its `widgets::part_focus`, outside `next`), and the egui connector's install plugin strokes the ring with no call of the application's, as the `next::ring_look` entry above says"
+
+[[exception]]
 connector = "gpui"
 name = "pick_list_handle"
 kind = "absent"

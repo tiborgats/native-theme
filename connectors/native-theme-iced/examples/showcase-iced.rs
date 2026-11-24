@@ -7597,21 +7597,61 @@ fn next_field_radius(field: &native_theme::next::PartStyle) -> f32 {
 /// 0.14.2 `src/text_input.rs` and `src/text_editor.rs`, `default`).
 const ICED_FIELD_RADIUS: f32 = 2.0;
 
+/// The part a field's focus ring is drawn round, whose own ring
+/// (`PartStyle.focus`) the field draws in place of the global one where the
+/// theme states it ([`next_focus_ring`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum RingPart {
+    /// A text field's, `input.field`: the single-line fields, the number
+    /// input's and the command palette's query.
+    Input,
+    /// The multi-line field's, `text_area.field`.
+    TextArea,
+}
+
+impl RingPart {
+    /// The part, read at `state`.
+    fn part(
+        self,
+        r: &native_theme::next::ResolvedTheme,
+        state: WidgetState,
+    ) -> native_theme::next::PartStyle {
+        match self {
+            Self::Input => r.input.field(state),
+            Self::TextArea => r.text_area.field(state),
+        }
+    }
+
+    /// The homes of its own ring's fields.
+    fn homes(self) -> iced_next::RingHomes {
+        match self {
+            Self::Input => iced_next::RingHomes::INPUT,
+            Self::TextArea => iced_next::RingHomes::TEXT_AREA,
+        }
+    }
+}
+
 /// `field` with the installed 0.8.0 theme's focus ring round it while it
-/// holds the keyboard focus (`iced_next::focus_ring`), the ring's curves
-/// `corner_radius`; the field alone, as iced draws it with no ring, where
-/// the connector maps no ring for the theme (`native_theme_iced::next::Unmapped`:
-/// the indicator is not a ring, a stroke is per side or the corners
-/// concentric). The ring is mapped once (`iced_next::ring_look`) and drawn
-/// round the field by `iced_next::focus_ring_with`.
+/// holds the keyboard focus, the ring's curves `corner_radius`: the ring
+/// `part` states of its own where the theme states one, else the global
+/// ring, none where the part states it has none (`iced_next::part_ring_look`;
+/// spec §2, `FocusIndicator`), the part read at `FOCUS_VISIBLE` for a focus
+/// that followed a key and at `FOCUSED` for another
+/// (`iced_next::focus_rings_with`); the field alone, as iced draws it with
+/// no ring, where the connector maps no ring for the theme
+/// (`native_theme_iced::next::Unmapped`: the indicator is not a ring, a
+/// stroke is per side or the corners concentric).
 fn next_focus_ring<'a>(
     r: &native_theme::next::ResolvedTheme,
+    part: RingPart,
     corner_radius: f32,
     field: impl Into<Element<'a, Message>>,
 ) -> Element<'a, Message> {
-    match iced_next::ring_look(r, corner_radius) {
-        Ok(look) => iced_next::focus_ring_with(look, field),
-        Err(_) => field.into(),
+    let look =
+        |state| iced_next::part_ring_look(r, &part.part(r, state), part.homes(), corner_radius);
+    match (look(WidgetState::FOCUSED), look(WidgetState::FOCUS_VISIBLE)) {
+        (Ok(look), Ok(key)) => iced_next::focus_rings_with(look, key, field),
+        _ => field.into(),
     }
 }
 
@@ -12270,7 +12310,7 @@ fn command_palette(state: &State) -> Element<'_, Message> {
         .padding(inp_pad);
     // The theme's focus ring round it while it is focused, as it is from
     // the palette's opening (`Overlay::CommandPalette` focuses it).
-    let query = next_focus_ring(r, next_field_radius(&field), query);
+    let query = next_focus_ring(r, RingPart::Input, next_field_radius(&field), query);
     let item = r.list.item_label(WidgetState::NONE);
     let row_pad = next_list_row_padding(r);
     let (_, muted) = info_inks(r);
@@ -14238,7 +14278,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             }),
             None => field,
         };
-        next_focus_ring(next, input_radius, field)
+        next_focus_ring(next, RingPart::Input, input_radius, field)
     };
     // A field with no `on_input` is a disabled one (text_input.rs:170).
     let inputs = group(
@@ -14311,7 +14351,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // NumberInput hands an operation to its field (iced_aw 0.14.1
     // `src/widget/number_input.rs:587-602`).
     #[cfg(feature = "iced_aw")]
-    let number = next_focus_ring(next, input_radius, number);
+    let number = next_focus_ring(next, RingPart::Input, input_radius, number);
     // Without iced_aw, the value in a plain field.
     #[cfg(not(feature = "iced_aw"))]
     let number = fielded(
@@ -14562,7 +14602,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // The field with the theme's focus ring round it while it is focused,
     // its curves the field's own corners.
     let area_radius = next_field_radius(&area_field);
-    let ringed = |field: Tagged<'a>| next_focus_ring(next, area_radius, field);
+    let ringed = |field: Tagged<'a>| next_focus_ring(next, RingPart::TextArea, area_radius, field);
     let text_area = group(
         "basic.text_area.heading",
         "Text area",
@@ -16813,6 +16853,7 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
             title("TextInput (single line)"),
             next_focus_ring(
                 next,
+                RingPart::Input,
                 input_radius,
                 field("Type something here...").id(TEXT_INPUT_ID)
             ),
@@ -16830,7 +16871,12 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
         UnlistedKey::SecureTextInput,
         column![
             title("TextInput (secure / password)"),
-            next_focus_ring(next, input_radius, field("Password field...").secure(true)),
+            next_focus_ring(
+                next,
+                RingPart::Input,
+                input_radius,
+                field("Password field...").secure(true)
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -16851,6 +16897,7 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
                 Fill,
                 next_focus_ring(
                     next,
+                    RingPart::TextArea,
                     next_field_radius(&area_field),
                     text_editor(&state.text_editor_content)
                         .on_action(Message::EditorAction)
@@ -35007,24 +35054,39 @@ mod tests {
     /// ground's. Under adwaita (2 at -2, inset at the edge) the ring is the
     /// band over the field's outermost 2 px (spec §2, `FocusIndicator`): a
     /// pixel in it is the ring's colour over the field's fill, read past
-    /// the band. The
+    /// the band. Under windows-11 with the text field patched to state a
+    /// ring of its own (FR4: `input.field`'s `focus`, 3 at +1 in a colour of
+    /// no preset's, shown for any focus), that ring is drawn in place of
+    /// the global one, which shows for keyboard focus only. The
     /// Simulator runs no operation that gives a widget the focus, so the key
     /// path is the connector's tests' (`focus_ring.rs`,
     /// `where_the_theme_says_keyboard_only_a_click_draws_no_ring`,
     /// `a_modifier_key_alone_is_no_key`), through `operate`.
     #[test]
     fn the_focused_field_draws_the_themes_ring_round_it() {
+        use native_theme::next::{
+            FocusIndicator, FocusKind, FocusTrigger, InputRule, PartPatch, Stroke, ThemePatch,
+        };
+        let own = std::sync::Arc::new(FocusIndicator::new(
+            FocusKind::Ring,
+            Stroke::uniform(3.0, native_theme::next::Color::new(0.9, 0.1, 0.5, 1.0)),
+            Stroke::None,
+            1.0,
+            None,
+            Some(FocusTrigger::Always),
+        ));
         let mut faults = Vec::new();
         // (preset, the keyboard rule set to `None`, the ring unmapped, the
-        // ring expected)
+        // field's own ring stated, the ring expected)
         let runs = [
-            ("macos-tahoe", false, false, true),
-            ("windows-11", true, false, true),
-            ("windows-11", false, false, false),
-            ("macos-tahoe", false, true, false),
-            ("adwaita", false, false, true),
+            ("macos-tahoe", false, false, false, true),
+            ("windows-11", true, false, false, true),
+            ("windows-11", false, false, false, false),
+            ("macos-tahoe", false, true, false, false),
+            ("adwaita", false, false, false, true),
+            ("windows-11", false, false, true, true),
         ];
-        for (preset, rule_off, unmapped, ringed) in runs {
+        for (preset, rule_off, unmapped, own_ring, ringed) in runs {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let mut state = page_state(preset, Tab::Basic);
                 assert!(
@@ -35040,7 +35102,17 @@ mod tests {
                     state.next_resolved.focus_ring.kind = fill;
                     state.next_inactive.focus_ring.kind = fill;
                 }
-                let ring = state.next_shown().focus_ring.clone();
+                if own_ring {
+                    let patch = ThemePatch::new()
+                        .input(InputRule::new().field(PartPatch::new().focus(Some(own.clone()))));
+                    state.next_resolved.apply_patch(&patch);
+                    state.next_inactive.apply_patch(&patch);
+                }
+                let ring = if own_ring {
+                    (*own).clone()
+                } else {
+                    state.next_shown().focus_ring.clone()
+                };
                 assert_eq!(
                     iced_next::ring_look(state.next_shown(), 0.0).is_err(),
                     unmapped,

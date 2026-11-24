@@ -1274,19 +1274,109 @@ pub(crate) fn ring_stroke(stroke: &Stroke, home: &'static str) -> Mapped<Option<
 /// stroke is per side or the corners concentric (`borders::corner_radii`).
 #[cfg(feature = "widgets")]
 pub fn ring_look(r: &ResolvedTheme, radius: f32) -> Mapped<Option<RingLook>> {
+    indicator_look(&r.focus_ring, &RingHomes::GLOBAL, radius)
+}
+
+/// The homes of a focus indicator's fields, which [`Unmapped`] names where
+/// the connector cannot draw one: the global ring's (`focus_ring`), or the
+/// ring a part states of its own (`PartStyle.focus`), read at the part's
+/// focused state.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RingHomes {
+    /// The indicator's `kind`.
+    pub kind: &'static str,
+    /// Its `stroke`, stated per side.
+    pub stroke: &'static str,
+    /// Its `inner_stroke`, stated per side.
+    pub inner_stroke: &'static str,
+    /// Its `corners`, concentric.
+    pub corners: &'static str,
+}
+
+impl RingHomes {
+    /// The global ring's, `focus_ring`.
+    pub const GLOBAL: Self = Self {
+        kind: "focus_ring.kind",
+        stroke: "focus_ring.stroke",
+        inner_stroke: "focus_ring.inner_stroke",
+        corners: "focus_ring.corners",
+    };
+    /// The text field's own, `input.field`.
+    pub const INPUT: Self = Self {
+        kind: "input.field(FOCUSED).focus.kind",
+        stroke: "input.field(FOCUSED).focus.stroke",
+        inner_stroke: "input.field(FOCUSED).focus.inner_stroke",
+        corners: "input.field(FOCUSED).focus.corners",
+    };
+    /// The multi-line field's own, `text_area.field`.
+    pub const TEXT_AREA: Self = Self {
+        kind: "text_area.field(FOCUSED).focus.kind",
+        stroke: "text_area.field(FOCUSED).focus.stroke",
+        inner_stroke: "text_area.field(FOCUSED).focus.inner_stroke",
+        corners: "text_area.field(FOCUSED).focus.corners",
+    };
+}
+
+/// The focus indicator the connector draws round the part `part`, read at
+/// a focused state, with the homes of its fields (spec §2,
+/// `FocusIndicator`: a preset states `PartStyle.focus` on a focusable part
+/// where its platform's indicator has a source; where it states none, the
+/// toolkit's own stays): the part's own where the theme states one, at
+/// `homes`; none where it states that the part has none; else the global
+/// ring, `focus_ring`, at [`RingHomes::GLOBAL`].
+#[must_use]
+pub fn part_focus<'a>(
+    r: &'a ResolvedTheme,
+    part: &'a PartStyle,
+    homes: RingHomes,
+) -> Option<(&'a native_theme::next::FocusIndicator, RingHomes)> {
+    if part.stated.contains(PartStated::FOCUS) {
+        part.focus.as_deref().map(|f| (f, homes))
+    } else {
+        Some((&r.focus_ring, RingHomes::GLOBAL))
+    }
+}
+
+/// The ring [`focus_ring`] draws round a field of corner `radius` whose
+/// part, read at a focused state, is `part`: [`ring_look`] of the
+/// indicator [`part_focus`] picks, the part's own at `homes` where the
+/// theme states one; `None` where it states that the part has none.
+///
+/// # Errors
+///
+/// As [`ring_look`], at the picked indicator's homes.
+#[cfg(feature = "widgets")]
+pub fn part_ring_look(
+    r: &ResolvedTheme,
+    part: &PartStyle,
+    homes: RingHomes,
+    radius: f32,
+) -> Mapped<Option<RingLook>> {
+    match part_focus(r, part, homes) {
+        Some((f, homes)) => indicator_look(f, &homes, radius),
+        None => Ok(None),
+    }
+}
+
+/// [`ring_look`] of the indicator `f`, the homes of its fields `homes`.
+#[cfg(feature = "widgets")]
+fn indicator_look(
+    f: &native_theme::next::FocusIndicator,
+    homes: &RingHomes,
+    radius: f32,
+) -> Mapped<Option<RingLook>> {
     use native_theme::next::{FocusKind, FocusTrigger};
 
-    let f = &r.focus_ring;
     if f.kind != FocusKind::Ring {
-        return Err(Unmapped("focus_ring.kind"));
+        return Err(Unmapped(homes.kind));
     }
-    let Some((width, color)) = ring_stroke(&f.stroke, "focus_ring.stroke")? else {
+    let Some((width, color)) = ring_stroke(&f.stroke, homes.stroke)? else {
         return Ok(None);
     };
-    let inner = ring_stroke(&f.inner_stroke, "focus_ring.inner_stroke")?
-        .map(|(width, color)| (color, width));
+    let inner =
+        ring_stroke(&f.inner_stroke, homes.inner_stroke)?.map(|(width, color)| (color, width));
     let corners = match &f.corners {
-        Some(corners) => Some(borders::corner_radii(corners, "focus_ring.corners")?),
+        Some(corners) => Some(borders::corner_radii(corners, homes.corners)?),
         None => None,
     };
     Ok(crate::focus_ring::ring_look_from(
@@ -1337,6 +1427,25 @@ where
     Renderer: iced_core::Renderer + 'a,
 {
     crate::focus_ring::FocusRing::new(field.into(), look).into()
+}
+
+/// [`focus_ring_with`] of a field whose part's rings differ by the focus:
+/// `field`, and round it while it holds the keyboard focus, `key` for a
+/// focus that followed a key (the part read at `FOCUS_VISIBLE`) and `look`
+/// for another (the part read at `FOCUSED`), none where `look` shows for
+/// keyboard focus only ([`part_ring_look`] of each; spec §2,
+/// `FocusIndicator`'s trigger contract).
+#[cfg(feature = "widgets")]
+pub fn focus_rings_with<'a, Message, Renderer>(
+    look: Option<RingLook>,
+    key: Option<RingLook>,
+    field: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    crate::focus_ring::FocusRing::keyed(field.into(), look, key).into()
 }
 
 /// What [`spinner`] reads: its diameter, stroke width, colour and period
