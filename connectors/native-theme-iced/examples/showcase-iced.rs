@@ -7280,9 +7280,7 @@ where
 {
     let r = state.next_shown();
     let label = r.combo_box.label(WidgetState::NONE);
-    // iced's own `PickList` padding, `button::DEFAULT_PADDING` (iced_widget
-    // 0.14.2 `src/pick_list.rs`, `PickList::new`).
-    let pad = native_theme_iced::next::combo_box_padding(r).unwrap_or(button::DEFAULT_PADDING);
+    let pad = next_drop_down_padding(r);
     let min_height = r.combo_box.field(WidgetState::NONE).min_size[1];
     let list = pick_list(options, selected, on_select)
         .handle(next_arrow_handle(r))
@@ -7388,9 +7386,7 @@ fn icon_theme_picker(state: &State) -> Element<'_, Message> {
 fn theme_picker(state: &State) -> Element<'_, Message> {
     let r = state.next_shown();
     let label = r.combo_box.label(WidgetState::NONE);
-    // iced's own `ComboBox` padding, `text_input::DEFAULT_PADDING`
-    // (iced_widget 0.14.2 `src/combo_box.rs`, `ComboBox::new`).
-    let pad = native_theme_iced::next::combo_box_padding(r).unwrap_or(text_input::DEFAULT_PADDING);
+    let pad = next_combo_field_padding(r);
     let min_height = r.combo_box.field(WidgetState::NONE).min_size[1];
     let field = combo_box(
         &state.theme_combo,
@@ -7697,6 +7693,22 @@ fn next_button_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
 /// one iced cannot take.
 fn next_input_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
     iced_next::input_padding(r).unwrap_or(text_input::DEFAULT_PADDING)
+}
+
+/// A drop-down's padding on the installed 0.8.0 theme,
+/// `native_theme_iced::next::combo_box_padding`; iced's own `PickList`
+/// padding, `button::DEFAULT_PADDING` (iced_widget 0.14.2
+/// `src/pick_list.rs`, `PickList::new`), where the theme gives none.
+fn next_drop_down_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    iced_next::combo_box_padding(r).unwrap_or(button::DEFAULT_PADDING)
+}
+
+/// A searchable combo box's padding on the installed 0.8.0 theme,
+/// `native_theme_iced::next::combo_box_padding`; iced's own `ComboBox`
+/// padding, `text_input::DEFAULT_PADDING` (iced_widget 0.14.2
+/// `src/combo_box.rs`, `ComboBox::new`), where the theme gives none.
+fn next_combo_field_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    iced_next::combo_box_padding(r).unwrap_or(text_input::DEFAULT_PADDING)
 }
 
 /// The Basic text area's padding on the installed 0.8.0 theme,
@@ -14025,7 +14037,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     let check_box = c.indicator(WidgetState::NONE);
     let check_label = c.label(WidgetState::NONE);
     let stated = next_check_stroke(next);
-    let box_width = check_box.min_size[0].unwrap_or(ICED_CHECKBOX_SIZE);
+    let box_width = next_check_box_size(next);
     let [box_top, _, _, box_left] = iced_next::padding_of(&check_box);
     let check =
         |ids: CheckIds, checked: bool, label: &'a str, enabled: bool| -> Element<'a, Message> {
@@ -14357,15 +14369,12 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
 
     // The drop-down on the installed 0.8.0 theme: its label
     // `combo_box.label(NONE)`, its padding
-    // `native_theme_iced::next::combo_box_padding` (iced's own `PickList`
-    // padding, `button::DEFAULT_PADDING`, iced_widget 0.14.2
-    // `src/pick_list.rs`, `PickList::new`, where the theme gives none), at
-    // least `combo_box.field(NONE).min_size` ([`next_control_line`]), its
-    // arrow [`next_arrow_handle`].
+    // [`next_drop_down_padding`], at least `combo_box.field(NONE).min_size`
+    // ([`next_control_line`]), its arrow [`next_arrow_handle`].
     let combo_field = next.combo_box.field(WidgetState::NONE);
     let combo_label = next.combo_box.label(WidgetState::NONE);
     let combo_size = combo_label.size_px;
-    let combo_pad = iced_next::combo_box_padding(next).unwrap_or(button::DEFAULT_PADDING);
+    let combo_pad = next_drop_down_padding(next);
     let arrow_size = next_arrow_size(next);
     let drop_down = group(
         "basic.drop_down.heading",
@@ -15676,6 +15685,13 @@ fn next_check_stroke(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
     r.checkbox.checkmark(WidgetState::NONE).stroke_width
 }
 
+/// A check box's side on the installed 0.8.0 theme,
+/// `checkbox.indicator(NONE).min_size[0]`; iced's own,
+/// [`ICED_CHECKBOX_SIZE`], where unstated.
+fn next_check_box_size(r: &native_theme::next::ResolvedTheme) -> f32 {
+    r.checkbox.indicator(WidgetState::NONE).min_size[0].unwrap_or(ICED_CHECKBOX_SIZE)
+}
+
 /// iced's own check box size, where the theme states none:
 /// `Checkbox::DEFAULT_SIZE`, 16, private to iced (iced_widget 0.14.2
 /// `src/checkbox.rs:113`).
@@ -16526,12 +16542,20 @@ fn checkbox_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let c = &resolved.checkbox;
     let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
-    let label_gap_s = format!("{:.0}px", c.label_gap);
-    // `checkbox.indicator_width` is the indicator's side length, square for a
-    // checkbox and a diameter for a radio (platform-facts.md:984), and both
-    // `Checkbox::size` (checkbox.rs:176, laid out at :287) and `Radio::size`
-    // (radio.rs:200, :300) take exactly that.
-    let indicator_width_s = format!("{:.0}px", c.indicator_width);
+    // The gap and the box the page lays the check boxes out by, on the
+    // installed 0.8.0 theme: `checkbox.label_gap` and
+    // [`next_check_box_size`], the box's side, which `Checkbox::size`
+    // (checkbox.rs:176, laid out at :287) takes.
+    let next = state.next_shown();
+    let label_gap_s = format!("{:.0}px, checkbox.label_gap", next.checkbox.label_gap);
+    let box_size = next_check_box_size(next);
+    let indicator_width_s = match next.checkbox.indicator(WidgetState::NONE).min_size[0] {
+        Some(_) => format!("{box_size:.0}px, checkbox.indicator(NONE).min_size[0]"),
+        None => format!(
+            "{box_size:.0}px, iced's own Checkbox::DEFAULT_SIZE: \
+             checkbox.indicator(NONE).min_size[0] unstated"
+        ),
+    };
     let mut colours = Vec::new();
     for (is_checked, rows) in [
         (
@@ -16651,7 +16675,8 @@ fn pick_list_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let cb = &resolved.combo_box;
     let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
-    let arrow_size_s = format!("{:.0}px", cb.arrow_icon_size);
+    // The arrow [`next_arrow_handle`] draws, at [`next_arrow_size`].
+    let arrow_size_s = format!("{:.0}px", next_arrow_size(state.next_shown()));
     let rows = font_row("combo_box.font", &resolved.combo_box.font);
     let mut colours = style_paints(
         state,
@@ -16679,7 +16704,7 @@ fn pick_list_info(state: &State) -> String {
             (
                 "dropdown arrow",
                 "an open chevron, the platforms' glyph, drawn as iced's own \
-                 Iced-Icons U+E803 (native_theme_iced::pick_list_handle); \
+                 Iced-Icons U+E803 (native_theme_iced::next::pick_list_handle); \
                  its stroke is the font's, the theme states none",
             ),
             ("arrow color", "ComboBoxTheme carries no arrow color"),
@@ -16805,52 +16830,57 @@ fn combo_box_info(state: &State) -> String {
 }
 
 fn view_selection(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let c = &resolved.checkbox;
-    let sw = &resolved.switch;
-    let cb = &resolved.combo_box;
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
+    let typography = &next.typography;
+    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let caption = |content: String| next_caption_text(state, content, None);
 
-    let header = section_header(
+    let header = next_section_header(
         "Selection Widgets",
         "Checkbox, Radio, Toggler, PickList, and ComboBox",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
+    // The check boxes as the Basic page's are, on the installed 0.8.0
+    // theme: the box [`next_check_box_size`] across, `checkbox.label_gap`
+    // from the label in `checkbox.label(NONE)`; their colours and iced's
+    // own check glyph still `styles::checkbox`'s.
+    let check_label = next.checkbox.label(WidgetState::NONE);
+    let check_line = iced::Pixels(next_line_box(typography, &check_label));
+    let box_width = next_check_box_size(next);
+    let check = |checked: bool, label: &'static str, toggled: fn(bool) -> Message| {
+        checkbox(checked)
+            .label(label)
+            .spacing(next.checkbox.label_gap)
+            .size(box_width)
+            .text_size(check_label.size_px)
+            .text_line_height(check_line)
+            .next_font(&check_label, |boxed, font| boxed.font(font))
+            .style(styles::checkbox(resolved))
+            .on_toggle(toggled)
+    };
     let checkboxes = hoverable(
         UnlistedKey::Checkboxes,
         column![
-            text("Checkboxes").role(section_title(ts), resolved, a11y),
-            checkbox(state.checkbox_a)
-                .label("Enable notifications")
-                .spacing(c.label_gap)
-                .size(c.indicator_width)
-                .text_size(scaled_text_size(c.font.size, a11y))
-                .font(theme_font(&c.font))
-                .style(styles::checkbox(resolved))
-                .on_toggle(Message::CheckboxAToggled),
-            checkbox(state.checkbox_b)
-                .label("Dark mode auto-detect")
-                .spacing(c.label_gap)
-                .size(c.indicator_width)
-                .text_size(scaled_text_size(c.font.size, a11y))
-                .font(theme_font(&c.font))
-                .style(styles::checkbox(resolved))
-                .on_toggle(Message::CheckboxBToggled),
-            checkbox(state.checkbox_c)
-                .label("Remember preferences")
-                .spacing(c.label_gap)
-                .size(c.indicator_width)
-                .text_size(scaled_text_size(c.font.size, a11y))
-                .font(theme_font(&c.font))
-                .style(styles::checkbox(resolved))
-                .on_toggle(Message::CheckboxCToggled),
-            text(format!(
+            title("Checkboxes"),
+            check(
+                state.checkbox_a,
+                "Enable notifications",
+                Message::CheckboxAToggled
+            ),
+            check(
+                state.checkbox_b,
+                "Dark mode auto-detect",
+                Message::CheckboxBToggled
+            ),
+            check(
+                state.checkbox_c,
+                "Remember preferences",
+                Message::CheckboxCToggled
+            ),
+            caption(format!(
                 "Checked: {}",
                 [
                     state.checkbox_a.then_some("notifications"),
@@ -16862,73 +16892,53 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 .copied()
                 .collect::<Vec<_>>()
                 .join(", ")
-            ))
-            .role(&ts.caption, resolved, a11y),
+            )),
         ]
         .spacing(gap.widget)
         .into(),
     );
 
+    // The radios' labels in `radio.label(NONE)` on the installed 0.8.0
+    // theme; their circle, dot, gap and colours still
+    // `native_theme_iced::radio`'s, which draws them together.
+    let radio_label = next.radio.label(WidgetState::NONE);
+    let radio_line = iced::Pixels(next_line_box(typography, &radio_label));
+    let option = |label: &'static str, fruit: Fruit| {
+        native_theme_iced::radio(
+            resolved,
+            radio(label, fruit, state.selected_fruit, Message::FruitSelected)
+                .text_size(radio_label.size_px)
+                .text_line_height(radio_line)
+                .next_font(&radio_label, |radio, font| radio.font(font)),
+            state.selected_fruit == Some(fruit),
+        )
+    };
     let radios = hoverable(
         UnlistedKey::Radios,
         column![
-            text("Radio Buttons").role(section_title(ts), resolved, a11y),
+            title("Radio Buttons"),
             probe(
                 probes::RADIO_APPLE,
                 Length::Shrink,
-                native_theme_iced::radio(
-                    resolved,
-                    radio(
-                        "Apple",
-                        Fruit::Apple,
-                        state.selected_fruit,
-                        Message::FruitSelected
-                    )
-                    .text_size(scaled_text_size(c.font.size, a11y))
-                    .font(theme_font(&c.font)),
-                    state.selected_fruit == Some(Fruit::Apple),
-                )
+                option("Apple", Fruit::Apple)
             ),
             probe(
                 probes::RADIO_BANANA,
                 Length::Shrink,
-                native_theme_iced::radio(
-                    resolved,
-                    radio(
-                        "Banana",
-                        Fruit::Banana,
-                        state.selected_fruit,
-                        Message::FruitSelected
-                    )
-                    .text_size(scaled_text_size(c.font.size, a11y))
-                    .font(theme_font(&c.font)),
-                    state.selected_fruit == Some(Fruit::Banana),
-                )
+                option("Banana", Fruit::Banana)
             ),
             probe(
                 probes::RADIO_CHERRY,
                 Length::Shrink,
-                native_theme_iced::radio(
-                    resolved,
-                    radio(
-                        "Cherry",
-                        Fruit::Cherry,
-                        state.selected_fruit,
-                        Message::FruitSelected
-                    )
-                    .text_size(scaled_text_size(c.font.size, a11y))
-                    .font(theme_font(&c.font)),
-                    state.selected_fruit == Some(Fruit::Cherry),
-                )
+                option("Cherry", Fruit::Cherry)
             ),
-            text(format!(
+            caption(format!(
                 "Selected: {}",
                 state
                     .selected_fruit
                     .map(|f| f.to_string())
                     .unwrap_or_else(|| "None".to_string())
-            ))
-            .role(&ts.caption, resolved, a11y),
+            )),
         ]
         .spacing(gap.widget)
         .into(),
@@ -16937,7 +16947,11 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     // The page's switch is the connector's, whose track takes
     // `switch.track_width`, labelled as the Basic page's are. iced's own
     // toggler stays shown below it, so the widget iced offers is on show
-    // under the theme too, its track twice its height.
+    // under the theme too, its track twice its height. Their labels in
+    // `typography.body` on the installed 0.8.0 theme (the model states no
+    // font for a switch); the switch, and the toggler's size, whose
+    // `styles::toggler` padding ratio sizes its thumb, still the 0.7.2
+    // theme's.
     let switch = hoverable(
         UnlistedKey::Switch,
         row![
@@ -16950,31 +16964,32 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     Some(Message::TogglerToggled(!state.toggler_enabled)),
                 ),
             ),
-            text("Feature flag enabled").body(resolved, a11y),
+            text("Feature flag enabled").next_body(next),
         ]
         .spacing(TOGGLER_LABEL_GAP)
         .align_y(iced::Alignment::Center)
         .into(),
     );
+    let body = &typography.body;
     let iced_toggler = hoverable(
         UnlistedKey::IcedToggler,
         toggler(state.toggler_enabled)
             .label("iced's Toggler")
-            .size(sw.track_height)
-            .text_size(scaled_text_size(resolved.defaults.font.size, a11y))
-            .font(theme_font(&resolved.defaults.font))
+            .size(resolved.switch.track_height)
+            .text_size(body.size_px)
+            .text_line_height(iced::Pixels(next_line_box(typography, body)))
+            .next_font(body, |toggler, font| toggler.font(font))
             .style(styles::toggler(resolved))
             .on_toggle(Message::TogglerToggled)
             .into(),
     );
     let togglers: Element<'_, Message> = column![
-        text("Switch").role(section_title(ts), resolved, a11y),
+        title("Switch"),
         switch,
-        text(format!(
+        caption(format!(
             "State: {}",
             if state.toggler_enabled { "ON" } else { "OFF" }
-        ))
-        .role(&ts.caption, resolved, a11y),
+        )),
         iced_toggler,
     ]
     .spacing(gap.widget)
@@ -16994,10 +17009,22 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     .map(String::from)
     .collect();
 
+    // The drop-down and the searchable combo box as the Basic page's
+    // drop-down and the Theme row's field are, on the installed 0.8.0
+    // theme: their label `combo_box.label(NONE)`, their padding
+    // ([`next_drop_down_padding`], [`next_combo_field_padding`]), at least
+    // `combo_box.field(NONE).min_size[1]` tall ([`next_control_line`]), the
+    // drop-down's arrow [`next_arrow_handle`]; the showcase's own 250 px
+    // wide; their colours still `styles::pick_list`'s, `styles::text_input`'s
+    // and `styles::menu`'s.
+    let combo_label = next.combo_box.label(WidgetState::NONE);
+    let combo_min = next.combo_box.field(WidgetState::NONE).min_size[1];
+    let list_pad = next_drop_down_padding(next);
+    let field_pad = next_combo_field_padding(next);
     let pickers = hoverable(
         UnlistedKey::PickList,
         column![
-            text("PickList (dropdown)").role(section_title(ts), resolved, a11y),
+            title("PickList (dropdown)"),
             probe(
                 probes::PICK_LIST,
                 Length::Shrink,
@@ -17006,18 +17033,19 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     state.pick_list_selected.as_ref(),
                     Message::PickListSelected,
                 )
-                .handle(arrow_handle(resolved))
-                .text_size(scaled_text_size(resolved.combo_box.font.size, a11y))
-                .font(theme_font(&resolved.combo_box.font))
+                .handle(next_arrow_handle(next))
+                .padding(list_pad)
+                .text_line_height(next_control_line(next, &combo_label, combo_min, list_pad))
+                .text_size(combo_label.size_px)
+                .next_font(&combo_label, |list, font| list.font(font))
                 .style(styles::pick_list(resolved))
                 .menu_style(styles::menu(resolved))
                 .width(Length::Fixed(250.0))
             ),
-            text(format!(
+            caption(format!(
                 "Selected: {}",
                 state.pick_list_selected.as_deref().unwrap_or("None")
-            ))
-            .role(&ts.caption, resolved, a11y),
+            )),
         ]
         .spacing(gap.widget)
         .into(),
@@ -17026,7 +17054,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let combos = hoverable(
         UnlistedKey::ComboBox,
         column![
-            text("ComboBox (searchable dropdown)").role(section_title(ts), resolved, a11y),
+            title("ComboBox (searchable dropdown)"),
             probe(
                 probes::COMBO_BOX,
                 Length::Shrink,
@@ -17036,42 +17064,37 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     state.combo_selected.as_ref(),
                     Message::ComboBoxSelected,
                 )
-                .size(scaled_text_size(cb.font.size, a11y))
-                .font(theme_font(&cb.font))
+                .padding(field_pad)
+                .line_height(next_control_line(next, &combo_label, combo_min, field_pad))
+                .size(combo_label.size_px)
+                .next_font(&combo_label, |field, font| field.font(font))
                 .input_style(styles::text_input(resolved))
                 .menu_style(styles::menu(resolved))
                 .width(Length::Fixed(250.0))
             ),
-            text(format!(
+            caption(format!(
                 "Selected: {}",
                 state.combo_selected.as_deref().unwrap_or("None")
-            ))
-            .role(&ts.caption, resolved, a11y),
+            )),
         ]
         .spacing(gap.widget)
         .into(),
     );
 
+    // The rules between the groups `separator.thickness` thick, their
+    // colour still `styles::rule`'s.
+    let thickness = next.separator.thickness;
+    let divider = || rule::horizontal(thickness).style(styles::rule(resolved));
     column![
         header,
         row![
-            column![
-                checkboxes,
-                rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-                togglers,
-            ]
-            .spacing(gap.section)
-            .width(Fill),
-            rule::vertical(resolved.separator.line_width).style(styles::rule(resolved)),
-            column![
-                radios,
-                rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-                pickers,
-                rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-                combos,
-            ]
-            .spacing(gap.section)
-            .width(Fill),
+            column![checkboxes, divider(), togglers]
+                .spacing(gap.section)
+                .width(Fill),
+            rule::vertical(thickness).style(styles::rule(resolved)),
+            column![radios, divider(), pickers, divider(), combos]
+                .spacing(gap.section)
+                .width(Fill),
         ]
         .spacing(gap.section),
     ]
@@ -29480,6 +29503,148 @@ mod tests {
         match (
             at("Single-line TextInput and multi-line TextEditor"),
             at("TextInput (single line)"),
+        ) {
+            (Some(description), Some(title))
+                if near(
+                    title.y - (description.y + description.height),
+                    13.0 + 4.0 + 19.0,
+                ) => {}
+            pair => faults.push(format!("the description and the first title: {pair:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// The Selection page lays itself out on the installed 0.8.0 theme alone
+    /// ([`view_selection`]): kde-breeze with, on the 0.8.0 theme only, a
+    /// 21 px check box 17 px from its label, check box and radio labels of
+    /// 20 px on a 30 px line, a body on a 23 px line, a combo box label of
+    /// 20 px in a field at least 50 tall, a 19 px caption on a 29 px line, a
+    /// 13 px widget gap, a 19 px section gap and a 4 px separator draws the
+    /// check box 30 tall, its label's line, and 20 px wider with a 31 px box
+    /// 27 px from its label; the radio's row its label's 30 px line (or the
+    /// 0.7.2 circle `native_theme_iced::radio` still draws, where taller);
+    /// the switch's label 23 tall; the drop-down and the combo box
+    /// `max(20 × line_height_multiplier, 50 − padding) + padding` tall
+    /// ([`next_drop_down_padding`], [`next_combo_field_padding`]); a
+    /// caption 29 tall; and the first group's title 13 + 4 + 19 px under the
+    /// header's description. (The simulator finds no text of a radio's or a
+    /// toggler's label.)
+    #[test]
+    fn the_selection_page_lays_out_on_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.checkbox.rules]]\nindicator.min_size = [21.0, 21.0]\n\
+             label.size_px = 20.0\nlabel.line_height = 30.0\n\
+             [[widgets.radio.rules]]\nlabel.size_px = 20.0\nlabel.line_height = 30.0\n\
+             [[widgets.combo_box.rules]]\nfield.min_size = [\"none\", 50.0]\nlabel.size_px = 20.0\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let widened = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.checkbox.rules]]\nindicator.min_size = [31.0, 31.0]\n",
+        )
+        .map_err(|error| format!("the second patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Selection);
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.checkbox.label_gap = 17.0;
+            r.typography.body.line_height = 23.0;
+            r.typography.body.stated = r.typography.body.stated.union(TextStated::LINE_HEIGHT);
+            if let Some(caption) = r.typography.caption.as_mut() {
+                caption.size_px = 19.0;
+                caption.line_height = 29.0;
+                caption.stated = caption.stated.union(TextStated::LINE_HEIGHT);
+            }
+            r.layout.widget_gap = Some(13.0);
+            r.layout.section_gap = Some(19.0);
+            r.separator.thickness = 4.0;
+        });
+        let next = state.next_shown();
+        let old = &state.current_resolved;
+        if native_theme_iced::next::text_scale(next)
+            .caption
+            .line_height
+            != 29.0
+            || next_check_box_size(next) != 21.0
+            || old.checkbox.label_gap == 17.0
+            || old.checkbox.indicator_width == 21.0
+            || old.checkbox.font.size == 20.0
+            || old.combo_box.font.size == 20.0
+            || old.defaults.font.size * old.defaults.line_height == 23.0
+            || state.layout.widget_gap == Some(13.0)
+            || state.layout.section_gap == Some(19.0)
+            || old.separator.line_width == 4.0
+        {
+            return Err("the splice states 0.7.2's sizes, or no caption".into());
+        }
+        let own = 20.0 * next.typography.line_height_multiplier;
+        let field = |pad: Padding| own.max(50.0 - pad.y()) + pad.y();
+        let (list_height, combo_height) = (
+            field(next_drop_down_padding(next)),
+            field(next_combo_field_padding(next)),
+        );
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let mut ui = interface(&state);
+        for (id, want) in [
+            (probes::PICK_LIST, list_height),
+            (probes::COMBO_BOX, combo_height),
+        ] {
+            let bounds = probe_bounds(&mut ui, id);
+            if !near(bounds.height, want) {
+                faults.push(format!("{id} is {bounds:?}, not {want} tall"));
+            }
+        }
+        let found = texts(&mut ui);
+        let at = |label: &str| {
+            found
+                .iter()
+                .find(|(content, _)| content.starts_with(label))
+                .map(|(_, bounds)| *bounds)
+        };
+        // The radio's row: its label's line, or the 0.7.2 circle
+        // `native_theme_iced::radio` still draws where that is taller.
+        let c = &old.checkbox;
+        let radio_height = 30.0_f32.max(c.radio_indicator_width.unwrap_or(c.indicator_width));
+        let apple = probe_bounds(&mut ui, probes::RADIO_APPLE);
+        if !near(apple.height, radio_height) {
+            faults.push(format!("Apple is {apple:?}, not {radio_height} tall"));
+        }
+        drop(ui);
+        // The check box, which iced's simulator finds by its label as a
+        // whole: 30 tall, its label's line, and 20 px wider where the box is
+        // 10 px wider and 10 px further from the label.
+        let check_box = |state: &State| {
+            let mut ui = interface(state);
+            texts(&mut ui)
+                .into_iter()
+                .find(|(content, _)| content == "Enable notifications")
+                .map(|(_, bounds)| bounds)
+        };
+        let narrow = check_box(&state);
+        splice_next(&mut state, |r| {
+            r.checkbox.label_gap = 27.0;
+            r.apply_patch(&widened);
+        });
+        if next_check_box_size(state.next_shown()) != 31.0 {
+            return Err("the second patch states no 31 px box".into());
+        }
+        match (narrow, check_box(&state)) {
+            (Some(narrow), Some(wide))
+                if near(narrow.height, 30.0) && near(wide.width - narrow.width, 20.0) => {}
+            pair => faults.push(format!("the check box at 21 + 17 and at 31 + 27: {pair:?}")),
+        }
+        for (label, want) in [("Feature flag enabled", 23.0), ("Checked: ", 29.0)] {
+            match at(label) {
+                Some(bounds) if near(bounds.height, want) => {}
+                bounds => faults.push(format!("{label:?}: {bounds:?}, not {want} tall")),
+            }
+        }
+        match (
+            at("Checkbox, Radio, Toggler, PickList, and ComboBox"),
+            at("Checkboxes"),
         ) {
             (Some(description), Some(title))
                 if near(
