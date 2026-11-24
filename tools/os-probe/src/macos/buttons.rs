@@ -1048,7 +1048,7 @@ fn method_text() -> String {
 /// How `Pass::park` parks the cursor, for the method texts.
 fn park_text() -> String {
     format!(
-        "inside the window in its content view's bottom left corner, {} pt from its left and bottom edges (in the margins round every sheet's grid, outside every control and every recording's crop round a control), where windowNumberAtPoint: there gives the probe's window and hitTest: the content view itself, every caller parking with the backdrop box hidden (view_at_park_point), else not moved and the error",
+        "inside the window on the middle of its content view's bottom margin, half its width across and {} pt from its bottom edge (below every sheet's grid, outside every control and every recording's crop round a control), where windowNumberAtPoint: there gives the probe's window and hitTest: the content view itself, every caller parking with the backdrop box hidden (view_at_park_point), else not moved and the error",
         BUTTON_MARGIN / 2.0
     )
 }
@@ -2043,7 +2043,7 @@ impl Pass<'_> {
     }
 
     /// Where `park` parks the cursor in `window`, in AppKit's screen
-    /// points: its content view's bottom left corner (`park_point`), where
+    /// points: the middle of its content view's bottom margin (`park_point`), where
     /// the view there (`hitTest:` of the content view's superview) is the
     /// content view itself (`parks_on_content`): no control lies under it.
     /// The point and the views from the one hit up to the content view are
@@ -2528,16 +2528,17 @@ fn release_to_own_process(at: NSPoint, escape: bool) -> String {
     )
 }
 
-/// Where `Pass::park` parks the cursor, in `content`'s coordinates: its
-/// bottom left corner, `BUTTON_MARGIN / 2` from its left and bottom edges,
-/// inside both margins every sheet's grid keeps, so outside every control
-/// and every recording's crop round a control (the transition pass's crops
-/// reach `CROP_MARGIN` round a button, which the middle of the left margin
-/// lay inside).
+/// Where `Pass::park` parks the cursor, in `content`'s coordinates: the
+/// middle of its bottom margin, half its width across and `BUTTON_MARGIN /
+/// 2` up, below every sheet's grid, so outside every control and every
+/// recording's crop round a control (the transition pass's crops reach
+/// `CROP_MARGIN` round a button of the regular row, which the middle of the
+/// left margin lay inside; at the corner, 10 pt from both edges, hitTest:
+/// gave the window's frame view in run 45473409745).
 fn park_point(content: &NSView) -> NSPoint {
     let b = content.bounds();
     NSPoint::new(
-        b.origin.x + BUTTON_MARGIN / 2.0,
+        b.origin.x + b.size.width / 2.0,
         b.origin.y + BUTTON_MARGIN / 2.0,
     )
 }
