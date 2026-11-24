@@ -8,8 +8,8 @@
 //! The showcase's self-tests (spec §13 T11): the real `eframe::App`, driven headlessly.
 
 use egui_kittest::Harness;
+use native_theme::AccessibilityPreferences;
 use native_theme::icons::{IconSetChoice, default_icon_choice};
-use native_theme::{AccessibilityPreferences, theme::Theme};
 use native_theme_showcase_support::{Kind, capture};
 
 use crate::{
@@ -191,8 +191,8 @@ fn the_command_line_rejects_what_it_cannot_honour() {
     apply_cli_args(&mut settings, &cli(&[("--variant", "system")]));
     assert_eq!(settings.mode, ModeChoice::System);
 
-    let offered = Theme::list_presets_for_platform();
-    let foreign = Theme::list_presets()
+    let offered = native_theme::theme::Theme::list_presets_for_platform();
+    let foreign = native_theme::theme::Theme::list_presets()
         .iter()
         .find(|info| !offered.iter().any(|o| o.key == info.key))
         .map(|info| info.key)
@@ -407,14 +407,14 @@ fn pick_mode(harness: &mut Harness<'_, App>, mode: &str) {
 
 /// T11 (b): the theme, mode and icon pickers install what they name.
 #[test]
-fn interactive_controls_respond() {
+fn interactive_controls_respond() -> Result<(), String> {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
-    let (other, other_name) = Theme::list_presets_for_platform()
+    let (other, other_name) = native_theme::theme::Theme::list_presets_for_platform()
         .into_iter()
         .map(|info| (info.key, info.display_name))
         .find(|(key, _)| *key != TEST_PRESET)
-        .expect("a second preset is offered on every platform");
+        .ok_or("no second preset is offered on this platform")?;
 
     // The rows are the presets' display names, as the gpui showcase's (§10.4, parity item 1).
     harness
@@ -427,10 +427,7 @@ fn interactive_controls_respond() {
         harness.state().settings.theme,
         ThemeChoice::Preset(other.to_string())
     );
-    assert_eq!(
-        harness.state().atlas.name(),
-        Theme::preset(other).expect("bundled").name
-    );
+    assert_eq!(harness.state().atlas.name(), preset_name(other)?);
 
     pick_mode(&mut harness, "Dark");
     assert_eq!(harness.state().settings.mode, ModeChoice::Dark);
@@ -452,6 +449,7 @@ fn interactive_controls_respond() {
         !harness.state().settings.icon_follows_theme,
         "a pick in the picker stays chosen"
     );
+    Ok(())
 }
 
 /// §13.2: the OS draws the frame; the title carries the version.
@@ -1000,7 +998,7 @@ fn click_menu(harness: &mut Harness<'_, App>, menu: &str) {
 /// behind the app's back that only an install shows — so an item wired to another's action,
 /// or to none, fails.
 #[test]
-fn the_menus_run_their_actions() {
+fn the_menus_run_their_actions() -> Result<(), String> {
     let mut harness = open(
         egui::Theme::Dark,
         cli(&[
@@ -1010,12 +1008,12 @@ fn the_menus_run_their_actions() {
         ]),
     );
     harness.run_steps(2);
-    let other = Theme::list_presets_for_platform()
+    let other = native_theme::theme::Theme::list_presets_for_platform()
         .into_iter()
         .map(|info| info.key)
         .find(|key| *key != TEST_PRESET)
-        .expect("a second preset is offered on every platform");
-    let reloaded = Theme::preset(other).expect("bundled").name;
+        .ok_or("no second preset is offered on this platform")?;
+    let reloaded = preset_name(other)?;
     // `run_steps`, not `run`: View > Range shows a page that repaints every pass (§13 T11).
     for (menu, items) in Action::MENUS {
         for action in items.iter().flatten() {
@@ -1071,6 +1069,7 @@ fn the_menus_run_their_actions() {
             harness.run_steps(2);
         }
     }
+    Ok(())
 }
 
 /// M9-117: the macOS menu bar is Apple's HIG list (*The menu bar*), under the titles the shared
@@ -1175,7 +1174,7 @@ fn the_macos_system_items_take_the_showcases_wording() {
 
 /// §13.2: Ctrl+K opens the palette, typing filters, a row acts, Escape clears then closes.
 #[test]
-fn the_command_palette_runs_what_it_lists() {
+fn the_command_palette_runs_what_it_lists() -> Result<(), String> {
     // The rows the palette shows, by their labels: the page tabs carry the page names too, so a
     // row is the node the palette recorded as its row (`Id::accesskit_id`, `egui/src/id.rs:103`).
     fn rows(harness: &Harness<'_, App>) -> Vec<(egui::accesskit::NodeId, String)> {
@@ -1236,11 +1235,11 @@ fn the_command_palette_runs_what_it_lists() {
 
     // A preset row, found by its key, is named by its display name and installs the preset; a
     // mode row sets the mode it names (the gpui showcase's palette, parity item 19).
-    let (other, other_name) = Theme::list_presets_for_platform()
+    let (other, other_name) = native_theme::theme::Theme::list_presets_for_platform()
         .into_iter()
         .map(|info| (info.key, info.display_name))
         .find(|(key, _)| *key != TEST_PRESET)
-        .expect("a second preset is offered on every platform");
+        .ok_or("no second preset is offered on this platform")?;
     for (typed, row) in [(other, other_name), ("Dark", "Dark")] {
         harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
         harness.run_steps(2);
@@ -1263,7 +1262,7 @@ fn the_command_palette_runs_what_it_lists() {
     );
     assert_eq!(
         harness.state().atlas.name(),
-        Theme::preset(other).expect("bundled").name,
+        preset_name(other)?,
         "the preset row did not install it"
     );
     assert_eq!(harness.state().settings.mode, ModeChoice::Dark);
@@ -1290,6 +1289,7 @@ fn the_command_palette_runs_what_it_lists() {
         harness.state().palette.is_none(),
         "the second Escape closes"
     );
+    Ok(())
 }
 
 /// The palette's rows in order, each with its node's toggled state.
@@ -2349,8 +2349,8 @@ fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() -> Result<(), Str
 /// `toggle_on` asks each home with the checked flag alone and takes no other state's colours:
 /// without a 0.8.0 theme, and under a theme stating no checked colour, nothing (egui's own
 /// selected button); under a patched `button.body(CHECKED).fill` and `button.label(CHECKED)
-/// .color`, which no 0.7.2 theme the page read states, the Basic page's "On" toggle is painted
-/// in them and its Widget Info names no fallback; with the fill alone patched, the fill is the
+/// .color`, magenta, on a preset stating no checked colour, the Basic page's "On" toggle is
+/// painted in them and its Widget Info names no fallback; with the fill alone patched, the fill is the
 /// patched one and the label egui's selected button's, the suggested-action button's beside it.
 #[test]
 fn the_toggle_takes_the_checked_colours_alone() -> Result<(), String> {
@@ -2609,7 +2609,6 @@ fn rebuilt(name: &str) -> Result<crate::app::OldAtlas, crate::app::BuildError> {
 
 /// The name the unpatched 0.8.0 preset `name` resolves to, the atlas's name
 /// (`ThemeAtlas::name`) of an install of it.
-#[cfg(feature = "watch")]
 fn preset_name(name: &str) -> Result<String, String> {
     use native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
     let preset = Preset::from_name(name).ok_or_else(|| format!("no 0.8.0 preset {name}"))?;
@@ -2924,13 +2923,13 @@ fn a_click_on_the_palette_backdrop_closes_it() {
 /// a switch neither rebuilds nor reinstalls it — seen here as a selection changed behind the
 /// app's back that the switch does not install — from the Mode row as from the Theme menu.
 #[test]
-fn a_mode_switch_installs_nothing() {
-    let other = Theme::list_presets_for_platform()
+fn a_mode_switch_installs_nothing() -> Result<(), String> {
+    let other = native_theme::theme::Theme::list_presets_for_platform()
         .into_iter()
         .map(|info| info.key)
         .find(|key| *key != TEST_PRESET)
-        .expect("a second preset is offered on every platform");
-    let installed = Theme::preset(TEST_PRESET).expect("bundled").name;
+        .ok_or("no second preset is offered on this platform")?;
+    let installed = preset_name(TEST_PRESET)?;
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     harness.state_mut().settings.theme = ThemeChoice::Preset(other.to_string());
@@ -2954,6 +2953,7 @@ fn a_mode_switch_installs_nothing() {
         installed,
         "Theme > Light rebuilt the atlas"
     );
+    Ok(())
 }
 
 /// M9-113: under a preset with Mode = System the atlas carries the OS's colour mode
@@ -3726,8 +3726,8 @@ fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() -> R
 /// kde-breeze, which states every side, each installed through the Theme row's path on any
 /// platform. Under the first Widget Info names the padding on the modal's frame; under
 /// kde-breeze it does not. Under [`UNSTATED_PRESET`] with the padding patched to twice
-/// gpui-component's on every side, which the 0.7.2 `dialog.border.padding` beside it leaves
-/// unstated, the body lies the patched padding inside the line and the info names no padding.
+/// gpui-component's on every side, which the unpatched preset leaves unstated, the body lies the
+/// patched padding inside the line and the info names no padding.
 #[test]
 fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() -> Result<(), String> {
     use native_theme::next::{DialogPatch, Edges, PartPatch, ThemePatch, WidgetPatchMap};
@@ -3921,7 +3921,7 @@ fn the_area_stays_inside_the_page() {
 /// showcase's page `TabBar` does (parity item 9).
 #[test]
 fn the_rows_fit_the_content() {
-    for info in Theme::list_presets_for_platform() {
+    for info in native_theme::theme::Theme::list_presets_for_platform() {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", info.key), ("--tab", Page::Text.key())]),
@@ -4034,8 +4034,8 @@ const ABSENT_ICON_THEME: &str = "native-theme-test-no-such-icon-theme";
 /// The Icons page's placeholder for an icon the set lacks is filled with the installed 0.8.0
 /// theme's `button.body(NONE).fill`, as gpui's skeleton is: under [`TEST_PRESET`] with a
 /// freedesktop icon theme no host has ([`ABSENT_ICON_THEME`]), whose roles are absent, and that
-/// fill patched to `colors.window.border`, a colour of the same theme the 0.7.2
-/// `button.background_color` beside it is not, every `Image (absent)` square is filled with it.
+/// fill patched to `colors.window.border`, a colour of the same theme its unpatched
+/// `button.body(NONE).fill` is not, every `Image (absent)` square is filled with it.
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 #[test]
 fn the_icons_placeholder_takes_the_08_button_fill() -> Result<(), String> {
@@ -4445,7 +4445,8 @@ fn the_basic_page_applies_the_per_call_leaves() -> Result<(), String> {
 /// (`src/mapping.md`, `dialog.min_width` … `input.min_height`, DERIVED) reach the palette pages
 /// as they reach Basic. Under windows-11 set directly, which states every one: the Overlays
 /// page's modal is at least the 0.8.0 theme's `dialog.panel.min_size` and at most its
-/// `max_size`, under a patch whose least width is past the 0.7.2 `dialog.max_width`; every `Role::Button` kind of the Buttons and Overlays pages built with
+/// `max_size`, under a patch whose least width is past the unpatched preset's
+/// `dialog.panel.max_size[0]`; every `Role::Button` kind of the Buttons and Overlays pages built with
 /// `Button::new` is at least the 0.8.0 theme's `button.body(NONE).min_size[0]` wide, there and
 /// under kde-breeze, whose minimum is wider than egui's buttons; and every `TextEdit (…)` of the
 /// Inputs page at least `input.field(NONE).min_size[1]` tall, there and under adwaita and
@@ -4632,7 +4633,7 @@ fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
 /// `dialog.button_order`: `modal_buttons` puts the primary "OK" at the end each order names, and
 /// where the theme states none, as no bundled preset does, the buttons in the page's order with
 /// a message that says so; under kde-breeze (primary left) patched to primary right, which the
-/// 0.7.2 theme beside it is not, "Cancel" is drawn left of "OK".
+/// unpatched kde-breeze is not, "Cancel" is drawn left of "OK".
 #[test]
 fn the_modal_takes_the_08_button_order_or_says_it_is_unstated() -> Result<(), String> {
     use crate::pages::overlays::modal_buttons;
@@ -4693,7 +4694,7 @@ fn the_modal_takes_the_08_button_order_or_says_it_is_unstated() -> Result<(), St
 
 /// The Overlays page's menu-bar icons are drawn at the installed 0.8.0 theme's
 /// `menu.icon(NONE).size`: under kde-breeze with the bundled Material set and the size patched to
-/// twice the preset's own, which the 0.7.2 `menu.icon_size` beside it is not, the
+/// twice the preset's own, which the unpatched `menu.icon(NONE).size` is not, the
 /// `ui.menu_image_button`, an icon alone in its button, is wider than unpatched by what the icon
 /// grows; and without an installed 0.8.0 theme no size is taken.
 #[cfg(feature = "material-icons")]
@@ -4744,7 +4745,7 @@ fn the_menu_icons_take_the_08_menu_icon_size() -> Result<(), String> {
 }
 
 /// The least sizes the Buttons and Inputs pages give are the installed 0.8.0 theme's, not the
-/// 0.7.2 theme's beside it: under kde-breeze with `button.body(NONE).min_size[0]` patched to
+/// unpatched preset's: under kde-breeze with `button.body(NONE).min_size[0]` patched to
 /// half as wide again as the preset's own, which the first row of the Buttons page still holds
 /// (a `Button` is no wider than the room its row has left), and `input.field(NONE).min_size[1]`
 /// to twice the preset's own ([`open_patched`]), so neither is the unpatched theme's any more,
@@ -6593,8 +6594,8 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
 /// area, docs/platform-facts.md §2.13), not the window's, and the title of the open menu takes
 /// the bar's open fill (`menu_bar.item(OPEN).fill`) with the pointer off it, where
 /// `chrome::menu_bar` swaps `widgets.open` in; a closed title is not so filled. Under
-/// kde-breeze with the bar's fill patched to magenta, which the 0.7.2 `toolbar.background_color`
-/// beside it is not, the bar is filled in magenta.
+/// kde-breeze with the bar's fill patched to magenta, which the unpatched
+/// `menu_bar.bar(NONE).fill` is not, the bar is filled in magenta.
 #[test]
 fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() -> Result<(), String> {
     use native_theme::next::{MenuBarRule, Paint, PartPatch, ThemePatch, WidgetState};
@@ -6673,8 +6674,8 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() -> Res
 /// stroke: kde-breeze light 3 + 1 from the frame's edge on the top and the left; adwaita states
 /// no menu panel padding, and its item lies `popover.panel.padding` inside the line. Under
 /// kde-breeze with the popover's stroke patched to `colors.window.border` and the menu panel's
-/// padding to twice the preset's, which the 0.7.2 `popover.border.color` and
-/// `menu.panel_padding_*` beside them are not, the frame is drawn in the patched line and the
+/// padding to twice the preset's, which the unpatched `popover.panel` stroke colour and
+/// `menu.panel(NONE).padding` are not, the frame is drawn in the patched line and the
 /// item lies twice as far inside it. The frame is the `Shape::Rect` egui paints for
 /// `Frame::popup` (`epaint::StrokeKind::Inside` on its outer rectangle,
 /// `egui-0.37.0/src/containers/frame.rs:468-476`), in `menu.panel(NONE)`'s fill and the
@@ -9468,7 +9469,7 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() -> Result<(), String
 /// (`default_button`'s per-state looks): under kde-breeze light, hovered, its frame is
 /// `hover_stroke` over its own `fill`; pressed, its frame is `hover_stroke` over the button
 /// role's pressed fill (`button.body(PRESSED).fill`), never its own. Under a patched hover frame
-/// (`button.body(HOVER).stroke`), which no 0.7.2 theme states, `hover_stroke` is that frame, not
+/// (`button.body(HOVER).stroke`, 3 px magenta), `hover_stroke` is that frame, not
 /// `focus_stroke`, and the hovered button is drawn in it. Under adwaita light, whose 0.8.0 theme
 /// gives the default button no look of its own, it is the selected (primary) button, filled with
 /// the primary button's fill at rest. The presets are installed by the test, since `--theme`
@@ -9560,8 +9561,8 @@ fn the_dialog_default_button_is_drawn_in_its_state() -> Result<(), String> {
         "pressed: the button role's pressed fill under the hover frame"
     );
 
-    // A hover frame of the 0.8.0 theme's own, which no 0.7.2 theme states: the hovered button
-    // is drawn in it, not in the focus frame.
+    // A hover frame patched into the 0.8.0 theme: the hovered button is drawn in it, not in the
+    // focus frame.
     let magenta = native_theme::next::Color::from_srgb8(255, 0, 255, 255);
     let patch = ThemePatch::new().button(ButtonRule::new().states(WidgetState::HOVER).body(
         PartPatch::new().stroke(Stroke::Uniform {
@@ -10245,7 +10246,7 @@ fn the_info_is_the_manifest() {
     }
 
     // After a preset switch the shown info prints the new preset's values.
-    let other = Theme::list_presets_for_platform()
+    let other = native_theme::theme::Theme::list_presets_for_platform()
         .into_iter()
         .map(|i| i.key)
         .find(|k| *k != TEST_PRESET)
@@ -10679,6 +10680,411 @@ fn only_app_adopt_installs_or_clears_an_atlas() {
         adopt_clears_the_cache,
         "App::adopt_pair installs the atlas but does not clear the showcase's IconCache"
     );
+}
+
+/// The 0.7.2 model's reads and installs of a theme, which no showcase file reads through a
+/// path other than the 0.8.0 model's ([`is_next_path`]), as the gpui showcase's
+/// `OLD_MODEL_THEME_READS` (`connectors/native-theme-gpui/src/showcase.rs`): the desktop's
+/// theme (`SystemTheme`, the connector's `from_system` and its `SystemThemeExt` installs,
+/// `to_egui_atlas` and `to_egui_builder`), a preset loaded or resolved (`Theme::preset`,
+/// `Theme::from_toml`, the connector's `from_preset`, `resolve_with`, `into_resolved`,
+/// `ResolutionContext`, the resolved `native_theme::Resolved`, `ResolvedTheme` and its
+/// `ResolvedFontSpec`), its mode (`ThemeMode`), the connector's install of it (`to_theme`),
+/// and the pipeline's preset guess (`platform_preset_name`). Each is matched as a whole path,
+/// wherever it stands: after `::`, at a crate root, or bare and imported by a `use`.
+/// `ColorMode` is not one: `NextBuilder::os_mode` takes it. What reads no theme (the preset
+/// list, `AccessibilityPreferences`) is not a read.
+const OLD_MODEL_THEME_READS: &[&str] = &[
+    "SystemTheme",
+    "SystemThemeExt",
+    "to_egui_atlas",
+    "to_egui_builder",
+    "Theme::preset",
+    "Theme::from_toml",
+    "from_preset",
+    "from_system",
+    "resolve_with",
+    "into_resolved",
+    "ResolutionContext",
+    "native_theme::Resolved",
+    "ResolvedTheme",
+    "ResolvedFontSpec",
+    "ThemeMode",
+    "to_theme",
+    "platform_preset_name",
+];
+
+/// The 0.7.2 model's reads that no path makes 0.8.0's, refused wherever they stand: the
+/// installed atlas's 0.7.2 theme (`ThemeAtlas::resolved_for`, as `.resolved_for(`) and the
+/// connector's 0.7.2 builder (`ThemeAtlas::builder(`).
+const OLD_MODEL_LITERAL_READS: &[&str] = &[".resolved_for(", "ThemeAtlas::builder("];
+
+/// Whether `c` can stand in an identifier.
+fn is_ident_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_'
+}
+
+/// Every offset at which `code` holds `pattern` as a whole: no identifier character before a
+/// pattern that begins with one, none after a pattern that ends with one.
+fn whole_matches(code: &str, pattern: &str) -> Vec<usize> {
+    let starts_ident = pattern.chars().next().is_some_and(is_ident_char);
+    let ends_ident = pattern.chars().next_back().is_some_and(is_ident_char);
+    code.match_indices(pattern)
+        .map(|(at, _)| at)
+        .filter(|&at| {
+            let before_ok = !starts_ident
+                || code
+                    .get(..at)
+                    .and_then(|t| t.chars().next_back())
+                    .is_none_or(|c| !is_ident_char(c));
+            let after_ok = !ends_ident
+                || code
+                    .get(at + pattern.len()..)
+                    .and_then(|t| t.chars().next())
+                    .is_none_or(|c| !is_ident_char(c));
+            before_ok && after_ok
+        })
+        .collect()
+}
+
+/// One name a `use` declaration brings in: the declaration's span, the item's full path and
+/// the name it binds.
+struct UseItem {
+    span: std::ops::Range<usize>,
+    path: Vec<String>,
+    binds: String,
+}
+
+/// Every item of every `use` declaration in `code`, in source order.
+fn use_items(code: &str) -> Vec<UseItem> {
+    let mut out = Vec::new();
+    for at in whole_matches(code, "use") {
+        let head = code.get(..at).unwrap_or("").trim_end_matches([' ', '\t']);
+        let head_ok = head.ends_with("pub")
+            || head
+                .chars()
+                .next_back()
+                .is_none_or(|c| matches!(c, '\n' | ';' | '{' | '}' | ')'));
+        let tail = code.get(at + "use".len()..).unwrap_or("");
+        if !head_ok || !tail.starts_with([' ', '\n']) {
+            continue;
+        }
+        let Some(len) = tail.find(';') else { continue };
+        let tree = tail
+            .get(..len)
+            .unwrap_or("")
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        let span = at..at + "use".len() + len;
+        let mut items = Vec::new();
+        use_tree_items(&tree, &[], &mut items);
+        out.extend(items.into_iter().map(|(path, binds)| UseItem {
+            span: span.clone(),
+            path,
+            binds,
+        }));
+    }
+    out
+}
+
+/// The parts of `tree`, a `use` tree, split at its top-level commas and trimmed.
+fn top_level_parts(tree: &str) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut depth = 0usize;
+    let mut from = 0usize;
+    for (ix, c) in tree.char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => {
+                parts.push(tree.get(from..ix).unwrap_or(""));
+                from = ix + 1;
+            }
+            _ => {}
+        }
+    }
+    parts.push(tree.get(from..).unwrap_or(""));
+    parts
+        .into_iter()
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .collect()
+}
+
+/// The segments of `path`, a written path such as `a :: b::c`.
+fn path_segments(path: &str) -> impl Iterator<Item = String> + '_ {
+    path.split("::")
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
+/// The (full path, bound name) of every item of `tree`, under `prefix`.
+fn use_tree_items(tree: &str, prefix: &[String], out: &mut Vec<(Vec<String>, String)>) {
+    for part in top_level_parts(tree) {
+        let part = part.trim_start_matches("::");
+        if let Some(open) = part.find('{') {
+            let mut path = prefix.to_vec();
+            path.extend(path_segments(part.get(..open).unwrap_or("")));
+            let inner = part
+                .get(open + 1..)
+                .and_then(|t| t.trim_end().strip_suffix('}'))
+                .unwrap_or("");
+            use_tree_items(inner, &path, out);
+            continue;
+        }
+        let (named, alias) = match part.split_once(" as ") {
+            Some((named, alias)) => (named, Some(alias.trim())),
+            None => (part, None),
+        };
+        let mut path = prefix.to_vec();
+        path.extend(path_segments(named));
+        if path.last().is_some_and(|leaf| leaf == "self") {
+            path.pop();
+        }
+        let binds = alias
+            .map(str::to_string)
+            .or_else(|| path.last().cloned())
+            .unwrap_or_default();
+        out.push((path, binds));
+    }
+}
+
+/// Whether `path` is the 0.8.0 model's -- it passes through a `next` module -- or egui's own,
+/// whose `SystemTheme` the 0.7.2 model's name shares.
+fn is_next_path<S: AsRef<str>>(path: &[S]) -> bool {
+    path.iter().any(|s| s.as_ref() == "next") || path.first().is_some_and(|s| s.as_ref() == "egui")
+}
+
+/// The identifier `s` ends with.
+fn trailing_ident(s: &str) -> &str {
+    let start = s
+        .char_indices()
+        .rfind(|(_, c)| !is_ident_char(*c))
+        .map(|(ix, c)| ix + c.len_utf8())
+        .unwrap_or_default();
+    s.get(start..).unwrap_or("")
+}
+
+/// The path written right before offset `at` of `code`, as segments: the `a::b::` that
+/// qualifies whatever begins at `at`.
+fn written_qualifier(code: &str, at: usize) -> Vec<String> {
+    let mut head = code.get(..at).unwrap_or("");
+    let mut segments = Vec::new();
+    while let Some(rest) = head.strip_suffix("::") {
+        let segment = trailing_ident(rest);
+        if segment.is_empty() {
+            break;
+        }
+        segments.push(segment.to_string());
+        head = rest
+            .get(..rest.len().saturating_sub(segment.len()))
+            .unwrap_or("");
+    }
+    segments.reverse();
+    segments
+}
+
+/// The full path of the name written at offset `at` of `code` as `written`: its written
+/// qualifier, and its first segment resolved through the nearest `use` before it that binds
+/// that name.
+fn full_path(code: &str, uses: &[UseItem], at: usize, written: &str) -> Vec<String> {
+    let mut path = written_qualifier(code, at);
+    path.extend(written.split("::").map(str::to_string));
+    let first = path.first().cloned().unwrap_or_default();
+    match uses
+        .iter()
+        .rfind(|item| item.span.end <= at && item.binds == first)
+    {
+        Some(item) => {
+            let mut full = item.path.clone();
+            full.extend(path.into_iter().skip(1));
+            full
+        }
+        None => path,
+    }
+}
+
+/// The argument list of the call whose `(` is at offset `open` of `code`, up to the `)` that
+/// closes it, trimmed; `None` where none closes it.
+fn call_arguments(code: &str, open: usize) -> Option<&str> {
+    let mut depth = 0usize;
+    for (ix, c) in code.get(open..)?.char_indices() {
+        match c {
+            '(' => depth += 1,
+            ')' => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    return code.get(open + 1..open + ix).map(str::trim);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+/// What `code`, a showcase file's code, reads of the 0.7.2 model, as (offset, what it reads):
+/// a name of [`OLD_MODEL_THEME_READS`] through a path that is not 0.8.0's, in code or imported
+/// by a `use` (with the first segment of a longer name, as `use native_theme::theme::Theme;`
+/// for `Theme::preset`); a read of [`OLD_MODEL_LITERAL_READS`]; and a `.resolve(` that is
+/// 0.7.2's. 0.8.0's `Theme::resolve` takes a `&ThemeContext` (`native-theme/src/next/preset.rs`),
+/// egui's `TextStyle::resolve` and `FontSelection::resolve` a `&Style` (a `&` expression, a
+/// `.style()` read or a binding named `style`), and 0.7.2's a `ColorMode`
+/// (`ThemeSpec::resolve`, `native-theme/src/model/mod.rs`) or nothing (`ThemeVariant::resolve`,
+/// `native-theme/src/resolve/mod.rs`): an argument that is none of the first two is 0.7.2's.
+fn old_model_reads(code: &str) -> Vec<(usize, String)> {
+    let uses = use_items(code);
+    let in_use = |at: usize| uses.iter().any(|item| item.span.contains(&at));
+    let mut findings = Vec::new();
+    for name in OLD_MODEL_THEME_READS {
+        for at in whole_matches(code, name) {
+            if !in_use(at) && !is_next_path(&full_path(code, &uses, at, name)) {
+                findings.push((at, format!("reads or installs a 0.7.2 theme, {name}")));
+            }
+        }
+    }
+    for item in &uses {
+        if is_next_path(&item.path) {
+            continue;
+        }
+        let joined = item.path.join("::");
+        let leaf = item.path.last().map_or("", String::as_str);
+        let imports_a_read = OLD_MODEL_THEME_READS.iter().any(|name| {
+            let segments: Vec<&str> = name.split("::").collect();
+            let ends_with_it = item.path.len() >= segments.len()
+                && item
+                    .path
+                    .iter()
+                    .rev()
+                    .zip(segments.iter().rev())
+                    .all(|(have, want)| have == want);
+            let its_type = segments.len() > 1
+                && segments
+                    .first()
+                    .is_some_and(|first| *first == leaf && first.starts_with(char::is_uppercase));
+            ends_with_it || its_type
+        });
+        if imports_a_read {
+            findings.push((item.span.start, format!("imports a 0.7.2 name, {joined}")));
+        }
+    }
+    for pattern in OLD_MODEL_LITERAL_READS {
+        for at in whole_matches(code, pattern) {
+            findings.push((at, format!("reads the installed 0.7.2 theme, {pattern}")));
+        }
+    }
+    for (at, m) in code.match_indices(".resolve(") {
+        let open = at + m.len() - "(".len();
+        let argument = call_arguments(code, open).unwrap_or("");
+        let style_read = argument == "style" || argument.ends_with(".style()");
+        if !argument.starts_with('&') && !style_read {
+            findings.push((
+                at,
+                "resolves a 0.7.2 theme, .resolve( without a &ThemeContext or egui's &Style"
+                    .to_string(),
+            ));
+        }
+    }
+    findings.sort();
+    findings
+}
+
+/// The egui showcase reads no 0.7.2 theme, as the gpui showcase's
+/// `the_showcase_reads_no_0_7_2_theme`: no file of it, the tests included, names a read or
+/// install of [`OLD_MODEL_THEME_READS`] or [`OLD_MODEL_LITERAL_READS`] or resolves a 0.7.2
+/// theme ([`old_model_reads`]). Comments and strings are not read: a note may name what the
+/// 0.7.2 model did.
+#[test]
+fn the_showcase_reads_no_0_7_2_theme() {
+    let mut findings = Vec::new();
+    let mut files = 0usize;
+    for (path, code) in showcase_sources() {
+        files += 1;
+        for (at, what) in old_model_reads(&code) {
+            let line = code
+                .get(..at)
+                .map(|s| s.matches('\n').count() + 1)
+                .unwrap_or_default();
+            findings.push(format!("{path}:{line}: {what}"));
+        }
+    }
+    assert!(files > 1, "the detector read no showcase file");
+    assert!(
+        findings.is_empty(),
+        "the egui showcase still reads the 0.7.2 theme:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// [`old_model_reads`] refuses each 0.7.2 read, however it is written, and takes its 0.8.0 or
+/// egui namesake: one refused and one taken snippet per pattern.
+#[test]
+fn old_model_reads_refuses_each_pattern() {
+    let refused = [
+        "let t = native_theme::Theme::preset(\"x\")?;",
+        "use native_theme::theme::Theme;\nfn f() { let t = Theme::preset(\"x\"); }",
+        "use native_theme::{AccessibilityPreferences, theme::Theme};",
+        "use native_theme::theme::Theme as Old;",
+        "let t = native_theme::theme::Theme::from_toml(s);",
+        "let t = native_theme_egui::from_preset(p, None);",
+        "let l = native_theme_egui::from_system();",
+        "let s = native_theme::SystemTheme::from_system();",
+        "use native_theme_egui::SystemThemeExt as _;",
+        "let a = system.to_egui_atlas();",
+        "let b = system.to_egui_builder();",
+        "let r = v.resolve_with(m, &c);",
+        "let r = v.into_resolved(c);",
+        "let c = native_theme::ResolutionContext::default();",
+        "fn f(r: &native_theme::Resolved) {}",
+        "fn f(r: &native_theme::ResolvedTheme) {}",
+        "fn f(r: &native_theme_egui::ResolvedTheme) {}",
+        "use native_theme_egui::{ColorMode, ResolvedTheme};",
+        "fn f(r: &ResolvedTheme) {}",
+        "fn f(f: &native_theme::theme::ResolvedFontSpec) {}",
+        "let m = native_theme::ThemeMode::default();",
+        "let a = native_theme_egui::to_theme(&r, \"x\");",
+        "let p = native_theme::platform_preset_name();",
+        "let r = atlas.resolved_for(egui::Theme::Dark);",
+        "let b = ThemeAtlas::builder(\"x\", &light, &dark);",
+        "let b = native_theme_egui::ThemeAtlas::builder(\"x\", &light, &dark);",
+        "let r = theme.resolve(native_theme::ColorMode::Dark);",
+        "let r = theme.resolve(mode);",
+        "variant.resolve();",
+    ];
+    for code in refused {
+        assert!(
+            !old_model_reads(code).is_empty(),
+            "takes a 0.7.2 read: {code}"
+        );
+    }
+    let taken = [
+        "let t = native_theme::next::Theme::preset(p);",
+        "use native_theme::next::{Preset, Theme};\nfn f() { let t = Theme::preset(p); }",
+        "let t = NextTheme::preset(p).resolve(&ctx);",
+        "let t = native_theme::next::Theme::from_system();",
+        "use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};",
+        "fn f(r: &native_theme::next::ResolvedTheme) {}",
+        "use native_theme_egui::{ColorMode, ThemeAtlas};",
+        "let b = ThemeAtlas::next_builder(\"x\", &light, &dark);",
+        "let r = atlas.next_resolved_for(egui::Theme::Dark);",
+        "fn f(t: egui::SystemTheme) {}",
+        "let p = native_theme_egui::next::font_plan_from_system(light);",
+        "let r = system\n    .resolve(\n        &ctx);",
+        "let f = egui::TextStyle::Body.resolve(ui.style()).size;",
+        "let f = egui::TextStyle::Monospace.resolve(style);",
+        "let f = egui::TextStyle::Body.resolve(&harness.ctx.global_style());",
+        "let presets = native_theme::theme::Theme::list_presets();",
+        "let p = native_theme::AccessibilityPreferences::default();",
+    ];
+    for code in taken {
+        assert_eq!(
+            old_model_reads(code),
+            Vec::new(),
+            "refuses a 0.8.0 or egui read: {code}"
+        );
+    }
 }
 
 #[test]
@@ -12679,8 +13085,8 @@ fn scope_style(
 /// The chrome toolbar's tool buttons are outlined hovered and pressed in the «toolbar» scope's
 /// hovered and pressed button's stroke, which `demo::next_tool_button` leaves to the scope: where
 /// a rule states `toolbar.button(HOVER)` and `toolbar.button(PRESSED)`'s stroke, its width
-/// (kde-breeze light patched to twice its stated hover width, which the 0.7.2
-/// `button.border.line_width` beside it is not), and where none does, the scope's own hovered
+/// (kde-breeze light patched to twice its stated hover width, which the unpatched
+/// `toolbar.button(HOVER)` width is not), and where none does, the scope's own hovered
 /// and pressed button's (windows-11 light states neither, and its scope's own button is
 /// outlined, spec §10 rule 0). The Command Palette
 /// button, hovered and then pressed, is painted in that pen.
@@ -13206,7 +13612,7 @@ fn the_theme_row_offers_the_08_models_presets_of_this_platform() {
             ThemeChoice::Default => None,
         })
         .collect();
-    let here: BTreeSet<&str> = Theme::list_presets_for_platform()
+    let here: BTreeSet<&str> = native_theme::theme::Theme::list_presets_for_platform()
         .iter()
         .map(|info| info.key)
         .filter(|key| Preset::from_name(key).is_some())
@@ -13219,7 +13625,7 @@ fn the_theme_row_offers_the_08_models_presets_of_this_platform() {
             "{key} is no preset of the 0.8.0 model"
         );
     }
-    for info in Theme::list_presets() {
+    for info in native_theme::theme::Theme::list_presets() {
         if Preset::from_name(info.key).is_none() {
             assert!(!offered.contains(info.key), "{} is offered", info.key);
         }
