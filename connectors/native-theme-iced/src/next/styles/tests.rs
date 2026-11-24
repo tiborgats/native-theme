@@ -376,11 +376,24 @@ fn an_all_gradient_fill_is_unmapped() -> TestResult {
     let fill = PartPatch::new().fill(gradient);
     let patch = ThemePatch::new()
         .button(ButtonRule::new().body(fill.clone()))
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::HOVER)
+                .body(fill.clone()),
+        )
         .toolbar(ToolbarRule::new().bar(fill.clone()))
         .input(InputRule::new().field(fill));
     let r = Theme::preset(Preset::KdeBreeze)
         .with_patch(patch)
         .resolve(&ThemeContext::light());
+    assert_eq!(
+        super::super::fill_of(&r.button.body(WidgetState::NONE), "at rest"),
+        Err(super::super::Unmapped("at rest"))
+    );
+    assert_eq!(
+        super::super::state_fill_of(&r.button.body(WidgetState::HOVER), "hovered"),
+        Err(super::super::Unmapped("hovered"))
+    );
     assert_eq!(
         super::button(&r).err(),
         Some(super::super::Unmapped("button.body(NONE).fill"))
@@ -2180,7 +2193,7 @@ fn a_toolbar_keeps_iceds_own_per_property() -> TestResult {
         let theme = to_theme(&r)?;
         let bar = super::toolbar(&r)?(&theme);
         assert_eq!(bar.text_color, Some(to_color(LABEL)), "{preset:?}");
-        let fill = super::super::fill_of(&r.toolbar.bar(WidgetState::NONE));
+        let fill = super::super::fill_of(&r.toolbar.bar(WidgetState::NONE), "toolbar")?;
         assert_eq!(
             background_color(bar.background),
             fill.or(background_color(iced.background)),
@@ -2958,7 +2971,7 @@ fn a_pane_grid_keeps_iceds_own_per_property() -> TestResult {
         let width = r.splitter.divider_width;
         let handle = r.splitter.handle(WidgetState::HOVER);
         let grid = super::pane_grid(&r)?(&theme);
-        let expected = super::super::fill_of(&handle);
+        let expected = super::super::fill_of(&handle, "handle")?;
         assert_eq!(
             grid.hovered_split.color,
             expected.unwrap_or(own.hovered_split.color),
@@ -2993,7 +3006,7 @@ fn an_application_keeps_iceds_own_per_property() -> TestResult {
         let stated = super::application(&r)?(&theme);
         assert_eq!(
             stated.background_color,
-            super::super::fill_of(&frame).unwrap_or(base.background_color),
+            super::super::fill_of(&frame, "frame")?.unwrap_or(base.background_color),
             "{preset:?}"
         );
         assert_eq!(stated.text_color, base.text_color, "{preset:?}");

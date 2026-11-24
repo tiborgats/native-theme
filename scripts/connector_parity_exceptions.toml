@@ -832,3 +832,9 @@ connector = "iced"
 name = ["next::body_text_unmapped", "next::label_font_unmapped"]
 kind = "absent"
 reason = "gpui's checks of whether a theme-drawn widget's label has a font gpui can letter it in, where gpui shows gpui-component's own control in its place (connectors/native-theme-gpui/src/next/mod.rs, `label_font_unmapped`'s and `body_text_unmapped`'s doc). iced's connector sets no widget's font: its style builders give a label only its colour (src/next/styles.rs, `button_source`: `button.label(..).color`), and the application sets each text's font and size itself (src/lib.rs, `radio`'s doc: \"Set the label's `text_size` and `font` on `radio` before passing it\"), from `next::font`, which returns `Unmapped` where the style states no family, weight or slant, or a slant iced has no face for (src/next/mod.rs, `face_style`), and `next::font_size`"
+
+[[exception]]
+connector = "iced"
+name = ["next::fill_of", "next::state_fill_of"]
+kind = "unlike"
+reason = "iced's take the fill's home and return `Mapped<Option<Color>>`: a fill stated as layers that are all gradients has no single colour, and iced's reports it `Unmapped` at that home (spec §10, rule 4) where gpui's and egui's return `None`, the answer they give for a fill the theme leaves unstated, so a reader of theirs draws the toolkit's own in place of a stated value; iced's styles take every fill through the same two (src/next/mod.rs, `fill_of`'s and `state_fill_of`'s doc)"

@@ -5218,9 +5218,9 @@ fn ghost_button(
 ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
     let b = &r.button;
     let label = iced_next::text_color_of(&b.label(flat(WidgetState::NONE)));
-    let hover = iced_next::state_fill_of(&b.body(flat(WidgetState::HOVER)));
+    let hover = drawn_state_fill(&b.body(flat(WidgetState::HOVER)));
     let hover_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::HOVER)));
-    let pressed = iced_next::state_fill_of(&b.body(flat(WidgetState::PRESSED)));
+    let pressed = drawn_state_fill(&b.body(flat(WidgetState::PRESSED)));
     let pressed_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::PRESSED)));
     let disabled_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::DISABLED)));
     let radius = iced_next::radius_of(&b.body(flat(WidgetState::NONE)));
@@ -5229,7 +5229,7 @@ fn ghost_button(
         part.from_state
             .contains(PartStated::STROKE)
             .then(|| {
-                let under = iced_next::state_fill_of(&part).unwrap_or(Color::TRANSPARENT);
+                let under = drawn_state_fill(&part).unwrap_or(Color::TRANSPARENT);
                 next_edge(&part, under)
             })
             .flatten()
@@ -5289,6 +5289,26 @@ fn ghost_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
 /// `variant=Flat` button of the 0.8.0 model's homes.
 fn flat(state: WidgetState) -> ButtonQuery {
     ButtonQuery::flat().state(state)
+}
+
+/// The home a drawing site hands the connector's fill readers. A drawing
+/// site draws iced's own where the reader is `Unmapped` and shows no
+/// error, so the home is not read there.
+const DRAWN_FILL: &str = "a fill a showcase drawing site reads";
+
+/// A part's fill as the page draws it: `iced_next::fill_of`'s colour where
+/// the theme states one, `None` where it is unstated, or stated as layers
+/// that are all gradients (`Unmapped`, spec §10 rule 4), iced's own then
+/// drawn there.
+fn drawn_fill(part: &PartStyle) -> Option<Color> {
+    iced_next::fill_of(part, DRAWN_FILL).ok().flatten()
+}
+
+/// A part's fill as the page draws it in a state a rule states it for,
+/// `iced_next::state_fill_of`'s colour; `None` where no rule states it, or
+/// it is `Unmapped` (spec §10 rule 4), iced's own then drawn there.
+fn drawn_state_fill(part: &PartStyle) -> Option<Color> {
+    iced_next::state_fill_of(part, DRAWN_FILL).ok().flatten()
 }
 
 /// A stroke of the 0.8.0 model as iced draws it on a widget it paints
@@ -5391,7 +5411,7 @@ fn menu_row(
     let label = iced_next::text_color_of(&m.item_label(WidgetState::NONE));
     let lit = |state: WidgetState| {
         let part = m.item(state);
-        let fill = iced_next::state_fill_of(&part);
+        let fill = drawn_state_fill(&part);
         let edge = part
             .from_state
             .contains(PartStated::STROKE)
@@ -5454,9 +5474,9 @@ fn menu_title(
 ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
     let (m, b) = (&r.menu, &r.menu_bar);
     let label = iced_next::text_color_of(&m.item_label(WidgetState::NONE));
-    let hover = iced_next::state_fill_of(&b.item(WidgetState::HOVER))
-        .or_else(|| iced_next::state_fill_of(&m.item(WidgetState::HOVER)));
-    let open_fill = iced_next::state_fill_of(&b.item(WidgetState::OPEN)).or(hover);
+    let hover = drawn_state_fill(&b.item(WidgetState::HOVER))
+        .or_else(|| drawn_state_fill(&m.item(WidgetState::HOVER)));
+    let open_fill = drawn_state_fill(&b.item(WidgetState::OPEN)).or(hover);
     let menu_lit = iced_next::state_text_color_of(&m.item_label(WidgetState::HOVER));
     let hover_label =
         iced_next::state_text_color_of(&b.item_label(WidgetState::HOVER)).or(menu_lit);
@@ -5612,17 +5632,17 @@ fn tab_style(
     let t = &r.tab;
     let open = t.tab(WidgetState::SELECTED);
     let rest = (
-        iced_next::fill_of(&t.tab(WidgetState::NONE)),
+        drawn_fill(&t.tab(WidgetState::NONE)),
         iced_next::text_color_of(&t.label(WidgetState::NONE)),
     );
     let lit = if selected {
         (
-            iced_next::fill_of(&open),
+            drawn_fill(&open),
             iced_next::text_color_of(&t.label(WidgetState::SELECTED)),
         )
     } else {
         (
-            iced_next::state_fill_of(&t.tab(WidgetState::HOVER)),
+            drawn_state_fill(&t.tab(WidgetState::HOVER)),
             iced_next::state_text_color_of(&t.label(WidgetState::HOVER)),
         )
     };
@@ -5689,7 +5709,7 @@ fn list_lit(
     state: WidgetState,
 ) -> (Option<Color>, Option<iced::Border>, Option<Color>) {
     let part = l.highlight(state);
-    let fill = iced_next::state_fill_of(&part);
+    let fill = drawn_state_fill(&part);
     let edge = part
         .from_state
         .contains(PartStated::STROKE)
@@ -5785,7 +5805,7 @@ fn next_selection_pair(
 fn list_frame(
     r: &native_theme::next::ResolvedTheme,
 ) -> impl Fn(&Theme) -> container::Style + use<> {
-    let fill = iced_next::fill_of(&r.list.container(WidgetState::NONE));
+    let fill = drawn_fill(&r.list.container(WidgetState::NONE));
     let border = list_frame_border(r);
     move |_theme| {
         let own = container::Style::default();
@@ -5805,7 +5825,7 @@ fn list_frame(
 fn list_frame_border(r: &native_theme::next::ResolvedTheme) -> iced::Border {
     let frame = r.list.container(WidgetState::NONE);
     let own = container::Style::default().border;
-    let fill = iced_next::fill_of(&frame).unwrap_or(Color::TRANSPARENT);
+    let fill = drawn_fill(&frame).unwrap_or(Color::TRANSPARENT);
     let border = next_edge(&frame, fill).unwrap_or(own);
     iced_next::radius_of(&frame).map_or(border, |radius| border.rounded(radius))
 }
@@ -6389,7 +6409,7 @@ impl Line {
     /// The line's colour, where the theme states it.
     fn colour(self, r: &native_theme::next::ResolvedTheme) -> Option<Color> {
         match self {
-            Self::MenuSeparator => iced_next::fill_of(&r.menu.separator(WidgetState::NONE)),
+            Self::MenuSeparator => drawn_fill(&r.menu.separator(WidgetState::NONE)),
             Self::StatusBar => iced_next::stroke_color_of(&r.status_bar.bar),
         }
     }
@@ -6448,19 +6468,19 @@ fn surface(
 ) -> impl Fn(&Theme) -> container::Style + use<> {
     let (background, text_color) = match surface {
         Surface::Window => (
-            iced_next::fill_of(&r.window.frame(native_theme::next::WindowState::default())),
+            drawn_fill(&r.window.frame(native_theme::next::WindowState::default())),
             r.colors.window.foreground.map(next_colour),
         ),
         Surface::SidePanel => (
-            iced_next::fill_of(&r.sidebar.container(WidgetState::NONE)),
+            drawn_fill(&r.sidebar.container(WidgetState::NONE)),
             iced_next::text_color_of(&r.sidebar.item_label(WidgetState::NONE)),
         ),
         Surface::TabStrip => (
-            iced_next::fill_of(&r.tab.bar(WidgetState::NONE)),
+            drawn_fill(&r.tab.bar(WidgetState::NONE)),
             iced_next::text_color_of(&r.tab.label(WidgetState::NONE)),
         ),
         Surface::StatusBar => (
-            iced_next::fill_of(&r.status_bar.bar),
+            drawn_fill(&r.status_bar.bar),
             iced_next::text_color_of(&r.status_bar.label),
         ),
     };
@@ -6864,7 +6884,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
 /// installed 0.8.0 theme; `None`, iced's own container, which fills
 /// nothing, where unstated.
 fn menu_bar_row(r: &native_theme::next::ResolvedTheme) -> Option<Color> {
-    iced_next::fill_of(&r.toolbar.bar(WidgetState::NONE))
+    drawn_fill(&r.toolbar.bar(WidgetState::NONE))
 }
 
 /// The window's toolbar (spec §2.3, platform-facts §2.13): three flat
@@ -8115,8 +8135,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
     )])
     .style({
         let style = menu_bar_style(r);
-        let window =
-            iced_next::fill_of(&r.window.frame(native_theme::next::WindowState::default()));
+        let window = drawn_fill(&r.window.frame(native_theme::next::WindowState::default()));
         move |theme, status| {
             let style = style(theme, status);
             iced_aw::style::menu_bar::Style {
@@ -8190,10 +8209,10 @@ fn menu_bar_style(
     } else {
         iced_next::radius_of(&r.popover.panel)
     };
-    let bar = iced_next::fill_of(&r.menu_bar.bar(WidgetState::NONE));
-    let fill = iced_next::fill_of(&panel);
+    let bar = drawn_fill(&r.menu_bar.bar(WidgetState::NONE));
+    let fill = drawn_fill(&panel);
     let hover = m.item(WidgetState::HOVER);
-    let highlight = iced_next::state_fill_of(&hover);
+    let highlight = drawn_state_fill(&hover);
     let hover_stroke = hover.from_state.contains(PartStated::STROKE);
     let item_radius = iced_next::radius_of(&m.item(WidgetState::NONE));
     let shadow = next_shadow(&panel).or_else(|| next_shadow(&r.popover.panel));
@@ -8267,7 +8286,7 @@ fn splitter(state: &State) -> Element<'_, Message> {
 /// dragged), which is the fill at rest where no rule states a hover fill;
 /// `None` where the theme states no fill.
 fn splitter_colour(r: &native_theme::next::ResolvedTheme, hovered: bool) -> Option<Color> {
-    iced_next::fill_of(&r.splitter.handle(if hovered {
+    drawn_fill(&r.splitter.handle(if hovered {
         WidgetState::HOVER
     } else {
         WidgetState::NONE
@@ -9151,7 +9170,7 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         // `styles::button`'s pressed pair, which `styles::button_default`'s
         // rows do not cover.
         _ if under("basic.buttons.dialog_default")
-            && iced_next::state_fill_of(&resolved.button.body(WidgetState::DEFAULT)).is_some()
+            && drawn_state_fill(&resolved.button.body(WidgetState::DEFAULT)).is_some()
             && (leaf == "button.active_background" || leaf == "button.active_text_color") =>
         {
             Drawing::only(BUTTON, &["Pressed"], &[])
@@ -9598,9 +9617,9 @@ fn ghost_route(
 ) -> String {
     let b = &r.button;
     let label = iced_next::text_color_of(&b.label(flat(WidgetState::NONE))).is_some();
-    let hover = iced_next::state_fill_of(&b.body(flat(WidgetState::HOVER))).is_some();
+    let hover = drawn_state_fill(&b.body(flat(WidgetState::HOVER))).is_some();
     let hover_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::HOVER))).is_some();
-    let pressed = iced_next::state_fill_of(&b.body(flat(WidgetState::PRESSED))).is_some();
+    let pressed = drawn_state_fill(&b.body(flat(WidgetState::PRESSED))).is_some();
     let pressed_label =
         iced_next::state_text_color_of(&b.label(flat(WidgetState::PRESSED))).is_some();
     let route = match leaf {
@@ -9738,7 +9757,7 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String
     let t = &r.tab;
     let open = t.tab(WidgetState::SELECTED);
     let route = match leaf {
-        "tab.active_background" if iced_next::fill_of(&open).is_none() => {
+        "tab.active_background" if drawn_fill(&open).is_none() => {
             "not drawn: tab.tab(SELECTED).fill is unstated, so tab_style fills the open tab as \
              a tab at rest"
         }
@@ -9755,14 +9774,12 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String
         "tab.active_text_color" => {
             "tab_style: the open tab's text colour, tab.label(SELECTED).color"
         }
-        "tab.background_color" if iced_next::fill_of(&t.tab(WidgetState::NONE)).is_none() => {
+        "tab.background_color" if drawn_fill(&t.tab(WidgetState::NONE)).is_none() => {
             "not drawn: tab.tab(NONE).fill is unstated, so a tab at rest has iced's own flat \
              button's fill (button::text), none"
         }
         "tab.background_color" => "tab_style: a tab's background at rest, tab.tab(NONE).fill",
-        "tab.hover_background"
-            if iced_next::state_fill_of(&t.tab(WidgetState::HOVER)).is_none() =>
-        {
+        "tab.hover_background" if drawn_state_fill(&t.tab(WidgetState::HOVER)).is_none() => {
             "not drawn: tab.tab(HOVER).fill is unstated; tab_style fills a tab under the pointer \
              as at rest"
         }
@@ -9807,13 +9824,13 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String
 /// reads.
 fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -> Option<String> {
     let l = &r.list;
-    let fill = |state: WidgetState| iced_next::state_fill_of(&l.highlight(state)).is_some();
+    let fill = |state: WidgetState| drawn_state_fill(&l.highlight(state)).is_some();
     let ink = |state: WidgetState| iced_next::state_text_color_of(&l.item_label(state)).is_some();
     let (hover, selected) = (WidgetState::HOVER, WidgetState::SELECTED);
     let container = l.container(WidgetState::NONE);
     let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
     let route = match leaf {
-        "list.background_color" if iced_next::fill_of(&container).is_none() => {
+        "list.background_color" if drawn_fill(&container).is_none() => {
             "not drawn: list.container(NONE).fill is unstated, so the frame is iced's own \
              container, which has no fill"
         }
@@ -9957,7 +9974,7 @@ fn table_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -
         "list.header_font.color" => {
             "basic_table: the header cells' text colour, list.header_label(NONE).color"
         }
-        "list.header_background" if iced_next::fill_of(&l.header(none)).is_none() => {
+        "list.header_background" if drawn_fill(&l.header(none)).is_none() => {
             "not drawn: list.header(NONE).fill is unstated, so the header row is not filled"
         }
         "list.header_background" => {
@@ -9984,9 +10001,7 @@ fn table_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -
         "list.grid_color" => {
             "basic_table: the grid lines' colour (rules between the cells), list.grid_color"
         }
-        "list.header_separator_color"
-            if iced_next::fill_of(&l.header_separator(none)).is_none() =>
-        {
+        "list.header_separator_color" if drawn_fill(&l.header_separator(none)).is_none() => {
             "not drawn: list.header_separator(NONE).fill is unstated; basic_table draws the \
              header's lines in list.grid_color"
         }
@@ -10258,13 +10273,13 @@ fn tab_layout_route(
 /// is drawn in its place. `None` for a leaf neither reads.
 fn menu_route(r: &native_theme::next::ResolvedTheme, leaf: &str, title: bool) -> Option<String> {
     let (m, b) = (&r.menu, &r.menu_bar);
-    let fill = |part: PartStyle| iced_next::state_fill_of(&part).is_some();
+    let fill = |part: PartStyle| drawn_state_fill(&part).is_some();
     let ink = |text: TextStyle| iced_next::state_text_color_of(&text).is_some();
     let stroke = |part: PartStyle| part.from_state.contains(PartStated::STROKE);
     let hover = WidgetState::HOVER;
     let pressed = WidgetState::PRESSED;
     let route = match leaf {
-        "menu.background_color" if iced_next::fill_of(&m.panel(WidgetState::NONE)).is_some() => {
+        "menu.background_color" if drawn_fill(&m.panel(WidgetState::NONE)).is_some() => {
             "menu_bar_style: menu_background, menu.panel(NONE).fill"
         }
         "menu.background_color" => {
@@ -15708,13 +15723,13 @@ impl TableColours {
         let (selected_fill, selected_ink) = next_selection_pair(r, window_active);
         let grid = next_colour(l.grid_color);
         Self {
-            header_fill: iced_next::fill_of(&l.header(view)),
+            header_fill: drawn_fill(&l.header(view)),
             header_ink: iced_next::text_color_of(&l.header_label(view)),
             row_ink: iced_next::text_color_of(&l.item_label(view)),
             selected_fill,
             selected_ink,
             grid,
-            header_line: iced_next::fill_of(&l.header_separator(view)).unwrap_or(grid),
+            header_line: drawn_fill(&l.header_separator(view)).unwrap_or(grid),
         }
     }
 }
@@ -18847,7 +18862,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     let item_label = next.list.item_label(WidgetState::NONE);
     let (header_label, item_label) = (&header_label, &item_label);
     let head_ink = iced_next::text_color_of(header_label);
-    let head_fill = iced_next::fill_of(&next.list.header(WidgetState::NONE));
+    let head_fill = drawn_fill(&next.list.header(WidgetState::NONE));
     let header_cell = |title: &'static str, width: f32| -> Element<'_, Message> {
         let title = text(title).next_text(header_label, typography);
         container(match head_ink {
@@ -19026,7 +19041,7 @@ impl ThemeSketch {
     fn from_next(r: &native_theme::next::ResolvedTheme) -> Self {
         let card = r.card.container(WidgetState::NONE);
         Self {
-            surface: iced_next::fill_of(&card),
+            surface: drawn_fill(&card),
             outline: next_colour(r.separator.color),
             outline_width: r.separator.thickness,
             corner_radius: iced_next::radius_of(&card),
@@ -21142,9 +21157,9 @@ type ThemeMapColour = (&'static str, &'static str, Option<Color>);
 
 /// The Theme Map's resolved colours on the installed 0.8.0 theme `r`, each
 /// named after the 0.7.2 field it showed and read from that field's 0.8.0
-/// home: a colour role as stated, a part's fill as `iced_next::fill_of`
-/// reads it and a text's colour as `iced_next::text_color_of` does, each
-/// `None` where unstated.
+/// home: a colour role as stated, a part's fill as [`drawn_fill`] reads it
+/// and a text's colour as `iced_next::text_color_of` does, each `None`
+/// where unstated.
 fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 37] {
     let c = &r.colors;
     let role = |color: native_theme::next::Color| Some(next_colour(color));
@@ -21179,7 +21194,7 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
         (
             "btn_bg",
             "button.body(NONE).fill",
-            iced_next::fill_of(&r.button.body(none)),
+            drawn_fill(&r.button.body(none)),
         ),
         (
             "btn_fg",
@@ -21189,7 +21204,7 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
         (
             "btn_primary",
             "button.body(NONE;variant=Primary).fill",
-            iced_next::fill_of(&r.button.body(ButtonQuery::primary())),
+            drawn_fill(&r.button.body(ButtonQuery::primary())),
         ),
         ("danger", "colors.error.fill", role(c.error.fill)),
         (
@@ -21226,7 +21241,7 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
         (
             "sidebar_bg",
             "sidebar.container(NONE).fill",
-            iced_next::fill_of(&r.sidebar.container(none)),
+            drawn_fill(&r.sidebar.container(none)),
         ),
         (
             "sidebar_fg",
@@ -21236,7 +21251,7 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
         (
             "tooltip_bg",
             "tooltip.panel.fill",
-            iced_next::fill_of(&r.tooltip.panel),
+            drawn_fill(&r.tooltip.panel),
         ),
         (
             "tooltip_fg",
@@ -21246,7 +21261,7 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
         (
             "popover_bg",
             "popover.panel.fill",
-            iced_next::fill_of(&r.popover.panel),
+            drawn_fill(&r.popover.panel),
         ),
         (
             "popover_fg",
@@ -21256,7 +21271,7 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
         (
             "input_bg",
             "input.field(NONE).fill",
-            iced_next::fill_of(&r.input.field(none)),
+            drawn_fill(&r.input.field(none)),
         ),
         (
             "input_fg",
@@ -21268,7 +21283,7 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
         (
             "alt_row",
             "list.row(NONE;alternate=true).fill",
-            iced_next::fill_of(&r.list.row(alternate_row)),
+            drawn_fill(&r.list.row(alternate_row)),
         ),
         (
             "sel_inactive",
@@ -21283,7 +21298,7 @@ fn theme_map_colours(r: &native_theme::next::ResolvedTheme) -> [ThemeMapColour; 
         (
             "card_bg",
             "card.container(NONE).fill",
-            iced_next::fill_of(&r.card.container(none)),
+            drawn_fill(&r.card.container(none)),
         ),
     ]
 }
@@ -23032,7 +23047,7 @@ mod tests {
             Message::ThemeSelected(ThemeChoice::Preset("kde-breeze".to_string())),
         );
         let r = state.next_shown().clone();
-        let checked_fill = iced_next::state_fill_of(&r.toolbar.button(WidgetState::CHECKED));
+        let checked_fill = drawn_state_fill(&r.toolbar.button(WidgetState::CHECKED));
         let checked_text = iced_next::state_text_color_of(&r.button.label(WidgetState::CHECKED));
         assert!(
             checked_fill.is_some() && checked_text.is_some(),
@@ -27874,7 +27889,7 @@ mod tests {
                 );
                 let pair = |r: &native_theme::next::ResolvedTheme, state: WidgetState| {
                     (
-                        iced_next::state_fill_of(&r.list.highlight(state)),
+                        drawn_state_fill(&r.list.highlight(state)),
                         iced_next::state_text_color_of(&r.list.item_label(state)),
                     )
                 };
@@ -27945,7 +27960,7 @@ mod tests {
             Some(to_color(native_theme::Rgba::rgb(0x23, 0x26, 0x29))),
         );
         let list = (
-            iced_next::state_fill_of(&state.next_resolved.list.highlight(WidgetState::SELECTED)),
+            drawn_state_fill(&state.next_resolved.list.highlight(WidgetState::SELECTED)),
             iced_next::state_text_color_of(
                 &state.next_resolved.list.item_label(WidgetState::SELECTED),
             ),
@@ -28009,7 +28024,7 @@ mod tests {
         ));
         state.basic_list_selected = Some(1);
         let fill = |r: &native_theme::next::ResolvedTheme, state: WidgetState| {
-            iced_next::state_fill_of(&r.list.highlight(state)).unwrap_or(Color::TRANSPARENT)
+            drawn_state_fill(&r.list.highlight(state)).unwrap_or(Color::TRANSPARENT)
         };
         let inactive = fill(
             &state.next_inactive,
@@ -28100,9 +28115,9 @@ mod tests {
         let Ok(theme) = native_theme_iced::next::to_theme(r) else {
             panic!("kde-breeze's 0.8.0 theme maps to no iced theme");
         };
-        let hovered = iced_next::state_fill_of(&r.list.header(WidgetState::HOVER));
+        let hovered = drawn_state_fill(&r.list.header(WidgetState::HOVER));
         assert!(hovered.is_some(), "kde-breeze states the hovered fill");
-        let pressed = iced_next::state_fill_of(&r.list.header(WidgetState::PRESSED)).or(hovered);
+        let pressed = drawn_state_fill(&r.list.header(WidgetState::PRESSED)).or(hovered);
         for first in [true, false] {
             let style = header_section_style(r, first);
             for (status, want) in [
@@ -28417,9 +28432,7 @@ mod tests {
                 }
             }
 
-            let Some(selection) =
-                iced_next::state_fill_of(&r.list.highlight(WidgetState::SELECTED))
-            else {
+            let Some(selection) = drawn_state_fill(&r.list.highlight(WidgetState::SELECTED)) else {
                 faults.push(format!(
                     "{preset}: list.highlight(SELECTED).fill is unstated"
                 ));
@@ -28940,8 +28953,7 @@ mod tests {
                 y: row_1.y + 2.0 * row_1.height,
                 ..row_1
             };
-            let Some(hover) = iced_next::state_fill_of(&next.list.highlight(WidgetState::HOVER))
-            else {
+            let Some(hover) = drawn_state_fill(&next.list.highlight(WidgetState::HOVER)) else {
                 faults.push(format!("{preset}: list.highlight(HOVER).fill is unstated"));
                 continue;
             };
@@ -33979,9 +33991,8 @@ mod tests {
         for home in homes {
             if home == UNPATCHED_HOME {
                 let shown = combinations.iter().all(|(_, r)| {
-                    let frame = native_theme_iced::next::fill_of(
-                        &r.window.frame(native_theme::next::WindowState::default()),
-                    );
+                    let frame =
+                        drawn_fill(&r.window.frame(native_theme::next::WindowState::default()));
                     frame.is_none_or(|colour| {
                         next_drawn_by(function, r)
                             .is_some_and(|drawn| drawn.contains(&format!("{colour:?}")))
@@ -34024,7 +34035,7 @@ mod tests {
             };
         assert_eq!(
             read("splitter.handle(HOVER).fill", &|r| {
-                native_theme_iced::next::fill_of(&r.splitter.handle(WidgetState::HOVER))
+                drawn_fill(&r.splitter.handle(WidgetState::HOVER))
             }),
             colour
         );
@@ -34144,7 +34155,7 @@ mod tests {
                             state
                         };
                         let part = r.button.body(flat(state));
-                        let under = iced_next::state_fill_of(&part).unwrap_or(Color::TRANSPARENT);
+                        let under = drawn_state_fill(&part).unwrap_or(Color::TRANSPARENT);
                         let stated = part
                             .from_state
                             .contains(PartStated::STROKE)
@@ -39434,7 +39445,7 @@ mod tests {
             {
                 failures.push(format!("{label}: the hovered row's border is {border:?}"));
             }
-            let hover_fill = iced_next::state_fill_of(&r.menu.item(WidgetState::HOVER));
+            let hover_fill = drawn_state_fill(&r.menu.item(WidgetState::HOVER));
             if hover_fill.is_none() || hovered.background != hover_fill.map(iced::Background::Color)
             {
                 failures.push(format!("{label}: the hovered row's fill is {hovered:?}"));
@@ -39575,7 +39586,7 @@ mod tests {
             let (theme, next) = (&state.current_theme, state.next_shown());
             let b = &next.menu_bar;
             if [WidgetState::HOVER, WidgetState::OPEN].iter().any(|&s| {
-                iced_next::state_fill_of(&b.item(s)).is_some()
+                drawn_state_fill(&b.item(s)).is_some()
                     || iced_next::state_text_color_of(&b.item_label(s)).is_some()
             }) || iced_next::padding_of(&b.item(WidgetState::NONE))
                 .iter()
@@ -39584,7 +39595,7 @@ mod tests {
                 return Err(format!("{label} states a menu-bar field"));
             }
             let lit = (
-                iced_next::state_fill_of(&next.menu.item(WidgetState::HOVER))
+                drawn_state_fill(&next.menu.item(WidgetState::HOVER))
                     .map(|c| format!("{:?}", iced::Background::Color(c))),
                 iced_next::state_text_color_of(&next.menu.item_label(WidgetState::HOVER)),
             );
@@ -39887,7 +39898,7 @@ mod tests {
             let r = state.next_shown().clone();
             let label = format!("{preset} {mode:?}");
             let lit = r.list.highlight(WidgetState::HOVER);
-            let Some(hover) = iced_next::state_fill_of(&lit) else {
+            let Some(hover) = drawn_state_fill(&lit) else {
                 failures.push(format!("{label}: no hovered row's fill is stated"));
                 continue;
             };
@@ -40030,7 +40041,7 @@ mod tests {
         let r = state.next_shown().clone();
         let lit = r.list.highlight(WidgetState::HOVER);
         let (Some(fill), Some(line)) = (
-            iced_next::state_fill_of(&lit),
+            drawn_state_fill(&lit),
             iced_next::stroke_width_of(&lit).filter(|line| *line > 0.0),
         ) else {
             return vec![format!("{preset}: no hovered fill and outline: {lit:?}")];
@@ -40205,8 +40216,8 @@ mod tests {
         ));
         let r = state.next_shown().clone();
         let stated = (
-            iced_next::fill_of(&r.toolbar.bar(WidgetState::NONE)),
-            iced_next::fill_of(&r.window.frame(native_theme::next::WindowState::default())),
+            drawn_fill(&r.toolbar.bar(WidgetState::NONE)),
+            drawn_fill(&r.window.frame(native_theme::next::WindowState::default())),
         );
         let both = stated.0.zip(stated.1);
         assert!(

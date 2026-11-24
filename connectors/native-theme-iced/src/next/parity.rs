@@ -199,7 +199,7 @@ impl Field {
 }
 
 /// A home's value as the 0.8.0 builder reads it: a fill (a stated
-/// `Paint::None` transparent, [`super::fill_of`]) or a text colour; a
+/// `Paint::None` transparent, [`super::fill_color`]) or a text colour; a
 /// stroke width ([`super::stroke_width_of`]); the part whose stroke the
 /// builder lays over the fill ([`super::borders::line_or_none`]), on a
 /// disabled button `faded` by its opacity (`crate::styles::faded`); a
@@ -259,7 +259,7 @@ mod read {
     /// The fill.
     pub(super) fn fill(part: &PartStyle, gate: &PartStyle, state: WidgetState) -> Option<Value> {
         part_stated(gate, PartStated::FILL, state)
-            .then(|| crate::next::fill_of(part))
+            .then(|| crate::next::fill_color(part))
             .flatten()
             .map(Value::Color)
     }
@@ -1366,7 +1366,7 @@ fn disabled_mark(
     }
     Some(Value::Faded {
         color,
-        under: Some(super::fill_of(&c.indicator(state))?),
+        under: Some(super::fill_color(&c.indicator(state))?),
         ground: super::to_color(t.colors.window.background?),
         opacity: c.disabled_opacity,
     })
@@ -2969,7 +2969,12 @@ fn compare_styles(
 
     let button = [Active, Hovered, Pressed, Disabled];
     let b = ButtonSource::of(old);
-    let checked_fill = super::state_fill_of(&new.button.body(WidgetState::CHECKED));
+    let checked_fill = super::state_fill_of(
+        &new.button.body(WidgetState::CHECKED),
+        "button.body(CHECKED).fill",
+    )
+    .ok()
+    .flatten();
     let checked_label = super::state_text_color_of(&new.button.label(WidgetState::CHECKED));
     let at = move |l: Listed| {
         let s = b.listed(l);

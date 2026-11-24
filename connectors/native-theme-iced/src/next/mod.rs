@@ -137,30 +137,12 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 /// instead (`styles::state_layer`), whose no fill paints nothing in that
 /// state rather than the fill at rest under a transparent layer.
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<IcedColor> {
-    stated(fill_of(part), home)
+    stated(fill_color(part), home)
 }
 
-/// A part's fill as `fill` reads it, `None` where it is not stated: iced's
-/// own there (spec §10, rule 0); [`Unmapped`] where it is stated as layers
-/// that are all gradients, which have no single colour for iced to paint
-/// (spec §10, rule 4), never iced's own in their place.
-pub(crate) fn fill_or_own(part: &PartStyle, home: &'static str) -> Mapped<Option<IcedColor>> {
-    if part.stated.contains(PartStated::FILL) {
-        fill(part, home).map(Some)
-    } else {
-        Ok(None)
-    }
-}
-
-/// A part's fill as `fill` reads it, `None` where it is not stated, or
-/// stated as layers that are all gradients, which have no single colour:
-/// for a reader of what the theme states. The style functions draw a fill
-/// that is not stated as iced's own and report the gradients `Unmapped`
-/// (`fill_or_own`; spec §10, rules 0 and 4). A fill stated as none is
-/// transparent, and a layered paint gives its fallback colour (spec §10,
-/// rule 2: each solid layer its colour, each material its fallback, the
-/// topmost opaque one).
-pub fn fill_of(part: &PartStyle) -> Option<IcedColor> {
+/// A part's fill as [`fill`] reads it, `None` where it is not stated or
+/// has no single colour.
+pub(crate) fn fill_color(part: &PartStyle) -> Option<IcedColor> {
     if !part.stated.contains(PartStated::FILL) {
         return None;
     }
@@ -171,26 +153,40 @@ pub fn fill_of(part: &PartStyle) -> Option<IcedColor> {
     }
 }
 
-/// A part's fill where a rule states it for the queried state (its
-/// `from_state` bit), as [`fill`] reads it; `None` where none does, a soft
-/// option's unset value.
-pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<IcedColor>> {
-    if part.from_state.contains(PartStated::FILL) {
+/// A part's fill as the style functions draw it, `None` where it is not
+/// stated: iced's own there (spec §10, rule 0). A fill stated as none is
+/// transparent, and a layered paint gives its fallback colour (spec §10,
+/// rule 2: each solid layer its colour, each material its fallback, the
+/// topmost opaque one).
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` where the fill is stated as layers that are all
+/// gradients, which have no single colour for iced to paint (spec §10,
+/// rule 4), never iced's own in their place.
+pub fn fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<IcedColor>> {
+    if part.stated.contains(PartStated::FILL) {
         fill(part, home).map(Some)
     } else {
         Ok(None)
     }
 }
 
-/// A part's fill as `state_fill` reads it, `None` where no rule states it
-/// for the queried state, or it is stated in a form iced cannot paint (a
-/// layered paint with no fallback colour). The rule is for some flag of the
-/// query, not a given one (spec §2, `from_state`).
-pub fn state_fill_of(part: &PartStyle) -> Option<IcedColor> {
-    part.from_state
-        .contains(PartStated::FILL)
-        .then(|| fill_of(part))
-        .flatten()
+/// A part's fill as [`fill_of`] reads it, where a rule states it for the
+/// queried state (its `from_state` bit); `None` where none does, a soft
+/// option's unset value. The rule is for some flag of the query, not a
+/// given one (spec §2, `from_state`).
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` where the fill is stated as layers that are all
+/// gradients (spec §10, rule 4).
+pub fn state_fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<IcedColor>> {
+    if part.from_state.contains(PartStated::FILL) {
+        fill(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
 }
 
 /// A part's stroke colour as stated, where stated as one stroke of one
@@ -540,7 +536,7 @@ pub fn scrollbar_groove_width(r: &ResolvedTheme) -> Mapped<f32> {
 /// [`Unmapped`] where the fill is stated as a layered paint with no
 /// fallback colour.
 pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<IcedColor>> {
-    state_fill(
+    state_fill_of(
         &r.list.header(WidgetState::HOVER),
         "list.header(HOVER).fill",
     )
@@ -555,7 +551,7 @@ pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<IcedColo
 /// [`Unmapped`] where the fill is stated as a layered paint with no
 /// fallback colour.
 pub fn list_header_active_background(r: &ResolvedTheme) -> Mapped<Option<IcedColor>> {
-    state_fill(
+    state_fill_of(
         &r.list.header(WidgetState::PRESSED),
         "list.header(PRESSED).fill",
     )

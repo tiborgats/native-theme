@@ -784,7 +784,9 @@ rule 0).
   `Paint::fallback_color`): each solid layer its colour, each material its
   `fallback`, the topmost opaque one. Layers that are all gradients have no
   such colour, so the style is `Unmapped` at the fill's home
-  (`button.body(NONE).fill`), not iced's own fill; no preset states layers.
+  (`button.body(NONE).fill`), not iced's own fill, and so are
+  `next::fill_of` and `next::state_fill_of`, the readers the styles take a
+  fill through; no preset states layers.
 - **Shadows.** iced's `Shadow` is one outset shadow: a colour, an offset and
   a blur (`iced_core` 0.14.0 `src/shadow.rs`). The menu, the segmented
   control's track and the expander's frame cast the first outset layer the

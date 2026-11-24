@@ -11,7 +11,7 @@ use iced_core::theme::Theme;
 use native_theme::next::{PartStated, PartStyle, ResolvedTheme, WidgetState};
 
 use super::super::borders::{line_or_none, state_line, stroke_width};
-use super::super::{Mapped, fill_or_own, state_fill, state_text_color, text_color_of, to_color};
+use super::super::{Mapped, fill_of, state_fill_of, state_text_color, text_color_of, to_color};
 use super::{radius_or_iced, shadow};
 use crate::styles::Line;
 use crate::styles::aw::{self as old, CardSource, ListSource, MenuSource, TabBarSource};
@@ -55,7 +55,7 @@ pub(super) fn card_source(r: &ResolvedTheme) -> Mapped<CardSource> {
         "card.container(NONE).stroke.width",
     )?;
     Ok(CardSource {
-        background: fill_or_own(&c, "card.container(NONE).fill")?,
+        background: fill_of(&c, "card.container(NONE).fill")?,
         label: r.colors.window.foreground.map(to_color),
         line,
         width,
@@ -111,12 +111,12 @@ pub(super) fn menu_source(r: &ResolvedTheme) -> Mapped<MenuSource> {
         None => None,
     };
     Ok(MenuSource {
-        bar: fill_or_own(
+        bar: fill_of(
             &r.menu_bar.bar(WidgetState::NONE),
             "menu_bar.bar(NONE).fill",
         )?,
-        panel: fill_or_own(&panel, "menu.panel(NONE).fill")?,
-        highlight: state_fill(&hover, "menu.item(HOVER).fill")?,
+        panel: fill_of(&panel, "menu.panel(NONE).fill")?,
+        highlight: state_fill_of(&hover, "menu.item(HOVER).fill")?,
         frame_line,
         frame_width,
         frame_radius,
@@ -161,12 +161,12 @@ pub(super) fn tab_bar_source(r: &ResolvedTheme) -> Mapped<TabBarSource> {
         "tab.tab(NONE).stroke.width",
     )?;
     Ok(TabBarSource {
-        bar_background: fill_or_own(&t.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
-        background: fill_or_own(&idle, "tab.tab(NONE).fill")?,
+        bar_background: fill_of(&t.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
+        background: fill_of(&idle, "tab.tab(NONE).fill")?,
         idle_line,
         idle_width,
-        active_background: fill_or_own(&selected, "tab.tab(SELECTED).fill")?,
-        hover_background: state_fill(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")?,
+        active_background: fill_of(&selected, "tab.tab(SELECTED).fill")?,
+        hover_background: state_fill_of(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")?,
         label: text_color_of(&t.label(WidgetState::NONE)),
         active_label: text_color_of(&t.label(WidgetState::SELECTED)),
         hover_label: state_text_color(&t.label(WidgetState::HOVER), "tab.label(HOVER).color")?,
@@ -202,12 +202,12 @@ pub(super) fn sidebar_source(r: &ResolvedTheme) -> Mapped<ListSource> {
     )?;
     let label = text_color_of(&s.item_label(WidgetState::NONE));
     Ok(ListSource {
-        background: fill_or_own(&panel, "sidebar.container(NONE).fill")?,
-        selection_background: fill_or_own(
+        background: fill_of(&panel, "sidebar.container(NONE).fill")?,
+        selection_background: fill_of(
             &s.item(WidgetState::SELECTED),
             "sidebar.item(SELECTED).fill",
         )?,
-        hover_background: state_fill(&s.item(WidgetState::HOVER), "sidebar.item(HOVER).fill")?,
+        hover_background: state_fill_of(&s.item(WidgetState::HOVER), "sidebar.item(HOVER).fill")?,
         label,
         selection_label: text_color_of(&s.item_label(WidgetState::SELECTED)),
         hover_label: label,
@@ -244,12 +244,12 @@ pub(super) fn list_source(r: &ResolvedTheme) -> Mapped<ListSource> {
         "list.container(NONE).stroke.width",
     )?;
     Ok(ListSource {
-        background: fill_or_own(&panel, "list.container(NONE).fill")?,
-        selection_background: fill_or_own(
+        background: fill_of(&panel, "list.container(NONE).fill")?,
+        selection_background: fill_of(
             &l.highlight(WidgetState::SELECTED),
             "list.highlight(SELECTED).fill",
         )?,
-        hover_background: state_fill(
+        hover_background: state_fill_of(
             &l.highlight(WidgetState::HOVER),
             "list.highlight(HOVER).fill",
         )?,

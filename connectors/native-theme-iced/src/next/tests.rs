@@ -50,12 +50,6 @@ fn the_public_part_reads_are_the_mappings_own() -> TestResult {
             let part = r.button.body(state);
             let text = r.button.label(state);
             let at = format!("{preset:?} {state:?}");
-            assert_eq!(super::fill_of(&part), super::fill(&part, "h").ok(), "{at}");
-            assert_eq!(
-                super::state_fill_of(&part),
-                super::state_fill(&part, "h").ok().flatten(),
-                "{at}"
-            );
             assert_eq!(
                 super::stroke_color_of(&part),
                 super::borders::line(&part, "h").ok().map(|l| l.color),
