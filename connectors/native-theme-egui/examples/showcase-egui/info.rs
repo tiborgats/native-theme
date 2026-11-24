@@ -874,7 +874,12 @@ impl InfoView {
         (atlas, ctx): (&OldAtlas, &egui::Context),
     ) -> Self {
         let families = crate::demo::DrawnFamilies::of(ctx, atlas);
-        let family = |path: &str, font: &StatedFont| families.home_label(path, font);
+        let family = |path: &str, font: &StatedFont| {
+            families.as_ref().map_or_else(
+                || "error: the atlas holds no 0.8.0 light theme, whose families egui draws".into(),
+                |families| families.home_label(path, font),
+            )
+        };
         let seams = &shown.info.seams;
         // A row's route, with each note `mapping.toml` records on a row that holds its home or
         // a field of it, once, and each exception such a row records for the preset shown.
@@ -1408,9 +1413,8 @@ pub(crate) fn theme_tab(
         );
     }
     section(ui, "Fonts");
-    match r {
-        Some(r) => {
-            let families = crate::demo::DrawnFamilies::of(ui.ctx(), atlas);
+    match r.zip(crate::demo::DrawnFamilies::of(ui.ctx(), atlas)) {
+        Some((r, families)) => {
             let (body, mono) = (&r.typography.body, &r.typography.monospace);
             row(ui, "font_family", families.label(&body.family, false));
             row(ui, "font_size", next_status::defined_size(body));

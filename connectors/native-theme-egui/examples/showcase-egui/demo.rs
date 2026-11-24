@@ -1028,7 +1028,7 @@ pub(crate) fn named_image(
 }
 
 /// The icons the showcase loads itself, kept from the pass that first draws each until the
-/// next install (`App::adopt`: `ThemeAtlas::install` forgets the connector's icon URIs,
+/// next install (`App::adopt_pair`: `ThemeAtlas::install` forgets the connector's icon URIs,
 /// `forget_icons`, which a kept image names) or the next change of the icon choice: the
 /// Icons page's loading indicator and the images of its frames, and `named_image`'s
 /// freedesktop icons. Each map has its own key, so another choice or scheme misses and loads
@@ -1048,7 +1048,7 @@ pub(crate) fn named_image(
 /// The connector asks for its images to be built in each pass, not kept
 /// (`icons::to_image_source`), since `forget_icons` frees what they name, a raster's texture
 /// among them. Keeping them holds because the two calls that run it are covered: every install
-/// goes through `App::adopt`, which clears this beside it, and the showcase calls no
+/// goes through `App::adopt_pair`, which clears this beside it, and the showcase calls no
 /// `ThemeAtlas::clear`; a call would need `IconCache::clear` beside it.
 #[derive(Default)]
 pub(crate) struct IconCache {
@@ -1228,16 +1228,17 @@ pub(crate) struct DrawnFamilies<'a> {
     invalid: Vec<&'a str>,
     proportional: Option<String>,
     monospace: Option<String>,
-    /// The light variant's `defaults.font.family` and its label ([`Self::drawn`]).
+    /// The light theme's `typography.body.family` and its label ([`Self::drawn`]).
     body: (String, String),
-    /// The light variant's `defaults.mono_font.family` and its label.
+    /// The light theme's `typography.monospace.family` and its label.
     mono: (String, String),
 }
 
 impl<'a> DrawnFamilies<'a> {
     /// The families `atlas` draws in, the fonts read from `ctx`, which has run a pass
-    /// (`Context::fonts` panics before the first, `egui/src/context.rs:1097-1106`).
-    pub(crate) fn of(ctx: &egui::Context, atlas: &'a crate::app::OldAtlas) -> Self {
+    /// (`Context::fonts` panics before the first, `egui/src/context.rs:1097-1106`); `None`
+    /// where the atlas holds no 0.8.0 light theme, whose families the font plan loads.
+    pub(crate) fn of(ctx: &egui::Context, atlas: &'a crate::app::OldAtlas) -> Option<Self> {
         let first = |family: egui::FontFamily| {
             ctx.fonts(|f| {
                 f.definitions()
@@ -1247,21 +1248,12 @@ impl<'a> DrawnFamilies<'a> {
             })
         };
         // The families the plan loads: the installed 0.8.0 light theme's
-        // (`next::font_plan_from_system(light)`, `app::next_atlas`); an atlas of the 0.7.2 model
-        // alone, which only a test installs, plans its own light variant's.
-        let (body, mono) = match atlas.next_resolved(egui::Theme::Light) {
-            Some(light) => (
-                light.typography.body.family.to_string(),
-                light.typography.monospace.family.to_string(),
-            ),
-            None => {
-                let light = &atlas.old_resolved(egui::Theme::Light).defaults;
-                (
-                    light.font.family.to_string(),
-                    light.mono_font.family.to_string(),
-                )
-            }
-        };
+        // (`next::font_plan_from_system(light)`, `app::next_atlas`).
+        let light = atlas.next_resolved(egui::Theme::Light)?;
+        let (body, mono) = (
+            light.typography.body.family.to_string(),
+            light.typography.monospace.family.to_string(),
+        );
         let mut families = Self {
             unavailable: unavailable_families(atlas.notes()),
             invalid: invalid_families(atlas.notes()),
@@ -1276,7 +1268,7 @@ impl<'a> DrawnFamilies<'a> {
         families.mono.1 = families
             .drawn(&families.mono.0, true)
             .label(&families.mono.0);
-        families
+        Some(families)
     }
 
     /// How egui draws text of `planned`, a family the font plan loads, in its `Monospace` family

@@ -7,8 +7,8 @@ use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::next::{
     Contrast, Direction, MotionPreference, Palette, Preset, Scheme, ThemeContext,
 };
-use native_theme::{AccessibilityPreferences, SystemTheme, icons::IconSet};
-use native_theme_egui::{ColorMode, SystemThemeExt as _, ThemeAtlas, from_preset};
+use native_theme::{AccessibilityPreferences, icons::IconSet};
+use native_theme_egui::{ColorMode, ThemeAtlas};
 use native_theme_showcase_support::capture::{Content, FrameCapture};
 use native_theme_showcase_support::cli::{self, Output, Outputs};
 use native_theme_showcase_support::{CAPTURE_WAIT, Kind, dump, rows};
@@ -329,18 +329,12 @@ pub(crate) fn preferences_of(ctx: &ThemeContext) -> AccessibilityPreferences {
     prefs
 }
 
-/// The text of the error [`OldAtlas::of`]'s `None` gives.
-pub(crate) const NOT_OLD: &str = "the atlas holds no 0.7.2 theme, which the showcase's pages read";
-
-/// What the Palette row's hover text says of the pages still on the 0.7.2 model, which has no
-/// palettes.
+/// What the Palette row's hover text says a palette changes.
 pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): the \
      installed egui styles and frames -- every widget the connector styles, the companion \
-     crate's widgets and the chrome's frames -- are built from the 0.8.0 theme with the palette. \
-     The showcase's own refinements on the pages and the chrome (their padding, gaps, row heights, \
-     fonts and the colours they draw themselves) still read the 0.7.2 preset, which has no \
-     palettes, until their page group moves to the 0.8.0 model: they show the preset alone, in \
-     the palette's scheme.";
+     crate's widgets and the chrome's frames -- and the showcase's own refinements on the pages \
+     and the chrome (their padding, gaps, row heights, fonts and the colours they draw \
+     themselves) are all read from the 0.8.0 theme with the palette, in the palette's scheme.";
 
 /// The desktop's settings as the 0.8.0 model reads them (`next::Theme::from_system`), or the
 /// error to report where the read failed. No preset stands in for them.
@@ -352,19 +346,16 @@ pub(crate) fn read_next_system() -> NextSystem {
     native_theme::next::Theme::from_system().map_err(|e| format!("Failed to load OS theme: {e}"))
 }
 
-/// Why an install did not build: the 0.7.2 model's error, or the 0.8.0 model's, as the text to
-/// report (a failed desktop read, a preset or palette it has none of, a theme the connector
-/// cannot install).
+/// Why an install did not build, as the 0.8.0 model's text to report (a failed desktop read, a
+/// preset or palette it has none of, a theme the connector cannot install).
 #[derive(Debug)]
 pub(crate) enum BuildError {
-    Old(native_theme::Error),
     Next(String),
 }
 
 impl std::fmt::Display for BuildError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildError::Old(error) => error.fmt(f),
             BuildError::Next(error) => f.write_str(error),
         }
     }
@@ -372,19 +363,12 @@ impl std::fmt::Display for BuildError {
 
 impl std::error::Error for BuildError {}
 
-impl From<native_theme::Error> for BuildError {
-    fn from(error: native_theme::Error) -> Self {
-        BuildError::Old(error)
-    }
-}
-
 #[cfg(feature = "watch")]
 impl BuildError {
-    /// The error the watcher's `rebuild` returns, which takes the 0.7.2 model's type: that
-    /// model's error as it is, the 0.8.0 model's text as the error of the showcase's rebuild.
+    /// The error the watcher's `rebuild` returns, which takes the 0.7.2 model's type: the
+    /// 0.8.0 model's text as the error of the showcase's rebuild.
     fn into_native(self) -> native_theme::Error {
         match self {
-            BuildError::Old(error) => error,
             BuildError::Next(error) => native_theme::Error::ReaderFailed {
                 reader: "showcase-egui rebuild",
                 source: error.into(),
@@ -520,70 +504,37 @@ struct NextSlots {
     contrast_held: [Option<ContrastHeld>; 2],
 }
 
-/// The atlas the showcase installs, with the 0.7.2 themes of the same choice beside it, which
-/// the showcase's pages read through [`OldAtlas::old_resolved`] until they are ported to the
-/// 0.8.0 model, as the gpui showcase keeps its `OldModel`; it derefs to the installed atlas.
+/// The atlas the showcase installs, with the 0.8.0 themes it was built from for an inactive
+/// window and the contrast each slot holds back; it derefs to the installed atlas.
 ///
-/// [`App::rebuild_atlas`] builds both from the settings' choice: the installed atlas from the
-/// 0.8.0 theme of the choice with its palette (`ThemeAtlas::next_builder`), and, per scheme
-/// slot, the 0.7.2 theme of the same choice in the scheme the slot's 0.8.0 theme resolved to:
-/// the preset alone under a palette, which the 0.7.2 model has no equivalent of. An atlas of
-/// the 0.7.2 model alone ([`OldAtlas::of`]) carries its own themes.
+/// [`App::rebuild_atlas`] builds it from the settings' choice: the installed atlas from the
+/// 0.8.0 theme of the choice with its palette (`ThemeAtlas::next_builder`).
 #[derive(Clone)]
 pub(crate) struct OldAtlas {
     atlas: ThemeAtlas,
-    old: std::sync::Arc<[native_theme_egui::ResolvedTheme; 2]>,
-    /// The accessibility preferences the install asked for (an atlas of the 0.7.2 model alone:
-    /// its own), which the 0.8.0 theme's context reads back lowered where the theme holds a
-    /// level back.
+    /// The accessibility preferences the install asked for, which the 0.8.0 theme's context
+    /// reads back lowered where the theme holds a level back.
     asked: AccessibilityPreferences,
-    next: Option<std::sync::Arc<NextSlots>>,
+    next: std::sync::Arc<NextSlots>,
 }
 
 impl std::fmt::Debug for OldAtlas {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("OldAtlas")
             .field("atlas", &self.atlas)
-            .field("next", &self.next.is_some())
             .finish_non_exhaustive()
     }
 }
 
 impl OldAtlas {
-    /// `atlas` with its 0.7.2 themes, light then dark; `None` for an atlas of the 0.8.0 model
-    /// (`native_theme_egui::next::to_theme`).
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "the tests install 0.7.2 atlases of their own")
-    )]
-    pub(crate) fn of(atlas: ThemeAtlas) -> Option<Self> {
-        let light = atlas.resolved_for(egui::Theme::Light)?.clone();
-        let dark = atlas.resolved_for(egui::Theme::Dark)?.clone();
-        Some(Self {
-            asked: atlas.accessibility().clone(),
-            atlas,
-            old: std::sync::Arc::new([light, dark]),
-            next: None,
-        })
-    }
-
-    /// The 0.7.2 theme of `theme`'s scheme.
-    pub(crate) fn old_resolved(&self, theme: egui::Theme) -> &native_theme_egui::ResolvedTheme {
-        let [light, dark] = &*self.old;
-        match theme {
-            egui::Theme::Light => light,
-            egui::Theme::Dark => dark,
-        }
-    }
-
     /// The accessibility preferences the install asked for, which the Preferences dialog and
     /// the status bar show: the user's over the OS's.
     pub(crate) fn asked(&self) -> &AccessibilityPreferences {
         &self.asked
     }
 
-    /// The installed 0.8.0 theme of `theme`'s slot for an active window, `None` for an atlas
-    /// of the 0.7.2 model.
+    /// The installed 0.8.0 theme of `theme`'s slot for an active window, `None` where the
+    /// installed atlas holds none (`ThemeAtlas::next_resolved_for`).
     pub(crate) fn next_resolved(
         &self,
         theme: egui::Theme,
@@ -592,15 +543,12 @@ impl OldAtlas {
     }
 
     /// The installed 0.8.0 theme of `theme`'s slot for an inactive window.
-    pub(crate) fn next_inactive(
-        &self,
-        theme: egui::Theme,
-    ) -> Option<&native_theme::next::ResolvedTheme> {
-        let [light, dark] = &self.next.as_deref()?.inactive;
-        Some(match theme {
+    pub(crate) fn next_inactive(&self, theme: egui::Theme) -> &native_theme::next::ResolvedTheme {
+        let [light, dark] = &self.next.inactive;
+        match theme {
             egui::Theme::Light => light,
             egui::Theme::Dark => dark,
-        })
+        }
     }
 
     /// The installed 0.8.0 theme a page on the 0.8.0 model reads: the scheme egui draws,
@@ -612,7 +560,7 @@ impl OldAtlas {
     ) -> Option<&native_theme::next::ResolvedTheme> {
         let theme = ctx.theme();
         if ctx.input(|i| i.viewport().focused) == Some(false) {
-            self.next_inactive(theme)
+            Some(self.next_inactive(theme))
         } else {
             self.next_resolved(theme)
         }
@@ -620,7 +568,7 @@ impl OldAtlas {
 
     /// Why the 0.8.0 theme of `theme`'s slot is at a lower contrast than asked, where it is.
     pub(crate) fn contrast_held(&self, theme: egui::Theme) -> Option<&ContrastHeld> {
-        let [light, dark] = &self.next.as_deref()?.contrast_held;
+        let [light, dark] = &self.next.contrast_held;
         match theme {
             egui::Theme::Light => light.as_ref(),
             egui::Theme::Dark => dark.as_ref(),
@@ -635,8 +583,8 @@ impl OldAtlas {
 
     /// This atlas with `patch` applied onto each of its four 0.8.0 themes
     /// (`ResolvedTheme::apply_patch`), built as [`App::rebuild_atlas`] builds the installed one,
-    /// with the same OS colour mode; the 0.7.2 themes, the preferences asked for and the held
-    /// contrasts stay as they are, so a test can make the two models' values differ.
+    /// with the same OS colour mode; the preferences asked for and the held contrasts stay as
+    /// they are, so a test can make the installed values differ from the unpatched preset's.
     #[cfg(test)]
     pub(crate) fn patched(&self, patch: &native_theme::next::ThemePatch) -> Result<Self, String> {
         self.edited(|r| r.apply_patch(patch))
@@ -649,10 +597,7 @@ impl OldAtlas {
         &self,
         edit: impl Fn(&mut native_theme::next::ResolvedTheme),
     ) -> Result<Self, String> {
-        let next = self
-            .next
-            .as_deref()
-            .ok_or("the atlas holds no 0.8.0 themes")?;
+        let next = &*self.next;
         let os_mode = self
             .atlas
             .os_mode()
@@ -674,12 +619,11 @@ impl OldAtlas {
             .map_err(|error| error.to_string())?;
         Ok(Self {
             atlas,
-            old: self.old.clone(),
             asked: self.asked.clone(),
-            next: Some(std::sync::Arc::new(NextSlots {
+            next: std::sync::Arc::new(NextSlots {
                 inactive: [light_inactive, dark_inactive],
                 contrast_held: next.contrast_held.clone(),
-            })),
+            }),
         })
     }
 }
@@ -696,13 +640,13 @@ pub(crate) struct App {
     /// The one field for theme state (§10.4's third rule).
     pub(crate) atlas: OldAtlas,
     pub(crate) settings: Settings,
-    /// The platform preset `default` builds on, `SystemTheme::preset` since the last read of
-    /// the OS: the name the Theme row, the command palette and the status bar give `default`,
+    /// The platform preset `default` builds on, the 0.8.0 model's read of the desktop's
+    /// (`next::Theme::preset_id`) since the last read of the OS: the name the Theme row, the command palette and the status bar give `default`,
     /// "default (kde-breeze)", as the gpui showcase's `default_label`
     /// (`showcase-gpui/app.rs:1972-1976`).
     pub(crate) default_preset: String,
     /// The desktop's settings as the 0.8.0 model last read them ([`read_next_system`]): read
-    /// again at each install of `default`, as the 0.7.2 model's are, and where none is kept;
+    /// again at each install of `default`, and where none is kept;
     /// Reload System Theme and a rebuild of the watcher's let it go.
     pub(crate) next_system: Option<NextSystem>,
     /// The OS's semibold face of the theme's family, registered after each install.
@@ -806,9 +750,7 @@ impl App {
         egui_extras::install_image_loaders(&cc.egui_ctx);
         let mut settings = Settings::initial();
         apply_cli_args(&mut settings, cli);
-        let mut default_preset = native_theme::pipeline::platform_preset_name()
-            .name
-            .to_string();
+        let mut default_preset = Preset::detect().as_str().to_owned();
         let next_system = read_next_system();
         // Where the choice does not build, the platform's preset in its place, which the Theme
         // row then shows: a fallback is never labelled the desktop's own theme.
@@ -933,37 +875,8 @@ impl App {
         Ok(app)
     }
 
-    /// The 0.7.2 atlas `settings` select (§10.4): `default` is `SystemTheme::from_system`
-    /// through `to_egui_atlas` after `invalidate_caches()`, its public `accessibility`
-    /// (`native-theme/src/lib.rs:643`) the [`effective_preferences`] of the OS's reading it
-    /// holds and Preferences' overrides; a preset is `from_preset` with the effective
-    /// preferences of the cached OS reading (`detect::accessibility_preferences`, which the
-    /// watcher and `ReloadTheme` clear before they rebuild) and the overrides. `from_preset`'s
-    /// `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
-    /// variants and egui picks the scheme (§4.6) — so `false` is passed. With the atlas comes,
-    /// for `default`, the platform preset it builds on (`SystemTheme::preset`).
-    fn rebuild_old(settings: &Settings) -> native_theme::Result<(ThemeAtlas, Option<String>)> {
-        match &settings.theme {
-            ThemeChoice::Default => {
-                native_theme::detect::invalidate_caches();
-                let mut sys = SystemTheme::from_system()?;
-                sys.accessibility =
-                    effective_preferences(&sys.accessibility, settings.prefs.as_ref());
-                let preset = sys.preset.clone();
-                Ok((sys.to_egui_atlas(), Some(preset)))
-            }
-            ThemeChoice::Preset(name) => {
-                let prefs = effective_preferences(
-                    &native_theme::detect::accessibility_preferences(),
-                    settings.prefs.as_ref(),
-                );
-                from_preset(name, false, &prefs).map(|(atlas, _)| (atlas, None))
-            }
-        }
-    }
-
-    /// The atlas `settings` select, the one place that builds both models from the theme
-    /// settings' choice ([`OldAtlas`]). The 0.8.0 theme of the choice -- `default`, the
+    /// The atlas `settings` select, the one place that builds it from the theme settings'
+    /// choice ([`OldAtlas`], §10.4). The 0.8.0 theme of the choice -- `default`, the
     /// desktop's own as the 0.8.0 model read it (`system`), or a preset alone -- with the
     /// palette chosen laid over it (`next::Theme::with_palette`, which locks the scheme to the
     /// palette's), is resolved per scheme slot in [`next_context`] (on the desktop's context
@@ -972,27 +885,30 @@ impl App {
     /// `ReloadTheme` and the watcher clear -- with the user's over them
     /// ([`effective_preferences`]), and for an inactive window beside it; the atlas installed is
     /// built from those four themes by `ThemeAtlas::next_builder`, with the OS's faces for the
-    /// light theme's text where `system-fonts` is on (`next::font_plan_from_system`), as the
-    /// 0.7.2 atlas takes them, and the OS colour mode: the desktop's scheme where the 0.8.0
-    /// model read it, else `detect::system_is_dark`, as `from_preset` reads it. Each slot keeps
-    /// the 0.7.2 theme of the choice in the scheme its 0.8.0 theme resolved to. With the atlas
-    /// comes, for `default`, the platform preset it builds on (`SystemTheme::preset`). It reads
-    /// `theme`, `palette` and `prefs` alone, not `mode`, which the watcher's selection relies
-    /// on: a mode switch publishes nothing to it, as the atlas holds a theme for each scheme.
+    /// light theme's text where `system-fonts` is on (`next::font_plan_from_system`), and the
+    /// OS colour mode: the desktop's scheme where the 0.8.0 model read it, else
+    /// `detect::system_is_dark`. With the atlas comes, for `default`, the platform preset it
+    /// builds on (`next::Theme::preset_id`). It reads `theme`, `palette` and `prefs` alone, not
+    /// `mode`, which the watcher's selection relies on: a mode switch publishes nothing to it,
+    /// as the atlas holds a theme for each scheme.
     pub(crate) fn rebuild_atlas(
         settings: &Settings,
         system: &NextSystem,
     ) -> Result<(OldAtlas, Option<String>), BuildError> {
-        let (old, preset) = Self::rebuild_old(settings)?;
-        let alone = match &settings.theme {
-            ThemeChoice::Default => system.clone().map_err(BuildError::Next)?,
-            ThemeChoice::Preset(name) => {
+        let (alone, preset) = match &settings.theme {
+            ThemeChoice::Default => {
+                let system = system.clone().map_err(BuildError::Next)?;
+                let preset = system.preset_id().as_str().to_owned();
+                (system, Some(preset))
+            }
+            ThemeChoice::Preset(name) => (
                 native_theme::next::Theme::preset(Preset::from_name(name).ok_or_else(|| {
                     BuildError::Next(format!(
                         "Failed to load preset '{name}': the 0.8.0 model has no preset of that name"
                     ))
-                })?)
-            }
+                })?),
+                None,
+            ),
         };
         let (theme, under) = match settings.palette {
             None => (alone, None),
@@ -1032,32 +948,20 @@ impl App {
             ColorMode::Light
         };
         let atlas = next_atlas([&light, &light_inactive, &dark, &dark_inactive], os_mode)?;
-        let old_of = |next: &native_theme::next::ResolvedTheme| {
-            let scheme = if next.is_dark() {
-                egui::Theme::Dark
-            } else {
-                egui::Theme::Light
-            };
-            old.resolved_for(scheme).cloned()
-        };
-        let (Some(old_light), Some(old_dark)) = (old_of(&light), old_of(&dark)) else {
-            return Err(BuildError::Next(NOT_OLD.to_owned()));
-        };
         let pair = OldAtlas {
             atlas,
-            old: std::sync::Arc::new([old_light, old_dark]),
             asked,
-            next: Some(std::sync::Arc::new(NextSlots {
+            next: std::sync::Arc::new(NextSlots {
                 inactive: [light_inactive, dark_inactive],
                 contrast_held: [light_held, dark_held],
-            })),
+            }),
         };
         Ok((pair, preset))
     }
 
     /// Rebuild what `settings` select and install it; a failure keeps the installed atlas and
     /// is shown on the page (§10.4, the theme error in the content). An install of `default`
-    /// reads the desktop again in both models; a preset's reads the 0.8.0 model's desktop
+    /// clears the detection caches and reads the desktop again; a preset's reads the desktop
     /// settings, its context's source, only where none are kept. A success covers the
     /// watcher's rebuilds returned before it read the record: a rebuild still running counts as
     /// newer, since it may carry an OS change this rebuild did not read.
@@ -1065,6 +969,7 @@ impl App {
         #[cfg(feature = "watch")]
         let rebuilds = self.rebuilds();
         if self.settings.theme == ThemeChoice::Default {
+            native_theme::detect::invalidate_caches();
             self.next_system = None;
         }
         let system = self.next_system.get_or_insert_with(read_next_system);
@@ -1096,21 +1001,6 @@ impl App {
         ctx.set_theme(self.theme_preference());
         #[cfg(feature = "watch")]
         self.publish_selection();
-    }
-
-    /// [`App::adopt_pair`] of an atlas of the 0.7.2 model alone, with its own themes, as the
-    /// tests install one. An atlas of the 0.8.0 model alone is not installed, as it carries no
-    /// 0.7.2 theme for the pages: the theme error says so.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "the tests install 0.7.2 atlases of their own")
-    )]
-    pub(crate) fn adopt(&mut self, ctx: &egui::Context, atlas: ThemeAtlas) {
-        let Some(atlas) = OldAtlas::of(atlas) else {
-            self.theme_error = Some(NOT_OLD.to_owned());
-            return;
-        };
-        self.adopt_pair(ctx, atlas);
     }
 
     /// The steps every install of an atlas takes, and nothing else: `atlas` installed into

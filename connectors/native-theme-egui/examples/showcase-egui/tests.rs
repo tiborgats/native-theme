@@ -10,7 +10,6 @@
 use egui_kittest::Harness;
 use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::{AccessibilityPreferences, theme::Theme};
-use native_theme_egui::from_preset;
 use native_theme_showcase_support::{Kind, capture};
 
 use crate::{
@@ -293,9 +292,9 @@ fn the_pages_follow_the_counterpart_table() {
 /// `breeze-dark`, where that theme is installed, else `system`
 /// (`native-theme/src/icons.rs:1439-1458`), which then keeps following.
 #[test]
-fn an_icon_choice_that_followed_the_preset_keeps_following_it() {
-    let prefs = AccessibilityPreferences::default();
-    let (breeze, _) = from_preset("kde-breeze", false, &prefs).expect("a bundled preset");
+fn an_icon_choice_that_followed_the_preset_keeps_following_it() -> Result<(), String> {
+    let breeze = preset_atlas_on("kde-breeze", &Err("not read by the test".to_owned()))
+        .map_err(|e| e.to_string())?;
     let follows = |scheme| default_icon_choice(breeze.icon_set(), breeze.icon_theme(scheme));
     let mut settings = Settings::for_tests();
     assert!(settings.icon_follows_theme);
@@ -327,6 +326,7 @@ fn an_icon_choice_that_followed_the_preset_keeps_following_it() {
     );
     settings.theme_installed(&breeze, egui::Theme::Light);
     assert_eq!(settings.icon, follows(egui::Theme::Light));
+    Ok(())
 }
 
 /// The Step 4 ruling on Reduce motion: Preferences' switch off is no request, so an OS request
@@ -1639,9 +1639,9 @@ fn install_under(harness: &mut Harness<'static, App>, theme: egui::Theme, preset
 
 /// [`open_page_under`], then the patch `patch` makes of the installed 0.8.0 theme of `theme`'s
 /// slot applied onto the four 0.8.0 themes of the showcase's atlas and installed as an install
-/// keeps it (`OldAtlas::patched`, `App::adopt_pair`), the 0.7.2 themes the pages not yet ported
-/// read left as they are, as the gpui showcase's `install_patched_breeze`: a test can make the
-/// 0.7.2 and the 0.8.0 values differ and so prove what it reads. The patched theme of `theme`'s
+/// keeps it (`OldAtlas::patched`, `App::adopt_pair`), as the gpui showcase's
+/// `install_patched_breeze`: a test can make the installed values differ from the unpatched
+/// preset's and so prove what it reads. The patched theme of `theme`'s
 /// slot comes back with the harness; `patch` gives `None` where `preset` states nothing the
 /// patch is made of.
 fn open_patched(
@@ -2583,70 +2583,40 @@ fn a_failed_rebuild_keeps_the_installed_fonts() {
     assert_eq!(faces(&harness), before);
 }
 
-/// `adopt` installs no atlas of the 0.8.0 model alone, whose 0.7.2 themes the pages would lack:
-/// the installed atlas, the showcase's own of the 0.8.0 model, stays, and the theme error says
-/// why.
-#[test]
-fn adopt_refuses_an_atlas_of_the_next_model() {
-    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
-
-    let mut harness = open_default();
-    harness.run_steps(SETTLE);
-    let ctx = harness.ctx.clone();
-    let before = harness.state().atlas.name().to_owned();
-    let theme = NextTheme::preset(Preset::Adwaita);
-    let [light, light_inactive, dark, dark_inactive] = [
-        ThemeContext::light(),
-        ThemeContext::light().with_window_active(false),
-        ThemeContext::dark(),
-        ThemeContext::dark().with_window_active(false),
-    ]
-    .map(|c| theme.resolve(&c));
-    let next = native_theme_egui::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)
-        .expect("adwaita maps");
-    assert_ne!(
-        next.name(),
-        before,
-        "the two atlases are told apart by name"
-    );
-    harness.state_mut().adopt(&ctx, next);
-    harness.run_steps(SETTLE);
-    assert_eq!(
-        harness.state().theme_error.as_deref(),
-        Some(crate::app::NOT_OLD)
-    );
-    assert_eq!(harness.state().atlas.name(), before);
-    let installed = native_theme_egui::ThemeAtlas::from_ctx(&ctx).expect("an atlas is installed");
-    assert_eq!(installed.name(), before);
-    assert!(installed.next_resolved_for(egui::Theme::Light).is_some());
-}
-
 /// A platform preset other than [`TEST_PRESET`], installed through `App::install` on any
 /// platform, and its atlas: the watcher's rebuilt atlas in the hand-off tests, told from the
 /// installed one by its name.
 #[cfg(feature = "watch")]
 const OTHER_PRESET: &str = "windows-11";
 
-/// [`preset_atlas`] as the watcher's record holds a rebuild: the 0.7.2 atlas with its themes.
+/// The atlas `App::rebuild_atlas` builds of the preset `name` alone, no palette over it and none
+/// of the user's preferences, its context's source the desktop's settings `system` (an error:
+/// none read), as an install or the watcher's rebuild builds it.
+fn preset_atlas_on(
+    name: &str,
+    system: &crate::app::NextSystem,
+) -> Result<crate::app::OldAtlas, crate::app::BuildError> {
+    let mut settings = Settings::for_tests();
+    settings.theme = ThemeChoice::Preset(name.to_owned());
+    App::rebuild_atlas(&settings, system).map(|(atlas, _)| atlas)
+}
+
+/// [`preset_atlas_on`] with no desktop settings read, as the watcher's record holds a rebuild.
 #[cfg(feature = "watch")]
 fn rebuilt(name: &str) -> Result<crate::app::OldAtlas, crate::app::BuildError> {
-    crate::app::OldAtlas::of(preset_atlas(name))
-        .ok_or_else(|| crate::app::BuildError::Next(crate::app::NOT_OLD.to_owned()))
+    preset_atlas_on(name, &Err("not read by the test".to_owned()))
 }
 
+/// The name the unpatched 0.8.0 preset `name` resolves to, the atlas's name
+/// (`ThemeAtlas::name`) of an install of it.
 #[cfg(feature = "watch")]
-fn preset_atlas(name: &str) -> native_theme_egui::ThemeAtlas {
-    from_preset(name, false, &AccessibilityPreferences::default())
-        .expect("a bundled preset builds")
-        .0
-}
-
-#[cfg(feature = "watch")]
-fn preset_name(name: &str) -> String {
-    Theme::preset(name)
-        .expect("a bundled preset")
+fn preset_name(name: &str) -> Result<String, String> {
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
+    let preset = Preset::from_name(name).ok_or_else(|| format!("no 0.8.0 preset {name}"))?;
+    Ok(NextTheme::preset(preset)
+        .resolve(&ThemeContext::light())
         .name
-        .to_string()
+        .to_string())
 }
 
 #[cfg(feature = "watch")]
@@ -2679,7 +2649,7 @@ fn a_hand_off_built_for_an_earlier_selection_installs_the_current_one() -> Resul
     app.theme_error = Some("an earlier failure".to_string());
     app.take_rebuilt(&ctx);
     assert_eq!(app.atlas.name(), installed);
-    assert_ne!(app.atlas.name(), preset_name(TEST_PRESET));
+    assert_ne!(app.atlas.name(), preset_name(TEST_PRESET)?);
     assert_eq!(
         app.theme_error, None,
         "the current selection's install succeeded"
@@ -2704,7 +2674,7 @@ fn a_hand_off_an_install_has_covered_installs_nothing() -> Result<(), String> {
     app.theme_error = Some("an earlier failure".to_string());
     app.take_rebuilt(&ctx);
     assert_eq!(app.atlas.name(), installed);
-    assert_ne!(app.atlas.name(), preset_name(TEST_PRESET));
+    assert_ne!(app.atlas.name(), preset_name(TEST_PRESET)?);
     assert_eq!(app.theme_error.as_deref(), Some("an earlier failure"));
     Ok(())
 }
@@ -2713,7 +2683,8 @@ fn a_hand_off_an_install_has_covered_installs_nothing() -> Result<(), String> {
 /// hand-off built for the current selection is installed and clears an earlier theme error.
 #[cfg(feature = "watch")]
 #[test]
-fn a_hand_off_built_for_the_current_selection_installs_it_and_clears_the_theme_error() {
+fn a_hand_off_built_for_the_current_selection_installs_it_and_clears_the_theme_error()
+-> Result<(), String> {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
@@ -2731,8 +2702,9 @@ fn a_hand_off_built_for_the_current_selection_installs_it_and_clears_the_theme_e
     assert!(App::record_rebuild(&app.rebuilt, current, rebuilt(OTHER_PRESET)).is_ok());
     app.theme_error = Some("an earlier failure".to_string());
     app.take_rebuilt(&ctx);
-    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET)?);
     assert_eq!(app.theme_error, None);
+    Ok(())
 }
 
 /// M9-114: a failed watcher rebuild is shown in the banner as `theme watcher: …` until a later
@@ -2748,7 +2720,14 @@ fn the_watchers_rebuild_error_is_shown_until_a_later_install() {
     let fail = |h: &mut Harness<'_, App>| {
         let app = h.state_mut();
         let current = app.generation();
-        assert!(App::record_rebuild(&app.rebuilt, current, Err(watch_failure().into())).is_err());
+        assert!(
+            App::record_rebuild(
+                &app.rebuilt,
+                current,
+                Err(crate::app::BuildError::Next(watch_failure().to_string()))
+            )
+            .is_err()
+        );
         app.watcher_last_error = Some(watch_failure().to_string());
         h.run_steps(SETTLE);
     };
@@ -2843,7 +2822,7 @@ fn a_failed_picks_error_stays_through_the_watchers_rebuilds() {
 /// same selection.
 #[cfg(feature = "watch")]
 #[test]
-fn a_mode_switch_leaves_a_rebuild_in_flight_current() {
+fn a_mode_switch_leaves_a_rebuild_in_flight_current() -> Result<(), String> {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
@@ -2852,7 +2831,8 @@ fn a_mode_switch_leaves_a_rebuild_in_flight_current() {
     app.set_mode(ModeChoice::Dark, &ctx);
     assert!(App::record_rebuild(&app.rebuilt, read, rebuilt(OTHER_PRESET)).is_ok());
     app.take_rebuilt(&ctx);
-    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET)?);
+    Ok(())
 }
 
 /// Preferences' text-scaling field is the gpui showcase's: 1.0 to 2.25 in steps of 0.25; a drag
@@ -2983,9 +2963,9 @@ fn a_mode_switch_installs_nothing() {
 #[test]
 fn a_preset_under_the_system_mode_follows_the_os() {
     let (os_mode, drawn) = if native_theme::detect::system_is_dark() {
-        (native_theme::theme::ColorMode::Dark, egui::Theme::Dark)
+        (native_theme_egui::ColorMode::Dark, egui::Theme::Dark)
     } else {
-        (native_theme::theme::ColorMode::Light, egui::Theme::Light)
+        (native_theme_egui::ColorMode::Light, egui::Theme::Light)
     };
     let mut harness = open(
         egui::Theme::Light,
@@ -3009,7 +2989,7 @@ fn a_preset_under_the_system_mode_follows_the_os() {
 /// §10.4's Text row: the code view's colours are egui_extras's own for the scheme shown, and
 /// its font is the base style's `Monospace` slot, after a mode switch or an install as before.
 #[test]
-fn the_code_view_follows_the_scheme() {
+fn the_code_view_follows_the_scheme() -> Result<(), String> {
     let mut harness = open_page(Page::Text, egui::Theme::Light);
     let is_dark = |h: &Harness<'_, App>| {
         h.state()
@@ -3042,20 +3022,25 @@ fn the_code_view_follows_the_scheme() {
 
     // A preset whose `Monospace` slot differs from the test preset's, installed.
     let before = monospace(&harness);
-    let prefs = AccessibilityPreferences::default();
-    let other = Theme::list_presets_for_platform()
+    let system = &Err("not read by the test".to_owned());
+    let other = harness
+        .state()
+        .theme_rows()
         .into_iter()
-        .map(|info| info.key)
+        .filter_map(|(choice, _)| match choice {
+            ThemeChoice::Preset(key) => Some(key),
+            ThemeChoice::Default => None,
+        })
         .find(|key| {
-            from_preset(key, false, &prefs).is_ok_and(|(atlas, _)| {
+            preset_atlas_on(key, system).is_ok_and(|atlas| {
                 let probe = egui::Context::default();
                 atlas.install(&probe);
                 probe.set_theme(egui::Theme::Dark);
                 egui::TextStyle::Monospace.resolve(&probe.global_style()) != before
             })
         })
-        .expect("a preset with another monospace font");
-    harness.state_mut().settings.theme = ThemeChoice::Preset(other.to_string());
+        .ok_or("no preset the Theme row offers has another monospace font")?;
+    harness.state_mut().settings.theme = ThemeChoice::Preset(other);
     harness.state_mut().install(&ctx);
     harness.run_steps(3);
     assert_ne!(monospace(&harness), before);
@@ -3064,6 +3049,7 @@ fn the_code_view_follows_the_scheme() {
         Some(monospace(&harness)),
         "the code view kept the previous preset's monospace font"
     );
+    Ok(())
 }
 
 /// The Containers page's nested `Panel::right` and `CentralPanel` set their own clip rects
@@ -4267,9 +4253,10 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
 }
 
 /// The Basic page's check boxes and radio buttons, and the rows they sit in, are as tall as the
-/// indicator the theme states or their label, not a push button's `button.min_height`: the
-/// model states no row height for either (kde-breeze: a 20 indicator under a 32 button,
-/// material-3 18 under 40).
+/// indicator the theme states or their label, not a push button's height: the model states no
+/// row height for either (kde-breeze light: a 20 `checkbox.indicator(NONE).min_size` beside a
+/// push button drawn 32 tall, whose `button.body(NONE).min_size[1]` is unstated; material-3
+/// light: 18 under a stated 40).
 #[test]
 fn basic_checkbox_and_radio_rows_fit_the_indicator() -> Result<(), String> {
     use native_theme::next::WidgetState;
@@ -6049,7 +6036,7 @@ fn a_theme_map_cell_cut_short_shows_its_whole_text_on_hover() {
 
 /// M9x CI item I2 (M9-170): each Basic list row's label is placed for the layout dump as the
 /// text it paints, centred down its row, as the iced and gpui showcases place theirs: under
-/// windows-11 (rows `list.row_height` 40, no vertical padding), `basic.list.row_N.text` is where
+/// windows-11 (rows `list.row(NONE).min_size[1]` 40, no vertical padding), `basic.list.row_N.text` is where
 /// the row's "Item N" galley is painted, as tall as its line, narrower than its row and centred
 /// in it to half a point.
 #[test]
@@ -8341,7 +8328,7 @@ fn set_content_width(harness: &mut Harness<'_, App>, width: f32) {
 /// its 0.8.0 themes changed and installed as an install keeps them (`OldAtlas::edited`,
 /// `App::adopt_pair`), at rest: each 0.8.0 theme, which the three tab bars read
 /// (`demo::TabLook::next`), with `tab.active_outward_corner_radius` set to `radius` and
-/// `edit_next` made of it; the 0.7.2 themes beside them as the preset gives them. The preset
+/// `edit_next` made of it. The preset
 /// states 4 (G3 T15); the tests set the radius on the resolved themes, whose fields are public,
 /// to try it unstated and at other values too.
 fn open_curving_out(
@@ -9764,7 +9751,7 @@ fn a_switch_off_of_the_users_reduce_motion_request_installs() {
 /// the companion crate's, in `Role::Switch`, so a set flag is a toggled switch named by its
 /// row's title, and a click flips it; each sits right of its title.
 #[test]
-fn a_set_preference_is_a_selected_switch() {
+fn a_set_preference_is_a_selected_switch() -> Result<(), String> {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
@@ -9819,13 +9806,17 @@ fn a_set_preference_is_a_selected_switch() {
     );
 
     // The OS's request, as the installed atlas's effective preferences carry it, with none of
-    // the user's: the switch shows the user's request, so it is off, and a change of another
-    // switch stores no request for Reduce motion.
-    let mut os = AccessibilityPreferences::default();
-    os.reduce_motion = true;
-    let (atlas, _) = from_preset(TEST_PRESET, false, &os).expect("a bundled preset");
+    // the user's: the desktop's settings, read with reduced motion, the context's source. The
+    // switch shows the user's request, so it is off, and a change of another switch stores no
+    // request for Reduce motion.
+    let preset = native_theme::next::Preset::from_name(TEST_PRESET).ok_or("no 0.8.0 preset")?;
+    let mut os = native_theme::next::ThemeContext::light();
+    os.motion = native_theme::next::MotionPreference::Reduced;
+    let system = Ok(native_theme::next::Theme::preset(preset).with_context(os));
+    let atlas = preset_atlas_on(TEST_PRESET, &system).map_err(|e| e.to_string())?;
+    assert!(atlas.asked().reduce_motion, "the OS's request is asked for");
     harness.state_mut().settings.prefs = None;
-    harness.state_mut().adopt(&ctx, atlas);
+    harness.state_mut().adopt_pair(&ctx, atlas);
     harness.run_steps(SETTLE);
     assert_eq!(
         harness
@@ -9858,6 +9849,7 @@ fn a_set_preference_is_a_selected_switch() {
         Some((false, true)),
         "the OS's request was stored as the user's"
     );
+    Ok(())
 }
 
 /// The Icons page's `ui.image` is drawn at the toolbar icon size, not at the page's width,
@@ -10620,8 +10612,7 @@ fn every_seam_is_recorded() {
 /// `IconCache`'s condition, held lexically: the images it keeps name the connector's icon URIs,
 /// which `ThemeAtlas::install` and `ThemeAtlas::clear` forget (`forget_icons`), so outside the
 /// tests an atlas is installed, cleared or its icons forgotten only in `App::adopt_pair`, which
-/// every install goes through (`App::adopt` of a 0.7.2 atlas alone included), and
-/// `App::adopt_pair` clears the cache beside it. A spelling of these calls the patterns miss (an
+/// every install goes through, and `App::adopt_pair` clears the cache beside it. A spelling of these calls the patterns miss (an
 /// atlas bound to a name other than `atlas`) is left to review.
 #[test]
 fn only_app_adopt_installs_or_clears_an_atlas() {
@@ -10674,7 +10665,7 @@ fn only_app_adopt_installs_or_clears_an_atlas() {
                     .map(|s| s.matches('\n').count() + 1)
                     .unwrap_or_default();
                 panic!(
-                    "{path}:{line}: {call} outside App::adopt, which clears the showcase's \
+                    "{path}:{line}: {call} outside App::adopt_pair, which clears the showcase's \
                      IconCache beside it"
                 );
             }
@@ -13237,8 +13228,8 @@ fn the_theme_row_offers_the_08_models_presets_of_this_platform() {
 
 /// `--palette` lays a bundled palette over the preset in the 0.8.0 model alone: both scheme
 /// slots' installed 0.8.0 theme take the palette's name, its scheme and its window colour, read
-/// from `Palette::from_name`, not a literal; the pages' 0.7.2 theme is the preset alone in the
-/// palette's scheme; the status bar names both, as the gpui showcase's does. The Palette row's
+/// from `Palette::from_name`, not a literal, which the unpatched 0.8.0 preset resolved alone in
+/// the same context does not have; the status bar names both, as the gpui showcase's does. The Palette row's
 /// `none` brings back the preset's own colours in each scheme.
 #[test]
 fn a_palette_is_laid_over_the_preset_in_the_08_model_only() -> Result<(), String> {
@@ -13257,9 +13248,9 @@ fn a_palette_is_laid_over_the_preset_in_the_08_model_only() -> Result<(), String
         let app = harness.state();
         assert_eq!(app.settings.palette, Some("dracula"));
         assert_eq!(app.theme_error, None);
-        let prefs = app.atlas.asked().clone();
-        let (_, preset_dark) =
-            from_preset(TEST_PRESET, true, &prefs).map_err(|error| error.to_string())?;
+        let preset = native_theme::next::Theme::preset(
+            native_theme::next::Preset::from_name(TEST_PRESET).ok_or("no 0.8.0 preset")?,
+        );
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             let next = app
                 .atlas
@@ -13272,9 +13263,14 @@ fn a_palette_is_laid_over_the_preset_in_the_08_model_only() -> Result<(), String
                 Some(dracula.window_bg),
                 "{theme:?}: the window background is not dracula's"
             );
+            let alone = preset.resolve(&next.context);
             assert!(
-                app.atlas.old_resolved(theme) == &preset_dark,
-                "{theme:?}: the 0.7.2 theme is not the preset alone in the palette's scheme"
+                alone.is_dark(),
+                "{theme:?}: the context is not the palette's scheme"
+            );
+            assert_ne!(
+                alone.colors.window.background, next.colors.window.background,
+                "{theme:?}: the preset alone has the palette's window background"
             );
         }
         let status = crate::chrome::environment(app, &harness.ctx).join(" · ");
@@ -13348,12 +13344,16 @@ fn a_failed_desktop_read_starts_the_platform_preset_and_says_so() {
     let mut harness = open(egui::Theme::Light, CliArgs::default());
     harness.run_steps(SETTLE);
     let app = harness.state();
-    let old_read = native_theme::SystemTheme::from_system().is_ok();
     match crate::app::read_next_system() {
-        Err(error) if old_read => {
+        Err(error) => {
             assert_eq!(
                 app.settings.theme,
                 ThemeChoice::Preset(app.default_preset.clone())
+            );
+            assert_eq!(
+                app.default_preset,
+                native_theme::next::Preset::detect().as_str(),
+                "the platform's preset stands in"
             );
             let shown = app.theme_error.clone().unwrap_or_default();
             assert!(
@@ -13361,8 +13361,10 @@ fn a_failed_desktop_read_starts_the_platform_preset_and_says_so() {
                 "the banner: {shown:?}"
             );
         }
-        Ok(_) if old_read => assert_eq!(app.settings.theme, ThemeChoice::Default),
-        _ => assert!(app.theme_error.is_some()),
+        Ok(system) => {
+            assert_eq!(app.settings.theme, ThemeChoice::Default);
+            assert_eq!(app.default_preset, system.preset_id().as_str());
+        }
     }
 }
 
@@ -13378,9 +13380,7 @@ fn the_next_helpers_read_the_installed_08_theme() -> Result<(), String> {
         crate::app::OldAtlas::from_ctx(&harness.ctx).ok_or("no atlas kept in the context")?;
     let theme = harness.ctx.theme();
     let active = atlas.next_resolved(theme).ok_or("no 0.8.0 theme")?.clone();
-    let inactive = atlas
-        .next_inactive(theme)
-        .ok_or("no inactive 0.8.0 theme")?;
+    let inactive = atlas.next_inactive(theme);
     assert!(active.context.window_active && !inactive.context.window_active);
     assert_eq!(inactive.name, active.name);
 

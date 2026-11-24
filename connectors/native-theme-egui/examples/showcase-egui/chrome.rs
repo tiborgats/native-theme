@@ -895,10 +895,12 @@ pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
         Some(palette) => format!("{preset} + {palette}"),
         None => preset,
     };
-    let Some(t) = app.atlas.next_shown(ctx) else {
+    let (Some(t), Some(families)) = (
+        app.atlas.next_shown(ctx),
+        crate::demo::DrawnFamilies::of(ctx, &app.atlas),
+    ) else {
         return vec![status::desktop(), format!("{preset} {mode}")];
     };
-    let families = crate::demo::DrawnFamilies::of(ctx, &app.atlas);
     let body = &t.typography.body;
     native_theme_showcase_support::next::status::environment_drawn(
         &preset,
