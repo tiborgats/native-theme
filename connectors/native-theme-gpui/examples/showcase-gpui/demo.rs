@@ -9724,9 +9724,10 @@ pub(crate) struct MenuRowsLook {
     /// `menu.item(HOVER)`, at its width; `None` where no rule states one,
     /// or it is 0 wide.
     pub(crate) edge: Option<(Hsla, Pixels)>,
-    /// A pressed row's fill and text, `menu.item(HOVER|PRESSED).fill` and
-    /// `menu.item_label(HOVER|PRESSED).color` where a rule states each for
-    /// the pressed state, the row keeping its hover look otherwise.
+    /// A pressed row's fill and text, `menu.item(PRESSED).fill` and
+    /// `menu.item_label(PRESSED).color` where a rule states each for the
+    /// pressed state (spec §2, `from_state`: a rule for `HOVER` does not
+    /// answer it), the row keeping its hover look otherwise.
     pub(crate) active: Option<Hsla>,
     pub(crate) active_text: Option<Hsla>,
     /// `menu.item(NONE).corners`, `None` where unstated: square rows.
@@ -9743,7 +9744,7 @@ impl MenuRowsLook {
     pub(crate) fn next_of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
         let m = &r.menu;
         let hovered = m.item(WidgetState::HOVER);
-        let pressed = WidgetState::HOVER | WidgetState::PRESSED;
+        let pressed = WidgetState::PRESSED;
         let edge_width = next::stroke_width_of(&hovered).filter(|width| *width > 0.0);
         let [top, right, bottom, left] = next::padding_of(&m.panel(WidgetState::NONE));
         Ok(Self {
@@ -9865,7 +9866,7 @@ impl MenuRowsPaint {
 /// states, the rows in `menu.item_label(NONE).color`, hovered in
 /// `menu.item(HOVER).fill` and `menu.item_label(HOVER).color` and outlined
 /// in the stroke a rule states for `menu.item(HOVER)`, pressed in what one
-/// states for `menu.item(HOVER|PRESSED)`, rounded by `menu.item(NONE)`'s
+/// states for `menu.item(PRESSED)`, rounded by `menu.item(NONE)`'s
 /// corners; where the theme states no value gpui can take at a home the
 /// look needs, or before one is installed, the popover's tokens and the
 /// accent (spec §10, rule 0). Each icon is the chosen icon theme's, and a row whose

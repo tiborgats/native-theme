@@ -554,14 +554,14 @@ fn menu_row_look(info: WidgetInfo, r: &NextTheme, look: &MenuRowsLook) -> Widget
         ))
         .colors(stated_claim(
             "pressed item",
-            "menu.item(HOVER|PRESSED).fill",
-            state_fill_of(&r.menu.item(WidgetState::HOVER | WidgetState::PRESSED)),
+            "menu.item(PRESSED).fill",
+            state_fill_of(&r.menu.item(WidgetState::PRESSED)),
             "showcase",
         ))
         .colors(stated_claim(
             "pressed item text",
-            "menu.item_label(HOVER|PRESSED).color",
-            state_text_color_of(&r.menu.item_label(WidgetState::HOVER | WidgetState::PRESSED)),
+            "menu.item_label(PRESSED).color",
+            state_text_color_of(&r.menu.item_label(WidgetState::PRESSED)),
             "showcase",
         ));
     let info = match look.edge {
