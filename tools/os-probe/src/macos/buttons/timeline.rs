@@ -326,12 +326,16 @@ pub(super) fn record(
 
     let worker = std::thread::spawn(move || {
         let mut log = Vec::new();
+        let mut unposted = Vec::new();
         for p in posts {
             if let Some(wait) = p.at.checked_sub(start.elapsed()) {
                 std::thread::sleep(wait);
             }
             let at = start.elapsed();
-            let outcome = post_one(&p.event);
+            let outcome = post_one(&p.event).unwrap_or_else(|reason| {
+                unposted.push(p.label.clone());
+                reason
+            });
             log.push(format!(
                 "{:.1} ms (planned {} ms): {}: {outcome}",
                 at.as_secs_f64() * 1000.0,
@@ -339,7 +343,7 @@ pub(super) fn record(
                 p.label
             ));
         }
-        log
+        (log, unposted)
     });
 
     let mut ran = Table::new();
@@ -415,9 +419,19 @@ pub(super) fn record(
             ))
         }
     };
-    let log = worker
+    let (log, unposted) = worker
         .join()
-        .unwrap_or_else(|_| vec!["the posting thread panicked".to_owned()]);
+        .unwrap_or_else(|_| (vec!["the posting thread panicked".to_owned()], Vec::new()));
+    if !unposted.is_empty() {
+        out::put(
+            &mut t,
+            "error",
+            out::unavailable(format!(
+                "CGEvents not created, so not posted: {}",
+                unposted.join(", ")
+            )),
+        );
+    }
     out::put(&mut t, "recording", outcome);
     out::put(
         &mut t,
@@ -463,17 +477,13 @@ pub(super) fn record(
 }
 
 /// Post one event (or take one capture) from the worker thread: what came
-/// of it.
-fn post_one(event: &Posted) -> String {
+/// of it, or (as `Err`) that its CGEvent is NULL and is not posted.
+fn post_one(event: &Posted) -> Result<String, String> {
+    let null = || "the CGEvent is NULL: not posted".to_owned();
     let mouse = |kind: CGEventType, at: NSPoint| {
-        let e = CGEvent::new_mouse_event(None, kind, at, CGMouseButton::Left);
-        let made = e.is_some();
-        CGEvent::post(CGEventTapLocation::HIDEventTap, e.as_deref());
-        if made {
-            format!("posted at ({:.1}, {:.1})", at.x, at.y)
-        } else {
-            "the CGEvent is NULL".to_owned()
-        }
+        let e = CGEvent::new_mouse_event(None, kind, at, CGMouseButton::Left).ok_or_else(null)?;
+        CGEvent::post(CGEventTapLocation::HIDEventTap, Some(&*e));
+        Ok(format!("posted at ({:.1}, {:.1})", at.x, at.y))
     };
     match event {
         Posted::Move(at) => mouse(CGEventType::MouseMoved, *at),
@@ -481,19 +491,16 @@ fn post_one(event: &Posted) -> String {
         Posted::Up(at) => mouse(CGEventType::LeftMouseUp, *at),
         Posted::Drag(at) => mouse(CGEventType::LeftMouseDragged, *at),
         Posted::Key(code, down) => {
-            let e = CGEvent::new_keyboard_event(None, *code, *down);
-            let made = e.is_some();
-            CGEvent::post(CGEventTapLocation::HIDEventTap, e.as_deref());
-            if made {
-                format!("posted key {code}")
-            } else {
-                "the CGEvent is NULL".to_owned()
-            }
+            let e = CGEvent::new_keyboard_event(None, *code, *down).ok_or_else(null)?;
+            CGEvent::post(CGEventTapLocation::HIDEventTap, Some(&*e));
+            Ok(format!("posted key {code}"))
         }
-        Posted::Capture(number, path, name) => match crate::macos::screencapture(*number, path) {
-            Ok(()) => format!("captured {name}"),
-            Err(reason) => format!("capture {name} failed: {reason}"),
-        },
+        Posted::Capture(number, path, name) => {
+            Ok(match crate::macos::screencapture(*number, path) {
+                Ok(()) => format!("captured {name}"),
+                Err(reason) => format!("capture {name} failed: {reason}"),
+            })
+        }
     }
 }
 

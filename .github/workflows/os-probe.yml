@@ -316,7 +316,14 @@ jobs:
       # probe.toml does not read accessibilityDisplayShouldReduceTransparency
       # false; the upload still runs. The controls-accent pass is the same
       # pass with the red accent set before it, into
-      # button-pass-controls-accent/.
+      # button-pass-controls-accent/; its step fails too where the accent the
+      # probe's process reads ([macos.environment.accent]) is not the red
+      # one: AppleAccentColor 0 (the value the step above writes) and
+      # controlAccentColor #e0383eff under aqua and #ff5257ff under darkAqua,
+      # the red accent's controlAccentColor read the same way on macOS 14, 15
+      # and 26 in run 40348854007 (docs/evidence/os-probe/
+      # 2026-10-26-run-40348854007, accent-red/probe.toml). The keys are the
+      # only ones of those names in the pass's probe.toml.
       - name: Run the controls pass (macOS)
         if: runner.os == 'macOS' && (matrix.pass == 'controls' || matrix.pass == 'controls-accent')
         run: |
@@ -349,6 +356,15 @@ jobs:
           if ! grep -qx 'accessibilityDisplayShouldReduceTransparency = false' "$out/probe.toml"; then
             echo "::error::$out/probe.toml does not hold accessibilityDisplayShouldReduceTransparency = false"
             exit 1
+          fi
+          if [ "${{ matrix.pass }}" = "controls-accent" ]; then
+            for line in 'AppleAccentColor = 0.0' 'controlAccentColor = "#e0383eff"' 'controlAccentColor = "#ff5257ff"'; do
+              if ! grep -qxF "$line" "$out/probe.toml"; then
+                echo "::error::$out/probe.toml does not hold $line: the probe does not see the red accent"
+                grep -A4 -F 'environment.accent' "$out/probe.toml"
+                exit 1
+              fi
+            done
           fi
           exit $status
       # The symbols pass (pass MP-symbols of the 0.8.0 measurement plan; U102,

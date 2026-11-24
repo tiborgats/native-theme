@@ -1042,8 +1042,17 @@ pub(super) fn button_pass_table(
 
 fn method_text() -> String {
     format!(
-        "activation policy set to Regular, finishLaunching and activation as in the key-window section; each sheet is a titled NSWindow (closable, miniaturizable, resizable, empty title) holding a backdrop (an NSBox, custom, no border, no title, over the whole content view, hidden for the window's own background) and a grid of controls, each given setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize: and sized to fit, centred in its row on whole points; the window is made key with makeKeyAndOrderFront: and makeFirstResponder: nil, the run loop pumped until isKeyWindow, then the mode's condition is set (mode_method); per appearance the window's appearance is set and the run loop pumped {SETTLE_STEPS} steps of {} ms, then each state is set (states) and per backdrop the window displayed, the run loop pumped {SETTLE_STEPS} steps ({HOVER_STEPS} after a cursor move) and the window captured with screencapture -x -o -l <windowNumber> to <appearance>/[<sheet>/]<state>[-<button>][-over-<backdrop>].png (the push sheet's captures in <appearance>/, as spike M wrote them); isKeyWindow and NSApp isActive are read just before and just after each capture (key_at_capture: both reads of isKeyWindow are true); each capture over the window's background is compared with the same appearance's normal one inside each button's frame grown by {DIFF_MARGIN} pt (diff_from_normal: the pixels whose bytes differ and the largest difference of one byte); the cursor is parked {CURSOR_AWAY_OFFSET} pt right of the push sheet's frame before the normal capture and after the hovered and clicked ones",
+        "activation policy set to Regular, finishLaunching and activation as in the key-window section; each sheet is a titled NSWindow (closable, miniaturizable, resizable, empty title) holding a backdrop (an NSBox, custom, no border, no title, over the whole content view, hidden for the window's own background) and a grid of controls, each given setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize: and sized to fit, centred in its row on whole points; the window is made key with makeKeyAndOrderFront: and makeFirstResponder: nil, the run loop pumped until isKeyWindow, then the mode's condition is set (mode_method); per appearance the window's appearance is set and the run loop pumped {SETTLE_STEPS} steps of {} ms, then each state is set (states) and per backdrop the window displayed, the run loop pumped {SETTLE_STEPS} steps ({HOVER_STEPS} after a cursor move) and the window captured with screencapture -x -o -l <windowNumber> to <appearance>/[<sheet>/]<state>[-<button>][-over-<backdrop>].png (the push sheet's captures in <appearance>/, as spike M wrote them); isKeyWindow and NSApp isActive are read just before and just after each capture (key_at_capture: both reads of isKeyWindow are true); each capture over the window's background is compared with the same appearance's normal one inside each button's frame grown by {DIFF_MARGIN} pt (diff_from_normal: the pixels whose bytes differ and the largest difference of one byte); the cursor is parked ({}) before the normal capture and after the hovered and clicked ones; every cursor move warps the cursor and posts its mouse-moved only where windowNumberAtPoint: at its target, read before, gives the probe's window (window_at_target, window_at_target_is_ours), else nothing is moved or posted and the move is the error",
         PUMP_STEP.as_millis(),
+        park_text(),
+    )
+}
+
+/// How `Pass::park` parks the cursor, for the method texts.
+fn park_text() -> String {
+    format!(
+        "inside the window on the middle of its content view's left margin, {} pt from its left edge, where windowNumberAtPoint: there gives the probe's window and hitTest: the content view or the backdrop box (view_at_park_point), else not moved and the error",
+        BUTTON_MARGIN / 2.0
     )
 }
 
@@ -1351,11 +1360,10 @@ impl Pass<'_> {
         }
         let all: Vec<&Case> = sheet.cases.iter().collect();
         let pointer = sheet.pointer_states && self.mode == Mode::Key;
-        let away = away_point(&sheet.window);
 
         let mut normal = Table::new();
         if pointer {
-            out::put_table(&mut normal, "cursor", self.move_cursor(&sheet.window, away));
+            out::put_table(&mut normal, "cursor", self.park(&sheet.window));
         }
         let normal_shots = self.shots(sheet, &mut normal, &dir, &rel, "normal", &all, false, None);
         if self.mode == Mode::Key {
@@ -1522,14 +1530,12 @@ impl Pass<'_> {
                 &rel,
                 normal_rgba.as_ref(),
                 pressed_shots.window.as_ref(),
-                away,
             );
         }
         t
     }
 
     /// The hovered and clicked captures of the push sheet.
-    #[allow(clippy::too_many_arguments)]
     fn pointer_states(
         &self,
         t: &mut Table,
@@ -1538,7 +1544,6 @@ impl Pass<'_> {
         rel: &str,
         normal: Option<&Rgba>,
         pressed: Option<&Rgba>,
-        away: NSPoint,
     ) {
         let window = &sheet.window;
         let mut hovered = Table::new();
@@ -1566,11 +1571,7 @@ impl Pass<'_> {
             );
             out::put_table(&mut hovered, &case.name, h);
         }
-        out::put_table(
-            &mut hovered,
-            "cursor_parked",
-            self.move_cursor(window, away),
-        );
+        out::put_table(&mut hovered, "cursor_parked", self.park(window));
         out::put_table(t, "hovered", hovered);
 
         let mut clicked = Table::new();
@@ -1600,11 +1601,7 @@ impl Pass<'_> {
             );
             out::put_table(&mut clicked, &case.name, c);
         }
-        out::put_table(
-            &mut clicked,
-            "cursor_parked",
-            self.move_cursor(window, away),
-        );
+        out::put_table(&mut clicked, "cursor_parked", self.park(window));
         out::put_table(t, "clicked", clicked);
     }
 
@@ -1967,9 +1964,12 @@ impl Pass<'_> {
         NSPoint::new(p.x, self.primary_height - p.y)
     }
 
-    /// Warp the cursor to `target` (AppKit's screen points), post a
-    /// mouse-moved event there and pump the run loop `HOVER_STEPS` steps,
-    /// counting the mouse events AppKit dispatches; where the cursor then is.
+    /// Where the window at `target` (AppKit's screen points; read with
+    /// `windowNumberAtPoint:` before anything is posted) is `window`: warp
+    /// the cursor there, post a mouse-moved event there and pump the run
+    /// loop `HOVER_STEPS` steps, counting the mouse events AppKit
+    /// dispatches; where the cursor then is. Where it is another window,
+    /// nothing is warped or posted and the move is the error.
     fn move_cursor(&self, window: &NSWindow, target: NSPoint) -> Table {
         let mut t = Table::new();
         let at = self.quartz(target);
@@ -1979,6 +1979,22 @@ impl Pass<'_> {
             out::floats(&[target.x, target.y]),
         );
         out::put(&mut t, "target_quartz_xy", out::floats(&[at.x, at.y]));
+        let at_target =
+            NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(target, 0, self.mtm);
+        let ours = at_target == window.windowNumber();
+        out::put(&mut t, "window_at_target", out::int_isize(at_target));
+        out::put(&mut t, "window_at_target_is_ours", out::boolean(ours));
+        if !ours {
+            out::put(
+                &mut t,
+                "error",
+                out::unavailable(format!(
+                    "the window at the target is window {at_target}, not the probe's {}: the cursor is not moved",
+                    window.windowNumber()
+                )),
+            );
+            return t;
+        }
         let warp = CGWarpMouseCursorPosition(at);
         out::put(
             &mut t,
@@ -1988,8 +2004,13 @@ impl Pass<'_> {
         let moved =
             CGEvent::new_mouse_event(None, CGEventType::MouseMoved, at, CGMouseButton::Left);
         out::put(&mut t, "mouseMoved_created", out::boolean(moved.is_some()));
-        if let Some(moved) = moved.as_deref() {
-            CGEvent::post(CGEventTapLocation::HIDEventTap, Some(moved));
+        match moved.as_deref() {
+            Some(moved) => CGEvent::post(CGEventTapLocation::HIDEventTap, Some(moved)),
+            None => out::put(
+                &mut t,
+                "error",
+                out::unavailable("the mouse-moved CGEvent is NULL: none is posted"),
+            ),
         }
         window.displayIfNeeded();
         out::put_table(&mut t, "events", pump_counting(self.app, HOVER_STEPS));
@@ -2006,6 +2027,65 @@ impl Pass<'_> {
             "window_under_cursor_is_ours",
             out::boolean(under == window.windowNumber()),
         );
+        t
+    }
+
+    /// Park the cursor inside `window` on the middle of its content view's
+    /// left margin (`park_point`), as `move_cursor` moves it, where the view
+    /// there (`hitTest:` of the content view's superview) is the content
+    /// view or the backdrop box (`is_backdrop`): no control lies under it.
+    /// The views from the one hit up to the content view are read into
+    /// `view_at_park_point`; where another view is hit the cursor is not
+    /// moved and the park is the error.
+    fn park(&self, window: &NSWindow) -> Table {
+        let Some(content) = window.contentView() else {
+            let mut t = Table::new();
+            out::put(
+                &mut t,
+                "error",
+                out::unavailable("the window has no content view: the cursor is not parked"),
+            );
+            return t;
+        };
+        let local = park_point(&content);
+        let in_window = content.convertPoint_toView(local, None);
+        let hit = match ffi::superview(&content) {
+            Some(frame_view) => frame_view.hitTest(in_window),
+            None => content.hitTest(in_window),
+        };
+        let mut chain: Vec<Value> = Vec::new();
+        let mut empty = hit.is_some();
+        let mut at = hit;
+        while let Some(v) = at {
+            chain.push(out::text(v.class().name().to_string_lossy()));
+            if std::ptr::eq(&*v, &*content) {
+                break;
+            }
+            let up = ffi::superview(&v);
+            empty &=
+                is_backdrop(&v, &content) || up.as_ref().is_some_and(|s| is_backdrop(s, &content));
+            at = up;
+        }
+        let screen = window.convertPointToScreen(in_window);
+        let mut t = if empty {
+            self.move_cursor(window, screen)
+        } else {
+            let mut t = Table::new();
+            out::put(
+                &mut t,
+                "error",
+                out::unavailable(
+                    "the view at the park point is neither the content view nor the backdrop box: the cursor is not parked",
+                ),
+            );
+            t
+        };
+        out::put(
+            &mut t,
+            "park_point_in_content_xy",
+            out::floats(&[local.x, local.y]),
+        );
+        out::put(&mut t, "view_at_park_point", out::array(chain));
         t
     }
 
@@ -2168,11 +2248,23 @@ impl Pass<'_> {
                             CGMouseButton::Left,
                         );
                         out::put(&mut reads, "mouseUp_created", out::boolean(up.is_some()));
-                        if let Some(up) = up.as_deref() {
-                            post_at_own_window(&mut reads, "mouseUp", mtm, number, screen, up);
+                        match up.as_deref() {
+                            Some(up) => {
+                                post_at_own_window(&mut reads, "mouseUp", mtm, number, screen, up);
+                                release.up_at.set(Some(std::time::Instant::now()));
+                                release.finish(!escape);
+                            }
+                            None => {
+                                out::put(
+                                    &mut reads,
+                                    "error",
+                                    out::unavailable(
+                                        "the mouse-up CGEvent is NULL: none is posted, and the watchdog ends the press",
+                                    ),
+                                );
+                                release.done.set(true);
+                            }
                         }
-                        release.up_at.set(Some(std::time::Instant::now()));
-                        release.finish(!escape);
                     }
                     Some(up_at) if up_at.elapsed() >= CLICK_CAPTURE_DELAY => {
                         let active = NSApplication::sharedApplication(mtm).isActive();
@@ -2184,6 +2276,13 @@ impl Pass<'_> {
                             if let Some(key) = key.as_deref() {
                                 post_to_own_process(&mut reads, "escape", active, key);
                             }
+                        }
+                        if created.iter().any(|c| c.as_bool() == Some(false)) {
+                            out::put(
+                                &mut reads,
+                                "error",
+                                out::unavailable("an Escape CGEvent is NULL: it is not posted"),
+                            );
                         }
                         out::put(&mut reads, "escape_created", out::array(created));
                         if !active {
@@ -2361,8 +2460,28 @@ fn release_to_own_process(at: NSPoint, escape: bool) -> String {
     )
 }
 
-/// Where the cursor is parked: right of the window's frame, in AppKit's
-/// screen points.
+/// Where `Pass::park` parks the cursor, in `content`'s coordinates: the
+/// middle of its left margin, `BUTTON_MARGIN / 2` from its left edge and
+/// half its height up, the point each sheet's capture reads its backdrop at
+/// (`Sheet::backdrop_point`).
+fn park_point(content: &NSView) -> NSPoint {
+    let b = content.bounds();
+    NSPoint::new(
+        b.origin.x + BUTTON_MARGIN / 2.0,
+        b.origin.y + b.size.height / 2.0,
+    )
+}
+
+/// Whether `v` is a backdrop box: an NSBox directly under `content` whose
+/// frame is `content`'s whole bounds.
+fn is_backdrop(v: &NSView, content: &NSView) -> bool {
+    v.downcast_ref::<NSBox>().is_some()
+        && ffi::superview(v).is_some_and(|s| std::ptr::eq(&*s, content))
+        && v.frame() == content.bounds()
+}
+
+/// A point right of the window's frame, in AppKit's screen points: where
+/// the motion and events passes' timelines move the cursor away to.
 fn away_point(window: &NSWindow) -> NSPoint {
     let f = window.frame();
     NSPoint::new(

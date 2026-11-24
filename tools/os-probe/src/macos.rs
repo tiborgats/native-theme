@@ -109,6 +109,7 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
             );
             out::put_table(&mut env, "mainScreen", screen_table(mtm));
             out::put_table(&mut env, "accessibility", accessibility_table());
+            out::put_table(&mut env, "accent", accent_table());
             out::put_table(&mut mac, "environment", env);
             out::put_table(&mut mac, "metrics", metrics_table(mtm));
             out::put_table(&mut mac, "tokens", tokens_table(mtm));
@@ -160,6 +161,7 @@ pub(crate) fn button_probe(doc: &mut Table, out_dir: &Path, mode: ButtonMode) {
             );
             out::put_table(&mut env, "mainScreen", screen_table(mtm));
             out::put_table(&mut env, "accessibility", accessibility_table());
+            out::put_table(&mut env, "accent", accent_table());
             out::put_table(&mut mac, "environment", env);
             out::put_table(
                 &mut mac,
@@ -222,6 +224,7 @@ fn single_pass(
             );
             out::put_table(&mut env, "mainScreen", screen_table(mtm));
             out::put_table(&mut env, "accessibility", accessibility_table());
+            out::put_table(&mut env, "accent", accent_table());
             out::put_table(&mut mac, "environment", env);
             out::put_table(&mut mac, key, pass(mtm, &app, &version));
         }
@@ -784,6 +787,54 @@ fn screen_table(mtm: MainThreadMarker) -> Table {
             out::put(&mut t, "frame_xywh", rect(screen.frame()));
         }
         None => out::put(&mut t, "screen", out::unavailable("mainScreen is nil")),
+    }
+    t
+}
+
+/// The accent the probe's process sees: the `AppleAccentColor` user default
+/// as `-[NSUserDefaults standardUserDefaults] objectForKey:` reads it (the
+/// global domain included; absent: nil), and per appearance
+/// `controlAccentColor` resolved inside `performAsCurrentDrawingAppearance:`,
+/// in sRGB as `#rrggbbaa` and as its red, green, blue and alpha components.
+fn accent_table() -> Table {
+    let mut t = Table::new();
+    let accent = match NSUserDefaults::standardUserDefaults().objectForKey(&ns("AppleAccentColor"))
+    {
+        None => out::text("absent (objectForKey: is nil)"),
+        Some(obj) => default_value(&obj),
+    };
+    out::put(&mut t, "AppleAccentColor", accent);
+    let srgb = NSColorSpace::sRGBColorSpace();
+    for (key, name) in APPEARANCES {
+        let Some(appearance) = NSAppearance::appearanceNamed(&NSString::from_str(name)) else {
+            out::put(
+                &mut t,
+                key,
+                out::unavailable(format!("appearanceNamed({name}) is nil")),
+            );
+            continue;
+        };
+        let result = RefCell::new(Table::new());
+        {
+            let block = RcBlock::new(|| {
+                let mut a = Table::new();
+                let color = NSColor::controlAccentColor();
+                out::put(&mut a, "controlAccentColor", color_value(&color, &srgb));
+                let components = match color.colorUsingColorSpace(&srgb) {
+                    Some(c) => out::floats(&[
+                        c.redComponent(),
+                        c.greenComponent(),
+                        c.blueComponent(),
+                        c.alphaComponent(),
+                    ]),
+                    None => out::unavailable("controlAccentColor has no sRGB form"),
+                };
+                out::put(&mut a, "controlAccentColor_srgb_rgba", components);
+                *result.borrow_mut() = a;
+            });
+            appearance.performAsCurrentDrawingAppearance(&block);
+        }
+        out::put_table(&mut t, key, result.into_inner());
     }
     t
 }

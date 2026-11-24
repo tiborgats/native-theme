@@ -379,11 +379,14 @@ fn pass_error(doc: &toml::Table) -> Option<String> {
 
 /// An error (the reason) where, in one of the sheet's appearances, its
 /// `normal` or `highlighted` state lacks one of its four captures, an
-/// `error` lies under `normal.backdrop_shows`, or a target placed in
+/// `error` lies under `normal.backdrop_shows` or one of its rows reads
+/// `over_backdrop = true` with `differing_pixels = 0`, the cursor's move
+/// (`normal.cursor`, `hovered.cursor_parked`, `pressed.cursor_parked`) is
+/// missing or fails as `first_error` takes it, or a target placed in
 /// `targets` (no `error` of its own) lacks its `hovered.<target>` (unless
 /// its `hovered` is false) or, where its `pressed` is true, its
 /// `pressed.<target>`, or that state lacks one of its four captures or
-/// holds an `error` or a `window_at_press_is_ours = false` anywhere under it.
+/// fails as `first_error` takes it.
 #[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn states_error(sheet: &toml::Table, path: &str) -> Result<(), String> {
     let placed: Vec<(&String, &toml::Table)> = sheet
@@ -420,6 +423,14 @@ fn states_error(sheet: &toml::Table, path: &str) -> Result<(), String> {
         }
         let shows = state(&["normal", "backdrop_shows"])?;
         first_error(shows, &format!("{at}.normal.backdrop_shows"))?;
+        backdrop_flag_error(shows, &format!("{at}.normal.backdrop_shows"))?;
+        for names in [
+            ["normal", "cursor"],
+            ["hovered", "cursor_parked"],
+            ["pressed", "cursor_parked"],
+        ] {
+            first_error(state(&names)?, &format!("{at}.{}", names.join(".")))?;
+        }
         for (name, target) in &placed {
             let flag = |k: &str| target.get(k).and_then(toml::Value::as_bool);
             for (kind, wanted) in [
@@ -438,17 +449,39 @@ fn states_error(sheet: &toml::Table, path: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// An error (the reason) where `state` lacks a capture: its own `file` or
-/// `window.file`, and `<backdrop>.file` for each of `OVER_BACKDROPS`.
+/// An error (the reason) where a row of `normal.backdrop_shows` reads
+/// `over_backdrop = true` and `differing_pixels = 0`: the part was taken as
+/// lying over the backdrop, yet the backdrop does not show through it.
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+fn backdrop_flag_error(shows: &toml::Table, path: &str) -> Result<(), String> {
+    for (name, row) in shows {
+        let over = row.get("over_backdrop").and_then(toml::Value::as_bool);
+        let differing = row
+            .get("differing_pixels")
+            .and_then(toml::Value::as_integer);
+        if over == Some(true) && differing == Some(0) {
+            return Err(format!(
+                "{path}.{name} reads over_backdrop = true with differing_pixels = 0"
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// An error (the reason) where `state` lacks a decoded capture: its own
+/// `file` or `window.file`, and `<backdrop>.file` for each of
+/// `OVER_BACKDROPS`; a capture counts only where its table also holds the
+/// decoded size (`pixels_wh`) and no `capture` or `decode` error.
 #[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn captures_error(state: &toml::Table, path: &str) -> Result<(), String> {
-    let file = |t: Option<&toml::Value>| {
-        t.and_then(|t| t.get("file"))
-            .and_then(toml::Value::as_str)
-            .is_some()
+    let decoded = |t: &toml::Table| {
+        t.get("file").and_then(toml::Value::as_str).is_some()
+            && t.get("pixels_wh").and_then(toml::Value::as_array).is_some()
+            && !t.contains_key("capture")
+            && !t.contains_key("decode")
     };
-    let window =
-        state.get("file").and_then(toml::Value::as_str).is_some() || file(state.get("window"));
+    let file = |t: Option<&toml::Value>| t.and_then(toml::Value::as_table).is_some_and(decoded);
+    let window = decoded(state) || file(state.get("window"));
     let missing: Vec<&str> = std::iter::once(("window", window))
         .chain(OVER_BACKDROPS.iter().map(|k| (*k, file(state.get(*k)))))
         .filter(|(_, present)| !present)
@@ -461,9 +494,9 @@ fn captures_error(state: &toml::Table, path: &str) -> Result<(), String> {
     }
 }
 
-/// An error (the reason) at the first `error` key, or
-/// `window_at_press_is_ours = false`, anywhere under `table`, its arrays
-/// included.
+/// An error (the reason) at the first `error` key,
+/// `window_at_press_is_ours = false` or `window_at_target_is_ours = false`,
+/// anywhere under `table`, its arrays included.
 #[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn first_error(table: &toml::Table, path: &str) -> Result<(), String> {
     for (key, value) in table {
@@ -473,6 +506,9 @@ fn first_error(table: &toml::Table, path: &str) -> Result<(), String> {
         }
         if key == "window_at_press_is_ours" && value.as_bool() == Some(false) {
             return Err(format!("{at} = false: the press was skipped"));
+        }
+        if key == "window_at_target_is_ours" && value.as_bool() == Some(false) {
+            return Err(format!("{at} = false: the cursor's move was skipped"));
         }
         value_error(value, &at)?;
     }
@@ -786,15 +822,21 @@ mod tests {
     /// The four captures of a state at `path`: the window's own as the
     /// state's `file` (`own`) or its `window.file`.
     fn captures(path: &str, own: bool) -> String {
+        let decoded = "pixels_wh = [2, 2]\n";
         let mut text = if own {
-            format!("[{path}]\nfile = \"a.png\"\n")
+            format!("[{path}]\nfile = \"a.png\"\n{decoded}")
         } else {
-            format!("[{path}.window]\nfile = \"a.png\"\n")
+            format!("[{path}.window]\nfile = \"a.png\"\n{decoded}")
         };
         for backdrop in OVER_BACKDROPS {
-            text.push_str(&format!("[{path}.{backdrop}]\nfile = \"b.png\"\n"));
+            text.push_str(&format!("[{path}.{backdrop}]\nfile = \"b.png\"\n{decoded}"));
         }
         text
+    }
+
+    /// A cursor's move at `path` that reached the probe's own window.
+    fn moved(path: &str) -> String {
+        format!("[{path}]\nwindow_at_target_is_ours = true\nwindow_under_cursor_is_ours = true\n")
     }
 
     /// One sheet at `sheet` with `targets` (name, hovered, pressed), each
@@ -809,18 +851,24 @@ mod tests {
         for key in CONTROLS_APPEARANCES {
             text.push_str(&captures(&format!("{sheet}.{key}.normal"), true));
             text.push_str(&captures(&format!("{sheet}.{key}.highlighted"), true));
+            text.push_str(&moved(&format!("{sheet}.{key}.normal.cursor")));
+            text.push_str(&moved(&format!("{sheet}.{key}.hovered.cursor_parked")));
+            text.push_str(&moved(&format!("{sheet}.{key}.pressed.cursor_parked")));
             for (name, hovered, pressed) in targets {
                 text.push_str(&format!(
-                    "[{sheet}.{key}.normal.backdrop_shows.{name}]\ndiffering_pixels = 1\n"
+                    "[{sheet}.{key}.normal.backdrop_shows.{name}]\nover_backdrop = true\ndiffering_pixels = 1\n"
                 ));
                 if *hovered {
                     text.push_str(&captures(&format!("{sheet}.{key}.hovered.{name}"), true));
+                    text.push_str(&moved(&format!("{sheet}.{key}.hovered.{name}.cursor")));
                 }
                 if *pressed {
                     text.push_str(&captures(&format!("{sheet}.{key}.pressed.{name}"), false));
+                    text.push_str(&moved(&format!(
+                        "{sheet}.{key}.pressed.{name}.over_black.cursor"
+                    )));
                     text.push_str(&format!(
-                        "[{sheet}.{key}.pressed.{name}.over_black.cursor]\nwindow_under_cursor_is_ours = true\n\
-                         [{sheet}.{key}.pressed.{name}.window.press]\nwindow_at_press_is_ours = true\n"
+                        "[{sheet}.{key}.pressed.{name}.window.press]\nwindow_at_press_is_ours = true\n"
                     ));
                 }
             }
@@ -1031,7 +1079,7 @@ mod tests {
     }
 
     #[test]
-    fn a_backdrop_flag_that_disagrees_with_the_count_is_a_failure() -> Result<(), String> {
+    fn an_error_under_backdrop_shows_is_a_failure() -> Result<(), String> {
         fails(fails_after(|d| {
             set(
                 d,
@@ -1040,6 +1088,94 @@ mod tests {
                 "unavailable: over_backdrop is true, yet no pixel of the part differs".into(),
             )
         })?)?;
+        Ok(())
+    }
+
+    #[test]
+    fn a_target_over_the_backdrop_with_no_differing_pixel_is_a_failure() -> Result<(), String> {
+        let shows = format!("{CONTROLS}.aqua.normal.backdrop_shows.box");
+        fails(fails_after(|d| {
+            set(d, &shows, "differing_pixels", 0.into())
+        })?)?;
+        let mut doc = controls_doc()?;
+        set(&mut doc, &shows, "differing_pixels", 0.into())?;
+        set(&mut doc, &shows, "over_backdrop", false.into())?;
+        passes(&doc)
+    }
+
+    #[test]
+    fn a_cursor_move_skipped_or_in_error_is_a_failure() -> Result<(), String> {
+        for path in [
+            format!("{CONTROLS}.aqua.normal.cursor"),
+            format!("{CONTROLS}.darkAqua.hovered.cursor_parked"),
+            format!("{TOOLBAR}.aqua.pressed.cursor_parked"),
+            format!("{CONTROLS}.aqua.hovered.box.cursor"),
+            format!("{CONTROLS}.darkAqua.pressed.push.over_black.cursor"),
+        ] {
+            fails(fails_after(|d| {
+                set(d, &path, "window_at_target_is_ours", false.into())
+            })?)?;
+            fails(fails_after(|d| {
+                set(d, &path, "error", "unavailable: x".into())
+            })?)?;
+        }
+        fails(fails_after(|d| {
+            remove(d, &format!("{TOOLBAR}.darkAqua.hovered"), "cursor_parked")
+        })?)?;
+        Ok(())
+    }
+
+    #[test]
+    fn a_capture_that_did_not_decode_is_missing() -> Result<(), String> {
+        fails(fails_after(|d| {
+            set(
+                d,
+                &format!("{CONTROLS}.aqua.normal.over_white"),
+                "capture",
+                "unavailable: the capture is not a bitmap image".into(),
+            )
+        })?)?;
+        fails(fails_after(|d| {
+            set(
+                d,
+                &format!("{CONTROLS}.darkAqua.pressed.push.window"),
+                "decode",
+                "unavailable: x".into(),
+            )
+        })?)?;
+        fails(fails_after(|d| {
+            remove(
+                d,
+                &format!("{TOOLBAR}.aqua.hovered.toolbar_button"),
+                "pixels_wh",
+            )
+        })?)?;
+        Ok(())
+    }
+
+    #[test]
+    fn a_toolbar_sheet_missing_or_in_error_is_a_failure() -> Result<(), String> {
+        type Edit<'a> = &'a dyn Fn(&mut toml::Table) -> Result<(), String>;
+        let edits: [Edit<'_>; 3] = [
+            &|d| remove(d, CONTROLS, "toolbar_sheet"),
+            &|d| set(d, TOOLBAR, "error", "unavailable: x".into()),
+            &|d| {
+                set(
+                    d,
+                    &format!("{TOOLBAR}.targets.toolbar_button"),
+                    "error",
+                    "unavailable: the view is in no window".into(),
+                )
+            },
+        ];
+        for edit in edits {
+            let mut doc = controls_doc()?;
+            edit(&mut doc)?;
+            match pass_error(&doc) {
+                Some(reason) if reason.contains("[macos.button_pass.controls.toolbar_sheet]") => {}
+                other => return Err(format!("not the toolbar sheet's failure: {other:?}")),
+            }
+        }
         Ok(())
     }
 
@@ -1056,11 +1192,6 @@ mod tests {
              [macos.button_pass.controls.toolbar_sheet.targets.toolbar_button]\nclass = \"NSButton\"\n",
             "[macos.button_pass.controls]\ntargets = {}\n\
              [macos.button_pass.controls.toolbar_sheet.targets.toolbar_button]\nclass = \"NSButton\"\n",
-            "[macos.button_pass.controls.targets.push]\nclass = \"NSButton\"\n",
-            "[macos.button_pass.controls.targets.push]\nclass = \"NSButton\"\n\
-             [macos.button_pass.controls.toolbar_sheet]\nerror = \"unavailable: x\"\n",
-            "[macos.button_pass.controls.targets.push]\nclass = \"NSButton\"\n\
-             [macos.button_pass.controls.toolbar_sheet.targets.toolbar_button]\nerror = \"unavailable: the view is in no window\"\n",
         ] {
             assert!(
                 matches!(

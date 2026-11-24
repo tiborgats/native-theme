@@ -18,7 +18,7 @@ use objc2_app_kit::{
 use objc2_foundation::{NSDate, NSOperatingSystemVersion, NSPoint, NSRect, NSSize};
 use toml::Table;
 
-use super::{Pass, SETTLE_STEPS, away_point, push_sheet};
+use super::{Pass, SETTLE_STEPS, push_sheet};
 use crate::macos::{APPEARANCES, ffi, ns, rect};
 use crate::out;
 
@@ -121,11 +121,7 @@ pub(super) fn transition_table(pass: &Pass<'_>, version: &NSOperatingSystemVersi
         ),
     }
     out::put(&mut t, "window_frame_xywh", rect(window.frame()));
-    out::put_table(
-        &mut t,
-        "cursor",
-        pass.move_cursor(window, away_point(window)),
-    );
+    out::put_table(&mut t, "cursor", pass.park(window));
 
     for (key, name) in APPEARANCES {
         let Some(appearance) = NSAppearance::appearanceNamed(&ns(name)) else {
@@ -510,8 +506,8 @@ fn crop_text(quartz: NSRect, scale: f64) -> Option<String> {
 
 fn method_text() -> String {
     format!(
-        "the push sheet's window presented as in the key mode (made key, the application active) and the cursor parked {} pt right of it; per appearance (the window's appearance set, the run loop pumped {SETTLE_STEPS} steps) and per button ({}): makeFirstResponder: nil and the run loop pumped {SETTLE_STEPS} steps; `screencapture -x -v -V{RECORD_SECONDS} <appearance>/transition-<button>.mov` started (the whole main display); the run loop pumped in steps of {} ms, before each the ticker (an NSBox, custom, no border, no title, at {} in the content view, outside every crop) filled black or white in turn, so the screen changes at every step (ticker_flips) (pump_lead: the steps and the longest between two starts) until {} ms after starting screencapture; makeFirstResponder: with the button (focus_at_ms, counted from starting screencapture); pumped until {} ms (pump_hold); makeFirstResponder: nil (unfocus_at_ms); pumped until screencapture exits (pump_finish, at most until {} ms); <appearance>/transition-<button>.crop holds ffmpeg's crop=w:h:x:y in pixels for the button's frame grown by {CROP_MARGIN} pt, in the display's pixels (frame_quartz_xywh times mainScreen_backingScaleFactor), which the workflow cuts each frame of the recording to (<stem>-frames/NNNNN.png, their times in <stem>-frames.csv, ffprobe's pts_time); the recording starts some time after screencapture does, so its times are not the probe's",
-        super::CURSOR_AWAY_OFFSET,
+        "the push sheet's window presented as in the key mode (made key, the application active) and the cursor parked {}; per appearance (the window's appearance set, the run loop pumped {SETTLE_STEPS} steps) and per button ({}): makeFirstResponder: nil and the run loop pumped {SETTLE_STEPS} steps; `screencapture -x -v -V{RECORD_SECONDS} <appearance>/transition-<button>.mov` started (the whole main display); the run loop pumped in steps of {} ms, before each the ticker (an NSBox, custom, no border, no title, at {} in the content view, outside every crop) filled black or white in turn, so the screen changes at every step (ticker_flips) (pump_lead: the steps and the longest between two starts) until {} ms after starting screencapture; makeFirstResponder: with the button (focus_at_ms, counted from starting screencapture); pumped until {} ms (pump_hold); makeFirstResponder: nil (unfocus_at_ms); pumped until screencapture exits (pump_finish, at most until {} ms); <appearance>/transition-<button>.crop holds ffmpeg's crop=w:h:x:y in pixels for the button's frame grown by {CROP_MARGIN} pt, in the display's pixels (frame_quartz_xywh times mainScreen_backingScaleFactor), which the workflow cuts each frame of the recording to (<stem>-frames/NNNNN.png, their times in <stem>-frames.csv, ffprobe's pts_time); the recording starts some time after screencapture does, so its times are not the probe's",
+        super::park_text(),
         TRANSITION_CASES.join(", "),
         FINE_STEP.as_millis(),
         crate::macos::rect_text(TICKER_FRAME),
