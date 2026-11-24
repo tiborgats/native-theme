@@ -79,7 +79,7 @@ use native_theme::next::{
     ThemeContext, Typography, WidgetState,
 };
 use native_theme::theme::{
-    ArrowSide, FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedTextScale, ResolvedTextScaleEntry,
+    FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedTextScale, ResolvedTextScaleEntry,
     ResolvedTheme,
 };
 use native_theme_iced::icons::to_svg_handle;
@@ -11178,6 +11178,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              width and the header line's height"
                 .into()
         }
+        ("separator", "line_width_px") if under("basic.separator.") => {
+            "rule::horizontal's thickness, separator.thickness".into()
+        }
         ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
         // ---- tabs ----
         ("tab", "bar_background") => {
@@ -11295,6 +11298,30 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "native_theme_iced::Spinner: the arc's stroke, the icon set having no indicator".into()
         }
         // ---- segmented control ----
+        ("segmented_control", "font") if under("basic.segmented.") => {
+            "next_text: the label's size, line box and font, segmented_control.label(NONE)".into()
+        }
+        ("segmented_control", "segment_height_px") if under("basic.segmented.") => {
+            "at_least(label, ..): each segment's outer height, \
+             segmented_control.segment(NONE).min_size[1], less its padding; no floor where \
+             unstated"
+                .into()
+        }
+        ("segmented_control", "separator_width_px") if under("basic.segmented.") => {
+            "the width of the styles::segment_separator line between two segments, \
+             segmented_control.separator_width"
+                .into()
+        }
+        ("segmented_control", "border.line_width_px") if under("basic.segmented.") => {
+            "styles::segmented_control: the outline; the container's padding, \
+             segmented_control.track(NONE)'s stroke width (NextSegmented), none where unstated"
+                .into()
+        }
+        ("segmented_control", f) if side(f).is_some() && under("basic.segmented.") => {
+            "Button::padding of each segment, the side of segmented_control.segment(NONE).padding, \
+             iced's own (button::DEFAULT_PADDING) where unstated"
+                .into()
+        }
         ("segmented_control", "font") => "the label's size and theme_font".into(),
         ("segmented_control", "segment_height_px") => {
             "at_least(label, ..): each segment's outer height less its padding".into()
@@ -11446,6 +11473,42 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         // ---- expander ----
+        ("expander", "font") if under("basic.expander.") => {
+            "next_text: the title's size, line box and font, expander.header_label(NONE)".into()
+        }
+        ("expander", "header_height_px") if under("basic.expander.") => {
+            "next_expander_header_height: the header button's height, at least \
+             expander.header(NONE).min_size[1], grown to hold its title's line box and padding"
+                .into()
+        }
+        ("expander", "arrow_icon_size_px") if under("basic.expander.") => {
+            "next_expander_arrow_size: the DisclosureArrow canvas's size, \
+             expander.arrow(NONE).size, iced's own (the renderer's default text size) where \
+             unstated"
+                .into()
+        }
+        ("expander", "arrow_side") if under("basic.expander.") => {
+            "the arrow before or after the title, expander.arrow_side".into()
+        }
+        ("expander", "arrow_gap_px") if under("basic.expander.") => {
+            "the header row's spacing, expander.arrow_gap; layout.widget_gap where unstated".into()
+        }
+        ("expander", "content_indent_px") if under("basic.expander.") => {
+            "the body's left padding, expander.content_indent; under the title where unstated"
+                .into()
+        }
+        ("expander", "border.line_width_px")
+            if under("basic.expander.") && state.next_shown().expander.frame_enabled == Some(true) =>
+        {
+            "styles::expander_frame: border.width; the frame's padding, \
+             expander.container(NONE)'s stroke width"
+                .into()
+        }
+        ("expander", f) if side(f).is_some() && under("basic.expander.") => {
+            "next_expander_header_padding: the header's padding, the side of \
+             expander.header(NONE).padding; button::DEFAULT_PADDING's where unstated"
+                .into()
+        }
         ("expander", "font") => "the title's size and theme_font".into(),
         ("expander", "header_height_px") => {
             "the header button's height, grown above a text scale of 1 to hold its title's \
@@ -13067,24 +13130,71 @@ fn basic_tabs_width(state: &State) -> f32 {
     }
 }
 
-/// The Basic Segmented control's width as the page lays it out: each label
-/// as iced shapes it in `segmented_control.font` at its scaled size
-/// ([`LabelWidths`]), inside the segment's padding (`padding_or` of the
-/// stated sides, `button::DEFAULT_PADDING` where unstated), the
-/// `separator_width` between neighbours and the container's
-/// `border.line_width` padding at both ends.
+/// The Basic segmented control's geometry on the installed 0.8.0 theme.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct NextSegmented {
+    /// A segment's padding: the sides `segmented_control.segment(NONE)`
+    /// states, iced's own button padding, `button::DEFAULT_PADDING`, on a
+    /// side it leaves unstated. A segment has no border of its own (the
+    /// control's outline is the container's), so the sides as they are.
+    padding: Padding,
+    /// A segment's least outer height,
+    /// `segmented_control.segment(NONE).min_size[1]`, where stated.
+    min_height: Option<f32>,
+    /// The line between two segments, `segmented_control.separator_width`.
+    separator_width: f32,
+    /// The control's outline, `segmented_control.track(NONE)`'s stroke
+    /// width, the container's padding round the segments; `None` where the
+    /// track states no stroke iced can draw, and the container keeps its own
+    /// padding, none.
+    outline: Option<f32>,
+}
+
+impl NextSegmented {
+    fn of(r: &native_theme::next::ResolvedTheme) -> Self {
+        let sc = &r.segmented_control;
+        let segment = sc.segment(WidgetState::NONE);
+        Self {
+            padding: stated_sides(&segment, button::DEFAULT_PADDING),
+            min_height: segment.min_size[1],
+            separator_width: sc.separator_width,
+            outline: iced_next::stroke_width_of(&sc.track(WidgetState::NONE)),
+        }
+    }
+}
+
+/// `frame` padded by `line`, the width of the outline its style draws on
+/// the installed 0.8.0 theme, where stated; its own padding, none, where
+/// not.
+fn outlined<'a>(
+    frame: iced::widget::Container<'a, Message>,
+    line: Option<f32>,
+) -> iced::widget::Container<'a, Message> {
+    match line {
+        Some(width) => frame.padding(width),
+        None => frame,
+    }
+}
+
+/// The Basic segmented control's width as the page lays it out on the
+/// installed 0.8.0 theme: each label as iced shapes it in
+/// `segmented_control.label(NONE)` ([`LabelWidths`],
+/// [`next_measured_font`]), inside the segment's padding, the separators
+/// between neighbours and the outline at both ends ([`NextSegmented`]).
 fn basic_segmented_width(state: &State) -> f32 {
-    let resolved = &state.current_resolved;
-    let sc = &resolved.segmented_control;
-    let pad = native_theme_iced::padding_or(&sc.border.padding, button::DEFAULT_PADDING);
-    let size = scaled_text_size(sc.font.size, &state.accessibility);
-    let font = theme_font(&sc.font);
+    let r = state.next_shown();
+    let sc = NextSegmented::of(r);
+    let label = r.segmented_control.label(WidgetState::NONE);
+    let font = next_measured_font(&label);
     let segments: f32 = BASIC_SEGMENTS
         .iter()
-        .map(|label| state.label_widths.width(label, font, size) + pad.x())
+        .map(|text| state.label_widths.width(text, font, label.size_px) + sc.padding.x())
         .sum();
     let lines = BASIC_SEGMENTS.len().saturating_sub(1) as f32 * sc.separator_width;
-    segments + lines + sc.border.line_width + sc.border.line_width
+    match sc.outline {
+        Some(outline) => segments + lines + outline + outline,
+        None => segments + lines,
+    }
 }
 
 /// The widest fixed-width control the theme states on the Basic page:
@@ -13504,43 +13614,39 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
     tab_row
 }
 
-/// An expander's header, tagged `<id>.header`, its arrow `<id>.arrow` and
-/// its title `<id>.title`, `arrow_gap` apart. It is
-/// `expander.header_height` tall at a text scale of 1 or less, grown above
-/// it to hold its title's line and padding, as a list or menu row is
-/// (`rows::scaled_height`); the title is one line, centred in it, as a menu
-/// row's label. Its arrow is `expander.arrow_icon_size` across, on
-/// `expander.arrow_side` (docs/platform-facts.md §2.27), before the title
-/// where the side is unstated; it is drawn in `styles::expander`.
+/// An expander's header on `r`, the installed 0.8.0 theme, tagged
+/// `<id>.header`, its arrow `<id>.arrow` and its title `<id>.title`,
+/// `arrow_gap` apart. It is [`next_expander_header_height`] tall, padded by
+/// [`next_expander_header_padding`]; the title, `expander.header_label(NONE)`,
+/// is one line, centred in it, as a menu row's label. Its arrow is
+/// [`next_expander_arrow_size`] across, on `expander.arrow_side`
+/// (docs/platform-facts.md §2.27), before the title where the side is
+/// unstated; it is drawn in `styles::expander` and the arrow's colour of
+/// `resolved`.
 fn expander_header<'a>(
     resolved: &'a ResolvedTheme,
-    a11y: &'a AccessibilityPreferences,
+    r: &'a native_theme::next::ResolvedTheme,
     arrow_gap: f32,
     id: &'static str,
     title: &'a str,
     expanded: bool,
     toggle: Message,
 ) -> Element<'a, Message> {
-    let x = &resolved.expander;
-    let x_pad = expander_header_padding(x);
-    let x_height = rows::scaled_height(
-        x.header_height,
-        a11y,
-        x.font.size,
-        resolved.defaults.line_height,
-        x_pad.y(),
-        0.0,
-    );
+    let x = &r.expander;
+    let x_pad = next_expander_header_padding(r);
+    let label = x.header_label(WidgetState::NONE);
+    let x_height = next_expander_header_height(r, x_pad);
     let arrow_color = native_theme_iced::expander_arrow_color(resolved);
-    let trailing = x.arrow_side == Some(ArrowSide::Trailing);
+    let trailing = x.arrow_side == Some(native_theme::next::ArrowSide::Trailing);
+    let arrow_size = next_expander_arrow_size(r);
     let arrow = || {
         let arrow = canvas(DisclosureArrow {
             expanded,
             trailing,
             color: arrow_color,
         })
-        .width(Length::Fixed(x.arrow_icon_size))
-        .height(Length::Fixed(x.arrow_icon_size));
+        .width(Length::Fixed(arrow_size))
+        .height(Length::Fixed(arrow_size));
         match listed_part(id, "arrow") {
             Some(arrow_id) => Element::from(tagged(arrow_id, arrow)),
             None => arrow.into(),
@@ -13557,7 +13663,7 @@ fn expander_header<'a>(
             .push((!trailing).then(arrow))
             .push(tag_title(
                 text(title)
-                    .themed(&x.font, resolved, a11y)
+                    .next_text(&label, &r.typography)
                     .wrapping(text::Wrapping::None),
             ))
             // A trailing arrow at the header's far end.
@@ -13578,13 +13684,45 @@ fn expander_header<'a>(
     }
 }
 
-/// An expander header's padding: the header draws no outline
-/// (`styles::expander`) -- a framed one sits inside the item's frame,
-/// `styles::expander_frame`, `expander.border.line_width` in -- so the
-/// stated sides are its padding as they are, `button::DEFAULT_PADDING`'s
-/// where unstated.
-fn expander_header_padding(x: &native_theme::theme::ResolvedExpanderTheme) -> Padding {
-    native_theme_iced::padding_or(&x.border.padding, button::DEFAULT_PADDING)
+/// An expander header's padding on the installed 0.8.0 theme: the header
+/// draws no outline (`styles::expander`) -- a framed one sits inside the
+/// item's frame, `styles::expander_frame`, its outline in -- so the sides
+/// `expander.header(NONE)` states are its padding as they are,
+/// `button::DEFAULT_PADDING`'s where unstated.
+fn next_expander_header_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    stated_sides(
+        &r.expander.header(WidgetState::NONE),
+        button::DEFAULT_PADDING,
+    )
+}
+
+/// An expander header's height on the installed 0.8.0 theme, whose text
+/// styles hold the text scale already: at least
+/// `expander.header(NONE).min_size[1]` where stated, grown to hold its
+/// title, `expander.header_label(NONE)`'s line box ([`next_line_box`]),
+/// and its padding `pad`, as a list row is ([`next_list_row_height`]); else
+/// the title's line box and the padding, the header its content's height.
+fn next_expander_header_height(r: &native_theme::next::ResolvedTheme, pad: Padding) -> f32 {
+    let x = &r.expander;
+    let line = next_line_box(&r.typography, &x.header_label(WidgetState::NONE));
+    match x.header(WidgetState::NONE).min_size[1] {
+        Some(min) => min.max(line + pad.y()),
+        None => line + pad.y(),
+    }
+}
+
+/// An expander's arrow's size on the installed 0.8.0 theme,
+/// `expander.arrow(NONE).size` where stated; else iced's own size for a
+/// disclosure glyph, the renderer's default text size, at which iced draws
+/// its own drop-down chevron where none is given (iced_widget 0.14.2
+/// `src/pick_list.rs`, `draw`), as [`next_arrow_size`].
+fn next_expander_arrow_size(r: &native_theme::next::ResolvedTheme) -> f32 {
+    let arrow = r.expander.arrow(WidgetState::NONE);
+    if arrow.stated.contains(native_theme::next::IconStated::SIZE) {
+        arrow.size
+    } else {
+        iced::Settings::default().default_text_size.0
+    }
 }
 
 /// The controls the three showcases all draw, in the same order, with the
@@ -14388,15 +14526,22 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
 
     let tabs = group("basic.tabs.heading", "Tabs", basic_tab_row(state));
 
-    let sc = &resolved.segmented_control;
-    // A segment has no border of its own (the control's outline is the
-    // container's), so its padding is the stated sides as they are.
-    let seg_pad = native_theme_iced::padding_or(&sc.border.padding, button::DEFAULT_PADDING);
-    // `segment_height` is each segment's outer height ("height of each
-    // segment button", docs/platform-facts.md §2 dimension rules): a segment
-    // has no border of its own, so its content is that less its padding, and
-    // the control is the segments inside its outline.
-    let seg_min = iced::Size::new(0.0, (sc.segment_height - seg_pad.y()).max(0.0));
+    // The segmented control on the installed 0.8.0 theme: its segments
+    // `segmented_control.segment(NONE)`, their labels
+    // `segmented_control.label(NONE)`, its outline
+    // `segmented_control.track(NONE)` ([`NextSegmented`]).
+    let sc = NextSegmented::of(next);
+    let seg_label = next.segmented_control.label(WidgetState::NONE);
+    let seg_pad = sc.padding;
+    // The segment's least height ("height of each segment button",
+    // docs/platform-facts.md §2 dimension rules) is its outer height: a
+    // segment has no border of its own, so its content is that less its
+    // padding, and the control is the segments inside its outline; no floor
+    // where unstated.
+    let seg_min = match sc.min_height {
+        Some(min) => iced::Size::new(0.0, (min - seg_pad.y()).max(0.0)),
+        None => iced::Size::ZERO,
+    };
     // Between each two segments a `segment_separator` line
     // `segmented_control.separator_width` wide, where the theme states one:
     // the row's children are then a segment at every even index.
@@ -14415,7 +14560,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         }
         segments.push(
             button(at_least(
-                text(*label).themed(&sc.font, resolved, a11y),
+                text(*label).next_text(&seg_label, &next.typography),
                 seg_min,
             ))
             .padding(seg_pad)
@@ -14460,8 +14605,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
                 // `Shrink` over the separators' `Fill`, which a row would
                 // otherwise take for its own height: the separators then
                 // span the segments' height.
-                container(row(segments).height(Length::Shrink))
-                    .padding(sc.border.line_width)
+                outlined(container(row(segments).height(Length::Shrink)), sc.outline)
                     .style(styles::segmented_control(resolved, false)),
             )
             .loose()
@@ -14607,25 +14751,28 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     );
     let list_group = group("basic.list.heading", "List", list);
 
-    let x = &resolved.expander;
-    let x_pad = expander_header_padding(x);
+    // The expanders on the installed 0.8.0 theme ([`expander_header`]).
+    let x = &next.expander;
+    let x_pad = next_expander_header_padding(next);
     // expander.arrow_gap; the widget gap where it is unstated.
     let arrow_gap = x.arrow_gap.unwrap_or(gap.widget);
     let header = move |id: &'static str, title: &'a str, expanded: bool, toggle: Message| {
-        expander_header(resolved, a11y, arrow_gap, id, title, expanded, toggle)
+        expander_header(resolved, next, arrow_gap, id, title, expanded, toggle)
     };
-    // The body sits content_indent in, or under the title, past the arrow
-    // and its gap, where the theme states no indent.
+    // The body sits expander.content_indent in, or under the title, past
+    // the arrow and its gap, where the theme states no indent.
     let body_inset = x
         .content_indent
-        .unwrap_or(x_pad.left + x.arrow_icon_size + arrow_gap);
+        .unwrap_or(x_pad.left + next_expander_arrow_size(next) + arrow_gap);
+    // A framed item's outline, `expander.container(NONE)`'s stroke width.
+    let frame_line = iced_next::stroke_width_of(&x.container(WidgetState::NONE));
     let item = move |id: &'static str,
                      head: Element<'a, Message>,
                      body: Option<&'a str>|
           -> Element<'a, Message> {
         let mut item = column![head].spacing(gap.widget);
         if let Some(body) = body {
-            let body = text(body).body(resolved, a11y);
+            let body = text(body).next_body(next);
             let body: Element<'a, Message> = match listed_part(id, "body") {
                 Some(body_id) => tagged(body_id, body).into(),
                 None => body.into(),
@@ -14633,8 +14780,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             item = item.push(container(body).padding(Padding::ZERO.left(body_inset)));
         }
         let item: Element<'a, Message> = match x.frame_enabled {
-            Some(true) => container(item)
-                .padding(x.border.line_width)
+            Some(true) => outlined(container(item), frame_line)
                 .width(Length::Fixed(BASIC_WIDE))
                 .style(styles::expander_frame(resolved))
                 .into(),
@@ -14699,7 +14845,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         "Separator",
         container(tagged(
             "basic.separator.line",
-            rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+            rule::horizontal(next.separator.thickness).style(styles::rule(resolved)),
         ))
         .width(Length::Fixed(BASIC_WIDE))
         .into(),
@@ -29157,6 +29303,104 @@ mod tests {
         }
     }
 
+    /// The Basic segmented control's height on the 0.8.0 theme `r`: each
+    /// segment `segmented_control.segment(NONE).min_size[1]` tall (its outer
+    /// height; a segment has no border), or its label's line box and
+    /// padding where taller, inside the control's outline
+    /// ([`NextSegmented`]).
+    fn next_segmented_height(r: &native_theme::next::ResolvedTheme) -> f32 {
+        let sc = NextSegmented::of(r);
+        let label = r.segmented_control.label(WidgetState::NONE);
+        let content = next_line_box(&r.typography, &label) + sc.padding.y();
+        let segment = match sc.min_height {
+            Some(min) => min.max(content),
+            None => content,
+        };
+        match sc.outline {
+            Some(outline) => segment + 2.0 * outline,
+            None => segment,
+        }
+    }
+
+    /// The Basic page's segmented control, expander and separator follow
+    /// the installed 0.8.0 theme alone: kde-breeze with a patch that
+    /// states, on the 0.8.0 theme only, segments 40 px tall at least,
+    /// padded by 7, a 3 px separator and a 2 px outline; an expander header
+    /// 44 px tall at least, padded by 6, a 13 px arrow 9 px from the title
+    /// and a body 31 px in; a 5 px separator, lays them out at those sizes.
+    #[test]
+    fn the_basic_segments_expanders_and_separator_take_the_0_8_0_geometry() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[widgets.segmented_control]\nseparator_width = 3.0\n\
+             [[widgets.segmented_control.rules]]\n\
+             segment.padding = { top = 7.0, right = 7.0, bottom = 7.0, left = 7.0 }\n\
+             segment.min_size = [\"none\", 40.0]\n\
+             track.stroke = { width = 2.0, color = \"#13579b\" }\n\
+             [widgets.expander]\narrow_gap = 9.0\ncontent_indent = 31.0\n\
+             [[widgets.expander.rules]]\nheader.min_size = [\"none\", 44.0]\n\
+             header.padding = { top = 6.0, right = 6.0, bottom = 6.0, left = 6.0 }\n\
+             arrow.size = 13.0\n\
+             [widgets.separator]\nthickness = 5.0\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        state.basic_details_open = true;
+        splice_next(&mut state, |r| r.apply_patch(&patch));
+        let r = state.next_shown().clone();
+        let old = &state.current_resolved;
+        if old.segmented_control.separator_width == 3.0
+            || old.expander.header_height == 44.0
+            || old.separator.line_width == 5.0
+        {
+            return Err("the patch states 0.7.2's sizes".into());
+        }
+        let (segmented, header, laid) = recording(|| {
+            let mut ui = interface(&state);
+            let segmented = probe_bounds(&mut ui, probes::BASIC_SEGMENTED);
+            let header = probe_bounds(&mut ui, probes::BASIC_EXPANDER);
+            let _ = texts(&mut ui);
+            (segmented, header, surveyed_layout())
+        });
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let height = next_segmented_height(&r);
+        if !near(segmented.height, height) || !near(height, 44.0) {
+            faults.push(format!(
+                "the segmented control is {segmented:?}, {height} tall"
+            ));
+        }
+        if !near(header.height, 44.0) {
+            faults.push(format!("the expander header is {header:?}, not 44 tall"));
+        }
+        let get = |id: &str| laid.get(id).copied();
+        match (get("basic.segmented.day"), get("basic.segmented.divider_1")) {
+            (Some(day), Some(divider))
+                if near(divider.width, 3.0) && near(day.y, segmented.y + 2.0) => {}
+            parts => faults.push(format!("the segment and divider: {parts:?}")),
+        }
+        match (
+            get("basic.expander.details.arrow"),
+            get("basic.expander.details.title"),
+            get("basic.expander.details.body"),
+        ) {
+            (Some(arrow), Some(title), Some(body))
+                if near(arrow.width, 13.0)
+                    && near(arrow.x, header.x + 6.0)
+                    && near(title.x, arrow.x + 13.0 + 9.0)
+                    && near(body.x, header.x + 31.0) => {}
+            parts => faults.push(format!("the expander's arrow, title and body: {parts:?}")),
+        }
+        match get("basic.separator.line") {
+            Some(line) if near(line.height, 5.0) => {}
+            line => faults.push(format!("the separator: {line:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
     /// Where the Basic page's text input, drop-down and text area are not
     /// laid out at the sizes the 0.8.0 theme `r` gives them: the input's
     /// height ([`next_field_height`] of `input.text(NONE)`,
@@ -29541,15 +29785,16 @@ mod tests {
         }
     }
 
-    /// M9-156: a stated `expander.header_height` takes the one rule every
-    /// stated row height takes (M9-150, `rows::scaled_height`): at a text
-    /// scale of 1 the header is exactly the stated height, its title no
-    /// more than one line, even where the title and its padding are taller
-    /// (kde-breeze with its header lowered to 20 px); at 1.5 it is at least
-    /// the line box of `expander.font` at its scaled size and
-    /// `defaults.line_height`, rounded up, and its padding.
+    /// The Basic expander's header on the installed 0.8.0 theme, whose text
+    /// styles hold the text scale already, is [`next_expander_header_height`]
+    /// tall: at least `expander.header(NONE).min_size[1]`, grown to hold
+    /// its title's line box and padding, at text scales of 1 and 1.5, its
+    /// title one line, `expander.header_label(NONE)`'s line box; under
+    /// kde-breeze with its least height patched to 20 px, under the title
+    /// and its padding, and to 60 px, over them, the header is the title and
+    /// the padding, and 60 px.
     #[test]
-    fn the_expander_header_takes_the_row_rule() {
+    fn the_expander_header_takes_the_row_rule() -> Result<(), String> {
         let mut faults = Vec::new();
         let cases = [
             "kde-breeze",
@@ -29563,37 +29808,38 @@ mod tests {
         .chain([
             ("kde-breeze", 1.0, Some(20.0)),
             ("kde-breeze", 1.5, Some(20.0)),
+            ("kde-breeze", 1.0, Some(60.0)),
         ]);
-        for (preset, factor, lowered) in cases {
-            let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            if let Some(height) = lowered {
-                resolved.expander.header_height = height;
-            }
-            let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
-            accessibility.text_scaling_factor = factor;
-            let x = resolved.expander.clone();
-            let line_height = resolved.defaults.line_height;
-            let want = rows::scaled_height(
-                x.header_height,
-                &accessibility,
-                x.font.size,
-                line_height,
-                expander_header_padding(&x).y(),
-                0.0,
-            );
-            let title_line = scaled_text_size(x.font.size, &accessibility) * line_height;
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                accessibility,
+        for (preset, factor, least) in cases {
+            let mut state = State {
                 active_tab: Tab::Basic,
                 ..State::default()
             };
+            state.accessibility.text_scaling_factor = factor;
+            if !state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light) {
+                return Err(format!("{preset} does not install"));
+            }
+            rescaled(&mut state, preset, false);
+            if let Some(height) = least {
+                let patch = native_theme::next::ThemePatch::from_toml(&format!(
+                    "[[widgets.expander.rules]]\nheader.min_size = [\"none\", {height:?}]\n"
+                ))
+                .map_err(|error| format!("the patch: {error:?}"))?;
+                splice_next(&mut state, |r| r.apply_patch(&patch));
+            }
+            let r = state.next_shown().clone();
+            let pad = next_expander_header_padding(&r);
+            let want = next_expander_header_height(&r, pad);
+            let title_line =
+                next_line_box(&r.typography, &r.expander.header_label(WidgetState::NONE));
+            if least == Some(60.0) && (want - 60.0).abs() >= 0.01 {
+                faults.push(format!("{preset}: the 60 px header is {want}px"));
+            }
+            if least == Some(20.0) && (want - (title_line + pad.y())).abs() >= 0.01 {
+                faults.push(format!("{preset}: the 20 px header is {want}px"));
+            }
             let mut ui = interface(&state);
-            let what = format!("{preset} at {factor} (header_height {})", x.header_height);
+            let what = format!("{preset} at {factor} (least {least:?})");
             let header = probe_bounds(&mut ui, probes::BASIC_EXPANDER);
             if (header.height - want).abs() >= 0.01 {
                 faults.push(format!(
@@ -29602,51 +29848,53 @@ mod tests {
                 ));
             }
             let title = height_of(&mut ui, "Details");
-            // One line at most: a header lower than its title and padding
-            // lays the title out in what is left.
-            if title > title_line + 0.01 {
+            if (title - title_line).abs() >= 0.01 {
                 faults.push(format!(
-                    "{what}: the title is {title}px tall, more than one line, {title_line}px"
+                    "{what}: the title is {title}px tall, not one line, {title_line}px"
                 ));
             }
         }
-        assert!(faults.is_empty(), "{faults:#?}");
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// M9-156, round 2: an expander header keeps a title of several words,
-    /// wider than the Basic column, on one line, at the stated
-    /// `expander.header_height` and at one raised to four lines and the
-    /// padding, which a wrapped title would fill; the header is the rule's
-    /// height at both. iced's default `Wrapping::Word` breaks such a title,
-    /// where a single word never breaks.
+    /// wider than the Basic column, on one line, on the installed 0.8.0
+    /// theme at its stated least height and at one raised to four lines and
+    /// the padding, which a wrapped title would fill; the header is
+    /// [`next_expander_header_height`] at both. iced's default
+    /// `Wrapping::Word` breaks such a title, where a single word never
+    /// breaks.
     #[test]
-    fn an_expander_header_keeps_a_long_title_on_one_line() {
+    fn an_expander_header_keeps_a_long_title_on_one_line() -> Result<(), String> {
         const TITLE: &str = "Details of a header title long enough to wrap";
         const HEADER: &str = "probe-test-expander-header";
-        let resolved = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok((_, resolved)) => resolved,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        let a11y = native_theme_iced::AccessibilityPreferences::default();
-        let x = &resolved.expander;
-        let pad = expander_header_padding(x);
-        let line = scaled_text_size(x.font.size, &a11y) * resolved.defaults.line_height;
+        let state = loaded("kde-breeze", false);
+        let resolved = state.current_resolved.clone();
+        let next = state.next_shown().clone();
+        let pad = next_expander_header_padding(&next);
+        let line = next_line_box(
+            &next.typography,
+            &next.expander.header_label(WidgetState::NONE),
+        );
+        let stated = next.expander.header(WidgetState::NONE).min_size[1]
+            .ok_or("kde-breeze states no expander header height")?;
         let mut faults = Vec::new();
-        for header_height in [x.header_height, 4.0 * line + pad.y()] {
-            let mut r = resolved.clone();
-            r.expander.header_height = header_height;
-            let want = rows::scaled_height(
-                header_height,
-                &a11y,
-                r.expander.font.size,
-                r.defaults.line_height,
-                pad.y(),
-                0.0,
-            );
+        for header_height in [stated, 4.0 * line + pad.y()] {
+            let patch = native_theme::next::ThemePatch::from_toml(&format!(
+                "[[widgets.expander.rules]]\nheader.min_size = [\"none\", {header_height:?}]\n"
+            ))
+            .map_err(|error| format!("the patch: {error:?}"))?;
+            let mut r = next.clone();
+            r.apply_patch(&patch);
+            let want = next_expander_header_height(&r, pad);
             let arrow_gap = r.expander.arrow_gap.unwrap_or_default();
             let header = expander_header(
+                &resolved,
                 &r,
-                &a11y,
                 arrow_gap,
                 "test.expander",
                 TITLE,
@@ -29673,14 +29921,19 @@ mod tests {
                 ));
             }
         }
-        assert!(faults.is_empty(), "{faults:#?}");
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// The Basic page's text area, segmented control, expander and list take
-    /// the sizes the theme states: three of the theme's lines inside the
-    /// field's padding; `segmented_control.segment_height` as an outer
-    /// height, where the label fits; `expander.header_height` as one,
-    /// verbatim; three rows of the list, each at least the 0.8.0 home
+    /// the sizes the installed 0.8.0 theme states: three of the theme's
+    /// lines inside the field's padding;
+    /// `segmented_control.segment(NONE).min_size[1]` as an outer height,
+    /// where the label fits; the expander's header
+    /// [`next_expander_header_height`] tall; three rows of the list, each at least the 0.8.0 home
     /// `list.row(NONE).min_size[1]`, grown to its content (macos-tahoe's
     /// 24 px, which its label and iced_aw's padding outgrow; windows-11's
     /// 40 px, which holds them).
@@ -29714,29 +29967,18 @@ mod tests {
                 "{preset}: the text area is {area:?}, expected {BASIC_WIDE} x {expected}"
             );
 
-            let sc = &r.segmented_control;
             let segmented = probe_bounds(&mut ui, probes::BASIC_SEGMENTED);
-            let seg_pad = native_theme_iced::padding_or(
-                &sc.border.padding,
-                iced::widget::button::DEFAULT_PADDING,
-            );
-            // Each segment `segment_height` tall (its outer height; a segment
-            // has no border), or its label's line and padding where taller,
-            // inside the control's outline.
-            let expected = sc
-                .segment_height
-                .max(sc.font.size * r.defaults.line_height + seg_pad.y())
-                + 2.0 * sc.border.line_width;
+            let expected = next_segmented_height(next);
             assert!(
                 (segmented.height - expected).abs() < 0.01,
                 "{preset}: the segmented control is {}px tall, expected {expected}px",
                 segmented.height
             );
 
-            // At a text scale of 1 the header is `expander.header_height`
-            // tall, verbatim ([`the_expander_header_takes_the_row_rule`]).
+            // The header [`next_expander_header_height`] tall
+            // ([`the_expander_header_takes_the_row_rule`]).
             let header = probe_bounds(&mut ui, probes::BASIC_EXPANDER);
-            let expected = r.expander.header_height;
+            let expected = next_expander_header_height(next, next_expander_header_padding(next));
             assert!(
                 (header.height - expected).abs() < 0.01,
                 "{preset}: the expander header is {}px tall, expected {expected}px",
