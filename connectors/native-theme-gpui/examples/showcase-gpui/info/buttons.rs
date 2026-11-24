@@ -769,10 +769,22 @@ fn next_label_size_note(info: WidgetInfo) -> WidgetInfo {
     info.config("label size", "button.label(NONE).size_px through next::geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
 }
 
+/// `info` with the hovered label of a Button built on a custom variant over
+/// `native_theme_gpui::variants::ghost_button`, whose label is `hovered`'s
+/// home where a rule states it: the variant's one foreground in every state,
+/// where gpui-component's own ghost letters `accent_foreground` under the
+/// pointer.
+fn one_label(info: WidgetInfo, hovered: &str) -> WidgetInfo {
+    info.not_themeable(
+        "hover text",
+        format!("secondary_foreground, as at rest: a custom variant letters every state in its one foreground (button/button.rs, ButtonVariant::text_color, Custom arm), so neither a hovered label a rule states, {hovered}, nor, where none does, gpui-component's own ghost's, accent_foreground under the pointer (button/button.rs:1242, ButtonVariant::hovered, Ghost arm), can be drawn"),
+    )
+}
+
 /// The variant line of a Ghost Button built with
-/// `native_theme_gpui::variants::ghost_button`.
+/// `native_theme_gpui::variants::ghost_button`, and its one label.
 fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
-    info.instance("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu's hover fill (`menu.hover_background`), not a button hover")
+    one_label(info, "button.label(HOVER; variant=Flat).color").instance("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu's hover fill (`menu.hover_background`), not a button hover")
 }
 
 /// `info` with what the page's Ghost Button paints, unrefined, and its
@@ -783,9 +795,9 @@ pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 }
 
 /// The variant line of a tool Button built with
-/// `native_theme_gpui::variants::toolbar_button`.
+/// `native_theme_gpui::variants::toolbar_button`, and its one label.
 fn toolbar_variant(info: WidgetInfo) -> WidgetInfo {
-    info.instance("variant", "native_theme_gpui::next::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where a rule of the theme states them for the state, toolbar.button(HOVER).fill, toolbar.button(PRESSED).fill and the outline toolbar.button(HOVER).stroke.color; for each fill it leaves unstated gpui-component's own toolbar button's, the ghost one a Toolbar makes of a Button it takes by child (accent, at half alpha in dark mode, under the pointer, button_active pressed; button/button.rs, Button::prepare_for_toolbar and ButtonVariant::hovered / active, Ghost arms), not the flat button's; and no edge where it states no outline (support::toolbar_variant). It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem), whose hover would recolour the label too")
+    one_label(info, "toolbar.button_label(HOVER).color").instance("variant", "native_theme_gpui::next::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where a rule of the theme states them for the state, toolbar.button(HOVER).fill, toolbar.button(PRESSED).fill and the outline toolbar.button(HOVER).stroke.color; for each fill it leaves unstated gpui-component's own toolbar button's, the ghost one a Toolbar makes of a Button it takes by child (accent, at half alpha in dark mode, under the pointer, button_active pressed; button/button.rs, Button::prepare_for_toolbar and ButtonVariant::hovered / active, Ghost arms), not the flat button's; and no edge where it states no outline (support::toolbar_variant). It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem), whose hover would recolour the label too")
 }
 
 /// What a tool Button built from the theme's toolbar states
