@@ -6644,7 +6644,7 @@ fn the_table_headers_lines_take_the_header_separator_colour() {
             .cloned();
         assert!(r.is_some(), "{preset}'s 0.8.0 theme is installed");
         let Some(r) = r else { continue };
-        let grid = crate::demo::next_color32(r.list.grid_color);
+        let grid = native_theme_egui::next::to_color32(r.list.grid_color);
         let stated = native_theme_egui::next::fill_of(
             &r.list
                 .header_separator(native_theme::next::ListQuery::from(ListVariant::Table)),
@@ -6743,7 +6743,11 @@ fn a_header_section_takes_the_pressed_fill_else_the_hovered_one() -> Result<(), 
     };
     let hovered = table(WidgetState::HOVER);
     let pressed = table(WidgetState::HOVER.union(WidgetState::PRESSED));
-    let border = r.colors.window.border.map(crate::demo::next_color32);
+    let border = r
+        .colors
+        .window
+        .border
+        .map(native_theme_egui::next::to_color32);
     if hovered.is_none() || pressed != border || hovered == pressed {
         return Err(format!(
             "kde-breeze states the hovered section {hovered:?}, the patched pressed one \
@@ -6799,7 +6803,11 @@ fn a_list_row_is_filled_in_its_stated_fill_under_its_highlight() -> Result<(), S
             ),
         )
     })?;
-    let border = r.colors.window.border.map(crate::demo::next_color32);
+    let border = r
+        .colors
+        .window
+        .border
+        .map(native_theme_egui::next::to_color32);
     let fill = row_of(&r, false);
     if fill.is_none() || fill != border || row_of(&r, true) != row_of(&own, true) {
         return Err(format!(
@@ -8941,15 +8949,29 @@ fn the_basic_tabs_stand_the_tab_scopes_gap_apart() -> Result<(), String> {
         );
         if r.tab.item_gap.is_none() {
             assert!(gap > 0.0, "{preset}: the tab scope's own gap is {gap}");
-            let named = state.registry.records().iter().any(|record| {
-                record.info.kind == "TabBar · Basic"
-                    && record.info.not_themeable.iter().any(|(what, why)| {
-                        *what == "the gap between tabs" && why.contains("tab.item_gap")
-                    })
-            });
+            let why: Vec<&str> = state
+                .registry
+                .records()
+                .iter()
+                .filter(|record| record.info.kind == "TabBar · Basic")
+                .flat_map(|record| record.info.not_themeable.iter())
+                .filter(|(what, why)| {
+                    *what == "the gap between tabs" && why.contains("tab.item_gap")
+                })
+                .map(|(_, why)| why.as_str())
+                .collect();
             assert!(
-                named,
+                !why.is_empty(),
                 "{preset}: the Basic bar's Widget Info names no unstated tab gap"
+            );
+            // the gap's home: layout.widget_gap where the theme states it, else egui's own
+            assert!(
+                why.iter().all(|why| {
+                    why.contains("layout.widget_gap") == r.layout.widget_gap.is_some()
+                        && why.contains("egui's own") == r.layout.widget_gap.is_none()
+                }),
+                "{preset}: the unstated tab gap named {why:?}, layout.widget_gap {:?}",
+                r.layout.widget_gap
             );
         }
     }

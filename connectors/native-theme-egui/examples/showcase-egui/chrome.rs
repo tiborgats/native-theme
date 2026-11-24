@@ -1497,7 +1497,10 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
 /// `src/theme/default_style.rs:207-215`).
 fn page_rule(app: &mut App, ui: &mut egui::Ui) {
     let (width, colour) = demo::next_value(ui, |r| {
-        (r.separator.thickness, demo::next_color32(r.separator.color))
+        (
+            r.separator.thickness,
+            native_theme_egui::next::to_color32(r.separator.color),
+        )
     })
     .unwrap_or_else(|| {
         let own = ui.visuals().widgets.noninteractive.bg_stroke;

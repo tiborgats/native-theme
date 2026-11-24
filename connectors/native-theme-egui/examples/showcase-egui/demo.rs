@@ -1568,13 +1568,6 @@ pub(crate) fn next_grown(
     stated.max(line.ceil() + padding + rule)
 }
 
-/// A colour of the 0.8.0 model as egui's: its 8-bit sRGB channels with straight alpha,
-/// premultiplied, as the connector converts one (`native_theme_egui::next`, `to_color32`).
-pub(crate) fn next_color32(c: native_theme::next::Color) -> egui::Color32 {
-    let [r, g, b, a] = c.to_srgb8();
-    egui::Color32::from_rgba_unmultiplied(r, g, b, a)
-}
-
 /// The value `build` gives for the installed 0.8.0 theme the window shows
 /// (`OldAtlas::next_shown`: the scheme egui draws, for an inactive window while it is not
 /// focused), as the gpui showcase's `support::next_value`; `None` without an installed 0.8.0
@@ -1757,10 +1750,18 @@ impl TabLook {
             min_width: r
                 .and_then(|r| r.tab.tab(native_theme::next::WidgetState::NONE).min_size[0])
                 .unwrap_or_default(),
-            gap_unstated: r.is_none_or(|r| r.tab.item_gap.is_none()).then_some(
-                "not stated by the theme (tab.item_gap): egui's own, the gap between the \
-                 widgets of a row (item_spacing.x)",
-            ),
+            gap_unstated: match r {
+                Some(r) if r.tab.item_gap.is_some() => None,
+                // the connector's base style spaces a row's widgets by the layout's gap
+                Some(r) if r.layout.widget_gap.is_some() => Some(
+                    "not stated by the theme (tab.item_gap): the gap between the widgets of a \
+                     row (item_spacing.x), layout.widget_gap",
+                ),
+                _ => Some(
+                    "not stated by the theme (tab.item_gap): egui's own, the gap between the \
+                     widgets of a row (item_spacing.x)",
+                ),
+            },
             line: r.and_then(next_indicator_line),
             flare: r.and_then(next_outward_radius),
             label: |ui, text| next_lined(ui, text, egui::TextStyle::Button),

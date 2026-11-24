@@ -79,7 +79,7 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 /// alpha, premultiplied as [`crate::convert::to_color32`] premultiplies a
 /// 0.7.2 colour.
 #[must_use]
-pub(crate) fn to_color32(c: native_theme::next::Color) -> Color32 {
+pub fn to_color32(c: native_theme::next::Color) -> Color32 {
     let [r, g, b, a] = c.to_srgb8();
     Color32::from_rgba_unmultiplied_const(r, g, b, a)
 }

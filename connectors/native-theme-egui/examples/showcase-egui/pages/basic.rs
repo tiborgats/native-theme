@@ -753,7 +753,7 @@ fn checkboxes(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     let ground = atlas
         .next_shown(ui.ctx())
         .and_then(|r| r.colors.window.background)
-        .map_or(ui.visuals().panel_fill, demo::next_color32);
+        .map_or(ui.visuals().panel_fill, next::to_color32);
     let normal = RoleVariant::Normal;
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
@@ -2431,7 +2431,7 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
             let head = TableHeader::of(ui, r);
             let rest = list_query(table, NextState::NONE);
             let grid = r.map(|r| {
-                egui::Stroke::new(r.separator.thickness, demo::next_color32(r.list.grid_color))
+                egui::Stroke::new(r.separator.thickness, next::to_color32(r.list.grid_color))
             });
             let grid_width = grid.map_or(egui::Stroke::NONE.width, |s| s.width);
             let header_fill = r.and_then(|r| next::fill_of(&r.list.header(rest)));
