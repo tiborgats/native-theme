@@ -182,8 +182,8 @@ impl SwitchLook {
     /// not, each field read at its home: the track and the thumb at the
     /// switch's state (`switch.track` and `switch.thumb` at `CHECKED` where
     /// checked and `DISABLED` where disabled; a track with no fill ruled for
-    /// `DISABLED` is gpui-component's own disabled one, [`DISABLED_TRACK_ALPHA`]
-    /// of the enabled), the hovered track's fill where a rule states it, the track's
+    /// `DISABLED` is gpui-component's own disabled one, the enabled one at half
+    /// its alpha), the hovered track's fill where a rule states it, the track's
     /// and the thumb's strokes (the colour at the state, the width at rest; no
     /// stroke is no outline), the track's minimum size and corners, the
     /// thumb's minimum width at the checked state, the label's colour
