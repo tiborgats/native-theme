@@ -185,14 +185,14 @@ pub(super) fn events_table(pass: &Pass<'_>) -> Table {
         pass.settle(&c.window, SETTLE_STEPS);
         let mut per = Table::new();
         let typing = typing_recording(pass, &c, key);
-        let r = timeline::record(pass, &ticker, scale, pass.out_dir, typing);
+        let r = timeline::record(pass, &c.window, &ticker, scale, pass.out_dir, typing);
         out::put_table(&mut per, "typing-pointer", r);
         reset(pass, &c);
         let changes_before = ffi::drag_pasteboard_change_count();
         let validated_before = c.drop.ivars().validated.get();
         let spring_before = c.spring.state();
         let drag = drag_recording(pass, &c, key);
-        let mut r = timeline::record(pass, &ticker, scale, pass.out_dir, drag);
+        let mut r = timeline::record(pass, &c.window, &ticker, scale, pass.out_dir, drag);
         pass.settle(&c.window, SETTLE_STEPS);
         out::put(
             &mut r,
@@ -404,6 +404,20 @@ fn double_click_table(pass: &Pass<'_>, c: &Controls) -> Table {
     let p0 = content_quartz(pass, c, EMPTY_POINT);
     out::put(&mut t, "first_click_quartz_xy", out::floats(&[p0.x, p0.y]));
     let trial = |p1: NSPoint, gap_ms: u64| -> Value {
+        let mut row = Table::new();
+        out::put(
+            &mut row,
+            "second_click_quartz_xy",
+            out::floats(&[p1.x, p1.y]),
+        );
+        if let Some(reason) = pass.posts_error(&c.window, &[p0, p1], false) {
+            out::put(
+                &mut row,
+                "error",
+                out::unavailable(format!("{reason}: the trial is skipped")),
+            );
+            return Value::Table(row);
+        }
         let gap = Duration::from_millis(gap_ms.saturating_sub(CLICK_HOLD_MS));
         let hold = Duration::from_millis(CLICK_HOLD_MS);
         let mut made = post_mouse(CGEventType::LeftMouseDown, p0);
@@ -415,14 +429,8 @@ fn double_click_table(pass: &Pass<'_>, c: &Controls) -> Table {
         made &= post_mouse(CGEventType::LeftMouseUp, p1);
         let mut counts = pump_clicks(pass.app, Duration::from_millis(300));
         counts.extend(pump_clicks(pass.app, rest));
-        let mut row = Table::new();
         out::put(&mut row, "events_created", out::boolean(made));
         events_error(&mut row, made);
-        out::put(
-            &mut row,
-            "second_click_quartz_xy",
-            out::floats(&[p1.x, p1.y]),
-        );
         out::put(&mut row, "mouseDown_clickCounts", out::array(counts));
         Value::Table(row)
     };
@@ -477,6 +485,17 @@ fn drag_start_table(pass: &Pass<'_>, c: &Controls) -> Table {
             out::boolean(c.window.makeFirstResponder(Some(source))),
         );
         pass.settle(&c.window, SETTLE_STEPS);
+        let points: Vec<NSPoint> = std::iter::once(press)
+            .chain((1..=distance).map(|i| NSPoint::new(press.x + f64::from(i), press.y)))
+            .collect();
+        if let Some(reason) = pass.posts_error(&c.window, &points, false) {
+            out::put(
+                &mut row,
+                "error",
+                out::unavailable(format!("{reason}: the trial is skipped")),
+            );
+            return Value::Table(row);
+        }
         let before = ffi::drag_pasteboard_change_count();
         let worker = std::thread::spawn(move || {
             let mut made = post_mouse(CGEventType::LeftMouseDown, press);
@@ -492,10 +511,19 @@ fn drag_start_table(pass: &Pass<'_>, c: &Controls) -> Table {
             made
         });
         let steps = pump(pass.app, 400, || worker.is_finished());
-        let made = worker.join().unwrap_or(false);
+        let joined = worker.join();
         pass.settle(&c.window, SETTLE_STEPS);
-        out::put(&mut row, "events_created", out::boolean(made));
-        events_error(&mut row, made);
+        match joined {
+            Ok(made) => {
+                out::put(&mut row, "events_created", out::boolean(made));
+                events_error(&mut row, made);
+            }
+            Err(_) => out::put(
+                &mut row,
+                "error",
+                out::unavailable("the posting thread panicked"),
+            ),
+        }
         out::put(&mut row, "pump_steps", out::int(i64::from(steps)));
         out::put(
             &mut row,
@@ -556,19 +584,23 @@ fn tool_tip_windows(app: &NSApplication) -> Vec<String> {
 /// The tool tip trials over the Tip button.
 fn tool_tip_table(pass: &Pass<'_>, c: &Controls) -> Table {
     let mut t = Table::new();
-    let away = pass.quartz(super::away_point(&c.window));
     let tip = timeline::quartz_centre(pass, &c.tip);
     out::put(&mut t, "tip_quartz_xy", out::floats(&[tip.x, tip.y]));
     for (name, rest_ms) in TIP_TRIALS {
         let mut row = Table::new();
-        let moved = move_to(away);
-        out::put(&mut row, "moved_away", out::boolean(moved));
-        events_error(&mut row, moved);
-        let _ = pump_clicks(pass.app, Duration::from_millis(rest_ms));
+        let rested = Instant::now();
+        out::put_table(&mut row, "cursor_parked", pass.park(&c.window));
+        let rest = Duration::from_millis(rest_ms);
+        let _ = pump_clicks(pass.app, rest.saturating_sub(rested.elapsed()));
         out::put(
             &mut row,
             "rest_ms",
             out::int(i64::try_from(rest_ms).unwrap_or(i64::MAX)),
+        );
+        out::put(
+            &mut row,
+            "rested_ms",
+            out::float(rested.elapsed().as_secs_f64() * 1000.0),
         );
         out::put(
             &mut row,
@@ -580,6 +612,15 @@ fn tool_tip_table(pass: &Pass<'_>, c: &Controls) -> Table {
                     .collect(),
             ),
         );
+        if let Some(reason) = pass.posts_error(&c.window, &[tip], false) {
+            out::put(
+                &mut row,
+                "error",
+                out::unavailable(format!("{reason}: the trial is skipped")),
+            );
+            out::put_table(&mut t, name, row);
+            continue;
+        }
         let start = Instant::now();
         let moved = move_to(tip);
         out::put(&mut row, "moved_onto_tip", out::boolean(moved));
@@ -634,7 +675,7 @@ fn tool_tip_table(pass: &Pass<'_>, c: &Controls) -> Table {
         }
         out::put_table(&mut t, name, row);
     }
-    let _ = move_to(away);
+    out::put_table(&mut t, "cursor_parked_after", pass.park(&c.window));
     let _ = pump_clicks(pass.app, Duration::from_millis(500));
     t
 }
@@ -782,7 +823,7 @@ fn drag_recording<'a>(pass: &Pass<'_>, c: &'a Controls, key_name: &str) -> Recor
 
 fn method_text() -> String {
     format!(
-        "a titled window (empty title, content {} from {}) holding, in its content view (bottom-left origin): an editable NSTextView \"{DRAG_TEXT}\" {} (the drag source); a push button \"Tip\" (regular, sized to fit) from {} with the tool tip \"Tip\"; a push button \"Spring\" from {}, buttonType pushOnPushOff, state off, springLoaded YES, action updateWindows at NSApp; an editable NSTextView \"{TARGET_TEXT}\" {} (the drop target and the typing target); an NSScrollView {} holding a view-based NSTableView (one {TABLE_COLUMN_WIDTH} pt column, {TABLE_ROWS} rows, each a labelWithString: \"Row <n>\") whose data source registers for NSPasteboardTypeString drags, answers tableView:validateDrop:proposedRow:proposedDropOperation: with NSDragOperationCopy for the row and operation AppKit proposes (counting the calls and keeping the last) and tableView:acceptDrop:row:dropOperation: with NO; a ticker {}. The window presented as the key mode presents it, the cursor parked {}. Every event is a CGEvent posted at the HID event tap (left button). double_click: per trial, a mouse-down and a mouse-up {CLICK_HOLD_MS} ms later at the empty point {} of the content view, the second pair's mouse-down {CLICK_GAP_MS} ms after the first's at a point the distance along x (distance_x) or y (distance_y, Quartz's downwards) away, or at the same point after a gap (gap_same_point); then the run loop pumped 300 ms and doubleClickInterval + 300 ms, dispatching every event, each left mouse-down's NSEvent clickCount noted in order. drag_start: per trial the source's text set and all selected and the source made first responder; a mouse-down at {} pt from its top left, held, then one mouse-dragged event per point to the right every {DRAG_STEP_MS} ms, a mouse-up {DRAG_RELEASE_AFTER_MS} ms after the last (posted from a second thread while the main thread pumps); the drag pasteboard's (NSPasteboardNameDrag) changeCount before and after: a drag session that starts writes to it; distance_after_hold holds {DRAG_HOLD_MS} ms and moves each distance, hold_before_distance holds each time and moves {DRAG_DISTANCE} pt. tool_tip: per trial the cursor warped (CGWarpMouseCursorPosition) and a mouse-moved posted away from the window, the run loop pumped for the trial's rest, then warped and moved onto the Tip button's centre, and NSApp's windows polled every 5 ms (the run loop pumped between) for a visible one whose class name holds ToolTip, for at most {} ms; the trials cold, warm (right after the cold one's tip) and rested. Per appearance two recordings as the motion pass makes them (screencapture -v of the main display, events posted from a second thread at planned times, main-thread actions, a common-modes timer flipping the ticker every 5 ms): typing-pointer (screencapture -C, the cursor drawn; the target made first responder at 2 s, the cursor moved onto its centre at 2.2 s, a, s, d typed at 3, 3.2 and 3.4 s, the cursor moved 1 pt at 6 s, a and s typed at 7 and 7.2 s, resigned at 9 s; 10 s; each sample reads CGCursorIsVisible; the crop the text view grown by {TYPING_CROP_MARGIN} pt) and drag-over (the source's text selected and the source first responder at 1 s; the cursor moved onto the selection at 1.8 s, a mouse-down at 2 s, dragged 30 pt right from 3 to 3.3 s, onto row 1's centre by 3.8 s, the window captured (screencapture -l, the drag image is a window of its own and not in it) at 4.5 s as drag-over-table-on.png, between rows 2 and 3 by 5.3 s, captured at 6.3 s (drag-over-table-above.png), onto the target text view's centre by 7 s, captured at 8 s (drag-over-text.png), onto the spring-loaded button's centre by 8.6 s, captured at 9 and 11 s (drag-over-spring-early.png, -late.png), to the empty point by 12.9 s, a mouse-up there at 13.5 s; 16 s; the crop the content view), with the drag pasteboard's change count, the table's validation calls and last proposal, the spring-loaded button's state and both texts read after",
+        "a titled window (empty title, content {} from {}) holding, in its content view (bottom-left origin): an editable NSTextView \"{DRAG_TEXT}\" {} (the drag source); a push button \"Tip\" (regular, sized to fit) from {} with the tool tip \"Tip\"; a push button \"Spring\" from {}, buttonType pushOnPushOff, state off, springLoaded YES, action updateWindows at NSApp; an editable NSTextView \"{TARGET_TEXT}\" {} (the drop target and the typing target); an NSScrollView {} holding a view-based NSTableView (one {TABLE_COLUMN_WIDTH} pt column, {TABLE_ROWS} rows, each a labelWithString: \"Row <n>\") whose data source registers for NSPasteboardTypeString drags, answers tableView:validateDrop:proposedRow:proposedDropOperation: with NSDragOperationCopy for the row and operation AppKit proposes (counting the calls and keeping the last) and tableView:acceptDrop:row:dropOperation: with NO; a ticker {}. The window presented as the key mode presents it, the cursor parked {}. Every event is a CGEvent posted at the HID event tap (left button); before each trial and each recording, on the main thread, windowNumberAtPoint: is read at every point a mouse event of it is posted at and, where it types, NSApp isActive: where one is another window than the probe's, or the application is not active, nothing of it is posted and it is the error. double_click: per trial, a mouse-down and a mouse-up {CLICK_HOLD_MS} ms later at the empty point {} of the content view, the second pair's mouse-down {CLICK_GAP_MS} ms after the first's at a point the distance along x (distance_x) or y (distance_y, Quartz's downwards) away, or at the same point after a gap (gap_same_point); then the run loop pumped 300 ms and doubleClickInterval + 300 ms, dispatching every event, each left mouse-down's NSEvent clickCount noted in order. drag_start: per trial the source's text set and all selected and the source made first responder; a mouse-down at {} pt from its top left, held, then one mouse-dragged event per point to the right every {DRAG_STEP_MS} ms, a mouse-up {DRAG_RELEASE_AFTER_MS} ms after the last (posted from a second thread while the main thread pumps); the drag pasteboard's (NSPasteboardNameDrag) changeCount before and after: a drag session that starts writes to it; distance_after_hold holds {DRAG_HOLD_MS} ms and moves each distance, hold_before_distance holds each time and moves {DRAG_DISTANCE} pt. tool_tip: per trial the cursor parked as the window was presented (cursor_parked, which pumps the run loop {} ms), the run loop pumped until the trial's rest has passed since the park began (rest_ms; rested_ms, the time from the park's start to the next move, the park's length where it is the longer), then warped (CGWarpMouseCursorPosition) and moved (a mouse-moved) onto the Tip button's centre, and NSApp's windows polled every 5 ms (the run loop pumped between) for a visible one whose class name holds ToolTip, for at most {} ms; the trials cold, warm (right after the cold one's tip) and rested; after them the cursor parked again (cursor_parked_after). Per appearance two recordings as the motion pass makes them (screencapture -v of the main display, events posted from a second thread at planned times, main-thread actions, a common-modes timer flipping the ticker every 5 ms): typing-pointer (screencapture -C, the cursor drawn; the target made first responder at 2 s, the cursor moved onto its centre at 2.2 s, a, s, d typed at 3, 3.2 and 3.4 s, the cursor moved 1 pt at 6 s, a and s typed at 7 and 7.2 s, resigned at 9 s; 10 s; each sample reads CGCursorIsVisible; the crop the text view grown by {TYPING_CROP_MARGIN} pt) and drag-over (the source's text selected and the source first responder at 1 s; the cursor moved onto the selection at 1.8 s, a mouse-down at 2 s, dragged 30 pt right from 3 to 3.3 s, onto row 1's centre by 3.8 s, the window captured (screencapture -l, the drag image is a window of its own and not in it) at 4.5 s as drag-over-table-on.png, between rows 2 and 3 by 5.3 s, captured at 6.3 s (drag-over-table-above.png), onto the target text view's centre by 7 s, captured at 8 s (drag-over-text.png), onto the spring-loaded button's centre by 8.6 s, captured at 9 and 11 s (drag-over-spring-early.png, -late.png), to the empty point by 12.9 s, a mouse-up there at 13.5 s; 16 s; the crop the content view), with the drag pasteboard's change count, the table's validation calls and last proposal, the spring-loaded button's state and both texts read after",
         rect_text(NSRect::new(NSPoint::new(0.0, 0.0), WINDOW_FRAME.size)),
         point_text(WINDOW_FRAME.origin),
         rect_text(SOURCE_FRAME),
@@ -794,6 +835,9 @@ fn method_text() -> String {
         super::park_text(),
         point_text(EMPTY_POINT),
         point_text(NSPoint::new(PRESS_AT.0, PRESS_AT.1)),
+        crate::macos::PUMP_STEP
+            .saturating_mul(super::HOVER_STEPS)
+            .as_millis(),
         TIP_WAIT.as_millis(),
     )
 }

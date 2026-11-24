@@ -495,8 +495,9 @@ fn captures_error(state: &toml::Table, path: &str) -> Result<(), String> {
 }
 
 /// An error (the reason) at the first `error` key,
-/// `window_at_press_is_ours = false` or `window_at_target_is_ours = false`,
-/// anywhere under `table`, its arrays included.
+/// `window_at_press_is_ours = false`, `window_at_target_is_ours = false`,
+/// `window_under_cursor_is_ours = false` or non-zero
+/// `CGWarpMouseCursorPosition`, anywhere under `table`, its arrays included.
 #[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn first_error(table: &toml::Table, path: &str) -> Result<(), String> {
     for (key, value) in table {
@@ -509,6 +510,14 @@ fn first_error(table: &toml::Table, path: &str) -> Result<(), String> {
         }
         if key == "window_at_target_is_ours" && value.as_bool() == Some(false) {
             return Err(format!("{at} = false: the cursor's move was skipped"));
+        }
+        if key == "window_under_cursor_is_ours" && value.as_bool() == Some(false) {
+            return Err(format!(
+                "{at} = false: the cursor did not end on the probe's window"
+            ));
+        }
+        if key == "CGWarpMouseCursorPosition" && value.as_integer().is_some_and(|r| r != 0) {
+            return Err(format!("{at} = {value}: the cursor's warp failed"));
         }
         value_error(value, &at)?;
     }
@@ -836,7 +845,9 @@ mod tests {
 
     /// A cursor's move at `path` that reached the probe's own window.
     fn moved(path: &str) -> String {
-        format!("[{path}]\nwindow_at_target_is_ours = true\nwindow_under_cursor_is_ours = true\n")
+        format!(
+            "[{path}]\nwindow_at_target_is_ours = true\nCGWarpMouseCursorPosition = 0\nwindow_under_cursor_is_ours = true\n"
+        )
     }
 
     /// One sheet at `sheet` with `targets` (name, hovered, pressed), each
@@ -1117,6 +1128,12 @@ mod tests {
             })?)?;
             fails(fails_after(|d| {
                 set(d, &path, "error", "unavailable: x".into())
+            })?)?;
+            fails(fails_after(|d| {
+                set(d, &path, "window_under_cursor_is_ours", false.into())
+            })?)?;
+            fails(fails_after(|d| {
+                set(d, &path, "CGWarpMouseCursorPosition", 1000.into())
             })?)?;
         }
         fails(fails_after(|d| {

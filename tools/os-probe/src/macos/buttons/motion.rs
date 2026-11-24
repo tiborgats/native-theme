@@ -150,6 +150,19 @@ pub(super) fn motion_table(pass: &Pass<'_>, version: &NSOperatingSystemVersion) 
         controls.content.setNeedsDisplay(true);
         pass.settle(&controls.window, SETTLE_STEPS);
         let mut per = Table::new();
+        let park = match pass.park_quartz(&controls.window) {
+            Ok(park) => park,
+            Err(reason) => {
+                out::put(
+                    &mut per,
+                    "error",
+                    out::unavailable(format!("the park point: {reason}: no recording is made")),
+                );
+                out::put_table(&mut t, key, per);
+                continue;
+            }
+        };
+        out::put(&mut per, "park_quartz_xy", out::floats(&[park.x, park.y]));
         let recordings = recordings(
             pass,
             &controls,
@@ -157,11 +170,12 @@ pub(super) fn motion_table(pass: &Pass<'_>, version: &NSOperatingSystemVersion) 
             key,
             &appearance,
             opposite.as_deref(),
+            park,
         );
         for (name, rec) in recordings {
             let _ = controls.window.makeFirstResponder(None);
             pass.settle(&controls.window, SETTLE_STEPS);
-            let r = timeline::record(pass, &ticker, scale, pass.out_dir, rec);
+            let r = timeline::record(pass, &controls.window, &ticker, scale, pass.out_dir, rec);
             out::put_table(&mut per, name, r);
             reset(&controls);
             pass.settle(&controls.window, SETTLE_STEPS);
@@ -274,7 +288,9 @@ fn unfocus(at_ms: u64, window: &NSWindow) -> timeline::Action<'_> {
     })
 }
 
-/// The recordings, in order, for the appearance `key`.
+/// The recordings, in order, for the appearance `key`; `park` (Quartz's
+/// global points) is where the cursor is moved off a control, the point
+/// `Pass::park_quartz` checked.
 fn recordings<'a>(
     pass: &Pass<'_>,
     c: &'a Controls,
@@ -282,9 +298,9 @@ fn recordings<'a>(
     key: &str,
     appearance: &'a NSAppearance,
     opposite: Option<&'a NSAppearance>,
+    park: NSPoint,
 ) -> Vec<(&'static str, Recording<'a>)> {
     let mut list = Vec::new();
-    let away = pass.quartz(super::away_point(&c.window));
     let mut presses: Vec<(&'static str, &NSButton)> = vec![("press-push", &*c.push)];
     if let Some(glass) = &c.glass {
         presses.push(("press-glass", &**glass));
@@ -297,10 +313,10 @@ fn recordings<'a>(
         click(&mut posts, 5000, 80, at, "release at 80 ms");
         click(&mut posts, 6000, 150, at, "release at 150 ms");
         click(&mut posts, 7000, 250, at, "release at 250 ms");
-        posts.push(post(8000, "move away", Posted::Move(away)));
+        posts.push(post(8000, "move to the park point", Posted::Move(park)));
         posts.push(post(8500, "move in again", Posted::Move(at)));
         click(&mut posts, 8600, 600, at, "press 100 ms into the hover");
-        posts.push(post(10000, "move away", Posted::Move(away)));
+        posts.push(post(10000, "move to the park point", Posted::Move(park)));
         list.push((
             name,
             Recording {
@@ -322,7 +338,7 @@ fn recordings<'a>(
     click(&mut posts, 3000, 100, a, "click One");
     click(&mut posts, 5000, 100, b, "click Two");
     click(&mut posts, 7000, 100, a, "click One");
-    posts.push(post(8000, "move away", Posted::Move(away)));
+    posts.push(post(8000, "move to the park point", Posted::Move(park)));
     let fa = screen_frame(&c.radio_a);
     let fb = screen_frame(&c.radio_b);
     list.push((
@@ -504,7 +520,7 @@ fn union(a: NSRect, b: NSRect) -> NSRect {
 
 fn method_text() -> String {
     format!(
-        "a titled window (empty title, content {} from {}) holding, in its content view (bottom-left origin): a regular push button (NSButton, momentaryPushIn, bezelStyle push, title \"Button\", system font of the regular size, sized to fit) from {}; on macOS 26 the same with bezelStyle glass from {}; two radio buttons (buttonType radio, titles \"One\" and \"Two\", state off, both with the action updateWindows at NSApp, so they form one group) from {} and {}; an NSSearchField {}; three NSTextViews: editable \"{CARET_TEXT}\" with the insertion point at its end {}, editable \"{}\" (a left-to-right run, a space and three Hebrew letters) with the insertion point at UTF-16 index {MIXED_CARET} (between the space and the first Hebrew letter) {}, and a selectable, non-editable \"{CARET_TEXT}\" with the insertion point at index 1 {}; and a ticker (an NSBox, custom, no border) {}; a second titled window {} for focus-deactivate. The window presented as the key mode presents (made key, the application active), the cursor parked {}. Per appearance (the window's appearance set, the run loop pumped {SETTLE_STEPS} steps), each recording: makeFirstResponder: nil, then `screencapture -x -v -V<seconds> <appearance>/<name>.mov` (the whole main display) while a worker thread posts CGEvents (mouse moved, left mouse down, up, dragged; key down and up) at the HID event tap at its planned times and the main thread runs its actions at theirs, pumping the run loop in steps of 5 ms between; a repeating NSTimer in the run loop's common modes (so it fires inside AppKit's mouse tracking too) flips the ticker black and white every 5 ms and, where the recording names a view, reads its alphaValue and the presentation layers of its layer tree (3 levels, at most 16 layers: path, class, opacity, bounds size, affine transform, the 3D transform's m33, m34 and m43; the model layer where none is presented), keeping each reading that differs from the one before as a sample, its time counted from starting screencapture; <name>.crop holds ffmpeg's crop=w:h:x:y in pixels for the subject's screen frame grown by {CROP_MARGIN} pt. After each recording the search field is emptied, the caret text view's text and insertion point restored, both radios set off and the window made key again. The recordings: press-push and press-glass (move in at 2 s; a press held 1 s from 3 s; clicks released 80, 150 and 250 ms after their mouse-down at 5, 6 and 7 s; move away at 8 s, in again at 8.5 s, a press 100 ms later held 600 ms; away at 10 s; 12 s; the button sampled); radio (clicks of 100 ms on One at 3 s, Two at 5 s, One at 7 s; 9 s; One sampled); search-cancel (the field made first responder at 2.5 s, a and s typed at 3 and 3.2 s, Escape at 5 s, d at 6.5 s, the program empties it at 8 s; 10 s); focus-interrupt (the push button made first responder at 3, 4.5 and 6 s and resigned 70, 120 and 170 ms later; made first responder at 7.5 s, the window's appearance set to the other one at 7.6 s and back at 9 s, resigned at 10 s; 12 s; the button sampled); focus-deactivate (the push button first responder at 3 s, the second window made key at 3.1 s, this window key again at 5 s, the second ordered out at 5.1 s, resigned at 7 s; 9 s); caret-long (the editable text view first responder at 2 s, a, s, d typed from 30 s 150 ms apart, resigned at 38 s; 40 s); caret-mixed and caret-read-only (first responder at 2 s, resigned at 7 s; 8 s). Each key is typed as a key-down and a key-up 40 ms later (virtual key codes 0, 1, 2 and 53 of HIToolbox's Events.h); each click as a mouse-down and a mouse-up at the view's centre",
+        "a titled window (empty title, content {} from {}) holding, in its content view (bottom-left origin): a regular push button (NSButton, momentaryPushIn, bezelStyle push, title \"Button\", system font of the regular size, sized to fit) from {}; on macOS 26 the same with bezelStyle glass from {}; two radio buttons (buttonType radio, titles \"One\" and \"Two\", state off, both with the action updateWindows at NSApp, so they form one group) from {} and {}; an NSSearchField {}; three NSTextViews: editable \"{CARET_TEXT}\" with the insertion point at its end {}, editable \"{}\" (a left-to-right run, a space and three Hebrew letters) with the insertion point at UTF-16 index {MIXED_CARET} (between the space and the first Hebrew letter) {}, and a selectable, non-editable \"{CARET_TEXT}\" with the insertion point at index 1 {}; and a ticker (an NSBox, custom, no border) {}; a second titled window {} for focus-deactivate. The window presented as the key mode presents (made key, the application active), the cursor parked {}. Per appearance (the window's appearance set, the run loop pumped {SETTLE_STEPS} steps), each recording: makeFirstResponder: nil, then `screencapture -x -v -V<seconds> <appearance>/<name>.mov` (the whole main display) while a worker thread posts CGEvents (mouse moved, left mouse down, up, dragged; key down and up) at the HID event tap at its planned times and the main thread runs its actions at theirs, pumping the run loop in steps of 5 ms between; a repeating NSTimer in the run loop's common modes (so it fires inside AppKit's mouse tracking too) flips the ticker black and white every 5 ms and, where the recording names a view, reads its alphaValue and the presentation layers of its layer tree (3 levels, at most 16 layers: path, class, opacity, bounds size, affine transform, the 3D transform's m33, m34 and m43; the model layer where none is presented), keeping each reading that differs from the one before as a sample, its time counted from starting screencapture; <name>.crop holds ffmpeg's crop=w:h:x:y in pixels for the subject's screen frame grown by {CROP_MARGIN} pt. After each recording the search field is emptied, the caret text view's text and insertion point restored, both radios set off and the window made key again. Per appearance, before its recordings, the park point is read on the main thread as the park reads it, and where windowNumberAtPoint: there gives the probe's window it is where the recordings move the cursor off a control (park_quartz_xy), else no recording is made and the appearance is the error; before each recording, on the main thread, windowNumberAtPoint: is read at every mouse event's point and, where it types, NSApp isActive (post_points_checked): where one is another window, or the application is not active, nothing is recorded or posted and the recording is the error. The recordings: press-push and press-glass (move in at 2 s; a press held 1 s from 3 s; clicks released 80, 150 and 250 ms after their mouse-down at 5, 6 and 7 s; moved to the park point at 8 s, in again at 8.5 s, a press 100 ms later held 600 ms; to the park point at 10 s; 12 s; the button sampled); radio (clicks of 100 ms on One at 3 s, Two at 5 s, One at 7 s; moved to the park point at 8 s; 9 s; One sampled); search-cancel (the field made first responder at 2.5 s, a and s typed at 3 and 3.2 s, Escape at 5 s, d at 6.5 s, the program empties it at 8 s; 10 s); focus-interrupt (the push button made first responder at 3, 4.5 and 6 s and resigned 70, 120 and 170 ms later; made first responder at 7.5 s, the window's appearance set to the other one at 7.6 s and back at 9 s, resigned at 10 s; 12 s; the button sampled); focus-deactivate (the push button first responder at 3 s, the second window made key at 3.1 s, this window key again at 5 s, the second ordered out at 5.1 s, resigned at 7 s; 9 s); caret-long (the editable text view first responder at 2 s, a, s, d typed from 30 s 150 ms apart, resigned at 38 s; 40 s); caret-mixed and caret-read-only (first responder at 2 s, resigned at 7 s; 8 s). Each key is typed as a key-down and a key-up 40 ms later (virtual key codes 0, 1, 2 and 53 of HIToolbox's Events.h); each click as a mouse-down and a mouse-up at the view's centre",
         rect_text(NSRect::new(NSPoint::new(0.0, 0.0), WINDOW_FRAME.size)),
         point_text(WINDOW_FRAME.origin),
         point_text(PUSH_ORIGIN),

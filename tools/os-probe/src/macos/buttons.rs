@@ -125,9 +125,6 @@ const PATTERN_SQUARE: usize = 4;
 /// panel: their content frame on the screen, clear of the sheets.
 const OTHER_FRAME: NSRect = NSRect::new(NSPoint::new(860.0, 560.0), NSSize::new(140.0, 80.0));
 
-/// How far right of the window's frame the cursor is parked, in points.
-const CURSOR_AWAY_OFFSET: f64 = 100.0;
-
 /// The steps the pump runs after the cursor moves, so a hover the button
 /// animates in has settled before the capture.
 const HOVER_STEPS: u32 = 20;
@@ -1051,7 +1048,7 @@ fn method_text() -> String {
 /// How `Pass::park` parks the cursor, for the method texts.
 fn park_text() -> String {
     format!(
-        "inside the window on the middle of its content view's left margin, {} pt from its left edge, where windowNumberAtPoint: there gives the probe's window and hitTest: the content view or the backdrop box (view_at_park_point), else not moved and the error",
+        "inside the window in its content view's bottom left corner, {} pt from its left and bottom edges (in the margins round every sheet's grid, outside every control and every recording's crop round a control), where windowNumberAtPoint: there gives the probe's window and hitTest: the content view itself, every caller parking with the backdrop box hidden (view_at_park_point), else not moved and the error",
         BUTTON_MARGIN / 2.0
     )
 }
@@ -1061,7 +1058,7 @@ fn states_table() -> Table {
     for (state, how) in [
         (
             "normal",
-            "nothing set; on the push sheet the cursor parked outside the window",
+            "nothing set; on the push sheet the cursor parked as the method says, inside the window over no control",
         ),
         (
             "pressed",
@@ -2001,16 +1998,21 @@ impl Pass<'_> {
             "CGWarpMouseCursorPosition",
             out::int(i64::from(warp.0)),
         );
+        if warp.0 != 0 {
+            add_error(
+                &mut t,
+                &format!(
+                    "CGWarpMouseCursorPosition returned {}, not kCGErrorSuccess",
+                    warp.0
+                ),
+            );
+        }
         let moved =
             CGEvent::new_mouse_event(None, CGEventType::MouseMoved, at, CGMouseButton::Left);
         out::put(&mut t, "mouseMoved_created", out::boolean(moved.is_some()));
         match moved.as_deref() {
             Some(moved) => CGEvent::post(CGEventTapLocation::HIDEventTap, Some(moved)),
-            None => out::put(
-                &mut t,
-                "error",
-                out::unavailable("the mouse-moved CGEvent is NULL: none is posted"),
-            ),
+            None => add_error(&mut t, "the mouse-moved CGEvent is NULL: none is posted"),
         }
         window.displayIfNeeded();
         out::put_table(&mut t, "events", pump_counting(self.app, HOVER_STEPS));
@@ -2022,71 +2024,134 @@ impl Pass<'_> {
         );
         let under =
             NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(location, 0, self.mtm);
+        let under_ours = under == window.windowNumber();
         out::put(
             &mut t,
             "window_under_cursor_is_ours",
-            out::boolean(under == window.windowNumber()),
+            out::boolean(under_ours),
         );
+        if !under_ours {
+            add_error(
+                &mut t,
+                &format!(
+                    "after the move the window under the cursor is window {under}, not the probe's {}",
+                    window.windowNumber()
+                ),
+            );
+        }
         t
     }
 
-    /// Park the cursor inside `window` on the middle of its content view's
-    /// left margin (`park_point`), as `move_cursor` moves it, where the view
-    /// there (`hitTest:` of the content view's superview) is the content
-    /// view or the backdrop box (`is_backdrop`): no control lies under it.
-    /// The views from the one hit up to the content view are read into
-    /// `view_at_park_point`; where another view is hit the cursor is not
-    /// moved and the park is the error.
-    fn park(&self, window: &NSWindow) -> Table {
-        let Some(content) = window.contentView() else {
-            let mut t = Table::new();
-            out::put(
-                &mut t,
-                "error",
-                out::unavailable("the window has no content view: the cursor is not parked"),
-            );
-            return t;
-        };
+    /// Where `park` parks the cursor in `window`, in AppKit's screen
+    /// points: its content view's bottom left corner (`park_point`), where
+    /// the view there (`hitTest:` of the content view's superview) is the
+    /// content view itself (`parks_on_content`): no control lies under it.
+    /// The point and the views from the one hit up to the content view are
+    /// read into `t` (`park_point_in_content_xy`, `view_at_park_point`);
+    /// where another view is hit, the reason.
+    fn park_target(&self, window: &NSWindow, t: &mut Table) -> Result<NSPoint, String> {
+        let content = window
+            .contentView()
+            .ok_or_else(|| "the window has no content view: the cursor is not parked".to_owned())?;
         let local = park_point(&content);
+        out::put(
+            t,
+            "park_point_in_content_xy",
+            out::floats(&[local.x, local.y]),
+        );
         let in_window = content.convertPoint_toView(local, None);
         let hit = match ffi::superview(&content) {
             Some(frame_view) => frame_view.hitTest(in_window),
             None => content.hitTest(in_window),
         };
         let mut chain: Vec<Value> = Vec::new();
-        let mut empty = hit.is_some();
-        let mut at = hit;
+        let mut at = hit.clone();
         while let Some(v) = at {
             chain.push(out::text(v.class().name().to_string_lossy()));
             if std::ptr::eq(&*v, &*content) {
                 break;
             }
-            let up = ffi::superview(&v);
-            empty &=
-                is_backdrop(&v, &content) || up.as_ref().is_some_and(|s| is_backdrop(s, &content));
-            at = up;
+            at = ffi::superview(&v);
         }
-        let screen = window.convertPointToScreen(in_window);
-        let mut t = if empty {
-            self.move_cursor(window, screen)
+        out::put(t, "view_at_park_point", out::array(chain));
+        if parks_on_content(hit.as_deref(), |v| std::ptr::eq(v, &*content)) {
+            Ok(window.convertPointToScreen(in_window))
         } else {
-            let mut t = Table::new();
-            out::put(
-                &mut t,
-                "error",
-                out::unavailable(
-                    "the view at the park point is neither the content view nor the backdrop box: the cursor is not parked",
-                ),
-            );
-            t
+            Err(
+                "the view at the park point is not the content view: the cursor is not parked"
+                    .to_owned(),
+            )
+        }
+    }
+
+    /// Park the cursor inside `window` at `park_target`'s point, as
+    /// `move_cursor` moves it; where that point is not empty the cursor is
+    /// not moved and the park is the error.
+    fn park(&self, window: &NSWindow) -> Table {
+        let mut reads = Table::new();
+        let mut t = match self.park_target(window, &mut reads) {
+            Ok(screen) => self.move_cursor(window, screen),
+            Err(reason) => {
+                let mut t = Table::new();
+                out::put(&mut t, "error", out::unavailable(reason));
+                t
+            }
         };
-        out::put(
-            &mut t,
-            "park_point_in_content_xy",
-            out::floats(&[local.x, local.y]),
-        );
-        out::put(&mut t, "view_at_park_point", out::array(chain));
+        for (k, v) in reads {
+            t.insert(k, v);
+        }
         t
+    }
+
+    /// `park_target`'s point in Quartz's global display points, for a
+    /// timeline that moves the cursor there itself, read now on the main
+    /// thread: the point where it is empty and `windowNumberAtPoint:` there
+    /// gives `window`, else the reason.
+    fn park_quartz(&self, window: &NSWindow) -> Result<NSPoint, String> {
+        let mut reads = Table::new();
+        let screen = self.park_target(window, &mut reads)?;
+        let under = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(screen, 0, self.mtm);
+        if under == window.windowNumber() {
+            Ok(self.quartz(screen))
+        } else {
+            Err(format!(
+                "the window at the park point is window {under}, not the probe's {}",
+                window.windowNumber()
+            ))
+        }
+    }
+
+    /// Where an event posted at one of `points` (Quartz's global display
+    /// points) would reach another window than `window`
+    /// (`windowNumberAtPoint:` there, read now on the main thread), or,
+    /// where `keys`, the probe's application is not active (key events go
+    /// to the active application): the reason, and nothing is posted.
+    fn posts_error(&self, window: &NSWindow, points: &[NSPoint], keys: bool) -> Option<String> {
+        let number = window.windowNumber();
+        let other: Vec<String> = points
+            .iter()
+            .filter_map(|p| {
+                let under = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(
+                    self.quartz(*p),
+                    0,
+                    self.mtm,
+                );
+                (under != number).then(|| format!("({:.1}, {:.1}) window {under}", p.x, p.y))
+            })
+            .collect();
+        if let Some(first) = other.first() {
+            return Some(format!(
+                "{} of {} post points lie on another window than the probe's {number} (the first {first}): nothing is posted",
+                other.len(),
+                points.len()
+            ));
+        }
+        if keys && !self.app.isActive() {
+            return Some(
+                "the probe's application is not active: no key event is posted".to_owned(),
+            );
+        }
+        None
     }
 
     /// Capture `window` to `<dir>/<file>`, reading its key status just
@@ -2277,24 +2342,28 @@ impl Pass<'_> {
                                 post_to_own_process(&mut reads, "escape", active, key);
                             }
                         }
-                        if created.iter().any(|c| c.as_bool() == Some(false)) {
-                            out::put(
-                                &mut reads,
-                                "error",
-                                out::unavailable("an Escape CGEvent is NULL: it is not posted"),
-                            );
-                        }
-                        out::put(&mut reads, "escape_created", out::array(created));
-                        if !active {
+                        let escape_null = created.iter().any(|c| c.as_bool() == Some(false));
+                        if escape_null {
                             out::put(
                                 &mut reads,
                                 "error",
                                 out::unavailable(
-                                    "the probe's application is not active: the Escape was posted to the probe's process alone",
+                                    "an Escape CGEvent is NULL: it is not posted, and the watchdog posts the release again",
                                 ),
                             );
                         }
-                        release.finish(true);
+                        out::put(&mut reads, "escape_created", out::array(created));
+                        if !active {
+                            add_error(
+                                &mut reads,
+                                "the probe's application is not active: the Escape was posted to the probe's process alone",
+                            );
+                        }
+                        if escape_null {
+                            release.done.set(true);
+                        } else {
+                            release.finish(true);
+                        }
                     }
                     Some(_) => {}
                 }
@@ -2312,12 +2381,11 @@ impl Pass<'_> {
         }
         if let Some(watchdog) = watchdog {
             out::put(t, "release_by_watchdog", out::text(watchdog));
-            out::put(
+            add_error(
                 t,
-                "error",
-                out::unavailable(format!(
+                &format!(
                     "the release timer did not post the release within {CLICK_WAIT_STEPS} pump steps of the capture: the second thread posted it to the probe's process alone"
-                )),
+                ),
             );
         }
         // Deliver the mouse-up, so the tracking ends before the next state.
@@ -2460,34 +2528,38 @@ fn release_to_own_process(at: NSPoint, escape: bool) -> String {
     )
 }
 
-/// Where `Pass::park` parks the cursor, in `content`'s coordinates: the
-/// middle of its left margin, `BUTTON_MARGIN / 2` from its left edge and
-/// half its height up, the point each sheet's capture reads its backdrop at
-/// (`Sheet::backdrop_point`).
+/// Where `Pass::park` parks the cursor, in `content`'s coordinates: its
+/// bottom left corner, `BUTTON_MARGIN / 2` from its left and bottom edges,
+/// inside both margins every sheet's grid keeps, so outside every control
+/// and every recording's crop round a control (the transition pass's crops
+/// reach `CROP_MARGIN` round a button, which the middle of the left margin
+/// lay inside).
 fn park_point(content: &NSView) -> NSPoint {
     let b = content.bounds();
     NSPoint::new(
         b.origin.x + BUTTON_MARGIN / 2.0,
-        b.origin.y + b.size.height / 2.0,
+        b.origin.y + BUTTON_MARGIN / 2.0,
     )
 }
 
-/// Whether `v` is a backdrop box: an NSBox directly under `content` whose
-/// frame is `content`'s whole bounds.
-fn is_backdrop(v: &NSView, content: &NSView) -> bool {
-    v.downcast_ref::<NSBox>().is_some()
-        && ffi::superview(v).is_some_and(|s| std::ptr::eq(&*s, content))
-        && v.frame() == content.bounds()
+/// Whether the park point is empty: a view is hit there and it is the
+/// content view itself (`is_content`), not a control nor any other view
+/// over it.
+fn parks_on_content<T: ?Sized>(hit: Option<&T>, is_content: impl Fn(&T) -> bool) -> bool {
+    hit.is_some_and(is_content)
 }
 
-/// A point right of the window's frame, in AppKit's screen points: where
-/// the motion and events passes' timelines move the cursor away to.
-fn away_point(window: &NSWindow) -> NSPoint {
-    let f = window.frame();
-    NSPoint::new(
-        f.origin.x + f.size.width + CURSOR_AWAY_OFFSET,
-        f.origin.y + f.size.height / 2.0,
-    )
+/// Into `t`, `reason` as its `error`, after the error already there where
+/// there is one.
+fn add_error(t: &mut Table, reason: &str) {
+    let error = match t.get("error").and_then(Value::as_str) {
+        Some(earlier) => format!(
+            "{}; and {reason}",
+            earlier.strip_prefix("unavailable: ").unwrap_or(earlier)
+        ),
+        None => reason.to_owned(),
+    };
+    out::put(t, "error", out::unavailable(error));
 }
 
 /// The centre of a button in AppKit's screen points.
@@ -2799,4 +2871,29 @@ fn pump_counting(app: &NSApplication, steps: u32) -> Table {
     }
     out::put(&mut t, "other", out::int(other));
     t
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_park_point_is_empty_only_where_the_content_view_itself_is_hit() {
+        let content = 0_usize;
+        let is_content = |v: &usize| *v == content;
+        assert!(parks_on_content(Some(&0), is_content));
+        assert!(!parks_on_content(Some(&1), is_content));
+        assert!(!parks_on_content(None, is_content));
+    }
+
+    #[test]
+    fn an_error_added_keeps_the_one_already_there() {
+        let mut t = Table::new();
+        add_error(&mut t, "first");
+        add_error(&mut t, "second");
+        assert_eq!(
+            t.get("error").and_then(Value::as_str),
+            Some("unavailable: first; and second")
+        );
+    }
 }

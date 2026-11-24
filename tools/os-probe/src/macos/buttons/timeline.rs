@@ -20,7 +20,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use objc2::rc::Retained;
-use objc2_app_kit::{NSBox, NSColor, NSEventMask, NSView};
+use objc2_app_kit::{NSBox, NSColor, NSEventMask, NSView, NSWindow};
 use objc2_core_graphics::{CGEvent, CGEventTapLocation, CGEventType, CGMouseButton};
 use objc2_foundation::{NSDate, NSPoint, NSRect};
 use toml::{Table, Value};
@@ -193,9 +193,14 @@ struct Shared {
 /// Make `rec`, its files under `out_dir`: `<stem>.mov`, the crop in
 /// `<stem>.crop` (ffmpeg's `crop=w:h:x:y` in pixels) and the window captures
 /// its posts take. What happened, with every time counted from starting
-/// `screencapture`.
+/// `screencapture`. Before it starts, on the main thread, the window at
+/// every mouse event's point is read and the probe's application's
+/// activity where it posts key events (`Pass::posts_error`): where one is
+/// not `window`'s, or the application is not active, nothing is recorded
+/// or posted and the recording is the error.
 pub(super) fn record(
     pass: &Pass<'_>,
+    window: &NSWindow,
     ticker: &Retained<NSBox>,
     scale: Option<f64>,
     out_dir: &Path,
@@ -250,6 +255,28 @@ pub(super) fn record(
             "crop_px_whxy",
             out::unavailable("no backing scale, or the crop lies off the screen"),
         ),
+    }
+
+    let points: Vec<NSPoint> = posts
+        .iter()
+        .filter_map(|p| match p.event {
+            Posted::Move(at) | Posted::Down(at) | Posted::Up(at) | Posted::Drag(at) => Some(at),
+            Posted::Key(..) | Posted::Capture(..) => None,
+        })
+        .collect();
+    let keys = posts.iter().any(|p| matches!(p.event, Posted::Key(..)));
+    out::put(
+        &mut t,
+        "post_points_checked",
+        out::int(i64::try_from(points.len()).unwrap_or(i64::MAX)),
+    );
+    if let Some(reason) = pass.posts_error(window, &points, keys) {
+        out::put(
+            &mut t,
+            "error",
+            out::unavailable(format!("{reason}: the recording is skipped")),
+        );
+        return t;
     }
 
     actions.sort_by_key(|a| a.at);
