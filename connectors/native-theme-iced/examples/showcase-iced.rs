@@ -8784,6 +8784,13 @@ fn toml_strings(value: Option<&toml::Value>) -> Vec<String> {
 
 /// Reads `text` in the export's format.
 fn parse_contract_leaves(text: &str) -> Result<ContractLeaves, String> {
+    parse_export(text, "leaves")
+}
+
+/// Reads `text` in the format both exports share, its keys -- 0.7.2 leaves
+/// or 0.8.0 homes -- under `key` (`leaves`, `homes`): the `[<key>]` tables
+/// and each row's list of what moves it.
+fn parse_export(text: &str, key: &str) -> Result<ContractLeaves, String> {
     let table: toml::Table = text.parse().map_err(|e| format!("{e}"))?;
     let section = |name: &str| {
         table
@@ -8792,10 +8799,10 @@ fn parse_contract_leaves(text: &str) -> Result<ContractLeaves, String> {
             .ok_or_else(|| format!("no [{name}] table"))
     };
     let mut leaves = BTreeMap::new();
-    for (leaf, entry) in section("leaves")? {
+    for (leaf, entry) in section(key)? {
         let entry = entry
             .as_table()
-            .ok_or_else(|| format!("leaves.{leaf} is no table"))?;
+            .ok_or_else(|| format!("{key}.{leaf} is no table"))?;
         let reach = match entry.get("moves").and_then(toml::Value::as_array) {
             Some(moves) => LeafReach::Moves(
                 moves
@@ -8811,12 +8818,12 @@ fn parse_contract_leaves(text: &str) -> Result<ContractLeaves, String> {
                     .collect(),
             ),
             None => {
-                let field = |key: &str| {
+                let field = |name: &str| {
                     entry
-                        .get(key)
+                        .get(name)
                         .and_then(toml::Value::as_str)
                         .map(str::to_owned)
-                        .ok_or_else(|| format!("leaves.{leaf} has neither moves nor {key}"))
+                        .ok_or_else(|| format!("{key}.{leaf} has neither moves nor {name}"))
                 };
                 LeafReach::Named {
                     kind: field("kind")?,
@@ -8833,7 +8840,7 @@ fn parse_contract_leaves(text: &str) -> Result<ContractLeaves, String> {
                 .get("cfg")
                 .and_then(toml::Value::as_str)
                 .map(str::to_owned);
-            let leaves = toml_strings(entry.get("leaves"));
+            let leaves = toml_strings(entry.get(key));
             (row.clone(), ExportRow { leaves, cfg })
         })
         .collect();
@@ -8850,6 +8857,23 @@ fn contract_leaves() -> Option<&'static ContractLeaves> {
     static EXPORT: OnceLock<Result<ContractLeaves, String>> = OnceLock::new();
     EXPORT
         .get_or_init(|| parse_contract_leaves(CONTRACT_LEAVES))
+        .as_ref()
+        .ok()
+}
+
+/// The contract's export on the 0.8.0 model (connectors/native-theme-iced/
+/// contract-homes.toml): per colour home of the 0.8.0 model, the rows of
+/// `native_theme_iced::next` it moves under which statuses and the platform
+/// combinations in which it does not, or why no row reads it. A style row's
+/// colour line names the homes that move it.
+const CONTRACT_HOMES: &str = include_str!("../contract-homes.toml");
+
+/// The home export, read once; `None` if it does not parse, which
+/// `a_page_colour_names_the_homes_that_move_it` rules out.
+fn contract_homes() -> Option<&'static ContractLeaves> {
+    static EXPORT: OnceLock<Result<ContractLeaves, String>> = OnceLock::new();
+    EXPORT
+        .get_or_init(|| parse_export(CONTRACT_HOMES, "homes"))
         .as_ref()
         .ok()
 }
@@ -12656,7 +12680,7 @@ fn widget_tooltip_themed(
 struct Paint {
     role: &'static str,
     /// The style function's row (`styles::<fn>.<field>`), its status and the
-    /// leaves that move it there, as the contract's export records them; or
+    /// 0.8.0 homes that move it there, as the home export records them; or
     /// what the showcase, or iced from a palette slot, paints it from.
     source: String,
     ink: Ink,
@@ -12720,14 +12744,15 @@ fn style_paints<S: Copy + std::fmt::Debug, O>(
 }
 
 /// What a colour row's text says after the row and its status: the colour
-/// leaves the contract's export records as moving `row` -- of those its
-/// `rows` entry lists -- under `status` (`None`: a row that takes none), on
-/// `installed`, the bundled combination shown (`<preset>/<mode>`), or in any
-/// bundled one where the theme is the OS's (`None`, D1); where it records
-/// none, the row's derivation sentence ([`DERIVED_ROWS`]): a status the
-/// contract's rows leave to iced's derivation.
+/// homes of the 0.8.0 model the contract's home export records as moving
+/// `row` -- of those its `rows` entry lists -- under `status` (`None`: a row
+/// that takes none), on `installed`, the platform combination shown
+/// (`<preset>/<mode>`), or in any platform one where the theme is not one
+/// the export names (the OS's, D1); where it records none, the row's
+/// derivation sentence ([`DERIVED_ROWS`]): a status the contract's rows
+/// leave to iced's derivation.
 fn moved_by(row: &str, status: Option<&str>, installed: Option<&str>) -> String {
-    let Some(export) = contract_leaves() else {
+    let Some(export) = contract_homes() else {
         return String::new();
     };
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
@@ -12753,10 +12778,10 @@ fn moved_by(row: &str, status: Option<&str>, installed: Option<&str>) -> String 
         .map(|(_, sentence)| *sentence);
     match (leaves.is_empty(), installed, derived) {
         (false, Some(_), _) => format!(" moved by {}", leaves.join(", ")),
-        (false, None, _) => format!(" moved by {} (in a bundled theme)", leaves.join(", ")),
+        (false, None, _) => format!(" moved by {} (in a platform theme)", leaves.join(", ")),
         (true, _, Some(sentence)) => format!(", {sentence}"),
-        (true, Some(label), None) => format!(", moved by no colour leaf on {label}"),
-        (true, None, None) => ", moved by no colour leaf in a bundled theme".to_owned(),
+        (true, Some(label), None) => format!(", moved by no colour home on {label}"),
+        (true, None, None) => ", moved by no colour home in a platform theme".to_owned(),
     }
 }
 
@@ -37808,13 +37833,16 @@ mod tests {
     }
 
     /// What is wrong with the labels of `info`'s style rows on
-    /// `combination`, a bundled one (D1): each says "moved by" the leaves
-    /// the export records as moving its row at its status there, read from
-    /// every leaf's moves, or, where it records none, names no leaf.
+    /// `combination`, a bundled one (D1): each says "moved by" the homes
+    /// the home export records as moving its row at its status there -- in
+    /// any platform combination where `combination` is none the export
+    /// names -- read from every home's moves, or, where it records none,
+    /// names no home.
     fn colour_label_faults(info: &str, combination: &str) -> Vec<String> {
-        let Some(export) = contract_leaves() else {
-            return vec!["contract-leaves.toml does not parse".to_owned()];
+        let Some(export) = contract_homes() else {
+            return vec!["contract-homes.toml does not parse".to_owned()];
         };
+        let platform = export.combinations.iter().any(|c| c == combination);
         let title = info.lines().next().unwrap_or_default();
         let mut faults = Vec::new();
         for (line, rest) in style_lines(info) {
@@ -37823,6 +37851,9 @@ mod tests {
                 Some((label, _)) => label,
                 None => tail.rsplit_once(' ').map_or("", |(label, _)| label),
             };
+            let label = label
+                .strip_suffix(" (in a platform theme)")
+                .unwrap_or(label);
             let want: BTreeSet<&str> = export
                 .leaves
                 .iter()
@@ -37833,7 +37864,7 @@ mod tests {
                                 Some(s) => m.statuses.iter().any(|t| t == s),
                                 None => m.statuses.is_empty(),
                             }
-                            && !m.except.iter().any(|e| e == combination)
+                            && !(platform && m.except.iter().any(|e| e == combination))
                     }),
                     LeafReach::Named { .. } => false,
                 })
@@ -37853,12 +37884,13 @@ mod tests {
     }
 
     /// D1 (M9b T4 review, Important 1): a page widget's colour row says
-    /// "moved by" the colour leaves `contract-leaves.toml` records as moving
-    /// it at its status on the bundled preset shown, and names no other,
-    /// over every bundled preset in both modes. A leaf moves a row where a
-    /// splice of it changes the row; the theme need not state it.
+    /// "moved by" the colour homes `contract-homes.toml` records as moving
+    /// it at its status on the platform preset shown (in any platform
+    /// preset on another bundled one), and names no other, over every
+    /// bundled preset in both modes. A home moves a row where colours stated
+    /// there tell the row apart; the theme need not state it.
     #[test]
-    fn a_page_colour_names_the_leaves_that_move_it() {
+    fn a_page_colour_names_the_homes_that_move_it() {
         let mut failures = Vec::new();
         over_bundled_infos(|_, combination, infos, _| {
             for info in infos {
