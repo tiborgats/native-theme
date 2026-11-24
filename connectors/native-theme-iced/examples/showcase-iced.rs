@@ -74,8 +74,9 @@ use native_theme::icons::{
     list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::next::{
-    ButtonQuery, Contrast, Direction, MotionPreference, Palette, PartStated, PartStyle, Preset,
-    Scheme, Stroke, StrokeAlign, TextStated, TextStyle, ThemeContext, Typography, WidgetState,
+    ButtonQuery, Contrast, Direction, MotionPreference, Orientation, Palette, PartStated,
+    PartStyle, Preset, Scheme, Stroke, StrokeAlign, StyleQuery, TextStated, TextStyle,
+    ThemeContext, Typography, WidgetState,
 };
 use native_theme::theme::{
     ArrowSide, FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedListTheme, ResolvedTextScale,
@@ -5962,32 +5963,92 @@ fn shown_fill(
 /// its left and right, where iced puts a scrollbar's margin (iced_widget
 /// 0.14.2 `src/scrollable.rs:1957-1990`). iced lays the bar the list's full
 /// height, so its right-hand corners lie in the corners of the frame's
-/// inside, rounded by [`inner_radius`], and a part `w` wide fits a corner
-/// only `w / 2` round. A floating bar (`scrollbar.overlay_mode`) is held the
-/// inner radius off the right edge, clear of the corners the rows it floats
-/// over round into ([`shown_fill`]). A bar beside the rows is held as far as
-/// the inner radius is more than half its wider part
-/// (`scrollbar.groove_width` or `.thumb_width`), none where it is not, and
-/// rounds its parts into the arcs ([`list_bar_style`]). The wider part is
-/// what iced places the bar by, `width.max(scroller_width) + 2 margin` from
-/// the right edge (`:1966-1975`), so it is what has to fit the corners; the
-/// rows' padding beside a bar, the groove alone and the margin
+/// inside, rounded by [`next_inner_radius`], and a part `w` wide fits a
+/// corner only `w / 2` round. A floating bar (`scrollbar.overlay_mode`) is
+/// held the inner radius off the right edge, clear of the corners the rows
+/// it floats over round into ([`shown_fill`]). A bar beside the rows is held
+/// as far as the inner radius is more than half its wider part
+/// ([`next_bar_widths`]), none where it is not, and rounds its parts into
+/// the arcs ([`list_bar_style`]). The wider part is what iced places the bar
+/// by, `width.max(scroller_width) + 2 margin` from the right edge
+/// (`:1966-1975`), so it is what has to fit the corners; the rows' padding
+/// beside a bar, the groove alone and the margin
 /// (`src/scrollable.rs:482-489`), only decides where they end, which the
 /// corners do not depend on, so a thumb wider than its groove still fits.
-fn list_bar_margin(resolved: &ResolvedTheme) -> f32 {
-    let inner = inner_radius(&resolved.list);
-    let s = &resolved.scrollbar;
-    if s.overlay_mode {
+fn list_bar_margin(r: &native_theme::next::ResolvedTheme) -> f32 {
+    let inner = next_inner_radius(r);
+    let (groove, thumb) = next_bar_widths(r);
+    if r.scrollbar.overlay_mode {
         inner
     } else {
-        (inner - s.groove_width.max(s.thumb_width) / 2.0).max(0.0)
+        (inner - groove.max(thumb) / 2.0).max(0.0)
     }
 }
 
-/// The Basic list's scrollbar: `styles::scrollbar`'s, at its stated widths,
-/// held [`list_bar_margin`] off the frame's right-hand edge.
-fn list_bar(resolved: &ResolvedTheme) -> scrollable::Scrollbar {
-    styles::scrollbar(resolved).margin(list_bar_margin(resolved))
+/// iced's own width of a scrollbar's rail and of its scroller, which a bar
+/// keeps where the theme states none (iced_widget 0.14.2
+/// `src/scrollable.rs:330-339`, `Scrollbar::default`).
+const ICED_SCROLLBAR_WIDTH: f32 = 10.0;
+
+/// The widths of the Basic list's scrollbar's groove and thumb across the
+/// vertical bar on the installed 0.8.0 theme, as
+/// `iced_next::styles::scrollbar` gives them to iced:
+/// `scrollbar.track(NONE; orientation=Vertical).min_size[0]` and
+/// `scrollbar.thumb(NONE; orientation=Vertical).min_size[0]`, each iced's
+/// own, [`ICED_SCROLLBAR_WIDTH`], where unstated.
+fn next_bar_widths(r: &native_theme::next::ResolvedTheme) -> (f32, f32) {
+    let s = &r.scrollbar;
+    let vertical = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Vertical);
+    let [groove, _] = s.track(vertical).min_size;
+    let [thumb, _] = s.thumb(vertical).min_size;
+    (
+        groove.unwrap_or(ICED_SCROLLBAR_WIDTH),
+        thumb.unwrap_or(ICED_SCROLLBAR_WIDTH),
+    )
+}
+
+/// The Basic list's scrollbar: `iced_next::styles::scrollbar`'s, at its
+/// stated widths, held [`list_bar_margin`] off the frame's right-hand edge.
+fn list_bar(r: &native_theme::next::ResolvedTheme) -> scrollable::Scrollbar {
+    iced_next::styles::scrollbar(r).margin(list_bar_margin(r))
+}
+
+/// The route of the Basic list's scrollbar's groove width, or its thumb's
+/// where `thumb`, under `r`, the installed 0.8.0 theme: the home
+/// [`next_bar_widths`] reads, and what it moves, or that it is unstated and
+/// iced's own width is drawn in its place.
+fn list_bar_width_route(r: &native_theme::next::ResolvedTheme, thumb: bool) -> String {
+    let vertical = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Vertical);
+    let (part, home, setter) = if thumb {
+        (
+            r.scrollbar.thumb(vertical),
+            "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]",
+            "Scrollbar::scroller_width",
+        )
+    } else {
+        (
+            r.scrollbar.track(vertical),
+            "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
+            "Scrollbar::width",
+        )
+    };
+    bar_width_route(part.min_size[0].is_some(), home, setter)
+}
+
+/// [`list_bar_width_route`] of whether the theme states the width at
+/// `home`, which iced takes through `setter`.
+fn bar_width_route(stated: bool, home: &str, setter: &str) -> String {
+    if stated {
+        format!(
+            "iced_next::styles::scrollbar: {setter}, {home}; list_bar_margin, list_bar_style: \
+             the bar's margin and its right-hand corners, inside the frame's"
+        )
+    } else {
+        format!(
+            "not drawn: {home} is unstated; the bar keeps iced's own {setter}, \
+             {ICED_SCROLLBAR_WIDTH} px (next_bar_widths)"
+        )
+    }
 }
 
 /// The radius a part of the Basic list's scrollbar, `width` wide, its right
@@ -6000,21 +6061,23 @@ fn list_bar_corner(inner: f32, inset: f32, width: f32, own: f32) -> f32 {
     own.max(inner - inset).min(width / 2.0).max(0.0)
 }
 
-/// The Basic list's scrollbar's style: `styles::scrollable`'s, its vertical
-/// rail's and scroller's right-hand corners rounded by
+/// The Basic list's scrollbar's style: `iced_next::styles::scrollable`'s,
+/// iced's own (`scrollable::default`) where the theme lacks a value it
+/// needs, its vertical rail's and scroller's right-hand corners rounded by
 /// [`list_bar_corner`], so that both keep inside the frame's rounded inside;
 /// the scroller lies centred in the bar, as iced lays it out
 /// (`src/scrollable.rs:1993-2010`).
 fn list_bar_style(
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
 ) -> impl Fn(&Theme, scrollable::Status) -> scrollable::Style + use<> {
-    let style = styles::scrollable(resolved);
-    let inner = inner_radius(&resolved.list);
-    let margin = list_bar_margin(resolved);
-    let (groove, thumb) = (
-        resolved.scrollbar.groove_width,
-        resolved.scrollbar.thumb_width,
-    );
+    let mapped = iced_next::styles::scrollable(r).ok();
+    let style = move |theme: &Theme, status| match &mapped {
+        Some(style) => style(theme, status),
+        None => scrollable::default(theme, status),
+    };
+    let inner = next_inner_radius(r);
+    let margin = list_bar_margin(r);
+    let (groove, thumb) = next_bar_widths(r);
     let bar = groove.max(thumb);
     let rounded = move |border: iced::Border, width: f32| {
         let inset = margin + (bar - width) / 2.0;
@@ -11109,15 +11172,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "a row's padding; iced_aw's list's 5 px where unstated".into()
         }
         // ---- scrollbar ----
-        ("scrollbar", "groove_width_px") if under("basic.list.") => {
-            "styles::scrollbar: Scrollbar::width; list_bar_margin, list_bar_style: the bar's \
-             margin and its right-hand corners, inside the frame's"
-                .into()
-        }
-        ("scrollbar", "thumb_width_px") if under("basic.list.") => {
-            "styles::scrollbar: Scrollbar::scroller_width; list_bar_margin, list_bar_style: \
-             the bar's margin and its right-hand corners, inside the frame's"
-                .into()
+        ("scrollbar", f @ ("groove_width_px" | "thumb_width_px")) if under("basic.list.") => {
+            list_bar_width_route(state.next_shown(), f == "thumb_width_px").into()
         }
         ("scrollbar", "groove_width_px") => "styles::scrollbar: Scrollbar::width".into(),
         ("scrollbar", "thumb_width_px") => "styles::scrollbar: Scrollbar::scroller_width".into(),
@@ -11125,10 +11181,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "not reachable: iced's scroller has no minimum length setter".into()
         }
         ("scrollbar", "overlay_mode") if under("basic.list.") => {
-            "styles::scrollbar: no spacing beside the content; styles::scrollable: a floating \
-             bar transparent at rest and shown under the pointer, iced having no reveal on \
-             scroll; list_bar_margin: a floating bar held the frame's inner radius off its \
-             right edge, one beside the rows as far as its corners need"
+            "iced_next::styles::scrollbar: no spacing beside the content, \
+             scrollbar.overlay_mode; iced_next::styles::scrollable: a floating bar transparent \
+             at rest and shown under the pointer, iced having no reveal on scroll; \
+             list_bar_margin: a floating bar held the frame's inner radius off its right edge, \
+             one beside the rows as far as its corners need"
                 .into()
         }
         ("scrollbar", "overlay_mode") => {
@@ -14164,16 +14221,13 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         }
     });
     // The scrollbar and its thumb as iced lays them out (iced_widget 0.14.2
-    // `src/scrollable.rs:1957-2015`): the groove `scrollbar.groove_width`
-    // wide, `list_bar_margin` in from the right edge, the thumb
-    // `scrollbar.thumb_width` wide centred in it, as tall as the part of the
-    // rows shown, at the top.
-    let (groove, scroller) = (
-        resolved.scrollbar.groove_width,
-        resolved.scrollbar.thumb_width,
-    );
-    let bar_margin = list_bar_margin(resolved);
-    let floats = resolved.scrollbar.overlay_mode;
+    // `src/scrollable.rs:1957-2015`): the groove as wide as
+    // `next_bar_widths` gives it, `list_bar_margin` in from the right edge,
+    // the thumb as wide as it gives that centred in it, as tall as the part
+    // of the rows shown, at the top.
+    let (groove, scroller) = next_bar_widths(next);
+    let bar_margin = list_bar_margin(next);
+    let floats = next.scrollbar.overlay_mode;
     let shown = BASIC_LIST_VISIBLE / BASIC_LIST_ITEMS as f32;
     let bar_parts = move |b: iced::Rectangle| {
         let total = groove.max(scroller) + 2.0 * bar_margin;
@@ -14199,8 +14253,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             "basic.list.frame",
             container(Underlay::new(
                 scrollable(column(rows))
-                    .direction(scrollable::Direction::Vertical(list_bar(resolved)))
-                    .style(list_bar_style(resolved))
+                    .direction(scrollable::Direction::Vertical(list_bar(next)))
+                    .style(list_bar_style(next))
                     .height(Length::Fixed(BASIC_LIST_VISIBLE * row_height)),
                 Box::new(
                     move |_: &mut iced::Renderer,
@@ -26791,26 +26845,33 @@ mod tests {
 
     /// A Basic list bar whose thumb is wider than its groove still keeps
     /// inside the frame's rounded inside: no bundled preset states one, so
-    /// kde-breeze light is given a 6 px groove, a 10 px thumb, a solid bar and
-    /// a frame of radius 10 and line 1 (inner radius 9). iced places the bar
-    /// by its wider part, the thumb (`src/scrollable.rs:1966-1975`, `:2000-2010`),
-    /// so `list_bar_margin` is 9 − 10 / 2 = 4, the thumb's right edge 4 in
-    /// and the groove's 6, and `list_bar_style` rounds their right-hand corners
-    /// by 5 and 3, each half its width; both outlines, the thumb at the top
-    /// and at the bottom, keep inside a 168 × 60 inside.
+    /// kde-breeze light's installed 0.8.0 theme is patched to a 6 px groove
+    /// (`scrollbar.track.min_size[0]`), a 10 px thumb
+    /// (`scrollbar.thumb.min_size[0]`), a solid bar and a frame of corners 10
+    /// and a 1 px line (`list.container.corners`, `.stroke`; inner radius 9).
+    /// iced places the bar by its wider part, the thumb
+    /// (`src/scrollable.rs:1966-1975`, `:2000-2010`), so `list_bar_margin`
+    /// is 9 − 10 / 2 = 4, the thumb's right edge 4 in and the groove's 6, and
+    /// `list_bar_style` rounds their right-hand corners by 5 and 3, each half
+    /// its width; both outlines, the thumb at the top and at the bottom, keep
+    /// inside a 168 × 60 inside.
     #[test]
-    fn a_list_bar_with_a_thumb_wider_than_its_groove_keeps_inside_the_frame() {
-        let (theme, mut r) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        r.scrollbar.groove_width = 6.0;
-        r.scrollbar.thumb_width = 10.0;
+    fn a_list_bar_with_a_thumb_wider_than_its_groove_keeps_inside_the_frame() -> Result<(), String>
+    {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.scrollbar.rules]]\ntrack.min_size = [6.0, \"none\"]\n\
+             thumb.min_size = [10.0, \"none\"]\n\
+             [[widgets.list.rules]]\ncontainer.corners = 10.0\n\
+             container.stroke = { width = 1.0, color = \"#13579b\" }\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut r = loaded("kde-breeze", false).next_shown().clone();
+        r.apply_patch(&patch);
         r.scrollbar.overlay_mode = false;
-        r.list.border.corner_radius = 10.0;
-        r.list.border.line_width = 1.0;
-        let inner = inner_radius(&r.list);
+        let theme = native_theme_iced::next::to_theme(&r).map_err(|error| format!("{error:?}"))?;
+        let inner = next_inner_radius(&r);
         assert_eq!(inner, 9.0, "the inside's radius");
+        assert_eq!(next_bar_widths(&r), (6.0, 10.0), "the groove and the thumb");
         let margin = list_bar_margin(&r);
         assert_eq!(margin, 4.0, "the margin the thumb, the wider part, needs");
         let style = list_bar_style(&r)(
@@ -26827,7 +26888,7 @@ mod tests {
             height: 60.0,
         };
         let right = inside.x + inside.width;
-        let (groove, thumb) = (r.scrollbar.groove_width, r.scrollbar.thumb_width);
+        let (groove, thumb) = next_bar_widths(&r);
         let centre = right - margin - groove.max(thumb) / 2.0;
         let rail = Rectangle {
             x: centre - groove / 2.0,
@@ -26869,13 +26930,79 @@ mod tests {
                 "the {part} {rect:?} rounded {radius:?}"
             );
         }
+        Ok(())
+    }
+
+    /// The routes of the Basic list's scrollbar widths name the homes
+    /// [`next_bar_widths`] reads, on every preset of the 0.8.0 model in both
+    /// schemes, where each states them; and each home moves what the list
+    /// lays out: a patch stating the groove 7 px and the thumb 9 px gives
+    /// those widths and the margin they leave ([`list_bar_margin`]).
+    #[test]
+    fn the_basic_list_bar_width_routes_name_their_homes() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.scrollbar.rules]]\ntrack.min_size = [7.0, \"none\"]\n\
+             thumb.min_size = [9.0, \"none\"]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let vertical = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Vertical);
+        let mut faults = Vec::new();
+        for (label, r) in next_combinations() {
+            for (thumb, home, width) in [
+                (
+                    false,
+                    "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
+                    r.scrollbar.track(vertical).min_size[0],
+                ),
+                (
+                    true,
+                    "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]",
+                    r.scrollbar.thumb(vertical).min_size[0],
+                ),
+            ] {
+                let route = list_bar_width_route(&r, thumb);
+                if width.is_none() || !route.contains(home) || route.starts_with("not drawn") {
+                    faults.push(format!("{label}: {width:?}, \"{route}\""));
+                }
+            }
+            let mut patched = r.clone();
+            patched.apply_patch(&patch);
+            let inner = next_inner_radius(&patched);
+            let margin = if patched.scrollbar.overlay_mode {
+                inner
+            } else {
+                (inner - 9.0 / 2.0).max(0.0)
+            };
+            if next_bar_widths(&patched) != (7.0, 9.0) || list_bar_margin(&patched) != margin {
+                faults.push(format!(
+                    "{label}, patched: widths {:?}, margin {}, want (7, 9) and {margin}",
+                    next_bar_widths(&patched),
+                    list_bar_margin(&patched)
+                ));
+            }
+        }
+        // A width no preset leaves unstated: the route says iced's own is
+        // drawn, and names the home.
+        let unstated = bar_width_route(false, "the home", "Scrollbar::width");
+        if !unstated.starts_with("not drawn: the home is unstated")
+            || !unstated.contains("iced's own Scrollbar::width, 10 px")
+        {
+            faults.push(format!("unstated: \"{unstated}\""));
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// The Basic list's scrollbar keeps inside the frame's rounded inside, at
     /// its stated widths: iced lays the rail the list's full height, so its
     /// right-hand corners, and the scroller's at the top at rest and at the
     /// bottom at the end, lie in the inside's corners, rounded by the inner
-    /// radius (`list.border.corner_radius` less `list.border.line_width`).
+    /// radius of the installed 0.8.0 theme's list frame
+    /// (`list.container(NONE).corners` less its stroke's width,
+    /// [`next_inner_radius`]), the widths [`next_bar_widths`]'.
     /// Under adwaita and ios-13 light, whose bars float over the rows, the
     /// bar is held the inner radius off the frame's right-hand edge, clear of
     /// the corners the rows round into; under material-3 and kde-breeze light,
@@ -26906,18 +27033,26 @@ mod tests {
             assert!(
                 state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light)
             );
-            let r = state.current_resolved.clone();
-            let l = &r.list;
-            let s = &r.scrollbar;
-            let inner = l.border.corner_radius - l.border.line_width;
+            let next = state.next_shown().clone();
+            let frame_part = next.list.container(WidgetState::NONE);
+            let w = iced_next::stroke_width_of(&frame_part).unwrap_or_default();
+            let inner = iced_next::radius_of(&frame_part).unwrap_or_default() - w;
             assert!(
                 inner > 0.0,
                 "{preset}: the list's frame is rounded inside its line"
             );
-            let (groove, thumb) = (s.groove_width, s.thumb_width);
+            let vertical = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Vertical);
+            let (Some(groove), Some(thumb)) = (
+                next.scrollbar.track(vertical).min_size[0],
+                next.scrollbar.thumb(vertical).min_size[0],
+            ) else {
+                faults.push(format!("{preset}: the scrollbar's widths are unstated"));
+                continue;
+            };
             let bar = groove.max(thumb);
-            bars.push(s.overlay_mode);
-            let margin = if s.overlay_mode {
+            let floats = next.scrollbar.overlay_mode;
+            bars.push(floats);
+            let margin = if floats {
                 inner
             } else {
                 (inner - bar / 2.0).max(0.0)
@@ -26929,7 +27064,7 @@ mod tests {
             let drawn = LIST_BAR_STYLE.take();
             // A floating bar is hidden at rest, so the dump leaves it out; it
             // lies where it shows under the pointer all the same.
-            let parts = if s.overlay_mode {
+            let parts = if floats {
                 for id in ["basic.list.scrollbar", "basic.list.scrollbar.thumb"] {
                     if rects.contains_key(id) {
                         faults.push(format!("{preset}: the dump records {id}, hidden at rest"));
@@ -26951,7 +27086,6 @@ mod tests {
                 None => panic!("{preset}: {id} is not drawn"),
             };
             let frame = rect_of("basic.list.frame");
-            let w = l.border.line_width;
             let inside = Rectangle {
                 x: frame.x + w,
                 y: frame.y + w,
@@ -26969,7 +27103,7 @@ mod tests {
                     ));
                 }
             }
-            if s.overlay_mode && rail.x + rail.width.max(rest.width) > right - inner + 0.01 {
+            if floats && rail.x + rail.width.max(rest.width) > right - inner + 0.01 {
                 faults.push(format!(
                     "{preset}: the floating bar reaches into the corners the rows round into"
                 ));
@@ -27006,7 +27140,12 @@ mod tests {
                 y: row_1.y + 2.0 * row_1.height,
                 ..row_1
             };
-            let hover = iced::Background::Color(to_color(l.hover_background));
+            let Some(hover) = iced_next::state_fill_of(&next.list.highlight(WidgetState::HOVER))
+            else {
+                faults.push(format!("{preset}: list.highlight(HOVER).fill is unstated"));
+                continue;
+            };
+            let hover = iced::Background::Color(hover);
             let edge = right - (bar + 2.0 * margin);
             for (x, hovered) in [(edge + 0.5, false), (edge - 0.5, true)] {
                 let at = iced::Point::new(x, row_3.center_y());
