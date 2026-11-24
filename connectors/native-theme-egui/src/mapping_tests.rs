@@ -1461,27 +1461,27 @@ fn t2_every_row_s_declared_sinks_are_exactly_what_its_leaf_moves() {
 }
 
 /// The table of homes (`native-theme/tests/next_homes.toml`), its rows by key.
-fn table_of_homes() -> BTreeMap<String, toml::Table> {
+fn table_of_homes() -> Result<BTreeMap<String, toml::Table>, Box<dyn std::error::Error>> {
     let table: toml::Table =
-        toml::from_str(include_str!("../../../native-theme/tests/next_homes.toml"))
-            .expect("next_homes.toml parses");
+        toml::from_str(include_str!("../../../native-theme/tests/next_homes.toml"))?;
     let rows = table
         .get("row")
         .and_then(toml::Value::as_array)
-        .expect("next_homes.toml has rows");
+        .ok_or("next_homes.toml has no rows")?;
     let mut by_key = BTreeMap::new();
     for row in rows {
-        let row = row.as_table().expect("a row is a table");
+        let row = row
+            .as_table()
+            .ok_or("next_homes.toml: a row is not a table")?;
         let key = row
             .get("key")
             .and_then(toml::Value::as_str)
-            .expect("a row names its key");
-        assert!(
-            by_key.insert(key.to_owned(), row.clone()).is_none(),
-            "next_homes.toml: two rows of {key}"
-        );
+            .ok_or("next_homes.toml: a row names no key")?;
+        if by_key.insert(key.to_owned(), row.clone()).is_some() {
+            return Err(format!("next_homes.toml: two rows of {key}").into());
+        }
     }
-    by_key
+    Ok(by_key)
 }
 
 /// The homes a row's `homes_by_preset` gives, every preset's.
@@ -1504,8 +1504,9 @@ fn homes_by_preset(row: &toml::Table) -> Vec<String> {
 /// leaf of `ResolvedTheme` (`hand = true`: `Resolved.icon_set`'s `icons.set`), which this
 /// manifest has no row for.
 #[test]
-fn every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row() {
-    let table = table_of_homes();
+fn every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row()
+-> Result<(), Box<dyn std::error::Error>> {
+    let table = table_of_homes()?;
     let manifest = manifest();
     let mut problems = Vec::new();
     let mut held = BTreeSet::new();
@@ -1551,12 +1552,11 @@ fn every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row() {
         .filter(|home| !held.contains(home))
         .collect();
     let elements: toml::Table =
-        toml::from_str(include_str!("../../../docs/showcase-elements.toml"))
-            .expect("showcase-elements.toml parses");
+        toml::from_str(include_str!("../../../docs/showcase-elements.toml"))?;
     let listed: BTreeSet<&str> = elements
         .get("element")
         .and_then(toml::Value::as_array)
-        .expect("showcase-elements.toml has elements")
+        .ok_or("showcase-elements.toml has no elements")?
         .iter()
         .filter_map(|element| element.get("homes").and_then(toml::Value::as_array))
         .flatten()
@@ -1578,4 +1578,5 @@ fn every_row_holds_its_leafs_homes_and_every_listed_home_has_a_row() {
         problems.len(),
         problems.join("\n")
     );
+    Ok(())
 }

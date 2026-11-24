@@ -16,23 +16,13 @@ pub(crate) mod parity;
 
 pub(crate) use native_theme_egui::next::{
     disabled_text_color, fill_of, radius_of, state_text_color_of, stroke_color_of, stroke_width_of,
-    text_color_of,
+    text_color_of, to_color32,
 };
 
-use native_theme_egui::convert::to_color32;
 use native_theme_egui::egui::Color32;
-use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::next::{
-    Color, CornerCurve, CornerRadius, IconStated, IconStyle, PartStated, PartStyle, ResolvedTheme,
+    CornerCurve, CornerRadius, IconStated, IconStyle, PartStated, PartStyle, ResolvedTheme,
 };
-
-/// A colour of the 0.8.0 model that no part's `stated` bits govern, as egui's: its 8-bit sRGB
-/// channels with straight alpha, through the connector's [`to_color32`], as the connector's
-/// readers convert a stated colour.
-pub(crate) fn color(c: Color) -> Color32 {
-    let [r, g, b, a] = c.to_srgb8();
-    to_color32(Rgba::new(r, g, b, a))
-}
 
 /// [`fill_of`] `part` where `ruled`, the part queried with the state's flag alone, has its
 /// fill from a rule for that state (spec §2, `from_state`): a state's fill laid over another
@@ -71,13 +61,15 @@ pub(crate) fn radius(part: &PartStyle, width: Option<f32>, height: Option<f32>) 
 
 /// An icon's colour, where stated.
 pub(crate) fn icon(i: &IconStyle) -> Option<Color32> {
-    i.stated.contains(IconStated::COLOR).then(|| color(i.color))
+    i.stated
+        .contains(IconStated::COLOR)
+        .then(|| to_color32(i.color))
 }
 
 /// The window's background, `colors.window.background`, where stated: the ground a disabled
 /// widget is faded over as one.
 pub(crate) fn window_background(r: &ResolvedTheme) -> Option<Color32> {
-    r.colors.window.background.map(color)
+    r.colors.window.background.map(to_color32)
 }
 
 /// The body text's colour, `typography.body.color`, where stated.

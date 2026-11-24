@@ -11,7 +11,7 @@
 //! theme states none for the state, and the cell then keeps its `Normal` cell's value there
 //! (spec §10, rule 0): egui's own checked box is its unchecked one with the mark
 //! (`egui/src/widget_style.rs:182-188`), and egui dims a disabled widget by `disabled_alpha`
-//! alone (`egui/src/ui.rs:497-502`).
+//! alone (egui 0.37.0 `src/ui.rs:523-529`, `Ui::disable`).
 
 use egui::style::WidgetVisuals;
 

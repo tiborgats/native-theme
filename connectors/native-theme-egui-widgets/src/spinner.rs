@@ -94,8 +94,8 @@ impl Look {
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Self {
         let s = &r.spinner;
         Self {
-            fill_color: next::color(s.color),
-            text_color: r.colors.window.foreground.map(next::color),
+            fill_color: next::to_color32(s.color),
+            text_color: r.colors.window.foreground.map(next::to_color32),
             diameter: s.diameter,
             stroke_width: s.stroke_width,
         }

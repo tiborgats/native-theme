@@ -444,6 +444,7 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
     let rule = "[[widgets.checkbox.rules]]\nstates = [\"disabled\"]\n\
                 indicator.stroke = { width = 3.0, color = \"#ff00ff\" }\n";
     let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
+    let mut no_rule = 0;
     for &(key, preset) in PRESETS {
         let cells = |atlas: &crate::ThemeAtlas| {
             let styles = atlas.scheme(egui::Theme::Light);
@@ -475,11 +476,16 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
             .from_state
             .intersects(PartStated::STROKE | PartStated::FILL)
         {
+            no_rule += 1;
             let [normal, selected, disabled, checked] = cells(&patched_light(preset, "")?);
             assert_eq!(disabled.bg_stroke, normal.bg_stroke, "{key}: unchecked");
             assert_eq!(checked.bg_stroke, selected.bg_stroke, "{key}: checked");
         }
     }
+    assert!(
+        no_rule > 0,
+        "every preset states a disabled indicator's stroke or fill"
+    );
     Ok(())
 }
 

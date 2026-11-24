@@ -4631,9 +4631,9 @@ fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
 
 /// The Overlays page's modal lays its buttons out in the installed 0.8.0 theme's
 /// `dialog.button_order`: `modal_buttons` puts the primary "OK" at the end each order names, and
-/// where the theme states none, as no bundled preset does, the buttons in the page's order with
-/// a message that says so; under kde-breeze (primary left) patched to primary right, which the
-/// unpatched kde-breeze is not, "Cancel" is drawn left of "OK".
+/// where the theme states none, the buttons in the page's order with a message that says so;
+/// the unpatched kde-breeze states primary left, and patched to primary right, "Cancel" is
+/// drawn left of "OK".
 #[test]
 fn the_modal_takes_the_08_button_order_or_says_it_is_unstated() -> Result<(), String> {
     use crate::pages::overlays::modal_buttons;
