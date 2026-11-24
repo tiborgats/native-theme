@@ -19,8 +19,8 @@ use super::base::{Read, length, stroke};
 use super::line::{Line, LineAlign};
 use super::roles::CellInput;
 use super::states::{
-    FillField, OpenFrom, StateLine, StateSource, TextSource, Unstated, state_borders,
-    write_states_with,
+    FillField, FillSource, Layer, OpenFrom, StateLine, StateSource, TextSource, Unstated,
+    state_borders, write_states_with,
 };
 use crate::convert::{Rgba, to_color32};
 use crate::style::note_transparent_fill;
@@ -410,6 +410,61 @@ pub(crate) fn mixed_cell(
             notes,
         );
     }
+}
+
+/// The flat button under the pointer and pressed or focused (egui's `active` entry is both):
+/// the body's fill and the label's colour of each state, and the hovered and the pressed or
+/// focused border, each where a rule states it for the state.
+pub(crate) struct FlatButton {
+    pub fill: [Read<Rgba>; 2],
+    pub label: [Option<Rgba>; 2],
+    pub state_border: [Option<StateLine>; 2],
+    pub align: LineAlign,
+}
+
+/// The flat button `f` laid over `w`, the entries of the scope a flat button is drawn in: its
+/// hovered and `active` fill, label colour and border, each unstated one what `unstated`
+/// gives. The resting entry is left as it stands: egui draws a
+/// `Button::frame_when_inactive(false)` unframed at rest (egui 0.37.0
+/// `src/theme/default_style.rs:77-87`).
+pub(crate) fn flat_cell(
+    w: &mut egui::style::Widgets,
+    f: &FlatButton,
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let [hover, active] = f.fill;
+    let [hover_text, active_text] = f.label;
+    write_states_with(
+        w,
+        &StateSource {
+            fill: Some(FillSource {
+                field: FillField::Weak,
+                idle: None,
+                hover,
+                active,
+                layer: Layer::AsGiven,
+            }),
+            text: Some(TextSource {
+                idle: None,
+                hover: hover_text,
+                active: active_text,
+                in_noninteractive: false,
+            }),
+            border: None,
+            open: OpenFrom::Inactive,
+        },
+        unstated,
+        notes,
+    );
+    state_borders(
+        w,
+        f.state_border,
+        f.align,
+        Some(FillField::Weak),
+        unstated,
+        notes,
+    );
 }
 
 /// The five entries of `w`.

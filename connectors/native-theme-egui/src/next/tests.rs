@@ -481,6 +481,94 @@ fn a_tool_buttons_pressed_outline_is_its_own() -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
+/// The flat button `super::flat_button` lays over the light `Role::Button` `Normal` cell takes
+/// under the pointer the outline a rule for the flat variant states for `HOVER`, pressed or
+/// focused the one it states for `FOCUS_VISIBLE`, and its stated fills, never the push button's
+/// cell's; a flat button stating none of them is egui's own hovered and pressed outline, fill
+/// and label (spec §10, rule 0).
+#[test]
+fn a_flat_buttons_states_are_its_own() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{ButtonRule, ButtonVariant};
+
+    let [magenta, green, blue] = [[0xff, 0, 0xff], [0, 0xff, 0], [0, 0, 0xff]]
+        .map(|[r, g, b]| egui::Color32::from_rgb(r, g, b));
+    let flat = |state: WidgetState, body: PartPatch| {
+        ButtonRule::new()
+            .variant(ButtonVariant::Flat)
+            .states(state)
+            .body(body)
+    };
+    let pen = |width: f32, [r, g, b]: [f32; 3]| Stroke::uniform(width, Color::new(r, g, b, 1.0));
+    let patch = ThemePatch::new()
+        .button(flat(
+            WidgetState::HOVER,
+            PartPatch::new()
+                .stroke(pen(3.0, [1.0, 0.0, 1.0]))
+                .fill(Paint::Solid(Color::new(0.0, 0.0, 1.0, 1.0))),
+        ))
+        .button(flat(
+            WidgetState::FOCUS_VISIBLE,
+            PartPatch::new().stroke(pen(4.0, [0.0, 1.0, 0.0])),
+        ));
+    let own = egui::Theme::Light.default_style().visuals.widgets;
+    for &(key, preset) in PRESETS {
+        let theme = Theme::preset(preset).with_patch(patch.clone());
+        let r = theme.resolve(&ThemeContext::light());
+        let mut visuals = atlas_of(&theme)?
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Button, crate::RoleVariant::Normal)
+            .visuals
+            .clone();
+        let cell = visuals.widgets.clone();
+        let notes = super::flat_button(&r, egui::Theme::Light, &mut visuals);
+        assert!(notes.is_empty(), "{key}: {notes:?}");
+        let w = &visuals.widgets;
+        assert_eq!(
+            w.hovered.bg_stroke,
+            egui::Stroke::new(3.0, magenta),
+            "{key}"
+        );
+        assert_eq!(w.hovered.weak_bg_fill, blue, "{key}");
+        assert_eq!(w.active.bg_stroke, egui::Stroke::new(4.0, green), "{key}");
+        assert_eq!(
+            w.inactive, cell.inactive,
+            "{key}: the resting entry is the scope's"
+        );
+        assert_ne!(
+            cell.hovered.bg_stroke, w.hovered.bg_stroke,
+            "{key}: the push button's cell has the flat outline, so this proves nothing"
+        );
+
+        // Every preset states the flat button's states (a rule that names no variant is the
+        // flat button's too), so the unstated case is a flat button stating none.
+        let mut bare = cell.clone();
+        let mut notes = Vec::new();
+        crate::style::variants::flat_cell(
+            &mut bare,
+            &crate::style::variants::FlatButton {
+                fill: [None; 2],
+                label: [None; 2],
+                state_border: [None; 2],
+                align: crate::style::line::LineAlign::Outside,
+            },
+            crate::style::states::Unstated::Egui(&own),
+            &mut notes,
+        );
+        assert!(notes.is_empty(), "{key}: {notes:?}");
+        for (entry, stock, state) in [
+            (&bare.hovered, &own.hovered, "hovered"),
+            (&bare.active, &own.active, "pressed"),
+        ] {
+            assert_eq!(
+                (entry.bg_stroke, entry.weak_bg_fill, entry.fg_stroke.color),
+                (stock.bg_stroke, stock.weak_bg_fill, stock.fg_stroke.color),
+                "{key}: a flat button stating nothing {state} is egui's own there"
+            );
+        }
+    }
+    Ok(())
+}
+
 /// A focus indicator that is not a ring is none the plugin's ring can draw: `to_theme` is
 /// `Unmapped` at `focus_ring.kind`, as iced's ring is.
 #[test]

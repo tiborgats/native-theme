@@ -1183,11 +1183,12 @@ fn painted(ui: &egui::Ui, rect: egui::Rect, galley: &egui::Galley) -> egui::Rect
 /// then each row `layout.widget_gap` below the one before — a colour's swatch, a square one line
 /// tall, `layout.widget_gap` before the text `<leaf> <value>`, and under the text the muted line
 /// of how egui applies it — and, `layout.section_gap` below, "Not themeable" and its lines. A
-/// gap the theme leaves unstated is none. Copy is padded by `button.body(NONE).padding` and
-/// rounded by its corners, filled under the pointer and while pressed with
-/// `button.body(HOVER|PRESSED).fill` and lettered in `button.label(HOVER|PRESSED).color` where a
-/// rule states them for the state, else the scope's own hovered and pressed button's (spec §10,
-/// rule 0). All of the installed 0.8.0 theme `r`. The content records nothing (§10.4); it
+/// gap the theme leaves unstated is none. Copy is a flat button, padded by
+/// `button.body(NONE).padding` and rounded by its corners, unframed at rest, and under the
+/// pointer and while pressed or focused filled, outlined and lettered as
+/// `button.body(HOVER|PRESSED; variant=Flat)` and its label state, the outline focused
+/// `FOCUS_VISIBLE`'s, where a rule states them for the state, else egui's own
+/// (`next::flat_button`; spec §10, rule 0). All of the installed 0.8.0 theme `r`. The content records nothing (§10.4); it
 /// places the Widget Info elements of `docs/showcase-elements.toml`.
 pub(crate) fn widget_tab(
     ui: &mut egui::Ui,
@@ -1253,30 +1254,36 @@ pub(crate) fn widget_tab(
         egui::Sense::click(),
     );
     copy.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Copy"));
-    // In a state, the fill and text a rule states for it, else the scope's own button's there.
-    let in_state = |state: WidgetState, own: &egui::style::WidgetVisuals| {
-        let fill = r.and_then(|r| nx::state_fill_of(&r.button.body(state)));
-        let colour = r.and_then(|r| nx::state_text_color_of(&r.button.label(state)));
-        (
-            Some(fill.unwrap_or(own.weak_bg_fill)),
-            colour.unwrap_or(own.text_color()),
-        )
-    };
-    let widgets = &ui.visuals().widgets;
-    let (fill, colour) = if copy.is_pointer_button_down_on() {
-        in_state(WidgetState::PRESSED, &widgets.active)
+    // A flat button, unframed at rest: under the pointer and pressed or focused, the flat
+    // button's states laid over the scope's (`next::flat_button`, as `demo::flat` lays them),
+    // egui's `active` entry for a press and a keyboard focus alike. The notes are the flat
+    // button's homes', which the recorded flat buttons list; the Widget tab records nothing.
+    let mut visuals = ui.visuals().clone();
+    if let Some(r) = r {
+        let _notes = nx::flat_button(r, ui.ctx().theme(), &mut visuals);
+    }
+    let widgets = &visuals.widgets;
+    let entry = if copy.is_pointer_button_down_on() || copy.has_focus() {
+        Some(&widgets.active)
     } else if copy.hovered() {
-        in_state(WidgetState::HOVER, &widgets.hovered)
+        Some(&widgets.hovered)
     } else {
-        (None, text.colour)
+        None
     };
-    if let Some(fill) = fill {
+    let colour = entry.map_or(text.colour, egui::style::WidgetVisuals::text_color);
+    if let Some(entry) = entry {
         let radius = r
             .and_then(|r| nx::radius_of(&r.button.body(WidgetState::NONE)))
             .map_or(widgets.inactive.corner_radius, |radius| {
                 native_theme_egui::convert::to_corner_radius(egui::CornerRadius::ZERO, radius)
             });
-        ui.painter().rect_filled(copy_rect, radius, fill);
+        ui.painter().rect(
+            copy_rect,
+            radius,
+            entry.weak_bg_fill,
+            entry.bg_stroke,
+            egui::StrokeKind::Inside,
+        );
     }
     let copy_label = text.galley(ui, "Copy", &text.regular, colour);
     let at = egui::pos2(

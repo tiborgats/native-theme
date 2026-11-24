@@ -13190,6 +13190,112 @@ fn a_chrome_tool_buttons_outline_is_the_toolbar_scopes() -> Result<(), String> {
     Ok(())
 }
 
+/// The flat buttons — the Buttons page's frameless button and the status bar's side-panel
+/// toggle, a Ghost button — are outlined hovered and focused in the flat button's stated
+/// outlines (`demo::flat`, `next::flat_button`): kde-breeze light patched with a rule for the
+/// flat variant that states `HOVER`'s and `FOCUS_VISIBLE`'s stroke, which the push button's
+/// `HOVER` and `FOCUS_VISIBLE` strokes are not. Each button, hovered and then focused, is
+/// painted in that pen.
+#[test]
+fn a_flat_buttons_stated_hover_and_focus_outlines_are_drawn() -> Result<(), String> {
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, ButtonVariant, PartPatch, Stroke, ThemePatch, WidgetState,
+    };
+    use native_theme_egui::next::{state_stroke_color_of, stroke_width_of};
+    /// Whether `place`, hovered and then focused by the button labelled `label`, is painted in
+    /// `hovered` and `focused`.
+    fn lined(
+        harness: &mut Harness<'static, App>,
+        place: egui::Rect,
+        label: &str,
+        [hovered, focused]: [egui::Stroke; 2],
+    ) -> Result<[bool; 2], String> {
+        let painted = |harness: &Harness<'static, App>, pen: egui::Stroke| {
+            harness
+                .output()
+                .shapes
+                .iter()
+                .any(|clipped| match &clipped.shape {
+                    egui::Shape::Rect(s) => {
+                        s.stroke == pen && place.expand(1.0).contains_rect(s.rect)
+                    }
+                    _ => false,
+                })
+        };
+        harness.hover_at(place.center());
+        harness.run_steps(3);
+        let hover = painted(harness, hovered);
+        harness
+            .query_all_by_label(label)
+            .next()
+            .ok_or_else(|| format!("no node labelled {label}"))?
+            .focus();
+        harness.run_steps(3);
+        let focus = painted(harness, focused);
+        Ok([hover, focus])
+    }
+    let magenta = native_theme::next::Color::new(1.0, 0.0, 1.0, 1.0);
+    let green = native_theme::next::Color::new(0.0, 1.0, 0.0, 1.0);
+    let (mut harness, r) = open_patched(Page::Buttons, egui::Theme::Light, "kde-breeze", |_| {
+        let flat = |state: WidgetState, width: f32, colour| {
+            ButtonRule::new()
+                .variant(ButtonVariant::Flat)
+                .states(state)
+                .body(PartPatch::new().stroke(Stroke::uniform(width, colour)))
+        };
+        Some(
+            ThemePatch::new()
+                .button(flat(WidgetState::HOVER, 3.0, magenta))
+                .button(flat(WidgetState::FOCUS_VISIBLE, 4.0, green)),
+        )
+    })?;
+    let pen = |part: &native_theme::next::PartStyle| {
+        stroke_width_of(part)
+            .zip(state_stroke_color_of(part))
+            .map(|(width, colour)| egui::Stroke::new(width, colour))
+    };
+    let at = |state: WidgetState| ButtonQuery::flat().with_state(state);
+    let pens = [WidgetState::HOVER, WidgetState::FOCUS_VISIBLE]
+        .map(|state| pen(&r.button.body(at(state))));
+    let [Some(hovered), Some(focused)] = pens else {
+        return Err(format!(
+            "the patched kde-breeze states no flat button pen: {pens:?}"
+        ));
+    };
+    for state in [WidgetState::HOVER, WidgetState::FOCUS_VISIBLE] {
+        let push = pen(&r.button.body(state));
+        assert!(
+            push != Some(hovered) && push != Some(focused),
+            "the push button's {state:?} pen {push:?} is the flat one, so the patch proves nothing"
+        );
+    }
+    let frameless = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.kind == "button (frameless)")
+        .map(|record| record.rect)
+        .ok_or("no record of the frameless button")?;
+    assert_eq!(
+        lined(&mut harness, frameless, "Frameless", [hovered, focused])?,
+        [true; 2],
+        "[hovered, focused] frameless button lined in {hovered:?}, {focused:?}"
+    );
+    let toggle = place_of(&harness, "chrome.status_bar.toggle");
+    assert_eq!(
+        lined(
+            &mut harness,
+            toggle,
+            "Toggle Side Panel",
+            [hovered, focused]
+        )?,
+        [true; 2],
+        "[hovered, focused] side-panel toggle lined in {hovered:?}, {focused:?}"
+    );
+    Ok(())
+}
+
 /// How far egui 0.37.0 puts a framed button's content in from the frame's edge, for a
 /// `Spacing::button_padding` side of `padding` and a resting border `stroke` wide: the frame's
 /// inner margin is whole points (`Margin`'s sides are `i8`, `From<Vec2>` rounds,

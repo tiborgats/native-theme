@@ -1204,6 +1204,38 @@ pub fn mixed_checkbox(
     notes
 }
 
+/// Lay the flat button of `r` over `visuals`, the visuals of the scope a
+/// flat button is drawn in, for a `Button::frame_when_inactive(false)`
+/// drawn in it, which egui draws unframed at rest and framed in its
+/// hovered and `active` entries (egui 0.37.0
+/// `src/theme/default_style.rs:77-87`). The atlas has no cell for the flat
+/// button, so its states are laid over the scope per call: under the
+/// pointer the fill, label colour and outline `button.body(HOVER;
+/// variant=Flat)` and `button.label(HOVER; variant=Flat)` state; pressed or
+/// focused, which egui draws alike (`active`, `Widgets::style`,
+/// `src/style.rs:1383-1394`), `PRESSED`'s fill and label colour and the
+/// outline of `FOCUS_VISIBLE`, else of `PRESSED`. Each value is the one a
+/// rule states for the state (spec §2, `from_state`; a rule that names no
+/// variant is the flat button's too), an unstated one egui's own treatment
+/// of the hover or the press in `scheme` (spec §10, rule 0). Returns the
+/// notes on values written otherwise than stated, as the atlas's.
+#[must_use = "the notes report values written otherwise than stated"]
+pub fn flat_button(
+    r: &ResolvedTheme,
+    scheme: egui::Theme,
+    visuals: &mut egui::Visuals,
+) -> Vec<crate::Note> {
+    let own = egui::Theme::default_style(scheme);
+    let mut notes = Vec::new();
+    crate::style::variants::flat_cell(
+        &mut visuals.widgets,
+        &build::flat_button(r, &mut notes),
+        crate::style::states::Unstated::Egui(&own.visuals.widgets),
+        &mut notes,
+    );
+    notes
+}
+
 /// [`crate::icons::icon_size`]: the icon size for a context, in logical
 /// pixels (`icons.sizes.small`, `.toolbar`, `.panel`, `.dialog`, `.large`).
 ///

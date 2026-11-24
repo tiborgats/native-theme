@@ -502,12 +502,13 @@ fn chrome_button_image(
 }
 
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
-/// for a `Ui` made Ghost with `demo::ghost`: transparent at rest and filled on hover; while
-/// `selected`, filled with the pressed fill of that `Ui` — in `Role::Button`,
-/// `button.active_background` (§6.4) — as native-theme-gpui's `ghost_button` fills with its
-/// `active` colour (`connectors/native-theme-gpui/src/variants.rs:59-65`), not with the
-/// selected button's accent. Its icon where the set has one, else its tooltip's text as its
-/// label, as gpui's (`showcase-gpui/demo.rs:1367-1370`).
+/// for a `Ui` made Ghost with `demo::ghost`: unframed at rest (`frame_when_inactive(false)`) and
+/// filled on hover; while `selected`, filled with the pressed fill of that `Ui` — in a flat
+/// button's scope (`demo::flat`), `button.body(PRESSED; variant=Flat).fill` — as
+/// native-theme-gpui's `ghost_button` fills with its `active` colour
+/// (`connectors/native-theme-gpui/src/variants.rs:59-65`), not with the selected button's
+/// accent. Its icon where the set has one, else its tooltip's text as its label, as gpui's
+/// (`showcase-gpui/demo.rs:1367-1370`).
 fn ghost_button(
     ui: &egui::Ui,
     image: Option<egui::Image<'static>>,
@@ -517,7 +518,8 @@ fn ghost_button(
     let button = match image {
         Some(image) => egui::Button::image(image),
         None => egui::Button::new(label),
-    };
+    }
+    .frame_when_inactive(false);
     if selected {
         button.fill(ui.visuals().widgets.active.weak_bg_fill)
     } else {
@@ -771,6 +773,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 let open = *side_panel_visible;
                 let kind = ghost_kind(image.is_some(), open);
                 let drawn = image.is_some().then_some(icon_size).flatten();
+                let mut flat = Vec::new();
                 let toggle = demo::scoped(
                     registry,
                     ui,
@@ -779,6 +782,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     kind,
                     |ui| {
                         demo::next_tool_button(ui, padding);
+                        flat = demo::flat(ui);
                         let r = ui.add(ghost_button(ui, image, label, open));
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::Role::Button, true, open, label)
@@ -787,6 +791,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     },
                 );
                 registry.ghost_last();
+                registry.flat_last(&flat);
                 if icon_size.is_none() {
                     registry.note_last(
                         "icon size",
@@ -1457,10 +1462,12 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
             });
             let drawn = caret.is_some().then_some(caret_size).flatten();
             demo::next_tool_button(ui, padding);
+            let flat = demo::flat(ui);
             let button = match caret {
                 Some(image) => egui::Button::image(image),
                 None => egui::Button::new("Pages"),
-            };
+            }
+            .frame_when_inactive(false);
             let response = demo::menu_button(
                 registry,
                 ui,
@@ -1482,6 +1489,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                 },
             );
             registry.ghost_last();
+            registry.flat_last(&flat);
             registry.tag("chrome.page_tabs.menu", &response);
             if let Some(size) = drawn {
                 place_icon(registry, ui, "chrome.page_tabs.menu", &response, size);
@@ -1644,12 +1652,15 @@ fn dialog_title(
         });
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             demo::ghost(ui);
+            let flat = demo::flat(ui);
             let button = match image {
                 Some(image) => egui::Button::image(image),
                 None => egui::Button::new("Close"),
-            };
+            }
+            .frame_when_inactive(false);
             let r = body.add(reg, ui, "Button · dialog close", |ui| ui.add(button));
             reg.ghost_last();
+            reg.flat_last(&flat);
             r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Close"));
             clicked = r.clicked();
         });

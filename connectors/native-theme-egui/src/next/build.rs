@@ -25,7 +25,7 @@ use crate::style::frames::{FrameSource, SurfaceSource};
 use crate::style::line::LineAlign;
 use crate::style::states::{Edge, StateLine};
 use crate::style::variants::{
-    CheckedBox, Disabled, MarkedBox, MixedBox, PrimaryDisabled, VariantSource,
+    CheckedBox, Disabled, FlatButton, MarkedBox, MixedBox, PrimaryDisabled, VariantSource,
 };
 use crate::style::{Sources, push_note};
 
@@ -373,6 +373,51 @@ fn button_states(r: &ResolvedTheme, notes: &mut Vec<Note>) -> ButtonStates {
             )
             .or_else(|| state_line(&pressed, "button.body(PRESSED).stroke.width", notes)),
         ],
+    }
+}
+
+/// The flat button's states, `button.body(<state>; variant=Flat)` and its label, each where a
+/// rule states it for the state (a rule that names no variant is the flat button's too, spec
+/// §2): the fill and the label of `HOVER` and `PRESSED`, the hovered border, and, as egui's
+/// `active` is press and keyboard focus alike, the `FOCUS_VISIBLE` border, else the `PRESSED`
+/// one, as [`button_states`] reads the push button's.
+pub(crate) fn flat_button(r: &ResolvedTheme, notes: &mut Vec<Note>) -> FlatButton {
+    let b = &r.button;
+    let flat = ButtonQuery::flat();
+    let at = |state: WidgetState| flat.with_state(state);
+    let (hover, pressed) = (
+        b.body(at(WidgetState::HOVER)),
+        b.body(at(WidgetState::PRESSED)),
+    );
+    FlatButton {
+        fill: [
+            state_fill_at(&hover, "button.body(HOVER; variant=Flat).fill"),
+            state_fill_at(&pressed, "button.body(PRESSED; variant=Flat).fill"),
+        ],
+        label: [
+            state_text_color(&b.label(at(WidgetState::HOVER))),
+            state_text_color(&b.label(at(WidgetState::PRESSED))),
+        ],
+        state_border: [
+            state_line(
+                &hover,
+                "button.body(HOVER; variant=Flat).stroke.width",
+                notes,
+            ),
+            state_line(
+                &b.body(at(WidgetState::FOCUS_VISIBLE)),
+                "button.body(FOCUS_VISIBLE; variant=Flat).stroke.width",
+                notes,
+            )
+            .or_else(|| {
+                state_line(
+                    &pressed,
+                    "button.body(PRESSED; variant=Flat).stroke.width",
+                    notes,
+                )
+            }),
+        ],
+        align: edge(&b.body(flat)).1,
     }
 }
 

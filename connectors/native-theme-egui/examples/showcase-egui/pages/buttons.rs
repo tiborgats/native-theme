@@ -61,9 +61,17 @@ pub(crate) fn show(
              (src/theme/default_style.rs:56-60, :98-102); button.body(NONE).min_size is not \
              applied",
         );
+        // A flat button: unframed at rest, in the flat button's states (`demo::flat`).
+        let mut flat = Vec::new();
         demo::scoped(reg, ui, Role::Button, normal, "button (frameless)", |ui| {
-            ui.add(Button::new("Frameless").frame(false).min_size(min))
+            flat = demo::flat(ui);
+            ui.add(
+                Button::new("Frameless")
+                    .frame_when_inactive(false)
+                    .min_size(min),
+            )
         });
+        reg.flat_last(&flat);
         let shortcut = ui.ctx().format_shortcut(&egui::KeyboardShortcut::new(
             egui::Modifiers::COMMAND,
             egui::Key::S,

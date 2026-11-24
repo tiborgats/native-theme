@@ -258,6 +258,12 @@ impl Registry {
             record.info.not_themeable.push((what, note.to_string()));
         }
     }
+    /// Add each of `notes`, the notes [`flat`] returned, to the last record.
+    pub(crate) fn flat_last(&mut self, notes: &[native_theme_egui::Note]) {
+        for note in notes {
+            self.note_last("flat button", &format!("{note:?}"));
+        }
+    }
     /// Note on the last record that it is a button drawn in a `ghost` scope.
     pub(crate) fn ghost_last(&mut self) {
         self.amend_last(|i| {
@@ -286,6 +292,26 @@ pub(crate) fn ghost(ui: &mut egui::Ui) {
     let rest = &mut ui.style_mut().visuals.widgets.inactive;
     rest.weak_bg_fill = egui::Color32::TRANSPARENT;
     rest.bg_stroke.color = egui::Color32::TRANSPARENT;
+}
+
+/// Make the rest of `ui` a flat button's, for a `Button::frame_when_inactive(false)` drawn in it,
+/// unframed at rest: the installed 0.8.0 theme's flat button laid over the scope
+/// (`next::flat_button`, in the scheme egui draws), `button.body(<state>; variant=Flat)` under
+/// the pointer and pressed or focused where a rule states it for the state, else egui's own
+/// (spec §10, rule 0). Returns the notes on the values it wrote otherwise than stated; without
+/// a 0.8.0 theme, the scope's own and no note.
+pub(crate) fn flat(ui: &mut egui::Ui) -> Vec<native_theme_egui::Note> {
+    let scheme = ui.ctx().theme();
+    let mut visuals = ui.visuals().clone();
+    match next_value(ui, |r| {
+        native_theme_egui::next::flat_button(r, scheme, &mut visuals)
+    }) {
+        Some(notes) => {
+            *ui.visuals_mut() = visuals;
+            notes
+        }
+        None => Vec::new(),
+    }
 }
 
 /// The sides of `padding`, top, right, bottom and left (`next::padding_of`'s order), the theme
