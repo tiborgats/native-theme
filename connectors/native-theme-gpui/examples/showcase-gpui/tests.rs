@@ -13,7 +13,7 @@ use gpui::{
 };
 use gpui_base::ScrollbarHandle as _;
 use gpui_component::{Colorize as _, IconName, Root, WindowExt as _, theme::Theme};
-use native_theme_gpui::{ActiveNativeTheme, geometry, next};
+use native_theme_gpui::{ActiveNativeTheme, next};
 use std::{rc::Rc, time::Duration};
 
 use crate::app::{
@@ -27,7 +27,7 @@ use crate::info::{
     next_native_info, percent_text,
 };
 use crate::inspector::InspectorTab;
-use crate::support::{CAROUSEL_SLIDES, ChromeIcon, load_gpui_icons, native_color, native_value};
+use crate::support::{CAROUSEL_SLIDES, ChromeIcon, load_gpui_icons, native_value};
 use crate::{
     BASIC_INPUT_DISABLED, BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS,
     BUTTONS_LOADING_NO_ICON, BUTTONS_PRIMARY, BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART,
@@ -5753,16 +5753,18 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
             ChromeIcon::Missing(name)
         );
         let labelled = bounds_of(&mut cx, selector);
-        // In `button.font`'s size and weight where a native theme is
-        // installed (demo::labelled), else in a Small Button's `text_sm`.
+        // In `button.label(NONE)`'s size and weight where the installed
+        // 0.8.0 theme states a font gpui can letter it in
+        // (`next::geometry::button_label`, demo::labelled), else in a Small
+        // Button's `text_sm`.
         let font = read(&mut cx, &showcase, |_this, cx| {
-            native_value(cx, |n| {
-                let f = &n.resolved.button.font;
-                (
-                    px(native_theme_gpui::scaled_text_size(f.size, n.accessibility)),
-                    gpui::FontWeight(f32::from(f.weight)),
-                )
+            crate::support::next_value(cx, |r| {
+                let f = r.button.label(native_theme::next::WidgetState::NONE);
+                native_theme_gpui::next::label_font_unmapped(&f, "button.label(NONE)")
+                    .is_none()
+                    .then(|| (px(f.size_px), gpui::FontWeight(f32::from(f.weight))))
             })
+            .flatten()
         });
         let expected = cx.update(|window, _| {
             let rem = window.rem_size();
@@ -7167,8 +7169,9 @@ fn only_an_interactive_run_follows_the_os() {
 /// The chrome takes what the theme states: the side panel is filled with
 /// `sidebar.container(NONE).fill`; the splitter is `splitter.divider_width`
 /// wide in `splitter.handle(NONE).fill`; a menu title under the pointer fills
-/// with `menu.hover_background`, opens its menu, and a row of it runs its
-/// action; and a page tab is at least `tab.min_width` by `tab.min_height`.
+/// with `menu_bar.item(HOVER).fill`, else `menu.item(HOVER).fill`, opens its
+/// menu, and a row of it runs its action; and a page tab is at least
+/// `tab.tab(NONE).min_size`, where stated.
 /// Under material-3 dark, whose splitter is wider than upstream's 1px line.
 #[gpui::test]
 fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
@@ -7176,13 +7179,6 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "material-3");
     run_menu_item(&mut cx, "Theme", "Dark");
     show(&mut cx, &showcase, Page::Basic);
-    let stated =
-        |cx: &mut VisualTestContext,
-         pick: fn(&native_theme_gpui::ResolvedTheme) -> native_theme::color::Rgba| {
-            read(cx, &showcase, |_this, cx| {
-                native_color(cx, |n| pick(n.resolved))
-            })
-        };
     let next = next_theme(&mut cx, &showcase);
     let next_fill =
         |part: fn(&native_theme::next::ResolvedTheme) -> native_theme::next::PartStyle| {
@@ -7237,10 +7233,24 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
     let title = bounds_of(&mut cx, "menu-title-View");
     hover(&mut cx, title.center());
     draw(&mut cx);
+    // A title's hover fill: menu_bar.item(HOVER).fill where a rule states
+    // it, else the menu row's (`MenuLook::next_of`).
+    let title_hover = next.as_ref().and_then(|r| {
+        native_theme_gpui::next::state_fill_of(
+            &r.menu_bar.item(native_theme::next::WidgetState::HOVER),
+        )
+        .or_else(|| {
+            native_theme_gpui::next::fill_of(&r.menu.item(native_theme::next::WidgetState::HOVER))
+        })
+    });
+    assert!(
+        title_hover.is_some(),
+        "material-3 dark states no hover fill for a menu title or a menu row"
+    );
     assert_eq!(
         painted_fill(&mut cx, "menu-title-View"),
-        stated(&mut cx, |r| r.menu.hover_background),
-        "a hovered menu title is not filled with menu.hover_background"
+        title_hover,
+        "a hovered menu title is not filled with menu_bar.item(HOVER).fill, else menu.item(HOVER).fill"
     );
     click(&mut cx, "menu-title-View");
     click(&mut cx, "menu-row-Buttons");
@@ -7250,16 +7260,19 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
         "View > Buttons did not show the Buttons page"
     );
 
-    let (min_width, min_height) = read(&mut cx, &showcase, |_this, cx| {
-        native_value(cx, |n| {
-            (n.resolved.tab.min_width, n.resolved.tab.min_height)
-        })
-    })
-    .unwrap_or_default();
+    let min_size = next
+        .as_ref()
+        .map(|r| r.tab.tab(native_theme::next::WidgetState::NONE).min_size);
+    assert!(
+        min_size.is_some_and(|[w, h]| w.is_some() || h.is_some()),
+        "material-3 dark states no tab.tab(NONE).min_size: {min_size:?}"
+    );
+    let [min_width, min_height] = min_size.unwrap_or_default();
     let tab = bounds_of(&mut cx, Page::Basic.tab());
     assert!(
-        tab.size.width.as_f32() >= min_width && tab.size.height.as_f32() >= min_height,
-        "a page tab is {:?}, under tab.min_width {min_width} by tab.min_height {min_height}",
+        min_width.is_none_or(|w| tab.size.width.as_f32() >= w)
+            && min_height.is_none_or(|h| tab.size.height.as_f32() >= h),
+        "a page tab is {:?}, under tab.tab(NONE).min_size {min_width:?} by {min_height:?}",
         tab.size
     );
 
@@ -7327,28 +7340,35 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
             dark,
             "Theme > {item} did not reach Theme::mode, so this proves nothing"
         );
-        // The builder's fills, which its unit test holds to the two fields.
+        // The installed 0.8.0 theme's builder's fills, which its unit test
+        // holds to input.field(NONE).fill and input.field(DISABLED).fill.
         let (fill, disabled_fill) = read(&mut cx, &showcase, |_this, cx| {
-            match crate::support::old_native(cx) {
-                Some(n) => {
-                    let solid = |r: gpui::StyleRefinement| {
-                        r.background
-                            .and_then(|f| f.color())
-                            .and_then(|b| b.as_solid())
-                    };
+            let solid = |r: &gpui::StyleRefinement| {
+                r.background
+                    .as_ref()
+                    .and_then(|f| f.color())
+                    .and_then(|b| b.as_solid())
+            };
+            let input_fill = native_theme_gpui::next::geometry::input_fill;
+            match crate::support::next_resolved(cx)
+                .map(|r| Some((input_fill(r, false).ok()?, input_fill(r, true).ok()?)))
+            {
+                Some(Some((rest, disabled))) => {
                     // A disabled field is faded by `input.disabled_opacity`
                     // too, which gpui folds into the painted fill's alpha.
-                    let disabled = geometry::input_fill(n, true);
-                    let fade = disabled.opacity.unwrap_or(1.);
-                    (
-                        solid(geometry::input_fill(n, false)),
-                        solid(disabled).map(|c| gpui::Hsla { a: c.a * fade, ..c }),
-                    )
+                    let faded = solid(&disabled).map(|c| gpui::Hsla {
+                        a: disabled.opacity.map_or(c.a, |fade| c.a * fade),
+                        ..c
+                    });
+                    (solid(&rest), faded)
                 }
-                None => (None, None),
+                _ => (None, None),
             }
         });
-        assert!(fill.is_some(), "no native theme is installed");
+        assert!(
+            fill.is_some(),
+            "no 0.8.0 theme is installed, or it leaves a home next::geometry::input_fill reads unstated"
+        );
 
         show(&mut cx, &showcase, Page::Inputs);
         let info = settle_on(&mut cx, &showcase, INPUTS_FIELD);
@@ -11054,27 +11074,32 @@ fn open_menu(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, name: &str
     draw(cx);
 }
 
-/// A menu row under the pointer is outlined in `menu.hover_border_color` at
-/// `defaults.border.line_width`, a box over the row (`MenuLook::edge`), and
+/// A menu row under the pointer is outlined in the installed 0.8.0 theme's
+/// `menu.item(HOVER)` stroke, its colour at its width, a box over the row
+/// (`MenuLook::edge`), and
 /// at rest it is not: under kde-breeze light, the Theme menu's "System" row,
 /// lit by the pointer, and the Overlays page's first application-drawn row.
 /// Under adwaita, which states no outline, a hovered row draws none.
 #[gpui::test]
 fn a_hovered_menu_row_takes_the_hover_border(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::{state_stroke_color_of, stroke_width_of};
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let far = point(px(1200.), px(8900.));
     for preset in ["kde-breeze", "adwaita"] {
         use_light_preset(&mut cx, &showcase, preset);
-        let r = resolved_theme(&mut cx, &showcase);
-        let edge = r.menu.hover_border_color.map(stated);
-        let width = r.defaults.border.line_width;
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let hovered = r.menu.item(WidgetState::HOVER);
+        let edge = state_stroke_color_of(&hovered);
+        let width = stroke_width_of(&hovered).filter(|w| *w > 0.0);
         assert_eq!(
-            edge.is_some(),
+            edge.is_some() && width.is_some(),
             preset == "kde-breeze",
-            "{preset}: menu.hover_border_color is stated by kde-breeze alone"
+            "{preset}: a menu.item(HOVER) stroke is stated by kde-breeze alone"
         );
-        let expected = edge.map(|e| (e, width));
+        let expected = edge.zip(width);
         hover(&mut cx, far);
         draw(&mut cx);
         open_menu(&mut cx, &showcase, "theme");
@@ -11090,7 +11115,7 @@ fn a_hovered_menu_row_takes_the_hover_border(cx: &mut TestAppContext) {
         assert_eq!(
             last_edge_inside(&mut cx, row),
             expected,
-            "{preset}: the hovered System row is not outlined in menu.hover_border_color at defaults.border.line_width"
+            "{preset}: the hovered System row is not outlined in menu.item(HOVER)'s stroke"
         );
         if let Some(edge) = edge {
             assert_eq!(
@@ -11124,7 +11149,7 @@ fn a_hovered_menu_row_takes_the_hover_border(cx: &mut TestAppContext) {
         assert_eq!(
             last_edge_inside(&mut cx, row),
             expected,
-            "{preset}: the Overlays page's hovered first menu row is not outlined in menu.hover_border_color at defaults.border.line_width"
+            "{preset}: the Overlays page's hovered first menu row is not outlined in menu.item(HOVER)'s stroke"
         );
     }
 }
@@ -11403,9 +11428,10 @@ fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
     }
 }
 
-/// E2: a menu row the mouse button is held on is filled with
-/// `menu.active_background`, lettered `menu.active_text_color` (#ffffff
-/// under kde-breeze light, against the hover text #232629) and draws no
+/// E2: a menu row the mouse button is held on is filled with the installed
+/// 0.8.0 theme's `menu.item(PRESSED).fill` (0.7.2's `menu.active_background`),
+/// lettered `menu.item_label(PRESSED).color` (#ffffff under kde-breeze light,
+/// against the hover text `menu.item_label(HOVER).color`, #232629) and draws no
 /// outline (`MenuLook::pressed`, the edge hidden under group active), under
 /// kde-breeze light: the Theme menu's System row, its Preferences row with
 /// the shortcut, and the Overlays page's first application-drawn row. Each
@@ -11415,17 +11441,20 @@ fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
 /// let go off the row (trial T-L1 case 2 checked the released frame).
 #[gpui::test]
 fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_color_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let r = resolved_theme(&mut cx, &showcase);
-    let fill = r.menu.active_background.map(stated);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let fill = state_fill_of(&r.menu.item(WidgetState::PRESSED));
     assert!(
-        fill.is_some() && fill != Some(stated(r.menu.hover_background)),
+        fill.is_some() && fill != fill_of(&r.menu.item(WidgetState::HOVER)),
         "kde-breeze light no longer states a pressed menu fill apart from its hover fill, which this test reads"
     );
-    let text = r.menu.active_text_color.map(stated);
-    let hover_text = Some(stated(r.menu.hover_text_color));
+    let text = state_text_color_of(&r.menu.item_label(WidgetState::PRESSED));
+    let hover_text = text_color_of(&r.menu.item_label(WidgetState::HOVER));
     assert!(
         text.is_some() && text != hover_text,
         "kde-breeze light no longer states a pressed menu text apart from its hover text, which this test reads"
@@ -11515,20 +11544,39 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
 fn the_theme_menu_has_breezes_geometry(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let r = resolved_theme(&mut cx, &showcase);
-    let m = &r.menu;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{padding_of, stroke_width_of};
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let (panel, item) = (
+        r.menu.panel(WidgetState::NONE),
+        r.menu.item(WidgetState::NONE),
+    );
+    let [panel_top, _, _, _] = padding_of(&panel);
+    let [_, item_right, _, item_left] = padding_of(&item);
     assert_eq!(
         (
-            m.panel_padding_vertical,
-            m.min_row_height,
-            m.border.padding.left,
-            m.border.padding.right,
-            m.row_height,
-            r.defaults.font.size,
+            panel_top,
+            item.min_size[1],
+            item_left,
+            item_right,
+            item.max_size[1],
+            r.typography.body.size_px,
         ),
         (Some(3.), Some(29.), Some(14.), Some(27.), None, 13.),
-        "kde-breeze light's menu geometry and body size, which this test reads"
+        "kde-breeze light's menu geometry (menu.panel(NONE)'s top padding, menu.item(NONE)'s min_size[1], side padding and max_size[1]) and body size, which this test reads"
     );
+    // The popup's frame: the menu panel's stroke, else the popover's
+    // (`MenuRowsFrame::next_of`).
+    let frame_width = stroke_width_of(&panel).or_else(|| stroke_width_of(&r.popover.panel));
+    assert!(
+        frame_width.is_some(),
+        "kde-breeze light states no stroke width for menu.panel(NONE) or popover.panel"
+    );
+    let Some(frame_width) = frame_width else {
+        return;
+    };
     hover(&mut cx, point(px(1200.), px(700.)));
     draw(&mut cx);
     open_menu(&mut cx, &showcase, "theme");
@@ -11551,7 +11599,7 @@ fn the_theme_menu_has_breezes_geometry(cx: &mut TestAppContext) {
         "chrome.menu.theme.separator_2",
         "chrome.menu.theme.preferences",
     ];
-    let inset = at(rows[0]).top() - frame.top() - px(r.popover.border.line_width);
+    let inset = at(rows[0]).top() - frame.top() - px(frame_width);
     println!("first row below the frame's inner edge: {inset:?}");
     assert!(
         near(inset, 3.),
@@ -11644,20 +11692,27 @@ fn the_table_headers_separators_take_their_colour(cx: &mut TestAppContext) {
     }
 }
 
-/// The Basic List's unselected rows under the pointer are outlined in
-/// `list.hover_border_color` at `defaults.border.line_width`, a box over
-/// the row in its suffix (`demo::ListRow`), and at rest they are not: under
-/// kde-breeze light, rows 1 and 3; the selected row 2 never.
+/// The Basic List's unselected rows under the pointer are outlined in the
+/// installed 0.8.0 theme's `list.highlight(HOVER)` stroke, its colour at its
+/// width, a box over the row in its suffix (`demo::ListRow`), and at rest
+/// they are not: under kde-breeze light, rows 1 and 3; the selected row 2
+/// never.
 #[gpui::test]
 fn a_hovered_list_row_takes_the_hover_border(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{state_stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
-    let edge = r.list.hover_border_color.map(stated);
-    assert!(edge.is_some(), "kde-breeze states list.hover_border_color");
-    let expected = edge.map(|e| (e, r.defaults.border.line_width));
+    let r = next_theme(&mut cx, &showcase);
+    let expected = r.as_ref().and_then(|r| {
+        let hovered = r.list.highlight(WidgetState::HOVER);
+        Some((state_stroke_color_of(&hovered)?, stroke_width_of(&hovered)?))
+    });
+    assert!(
+        expected.is_some(),
+        "kde-breeze states list.highlight(HOVER)'s stroke"
+    );
     let far = point(px(1200.), px(8900.));
     for (row, outlined) in [
         ("basic-list-row-0", true),
@@ -14843,10 +14898,9 @@ fn a_variant_alone_reinstalls_the_theme_in_its_mode(cx: &mut TestAppContext) {
         "--variant {variant} alone did not install the theme in that mode"
     );
     assert!(
-        read(&mut cx, &showcase, |_this, cx| crate::support::old_native(
-            cx
-        )
-        .is_some()),
+        read(&mut cx, &showcase, |_this, cx| {
+            crate::support::next_resolved(cx).is_some()
+        }),
         "--variant {variant} alone left no native variant installed for its mode"
     );
 }
@@ -15835,7 +15889,7 @@ fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
                     .cloned()
                     .unwrap_or_default(),
                 this.error_message.clone(),
-                crate::support::old_native(cx).is_some(),
+                crate::support::next_resolved(cx).is_some(),
             )
         });
         assert_eq!(name, key, "--theme {key} did not install it");
@@ -24455,11 +24509,11 @@ fn a_hairline_separator_is_drawn_at_scale_one(cx: &mut TestAppContext) {
     let (showcase, root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "macos-tahoe");
     let width = read(&mut cx, &showcase, |_this, cx| {
-        native_value(cx, |n| n.resolved.separator.line_width)
+        crate::support::next_value(cx, |r| r.separator.thickness)
     });
     assert!(
         width.is_some_and(|w| w > 0.0 && w < 1.0),
-        "macos-tahoe's separator.line_width is {width:?}, not under one pixel"
+        "macos-tahoe's separator.thickness is {width:?}, not under one pixel"
     );
     cx.simulate_window_scale_factor_change(root, 1.0);
     cx.run_until_parked();
@@ -24494,8 +24548,8 @@ fn the_hairlines_are_filled_quads_at_scale_one(cx: &mut TestAppContext) {
     draw(&mut cx);
     let (grid, line) = read(&mut cx, &showcase, |_this, cx| {
         (
-            native_value(cx, |n| crate::info::stated(n.resolved.list.grid_color)),
-            native_value(cx, |n| crate::info::stated(n.resolved.separator.line_color)),
+            crate::support::next_value(cx, |r| crate::info::next_stated(r.list.grid_color)),
+            crate::support::next_value(cx, |r| crate::info::next_stated(r.separator.color)),
         )
     });
     let drawn = read(&mut cx, &showcase, |this, cx| {
@@ -24538,7 +24592,12 @@ fn the_hairlines_are_filled_quads_at_scale_one(cx: &mut TestAppContext) {
     cx.run_until_parked();
     draw(&mut cx);
     let menu_line = read(&mut cx, &showcase, |_this, cx| {
-        native_value(cx, |n| crate::info::stated(n.resolved.menu.separator_color))
+        crate::support::next_value(cx, |r| {
+            native_theme_gpui::next::fill_of(
+                &r.menu.separator(native_theme::next::WidgetState::NONE),
+            )
+        })
+        .flatten()
     });
     let drawn = read(&mut cx, &showcase, |this, cx| {
         this.info_ui.read(cx).layout_drawn()
@@ -24578,9 +24637,11 @@ fn the_page_menu_button_shows_its_caret_without_the_sets_chevron(cx: &mut TestAp
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
     remove_icons(&mut cx, &showcase, &["ChevronDown"]);
     let (padding, rem, menu) = read(&mut cx, &showcase, |this, cx| {
-        let padding = native_value(cx, |n| {
-            let p = &n.resolved.button.border.padding;
-            (p.left, p.right)
+        let padding = crate::support::next_value(cx, |r| {
+            let [_, right, _, left] = native_theme_gpui::next::padding_of(
+                &r.button.body(native_theme::next::WidgetState::NONE),
+            );
+            (left, right)
         });
         (
             padding,

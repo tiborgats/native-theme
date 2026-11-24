@@ -430,7 +430,7 @@ pub(crate) fn next_geometry<
     next_resolved(cx).map(build)
 }
 
-/// `native_color` on the 0.8.0 model: the colour `pick` gives for the
+/// The colour `pick` gives for the
 /// installed 0.8.0 theme, as gpui paints it; `None` before
 /// `native_theme_gpui::next::apply` ran, or where the theme states no such
 /// colour (`pick` gives `None`).
@@ -555,20 +555,6 @@ pub(crate) fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> 
 /// or `None` before `apply` ran (spec §9.3, §9.4).
 pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) -> Option<T> {
     old_native(cx).map(build)
-}
-
-/// A colour of the installed native theme, as gpui paints it, or `None`
-/// before `apply` ran: for a widget whose own setter or refinement takes a
-/// colour the connector's tokens do not carry. Only the tests still read it.
-#[cfg(test)]
-pub(crate) fn native_color<F: FnOnce(Native<'_>) -> native_theme::color::Rgba>(
-    cx: &App,
-    pick: F,
-) -> Option<gpui::Hsla> {
-    native_value(cx, pick).map(|color| {
-        let [r, g, b, a] = color.to_f32_array();
-        gpui::Hsla::from(gpui::Rgba { r, g, b, a })
-    })
 }
 
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
