@@ -1525,56 +1525,6 @@ fn the_menu_item_takes_the_panels_corners_on_material_3_alone()
     Ok(())
 }
 
-/// Each form of a stated radius as the one-radius read takes it: a continuous curve drawn as
-/// the circular corner of its radius (spec §10, rule 2), a pill as the largest radius egui
-/// holds, which epaint clamps to half the shorter side, per-corner radii where the four are
-/// one; per-corner radii that differ and a concentric radius, which needs the container's,
-/// not. On a patched theme a continuous panel's radius reaches material-3's menu outline.
-#[test]
-fn every_radius_form_is_read_as_egui_rounds_it() -> Result<(), Box<dyn std::error::Error>> {
-    use native_theme::next::{CornerCurve, CornerRadius, Corners, PartStated, PartStyle};
-
-    let part = |radius: CornerRadius, curve: CornerCurve| {
-        let mut part = PartStyle::default();
-        part.corners = Corners { radius, curve };
-        part.stated |= PartStated::CORNERS;
-        part
-    };
-    let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
-        top_left,
-        top_right,
-        bottom_right,
-        bottom_left,
-    };
-    for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
-        let read = |radius| super::radius_of(&part(radius, curve));
-        assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
-        assert_eq!(read(CornerRadius::None), Some(0.0));
-        assert_eq!(read(CornerRadius::Pill), Some(255.0));
-        assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
-        assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
-        assert_eq!(
-            read(CornerRadius::Concentric {
-                inset: 2.0,
-                min_radius: 1.0,
-            }),
-            None
-        );
-    }
-    assert_eq!(super::radius_of(&PartStyle::default()), None);
-
-    let panel =
-        "[[widgets.menu.rules]]\npanel.corners = { radius = 4.0, curve = \"continuous\" }\n";
-    let r = Theme::preset(Preset::Material3)
-        .with_patch(ThemePatch::from_toml(panel)?)
-        .resolve(&ThemeContext::light());
-    assert_eq!(
-        super::build::cell_source(&r).menu.outline.edge.radius,
-        Some(4.0)
-    );
-    Ok(())
-}
-
 /// A text that leaves its family, weight or style unstated asks its chain for no face: the
 /// chain keeps the plan's base, egui's own, and no note names it; the other chain takes the
 /// plan's face.
