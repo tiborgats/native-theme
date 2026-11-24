@@ -5,9 +5,7 @@
 
 use iced_core::Border;
 use iced_core::border::Radius;
-use native_theme::next::{
-    CornerCurve, CornerRadius, Corners, PartStated, PartStyle, Stroke, StrokeAlign,
-};
+use native_theme::next::{CornerRadius, Corners, PartStated, PartStyle, Stroke, StrokeAlign};
 
 use super::{Mapped, Unmapped, radius_of, stated, stroke_width_of, to_color};
 use crate::styles::{Line, LineAlign, Outline};
@@ -37,7 +35,7 @@ pub(crate) fn line(part: &PartStyle, home: &'static str) -> Mapped<Line> {
     }
 }
 
-/// [`line`], or, where the part states no stroke (`Stroke::None`), no
+/// [`line()`], or, where the part states no stroke (`Stroke::None`), no
 /// stroke ([`Line::none`]), which iced draws 0 wide.
 pub(crate) fn line_or_none(part: &PartStyle, home: &'static str) -> Mapped<Line> {
     match part.stroke {
@@ -80,48 +78,52 @@ pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> 
     stated(stroke_width_of(part), home)
 }
 
-/// A part's corner radius, where stated as one circular radius, as square
-/// corners, which are no radius, or as a pill, which iced rounds by a radius
-/// its renderers clamp to half the shorter side ([`crate::styles::pill`]).
+/// A part's corner radius as [`radius_of`] reads it, where it is one radius.
 pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     stated(radius_of(part), home)
 }
 
+/// A part's corners as [`corner_radii`] rounds them, where stated.
+pub(crate) fn part_radii(part: &PartStyle, home: &'static str) -> Mapped<Radius> {
+    if !part.stated.contains(PartStated::CORNERS) {
+        return Err(Unmapped(home));
+    }
+    corner_radii(&part.corners, home)
+}
+
 /// Stated `corners` as iced rounds a quad, corner by corner: square corners
 /// are no radius, a pill a radius iced clamps to half the shorter side
-/// ([`crate::styles::pill`]).
+/// ([`crate::styles::pill`]). iced's corner is circular, so a continuous
+/// curve is drawn as the circular corner of its radius (spec §10, rule 2).
 ///
 /// # Errors
 ///
-/// [`Unmapped`] at `home` for a squircle (`CornerCurve::Continuous`) or a
-/// radius of a kind iced has no form for.
+/// [`Unmapped`] at `home` for a concentric radius, which needs the
+/// container's radius, or a radius of a kind iced has no form for.
 pub(crate) fn corner_radii(corners: &Corners, home: &'static str) -> Mapped<Radius> {
-    match (corners.radius, corners.curve) {
-        (CornerRadius::None, _) => Ok(Radius::from(0.0)),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Ok(Radius::from(r)),
-        (
-            CornerRadius::PerCorner {
-                top_left,
-                top_right,
-                bottom_right,
-                bottom_left,
-            },
-            CornerCurve::Circular,
-        ) => Ok(Radius {
+    match corners.radius {
+        CornerRadius::None => Ok(Radius::from(0.0)),
+        CornerRadius::Uniform(r) => Ok(Radius::from(r)),
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => Ok(Radius {
             top_left,
             top_right,
             bottom_right,
             bottom_left,
         }),
-        (CornerRadius::Pill, CornerCurve::Circular) => Ok(crate::styles::pill()),
+        CornerRadius::Pill => Ok(crate::styles::pill()),
         _ => Err(Unmapped(home)),
     }
 }
 
 /// A part's border as iced outlines a widget, of a part a resolved theme
-/// always states it for: the stroke ([`line`]) and its width, a stated
-/// `Stroke::None` being no width in iced's own colour, and the corner
-/// radius.
+/// always states it for: the stroke ([`line()`]) and its width, a stated
+/// `Stroke::None` being no width in iced's own colour, and the corners
+/// ([`part_radii`]).
 pub(crate) fn outline_of(
     part: &PartStyle,
     color_home: &'static str,
@@ -132,13 +134,13 @@ pub(crate) fn outline_of(
     Ok(Outline {
         line: line_or_none(part, color_home)?,
         width,
-        radius: Radius::new(radius(part, corners_home)?),
+        radius: part_radii(part, corners_home)?,
     })
 }
 
 /// [`outline_of`] for a part whose border the table of homes allows to be
 /// unstated (`unstated_if_unset`): the stroke and its width where the stroke
-/// is stated, the radius where the corners are, and iced's own
+/// is stated, the corners where they are, and iced's own
 /// (`Border::default()`, no line and square corners) for each the theme
 /// leaves unstated (spec §10, rule 0).
 pub(crate) fn outline_or_iced_of(
@@ -158,7 +160,7 @@ pub(crate) fn outline_or_iced_of(
         outline.line = line_or_none(part, color_home)?;
     }
     if part.stated.contains(PartStated::CORNERS) {
-        outline.radius = Radius::new(radius(part, corners_home)?);
+        outline.radius = part_radii(part, corners_home)?;
     }
     Ok(outline)
 }

@@ -24,11 +24,12 @@ pub(crate) struct FocusRingSource {
     pub keyboard_only: bool,
     /// The second ring inside the first, its colour and width, where the theme states one.
     pub inner: Option<(Rgba, (f32, &'static str))>,
-    /// The ring's outer corners, where the theme states the ring's own.
+    /// The corners of the ring's inner edge, the line the offset places, where the theme
+    /// states the ring's own.
     pub corners: Option<RingCorners>,
 }
 
-/// A focus ring's outer corners as the theme states them.
+/// The corners of a focus ring's inner edge as the theme states them.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum RingCorners {
     /// Top-left, top-right, bottom-right, bottom-left.
@@ -89,14 +90,15 @@ pub(crate) fn build_focus_ring_from(
         }
         (w.is_finite() && w > 0.0).then(|| egui::Stroke::new(clamp_length(w), to_color32(color)))
     });
-    // epaint grows an `Outside` stroke's outer corners by its width (`epaint-0.37.0`
-    // `src/tessellator.rs`, `tessellate_rect`), so the ring's rect takes the stated outer
-    // corners less the width; a pill's radius epaint clamps to half the rect's shorter side
-    // (the same function: "already clamped to half the rect size by `RoundedRect`")
+    // the stated corners are the ring's rect's, the line the offset places (spec §2,
+    // `FocusIndicator`): epaint grows an `Outside` stroke's outer corners by its width
+    // (`epaint-0.37.0` `src/tessellator.rs`, `tessellate_rect`), the outer edge concentric;
+    // a pill's radius epaint clamps to half the rect's shorter side (the same function:
+    // "already clamped to half the rect size by `RoundedRect`")
     let corners = match src.corners {
         Some(RingCorners::Pill) => Some(CornerRadius::same(u8::MAX)),
         Some(RingCorners::Radii(radii)) if radii.iter().all(|r| r.is_finite()) => {
-            let [nw, ne, se, sw] = radii.map(|r| u8_from_f32_saturating(r - width));
+            let [nw, ne, se, sw] = radii.map(u8_from_f32_saturating);
             Some(CornerRadius { nw, ne, sw, se })
         }
         Some(RingCorners::Radii(_)) => {

@@ -328,16 +328,18 @@ fn a_default_buttons_unstated_properties_are_eguis_own() -> Result<(), Box<dyn s
                 own_width += usize::from(width.is_none());
                 let width = width.unwrap_or(stock.inactive.bg_stroke.width);
                 assert_eq!(button.stroke.width, width, "{at}");
+                // a hovered frame stated as none is no line (spec §10, rule 2)
                 let hover = b.body(WidgetState::HOVER);
-                match super::state_stroke_color_of(&hover) {
-                    Some(c) => assert_eq!(button.hover_stroke.color, c, "{at}"),
-                    None => {
-                        own_hover += 1;
-                        assert_eq!(
-                            button.hover_stroke.color, stock.hovered.bg_stroke.color,
-                            "{at}"
-                        );
-                    }
+                if hover.from_state.contains(PartStated::STROKE) {
+                    let stated =
+                        super::state_stroke_color_of(&hover).unwrap_or(egui::Color32::TRANSPARENT);
+                    assert_eq!(button.hover_stroke.color, stated, "{at}");
+                } else {
+                    own_hover += 1;
+                    assert_eq!(
+                        button.hover_stroke.color, stock.hovered.bg_stroke.color,
+                        "{at}"
+                    );
                 }
                 // the hovered width is its own state's, egui's own where the theme states none
                 if hover.from_state.contains(PartStated::STROKE) {
@@ -353,13 +355,14 @@ fn a_default_buttons_unstated_properties_are_eguis_own() -> Result<(), Box<dyn s
             }
         }
     }
-    assert!(own_hover > 0, "no preset leaves the hovered frame unstated");
+    // the presets' and patches' cases, both kinds of hovered frame among them where a preset
+    // gives each; each unstated value alone is `each_unstated_default_button_value_is_eguis_own`'s
     assert!(
-        own_hover_width > 0,
-        "no preset leaves the hovered width unstated"
+        own_hover < 4 * PRESETS.len(),
+        "no preset states the hovered frame"
     );
-    let fallbacks = [own_text, own_frame, own_width];
-    println!("label, frame, width fallbacks: {fallbacks:?}");
+    let fallbacks = [own_text, own_frame, own_width, own_hover, own_hover_width];
+    println!("label, frame, width, hovered frame, hovered width fallbacks: {fallbacks:?}");
     Ok(())
 }
 
@@ -506,11 +509,12 @@ fn a_stated_drop_shadow_is_drawn_as_stated() -> Result<(), Box<dyn std::error::E
 }
 
 /// The ring's second stroke and its own corners are drawn where the theme states them: the
-/// plugin's ring holds the inner stroke and the corners at the ring's inner edge (the stated
-/// outer corners less the width); unstated, neither.
+/// plugin's ring holds the inner stroke and the stated corners as its rect's, the line the
+/// offset places, between the two rings (a continuous curve drawn circular); unstated,
+/// neither; concentric corners are unmapped.
 #[test]
 fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn std::error::Error>> {
-    use native_theme::next::Corners;
+    use native_theme::next::{CornerRadius, Corners};
 
     let theme = Theme::preset(Preset::Windows11);
     let [mut light, light_inactive, dark, dark_inactive] = [
@@ -526,15 +530,29 @@ fn the_focus_rings_inner_stroke_and_corners_are_drawn() -> Result<(), Box<dyn st
     };
     let plain = ring(&light)?.ok_or("windows-11 states a ring")?;
     assert_eq!((plain.inner, plain.corners), (None, None));
-    let width = plain.stroke.width;
     light.focus_ring.inner_stroke = Stroke::uniform(1.0, Color::new(1.0, 1.0, 1.0, 1.0));
-    light.focus_ring.corners = Some(Corners::uniform(width + 4.0));
+    light.focus_ring.corners = Some(Corners::uniform(4.0));
     let drawn = ring(&light)?.ok_or("the ring")?;
     assert_eq!(
         drawn.inner,
         Some(egui::Stroke::new(1.0, egui::Color32::WHITE))
     );
     assert_eq!(drawn.corners, Some(egui::CornerRadius::same(4)));
+    light.focus_ring.corners = Some(Corners::continuous(4.0));
+    let drawn = ring(&light)?.ok_or("the ring")?;
+    assert_eq!(drawn.corners, Some(egui::CornerRadius::same(4)));
+    light.focus_ring.corners = Some(Corners {
+        radius: CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        },
+        ..Corners::default()
+    });
+    assert_eq!(
+        ring(&light).err(),
+        Some(super::Unmapped("focus_ring.corners"))
+    );
+    light.focus_ring.corners = None;
     light.focus_ring.inner_stroke = Stroke::sides(
         StrokeSide::default(),
         StrokeSide::default(),
@@ -618,20 +636,43 @@ fn the_next_builder_takes_fonts_os_mode_and_a_style_patch() -> Result<(), Box<dy
 /// and a role that states no outline at rest, hover or press keeps the base style's.
 #[test]
 fn a_tab_and_a_segment_outline_each_state_by_rule_0() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{PartStated, PartStyle, ResolvedTheme};
+
     let own = egui::Theme::Light.default_style().visuals.widgets;
-    for (role, widget, part) in [
-        (crate::Role::Tab, "tab", "tab"),
+    let tab: fn(&ResolvedTheme, WidgetState) -> PartStyle = |r, s| r.tab.tab(s);
+    let segment: fn(&ResolvedTheme, WidgetState) -> PartStyle =
+        |r, s| r.segmented_control.segment(s);
+    for (role, widget, part, of) in [
+        (crate::Role::Tab, "tab", "tab", tab),
         (
             crate::Role::SegmentedControl,
             "segmented_control",
             "segment",
+            segment,
         ),
     ] {
+        // a preset with no rule for a pressed outline, one stating the outline at rest where
+        // a preset does
+        let unpressed = |rest_stated: bool| {
+            PRESETS.iter().find(|(_, p)| {
+                let r = Theme::preset(*p).resolve(&ThemeContext::light());
+                (!rest_stated
+                    || of(&r, WidgetState::NONE)
+                        .stated
+                        .contains(PartStated::STROKE))
+                    && !of(&r, WidgetState::PRESSED)
+                        .from_state
+                        .contains(PartStated::STROKE)
+            })
+        };
+        let (key, preset) = unpressed(true)
+            .or_else(|| unpressed(false))
+            .ok_or_else(|| format!("{role:?}: every preset states a pressed {part}'s outline"))?;
         let rules = format!(
             "[[widgets.{widget}.rules]]\nstates = [\"hover\"]\n\
              {part}.stroke = {{ width = 3.0, color = \"#ff00ff\" }}\n"
         );
-        let atlas = patched_light(Preset::KdeBreeze, &rules)?;
+        let atlas = patched_light(*preset, &rules)?;
         let w = &atlas
             .scheme(egui::Theme::Light)
             .cell(role, crate::RoleVariant::Normal)
@@ -640,22 +681,40 @@ fn a_tab_and_a_segment_outline_each_state_by_rule_0() -> Result<(), Box<dyn std:
         assert_eq!(
             w.hovered.bg_stroke,
             egui::Stroke::new(3.0, egui::Color32::from_rgb(0xff, 0, 0xff)),
-            "{role:?}"
+            "{role:?} on {key}"
         );
-        // kde-breeze states the outline at rest and no pressed one: egui's own pressed colour
-        // and width, both of which egui's stock entries change from rest
-        assert_eq!(w.active.bg_stroke, own.active.bg_stroke, "{role:?}");
+        // no pressed outline stated: egui's own pressed colour and width, both of which egui's
+        // stock entries change from rest
+        assert_eq!(
+            w.active.bg_stroke, own.active.bg_stroke,
+            "{role:?} on {key}"
+        );
     }
-    // adwaita states no tab outline: the tab keeps the base's in every state
-    let atlas = patched_light(Preset::Adwaita, "")?;
+    // a preset stating no tab outline at rest, hover or press: the tab keeps the base's in
+    // every state
+    let (key, preset) = PRESETS
+        .iter()
+        .find(|(_, p)| {
+            let r = Theme::preset(*p).resolve(&ThemeContext::light());
+            [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED]
+                .into_iter()
+                .all(|s| {
+                    !r.tab
+                        .tab(s)
+                        .stated
+                        .contains(native_theme::next::PartStated::STROKE)
+                })
+        })
+        .ok_or("every preset states a tab outline at rest, hover or press")?;
+    let atlas = patched_light(*preset, "")?;
     let styles = atlas.scheme(egui::Theme::Light);
     let tab = &styles
         .cell(crate::Role::Tab, crate::RoleVariant::Normal)
         .visuals
         .widgets;
     let base = &styles.base.visuals.widgets;
-    assert_eq!(tab.hovered.bg_stroke, base.hovered.bg_stroke);
-    assert_eq!(tab.active.bg_stroke, base.active.bg_stroke);
+    assert_eq!(tab.hovered.bg_stroke, base.hovered.bg_stroke, "{key}");
+    assert_eq!(tab.active.bg_stroke, base.active.bg_stroke, "{key}");
     Ok(())
 }
 
@@ -696,6 +755,55 @@ fn a_tab_outline_stated_only_hovered_leaves_the_press_to_rule_0()
     Ok(())
 }
 
+/// A checked box whose outline the theme states as none draws none: the checked cell's outline
+/// is transparent, not the unchecked box's it is copied from (spec §10, rule 2).
+#[test]
+fn a_checked_outline_stated_as_none_is_transparent() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::PartStated;
+
+    let (key, preset) = PRESETS
+        .iter()
+        .find(|(_, p)| {
+            let r = Theme::preset(*p).resolve(&ThemeContext::light());
+            let checked = r.checkbox.indicator(WidgetState::CHECKED);
+            let rest = r.checkbox.indicator(WidgetState::NONE);
+            checked.stated.contains(PartStated::STROKE)
+                && matches!(checked.stroke, Stroke::None)
+                && matches!(rest.stroke, Stroke::Uniform { .. })
+        })
+        .ok_or("no preset states a checked box's outline as none and an unchecked one's")?;
+    let atlas = patched_light(*preset, "")?;
+    let styles = atlas.scheme(egui::Theme::Light);
+    let cell = |variant| {
+        styles
+            .cell(crate::Role::Checkbox, variant)
+            .visuals
+            .widgets
+            .clone()
+    };
+    let (normal, selected) = (
+        cell(crate::RoleVariant::Normal),
+        cell(crate::RoleVariant::Selected),
+    );
+    assert_ne!(
+        normal.inactive.bg_stroke.color,
+        egui::Color32::TRANSPARENT,
+        "{key}"
+    );
+    for (name, entry) in [
+        ("noninteractive", &selected.noninteractive),
+        ("inactive", &selected.inactive),
+        ("open", &selected.open),
+    ] {
+        assert_eq!(
+            entry.bg_stroke.color,
+            egui::Color32::TRANSPARENT,
+            "{key}: {name}"
+        );
+    }
+    Ok(())
+}
+
 /// The menu item takes the panel's corners where it states none of its own on material-3,
 /// whose table of homes row names the panel's corners, and on no other preset.
 #[test]
@@ -717,6 +825,56 @@ fn the_menu_item_takes_the_panels_corners_on_material_3_alone()
     }
     assert!(unstated.contains(&Preset::Material3), "{unstated:?}");
     assert!(unstated.len() > 1, "{unstated:?}");
+    Ok(())
+}
+
+/// Each form of a stated radius as the one-radius read takes it: a continuous curve drawn as
+/// the circular corner of its radius (spec §10, rule 2), a pill as the largest radius egui
+/// holds, which epaint clamps to half the shorter side, per-corner radii where the four are
+/// one; per-corner radii that differ and a concentric radius, which needs the container's,
+/// not. On a patched theme a continuous panel's radius reaches material-3's menu outline.
+#[test]
+fn every_radius_form_is_read_as_egui_rounds_it() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{CornerCurve, CornerRadius, Corners, PartStated, PartStyle};
+
+    let part = |radius: CornerRadius, curve: CornerCurve| {
+        let mut part = PartStyle::default();
+        part.corners = Corners { radius, curve };
+        part.stated |= PartStated::CORNERS;
+        part
+    };
+    let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
+        top_left,
+        top_right,
+        bottom_right,
+        bottom_left,
+    };
+    for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
+        let read = |radius| super::radius_of(&part(radius, curve));
+        assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
+        assert_eq!(read(CornerRadius::None), Some(0.0));
+        assert_eq!(read(CornerRadius::Pill), Some(255.0));
+        assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
+        assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
+        assert_eq!(
+            read(CornerRadius::Concentric {
+                inset: 2.0,
+                min_radius: 1.0,
+            }),
+            None
+        );
+    }
+    assert_eq!(super::radius_of(&PartStyle::default()), None);
+
+    let panel =
+        "[[widgets.menu.rules]]\npanel.corners = { radius = 4.0, curve = \"continuous\" }\n";
+    let r = Theme::preset(Preset::Material3)
+        .with_patch(ThemePatch::from_toml(panel)?)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        super::build::cell_source(&r).menu.outline.edge.radius,
+        Some(4.0)
+    );
     Ok(())
 }
 
@@ -928,6 +1086,140 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
     assert!(
         !tried.is_empty(),
         "no preset leaves both state fills unstated"
+    );
+    Ok(())
+}
+
+/// The controls whose hovered and pressed fills the 0.7.2 model states as layers over the idle
+/// fill, each with the role whose cell draws it, the widget and part whose hovered fill a rule
+/// states, and whether the entry paints `weak_bg_fill` (else `bg_fill`).
+const STATE_FILLS: [(crate::Role, &str, &str, bool); 5] = [
+    (crate::Role::Button, "button", "body", true),
+    (crate::Role::Checkbox, "checkbox", "indicator", false),
+    (crate::Role::Switch, "switch", "track", true),
+    (crate::Role::ComboBox, "combo_box", "field", true),
+    (
+        crate::Role::SegmentedControl,
+        "segmented_control",
+        "segment",
+        true,
+    ),
+];
+
+/// A state's fill on the 0.8.0 model is the whole fill the part shows in that state (spec §9,
+/// step 2), written as given: a translucent hovered fill a rule states is the entry's, not
+/// composited over the resting fill, and so is an opaque one.
+#[test]
+fn a_stated_hovered_fill_is_the_states_own() -> Result<(), Box<dyn std::error::Error>> {
+    for (marker, color) in [
+        (
+            "#ff00ff80",
+            egui::Color32::from_rgba_unmultiplied(0xff, 0, 0xff, 0x80),
+        ),
+        ("#f0a014", egui::Color32::from_rgb(0xf0, 0xa0, 0x14)),
+    ] {
+        for (role, widget, part, weak) in STATE_FILLS {
+            let patch = format!(
+                "[[widgets.{widget}.rules]]\nstates = [\"hover\"]\n{part}.fill = \"{marker}\"\n"
+            );
+            let atlas = patched_light(Preset::KdeBreeze, &patch)?;
+            let cell = atlas
+                .scheme(egui::Theme::Light)
+                .cell(role, crate::RoleVariant::Normal);
+            let hovered = &cell.visuals.widgets.hovered;
+            let fill = if weak {
+                hovered.weak_bg_fill
+            } else {
+                hovered.bg_fill
+            };
+            assert_eq!(fill, color, "{role:?} {marker}");
+        }
+    }
+    Ok(())
+}
+
+/// The rows and items whose hovered and pressed fills the cells read as given, each as
+/// [`STATE_FILLS`] names it.
+const ROW_FILLS: [(crate::Role, &str, &str, bool); 3] = [
+    (crate::Role::List, "list", "highlight", false),
+    (crate::Role::Sidebar, "sidebar", "item", true),
+    (crate::Role::Tab, "tab", "tab", true),
+];
+
+/// A hovered or pressed fill a rule states as none is transparent (spec §10, rule 2), not
+/// unstated: the entry draws no fill, where an unstated one would keep egui's own or the base's.
+#[test]
+fn a_state_fill_stated_as_none_is_transparent() -> Result<(), Box<dyn std::error::Error>> {
+    let plain = patched_light(Preset::KdeBreeze, "")?;
+    for (state, pressed) in [("hover", false), ("pressed", true)] {
+        for (role, widget, part, weak) in STATE_FILLS.into_iter().chain(ROW_FILLS) {
+            let fill = |atlas: &crate::ThemeAtlas| {
+                let cell = atlas
+                    .scheme(egui::Theme::Light)
+                    .cell(role, crate::RoleVariant::Normal);
+                let w = &cell.visuals.widgets;
+                let entry = if pressed { &w.active } else { &w.hovered };
+                if weak {
+                    entry.weak_bg_fill
+                } else {
+                    entry.bg_fill
+                }
+            };
+            let patch = format!(
+                "[[widgets.{widget}.rules]]\nstates = [\"{state}\"]\n{part}.fill = \"none\"\n"
+            );
+            let atlas = patched_light(Preset::KdeBreeze, &patch)?;
+            assert_ne!(
+                fill(&plain),
+                egui::Color32::TRANSPARENT,
+                "{role:?} {state}: the preset's own fill proves nothing"
+            );
+            assert_eq!(fill(&atlas), egui::Color32::TRANSPARENT, "{role:?} {state}");
+        }
+    }
+    Ok(())
+}
+
+/// On the macOS presets, whose button the pointer does not change (`platform-facts.md` §2.3),
+/// the hovered button's fill is its resting fill wherever the preset states it so: the state's
+/// own fill, not a layer laid over the rest again.
+#[test]
+fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::error::Error>> {
+    let mut tried = Vec::new();
+    let mut layered_would_differ = 0;
+    for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
+        for (scheme, ctx) in [
+            (egui::Theme::Light, ThemeContext::light()),
+            (egui::Theme::Dark, ThemeContext::dark()),
+        ] {
+            let r = Theme::preset(preset).resolve(&ctx);
+            let body = |s| super::build::state_fill(&r.button.body(s));
+            let rest = super::build::fill(&r.button.body(WidgetState::NONE));
+            let Some(rest_fill) = rest else { continue };
+            if body(WidgetState::HOVER).is_none() || body(WidgetState::HOVER) != rest {
+                continue;
+            }
+            if crate::convert::composite_over(rest_fill, rest_fill)
+                != crate::convert::to_color32(rest_fill)
+            {
+                layered_would_differ += 1;
+            }
+            tried.push((preset, scheme));
+            let atlas = patched_light(preset, "")?;
+            let widgets = &atlas.scheme(scheme).base.visuals.widgets;
+            assert_eq!(
+                widgets.hovered.weak_bg_fill, widgets.inactive.weak_bg_fill,
+                "{preset:?} {scheme:?}"
+            );
+        }
+    }
+    assert!(
+        !tried.is_empty(),
+        "no macOS preset states its hover as rest"
+    );
+    assert!(
+        layered_would_differ > 0,
+        "no macOS scheme's rest fill is translucent, so the test cannot tell a whole fill from a layered one"
     );
     Ok(())
 }

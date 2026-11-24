@@ -139,7 +139,7 @@ pub use geometry::{
     StrokeAlign, StrokeSide, Transform,
 };
 pub use icons::{IconSizes, IconThemeSpec};
-pub use layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
+pub use layout::{ArrowSide, DialogButtonOrder, LabelSide, LayoutMetrics, TabIndicatorSide};
 pub use motion::{
     CaretShape, CaretSpec, DialogEntranceStyle, MotionTokens, ThemeChangePolicy, Timing,
     Transition, UiTimings,

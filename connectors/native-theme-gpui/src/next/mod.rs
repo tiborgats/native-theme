@@ -46,8 +46,8 @@ use gpui_base::ResizableTheme;
 use gpui_base::input::CursorBlink;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig, ThemeMode};
 use native_theme::next::{
-    ButtonQuery, Color, Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FocusTrigger,
-    FontStyle, IconSizes, ListQuery, MotionPreference, Orientation, Paint, PartStated, PartStyle,
+    ButtonQuery, Color, Contrast, CornerRadius, DialogButtonOrder, FocusTrigger, FontStyle,
+    IconSizes, ListQuery, MotionPreference, Orientation, Paint, PartStated, PartStyle,
     ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
 
@@ -182,23 +182,42 @@ pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     }
 }
 
-/// A part's corner radius, where stated as one circular radius, or as square
-/// corners, which are no radius.
+/// A part's corner radius as [`radius_of`] reads it, where it is one radius.
 pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     stated(radius_of(part), home)
 }
 
-/// A part's corner radius as `radius` reads it, `None` where it is not
-/// stated, or stated in a form gpui cannot draw (not one circular radius,
-/// nor square corners: pill, per-corner or concentric corners, a continuous
-/// curve).
+/// The radius gpui-component rounds a pill or a circle by, past half any
+/// shape's shorter side, which gpui clamps to that half (gpui-component
+/// 0.10.0 `src/theme/mod.rs`, `RADIUS_FULL`, `px(9999.)`; gpui-pre 0.3.12
+/// `src/style.rs`, `Style::paint`, `clamp_radii_for_quad_size`).
+pub(crate) const PILL_RADIUS: f32 = 9999.0;
+
+/// A part's corner radius as one radius: one radius stated for every
+/// corner, square corners, which are no radius, or a pill, gpui-component's
+/// full radius (9999), which gpui clamps to half the shorter side
+/// (gpui-component 0.10.0 `src/theme/mod.rs`, `RADIUS_FULL`); `None` where
+/// it is not stated, or stated as per-corner radii that differ, or as a
+/// concentric radius, which needs the container's. gpui's corner is
+/// circular, so a continuous curve is drawn as the circular corner of its
+/// radius (spec §10, rule 2).
 pub fn radius_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return None;
     }
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Some(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+    match part.corners.radius {
+        CornerRadius::None => Some(0.0),
+        CornerRadius::Uniform(r) => Some(r),
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => [top_right, bottom_right, bottom_left]
+            .iter()
+            .all(|&r| r == top_left)
+            .then_some(top_left),
+        CornerRadius::Pill => Some(PILL_RADIUS),
         _ => None,
     }
 }
@@ -438,11 +457,103 @@ fn list_row_hover(r: &ResolvedTheme) -> Mapped<Hsla> {
     let home = "list.highlight(HOVER).fill";
     match stated_fill(&r.list.highlight(WidgetState::HOVER), home)? {
         Some(hover) => Ok(hover),
-        None => Ok(
-            fill(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill")?
-                .opacity(UPSTREAM_LIST_HOVER_ACCENT_OPACITY),
-        ),
+        None => Ok(menu_hover_fill(r)?.opacity(UPSTREAM_LIST_HOVER_ACCENT_OPACITY)),
     }
+}
+
+/// gpui-component's own colours of the theme's scheme, its default theme's
+/// (`ThemeColor::light()` and `dark()`, gpui-component 0.10.0
+/// `theme/theme_color.rs:552-561`, `theme/default-theme.json`): what a
+/// widget shows in a state the theme states nothing for (spec §10, rule 0).
+fn upstream_colors(r: &ResolvedTheme) -> std::sync::Arc<ThemeColor> {
+    if r.is_dark() {
+        ThemeColor::dark()
+    } else {
+        ThemeColor::light()
+    }
+}
+
+/// A hovered menu item's fill, `accent`, which gpui-component paints a
+/// hovered item in over its unfilled rest (gpui-component 0.10.0
+/// `menu/menu_item.rs:134-137`): `menu.item(HOVER).fill` where a rule states
+/// it for `HOVER` (spec §2, `from_state`), else gpui-component's own `accent`
+/// (spec §10, rule 0).
+fn menu_hover_fill(r: &ResolvedTheme) -> Mapped<Hsla> {
+    state_fill_or(
+        &r.menu.item(WidgetState::HOVER),
+        "menu.item(HOVER).fill",
+        upstream_colors(r).accent,
+    )
+}
+
+/// A hovered menu item's label, `accent_foreground`, which gpui-component
+/// letters a hovered item in (gpui-component 0.10.0
+/// `menu/menu_item.rs:122, 134-137`): `menu.item_label(HOVER).color` where a
+/// rule states it for `HOVER` (spec §2, `from_state`); where a rule states
+/// the item's fill (`item`) for `HOVER` and none its label, the label at
+/// rest, `rest` (spec §10, rule 0a: a label is chosen for the fill it lies
+/// on); else gpui-component's own `accent_foreground`, `upstream`, which goes
+/// with its own `accent` fill (spec §10, rule 0).
+fn menu_hover_label(
+    item: &PartStyle,
+    label: &TextStyle,
+    rest: &TextStyle,
+    upstream: Hsla,
+) -> Mapped<Hsla> {
+    if let Some(stated) = state_text_color(label, "menu.item_label(HOVER).color")? {
+        return Ok(stated);
+    }
+    if state_fill(item, "menu.item(HOVER).fill")?.is_some() {
+        return text_color(rest, "menu.item_label(NONE).color");
+    }
+    Ok(upstream)
+}
+
+/// A hovered push button's fill, `button_hover` and `button_secondary_hover`
+/// ([`button_states`]), which gpui-component paints a hovered button in
+/// (gpui-component 0.10.0 `button/button.rs:1194`,
+/// `theme/schema.rs:854`): `button.body(HOVER).fill` where a rule states it
+/// for `HOVER` (spec §2, `from_state`), else gpui-component's own treatment
+/// (spec §10, rule 0): its theme's `secondary_hover` where that theme turns a
+/// button on hover (its `secondary_hover` is not its `secondary`), else the
+/// button at rest, `rest`, as that theme leaves it.
+fn button_hover_fill(part: &PartStyle, rest: Hsla, upstream: &ThemeColor) -> Mapped<Hsla> {
+    let own = if upstream.secondary_hover == upstream.secondary {
+        rest
+    } else {
+        upstream.secondary_hover
+    };
+    state_fill_or(part, "button.body(HOVER).fill", own)
+}
+
+/// A pressed push button's fill, `button_active` and
+/// `button_secondary_active` ([`button_states`]), which gpui-component paints
+/// a pressed button in (gpui-component 0.10.0 `button/button.rs:1278`,
+/// `theme/schema.rs:855`): `button.body(PRESSED).fill` where a rule states it
+/// for `PRESSED` (spec §2, `from_state`), else gpui-component's own treatment
+/// (spec §10, rule 0): its theme's `secondary_active` where that theme turns
+/// a button pressed (its `secondary_active` is not its `secondary`), else the
+/// button at rest, `rest`, as that theme leaves it. Always `Some`: the 0.7.2
+/// model's `None`, the connector's darkening of the rest fill
+/// (`colors::assign_secondary`), is not the 0.8.0 model's.
+fn button_pressed_fill(
+    part: &PartStyle,
+    rest: Hsla,
+    upstream: &ThemeColor,
+) -> Mapped<Option<Hsla>> {
+    let own = if upstream.secondary_active == upstream.secondary {
+        rest
+    } else {
+        upstream.secondary_active
+    };
+    state_fill_or(part, "button.body(PRESSED).fill", own).map(Some)
+}
+
+/// A part's fill where a rule states it for the queried state
+/// ([`state_fill`]), else `upstream`, gpui-component's own (spec §10,
+/// rule 0).
+fn state_fill_or(part: &PartStyle, home: &'static str, upstream: Hsla) -> Mapped<Hsla> {
+    Ok(state_fill(part, home)?.unwrap_or(upstream))
 }
 
 /// The slice's colours of a 0.8.0 resolved theme.
@@ -451,6 +562,7 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
     let b = &r.button;
     let l = &r.list;
     let s = &r.scrollbar;
+    let secondary = fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?;
     Ok(SliceColors {
         fg: hsla(stated(c.window.foreground, "colors.window.foreground")?),
         accent: hsla(c.accent.fill),
@@ -467,7 +579,7 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
             &b.label(ButtonQuery::primary()),
             "button.label(NONE; variant=Primary).color",
         )?,
-        secondary: fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?,
+        secondary,
         secondary_fg: text_color(&b.label(WidgetState::NONE), "button.label(NONE).color")?,
         danger: hsla(c.error.fill),
         danger_fg: hsla(c.error.foreground),
@@ -493,8 +605,16 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
         scrollbar_track: fill(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
         scrollbar_thumb: thumb_at_rest(r)?,
         scrollbar_thumb_hover: fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
-        button_hover_bg: fill(&b.body(WidgetState::HOVER), "button.body(HOVER).fill")?,
-        button_active_bg: state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
+        button_hover_bg: button_hover_fill(
+            &b.body(WidgetState::HOVER),
+            secondary,
+            &upstream_colors(r),
+        )?,
+        button_active_bg: button_pressed_fill(
+            &b.body(WidgetState::PRESSED),
+            secondary,
+            &upstream_colors(r),
+        )?,
         list_hover_bg: list_row_hover(r)?,
         list_selection_bg: fill(
             &l.highlight(WidgetState::SELECTED),
@@ -517,10 +637,12 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
     let link = &r.link;
     Ok(WidgetColors {
         bg: fill(&frame, "window.frame(normal).fill")?,
-        menu_hover_bg: fill(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill")?,
-        menu_hover_fg: text_color(
+        menu_hover_bg: menu_hover_fill(r)?,
+        menu_hover_fg: menu_hover_label(
+            &r.menu.item(WidgetState::HOVER),
             &r.menu.item_label(WidgetState::HOVER),
-            "menu.item_label(HOVER).color",
+            &r.menu.item_label(WidgetState::NONE),
+            upstream_colors(r).accent_foreground,
         )?,
         sidebar_selection_bg: fill(
             &r.sidebar.item(WidgetState::SELECTED),
@@ -582,6 +704,11 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
             "progress_bar.fill(NONE).fill",
         )?,
         input_caret: hsla(r.colors.caret),
+        // A link button's text turns from `link` to `link_hover` and
+        // `link_active` (gpui-component 0.10.0 `button/button.rs:1240, 1316`),
+        // which gpui-component's own theme leaves at `link`
+        // (`theme/schema.rs:977-978`): unstated for the state, the label's
+        // rest colour is gpui-component's own treatment (spec §10, rule 0).
         link_hover_fg: text_color(&link.label(WidgetState::HOVER), "link.label(HOVER).color")?,
         link_active_fg: text_color(
             &link.label(WidgetState::PRESSED),
@@ -593,14 +720,69 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
     })
 }
 
-/// The `ThemeColor` fields, written by the old mapping's [`theme_color_of`].
+/// The `ThemeColor` fields, written by the old mapping's [`theme_color_of`],
+/// but for the push button's hovered and pressed slots ([`button_states`])
+/// and the flat button's ([`flat_button_states`]).
 pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
-    Ok(theme_color_of(
+    let mut tc = theme_color_of(
         &slice_colors(r)?,
         &widget_colors(r)?,
         r.is_dark(),
         r.context.reduced_transparency,
+    );
+    button_states(&mut tc);
+    let (hover, pressed) = flat_button_states(r)?;
+    tc.secondary_hover = hover;
+    tc.secondary_active = pressed;
+    Ok(tc)
+}
+
+/// The flat button's hovered and pressed fills, `secondary_hover` and
+/// `secondary_active`, which gpui-component paints the controls unfilled at
+/// rest in: the ghost button (`variants::ghost_button`; gpui-component
+/// 0.10.0 `button/button.rs:984, 987, 1346`), the title bar's buttons
+/// (`title_bar.rs:184, 193`), the Outline tab (`tab/tab.rs:234`), the
+/// calendar's days (`time/calendar.rs:184`), the stepper's trigger
+/// (`stepper/trigger.rs:130-131`), the dock's tab panel
+/// (`dock/tab_panel.rs:545-546`) and a pressed table cell
+/// (`table/state.rs:1916`). Each is `button.body(<state>; variant=Flat).fill`
+/// where a rule states it for that state alone (spec §2, `from_state`),
+/// else gpui-component's own (spec §10, rule 0). A rule that names no variant
+/// is the flat button's too (spec §2), so a theme that states no flat rule
+/// gives it the push button's stated fills.
+fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
+    let b = &r.button;
+    let upstream = upstream_colors(r);
+    let flat = ButtonQuery::flat();
+    Ok((
+        state_fill_or(
+            &b.body(flat.state(WidgetState::HOVER)),
+            "button.body(HOVER; variant=Flat).fill",
+            upstream.secondary_hover,
+        )?,
+        state_fill_or(
+            &b.body(flat.state(WidgetState::PRESSED)),
+            "button.body(PRESSED; variant=Flat).fill",
+            upstream.secondary_active,
+        )?,
     ))
+}
+
+/// The filled buttons' hovered and pressed slots, `button_hover`,
+/// `button_active` and their `button_secondary_*` pair: the push button's
+/// own fill of the state, which the read gives `secondary_hover` and
+/// `secondary_active` before [`flat_button_states`] replaces them. The 0.8.0
+/// model states each state's whole fill, any state layer pre-baked into it
+/// (spec §9, step 2), and gpui-component paints it in place of the rest fill,
+/// over what lies under the button as the rest fill is; the old mapping
+/// composites the 0.7.2 model's state layer over the rest fill instead
+/// (`colors::assign_buttons`, spec §3.2, C17), which drew a hovered button
+/// whose hover is its translucent rest fill darker than at rest.
+fn button_states(tc: &mut ThemeColor) {
+    tc.button_hover = tc.secondary_hover;
+    tc.button_active = tc.secondary_active;
+    tc.button_secondary_hover = tc.secondary_hover;
+    tc.button_secondary_active = tc.secondary_active;
 }
 
 /// The global theme's values beside its colours. The sizes are the model's,
@@ -1203,8 +1385,8 @@ mod tests {
     }
 
     /// `button.active_background`: the pressed body's fill without a rule
-    /// for the state is unset, so `assign_secondary` derives
-    /// `secondary_active` as for 0.7.2's `None`.
+    /// for the state is unset, so [`button_pressed_fill`] takes
+    /// gpui-component's own treatment.
     #[test]
     fn a_pressed_button_fill_without_a_state_rule_is_unset() -> Mapped<()> {
         assert_eq!(state_fill(&filled(RED, false), "pressed")?, None);
@@ -1388,6 +1570,409 @@ mod tests {
         assert_eq!(state_stroke_color(&hovered, "hover")?, None);
         hovered.from_state = PartStated::STROKE;
         assert_eq!(state_stroke_color(&hovered, "hover")?, Some(hsla(RED)));
+        Ok(())
+    }
+
+    /// Spec §9, step 2, on the macOS presets, whose push button draws
+    /// nothing on hover (the hovered fill is the rest fill): in both schemes
+    /// the filled buttons' hovered slots are the rest fill and their pressed
+    /// slots the stated pressed fill, translucent ones included, never the
+    /// state's fill composited over the rest fill.
+    #[test]
+    fn a_hovered_macos_button_is_filled_as_at_rest() -> Mapped<()> {
+        use native_theme::next::{Preset, Scheme, Theme, ThemeContext};
+        let mut layered_would_differ = 0;
+        for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
+            for scheme in [Scheme::Light, Scheme::Dark] {
+                let r = Theme::preset(preset).resolve(&ThemeContext::default().with_scheme(scheme));
+                let b = &r.button;
+                let rest = fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?;
+                let pressed = state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED)")?
+                    .ok_or(Unmapped("button.body(PRESSED).fill, for the state"))?;
+                if crate::colors::over(rest, rest) != rest {
+                    layered_would_differ += 1;
+                }
+                let tc = theme_color(&r)?;
+                assert_eq!(
+                    [tc.button, tc.button_hover, tc.button_secondary_hover],
+                    [rest; 3],
+                    "{preset:?} {scheme:?}"
+                );
+                assert_eq!(
+                    [tc.button_active, tc.button_secondary_active],
+                    [pressed; 2],
+                    "{preset:?} {scheme:?}"
+                );
+            }
+        }
+        assert!(
+            layered_would_differ > 0,
+            "no macOS scheme's rest fill is translucent, so the test cannot tell a whole fill from a layered one"
+        );
+        Ok(())
+    }
+
+    /// Spec §10 rule 0 for a hovered menu item: its fill and label where a
+    /// rule states them for `HOVER`, else gpui-component's own `accent` and
+    /// `accent_foreground`, not the item at rest; a patched theme's stated
+    /// hover reaches `accent`.
+    #[test]
+    fn an_unstated_menu_hover_is_gpui_components_own() -> Mapped<()> {
+        use native_theme::next::{
+            MenuRule, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        let upstream = hsla(BLUE);
+        assert_eq!(
+            state_fill_or(&filled(GREEN, false), "item", upstream)?,
+            upstream
+        );
+        assert_eq!(
+            state_fill_or(&filled(GREEN, true), "item", upstream)?,
+            hsla(GREEN)
+        );
+        let mut label = TextStyle::default();
+        label.color = GREEN;
+        label.stated = TextStated::COLOR;
+        let unfilled = filled(GREEN, false);
+        assert_eq!(
+            menu_hover_label(&unfilled, &label, &label, upstream)?,
+            upstream
+        );
+        label.from_state = TextStated::COLOR;
+        assert_eq!(
+            menu_hover_label(&unfilled, &label, &label, upstream)?,
+            hsla(GREEN)
+        );
+
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let mut r = Theme::preset(Preset::KdeBreeze)
+                .resolve(&ThemeContext::default().with_scheme(scheme));
+            r.apply_patch(
+                &ThemePatch::new().menu(
+                    MenuRule::new()
+                        .states(WidgetState::HOVER)
+                        .item(PartPatch::new().fill(Paint::Solid(RED))),
+                ),
+            );
+            assert_eq!(widget_colors(&r)?.menu_hover_bg, hsla(RED), "{scheme:?}");
+            assert_eq!(theme_color(&r)?.accent, hsla(RED), "{scheme:?}");
+        }
+        Ok(())
+    }
+
+    /// Spec §10 rule 0a for a hovered menu item's label: a label is chosen
+    /// for the fill it lies on, so where a rule states the item's fill for
+    /// `HOVER` and none its label, the label is the one at rest, not
+    /// gpui-component's `accent_foreground`, which goes with its own `accent`
+    /// fill; a stated label is taken as stated, and with neither stated the
+    /// label is gpui-component's own.
+    #[test]
+    fn a_stated_menu_hover_fill_keeps_the_label_at_rest() -> Mapped<()> {
+        let upstream = hsla(BLUE);
+        let mut rest = TextStyle::default();
+        rest.color = GREEN;
+        rest.stated = TextStated::COLOR;
+        let unstated = rest.clone();
+        let mut stated = rest.clone();
+        stated.color = RED;
+        stated.from_state = TextStated::COLOR;
+        let fill = filled(RED, true);
+        let own = filled(RED, false);
+        assert_eq!(
+            menu_hover_label(&fill, &unstated, &rest, upstream)?,
+            hsla(GREEN)
+        );
+        assert_eq!(
+            menu_hover_label(&fill, &stated, &rest, upstream)?,
+            hsla(RED)
+        );
+        assert_eq!(
+            menu_hover_label(&own, &unstated, &rest, upstream)?,
+            upstream
+        );
+        Ok(())
+    }
+
+    /// Spec §10 rule 0 for a hovered push button: its fill where a rule
+    /// states it for `HOVER`, else gpui-component's own `secondary_hover`
+    /// where its theme turns a button on hover, else the button at rest; a
+    /// patched theme's stated hover reaches `secondary_hover` and the
+    /// button's hovered slots.
+    #[test]
+    fn an_unstated_button_hover_is_gpui_components_own() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        let rest = hsla(GREEN);
+        let mut turning = *ThemeColor::light();
+        turning.secondary = hsla(RED);
+        turning.secondary_hover = hsla(BLUE);
+        let mut keeping = turning;
+        keeping.secondary_hover = keeping.secondary;
+        let unstated = filled(GREEN, false);
+        assert_eq!(button_hover_fill(&unstated, rest, &turning)?, hsla(BLUE));
+        assert_eq!(button_hover_fill(&unstated, rest, &keeping)?, rest);
+        let stated = filled(RED, true);
+        for upstream in [&turning, &keeping] {
+            assert_eq!(button_hover_fill(&stated, rest, upstream)?, hsla(RED));
+        }
+
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let mut r = Theme::preset(Preset::KdeBreeze)
+                .resolve(&ThemeContext::default().with_scheme(scheme));
+            r.apply_patch(
+                &ThemePatch::new().button(
+                    ButtonRule::new()
+                        .states(WidgetState::HOVER)
+                        .body(PartPatch::new().fill(Paint::Solid(BLUE))),
+                ),
+            );
+            assert_eq!(slice_colors(&r)?.button_hover_bg, hsla(BLUE), "{scheme:?}");
+            let tc = theme_color(&r)?;
+            assert_eq!(tc.secondary_hover, hsla(BLUE), "{scheme:?}");
+            assert_eq!(tc.button_hover, hsla(BLUE), "{scheme:?}");
+        }
+        Ok(())
+    }
+
+    /// Spec §10 rule 0 for a pressed push button: its fill where a rule
+    /// states it for `PRESSED`, else gpui-component's own `secondary_active`
+    /// where its theme turns a button pressed, else the button at rest, not
+    /// the connector's darkening of the rest fill. Every preset states its
+    /// push button's pressed fill, so none reaches the unstated case; on any
+    /// that would, the pressed slots are gpui-component's own, and a patched
+    /// theme's stated pressed fill reaches them.
+    #[test]
+    fn an_unstated_button_press_is_gpui_components_own() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        let rest = hsla(GREEN);
+        let mut turning = *ThemeColor::light();
+        turning.secondary = hsla(RED);
+        turning.secondary_active = hsla(BLUE);
+        let mut keeping = turning;
+        keeping.secondary_active = keeping.secondary;
+        let unstated = filled(GREEN, false);
+        assert_eq!(
+            button_pressed_fill(&unstated, rest, &turning)?,
+            Some(hsla(BLUE))
+        );
+        assert_eq!(button_pressed_fill(&unstated, rest, &keeping)?, Some(rest));
+        let stated = filled(RED, true);
+        for upstream in [&turning, &keeping] {
+            assert_eq!(
+                button_pressed_fill(&stated, rest, upstream)?,
+                Some(hsla(RED))
+            );
+        }
+
+        for preset in Preset::ALL {
+            for scheme in [Scheme::Light, Scheme::Dark] {
+                let mut r =
+                    Theme::preset(*preset).resolve(&ThemeContext::default().with_scheme(scheme));
+                let b = &r.button;
+                if state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?.is_some()
+                {
+                    continue;
+                }
+                let rest = fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?;
+                let upstream = upstream_colors(&r);
+                let own = if upstream.secondary_active == upstream.secondary {
+                    rest
+                } else {
+                    upstream.secondary_active
+                };
+                let tc = theme_color(&r)?;
+                assert_eq!(
+                    [tc.button_active, tc.button_secondary_active],
+                    [own; 2],
+                    "{preset:?} {scheme:?}"
+                );
+                r.apply_patch(
+                    &ThemePatch::new().button(
+                        ButtonRule::new()
+                            .states(WidgetState::PRESSED)
+                            .body(PartPatch::new().fill(Paint::Solid(BLUE))),
+                    ),
+                );
+                let tc = theme_color(&r)?;
+                assert_eq!(
+                    [tc.button_active, tc.button_secondary_active],
+                    [hsla(BLUE); 2],
+                    "{preset:?} {scheme:?}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// The controls unfilled at rest read the flat button's hovered and
+    /// pressed fills, `secondary_hover` and `secondary_active`: a flat rule
+    /// reaches them and not the push button's slots; where no rule states
+    /// the flat button's state, gpui-component's own (spec §10, rule 0).
+    #[test]
+    fn the_unfilled_controls_take_the_flat_buttons_states() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, ButtonVariant, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        for preset in Preset::ALL {
+            for scheme in [Scheme::Light, Scheme::Dark] {
+                let mut r =
+                    Theme::preset(*preset).resolve(&ThemeContext::default().with_scheme(scheme));
+                let b = &r.button;
+                let upstream = upstream_colors(&r);
+                let flat = ButtonQuery::flat();
+                let tc = theme_color(&r)?;
+                for (state, own, slot) in [
+                    (
+                        WidgetState::HOVER,
+                        upstream.secondary_hover,
+                        tc.secondary_hover,
+                    ),
+                    (
+                        WidgetState::PRESSED,
+                        upstream.secondary_active,
+                        tc.secondary_active,
+                    ),
+                ] {
+                    let stated = state_fill(&b.body(flat.state(state)), "flat")?;
+                    assert_eq!(
+                        slot,
+                        stated.unwrap_or(own),
+                        "{preset:?} {scheme:?} {state:?}"
+                    );
+                }
+                let push = [tc.button_hover, tc.button_active];
+                r.apply_patch(
+                    &ThemePatch::new()
+                        .button(
+                            ButtonRule::new()
+                                .variant(ButtonVariant::Flat)
+                                .states(WidgetState::HOVER)
+                                .body(PartPatch::new().fill(Paint::Solid(BLUE))),
+                        )
+                        .button(
+                            ButtonRule::new()
+                                .variant(ButtonVariant::Flat)
+                                .states(WidgetState::PRESSED)
+                                .body(PartPatch::new().fill(Paint::Solid(RED))),
+                        ),
+                );
+                let tc = theme_color(&r)?;
+                assert_eq!(
+                    [tc.secondary_hover, tc.secondary_active],
+                    [hsla(BLUE), hsla(RED)],
+                    "{preset:?} {scheme:?}"
+                );
+                assert_eq!(
+                    [tc.button_hover, tc.button_active],
+                    push,
+                    "{preset:?} {scheme:?}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// A hovered fill a rule states, opaque or translucent, is the hovered
+    /// button's whole fill, over macos-tahoe light's translucent rest fill.
+    #[test]
+    fn a_stated_hover_fill_is_the_hovered_buttons_whole_fill() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        let mut r = Theme::preset(Preset::MacosTahoe)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        let rest = fill(&r.button.body(WidgetState::NONE), "button.body(NONE).fill")?;
+        assert!(
+            rest.a < 1.0,
+            "macos-tahoe light's button is opaque: {rest:?}"
+        );
+        for hover in [RED, BLUE.with_alpha(0.5)] {
+            r.apply_patch(
+                &ThemePatch::new().button(
+                    ButtonRule::new()
+                        .states(WidgetState::HOVER)
+                        .body(PartPatch::new().fill(Paint::Solid(hover))),
+                ),
+            );
+            let tc = theme_color(&r)?;
+            assert_eq!(tc.button, rest);
+            assert_eq!(
+                [tc.button_hover, tc.button_secondary_hover],
+                [hsla(hover); 2],
+                "{hover:?}"
+            );
+        }
+        Ok(())
+    }
+
+    /// Each form of a stated radius as the one-radius read takes it: a
+    /// continuous curve drawn as the circular corner of its radius (spec §10,
+    /// rule 2), a pill as gpui-component's full radius, per-corner radii where
+    /// the four are one; per-corner radii that differ and a concentric radius,
+    /// which needs the container's, not. On a patched theme a continuous
+    /// button's geometry is the circular button's of the same radius.
+    #[test]
+    fn every_radius_form_is_read_as_gpui_rounds_it() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, CornerCurve, Corners, PartPatch, Preset, Theme, ThemeContext, ThemePatch,
+        };
+
+        let part = |radius: CornerRadius, curve: CornerCurve| {
+            let mut part = PartStyle::default();
+            part.corners = Corners { radius, curve };
+            part.stated |= PartStated::CORNERS;
+            part
+        };
+        let per_corner = |top_left, top_right, bottom_right, bottom_left| CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        };
+        for curve in [CornerCurve::Circular, CornerCurve::Continuous] {
+            let read = |radius| radius_of(&part(radius, curve));
+            assert_eq!(read(CornerRadius::Uniform(4.0)), Some(4.0));
+            assert_eq!(read(CornerRadius::None), Some(0.0));
+            assert_eq!(read(CornerRadius::Pill), Some(PILL_RADIUS));
+            assert_eq!(read(per_corner(3.0, 3.0, 3.0, 3.0)), Some(3.0));
+            assert_eq!(read(per_corner(1.0, 2.0, 3.0, 4.0)), None);
+            assert_eq!(
+                read(CornerRadius::Concentric {
+                    inset: 2.0,
+                    min_radius: 1.0,
+                }),
+                None
+            );
+        }
+        assert_eq!(
+            radius(
+                &part(per_corner(1.0, 2.0, 3.0, 4.0), CornerCurve::Circular),
+                "h"
+            )
+            .err(),
+            Some(Unmapped("h"))
+        );
+
+        let patched = |corners: Corners| {
+            let mut r = Theme::preset(Preset::MacosTahoe).resolve(&ThemeContext::light());
+            r.apply_patch(
+                &ThemePatch::new()
+                    .button(ButtonRule::new().body(PartPatch::new().corners(corners))),
+            );
+            r
+        };
+        let continuous = patched(Corners::continuous(4.0));
+        assert_eq!(
+            radius_of(&continuous.button.body(WidgetState::NONE)),
+            Some(4.0)
+        );
+        assert_eq!(
+            builders::button(&continuous)?,
+            builders::button(&patched(Corners::uniform(4.0)))?
+        );
         Ok(())
     }
 }

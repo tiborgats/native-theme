@@ -183,6 +183,7 @@
       "size_px": 17.0,
       "weight": 400,
       "style": "normal",
+      "line_height": 20.230001,
       "defined_size": {
         "pt": 17.0
       }
@@ -318,8 +319,8 @@
       "base": {
         "fill": "#e9e9ea",
         "stroke": {
-          "width": 0.5,
-          "color": "#c6c6c8"
+          "width": 1.0,
+          "color": "#ffffff"
         },
         "corners": 10.0,
         "min_size": [
@@ -333,7 +334,11 @@
             "hover"
           ],
           "body": {
-            "fill": "#d1d1d6"
+            "fill": "#d1d1d6",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff"
+            }
           }
         },
         {
@@ -341,7 +346,11 @@
             "pressed"
           ],
           "body": {
-            "fill": "#c7c7cc"
+            "fill": "#c7c7cc",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff"
+            }
           }
         },
         {
@@ -389,6 +398,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#007aff"
+          }
+        },
         {
           "states": [
             "pressed"
@@ -465,6 +482,17 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "field": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#c6c6c8"
+            }
+          }
+        },
+        {
+          "states": [
             "focused"
           ],
           "field": {
@@ -496,6 +524,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "text": {
+            "color": "#000000"
+          }
+        },
         {
           "states": [
             "disabled"
@@ -542,6 +578,17 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "field": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#c6c6c8"
+            }
+          }
+        },
+        {
+          "states": [
             "focused"
           ],
           "field": {
@@ -575,6 +622,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "text": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
             "disabled"
           ],
           "text": {
@@ -600,8 +655,8 @@
       "base": {
         "fill": "#ffffff",
         "stroke": {
-          "width": 0.5,
-          "color": "#c6c6c8"
+          "width": 1.5,
+          "color": "#3c3c4399"
         },
         "corners": 10.0,
         "shadows": "none",
@@ -620,7 +675,11 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#d1d1d6"
+            "fill": "#d1d1d6",
+            "stroke": {
+              "width": 1.5,
+              "color": "#3c3c4399"
+            }
           }
         },
         {
@@ -629,10 +688,29 @@
           ],
           "indicator": {
             "fill": "#007aff",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "indicator": {
+            "fill": "srgb(1, 1, 1, 0.75)",
             "stroke": {
-              "width": 0.5,
-              "color": "#c6c6c8"
+              "width": 1.5,
+              "color": "srgb(0.23529412, 0.23529412, 0.2627451, 0.45000002)"
             }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0, 0.47843137, 1, 0.75)",
+            "stroke": "none"
           }
         },
         {
@@ -648,7 +726,25 @@
     "checkmark": {
       "base": {
         "color": "#ffffff"
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "checkmark": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "checkmark": {
+            "color": "srgb(1, 1, 1, 0.75)"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -681,8 +777,8 @@
       "base": {
         "fill": "#ffffff",
         "stroke": {
-          "width": 0.5,
-          "color": "#c6c6c8"
+          "width": 1.5,
+          "color": "#3c3c4399"
         },
         "shadows": "none",
         "min_size": [
@@ -700,7 +796,11 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#d1d1d6"
+            "fill": "#d1d1d6",
+            "stroke": {
+              "width": 1.5,
+              "color": "#3c3c4399"
+            }
           }
         },
         {
@@ -709,10 +809,29 @@
           ],
           "indicator": {
             "fill": "#007aff",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "indicator": {
+            "fill": "srgb(1, 1, 1, 0.75)",
             "stroke": {
-              "width": 0.5,
-              "color": "#c6c6c8"
+              "width": 1.5,
+              "color": "srgb(0.23529412, 0.23529412, 0.2627451, 0.45000002)"
             }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0, 0.47843137, 1, 0.75)",
+            "stroke": "none"
           }
         },
         {
@@ -755,7 +874,9 @@
   },
   "switch": {
     "origin": "native",
+    "label_side": "leading",
     "label_gap": null,
+    "label_gap_stretches": true,
     "show_state_glyphs": null,
     "disabled_opacity": 0.3,
     "track": {
@@ -796,6 +917,17 @@
           ],
           "track": {
             "fill": "#2d8a47"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "track": {
+            "fill": "#78788029"
           }
         },
         {
@@ -1463,8 +1595,8 @@
       "base": {
         "fill": "#e9e9ea",
         "stroke": {
-          "width": 0.5,
-          "color": "#c6c6c8"
+          "width": 1.0,
+          "color": "#ffffff"
         },
         "corners": 10.0,
         "shadows": "none",
@@ -1479,7 +1611,23 @@
             "hover"
           ],
           "field": {
-            "fill": "#d1d1d6"
+            "fill": "#d1d1d6",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "field": {
+            "fill": "srgb(0.9137255, 0.9137255, 0.91764706, 0.75)",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff"
+            }
           }
         },
         {
@@ -1504,6 +1652,22 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#007aff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "srgb(0, 0.47843137, 1, 0.75)"
+          }
+        },
         {
           "states": [
             "disabled"

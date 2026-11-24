@@ -16,7 +16,7 @@ use std::sync::Arc;
 use super::color::Color;
 use super::error::Error;
 use super::geometry::{CornerRadius, Corners, Cursor, Edges, ShadowLayer, Stroke, Transform};
-use super::layout::{ArrowSide, DialogButtonOrder, TabIndicatorSide};
+use super::layout::{ArrowSide, DialogButtonOrder, LabelSide, TabIndicatorSide};
 use super::motion::{DialogEntranceStyle, Timing, Transition};
 use super::paint::{BlendMode, GradientStop, Paint, PaintLayer};
 use super::query::{
@@ -932,7 +932,9 @@ widget_patch! {
         parts { track: PartPatch, thumb: PartPatch, label: TextPatch }
         set {}
         opt {
+            label_side: LabelSide => none,
             label_gap: f32 => size,
+            label_gap_stretches: bool => none,
             show_state_glyphs: bool => none,
             disabled_opacity: f32 => unit,
         }
@@ -1334,6 +1336,7 @@ finite_without_numbers!(
     u32,
     TabIndicatorSide,
     ArrowSide,
+    LabelSide,
     DialogButtonOrder,
     DialogEntranceStyle,
 );

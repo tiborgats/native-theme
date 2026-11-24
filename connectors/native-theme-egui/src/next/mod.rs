@@ -34,9 +34,9 @@ use std::time::Duration;
 
 use egui::{Color32, FontId};
 use native_theme::next::{
-    Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FontStyle, MotionPreference,
-    Orientation, PartStated, PartStyle, ResolvedTheme, Scheme, Stroke, StyleQuery, TextStated,
-    TextStyle, WidgetState, WindowState,
+    Contrast, CornerRadius, DialogButtonOrder, FontStyle, MotionPreference, Orientation,
+    PartStated, PartStyle, ResolvedTheme, Scheme, Stroke, StyleQuery, TextStated, TextStyle,
+    WidgetState, WindowState,
 };
 
 use crate::accessors::text_size_or_stock;
@@ -240,18 +240,32 @@ pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     }
 }
 
-/// A part's corner radius, where stated as one circular radius, or as
-/// square corners, which are no radius; `None` where it is not stated, or
-/// stated in a form egui cannot draw as one radius (a pill, per-corner
-/// radii, a continuous curve).
+/// A part's corner radius as one radius: one radius stated for every
+/// corner, square corners, which are no radius, or a pill, the largest
+/// radius egui's `CornerRadius` holds (`u8::MAX`), which epaint clamps to
+/// half the shorter side ([`crate::convert::to_corner_radius`]); `None`
+/// where it is not stated, or stated as per-corner radii that differ, or as
+/// a concentric radius, which needs the container's. egui's corner is
+/// circular, so a continuous curve is drawn as the circular corner of its
+/// radius (spec §10, rule 2).
 #[must_use]
 pub fn radius_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return None;
     }
-    match (part.corners.radius, part.corners.curve) {
-        (CornerRadius::None, _) => Some(0.0),
-        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+    match part.corners.radius {
+        CornerRadius::None => Some(0.0),
+        CornerRadius::Uniform(r) => Some(r),
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => [top_right, bottom_right, bottom_left]
+            .iter()
+            .all(|&r| r == top_left)
+            .then_some(top_left),
+        CornerRadius::Pill => Some(f32::from(u8::MAX)),
         _ => None,
     }
 }

@@ -20,9 +20,136 @@ use super::{Mapped, Unmapped};
 struct Difference {
     name: &'static str,
     preset: &'static str,
-    new: &'static str,
+    new: New,
     reason: &'static str,
 }
+
+/// The 0.8.0 side's value a listed difference asserts: as written, or
+/// computed from the homes the 0.8.0 preset states (`None` where it leaves
+/// one unstated, which fails).
+enum New {
+    Is(&'static str),
+    Computed(fn(&native_theme::next::ResolvedTheme) -> Option<String>),
+}
+
+impl New {
+    /// The `Debug` form the entry asserts on `new`.
+    fn on(&self, new: &native_theme::next::ResolvedTheme) -> Option<String> {
+        match self {
+            Self::Is(v) => Some((*v).to_owned()),
+            Self::Computed(f) => f(new),
+        }
+    }
+}
+
+/// `button.body(NONE)`'s padding inside its border, from its homes: each
+/// stated side plus the stated stroke's width, a stroke stated as none
+/// adding 0 (spec §10, rule 2); `None` where a side or the stroke is
+/// unstated, or the stroke is per side.
+fn body_padding(new: &native_theme::next::ResolvedTheme) -> Option<iced_core::Padding> {
+    use native_theme::next::{PartStated, Stroke, WidgetState};
+
+    let body = new.button.body(WidgetState::NONE);
+    if !body.stated.contains(PartStated::STROKE) {
+        return None;
+    }
+    let width = match body.stroke {
+        Stroke::None => 0.0,
+        Stroke::Uniform { width, .. } => width,
+        _ => return None,
+    };
+    let side = |bit: PartStated, v: f32| body.stated.contains(bit).then_some(v + width);
+    let p = &body.padding;
+    Some(iced_core::Padding {
+        top: side(PartStated::PADDING_TOP, p.top)?,
+        right: side(PartStated::PADDING_RIGHT, p.right)?,
+        bottom: side(PartStated::PADDING_BOTTOM, p.bottom)?,
+        left: side(PartStated::PADDING_LEFT, p.left)?,
+    })
+}
+
+/// `button_padding` as [`body_padding`] computes it.
+fn stated_button_padding(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    Some(format!("{:?}", ok(body_padding(new)?)))
+}
+
+/// `button_content_min_size`: `button.body(NONE).min_size` less
+/// [`body_padding`] on each axis, no less than 0.
+fn stated_content_min_size(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    let p = body_padding(new)?;
+    let [width, height] = new
+        .button
+        .body(native_theme::next::WidgetState::NONE)
+        .min_size;
+    Some(format!(
+        "{:?}",
+        ok([
+            width.map(|w| (w - p.left - p.right).max(0.0)),
+            height.map(|h| (h - p.top - p.bottom).max(0.0)),
+        ])
+    ))
+}
+
+/// `combo_box_padding` from `combo_box.field(NONE)`'s homes: each stated
+/// side plus the stated stroke's width, a stroke stated as none adding 0
+/// (spec §10, rule 2), an unstated side iced's own
+/// (`iced_widget::button::DEFAULT_PADDING`); `None` where the stroke is
+/// unstated or per side, or the right side is stated (an arrow column then
+/// widens it, which this does not reckon).
+#[cfg(feature = "widgets")]
+fn stated_combo_box_padding(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    use native_theme::next::{PartStated, Stroke, WidgetState};
+
+    let field = new.combo_box.field(WidgetState::NONE);
+    if !field.stated.contains(PartStated::STROKE)
+        || field.stated.contains(PartStated::PADDING_RIGHT)
+    {
+        return None;
+    }
+    let width = match field.stroke {
+        Stroke::None => 0.0,
+        Stroke::Uniform { width, .. } => width,
+        _ => return None,
+    };
+    let own = iced_widget::button::DEFAULT_PADDING;
+    let side = |bit: PartStated, v: f32, own: f32| {
+        if field.stated.contains(bit) {
+            v + width
+        } else {
+            own
+        }
+    };
+    let p = &field.padding;
+    Some(format!(
+        "{:?}",
+        ok(iced_core::Padding {
+            top: side(PartStated::PADDING_TOP, p.top, own.top),
+            right: own.right,
+            bottom: side(PartStated::PADDING_BOTTOM, p.bottom, own.bottom),
+            left: side(PartStated::PADDING_LEFT, p.left, own.left),
+        })
+    ))
+}
+
+/// `combo_box_padding` is compared with the `widgets` feature only, which
+/// builds it: no value to assert without it.
+#[cfg(not(feature = "widgets"))]
+fn stated_combo_box_padding(_: &native_theme::next::ResolvedTheme) -> Option<String> {
+    None
+}
+
+/// The reason of the macOS 26 pop-up button's padding.
+const NO_POPUP_LINE: &str = "macos-tahoe states its pop-up button's outline as none (M2.FS4, \
+     measured: os-probe run 45198750893, macOS 26, `*.normal.popup` `edge_*`; \
+     native-theme/tests/next_homes.toml, rows combo_box.border.color and \
+     combo_box.border.line_width, listed differences): the padding inside the border is the \
+     stated padding plus a width of 0 (spec §10, rule 2), where 0.7.2 added its 0.5 hairline";
+
+/// The reason of the macOS 26 push button's padding.
+const NO_BEZEL_LINE: &str = "macos-tahoe states its push button's bezel stroked as none (M2.FS4, \
+     measured: `docs/facts/macos/button.toml` on `v0.8.0-rc1`, `button.body.stroke` absent): the \
+     padding inside the border is the stated padding plus a width of 0 (spec §10, rule 2), where \
+     0.7.2 added its 0.5 hairline, and the content's least size is the body's less that padding";
 
 /// The reason of Breeze's dialog size limits.
 const Z2: &str = "the 0.8.0 theme states no dialog size limits where no source gives them \
@@ -38,32 +165,50 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         name: "dialog_max_width",
         preset: "kde-breeze",
-        new: "None",
+        new: New::Is("None"),
         reason: Z2,
     },
     Difference {
         name: "dialog_max_height",
         preset: "kde-breeze",
-        new: "None",
+        new: New::Is("None"),
         reason: Z2,
     },
     Difference {
         name: "dialog_min_width",
         preset: "kde-breeze",
-        new: "None",
+        new: New::Is("None"),
         reason: Z2,
     },
     Difference {
         name: "dialog_min_height",
         preset: "kde-breeze",
-        new: "None",
+        new: New::Is("None"),
         reason: Z2,
     },
     Difference {
         name: "button_content_min_size",
         preset: "kde-breeze",
-        new: "Ok([Some(68.0), None])",
+        new: New::Is("Ok([Some(68.0), None])"),
         reason: Z1,
+    },
+    Difference {
+        name: "button_padding",
+        preset: "macos-tahoe",
+        new: New::Computed(stated_button_padding),
+        reason: NO_BEZEL_LINE,
+    },
+    Difference {
+        name: "button_content_min_size",
+        preset: "macos-tahoe",
+        new: New::Computed(stated_content_min_size),
+        reason: NO_BEZEL_LINE,
+    },
+    Difference {
+        name: "combo_box_padding",
+        preset: "macos-tahoe",
+        new: New::Computed(stated_combo_box_padding),
+        reason: NO_POPUP_LINE,
     },
 ];
 
@@ -71,6 +216,9 @@ const DIFFERENCES: &[Difference] = &[
 struct Pairs {
     label: String,
     preset: &'static str,
+    /// The value each entry of [`DIFFERENCES`] asserts on this side's
+    /// 0.8.0 theme, by its place.
+    asserted: Vec<Option<String>>,
     failures: Vec<String>,
     seen: Vec<(&'static str, &'static str)>,
 }
@@ -81,8 +229,11 @@ impl Pairs {
         if old == new {
             return;
         }
-        if DIFFERENCES.iter().any(|d| {
-            d.name == name && d.preset == self.preset && d.new == new && !d.reason.is_empty()
+        if DIFFERENCES.iter().zip(&self.asserted).any(|(d, asserted)| {
+            d.name == name
+                && d.preset == self.preset
+                && asserted.as_deref() == Some(new.as_str())
+                && !d.reason.is_empty()
         }) {
             self.seen.push((name, self.preset));
             return;
@@ -446,6 +597,7 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
             let mut p = Pairs {
                 label: format!("{key} {}", if is_dark { "dark" } else { "light" }),
                 preset: key,
+                asserted: DIFFERENCES.iter().map(|d| d.new.on(&new)).collect(),
                 failures: Vec::new(),
                 seen: Vec::new(),
             };
@@ -462,8 +614,13 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
         }
     }
     for d in DIFFERENCES {
-        // The button's helpers are compared with the `widgets` feature only.
-        if d.name == "button_content_min_size" && !cfg!(feature = "widgets") {
+        // The button's and the combo box's helpers are compared with the
+        // `widgets` feature only.
+        if matches!(
+            d.name,
+            "button_content_min_size" | "button_padding" | "combo_box_padding"
+        ) && !cfg!(feature = "widgets")
+        {
             continue;
         }
         if !seen.contains(&(d.name, d.preset)) {

@@ -200,7 +200,9 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke, StrokeAlign, StrokeSide};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
+use crate::next::layout::{
+    ArrowSide, DialogButtonOrder, LabelSide, LayoutMetrics, TabIndicatorSide,
+};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::palette::Palette;
@@ -219,6 +221,7 @@ use crate::next::platform::qt_tint::{qt_tint, tint_stored};
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
     Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
+    rest_color_rules,
 };
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
@@ -294,6 +297,7 @@ struct SchemeColors {
     button_disabled_background: Color,
     button_disabled_foreground: Color,
     checkbox_checked: Color,
+    checkbox_pressed: Color,
     checkbox_frame: Color,
     view_foreground: Color,
     checkbox_disabled_foreground: Color,
@@ -580,6 +584,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // `checkbox.checked_background`: platform-facts.md (§2.5): Button #fcfcfc under Selection
     // #3daee9 at alpha 0.3
     checkbox_checked: srgb8(0xc2e4_f6ff),
+    // the pressed check box: Button #fcfcfc `darker(110)`, renderCheckBoxBackground's
+    // radioCheckSunkenDarkeningFactor (breezehelper.cpp:862, :42 at breeze f0b1d75), computed by
+    // the project's clean-room `qt_lighter` port's darker branch; Breeze's default Button, which a
+    // system colour scheme does not replace here
+    checkbox_pressed: srgb8(0xe5e5_e5ff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     // `menu.separator_color`: platform-facts.md (§2.6): separatorColor(), mix(Window #eff0f1,
@@ -1005,6 +1014,11 @@ const DARK: SchemeColors = SchemeColors {
     // `checkbox.checked_background`: platform-facts.md (§2.5): Button #292c30 under Selection
     // #3daee9 at alpha 0.3
     checkbox_checked: srgb8(0x2f53_68ff),
+    // the pressed check box: Button #292c30 `darker(110)`, renderCheckBoxBackground's
+    // radioCheckSunkenDarkeningFactor (breezehelper.cpp:862, :42 at breeze f0b1d75), computed by
+    // the project's clean-room `qt_lighter` port's darker branch; Breeze's default Button, which a
+    // system colour scheme does not replace here
+    checkbox_pressed: srgb8(0x2528_2cff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     // `menu.separator_color`: platform-facts.md (§2.6): separatorColor(), mix(Window #202326,
@@ -1780,6 +1794,17 @@ const SWITCH_THUMB_DIAMETER: f32 = 18.0;
 // default 1 (SwitchIndicator.qml:65-79)
 const SWITCH_THUMB_BORDER_WIDTH: f32 = 1.0;
 
+/// The gap between a switch's track and its label.
+// `switch.label_gap`: qqc2-desktop-style's Switch `spacing: Kirigami.Units.smallSpacing`
+// (Switch.qml:26, the label's left padding the indicator's width plus it, :70, at
+// qqc2-desktop-style v6.31.0), `smallSpacing(4)` (units.cpp:37 at Kirigami 8319acc7)
+const SWITCH_LABEL_GAP: f32 = 4.0;
+
+/// The opacity a disabled switch draws its label at.
+// `switch.label`: `opacity: control.enabled ? 1 : 0.6` (Switch.qml:72 at qqc2-desktop-style
+// v6.31.0)
+const SWITCH_LABEL_DISABLED_OPACITY: f32 = 0.6;
+
 /// The gap between a dialog's buttons.
 // `dialog.button_gap`: 0.7.2 kde-breeze.toml (uncited)
 const DIALOG_BUTTON_GAP: f32 = 6.0;
@@ -1894,6 +1919,9 @@ const EXPANDER_CONTENT_INDENT: f32 = 20.0;
 /// Whether an expander draws its frame.
 // `expander.frame_enabled`: 0.7.2 kde-breeze.toml (uncited)
 const EXPANDER_FRAME_ENABLED: bool = false;
+
+/// `expander.hover_background`: platform-facts.md (§2.27), no fill, transparent.
+const EXPANDER_HEADER_HOVER_BACKGROUND: Color = srgb8(0x0000_0000);
 
 /// The state precedence of the combo box's field: disabled over open over
 /// hover, as the button's (an open combo box is "a pressed button frame
@@ -2834,11 +2862,11 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         link: link(c, &colors, &typography),
         slider: slider(c, &colors),
         progress_bar: progress_bar(c, &colors, &layout),
-        splitter: splitter(c, &colors),
+        splitter: splitter(c),
         separator: separator(c, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography, &layout),
-        switch: switch(c, &colors),
+        switch: switch(c, &colors, &typography),
         dialog: dialog(&colors, &typography, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
@@ -3129,6 +3157,15 @@ fn typography(
         None => text_scale_entry(FontSize::Pt(size), weight, units),
     };
     let caption = system.and_then(|s| s.caption_font.as_ref());
+    // The monospace font's line height, which no source states: the multiplier times its size
+    // (spec §4, `Typography`: `body` and `monospace` follow a slot's rule).
+    let mono = system.and_then(|s| s.monospace_font.as_ref());
+    let mono_size = mono
+        .and_then(|f| f.size)
+        .unwrap_or(FontSize::Pt(MONO_SIZE_PT));
+    let mut monospace = font(mono, (MONO_FAMILY, mono_size, MONO_WEIGHT), text, units);
+    monospace.line_height = line_height_px(mono_size, units);
+    monospace.stated |= TextStated::LINE_HEIGHT;
     Typography {
         display: None,
         title1: Some(heading(
@@ -3152,12 +3189,7 @@ fn typography(
             caption.and_then(|f| f.weight).unwrap_or(CAPTION_WEIGHT),
             units,
         )),
-        monospace: font(
-            system.and_then(|s| s.monospace_font.as_ref()),
-            (MONO_FAMILY, FontSize::Pt(MONO_SIZE_PT), MONO_WEIGHT),
-            text,
-            units,
-        ),
+        monospace,
         line_height_multiplier: LINE_HEIGHT,
         fallbacks: Arc::from([]),
         emoji_family: None,
@@ -3282,10 +3314,13 @@ fn button(
     // `button.hover_text_color` and `checked_text_color`: platform-facts.md (§2.3), a non-flat
     // button's label is ButtonText in every state; `default_button_text_color`: platform-facts.md
     // (§2.3), `[Colors:Button]` ForegroundNormal; each stated for its state (spec §2, `from_state`).
+    // Pressed, the same: platform-facts.md (§2.3) `active_text_color`, a non-flat button's label
+    // is ButtonText in every state (breezestyle.cpp:5350-5362 at breeze f0b1d75).
     let label = RuleBuilder::new(label(&typography.body, Some(c.button_foreground)))
         .rules(
             [
                 RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
                 RuleSelector::on(WidgetState::CHECKED),
                 RuleSelector::on(WidgetState::DEFAULT),
             ],
@@ -3368,21 +3403,49 @@ fn checkbox(
     layout: &LayoutMetrics,
 ) -> CheckboxWidget {
     // `checkbox.indicator_color`: platform-facts.md (§2.5), palette.text(), `[Colors:View]`
-    // ForegroundNormal, the checked box's mark, stated for `CHECKED` (spec §2, `from_state`).
+    // ForegroundNormal, the checked box's mark, stated for `CHECKED` (spec §2, `from_state`);
+    // hovered and pressed the same: the mark's pen is `QPen(palette.text(), …)` in every state
+    // (breezehelper.cpp:938 at breeze f0b1d75), and renderCheckBox ignores `sunken` (:888).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base(roles.view.foreground.map(IconProp::Color))
         .base([IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH))])
         .rules(
-            roles
-                .view
-                .foreground
-                .map(|_| RuleSelector::on(WidgetState::CHECKED)),
+            roles.view.foreground.into_iter().flat_map(|_| {
+                [
+                    RuleSelector::on(WidgetState::CHECKED),
+                    RuleSelector::on(WidgetState::HOVER),
+                    RuleSelector::on(WidgetState::PRESSED),
+                ]
+            }),
             roles.view.foreground.map(IconProp::Color),
+        )
+        .build();
+    // `hover_background`: platform-facts.md (§2.5), no hover fill, the box keeps palette.button()
+    // (breezehelper.cpp:862 at breeze f0b1d75), stated for `HOVER` (spec §2, `from_state`).
+    // Pressed: renderCheckBoxBackground fills `palette.button().darker(sunken ? 110 : 100)`
+    // (breezehelper.cpp:862, :42; `sunken` is State_Sunken, breezestyle.cpp:4912), and the hover
+    // pen stays over the frame while the pointer presses (breezehelper.cpp:894-907,
+    // breezestyle.cpp:4913). A checked box keeps its checked look; a disabled one its own.
+    let indicator = indicator(c, layout)
+        .base([corners(layout)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER)
+                .except(WidgetState::CHECKED | WidgetState::DISABLED),
+            [fill(c.button_background)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED)
+                .except(WidgetState::CHECKED | WidgetState::DISABLED),
+            [fill(c.checkbox_pressed)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
+            [outline(layout, c.accent)],
         )
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
-        indicator(c, layout).base([corners(layout)]).build(),
+        indicator,
         checkmark,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
@@ -3462,7 +3525,6 @@ fn list(
     // (docs/issues/0004_kde-leftovers-rationale.md, L2), so its hovered row takes the inactive
     // selection colour at the alphas of a focused view's (E5): derived, the outline's measured
     // pixel exact and the fill's within one 8-bit step, a residual not explained.
-    let unfocused_hover = WidgetState::HOVER.union(WidgetState::UNFOCUSED_VIEW);
     let inactive_highlight = c.selection_unfocused_background;
     // `L4`: a text-only row's content inset from the row's rectangle, the highlight's margin,
     // Breeze's item padding and, left and right, Qt's text margin.
@@ -3473,34 +3535,42 @@ fn list(
         ))])
         .rule(alternate, [fill(c.list_alternate_row)])
         .build();
-    let selected_hover = WidgetState::SELECTED.union(WidgetState::HOVER);
     let unfocused_selected = WidgetState::SELECTED.union(WidgetState::UNFOCUSED_VIEW);
     // `L4`: the highlight is inset by Breeze's margins; its corners are stated only by the rules
     // that draw one.
     let highlight_corners = PartProp::Corners(Corners::uniform(LIST_ROW_RADIUS));
+    // A pressed row draws the hovered row's highlight: drawPanelItemViewItemPrimitive reads
+    // State_MouseOver, State_Selected, State_Enabled and State_Active, never State_Sunken
+    // (breezestyle.cpp:4746-4897, flags :4817-4820 at breeze f0b1d75); the press selects the row.
+    let pointer = |states: WidgetState| {
+        [
+            RuleSelector::on(states.union(WidgetState::HOVER)),
+            RuleSelector::on(states.union(WidgetState::PRESSED)),
+        ]
+    };
     let highlight = RuleBuilder::new(PartStyle::default())
         .base([PartProp::Margin(Edges::symmetric(
             LIST_ROW_MARGIN_VERTICAL,
             LIST_ROW_MARGIN_HORIZONTAL,
         ))])
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        .rules(
+            pointer(WidgetState::NONE),
             [fill(c.list_row_hover), highlight_corners.clone()],
         )
         // `list.hover_border_color`: "the 1 px outline of a hovered, unselected row".
-        .rule(
-            RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+        .rules(
+            pointer(WidgetState::NONE).map(|s| s.except(WidgetState::SELECTED)),
             [outline(layout, c.list_row_hover_frame)],
         )
-        .rule(
-            RuleSelector::on(unfocused_hover),
+        .rules(
+            pointer(WidgetState::UNFOCUSED_VIEW),
             [
                 fill(translucent(inactive_highlight, BLEND_VALUE)),
                 highlight_corners.clone(),
             ],
         )
-        .rule(
-            RuleSelector::on(unfocused_hover).except(WidgetState::SELECTED),
+        .rules(
+            pointer(WidgetState::UNFOCUSED_VIEW).map(|s| s.except(WidgetState::SELECTED)),
             [outline(
                 layout,
                 translucent(inactive_highlight, LIST_HOVER_OUTLINE_ALPHA),
@@ -3513,8 +3583,8 @@ fn list(
         // `L3`: a hovered, selected row is filled with `Highlight.lighter(110)`; a view without
         // the focus draws its rows from the Inactive group (L2), whose Highlight is the inactive
         // selection, so its selected row takes that colour, lighter under the pointer.
-        .rule(
-            RuleSelector::on(selected_hover),
+        .rules(
+            pointer(WidgetState::SELECTED),
             [fill(lighter(
                 roles.selection.background,
                 LIST_SELECTED_HOVER_LIGHTER,
@@ -3524,8 +3594,8 @@ fn list(
             RuleSelector::on(unfocused_selected),
             [fill(inactive_highlight)],
         )
-        .rule(
-            RuleSelector::on(unfocused_selected.union(WidgetState::HOVER)),
+        .rules(
+            pointer(unfocused_selected),
             [fill(lighter(
                 inactive_highlight,
                 LIST_SELECTED_HOVER_LIGHTER,
@@ -3803,8 +3873,16 @@ fn input(
             PartProp::Padding(padding),
         ])
         .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])))
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        // Pressed, the hovered outline: the line edit frame reads State_MouseOver and
+        // State_HasFocus only, no State_Sunken (breezestyle.cpp:4065-4066, :3991-3992 at breeze
+        // f0b1d75), and frameOutlineColor gives hoverColor under the pointer
+        // (breezehelper.cpp:142-168); once the press gives the field the focus, the focused
+        // outline.
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
+            ],
             [outline(layout, c.decoration_hover)],
         )
         .rule(
@@ -3816,7 +3894,16 @@ fn input(
             [fill(c.view_disabled_background)],
         )
         .build();
+    // Hovered and pressed, the text as at rest: QLineEdit::paintEvent letters it
+    // `pal.text().color()` in every state (qlineedit.cpp:1985 at qtbase v6.12.0).
     let text = RuleBuilder::new(label(&typography.body, Some(c.view_foreground)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(c.view_foreground)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(c.view_disabled_foreground)],
@@ -3943,12 +4030,19 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             RuleSelector::on(WidgetState::FOCUSED),
             [handle_outline(c.accent)],
         )
+        // `thumb_hover_color`: platform-facts.md (§2.9), the handle's fill is QPalette::Button in
+        // every state (breezestyle.cpp:8122 at breeze f0b1d75), stated for `HOVER` and `PRESSED`
+        // (spec §2, `from_state`); the press only drops the handle's shadow
+        // (breezehelper.cpp:1169-1181).
         .rules(
             [
                 RuleSelector::on(WidgetState::HOVER),
                 RuleSelector::on(WidgetState::PRESSED),
             ],
-            [handle_outline(c.decoration_hover)],
+            [
+                fill(c.button_background),
+                handle_outline(c.decoration_hover),
+            ],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -4018,15 +4112,23 @@ fn separator(c: &SchemeColors, layout: &LayoutMetrics) -> SeparatorWidget {
     )
 }
 
-/// The splitter: a handle in the default border's colour (0.7.2:
-/// `splitter.divider_color` is `defaults.border.color` where unstated) and
-/// its stated hover colour.
-fn splitter(c: &SchemeColors, roles: &ColorRoles) -> SplitterWidget {
+/// The splitter: a handle in `separatorColor()` in every state, where 0.7.2
+/// took the default border's colour (`splitter.divider_color` is
+/// `defaults.border.color` where unstated) and its own hover colour.
+fn splitter(c: &SchemeColors) -> SplitterWidget {
+    // drawSplitterControl fills separatorColor() with no pen and reads no state
+    // (breezestyle.cpp:7581-7587 at breeze f0b1d75); separatorColor() = mix(Window, WindowText,
+    // frameIntensityBias 0.2) (breezehelper.cpp:329-332); platform-facts.md (§2.17)
+    // `hover_color`: separatorColor() in every state.
+    let separator = fill(c.checkbox_frame);
     let handle = RuleBuilder::new(PartStyle::default())
-        .base(roles.window.border.map(fill))
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
-            [fill(c.window_border)],
+        .base([separator.clone()])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [separator],
         )
         .build();
     SplitterWidget::new(WidgetOrigin::Native, handle, SPLITTER_DIVIDER_WIDTH)
@@ -4187,7 +4289,19 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             // the selected tab only, an unselected one draws no outline
             PartProp::Stroke(Stroke::None),
         ])
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.tab_hover)])
+        // Pressed, the hovered tab's fill: renderTabBarTab reads `hovered` and `selected` only
+        // (breezehelper.cpp:1438-1452, hover fill :1495-1500 at breeze f0b1d75), not the `down`
+        // the style passes (breezestyle.cpp:7187, :7357); the press selects the tab. Hovered and
+        // pressed, no outline, as at rest: the unselected branch draws with `Qt::NoPen` whether
+        // hovered or not (breezehelper.cpp:1488-1506, :1504); a selected tab keeps its frame pen,
+        // which reads no `hovered` (:1456-1487, :1468-1470).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [fill(c.tab_hover), PartProp::Stroke(Stroke::None)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [
@@ -4197,7 +4311,16 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             ],
         )
         .build();
+    // Pressed, the label as at rest: drawTabBarTabLabelControl letters the widget's foreground
+    // role, WindowText (breezestyle.cpp:7073-7079 at breeze f0b1d75).
     let label = RuleBuilder::new(label(&typography.body, roles.window.foreground))
+        .rules(
+            roles
+                .window
+                .foreground
+                .map(|_| RuleSelector::on(WidgetState::PRESSED)),
+            roles.window.foreground.map(TextProp::Color),
+        )
         .rules(
             [
                 RuleSelector::on(WidgetState::HOVER),
@@ -4291,11 +4414,19 @@ fn toolbar(
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(icon_size)])
         .build();
+    // Hovered and pressed, the label as at rest: drawToolButtonLabelControl letters an
+    // auto-raised (toolbar) button in WindowText whatever the state (breezestyle.cpp:5666-5674 at
+    // breeze f0b1d75).
+    let button_label = label(font, None);
+    let (selectors, color) =
+        rest_color_rules(&button_label, [WidgetState::HOVER, WidgetState::PRESSED]);
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
         button,
-        RuleBuilder::new(label(font, None)).build(),
+        RuleBuilder::new(button_label)
+            .rules(selectors, color)
+            .build(),
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),
         Some(TOOLBAR_ITEM_GAP),
@@ -4357,9 +4488,16 @@ fn sidebar(
         .base([fill(roles.sidebar.background.unwrap_or(c.view_background))])
         .base(roles.window.border.map(|border| outline(layout, border)))
         .build();
+    // Pressed, the hovered item's fill: KDE's side panels are item views (KIO's Places view draws
+    // its rows through PE_PanelItemViewItem, kfileplacesview.cpp:161 at kio v6.30.0), which
+    // Breeze draws with no pressed look (breezestyle.cpp:4817-4820 at breeze f0b1d75); the press
+    // selects the item.
     let item = RuleBuilder::new(PartStyle::default())
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
             [fill(c.sidebar_hover)],
         )
         .rule(
@@ -4367,7 +4505,16 @@ fn sidebar(
             [fill(roles.selection.background)],
         )
         .build();
+    // Hovered and pressed, the label as at rest: the Places delegate pens `opt.palette.text()`
+    // unless the row is selected and active (kfileplacesview.cpp:233-237 at kio v6.30.0).
     let item_label = RuleBuilder::new(label(&typography.body, Some(c.view_foreground)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(c.view_foreground)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -4417,6 +4564,32 @@ fn popover(
     )
 }
 
+/// The switch's label, qqc2-desktop-style's Switch's own: `control.font`,
+/// the General font (Switch.qml:74 at qqc2-desktop-style v6.31.0;
+/// qquicktheme.cpp:41, :97 at qtdeclarative v6.11.2; kdeplatformtheme.cpp:140-141,
+/// :176-178 at plasma-integration v6.5.3), in `Kirigami.Theme.textColor`
+/// (:75), `[Colors:Window]` ForegroundNormal (plasmadesktoptheme.cpp:289 at
+/// Kirigami 8319acc7), which hover, press and the on state leave alone
+/// (Switch.qml:64-83 reads none of them); disabled, the Disabled group's
+/// (plasmadesktoptheme.cpp:273-274), Disabled `[Colors:Window]`
+/// ForegroundNormal, at [`SWITCH_LABEL_DISABLED_OPACITY`] (:72), on or off.
+fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+    let same = [
+        RuleSelector::on(WidgetState::HOVER),
+        RuleSelector::on(WidgetState::PRESSED),
+        RuleSelector::on(WidgetState::CHECKED),
+    ];
+    RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rules(same, [TextProp::Color(c.window_foreground)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(
+                c.disabled_text.mul_alpha(SWITCH_LABEL_DISABLED_OPACITY),
+            )],
+        )
+        .build()
+}
+
 /// The switch: qqc2-desktop-style's SwitchIndicator, a track of an exact
 /// size and radius, off in the Button set's tint and on in Highlight laid
 /// over it, outlined in handleBorderColor off and in Highlight on; a round
@@ -4426,8 +4599,9 @@ fn popover(
 /// disabled, the Disabled group's colours for the track, its outline and the
 /// handle, the on track's apart (0.7.2: `switch.disabled_opacity` is
 /// `defaults.disabled_opacity` where unstated). No fill reads the pointer, so
-/// no hover rule.
-fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
+/// no hover rule. Its label [`switch_label`], after the track at
+/// [`SWITCH_LABEL_GAP`], keeping to it.
+fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> SwitchWidget {
     let track_outline = |color| PartProp::Stroke(Stroke::uniform(SWITCH_TRACK_BORDER_WIDTH, color));
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -4439,8 +4613,16 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         ])
         // `switch.hover_unchecked_background`: platform-facts.md (§2.21), no fill reads `hovered`,
         // "the same, the rest fill", stated for `HOVER` (spec §2, `from_state`), before the rules of
-        // the states that replace it.
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.switch_off)])
+        // the states that replace it; pressed the same: the track's colours read no `pressed`
+        // or `hovered`, `pressed` only stops the handle's slide (qqc2-desktop-style
+        // SwitchIndicator.qml:49, :62, :81 at v6.31.0).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [fill(c.switch_off)],
+        )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(c.switch_on), track_outline(c.selection_background)],
@@ -4491,8 +4673,16 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         WidgetOrigin::Native,
         track,
         thumb,
-        RuleBuilder::new(TextStyle::default()).build(),
-        None,
+        switch_label(c, typography),
+        // `label_side`, `label_gap`, `label_gap_stretches`: qqc2-desktop-style's Switch draws the
+        // indicator at the control's left padding and its label after it, the label's left
+        // padding the indicator's width plus `spacing` (Switch.qml:31-33, :70 at
+        // qqc2-desktop-style v6.31.0), `spacing: Kirigami.Units.smallSpacing` (:26), 4
+        // (units.cpp:37 at Kirigami 8319acc7), the label left-aligned (:79), so it keeps to the
+        // switch.
+        Some(LabelSide::Trailing),
+        Some(SWITCH_LABEL_GAP),
+        Some(false),
         None,
         // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
@@ -4584,12 +4774,26 @@ fn combo_box(
             )),
             PartProp::MinSize([Some(COMBO_BOX_MIN_WIDTH), Some(COMBO_BOX_MIN_HEIGHT)]),
         ])
+        // `hover_background`: platform-facts.md (§2.24), a non-editable combo box is a button
+        // frame whose hover turns only the pen Highlight (breezehelper.cpp:710-712 at breeze
+        // f0b1d75), its fill stated for `HOVER` (spec §2, `from_state`).
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [outline(layout, c.selection_background)],
+            [
+                fill(c.button_background),
+                outline(layout, c.selection_background),
+            ],
         )
-        .rule(
-            RuleSelector::on(WidgetState::OPEN),
+        // Pressed, the open combo box's look: drawComboBoxComplexControl passes `down ||
+        // checked` to renderButtonFrame (breezestyle.cpp:7821, :7823, :7860), which fills
+        // mix(button, highlight, Blend_Value) and pens Highlight while down
+        // (breezehelper.cpp:693-694, :710); platform-facts.md (§2.24) `open_background`,
+        // `open_border_color`.
+        .rules(
+            [
+                RuleSelector::on(WidgetState::OPEN),
+                RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
+            ],
             [
                 fill(c.button_pressed),
                 outline(layout, c.selection_background),
@@ -4600,7 +4804,16 @@ fn combo_box(
             [fill(c.button_disabled_background)],
         )
         .build();
+    // Hovered and pressed, the label as at rest: drawComboBoxLabelControl letters a framed combo
+    // box in ButtonText whatever the state (breezestyle.cpp:5789-5795 at breeze f0b1d75).
     let label = RuleBuilder::new(label(&typography.body, Some(c.button_foreground)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(c.button_foreground)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(c.button_disabled_foreground)],
@@ -4649,16 +4862,41 @@ fn segmented_control(
         .build();
     let segment = RuleBuilder::new(PartStyle::default())
         .base([PartProp::MinSize([None, Some(SEGMENT_MIN_HEIGHT)])])
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        // Pressed, the hovered segment's fill: platform-facts.md (§2.25) takes Breeze's tab bar
+        // as KDE's segmented control, whose renderTabBarTab reads `hovered` and `selected`, never
+        // the `down` the style passes (breezehelper.cpp:1440-1441; breezestyle.cpp:7187, :7357
+        // at breeze f0b1d75); the press selects the segment. Hovered and pressed, the line as at
+        // rest, the control's (platform-facts.md (§2.25) `border.color`: ←
+        // `defaults.border.color`): the pen reads neither `hovered` nor `down`
+        // (breezehelper.cpp:1468-1470, :1504).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
             [fill(c.segment_hover)],
+        )
+        .rules(
+            roles.window.border.into_iter().flat_map(|_| {
+                [
+                    RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+                    RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+                ]
+            }),
+            roles.window.border.map(|border| outline(layout, border)),
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(c.selection_background)],
         )
         .build();
-    let label = RuleBuilder::new(label(&typography.body, None))
+    // Hovered and pressed, the label as at rest: the tab bar letters it in the widget's
+    // foreground role, WindowText, in every state (breezestyle.cpp:7073-7079 at breeze f0b1d75).
+    let rest_label = label(&typography.body, None);
+    let (selectors, color) =
+        rest_color_rules(&rest_label, [WidgetState::HOVER, WidgetState::PRESSED]);
+    let label = RuleBuilder::new(rest_label)
+        .rules(selectors, color)
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -4719,8 +4957,19 @@ fn expander(
             PartProp::Shadows(None),
         ])
         .build();
+    // `hover_background`: platform-facts.md (§2.27), no fill under the pointer or pressed:
+    // KCollapsibleGroupBox paints the arrow and the title only, sets State_MouseOver alone and
+    // never State_Sunken (kcollapsiblegroupbox.cpp:153-182 at kwidgetsaddons v6.30.0), stated
+    // for `HOVER` and `PRESSED` (spec §2, `from_state`).
     let header = RuleBuilder::new(PartStyle::default())
         .base([PartProp::MinSize([None, Some(EXPANDER_HEADER_MIN_HEIGHT)])])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [fill(EXPANDER_HEADER_HOVER_BACKGROUND)],
+        )
         .build();
     let arrow = RuleBuilder::new(IconStyle::default())
         .base([
@@ -4728,11 +4977,16 @@ fn expander(
             IconProp::Color(c.expander_arrow),
         ])
         .build();
+    // Hovered and pressed, the title as at rest: it is CE_CheckBoxLabel
+    // (kcollapsiblegroupbox.cpp:178-180), which Breeze letters `QPalette::WindowText` in every
+    // state (breezestyle.cpp:5736 at breeze f0b1d75).
+    let title = label(&typography.body, None);
+    let (selectors, color) = rest_color_rules(&title, [WidgetState::HOVER, WidgetState::PRESSED]);
     ExpanderWidget::new(
         WidgetOrigin::Native,
         container,
         header,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(title).rules(selectors, color).build(),
         arrow,
         Some(EXPANDER_ARROW_SIDE),
         Some(EXPANDER_ARROW_GAP),

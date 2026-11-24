@@ -130,6 +130,7 @@ mod tests {
             name: "Button".into(),
             parent: "window".into(),
             leaves: leaves.iter().map(|leaf| (*leaf).to_string()).collect(),
+            homes: Vec::new(),
             states: states.iter().map(|state| (*state).to_string()).collect(),
             part: false,
             when: None,
