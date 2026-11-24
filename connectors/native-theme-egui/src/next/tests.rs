@@ -621,20 +621,43 @@ fn the_next_builder_takes_fonts_os_mode_and_a_style_patch() -> Result<(), Box<dy
 /// and a role that states no outline at rest, hover or press keeps the base style's.
 #[test]
 fn a_tab_and_a_segment_outline_each_state_by_rule_0() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{PartStated, PartStyle, ResolvedTheme};
+
     let own = egui::Theme::Light.default_style().visuals.widgets;
-    for (role, widget, part) in [
-        (crate::Role::Tab, "tab", "tab"),
+    let tab: fn(&ResolvedTheme, WidgetState) -> PartStyle = |r, s| r.tab.tab(s);
+    let segment: fn(&ResolvedTheme, WidgetState) -> PartStyle =
+        |r, s| r.segmented_control.segment(s);
+    for (role, widget, part, of) in [
+        (crate::Role::Tab, "tab", "tab", tab),
         (
             crate::Role::SegmentedControl,
             "segmented_control",
             "segment",
+            segment,
         ),
     ] {
+        // a preset with no rule for a pressed outline, one stating the outline at rest where
+        // a preset does
+        let unpressed = |rest_stated: bool| {
+            PRESETS.iter().find(|(_, p)| {
+                let r = Theme::preset(*p).resolve(&ThemeContext::light());
+                (!rest_stated
+                    || of(&r, WidgetState::NONE)
+                        .stated
+                        .contains(PartStated::STROKE))
+                    && !of(&r, WidgetState::PRESSED)
+                        .from_state
+                        .contains(PartStated::STROKE)
+            })
+        };
+        let (key, preset) = unpressed(true)
+            .or_else(|| unpressed(false))
+            .ok_or_else(|| format!("{role:?}: every preset states a pressed {part}'s outline"))?;
         let rules = format!(
             "[[widgets.{widget}.rules]]\nstates = [\"hover\"]\n\
              {part}.stroke = {{ width = 3.0, color = \"#ff00ff\" }}\n"
         );
-        let atlas = patched_light(Preset::KdeBreeze, &rules)?;
+        let atlas = patched_light(*preset, &rules)?;
         let w = &atlas
             .scheme(egui::Theme::Light)
             .cell(role, crate::RoleVariant::Normal)
@@ -643,11 +666,14 @@ fn a_tab_and_a_segment_outline_each_state_by_rule_0() -> Result<(), Box<dyn std:
         assert_eq!(
             w.hovered.bg_stroke,
             egui::Stroke::new(3.0, egui::Color32::from_rgb(0xff, 0, 0xff)),
-            "{role:?}"
+            "{role:?} on {key}"
         );
-        // kde-breeze states the outline at rest and no pressed one: egui's own pressed colour
-        // and width, both of which egui's stock entries change from rest
-        assert_eq!(w.active.bg_stroke, own.active.bg_stroke, "{role:?}");
+        // no pressed outline stated: egui's own pressed colour and width, both of which egui's
+        // stock entries change from rest
+        assert_eq!(
+            w.active.bg_stroke, own.active.bg_stroke,
+            "{role:?} on {key}"
+        );
     }
     // a preset stating no tab outline at rest, hover or press: the tab keeps the base's in
     // every state
@@ -711,6 +737,55 @@ fn a_tab_outline_stated_only_hovered_leaves_the_press_to_rule_0()
         egui::Stroke::new(3.0, egui::Color32::from_rgb(0xff, 0, 0xff))
     );
     assert_eq!(w.active.bg_stroke, own.active.bg_stroke);
+    Ok(())
+}
+
+/// A checked box whose outline the theme states as none draws none: the checked cell's outline
+/// is transparent, not the unchecked box's it is copied from (spec §10, rule 2).
+#[test]
+fn a_checked_outline_stated_as_none_is_transparent() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::PartStated;
+
+    let (key, preset) = PRESETS
+        .iter()
+        .find(|(_, p)| {
+            let r = Theme::preset(*p).resolve(&ThemeContext::light());
+            let checked = r.checkbox.indicator(WidgetState::CHECKED);
+            let rest = r.checkbox.indicator(WidgetState::NONE);
+            checked.stated.contains(PartStated::STROKE)
+                && matches!(checked.stroke, Stroke::None)
+                && matches!(rest.stroke, Stroke::Uniform { .. })
+        })
+        .ok_or("no preset states a checked box's outline as none and an unchecked one's")?;
+    let atlas = patched_light(*preset, "")?;
+    let styles = atlas.scheme(egui::Theme::Light);
+    let cell = |variant| {
+        styles
+            .cell(crate::Role::Checkbox, variant)
+            .visuals
+            .widgets
+            .clone()
+    };
+    let (normal, selected) = (
+        cell(crate::RoleVariant::Normal),
+        cell(crate::RoleVariant::Selected),
+    );
+    assert_ne!(
+        normal.inactive.bg_stroke.color,
+        egui::Color32::TRANSPARENT,
+        "{key}"
+    );
+    for (name, entry) in [
+        ("noninteractive", &selected.noninteractive),
+        ("inactive", &selected.inactive),
+        ("open", &selected.open),
+    ] {
+        assert_eq!(
+            entry.bg_stroke.color,
+            egui::Color32::TRANSPARENT,
+            "{key}: {name}"
+        );
+    }
     Ok(())
 }
 

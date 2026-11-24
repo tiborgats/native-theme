@@ -1054,12 +1054,15 @@ fn an_unstated_press_is_not_the_hovered_look() -> TestResult {
 fn a_segment_separator_is_the_separator_parts_fill_where_stated() -> TestResult {
     for (preset, r) in every_preset() {
         let style = super::segment_separator(&r, false)?(&to_theme(&r)?);
-        let outline = line(&r.segmented_control.track(WidgetState::NONE), "stroke")?;
-        assert_eq!(
-            background_color(style.background),
-            Some(outline.color),
-            "{preset:?}"
-        );
+        let track = r.segmented_control.track(WidgetState::NONE);
+        // a track stated with no stroke gives no line (the test below)
+        let outline =
+            if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None) {
+                None
+            } else {
+                Some(line(&track, "stroke")?.color)
+            };
+        assert_eq!(background_color(style.background), outline, "{preset:?}");
     }
     let patch = ThemePatch::new().segmented_control(
         SegmentedControlRule::new().separator(PartPatch::new().fill(Paint::Solid(DISTINCT))),

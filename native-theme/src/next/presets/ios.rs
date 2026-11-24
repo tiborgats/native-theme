@@ -723,6 +723,9 @@ const BUTTON_ICON_TEXT_GAP: f32 = 6.0;
 
 // `checkbox.indicator_width`: 0.7.2 ios-13.toml (uncited)
 const CHECKBOX_INDICATOR_SIZE: f32 = 22.0;
+// (WebKit) the empty box's outline as it shows: stroked `checkboxRadioBorderWidth * 2` = 3 on its
+// edge and clipped to it, so 1.5 inside (RenderThemeIOS.mm:1354, :1484-1491 at WebKit 31adf9d)
+const CHECKBOX_OUTLINE_WIDTH: f32 = 1.5;
 // `checkbox.label_gap`: 0.7.2 ios-13.toml (uncited)
 const CHECKBOX_LABEL_GAP: f32 = 8.0;
 
@@ -950,7 +953,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         elevations: Arc::from([]),
         button: button(c, &colors, &typography, &layout),
         checkbox: checkbox(c, &colors, &typography, &layout),
-        radio: radio(c, &colors, &typography, &layout),
+        radio: radio(c, &colors, &typography),
         scrollbar: scrollbar(c, &colors),
         list: list(c, &colors, &typography, &layout),
         tab: tab(c, &colors, &typography),
@@ -1465,21 +1468,27 @@ fn button(
 /// The box of a check box or the circle of a radio button, which 0.7.2's
 /// `checkbox.*` serves both, `CHECKBOX_INDICATOR_SIZE` across (0.7.2:
 /// `radio_indicator_width` is `indicator_width` where unstated): its
-/// unchecked fill in its unchecked outline at the default width, no shadow;
-/// under the pointer its hover fill; checked, the accent (0.7.2:
-/// `checkbox.checked_background` is `defaults.accent_color` where unstated)
-/// in the default border colour (`checkbox.border.color`); disabled, its
+/// unchecked fill in WebKit's outline, no shadow; under the pointer its
+/// hover fill; checked, the accent (0.7.2: `checkbox.checked_background` is
+/// `defaults.accent_color` where unstated) with no outline; disabled, its
 /// disabled fill, checked or not.
-fn indicator(
-    c: &SchemeColors,
-    roles: &ColorRoles,
-    layout: &LayoutMetrics,
-) -> RuleBuilder<PartStyle, PartProp> {
+fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, PartProp> {
     let size = [Some(CHECKBOX_INDICATOR_SIZE); 2];
+    // (WebKit) checkboxRadioBorderColor: secondaryLabel (ios.rs's `muted`), read for Enabled and
+    // Pressed only, so hovered as at rest; pressed, at pressedStateOpacity
+    // (RenderThemeIOS.mm:1357-1368 at WebKit 31adf9d). paintCheckbox strokes only the empty box
+    // and fills a checked one with no stroke (:1483-1491, :1502), where 0.7.2 outlined both in
+    // its uncited default line and separator.
+    let rest_edge = PartProp::Stroke(Stroke::uniform(CHECKBOX_OUTLINE_WIDTH, c.muted));
+    let pressed_edge = PartProp::Stroke(Stroke::uniform(
+        CHECKBOX_OUTLINE_WIDTH,
+        c.muted.mul_alpha(PRESSED_STATE_OPACITY),
+    ));
+    let no_edge = PartProp::Stroke(Stroke::None);
     RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.elevated),
-            outline(layout, c.separator),
+            rest_edge.clone(),
             // `checkbox.border.shadow_enabled`: docs/inheritance-rules.toml ([wrong_safety_nets]):
             // the defaults' shadow is a wrong safety net for this control, and the preset must say
             // so
@@ -1489,13 +1498,11 @@ fn indicator(
         ])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(c.control_hover)],
+            [fill(c.control_hover), rest_edge],
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(roles.accent.fill)]
-                .into_iter()
-                .chain(border(roles, layout)),
+            [fill(roles.accent.fill), no_edge.clone()],
         )
         // (WebKit) checkboxRadioBackgroundColor: pressed, the enabled background at
         // PRESSED_STATE_OPACITY, -webkit-control-background (systemBackground) unchecked, the tint
@@ -1503,11 +1510,17 @@ fn indicator(
         // (:1399-1401).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.background.mul_alpha(PRESSED_STATE_OPACITY))],
+            [
+                fill(c.background.mul_alpha(PRESSED_STATE_OPACITY)),
+                pressed_edge,
+            ],
         )
         .rule(
             RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
-            [fill(roles.accent.fill.mul_alpha(PRESSED_STATE_OPACITY))],
+            [
+                fill(roles.accent.fill.mul_alpha(PRESSED_STATE_OPACITY)),
+                no_edge,
+            ],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -1553,7 +1566,7 @@ fn checkbox(
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, layout)
+        indicator(c, roles)
             .base([corners(layout.corner_radius)])
             .build(),
         checkmark,
@@ -1567,18 +1580,13 @@ fn checkbox(
 /// The radio button: [`indicator`] (0.7.2 states no corners for it), a dot
 /// in the accent's text colour (`checkbox.indicator_color`; 0.7.2 states no
 /// dot size), [`check_label`].
-fn radio(
-    c: &SchemeColors,
-    roles: &ColorRoles,
-    typography: &Typography,
-    layout: &LayoutMetrics,
-) -> RadioWidget {
+fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> RadioWidget {
     let dot = RuleBuilder::new(PartStyle::default())
         .base([fill(roles.accent.foreground)])
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, layout).build(),
+        indicator(c, roles).build(),
         dot,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
@@ -2331,9 +2339,13 @@ fn combo_box(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> ComboBoxWidget {
+    // (WebKit) the select's `border: 1px solid -webkit-control-background` (html.css:1101 at
+    // WebKit 31adf9d), where 0.7.2 took its uncited default line; no :hover or :active rule
+    // for select, and adjustButtonLikeControlStyle changes an active control's text and
+    // background only (RenderThemeIOS.mm:459, :862-870), so hovered and pressed as at rest.
+    let edge = PartProp::Stroke(Stroke::uniform(BUTTON_BORDER_WIDTH, c.background));
     let field = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.secondary_fill)])
-        .base(border(roles, layout))
+        .base([fill(c.secondary_fill), edge.clone()])
         .base([
             corners(layout.corner_radius),
             // `combo_box.border.shadow_enabled`: docs/inheritance-rules.toml ([wrong_safety_nets]):
@@ -2344,21 +2356,30 @@ fn combo_box(
         ])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(c.control_hover)],
+            [fill(c.control_hover), edge.clone()],
         )
         // (WebKit) a pressed select: adjustMenuListButtonStyle takes adjustButtonLikeControlStyle
         // (RenderThemeIOS.mm:459), which multiplies an active control's background and text by
         // PRESSED_STATE_OPACITY (:862-870).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.secondary_fill.mul_alpha(PRESSED_STATE_OPACITY))],
+            [
+                fill(c.secondary_fill.mul_alpha(PRESSED_STATE_OPACITY)),
+                edge,
+            ],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_fill)],
         )
         .build();
+    // Hovered, the label as at rest: the select's `color: -apple-system-blue` (html.css:1099),
+    // no :hover rule, adjustButtonLikeControlStyle reads only `active()` (RenderThemeIOS.mm:862).
     let label = RuleBuilder::new(label(&typography.body, Some(c.system_blue)))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.system_blue)],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(

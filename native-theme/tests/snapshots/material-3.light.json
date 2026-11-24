@@ -1105,6 +1105,14 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "thumb": {
+            "fill": "#6750a4"
+          }
+        },
+        {
+          "states": [
             "disabled"
           ],
           "thumb": {
@@ -1256,6 +1264,28 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "tab": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "tab": {
+            "stroke": "none"
+          }
+        },
         {
           "states": [
             "hover"
@@ -1859,6 +1889,34 @@
           "states": [
             "hover"
           ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#79747e"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#79747e"
+            }
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
           "segment": {
             "fill": "#1d1b2014"
           }
@@ -2144,6 +2202,14 @@
           ],
           "handle": {
             "fill": "#6750a4"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "handle": {
+            "fill": "#1d1b20"
           }
         }
       ]

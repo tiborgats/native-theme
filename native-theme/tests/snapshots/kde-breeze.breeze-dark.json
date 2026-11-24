@@ -1533,7 +1533,8 @@
             "hover"
           ],
           "tab": {
-            "fill": "#1d99f333"
+            "fill": "#1d99f333",
+            "stroke": "none"
           }
         },
         {
@@ -1541,7 +1542,8 @@
             "pressed"
           ],
           "tab": {
-            "fill": "#1d99f333"
+            "fill": "#1d99f333",
+            "stroke": "none"
           }
         },
         {
@@ -2487,6 +2489,34 @@
         },
         {
           "states": [
+            "hover"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#4d545b"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#4d545b"
+            }
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "segment": {
@@ -2750,7 +2780,7 @@
     "divider_width": 1.0,
     "handle": {
       "base": {
-        "fill": "#4d545b"
+        "fill": "#575b5f"
       },
       "rules": [
         {
@@ -2758,7 +2788,15 @@
             "hover"
           ],
           "handle": {
-            "fill": "#4d545b"
+            "fill": "#575b5f"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "handle": {
+            "fill": "#575b5f"
           }
         }
       ]

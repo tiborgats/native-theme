@@ -582,7 +582,89 @@ const DIFFERENCES: &[Difference] = &[
                  button.body(NONE)'s stroke, 1 px of #ffffff / #000000; every other field of the \
                  refinement is equal",
     },
+    Difference {
+        leaf: RESIZE_HANDLES,
+        presets: &["kde-breeze"],
+        reason: "0.7.2's kde-breeze takes the default border colour for the splitter's handle \
+                 and its hover (#bcc0bf / #4d545b); the 0.8.0 preset states Breeze's \
+                 separatorColor(), which drawSplitterControl fills in every state \
+                 (breezestyle.cpp:7581-7587, breezehelper.cpp:329-332 at breeze f0b1d75; \
+                 docs/platform-facts.md §2.17, hover_color; native-theme/tests/next_homes.toml, \
+                 rows splitter.divider_color and splitter.hover_color, listed differences), \
+                 #c6c8c9 / #4c4e51; so the handle and the active handle are the fills of \
+                 splitter.handle(NONE) and splitter.handle(HOVER), in the compared \
+                 ResizableTheme, in gpui-base's global and in the base overrides alike",
+    },
+    Difference {
+        leaf: RESIZE_HANDLES,
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita takes the default border colour for the splitter's handle, \
+                 opaque (#dcdcde in light), and states an opaque hover colour (#d5d5d5 in \
+                 light, uncited); the 0.8.0 preset states the paned separator's translucent \
+                 $border_color line, currentColor at 15 %, in every state, libadwaita having no \
+                 :hover or :active rule for it (_paned.scss:1-36, _colors.scss:263, :257, :33, \
+                 :96, :318 at libadwaita 1.10.0; docs/platform-facts.md §2.17, hover_color; \
+                 native-theme/tests/next_homes.toml, rows splitter.divider_color and \
+                 splitter.hover_color, listed differences), #0000061f / #ffffff26; so the \
+                 handle and the active handle are the fills of splitter.handle(NONE) and \
+                 splitter.handle(HOVER), in the compared ResizableTheme, in gpui-base's global \
+                 and in the base overrides alike",
+    },
+    Difference {
+        leaf: "geometry::select",
+        presets: &["macos-tahoe"],
+        reason: "0.7.2's macos-tahoe edges the pop-up button in the default line (0.5 px); the \
+                 0.8.0 preset states its outline as none, as macOS 26 draws it (os-probe run \
+                 45198750893, macOS 26, `*.normal.popup` `edge_*`: every edge pixel is the \
+                 fill #00000013 / #ffffff13, docs/evidence/os-probe/2026-11-23-run-45198750893/ \
+                 on m2-fs4c; native-theme/tests/next_homes.toml, rows combo_box.border.color \
+                 and combo_box.border.line_width, listed differences), so the refinement's \
+                 border is combo_box.field(NONE)'s stroke width, 0; the refinement carries no \
+                 border colour in either model, and every other field of it is equal",
+    },
+    Difference {
+        leaf: "geometry::select",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 edges the select in the default border width (0.5 px, \
+                 uncited); the 0.8.0 preset states the border WebKit draws round an iOS select, \
+                 `border: 1px solid -webkit-control-background` (html.css:1101, \
+                 RenderThemeIOS.mm:1027 at WebKit 31adf9d; native-theme/tests/next_homes.toml, \
+                 rows combo_box.border.color and combo_box.border.line_width, listed \
+                 differences), so the refinement's border is combo_box.field(NONE)'s stroke \
+                 width, 1 px; the refinement carries no border colour in either model, and \
+                 every other field of it is equal",
+    },
+    Difference {
+        leaf: "geometry::combobox",
+        presets: &["macos-tahoe", "ios-13"],
+        reason: "as geometry::select's on each: the combo box trigger's frame is the select's \
+                 (crate::geometry::combobox), its border combo_box.field(NONE)'s stroke width",
+    },
 ];
+
+/// The leaf of [`DIFFERENCES`]' entries for the splitter's resize handles:
+/// `ResizableTheme`'s `handle` and `active_handle`, compared by
+/// [`resize_handles_of`], and the same two in what `apply` installs
+/// (gpui-base's global and the base overrides).
+const RESIZE_HANDLES: &str = "ResizableTheme: the handle and the active handle";
+
+/// The splitter's handle at rest and hovered, `splitter.handle(NONE)`'s and
+/// `splitter.handle(HOVER)`'s fills as the connector reads a fill
+/// ([`super::fill_of`]), where both are stated, the hovered one by a state
+/// rule: the form [`DIFFERENCES`]' [`RESIZE_HANDLES`] entries describe;
+/// `None` where they are not.
+fn resize_handles_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
+    use native_theme::next::{PartStated, WidgetState};
+    let s = &new.splitter;
+    let hovered = s.handle(WidgetState::HOVER);
+    if !hovered.from_state.contains(PartStated::FILL) {
+        return None;
+    }
+    Some((
+        super::fill_of(&s.handle(WidgetState::NONE))?,
+        super::fill_of(&hovered)?,
+    ))
+}
 
 /// The presets of [`DIFFERENCES`]' `geometry::button_checked` entries on
 /// which no model states a checked toggle, so the pressed pair stands in.
@@ -1181,12 +1263,35 @@ fn compare_resizable(
     let Some(n) = report.mapped("ResizableTheme", super::resizable_theme(new)) else {
         return;
     };
-    report.leaf("ResizableTheme.handle", o.handle, n.handle);
-    report.leaf(
-        "ResizableTheme.active_handle",
-        o.active_handle,
-        n.active_handle,
-    );
+    match report.listed(RESIZE_HANDLES) {
+        Some(listed) => {
+            report.count(RESIZE_HANDLES);
+            let homes = resize_handles_of(new).map(|(handle, active)| (Some(handle), Some(active)));
+            if o.handle == n.handle
+                || o.active_handle == n.active_handle
+                || homes != Some((n.handle, n.active_handle))
+            {
+                report.failures.push(format!(
+                    "{}: {RESIZE_HANDLES}: the listed difference ({}) no longer describes it: \
+                     0.7.2 {:?} {:?}, 0.8.0 {:?} {:?}",
+                    report.label,
+                    listed.reason,
+                    o.handle,
+                    o.active_handle,
+                    n.handle,
+                    n.active_handle
+                ));
+            }
+        }
+        None => {
+            report.leaf("ResizableTheme.handle", o.handle, n.handle);
+            report.leaf(
+                "ResizableTheme.active_handle",
+                o.active_handle,
+                n.active_handle,
+            );
+        }
+    }
 }
 
 /// The scroll bar's geometry, field by field.
@@ -1252,6 +1357,50 @@ fn compare_mapped<T: PartialEq + Debug>(
 ) {
     if let Some(n) = report.mapped(leaf, new) {
         report.leaf(leaf, old, n);
+    }
+}
+
+/// Compare a combo box trigger's refinement, `geometry::select` or
+/// `geometry::combobox`: where [`DIFFERENCES`] lists `leaf` for the preset,
+/// 0.7.2's refinement with its border widths as `combo_box.field(NONE)`'s
+/// stroke width gives them, the widths differing from 0.7.2's.
+fn compare_combo_trigger(
+    report: &mut Report,
+    leaf: &'static str,
+    o: gpui::StyleRefinement,
+    new_refinement: super::Mapped<gpui::StyleRefinement>,
+    new: &native_theme::next::ResolvedTheme,
+) {
+    let Some(n) = report.mapped(leaf, new_refinement) else {
+        return;
+    };
+    match report.listed(leaf) {
+        Some(listed) => {
+            use gpui::Styled as _;
+            use native_theme::next::WidgetState;
+            report.count(leaf);
+            let field = new.combo_box.field(WidgetState::NONE);
+            let stated = super::stroke_width(&field, "combo_box.field(NONE).stroke.width")
+                .ok()
+                .map(|width| {
+                    gpui::StyleRefinement::default()
+                        .border(px(width))
+                        .border_widths
+                });
+            let mut corrected = o.clone();
+            corrected.border_widths = n.border_widths.clone();
+            if o.border_widths == n.border_widths
+                || stated.as_ref() != Some(&n.border_widths)
+                || corrected != n
+            {
+                report.failures.push(format!(
+                    "{}: {leaf}: the listed difference ({}) no longer describes it: \
+                     0.7.2 {o:?}, 0.8.0 {n:?}",
+                    report.label, listed.reason
+                ));
+            }
+        }
+        None => report.leaf(leaf, o, n),
     }
 }
 
@@ -1462,8 +1611,20 @@ fn compare_builders(
     builder!(report, old, new, input);
     builder!(report, old, new, text_area);
     builder!(report, old, new, input_height);
-    builder!(report, old, new, select);
-    builder!(report, old, new, combobox);
+    compare_combo_trigger(
+        report,
+        "geometry::select",
+        crate::geometry::select(Native::unscaled(old)),
+        super::builders::select(new),
+        new,
+    );
+    compare_combo_trigger(
+        report,
+        "geometry::combobox",
+        crate::geometry::combobox(Native::unscaled(old)),
+        super::builders::combobox(new),
+        new,
+    );
     fill_builder!(report, old, new, input_fill);
     fill_builder!(report, old, new, combo_box_fill);
     builder!(report, old, new, menu_item);
@@ -2065,11 +2226,16 @@ fn every_listed_difference_names_a_covered_preset() {
 /// pressed fills of each scheme ([`button_states_of`]), with the button
 /// state slots of [`BUTTON_STATES`] as that theme's ([`button_states_as`]),
 /// or as a failure where they are not what the connector derives from the
-/// fills. The styled theme itself is returned beside.
+/// fills. Where `handles` is given, the resize handles of gpui-base's global
+/// and of the base overrides are given as 0.7.2's of the same scheme, or as
+/// a failure where they are not the 0.8.0 preset's homes
+/// ([`resize_handles_of`], [`DIFFERENCES`]' [`RESIZE_HANDLES`] entries) or
+/// are 0.7.2's. The styled theme itself is returned beside.
 fn installed(
     cx: &gpui::App,
     row_hover_listed: bool,
     button_states: Option<(&GpuiTheme, SchemeStates)>,
+    handles: Option<SchemeHandles>,
 ) -> (Vec<(&'static str, String)>, GpuiTheme) {
     let styled = GpuiTheme::global(cx);
     let is_dark = styled.is_dark();
@@ -2090,10 +2256,25 @@ fn installed(
     });
     let styled_debug = patched.map_or_else(|failure| failure, |theme| format!("{theme:?}"));
     let base = gpui_base::Theme::global(cx);
+    let as_old = |handle: Option<Hsla>, active: Option<Hsla>| match handles {
+        None => format!("{handle:?} {active:?}"),
+        Some([light, dark]) => {
+            let (old, homes) = if is_dark { dark } else { light };
+            let installed = (handle, active);
+            if installed != old && homes.map(|(h, a)| (Some(h), Some(a))) == Some(installed) {
+                format!("{:?} {:?}", old.0, old.1)
+            } else {
+                format!(
+                    "{RESIZE_HANDLES}: {handle:?} {active:?}, not the homes' {homes:?} beside \
+                     0.7.2's {old:?}"
+                )
+            }
+        }
+    };
     let nt = cx.try_global::<crate::NativeTheme>();
     let overrides = nt
         .and_then(|nt| crate::base_overrides_for(nt, is_dark, Some(styled)))
-        .map(|(g, r)| format!("{g:?} {:?} {:?}", r.handle, r.active_handle));
+        .map(|(g, r)| format!("{g:?} {}", as_old(r.handle, r.active_handle)));
     let band = nt
         .and_then(|nt| nt.source(is_dark))
         .map(crate::Variant::keyboard_focus_band);
@@ -2101,10 +2282,7 @@ fn installed(
         ("styled theme", styled_debug),
         (
             "base handles",
-            format!(
-                "{:?} {:?}",
-                base.resizable.handle, base.resizable.active_handle
-            ),
+            as_old(base.resizable.handle, base.resizable.active_handle),
         ),
         ("base overrides", format!("{overrides:?}")),
         (
@@ -2124,6 +2302,11 @@ fn installed(
 /// What [`apply_both`] gives for each point: the installed parts
 /// ([`installed`]) and the styled theme.
 type Installed = [(Vec<(&'static str, String)>, GpuiTheme); 2];
+
+/// The resize handles of each scheme, light and dark: 0.7.2's
+/// (`crate::base_layer::resizable_theme`'s `handle` and `active_handle`)
+/// and the 0.8.0 preset's homes ([`resize_handles_of`]).
+type SchemeHandles = [((Option<Hsla>, Option<Hsla>), Option<(Hsla, Hsla)>); 2];
 
 /// The two schemes of `key` (0.7.2) or `preset` (0.8.0) applied, light then
 /// dark, with no variant stored before: what is installed after the calls,
@@ -2185,9 +2368,25 @@ fn apply_both(
         .and_then(|old| old.get(at))
         .map(|(_, from)| (from, states))
     };
-    let after = cx.update(|cx| installed(cx, row_hover_listed, button_states(0)));
+    let handles_listed = next
+        && DIFFERENCES
+            .iter()
+            .any(|d| d.leaf == RESIZE_HANDLES && d.presets.contains(&key));
+    let handles = handles_listed.then(|| {
+        let mut schemes = themes.iter().map(|(_, (old, _, _, new))| {
+            let r = crate::base_layer::resizable_theme(old);
+            ((r.handle, r.active_handle), resize_handles_of(new))
+        });
+        [schemes.next(), schemes.next()]
+    });
+    let handles = match handles {
+        Some([Some(light), Some(dark)]) => Some([light, dark]),
+        Some(_) => return Err(format!("{key}: {RESIZE_HANDLES}: a scheme is missing")),
+        None => None,
+    };
+    let after = cx.update(|cx| installed(cx, row_hover_listed, button_states(0), handles));
     cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
-    let switched = cx.update(|cx| installed(cx, row_hover_listed, button_states(1)));
+    let switched = cx.update(|cx| installed(cx, row_hover_listed, button_states(1), handles));
     Ok([after, switched])
 }
 

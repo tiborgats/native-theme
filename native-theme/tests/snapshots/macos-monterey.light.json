@@ -346,7 +346,11 @@
             "pressed"
           ],
           "body": {
-            "fill": "#f0f0f0"
+            "fill": "#f0f0f0",
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000019"
+            }
           }
         },
         {
@@ -439,6 +443,17 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "field": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000019"
+            }
+          }
+        },
+        {
+          "states": [
             "disabled"
           ],
           "field": {
@@ -492,6 +507,17 @@
         "shadows": "none"
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "field": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000019"
+            }
+          }
+        },
         {
           "states": [
             "disabled"
@@ -561,7 +587,22 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#e0e0e5"
+            "fill": "#e0e0e5",
+            "stroke": {
+              "width": 0.5,
+              "color": "#d6d6d6"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#c7c7c7"
+            }
           }
         },
         {
@@ -633,7 +674,22 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#e0e0e5"
+            "fill": "#e0e0e5",
+            "stroke": {
+              "width": 0.5,
+              "color": "#d6d6d6"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#c7c7c7"
+            }
           }
         },
         {
@@ -1065,7 +1121,17 @@
         "defined_size": {
           "pt": 13.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#000000d8"
+          }
+        }
+      ]
     },
     "indicator": {
       "base": {}
@@ -1317,6 +1383,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#000000d8"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "item_label": {
@@ -1428,8 +1502,29 @@
           "states": [
             "hover"
           ],
+          "not_states": [
+            "disabled"
+          ],
           "field": {
-            "fill": "#e0e0e5"
+            "fill": "#ffffff",
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000019"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "disabled"
+          ],
+          "field": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000019"
+            }
           }
         },
         {
@@ -1454,6 +1549,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#000000d8"
+          }
+        },
         {
           "states": [
             "disabled"
@@ -1507,6 +1610,20 @@
         },
         {
           "states": [
+            "hover"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000019"
+            }
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "segment": {
@@ -1527,6 +1644,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#000000d8"
+          }
+        },
         {
           "states": [
             "selected"

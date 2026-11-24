@@ -492,6 +492,18 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "field": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#00000019",
+              "align": "outside"
+            }
+          }
+        },
+        {
+          "states": [
             "focused"
           ],
           "field": {
@@ -583,6 +595,18 @@
         {
           "states": [
             "hover"
+          ],
+          "field": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#00000019",
+              "align": "outside"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
           ],
           "field": {
             "stroke": {
@@ -1283,7 +1307,8 @@
             "hover"
           ],
           "tab": {
-            "fill": "#ffffff0f"
+            "fill": "#ffffff0f",
+            "stroke": "none"
           }
         },
         {
@@ -1291,7 +1316,8 @@
             "pressed"
           ],
           "tab": {
-            "fill": "#3a3a3a73"
+            "fill": "#3a3a3a73",
+            "stroke": "none"
           }
         },
         {
@@ -1803,7 +1829,11 @@
             "hover"
           ],
           "field": {
-            "fill": "#323232"
+            "fill": "#323232",
+            "stroke": {
+              "width": 1.0,
+              "color": "#020202"
+            }
           }
         },
         {
@@ -1811,7 +1841,11 @@
             "pressed"
           ],
           "field": {
-            "fill": "#272727"
+            "fill": "#272727",
+            "stroke": {
+              "width": 1.0,
+              "color": "#050505"
+            }
           }
         },
         {
@@ -1897,6 +1931,28 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": "none"
+          }
+        },
         {
           "states": [
             "hover"
@@ -2200,6 +2256,14 @@
         {
           "states": [
             "hover"
+          ],
+          "handle": {
+            "fill": "#020202"
+          }
+        },
+        {
+          "states": [
+            "pressed"
           ],
           "handle": {
             "fill": "#020202"

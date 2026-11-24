@@ -1314,7 +1314,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         link: link(c, &colors, &typography),
         slider: slider(c, &colors),
         progress_bar: progress_bar(c, &colors),
-        splitter: splitter(&colors),
+        splitter: splitter(c, &colors),
         separator: separator(c, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography),
@@ -2322,8 +2322,16 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             PartProp::MaxSize([Some(SLIDER_THUMB_DIAMETER); 2]),
         ])
         // `slider.thumb_hover_color`: 0.7.2 material-3.toml (uncited), the rest colour, stated for
-        // `HOVER` (spec §2, `from_state`), before the disabled rule.
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.primary)])
+        // `HOVER` (spec §2, `from_state`), before the disabled rule. Pressed, the rest colour too:
+        // pressed-handle-color = primary = handle-color (v0_192/_md-comp-slider.scss:92, :52 at
+        // material-web cbd34a8); its pressed state layer is drawn around the handle (:93-96).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [fill(c.primary)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_content)],
@@ -2381,14 +2389,19 @@ fn separator(c: &SchemeColors, layout: &LayoutMetrics) -> SeparatorWidget {
 
 /// The splitter: its handle in the default border colour (0.7.2:
 /// `splitter.divider_color` is `defaults.border.color` where unstated), under
-/// the pointer in the accent.
-fn splitter(roles: &ColorRoles) -> SplitterWidget {
+/// the pointer in the accent, pressed in on-surface.
+fn splitter(c: &SchemeColors, roles: &ColorRoles) -> SplitterWidget {
     let handle = RuleBuilder::new(PartStyle::default())
         .base(roles.window.border.map(fill))
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [fill(roles.accent.fill)],
         )
+        // Pressed, on-surface: the drag handle's pressed.color (latest/sass/_md-comp-drag-handle
+        // .scss:47-48 at material-web cbd34a8; v0_192 has no drag handle, platform-facts.md
+        // (§2.17)). Its pressed size, 12 × 52 (rest 4 × 48, :29-32), and corner-medium shape
+        // are not stated: the handle's part is the divider's.
+        .rule(RuleSelector::on(WidgetState::PRESSED), [fill(c.on_surface)])
         .build();
     SplitterWidget::new(WidgetOrigin::Native, handle, SPLITTER_DIVIDER_WIDTH)
 }
@@ -2492,6 +2505,16 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             // `tab.border.color`, `border.line_width`: platform-facts.md (§2.11): none, 0
             PartProp::Stroke(Stroke::None),
         ])
+        // Hovered and pressed, no outline, as at rest: the primary navigation tab's token set has
+        // no outline key in any state (v0_192/_md-comp-primary-navigation-tab.scss:37-121 at
+        // material-web cbd34a8); platform-facts.md (§2.11) `border.line_width` 0.
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+                RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+            ],
+            [PartProp::Stroke(Stroke::None)],
+        )
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
         // Pressed, inactive-pressed-state-layer-color primary at the pressed opacity
         // (_md-comp-primary-navigation-tab.scss:63-66).
@@ -2965,6 +2988,21 @@ fn segmented_control(
             PartProp::MinSize([None, Some(SEGMENT_HEIGHT)]),
             padding_sides(SEGMENT_PADDING_HORIZONTAL),
         ])
+        // Hovered and pressed, the outline as at rest: the token set has one enabled outline-color
+        // (v0_192/_md-comp-outlined-segmented-button.scss:65 at material-web cbd34a8), no hover or
+        // pressed one; material-web changes it only when disabled
+        // (labs/segmentedbutton/internal/_shared.scss:67-72).
+        .rules(
+            border(roles, layout.border_width)
+                .into_iter()
+                .flat_map(|_| {
+                    [
+                        RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+                        RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+                    ]
+                }),
+            border(roles, layout.border_width),
+        )
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
         // Pressed, unselected-pressed-state-layer-color on-surface
         // (_md-comp-outlined-segmented-button.scss:109-110) at its pressed-state-layer-opacity,

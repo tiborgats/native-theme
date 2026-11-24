@@ -1105,6 +1105,14 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "thumb": {
+            "fill": "#d0bcff"
+          }
+        },
+        {
+          "states": [
             "disabled"
           ],
           "thumb": {
@@ -1256,6 +1264,28 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "tab": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "tab": {
+            "stroke": "none"
+          }
+        },
         {
           "states": [
             "hover"
@@ -1859,6 +1889,34 @@
           "states": [
             "hover"
           ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#938f99"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#938f99"
+            }
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
           "segment": {
             "fill": "#e6e0e914"
           }
@@ -2144,6 +2202,14 @@
           ],
           "handle": {
             "fill": "#d0bcff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "handle": {
+            "fill": "#e6e0e9"
           }
         }
       ]

@@ -193,6 +193,7 @@ use crate::next::palette::Palette;
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
     Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
+    rest_color_rules,
 };
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, Orientation, Scheme, ThemeContext, WidgetState,
@@ -269,6 +270,8 @@ struct SchemeColors {
     checkbox_hover: Option<Color>,
     checkbox_unchecked: Color,
     checkbox_unchecked_border: Color,
+    /// The unchecked box's edge pressed; `None` where it is the rest one.
+    checkbox_pressed_border: Option<Color>,
     input_background: Color,
     caret: Color,
     input_disabled: Option<Color>,
@@ -307,7 +310,6 @@ struct SchemeColors {
     switch_disabled_thumb: Option<Color>,
     combo_background: Color,
     combo_foreground: Color,
-    combo_hover: Option<Color>,
     combo_disabled: Option<Color>,
     segmented_active: Option<Color>,
     segmented_active_foreground: Option<Color>,
@@ -410,6 +412,10 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // cannot carry (measured, os-probe run 40348854007, renders/aqua/checkbox-regular-off@2x.png;
     // the radio's within 4 levels)
     checkbox_unchecked_border: srgb8(0xd6d6_d6ff),
+    // `checkbox.indicator(PRESSED).stroke`: the pressed box's outer row #c7c7c7 (top #b3b3b3),
+    // at rest #d1d1d1 (#bcbcbc), one row in each (measured, os-probe run 45198750893, macOS 15,
+    // `*.pressed.checkbox_off` against `*.normal.checkbox_off` `edge_*`)
+    checkbox_pressed_border: Some(srgb8(0xc7c7_c7ff)),
     // `input.background_color`: platform-facts.md (§2.4): textBackgroundColor, probe
     input_background: srgb8(0xffff_ffff),
     // `input.caret_color`: platform-facts.md (§2.4): textInsertionPointColor, probe, the same in
@@ -515,8 +521,6 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // `combo_box.font.color`: platform-facts.md (§2.24): controlTextColor, probe; over the fill
     // #272727
     combo_foreground: srgb8(0x0000_00d8),
-    // `combo_box.hover_background`: soft_option: NSPopUpButton hover -- subtle highlight
-    combo_hover: Some(srgb8(0xe0e0_e5ff)),
     // `combo_box.disabled_background`: soft_option: NSPopUpButton disabled -- reduced alpha bg
     combo_disabled: Some(srgb8(0xe8e8_ed80)),
     // `segmented_control.active_background`: Interactive state colors (platform-facts.md section
@@ -632,6 +636,10 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): ← border.color, none: the fill
     // runs to the box's edge, a faint dark rim outside it (measured, the same render)
     checkbox_unchecked_border: srgb8(0x0000_0000),
+    // `checkbox.indicator(PRESSED).stroke`: as at rest: every pressed edge pixel is the pressed
+    // fill #ffffff5c (top #ffffff62), so no line of its own shows (measured, os-probe run
+    // 45198750893, macOS 15, `*.pressed.checkbox_off` `edge_*`)
+    checkbox_pressed_border: None,
     // `input.background_color`: platform-facts.md (§2.4): textBackgroundColor, probe
     input_background: srgb8(0x1e1e_1eff),
     // `input.caret_color`: platform-facts.md (§2.4): textInsertionPointColor, probe
@@ -738,8 +746,6 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `combo_box.font.color`: platform-facts.md (§2.24): controlTextColor, probe; over the fill
     // #e7e7e7
     combo_foreground: srgb8(0xffff_ffd8),
-    // `combo_box.hover_background`: soft_option: NSPopUpButton hover -- subtle highlight
-    combo_hover: Some(srgb8(0x4444_46ff)),
     // `combo_box.disabled_background`: soft_option: NSPopUpButton disabled -- reduced alpha bg
     combo_disabled: Some(srgb8(0x3a3a_3c80)),
     // `segmented_control.active_background`: Interactive state colors (platform-facts.md section
@@ -863,6 +869,9 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): macOS 26: none (measured), no
     // edge pixel differs from the fill; the same caveat
     checkbox_unchecked_border: srgb8(0x0000_0000),
+    // `checkbox.indicator(PRESSED).stroke`: as at rest: every pressed edge pixel is the fill
+    // (measured, os-probe run 45198750893, macOS 26, `*.pressed.checkbox_*` `edge_*`)
+    checkbox_pressed_border: None,
     // `input.background_color`: platform-facts.md (§2.4): textBackgroundColor, probe
     input_background: srgb8(0xffff_ffff),
     // `input.caret_color`: platform-facts.md (§2.4): textInsertionPointColor, probe
@@ -954,7 +963,6 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `combo_box.font.color`: platform-facts.md (§2.24): labelColor = controlTextColor, probe; over
     // the fill #242424
     combo_foreground: srgb8(0x0000_00d8),
-    combo_hover: None,
     combo_disabled: None,
     segmented_active: None,
     segmented_active_foreground: None,
@@ -1067,6 +1075,9 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): macOS 26: none (measured), no
     // edge pixel differs from the fill; the same caveat
     checkbox_unchecked_border: srgb8(0x0000_0000),
+    // `checkbox.indicator(PRESSED).stroke`: as at rest: every pressed edge pixel is the fill
+    // (measured, os-probe run 45198750893, macOS 26, `*.pressed.checkbox_*` `edge_*`)
+    checkbox_pressed_border: None,
     // `input.background_color`: platform-facts.md (§2.4): textBackgroundColor, probe
     input_background: srgb8(0x1e1e_1eff),
     // `input.caret_color`: platform-facts.md (§2.4): textInsertionPointColor, probe
@@ -1163,7 +1174,6 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `combo_box.font.color`: platform-facts.md (§2.24): labelColor = controlTextColor, probe; over
     // the fill #dfdfdf
     combo_foreground: srgb8(0xffff_ffd8),
-    combo_hover: None,
     combo_disabled: None,
     segmented_active: None,
     segmented_active_foreground: None,
@@ -1297,10 +1307,16 @@ struct Generation {
     combo_padding_bottom: f32,
     combo_padding_left: f32,
     combo_shadow_enabled: bool,
+    /// Whether the pop-up button's bezel is outlined in the default line;
+    /// `false` where the measurement reads no stroke.
+    combo_outlined: bool,
     segment_height: f32,
     segment_separator_width: f32,
     segment_padding_vertical: Option<f32>,
     segmented_shadow_enabled: bool,
+    /// Whether the track and a segment's edge are the control's bezel line
+    /// in the default line; `false` where the measurement reads no stroke.
+    segment_outlined: bool,
     card_padding_vertical: f32,
     card_padding_horizontal: f32,
     expander_header_height: f32,
@@ -1574,6 +1590,8 @@ const MONTEREY: Generation = Generation {
     combo_padding_left: 8.0,
     // `combo_box.border.shadow_enabled`: platform-facts.md (§2.24): no shadow
     combo_shadow_enabled: false,
+    // `combo_box.border`: 0.7.2's default line, as the push button's
+    combo_outlined: true,
     // `segmented_control.segment_height`: platform-facts.md (§2.25): intrinsicContentSize 22 high,
     // the alignment rect (probe)
     segment_height: 22.0,
@@ -1584,6 +1602,9 @@ const MONTEREY: Generation = Generation {
     segment_padding_vertical: Some(3.0),
     // `segmented_control.border.shadow_enabled`: platform-facts.md (§2.25): no shadow
     segmented_shadow_enabled: false,
+    // `segmented_control.segment(HOVER).stroke`: the bezel's line, as at rest (os-probe run
+    // 45198750893, macOS 15, `*.hovered.segment` differs from the normal capture in 0 pixels)
+    segment_outlined: true,
     // `card.border.padding.top`, `card.border.padding.bottom`: 0.7.2 macos-monterey.toml (uncited)
     card_padding_vertical: 5.0,
     // `card.border.padding.left`, `card.border.padding.right`: platform-facts.md (§2.26):
@@ -1871,6 +1892,9 @@ const TAHOE: Generation = Generation {
     combo_padding_left: 12.0,
     // `combo_box.border.shadow_enabled`: platform-facts.md (§2.24): no shadow (measured)
     combo_shadow_enabled: false,
+    // `combo_box.border`: no stroke: at rest the pop-up's edge pixels are its fill #00000013 /
+    // #ffffff13 (measured, os-probe run 45198750893, macOS 26, `*.normal.popup` `edge_*`)
+    combo_outlined: false,
     // `segmented_control.segment_height`: platform-facts.md (§2.25): intrinsicContentSize 24 high,
     // the alignment rect (probe)
     segment_height: 24.0,
@@ -1880,6 +1904,15 @@ const TAHOE: Generation = Generation {
     segment_padding_vertical: None,
     // `segmented_control.border.shadow_enabled`: platform-facts.md (§2.25): no shadow (measured)
     segmented_shadow_enabled: false,
+    // `segmented_control.segment(HOVER|PRESSED).stroke`: none: at rest, hovered (0 pixels
+    // differ) and pressed the segment's top, bottom and left edge pixels are its fill (measured,
+    // os-probe run 45198750893, macOS 26, `*.normal.segment`, `*.hovered.segment`,
+    // `*.pressed.segment` `edge_*`); the track's too (`segmented_control.track.stroke`): the
+    // measured part spans the control's whole height, so its top and bottom edge pixels are the
+    // control's, and they are the fill #00000013 / #ffffff13 (`*.normal.segment` `edge_top`,
+    // `edge_bottom`; the control's two ends were not read), where 0.7.2 outlines it in the
+    // default line
+    segment_outlined: false,
     // `card.border.padding.top`, `card.border.padding.bottom`: 0.7.2 macos-tahoe.toml (uncited)
     card_padding_vertical: 5.0,
     // `card.border.padding.left`, `card.border.padding.right`: platform-facts.md (§2.26):
@@ -2639,14 +2672,13 @@ fn button(
     // `v0.8.0-rc1`, `hover` not an axis; os-probe runs 41006842699, macOS 15, and 40969040283,
     // macOS 26, button-pass/probe.toml `…hovered.regular-*.diff_from_normal`). Pressed, the
     // measured fill; where no stroke is drawn, none pressed either (layers-key-push.toml
-    // `key.push.<appearance>.pressed.regular-plain.stroke` absent, run 41006842699, macOS 26).
-    let pressed = c.button_pressed.map(|pressed| {
-        let mut props = vec![fill(pressed)];
-        if !g.button_outlined {
-            props.push(stroke.clone());
-        }
-        props
-    });
+    // `key.push.<appearance>.pressed.regular-plain.stroke` absent, run 41006842699, macOS 26);
+    // where one is, the edge as at rest (macOS 15: the pressed bezel's outermost pixels are the
+    // rest ones byte for byte, os-probe run 45198750893 `*.pressed.push` against
+    // `*.normal.push`).
+    let pressed = c
+        .button_pressed
+        .map(|pressed| [fill(pressed), stroke.clone()]);
     let body = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.button_background),
@@ -2755,19 +2787,27 @@ fn indicator(
     layout: &LayoutMetrics,
 ) -> RuleBuilder<PartStyle, PartProp> {
     let size = Some(g.checkbox_indicator_width);
+    // Hovered, the edge as at rest (os-probe run 45198750893, macOS 15 and 26,
+    // `*.hovered.checkbox_off` and `…checkbox_on` differ from the normal capture in 0 pixels);
+    // pressed, the measured edge where the generation states one, else as at rest (macOS 26:
+    // every pressed edge pixel is the fill, `*.pressed.checkbox_*` `edge_*`).
+    let rest_edge = outline(layout, c.checkbox_unchecked_border);
+    let pressed_edge = c
+        .checkbox_pressed_border
+        .map_or_else(|| rest_edge.clone(), |color| outline(layout, color));
     RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.checkbox_unchecked),
-            outline(layout, c.checkbox_unchecked_border),
+            rest_edge.clone(),
             PartProp::MinSize([size; 2]),
             PartProp::MaxSize([size; 2]),
         ])
         .base(no_shadow(g.checkbox_shadow_enabled))
-        .rules(
-            c.checkbox_hover
-                .map(|_| RuleSelector::on(WidgetState::HOVER)),
-            c.checkbox_hover.map(fill),
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            c.checkbox_hover.map(fill).into_iter().chain([rest_edge]),
         )
+        .rule(RuleSelector::on(WidgetState::PRESSED), [pressed_edge])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(roles.accent.fill), outline(layout, c.border)],
@@ -3081,6 +3121,12 @@ fn input(
         .base(no_shadow(g.input_shadow_enabled))
         .base(padding.map(PartProp::Padding))
         .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])))
+        // Hovered, the edge as at rest: the hovered text field differs from its normal capture
+        // in 0 pixels (os-probe run 45198750893, macOS 15 and 26, `*.hovered.text_field`).
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [outline(layout, c.border)],
+        )
         .rules(
             c.input_disabled
                 .map(|_| RuleSelector::on(WidgetState::DISABLED)),
@@ -3402,11 +3448,23 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
             roles.window.background.map(fill),
         )
         .build();
+    // Hovered, the label as at rest: the hovered tab differs from its normal capture in 0 pixels
+    // (os-probe run 45198750893, macOS 15 and 26, `*.hovered.tab`).
+    let rest_label = label(&typography.body, None);
+    let rest_color = rest_label
+        .stated
+        .contains(TextStated::COLOR)
+        .then_some(rest_label.color);
     TabWidget::new(
         WidgetOrigin::Native,
         bar,
         tab,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(rest_label)
+            .rules(
+                rest_color.map(|_| RuleSelector::on(WidgetState::HOVER)),
+                rest_color.map(TextProp::Color),
+            )
+            .build(),
         RuleBuilder::new(PartStyle::default()).build(),
         RuleBuilder::new(PartStyle::default()).build(),
         RuleBuilder::new(IconStyle::default()).build(),
@@ -3440,7 +3498,12 @@ fn sidebar(
             [fill(roles.selection.background)],
         )
         .build();
-    let item_label = RuleBuilder::new(label(&typography.body, c.sidebar_foreground))
+    // Hovered, the label as at rest: the hovered source-list row differs from its normal capture
+    // in 0 pixels (os-probe run 45198750893, macOS 15 and 26, `*.hovered.source_list_row`).
+    let rest_label = label(&typography.body, c.sidebar_foreground);
+    let (selectors, color) = rest_color_rules(&rest_label, [WidgetState::HOVER]);
+    let item_label = RuleBuilder::new(rest_label)
+        .rules(selectors, color)
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -3698,8 +3761,8 @@ fn dialog(
 /// The pop-up button: its fill in the default line and radius (0.7.2:
 /// `combo_box.border` is `defaults.border` where unstated), no shadow, of
 /// least sizes, padded above, below and on the left, the side away from the
-/// arrow (the left one mirrored from right to left); `macos-monterey`'s
-/// hovered and disabled fills; the UI font in its colour (0.7.2:
+/// arrow (the left one mirrored from right to left); hovered as at rest;
+/// `macos-monterey`'s disabled fill; the UI font in its colour (0.7.2:
 /// `combo_box.font` is `defaults.font` where unstated), the disabled text
 /// when disabled (`combo_box.disabled_text_color`:
 /// `defaults.disabled_text_color` where unstated); the arrow's size.
@@ -3715,10 +3778,21 @@ fn combo_box(
         Direction::Ltr => EdgeFlags::LEFT,
         Direction::Rtl => EdgeFlags::RIGHT,
     };
+    let stroke = if g.combo_outlined {
+        outline(layout, c.border)
+    } else {
+        PartProp::Stroke(Stroke::None)
+    };
+    // Hovered and pressed, the edge as at rest: the hovered pop-up differs from its normal
+    // capture in 0 pixels, the highlighted one's edge pixels are the rest ones (macOS 15), the
+    // pressed one's uncovered edge is its fill (macOS 26) (os-probe runs 45198750893 and
+    // 45208260830, `*.hovered.popup`, `*.highlighted.popup`, `*.pressed.popup` `edge_*`).
+    // Hovered, the fill as at rest too (`*.hovered.popup` differs in 0 pixels, macOS 15 and 26),
+    // where 0.7.2 macos-monterey.toml states an uncited hover fill (#e0e0e5 / #444446).
     let field = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.combo_background),
-            outline(layout, c.border),
+            stroke.clone(),
             corners(layout),
             PartProp::PaddingSides(
                 physical_edges(
@@ -3735,9 +3809,13 @@ fn combo_box(
             PartProp::MinSize([Some(g.combo_min_width), Some(g.combo_min_height)]),
         ])
         .base(no_shadow(g.combo_shadow_enabled))
-        .rules(
-            c.combo_hover.map(|_| RuleSelector::on(WidgetState::HOVER)),
-            c.combo_hover.map(fill),
+        .rule(
+            RuleSelector::on(WidgetState::HOVER).except(WidgetState::DISABLED),
+            [fill(c.combo_background), stroke.clone()],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
+            [stroke],
         )
         .rules(
             c.combo_disabled
@@ -3745,7 +3823,12 @@ fn combo_box(
             c.combo_disabled.map(fill),
         )
         .build();
+    // Hovered, the label as at rest (`*.hovered.popup` differs in 0 pixels, the same runs).
     let label = RuleBuilder::new(label(&typography.body, Some(c.combo_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.combo_foreground)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(roles.disabled_text)],
@@ -3767,8 +3850,8 @@ fn combo_box(
 
 /// The segmented control: a track in the window's background (0.7.2:
 /// `segmented_control.background_color` is `defaults.background_color`
-/// where unstated) in the default line and radius
-/// (`segmented_control.border`: `defaults.border` where unstated), no
+/// where unstated) in the default line (`macos-tahoe`: none, measured) and
+/// radius (`segmented_control.border`: `defaults.border` where unstated), no
 /// shadow; segments of a least height, `macos-monterey`'s padding above and
 /// below and its hover fill, the selected one in `macos-monterey`'s own fill,
 /// else the accent (`active_background`: `defaults.accent_color` where
@@ -3783,12 +3866,16 @@ fn segmented_control(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> SegmentedControlWidget {
+    // A pressed segment's stroke where it is outlined: not stated, as macOS 15 draws it as a
+    // raised bezel whose top and bottom rows change apart and whose sides were not read
+    // (os-probe run 45198750893, `*.pressed.segment` `edge_top`, `edge_bottom`).
+    let segment_edge = if g.segment_outlined {
+        outline(layout, c.border)
+    } else {
+        PartProp::Stroke(Stroke::None)
+    };
     let track = RuleBuilder::new(PartStyle::default())
-        .base([
-            fill(c.background),
-            outline(layout, c.border),
-            corners(layout),
-        ])
+        .base([fill(c.background), segment_edge.clone(), corners(layout)])
         .base(no_shadow(g.segmented_shadow_enabled))
         .build();
     let segment = RuleBuilder::new(PartStyle::default())
@@ -3802,12 +3889,25 @@ fn segmented_control(
                 .map(|_| RuleSelector::on(WidgetState::HOVER)),
             c.segmented_hover.map(fill),
         )
+        .rules(
+            std::iter::once(RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED))
+                .chain(
+                    (!g.segment_outlined).then(|| {
+                        RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED)
+                    }),
+                ),
+            [segment_edge],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(c.segmented_active.unwrap_or(roles.accent.fill))],
         )
         .build();
-    let segment_label = RuleBuilder::new(label(&typography.body, None))
+    // Hovered, the label as at rest (`*.hovered.segment` differs in 0 pixels, macOS 15 and 26).
+    let rest_label = label(&typography.body, None);
+    let (selectors, color) = rest_color_rules(&rest_label, [WidgetState::HOVER]);
+    let segment_label = RuleBuilder::new(rest_label)
+        .rules(selectors, color)
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(

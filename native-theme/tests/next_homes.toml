@@ -721,9 +721,9 @@ homes = [
     "radio.indicator(HOVER|CHECKED).stroke.color",
 ]
 null_reference = "CHECKED"
-difference_presets = ["adwaita", "windows-11", "material-3"]
-difference_reason = "0.7.2 leaves it unset (no rule: the rest outline unchecked, the checked one checked); 0.8.0 states an unchecked indicator's outline for HOVER: on adwaita $trough_hover_color, which libadwaita draws on a hovered unchecked check and radio, on windows-11 the check box's rest outline, which WinUI keeps (spec §2, from_state); a checked indicator keeps its checked outline, and windows-11's radio button its rest one, no rule; on material-3 a check box's unchecked outline is on-surface for HOVER (unselected-hover-outline-color), the radio button stating none (its tokens not read), a checked indicator its checked outline"
-difference_citation = "adwaita: _checks.scss:20-35 (check, radio: `&:not(:checked):not(:indeterminate) { &:hover { box-shadow: inset 0 0 0 2px $trough_hover_color } }`), _colors.scss:281, :33, :96 at libadwaita 1.10.0; windows-11: CheckBoxCheckBackgroundStrokeUncheckedPointerOver = ControlStrongStrokeColorDefault, the rest brush (CheckBox_themeresources.xaml:218, :42; rest :217, :41 at microsoft-ui-xaml 8463f45); material-3: _md-comp-checkbox.scss:111-112 (unselected-hover-outline-color on-surface; rest unselected-outline-color on-surface-variant, :118-119), v0_192 at material-web cbd34a8"
+difference_presets = ["adwaita", "windows-11", "material-3", "macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (no rule: the rest outline unchecked, the checked one checked); 0.8.0 states an unchecked indicator's outline for HOVER: on macos-monterey and macos-tahoe the rest outline, as AppKit draws a hovered check box as at rest, and on ios-13 the rest outline, WebKit's checkboxRadioBorderColor, which reads no hover (a checked indicator keeps its checked outline, on ios-13 none); on adwaita $trough_hover_color, which libadwaita draws on a hovered unchecked check and radio, on windows-11 the check box's rest outline, which WinUI keeps (spec §2, from_state); a checked indicator keeps its checked outline, and windows-11's radio button its rest one, no rule; on material-3 a check box's unchecked outline is on-surface for HOVER (unselected-hover-outline-color), the radio button stating none (its tokens not read), a checked indicator its checked outline"
+difference_citation = "adwaita: _checks.scss:20-35 (check, radio: `&:not(:checked):not(:indeterminate) { &:hover { box-shadow: inset 0 0 0 2px $trough_hover_color } }`), _colors.scss:281, :33, :96 at libadwaita 1.10.0; windows-11: CheckBoxCheckBackgroundStrokeUncheckedPointerOver = ControlStrongStrokeColorDefault, the rest brush (CheckBox_themeresources.xaml:218, :42; rest :217, :41 at microsoft-ui-xaml 8463f45); material-3: _md-comp-checkbox.scss:111-112 (unselected-hover-outline-color on-surface; rest unselected-outline-color on-surface-variant, :118-119), v0_192 at material-web cbd34a8; macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.checkbox_off` and `*.hovered.checkbox_on` differ from the normal capture in 0 pixels; ios-13: checkboxRadioBorderColor, read for Enabled and Pressed only, strokes only the empty box (RenderThemeIOS.mm:1357-1368, :1483-1491, :1502 at WebKit 31adf9d)"
 
 [row.difference_values.adwaita]
 "checkbox.indicator(HOVER).stroke.color" = { light = "#00000629", dark = "#ffffff33" }
@@ -742,6 +742,24 @@ difference_citation = "adwaita: _checks.scss:20-35 (check, radio: `&:not(:checke
 "radio.indicator(HOVER).stroke.color" = { light = "#49454f", dark = "#cac4d0" }
 "checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#6750a4", dark = "#d0bcff" }
 "radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#6750a4", dark = "#d0bcff" }
+
+[row.difference_values.macos-monterey]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#d6d6d6", dark = "#00000000" }
+"radio.indicator(HOVER).stroke.color" = { light = "#d6d6d6", dark = "#00000000" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#00000019", dark = "#ffffff19" }
+"radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#00000019", dark = "#ffffff19" }
+
+[row.difference_values.macos-tahoe]
+"checkbox.indicator(HOVER).stroke.color" = "#00000000"
+"radio.indicator(HOVER).stroke.color" = "#00000000"
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = { light = "#00000019", dark = "#ffffff19" }
+"radio.indicator(HOVER|CHECKED).stroke.color" = { light = "#00000019", dark = "#ffffff19" }
+
+[row.difference_values.ios-13]
+"checkbox.indicator(HOVER).stroke.color" = { light = "#3c3c4399", dark = "#ebebf599" }
+"radio.indicator(HOVER).stroke.color" = { light = "#3c3c4399", dark = "#ebebf599" }
+"checkbox.indicator(HOVER|CHECKED).stroke.color" = "none"
+"radio.indicator(HOVER|CHECKED).stroke.color" = "none"
 
 [[row]]
 key = "checkbox.disabled_background"
@@ -767,6 +785,10 @@ homes = [
     "radio.indicator(NONE).stroke.color",
 ]
 if_null = "checkbox.border.color"
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 states the default border colour (the separator, uncited); 0.8.0 states the outline WebKit strokes round an empty iOS check box and radio, checkboxRadioBorderColor, secondaryLabel"
+difference_citation = "ios-13: RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit 31adf9d"
+difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" } }
 
 [[row]]
 key = "checkbox.font.family"
@@ -816,6 +838,10 @@ homes = [
     "checkbox.indicator(CHECKED).stroke.color",
     "radio.indicator(CHECKED).stroke.color",
 ]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 outlines a checked indicator in the default border colour (uncited); 0.8.0 states none, as WebKit fills a checked iOS check box and radio with no stroke"
+difference_citation = "ios-13: RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit 31adf9d"
+difference_values = { "ios-13" = "none" }
 
 [[row]]
 key = "checkbox.border.corner_radius"
@@ -828,6 +854,10 @@ homes = [
     "checkbox.indicator(NONE).stroke.width",
     "radio.indicator(NONE).stroke.width",
 ]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 states the default border width (0.5, uncited); 0.8.0 states the outline as it shows round an empty iOS check box and radio: stroked checkboxRadioBorderWidth × 2 = 3 on the edge and clipped to it, so 1.5 inside"
+difference_citation = "ios-13: RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit 31adf9d"
+difference_values = { "ios-13" = 1.5 }
 
 [[row]]
 key = "checkbox.border.shadow_enabled"
@@ -1288,6 +1318,10 @@ homes = [
     "input.field(HOVER).stroke.color",
     "text_area.field(HOVER).stroke.color",
 ]
+difference_presets = ["adwaita", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for HOVER (spec §2, from_state): adwaita's entry has no :hover rule, and a hovered macOS text field draws as at rest"
+difference_citation = "adwaita: _entries.scss:1-60 at libadwaita 1.10.0 (no :hover or :active rule); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.text_field` differs from the normal capture in 0 pixels"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = { light = "#00000019", dark = "#ffffff19" } }
 
 [[row]]
 key = "input.focus_border_color"
@@ -1524,10 +1558,10 @@ homes = ["slider.disabled_opacity"]
 [[row]]
 key = "slider.thumb_hover_color"
 homes = ["slider.thumb(HOVER).fill"]
-difference_presets = ["kde-breeze", "windows-11"]
-difference_reason = "0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the thumb's rest fill for HOVER, where the platform keeps it (spec §2, from_state)"
-difference_citation = "kde-breeze: docs/platform-facts.md §2.9 (thumb_hover_color), the handle's fill is QPalette::Button in every state (breezestyle.cpp:8122 at breeze f0b1d75); windows-11: SliderOuterThumbBackground has no PointerOver variant (Slider_themeresources.xaml:123, Border :198 at microsoft-ui-xaml 8463f45)"
-difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#ffffff", dark = "#454545" } }
+difference_presets = ["kde-breeze", "windows-11", "adwaita"]
+difference_reason = "0.7.2 leaves it unset on kde-breeze and windows-11 (the rest fill by inheritance, no rule); 0.8.0 states the thumb's rest fill for HOVER, where the platform keeps it (spec §2, from_state); adwaita: 0.7.2's adwaita states an uncited hover colour (#ebebeb / #3a3a3e); 0.8.0 states libadwaita's $slider_hover_color, white, in both schemes"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.9 (thumb_hover_color), the handle's fill is QPalette::Button in every state (breezestyle.cpp:8122 at breeze f0b1d75); windows-11: SliderOuterThumbBackground has no PointerOver variant (Slider_themeresources.xaml:123, Border :198 at microsoft-ui-xaml 8463f45); adwaita: _scale.scss:62-76 (`&:hover, &:active`), _colors.scss:289 at libadwaita 1.10.0"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#ffffff", dark = "#454545" }, "adwaita" = "#ffffff" }
 
 [[row]]
 key = "slider.disabled_fill_color"
@@ -1628,11 +1662,19 @@ homes = ["splitter.divider_width"]
 [[row]]
 key = "splitter.divider_color"
 homes = ["splitter.handle(NONE).fill"]
+difference_presets = ["kde-breeze", "adwaita"]
+difference_reason = "kde-breeze: 0.7.2 takes the default border colour (#bcc0bf / #4d545b); 0.8.0 states Breeze's separatorColor(), which drawSplitterControl fills in every state; adwaita: 0.7.2 takes the default border colour, opaque (#dcdcde in light); 0.8.0 states the paned separator's translucent $border_color line, currentColor at 15 %"
+difference_citation = "kde-breeze: breezestyle.cpp:7581-7587, breezehelper.cpp:329-332 at breeze f0b1d75, docs/platform-facts.md §2.17 (hover_color); adwaita: _paned.scss:1-36 (`box-shadow: inset 1px 0 $border_color`, no :hover or :active rule), _colors.scss:263, :257, :33, :96, :318 at libadwaita 1.10.0, docs/platform-facts.md §2.17 (hover_color)"
+difference_values = { "kde-breeze" = { light = "#c6c8c9", dark = "#4c4e51" }, "adwaita" = { light = "#0000061f", dark = "#ffffff26" } }
 
 [[row]]
 key = "splitter.hover_color"
 homes = ["splitter.handle(HOVER).fill"]
 note = "0.7.2 R-W: unset = divider_color, never null"
+difference_presets = ["kde-breeze", "adwaita"]
+difference_reason = "kde-breeze: 0.7.2 takes the default border colour (#bcc0bf / #4d545b); 0.8.0 states Breeze's separatorColor(), which drawSplitterControl fills in every state; adwaita: 0.7.2's adwaita states an opaque hover colour (#d5d5d5 light, uncited); 0.8.0 states the separator's line as at rest, as libadwaita has no :hover rule for it"
+difference_citation = "kde-breeze: breezestyle.cpp:7581-7587, breezehelper.cpp:329-332 at breeze f0b1d75, docs/platform-facts.md §2.17 (hover_color); adwaita: _paned.scss:1-36 (`box-shadow: inset 1px 0 $border_color`, no :hover or :active rule), _colors.scss:263, :257, :33, :96, :318 at libadwaita 1.10.0, docs/platform-facts.md §2.17 (hover_color)"
+difference_values = { "kde-breeze" = { light = "#c6c8c9", dark = "#4c4e51" }, "adwaita" = { light = "#0000061f", dark = "#ffffff26" } }
 
 # --- separator ---
 
@@ -2599,14 +2641,18 @@ homes = ["combo_box.label(DISABLED).color"]
 [[row]]
 key = "combo_box.hover_background"
 homes = ["combo_box.field(HOVER).fill"]
-difference_presets = ["kde-breeze", "material-3"]
-difference_reason = "0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the rest fill for HOVER, where Breeze keeps it, and where Material's outlined select keeps it (spec §2, from_state)"
-difference_citation = "kde-breeze: docs/platform-facts.md §2.24 (hover_background): a non-editable combo box is a button frame whose hover turns only the pen Highlight (breezehelper.cpp:710-712 at breeze f0b1d75); material-3: the outlined select passes the outlined field no container colour or state layer (select/internal/_outlined-select.scss:42-48), whose :hover changes only its outline (field/internal/_outlined-field.scss:247-257, material-web cbd34a8)"
-difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "material-3" = { light = "#fef7ff", dark = "#141218" } }
+difference_presets = ["kde-breeze", "material-3", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset on kde-breeze, material-3 and macos-tahoe (the rest fill by inheritance, no rule) and states an uncited hover fill on macos-monterey (#e0e0e5 / #444446); 0.8.0 states the rest fill for HOVER, where Breeze keeps it, where Material's outlined select keeps it, and where a hovered macOS pop-up button draws as at rest (spec §2, from_state)"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.24 (hover_background): a non-editable combo box is a button frame whose hover turns only the pen Highlight (breezehelper.cpp:710-712 at breeze f0b1d75); material-3: the outlined select passes the outlined field no container colour or state layer (select/internal/_outlined-select.scss:42-48), whose :hover changes only its outline (field/internal/_outlined-field.scss:247-257, material-web cbd34a8); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.popup` differs from the normal capture in 0 pixels"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "material-3" = { light = "#fef7ff", dark = "#141218" }, "macos-monterey" = { light = "#ffffff", dark = "#ffffff3f" }, "macos-tahoe" = { light = "#00000014", dark = "#ffffff14" } }
 
 [[row]]
 key = "combo_box.hover_border_color"
 homes = ["combo_box.field(HOVER).stroke.color"]
+difference_presets = ["adwaita", "windows-11", "macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for HOVER (spec §2, from_state): adwaita's trigger is a raised button whose :hover sets only its background, WinUI's hovered combo box keeps the rest border brush, a hovered macOS pop-up button draws as at rest (macos-tahoe's has no outline), and WebKit's iOS select has no :hover rule"
+difference_citation = "adwaita: _buttons.scss:35-42, _dropdowns.scss:1-12 at libadwaita 1.10.0; windows-11: ComboBoxBorderBrushPointerOver = ControlElevationBorderBrush, the rest brush (ComboBox_themeresources.xaml:265, :55; rest :264, :54; PointerOver :416-417 at microsoft-ui-xaml 8463f45); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.popup` differs from the normal capture in 0 pixels; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d, no :hover rule for select, adjustButtonLikeControlStyle reads only `active()` (RenderThemeIOS.mm:862-870)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { light = "#0000000f", dark = "#00000019" }, "macos-monterey" = { light = "#00000019", dark = "#ffffff19" }, "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
 
 [[row]]
 key = "combo_box.disabled_background"
@@ -2657,6 +2703,10 @@ homes = ["combo_box.label(NONE).color"]
 [[row]]
 key = "combo_box.border.color"
 homes = ["combo_box.field(NONE).stroke.color"]
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the pop-up button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border colour (the separator, uncited); 0.8.0 states the border WebKit draws round an iOS select, systemBackground"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.popup` `edge_*`: every edge pixel is the fill #00000013 / #ffffff13; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d; -webkit-control-background is systemBackground (RenderThemeIOS.mm:1027)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = { light = "#ffffff", dark = "#000000" } }
 
 [[row]]
 key = "combo_box.border.corner_radius"
@@ -2666,6 +2716,10 @@ note = "Corners::uniform(radius)"
 [[row]]
 key = "combo_box.border.line_width"
 homes = ["combo_box.field(NONE).stroke.width"]
+difference_presets = ["macos-tahoe", "ios-13"]
+difference_reason = "macos-tahoe: 0.7.2's macos-tahoe states the default line (0.5); 0.8.0 states the pop-up button's outline as none, as macOS 26 draws it; ios-13: 0.7.2's ios-13 states the default border width (0.5, uncited); 0.8.0 states the border WebKit draws round an iOS select, 1px"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.popup` `edge_*`: every edge pixel is the fill #00000013 / #ffffff13; ios-13: html.css:1101 (`border: 1px solid -webkit-control-background`) at WebKit 31adf9d; -webkit-control-background is systemBackground (RenderThemeIOS.mm:1027)"
+difference_values = { "macos-tahoe" = "none", "ios-13" = 1.0 }
 
 [[row]]
 key = "combo_box.border.shadow_enabled"
@@ -2746,6 +2800,10 @@ homes = ["segmented_control.label(NONE).color"]
 [[row]]
 key = "segmented_control.border.color"
 homes = ["segmented_control.track(NONE).stroke.color"]
+difference_presets = ["macos-tahoe"]
+difference_reason = "0.7.2's macos-tahoe states the default line (#00000019 / #ffffff19); 0.8.0 states the segmented control's outline as none, as macOS 26 draws it"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.segment` `edge_top`, `edge_bottom`: the measured part spans the control's whole height, and its top and bottom edge pixels are the fill #00000013 / #ffffff13 (the control's two ends were not read)"
+difference_values = { "macos-tahoe" = "none" }
 
 [[row]]
 key = "segmented_control.border.corner_radius"
@@ -2755,6 +2813,10 @@ note = "Corners::uniform(radius)"
 [[row]]
 key = "segmented_control.border.line_width"
 homes = ["segmented_control.track(NONE).stroke.width"]
+difference_presets = ["macos-tahoe"]
+difference_reason = "0.7.2's macos-tahoe states the default line (0.5); 0.8.0 states the segmented control's outline as none, as macOS 26 draws it"
+difference_citation = "macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), macOS 26, `*.normal.segment` `edge_top`, `edge_bottom`: the measured part spans the control's whole height, and its top and bottom edge pixels are the fill #00000013 / #ffffff13 (the control's two ends were not read)"
+difference_values = { "macos-tahoe" = "none" }
 
 [[row]]
 key = "segmented_control.border.shadow_enabled"

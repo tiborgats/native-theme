@@ -2210,12 +2210,18 @@ fn reader_parity_kde() -> TestResult {
     assert_eq!(paths.len(), KDE_FIXTURES, "the files of {dir:?}");
     for path in &paths {
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        let listed = if KDE_FIXTURES_OTHER_BUTTON.contains(&name) {
-            KDE_BUTTON_HOVER
-        } else {
-            &[]
-        };
-        reader_parity_on(name, &std::fs::read_to_string(path)?, &table, listed)?;
+        let other_button = KDE_FIXTURES_OTHER_BUTTON.contains(&name);
+        let other_window = KDE_FIXTURES_OTHER_WINDOW.contains(&name);
+        let listed: Vec<&str> = table
+            .row
+            .iter()
+            .map(|row| row.key.as_str())
+            .filter(|key| {
+                (other_button && KDE_BUTTON_HOVER.contains(key))
+                    || (other_window && KDE_SEPARATOR.contains(key))
+            })
+            .collect();
+        reader_parity_on(name, &std::fs::read_to_string(path)?, &table, &listed)?;
     }
     Ok(())
 }
@@ -2306,6 +2312,25 @@ const KDE_FIXTURES_OTHER_BUTTON: &[&str] = &[
     "breeze-dark.ini",
     "custom-accent.ini",
     "high-dpi.ini",
+    "missing-groups.ini",
+];
+
+/// M2.FS4: the rows of the splitter's handle, which the kde-breeze builder fills in Breeze's
+/// `separatorColor()`, the mix of the colour scheme's `[Colors:Window]` background and text by
+/// `frameContrast` (platform-facts.md (§2.17) `hover_color`, breezehelper.cpp:329-332 at breeze
+/// f0b1d75), where the table's listed difference gives the preset's Breeze colours. They differ on
+/// an input whose Window colours or `frameContrast` are not Breeze's.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_SEPARATOR: &[&str] = &["splitter.divider_color", "splitter.hover_color"];
+
+/// The KDE fixtures whose `[Colors:Window]` background and text (49,54,59 and 239,240,241) are not
+/// the kde-breeze preset's Breeze Dark ones: [`KDE_SEPARATOR`] is listed on them.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_FIXTURES_OTHER_WINDOW: &[&str] = &[
+    "breeze-dark.ini",
+    "custom-accent.ini",
+    "high-dpi.ini",
+    "minimal.ini",
     "missing-groups.ini",
 ];
 
@@ -2440,8 +2465,9 @@ fn live_system_parity_kde() -> TestResult {
 /// Reader parity on kdeglobals texts that move off their defaults the settings no fixture
 /// states: Breeze Light's file with `[KDE] frameContrast=0.5`, `contrast=3` and
 /// `[ColorEffects:Inactive] ChangeSelectionColor=false`, and with only `[ColorEffects:Inactive]
-/// Enable=false`. Zero mismatches in the ported groups on both, and every row those settings feed differs from the
-/// plain file's, so that equality proves the builder used them.
+/// Enable=false`. Zero mismatches in the ported groups on both but [`KDE_SEPARATOR`] on the first,
+/// whose `frameContrast` moves the separator off the table's listed Breeze colour, and every row those
+/// settings feed differs from the plain file's, so that equality proves the builder used them.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde_settings() -> TestResult {
@@ -2473,19 +2499,21 @@ fn reader_parity_kde_settings() -> TestResult {
     .into_iter()
     .chain(INACTIVE_SELECTION)
     .collect::<Vec<_>>();
-    for (name, content, fed) in [
+    for (name, content, fed, listed) in [
         (
             "frameContrast, contrast, ChangeSelectionColor",
             settings,
             fed_by_settings,
+            KDE_SEPARATOR,
         ),
         (
             "inactive effects off",
             effects_off,
             INACTIVE_SELECTION.to_vec(),
+            &[][..],
         ),
     ] {
-        let old = reader_parity_on(name, &content, &table, &[])?;
+        let old = reader_parity_on(name, &content, &table, listed)?;
         for key in fed {
             let pointer = format!("/{}", key.replace('.', "/"));
             let got = old.pointer(&pointer);
@@ -2993,6 +3021,7 @@ pub(crate) fn windows_cases() -> Vec<(
         "button.hover_border_color",
         "checkbox.hover_border_color",
         "switch.hover_checked_background",
+        "combo_box.hover_border_color",
         "expander.hover_background",
     ];
     let shades = || [1, 2, 3, 4, 5, 6].map(|b| Some(crate::Rgba::rgb(0, 0, b)));
@@ -3656,14 +3685,21 @@ fn reader_parity_macos() -> TestResult {
             snapshot.preset = preset;
         }
         let (old, unresolved, old_name) = old_macos_reader(&settings, snapshot.preset)?;
-        // M2.FS4: macos-monterey's hovered push button keeps its outline in the separator the
-        // reader states, where the table's listed difference gives the preset's own line.
-        let listed: Vec<&str> = (snapshot.preset == crate::next::preset::Preset::MacosMonterey
-            && !MACOS_CASES_PRESET_BORDER.contains(&name))
-        .then_some(MONTEREY_HOVER_BORDER)
-        .into_iter()
-        .chain(listed.iter().copied())
-        .collect();
+        // M2.FS4: a hovered control keeps its outline in the separator the reader states, where
+        // the table's listed difference gives the preset's own line.
+        let hover_border: &[&str] = if MACOS_CASES_PRESET_BORDER.contains(&name) {
+            &[]
+        } else if snapshot.preset == crate::next::preset::Preset::MacosMonterey {
+            MONTEREY_HOVER_BORDER
+        } else {
+            TAHOE_HOVER_BORDER
+        };
+        let listed: Vec<&str> = table
+            .row
+            .iter()
+            .map(|row| row.key.as_str())
+            .filter(|key| hover_border.contains(key) || listed.contains(key))
+            .collect();
         assert_reader_parity(
             name,
             &old,
@@ -3677,13 +3713,28 @@ fn reader_parity_macos() -> TestResult {
     Ok(())
 }
 
-/// M2.FS4: the row of a hovered push button's outline on macos-monterey, a listed difference of the table
-/// whose value is the preset's default line; a reader's separator replaces that line.
-const MONTEREY_HOVER_BORDER: &str = "button.hover_border_color";
+/// M2.FS4: the rows of a hovered control's outline on macos-monterey (the push button's, also
+/// pressed; the check box's and radio's, checked; the text field's; the pop-up button's), listed
+/// differences of the table whose value is the preset's default line; a reader's separator replaces
+/// that line.
+const MONTEREY_HOVER_BORDER: &[&str] = &[
+    "button.hover_border_color",
+    "checkbox.hover_border_color",
+    "input.hover_border_color",
+    "combo_box.hover_border_color",
+];
 
-/// The macOS reader cases on macos-monterey whose scheme has no separator of the reader's, so the
-/// preset's own line stays: [`MONTEREY_HOVER_BORDER`] is listed on every other one.
-const MACOS_CASES_PRESET_BORDER: &[&str] = &["a custom accent, light", "Aqua alone, dark"];
+/// The same rows on macos-tahoe, whose push button and pop-up button have no outline: the checked
+/// check box's and radio's and the text field's.
+const TAHOE_HOVER_BORDER: &[&str] = &["checkbox.hover_border_color", "input.hover_border_color"];
+
+/// The macOS reader cases whose scheme has no separator of the reader's, so the preset's own line
+/// stays: [`MONTEREY_HOVER_BORDER`] or [`TAHOE_HOVER_BORDER`] is listed on every other one.
+const MACOS_CASES_PRESET_BORDER: &[&str] = &[
+    "a custom accent, light",
+    "macOS 26, a custom accent, dark",
+    "Aqua alone, dark",
+];
 
 /// What macOS' reader parity expects of a case on `preset` whose listed differences are `listed`: every
 /// other row of the ported groups compared and equal but the rows [`macos_expected_skip`] skips with a

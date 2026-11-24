@@ -2862,7 +2862,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         link: link(c, &colors, &typography),
         slider: slider(c, &colors),
         progress_bar: progress_bar(c, &colors, &layout),
-        splitter: splitter(c, &colors),
+        splitter: splitter(c),
         separator: separator(c, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography, &layout),
@@ -4112,15 +4112,23 @@ fn separator(c: &SchemeColors, layout: &LayoutMetrics) -> SeparatorWidget {
     )
 }
 
-/// The splitter: a handle in the default border's colour (0.7.2:
-/// `splitter.divider_color` is `defaults.border.color` where unstated) and
-/// its stated hover colour.
-fn splitter(c: &SchemeColors, roles: &ColorRoles) -> SplitterWidget {
+/// The splitter: a handle in `separatorColor()` in every state, where 0.7.2
+/// took the default border's colour (`splitter.divider_color` is
+/// `defaults.border.color` where unstated) and its own hover colour.
+fn splitter(c: &SchemeColors) -> SplitterWidget {
+    // drawSplitterControl fills separatorColor() with no pen and reads no state
+    // (breezestyle.cpp:7581-7587 at breeze f0b1d75); separatorColor() = mix(Window, WindowText,
+    // frameIntensityBias 0.2) (breezehelper.cpp:329-332); platform-facts.md (§2.17)
+    // `hover_color`: separatorColor() in every state.
+    let separator = fill(c.checkbox_frame);
     let handle = RuleBuilder::new(PartStyle::default())
-        .base(roles.window.border.map(fill))
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
-            [fill(c.window_border)],
+        .base([separator.clone()])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [separator],
         )
         .build();
     SplitterWidget::new(WidgetOrigin::Native, handle, SPLITTER_DIVIDER_WIDTH)
@@ -4283,13 +4291,16 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
         ])
         // Pressed, the hovered tab's fill: renderTabBarTab reads `hovered` and `selected` only
         // (breezehelper.cpp:1438-1452, hover fill :1495-1500 at breeze f0b1d75), not the `down`
-        // the style passes (breezestyle.cpp:7187, :7357); the press selects the tab.
+        // the style passes (breezestyle.cpp:7187, :7357); the press selects the tab. Hovered and
+        // pressed, no outline, as at rest: the unselected branch draws with `Qt::NoPen` whether
+        // hovered or not (breezehelper.cpp:1488-1506, :1504); a selected tab keeps its frame pen,
+        // which reads no `hovered` (:1456-1487, :1468-1470).
         .rules(
             [
                 RuleSelector::on(WidgetState::HOVER),
                 RuleSelector::on(WidgetState::PRESSED),
             ],
-            [fill(c.tab_hover)],
+            [fill(c.tab_hover), PartProp::Stroke(Stroke::None)],
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
@@ -4854,13 +4865,25 @@ fn segmented_control(
         // Pressed, the hovered segment's fill: platform-facts.md (§2.25) takes Breeze's tab bar
         // as KDE's segmented control, whose renderTabBarTab reads `hovered` and `selected`, never
         // the `down` the style passes (breezehelper.cpp:1440-1441; breezestyle.cpp:7187, :7357
-        // at breeze f0b1d75); the press selects the segment.
+        // at breeze f0b1d75); the press selects the segment. Hovered and pressed, the line as at
+        // rest, the control's (platform-facts.md (§2.25) `border.color`: ←
+        // `defaults.border.color`): the pen reads neither `hovered` nor `down`
+        // (breezehelper.cpp:1468-1470, :1504).
         .rules(
             [
                 RuleSelector::on(WidgetState::HOVER),
                 RuleSelector::on(WidgetState::PRESSED),
             ],
             [fill(c.segment_hover)],
+        )
+        .rules(
+            roles.window.border.into_iter().flat_map(|_| {
+                [
+                    RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+                    RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+                ]
+            }),
+            roles.window.border.map(|border| outline(layout, border)),
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
