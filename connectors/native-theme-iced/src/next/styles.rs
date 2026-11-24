@@ -17,7 +17,8 @@ use super::borders::{
     flagged, line, line_or_none, outline_or_iced, part_outline, radius, state_line, stroke_width,
 };
 use super::{
-    Mapped, Unmapped, fill, fill_of, state_fill, state_text_color, stated, text_color_of, to_color,
+    Mapped, Unmapped, fill, fill_or_own, state_fill, state_text_color, stated, text_color_of,
+    to_color,
 };
 use crate::styles::{
     self as old, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource, Layer,
@@ -63,7 +64,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let primary = b.body(ButtonQuery::primary());
     let c = &r.colors;
     Ok(ButtonSource {
-        background: fill_of(&rest),
+        background: fill_or_own(&rest, "button.body(NONE).fill")?,
         hover_background: state_layer(&hover, "button.body(HOVER).fill")?,
         active_background: state_layer(&pressed, "button.body(PRESSED).fill")?,
         disabled_background: state_fill(
@@ -99,7 +100,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.body(ButtonQuery::primary().state(WidgetState::PRESSED)),
             "button.body(PRESSED; variant=Primary).stroke.color",
         )?,
-        primary_background: fill_of(&primary),
+        primary_background: fill_or_own(&primary, "button.body(NONE; variant=Primary).fill")?,
         primary_label: text_color_of(&b.label(ButtonQuery::primary())),
         default_background: state_fill(&default, "button.body(DEFAULT).fill")?,
         default_label: state_text_color(
@@ -352,7 +353,7 @@ pub fn button_link(
 fn link_source(r: &ResolvedTheme) -> Mapped<LinkSource> {
     let l = &r.link;
     Ok(LinkSource {
-        background: fill_of(&l.container(WidgetState::NONE)),
+        background: fill_or_own(&l.container(WidgetState::NONE), "link.container(NONE).fill")?,
         hover_background: state_layer(
             &l.container(WidgetState::HOVER),
             "link.container(HOVER).fill",
@@ -382,7 +383,7 @@ macro_rules! input_source {
         let i = &r.$w;
         let rest = i.field(WidgetState::NONE);
         Ok::<InputSource, Unmapped>(InputSource {
-            background: fill_of(&rest),
+            background: fill_or_own(&rest, concat!($home, ".field(NONE).fill"))?,
             disabled_background: state_fill(
                 &i.field(WidgetState::DISABLED),
                 concat!($home, ".field(DISABLED).fill"),
@@ -464,8 +465,14 @@ macro_rules! check_fills {
         let hover = w.indicator(WidgetState::HOVER);
         let checked_hover = w.indicator(WidgetState::HOVER | WidgetState::CHECKED);
         Ok::<CheckFills, Unmapped>(CheckFills {
-            checked: fill_of(&w.indicator(WidgetState::CHECKED)),
-            unchecked: fill_of(&w.indicator(WidgetState::NONE)),
+            checked: fill_or_own(
+                &w.indicator(WidgetState::CHECKED),
+                concat!($home, ".indicator(CHECKED).fill"),
+            )?,
+            unchecked: fill_or_own(
+                &w.indicator(WidgetState::NONE),
+                concat!($home, ".indicator(NONE).fill"),
+            )?,
             hover_fill: state_layer(&hover, concat!($home, ".indicator(HOVER).fill"))?
                 .map(Layer::as_given),
             checked_hover_fill: flagged(&hover, &checked_hover, PartStated::FILL, |p| {
@@ -612,7 +619,7 @@ fn radio_source(r: &ResolvedTheme) -> Mapped<RadioSource> {
     let w = &r.radio;
     Ok((
         check_fills!(w, "radio")?,
-        fill_of(&w.dot(WidgetState::CHECKED)),
+        fill_or_own(&w.dot(WidgetState::CHECKED), "radio.dot(CHECKED).fill")?,
         text_color_of(&w.label(WidgetState::NONE)),
         edge(
             &w.indicator(WidgetState::NONE),
@@ -658,8 +665,8 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
     let disabled_on = WidgetState::DISABLED | WidgetState::CHECKED;
     Ok(SwitchSource {
         disabled_opacity: s.disabled_opacity,
-        checked_background: fill_of(&on),
-        unchecked_background: fill_of(&off),
+        checked_background: fill_or_own(&on, "switch.track(CHECKED).fill")?,
+        unchecked_background: fill_or_own(&off, "switch.track(NONE).fill")?,
         hovered_checked_background: flagged(
             &s.track(hover),
             &s.track(hover_on),
@@ -679,8 +686,8 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
             &s.track(disabled),
             "switch.track(DISABLED).fill",
         )?,
-        thumb_background: fill_of(&thumb_on),
-        unchecked_thumb_background: fill_of(&thumb_off),
+        thumb_background: fill_or_own(&thumb_on, "switch.thumb(CHECKED).fill")?,
+        unchecked_thumb_background: fill_or_own(&thumb_off, "switch.thumb(NONE).fill")?,
         hovered_thumb: flagged(&s.thumb(hover), &s.thumb(hover_on), PartStated::FILL, |p| {
             layer(p, "switch.thumb(HOVER|CHECKED).fill")
         })?
@@ -783,7 +790,7 @@ fn pick_list_source(r: &ResolvedTheme) -> Mapped<PickListSource> {
     let open = c.field(WidgetState::OPEN);
     let open_hover = c.field(WidgetState::OPEN | WidgetState::HOVER);
     Ok(PickListSource {
-        background: fill_of(&rest),
+        background: fill_or_own(&rest, "combo_box.field(NONE).fill")?,
         hovered_background: state_layer(&hover, "combo_box.field(HOVER).fill")?
             .map(Layer::as_given),
         label: text_color_of(&c.label(WidgetState::NONE)),
@@ -868,7 +875,7 @@ fn menu_source(r: &ResolvedTheme) -> Mapped<MenuSource> {
         (None, None)
     };
     Ok(MenuSource {
-        background: fill_of(&panel),
+        background: fill_or_own(&panel, "menu.panel(NONE).fill")?,
         label: text_color_of(&m.item_label(WidgetState::NONE)),
         selected_label: state_text_color(
             &m.item_label(WidgetState::HOVER),
@@ -964,7 +971,10 @@ fn slider_source(r: &ResolvedTheme, orientation: Orientation) -> Mapped<SliderSo
     let pressed = s.thumb(WidgetState::PRESSED);
     let (width, rest_line) = thumb_edge(&thumb)?;
     Ok(SliderSource {
-        fill_color: fill_of(&s.active_track(WidgetState::NONE)),
+        fill_color: fill_or_own(
+            &s.active_track(WidgetState::NONE),
+            "slider.active_track(NONE).fill",
+        )?,
         hovered_fill_color: state_fill(
             &s.active_track(WidgetState::HOVER),
             "slider.active_track(HOVER).fill",
@@ -973,9 +983,9 @@ fn slider_source(r: &ResolvedTheme, orientation: Orientation) -> Mapped<SliderSo
             &s.active_track(WidgetState::PRESSED),
             "slider.active_track(PRESSED).fill",
         )?,
-        track_color: fill_of(&s.track(WidgetState::NONE)),
+        track_color: fill_or_own(&s.track(WidgetState::NONE), "slider.track(NONE).fill")?,
         track_height,
-        thumb_color: fill_of(&thumb),
+        thumb_color: fill_or_own(&thumb, "slider.thumb(NONE).fill")?,
         hovered_thumb: state_layer(&hover, "slider.thumb(HOVER).fill")?.map(Layer::as_given),
         pressed_thumb: state_layer(&pressed, "slider.thumb(PRESSED).fill")?.map(Layer::as_given),
         thumb_diameter,
@@ -1014,15 +1024,18 @@ pub fn scrollable(
 /// [`ScrollbarSource`] of the 0.8.0 model, in the view `view` says.
 fn scrollbar_source(r: &ResolvedTheme, view: WidgetState) -> Mapped<ScrollbarSource> {
     let s = &r.scrollbar;
-    let (rest, stroke_home, corners_home) = if view.contains(WidgetState::UNFOCUSED_VIEW) {
+    let (rest, fill_home, stroke_home, corners_home) = if view.contains(WidgetState::UNFOCUSED_VIEW)
+    {
         (
             WidgetState::UNFOCUSED_VIEW,
+            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
             "scrollbar.thumb(UNFOCUSED_VIEW).stroke",
             "scrollbar.thumb(UNFOCUSED_VIEW).corners",
         )
     } else {
         (
             WidgetState::NONE,
+            "scrollbar.thumb(NONE).fill",
             "scrollbar.thumb(NONE).stroke",
             "scrollbar.thumb(NONE).corners",
         )
@@ -1031,8 +1044,8 @@ fn scrollbar_source(r: &ResolvedTheme, view: WidgetState) -> Mapped<ScrollbarSou
     let hover = s.thumb(WidgetState::HOVER);
     let pressed = s.thumb(WidgetState::PRESSED);
     Ok(ScrollbarSource {
-        track: fill_of(&s.track(WidgetState::NONE)),
-        thumb: fill_of(&thumb),
+        track: fill_or_own(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
+        thumb: fill_or_own(&thumb, fill_home)?,
         hovered_thumb: state_fill(&hover, "scrollbar.thumb(HOVER).fill")?,
         dragged_thumb: state_fill(&pressed, "scrollbar.thumb(PRESSED).fill")?,
         overlay_mode: s.overlay_mode,
@@ -1074,7 +1087,7 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
             r.colors.window.background,
             "colors.window.background",
         )?),
-        background: fill_of(&track),
+        background: fill_or_own(&track, "segmented_control.track(NONE).fill")?,
         label: text_color_of(&s.label(WidgetState::NONE)),
         border: part_outline!(track, "segmented_control.track(NONE)")?,
         separator: if separator.stated.contains(PartStated::FILL) {
@@ -1085,7 +1098,10 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
         } else {
             Some(line(&track, "segmented_control.track(NONE).stroke.color")?.color)
         },
-        active_background: fill_of(&s.segment(WidgetState::SELECTED)),
+        active_background: fill_or_own(
+            &s.segment(WidgetState::SELECTED),
+            "segmented_control.segment(SELECTED).fill",
+        )?,
         active_text_color: text_color_of(&s.label(WidgetState::SELECTED)),
         hover_background: state_layer(
             &s.segment(WidgetState::HOVER),
@@ -1236,8 +1252,8 @@ fn progress_bar_source(r: &ResolvedTheme) -> Mapped<ProgressBarSource> {
     let p = &r.progress_bar;
     let track = p.track(WidgetState::NONE);
     Ok((
-        fill_of(&track),
-        fill_of(&p.fill(WidgetState::NONE)),
+        fill_or_own(&track, "progress_bar.track(NONE).fill")?,
+        fill_or_own(&p.fill(WidgetState::NONE), "progress_bar.fill(NONE).fill")?,
         part_outline!(track, "progress_bar.track(NONE)")?,
     ))
 }
@@ -1283,12 +1299,7 @@ pub fn pane_grid(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<>> {
     let s = &r.splitter;
-    let handle = s.handle(WidgetState::HOVER);
-    let color = if handle.stated.contains(PartStated::FILL) {
-        Some(fill(&handle, "splitter.handle(HOVER).fill")?)
-    } else {
-        None
-    };
+    let color = fill_or_own(&s.handle(WidgetState::HOVER), "splitter.handle(HOVER).fill")?;
     Ok(old::pane_grid_from(color, s.divider_width))
 }
 
@@ -1299,14 +1310,15 @@ pub fn pane_grid(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the panel's border is stated in a form iced
-/// cannot draw (a per-side stroke, a concentric radius).
+/// [`super::Unmapped`] where the panel's fill or border is stated in a form
+/// iced cannot draw (a layered fill with no fallback colour, a per-side
+/// stroke, a concentric radius).
 pub fn tooltip(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let t = &r.tooltip;
     Ok(old::panel_from(
-        fill_of(&t.panel),
+        fill_or_own(&t.panel, "tooltip.panel.fill")?,
         text_color_of(&t.text),
         Some(outline_or_iced!(t.panel, "tooltip.panel")?),
     ))
@@ -1318,14 +1330,14 @@ pub fn tooltip(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the card's border is stated in a form iced
-/// cannot draw.
+/// [`super::Unmapped`] where the card's fill or border is stated in a form
+/// iced cannot draw.
 pub fn container_card(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let card = r.card.container(WidgetState::NONE);
     Ok(old::panel_from(
-        fill_of(&card),
+        fill_or_own(&card, "card.container(NONE).fill")?,
         None,
         Some(outline_or_iced!(card, "card.container(NONE)")?),
     ))
@@ -1337,14 +1349,14 @@ pub fn container_card(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the panel's border is stated in a form iced
-/// cannot draw.
+/// [`super::Unmapped`] where the panel's fill or border is stated in a form
+/// iced cannot draw.
 pub fn dialog(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let d = &r.dialog;
     Ok(old::panel_from(
-        fill_of(&d.panel),
+        fill_or_own(&d.panel, "dialog.panel.fill")?,
         text_color_of(&d.body),
         Some(outline_or_iced!(d.panel, "dialog.panel")?),
     ))
@@ -1353,16 +1365,20 @@ pub fn dialog(
 /// [`crate::styles::toolbar`]: the bar's fill and the button label's colour,
 /// each iced's own container's where the theme leaves it unstated (spec
 /// §10, rule 0).
-#[must_use = "this returns the style function; it does not apply it"]
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states the bar's fill in a form
+/// iced cannot paint (a layered fill with no fallback colour).
 pub fn toolbar(
     r: &ResolvedTheme,
-) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
+) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let t = &r.toolbar;
-    old::panel_from(
-        fill_of(&t.bar(WidgetState::NONE)),
+    Ok(old::panel_from(
+        fill_or_own(&t.bar(WidgetState::NONE), "toolbar.bar(NONE).fill")?,
         text_color_of(&t.button_label(WidgetState::NONE)),
         None::<Outline>,
-    )
+    ))
 }
 
 /// [`crate::styles::application`]: the fill of a normal window's frame,
@@ -1376,12 +1392,10 @@ pub fn toolbar(
 pub fn application(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<>> {
-    let frame = r.window.frame(WindowState::default());
-    let background = if frame.stated.contains(PartStated::FILL) {
-        Some(fill(&frame, "window.frame(normal).fill")?)
-    } else {
-        None
-    };
+    let background = fill_or_own(
+        &r.window.frame(WindowState::default()),
+        "window.frame(normal).fill",
+    )?;
     Ok(old::application_from(background))
 }
 

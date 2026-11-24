@@ -778,6 +778,13 @@ rule 0).
   check box, a switch's track, the menu, a scroll bar's handle, the
   selected tab's top corners), per-corner radii that differ are
   `Unmapped`; no preset states them.
+- **Layered fills.** iced has no backdrop blur, and `next` fills a widget
+  with one colour. A fill stated as layers (`Paint::Complex`) is drawn in
+  the colour a toolkit without blur renders in its place (spec §10, rule 2,
+  `Paint::fallback_color`): each solid layer its colour, each material its
+  `fallback`, the topmost opaque one. Layers that are all gradients have no
+  such colour, so the style is `Unmapped` at the fill's home
+  (`button.body(NONE).fill`), not iced's own fill; no preset states layers.
 - **Shadows.** iced's `Shadow` is one outset shadow: a colour, an offset and
   a blur (`iced_core` 0.14.0 `src/shadow.rs`). The menu, the segmented
   control's track and the expander's frame cast the first outset layer the

@@ -6,10 +6,11 @@ use std::sync::Arc;
 use iced_core::Background;
 use iced_core::Color as IcedColor;
 use native_theme::next::{
-    ButtonRule, ButtonVariant, CheckboxRule, Color, ComboBoxRule, Corners, ExpanderRule, InputRule,
-    LinkRule, MenuRule, Paint, PaintLayer, PartPatch, PartStated, Preset, RadioRule, ResolvedTheme,
-    ScrollbarRule, SegmentedControlRule, ShadowLayer, SliderRule, Stroke, StrokeAlign, SwitchRule,
-    TextPatch, TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
+    ButtonRule, ButtonVariant, CheckboxRule, Color, ComboBoxRule, Corners, ExpanderRule,
+    GradientStop, InputRule, LinkRule, MaterialKind, MaterialSpec, MenuRule, Paint, PaintLayer,
+    PartPatch, PartStated, Preset, RadioRule, ResolvedTheme, ScrollbarRule, SegmentedControlRule,
+    ShadowLayer, SliderRule, Stroke, StrokeAlign, SwitchRule, TextPatch, TextStated, Theme,
+    ThemeContext, ThemePatch, ToolbarRule, WidgetState,
 };
 
 use super::super::borders::{line, line_or_none};
@@ -295,6 +296,103 @@ fn a_layered_fill_is_drawn_in_its_fallback() -> TestResult {
     let theme = to_theme(&r)?;
     let style = super::text_input(&r)?(&theme, iced_widget::text_input::Status::Active);
     assert_eq!(style.background, Background::Color(to_color(DISTINCT)));
+    Ok(())
+}
+
+/// A backdrop material of the case, `fallback` its colour for a toolkit
+/// without backdrop blur.
+fn material(fallback: Color) -> PaintLayer {
+    PaintLayer::Material(MaterialSpec::new(
+        MaterialKind::Acrylic,
+        30.0,
+        Color::TRANSPARENT,
+        1.0,
+        0.0,
+        0.0,
+        fallback,
+    ))
+}
+
+/// A material is drawn in its fallback colour (spec §10, rule 2: "render
+/// `material.fallback`"), on the surface it lies on whatever that is.
+#[test]
+fn a_material_fill_is_drawn_in_its_fallback() -> TestResult {
+    let patch = ThemePatch::new().input(
+        InputRule::new().field(PartPatch::new().fill(Paint::layers(vec![material(DISTINCT)]))),
+    );
+    let r = Theme::preset(Preset::Adwaita)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    let theme = to_theme(&r)?;
+    let style = super::text_input(&r)?(&theme, iced_widget::text_input::Status::Active);
+    assert_eq!(style.background, Background::Color(to_color(DISTINCT)));
+    Ok(())
+}
+
+/// A translucent solid over a material is drawn in the topmost opaque
+/// layer's colour, the material's fallback, not flattened onto a surface.
+#[test]
+fn a_solid_over_a_material_is_drawn_in_the_topmost_opaque_layer() -> TestResult {
+    use iced_widget::button::Status;
+    let layers = Paint::layers(vec![
+        material(DISTINCT),
+        PaintLayer::Solid {
+            color: Color::new(1.0, 1.0, 1.0, 0.5),
+            blend: Default::default(),
+        },
+    ]);
+    let patch = ThemePatch::new().button(ButtonRule::new().body(PartPatch::new().fill(layers)));
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let style = super::button(&r)?(&theme, Status::Active);
+        assert_eq!(
+            background_color(style.background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// Layers that are all gradients have no single colour: a style iced
+/// draws in one colour reports them `Unmapped` at their home (spec §10,
+/// rule 4), never iced's own fill in their place.
+#[test]
+fn an_all_gradient_fill_is_unmapped() -> TestResult {
+    let gradient = Paint::layers(vec![PaintLayer::LinearGradient {
+        angle_deg: 90.0,
+        stops: Arc::from(vec![
+            GradientStop {
+                offset: 0.0,
+                color: DISTINCT,
+            },
+            GradientStop {
+                offset: 1.0,
+                color: LABEL,
+            },
+        ]),
+        blend: Default::default(),
+    }]);
+    let fill = PartPatch::new().fill(gradient);
+    let patch = ThemePatch::new()
+        .button(ButtonRule::new().body(fill.clone()))
+        .toolbar(ToolbarRule::new().bar(fill.clone()))
+        .input(InputRule::new().field(fill));
+    let r = Theme::preset(Preset::KdeBreeze)
+        .with_patch(patch)
+        .resolve(&ThemeContext::light());
+    assert_eq!(
+        super::button(&r).err(),
+        Some(super::super::Unmapped("button.body(NONE).fill"))
+    );
+    assert_eq!(
+        super::text_input(&r).err(),
+        Some(super::super::Unmapped("input.field(NONE).fill"))
+    );
+    assert_eq!(
+        super::toolbar(&r).err(),
+        Some(super::super::Unmapped("toolbar.bar(NONE).fill"))
+    );
     Ok(())
 }
 
@@ -2069,7 +2167,7 @@ fn a_toolbar_keeps_iceds_own_per_property() -> TestResult {
     let iced = iced_container();
     for (preset, r) in every_preset_with(&filled) {
         let theme = to_theme(&r)?;
-        let bar = super::toolbar(&r)(&theme);
+        let bar = super::toolbar(&r)?(&theme);
         assert_eq!(
             background_color(bar.background),
             Some(to_color(DISTINCT)),
@@ -2080,9 +2178,9 @@ fn a_toolbar_keeps_iceds_own_per_property() -> TestResult {
     }
     for (preset, r) in every_preset_with(&lettered) {
         let theme = to_theme(&r)?;
-        let bar = super::toolbar(&r)(&theme);
+        let bar = super::toolbar(&r)?(&theme);
         assert_eq!(bar.text_color, Some(to_color(LABEL)), "{preset:?}");
-        let fill = super::fill_of(&r.toolbar.bar(WidgetState::NONE));
+        let fill = super::super::fill_of(&r.toolbar.bar(WidgetState::NONE));
         assert_eq!(
             background_color(bar.background),
             fill.or(background_color(iced.background)),
@@ -2860,7 +2958,7 @@ fn a_pane_grid_keeps_iceds_own_per_property() -> TestResult {
         let width = r.splitter.divider_width;
         let handle = r.splitter.handle(WidgetState::HOVER);
         let grid = super::pane_grid(&r)?(&theme);
-        let expected = super::fill_of(&handle);
+        let expected = super::super::fill_of(&handle);
         assert_eq!(
             grid.hovered_split.color,
             expected.unwrap_or(own.hovered_split.color),
@@ -2895,7 +2993,7 @@ fn an_application_keeps_iceds_own_per_property() -> TestResult {
         let stated = super::application(&r)?(&theme);
         assert_eq!(
             stated.background_color,
-            super::fill_of(&frame).unwrap_or(base.background_color),
+            super::super::fill_of(&frame).unwrap_or(base.background_color),
             "{preset:?}"
         );
         assert_eq!(stated.text_color, base.text_color, "{preset:?}");

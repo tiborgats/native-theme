@@ -140,11 +140,26 @@ pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<IcedColor> {
     stated(fill_of(part), home)
 }
 
+/// A part's fill as `fill` reads it, `None` where it is not stated: iced's
+/// own there (spec §10, rule 0); [`Unmapped`] where it is stated as layers
+/// that are all gradients, which have no single colour for iced to paint
+/// (spec §10, rule 4), never iced's own in their place.
+pub(crate) fn fill_or_own(part: &PartStyle, home: &'static str) -> Mapped<Option<IcedColor>> {
+    if part.stated.contains(PartStated::FILL) {
+        fill(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
 /// A part's fill as `fill` reads it, `None` where it is not stated, or
-/// stated as a layered paint with no fallback colour: for a reader that
-/// shows iced's own there (spec §10, rule 0). A fill stated as none is
+/// stated as layers that are all gradients, which have no single colour:
+/// for a reader of what the theme states. The style functions draw a fill
+/// that is not stated as iced's own and report the gradients `Unmapped`
+/// (`fill_or_own`; spec §10, rules 0 and 4). A fill stated as none is
 /// transparent, and a layered paint gives its fallback colour (spec §10,
-/// rule 2).
+/// rule 2: each solid layer its colour, each material its fallback, the
+/// topmost opaque one).
 pub fn fill_of(part: &PartStyle) -> Option<IcedColor> {
     if !part.stated.contains(PartStated::FILL) {
         return None;

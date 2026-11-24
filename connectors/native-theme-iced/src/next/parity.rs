@@ -3479,7 +3479,7 @@ fn compare_styles(
         themes,
         "toolbar",
         surface(o::toolbar(old)),
-        Ok::<_, super::Unmapped>(surface(n::toolbar(new))),
+        n::toolbar(new).map(surface),
         [()]
     );
     plain!(

@@ -6961,7 +6961,7 @@ fn toolbar(state: &State) -> Element<'_, Message> {
     let bar = container(row![items, space().height(floor)].align_y(iced::Center))
         .padding(padding)
         .width(Fill)
-        .style(iced_next::styles::toolbar(r));
+        .next_style(iced_next::styles::toolbar(r), |bar, style| bar.style(style));
     tagged(
         "chrome.toolbar",
         column![
