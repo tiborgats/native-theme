@@ -58,7 +58,7 @@
 #                                    `typography.body.size_px`, `icons.set`, `layout.widget_gap`,
 #                                    `timings.tooltip_show_ms`, `focus_ring.stroke.color`,
 #                                    `context.scheme` (the resolved theme's context: the level used)
-#   <widget>.<metric>                a direct metric of a widget (spec §5's table):
+#   <widget>.<metric>                a direct metric of a widget (docs/v0.8.0-spec.md §5's table):
 #                                    `button.icon_text_gap`
 #   <widget>.<part>.<property>       a part of a static widget: `tooltip.panel.fill`
 #   <widget>.<part>(<query>).<property>
@@ -69,7 +69,7 @@
 #                                    `orientation=Vertical`, `size=Small`, `surface=View`,
 #                                    `position=First`
 #   window.<getter>(normal).<property>
-#                                    `WindowChrome`'s `frame`, `title_bar` or `title` (spec §4) at
+#                                    `WindowChrome`'s `frame`, `title_bar` or `title` (docs/v0.8.0-spec.md §4) at
 #                                    `WindowState::default()`: `window.title_bar(normal).fill`
 #   <text part> or <global text style>, named whole
 #                                    a text part (`button.label(NONE)`) or a global text style
