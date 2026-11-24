@@ -1990,9 +1990,9 @@ fn link(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> LinkWi
 /// The slider: the groove `opaqueFill`, of an exact thickness across it,
 /// disabled its own colour; the filled part in the accent (0.7.2:
 /// `slider.fill_color` is `defaults.accent_color` where unstated), disabled
-/// its own colour; the handle in the view's background (0.7.2:
-/// `slider.thumb_color` is `defaults.surface_color` where unstated), of an
-/// exact size, hovered and disabled its own colours.
+/// its own colour; the handle white at rest and touched, as measured (not
+/// 0.7.2's `defaults.surface_color`), of an exact size, hovered and disabled
+/// its own colours.
 fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
     let track = across(
         RuleBuilder::new(PartStyle::default()).base([fill(c.track)]),
@@ -2011,9 +2011,11 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
         )
         .build();
     let thumb_size = [Some(SLIDER_THUMB_DIAMETER); 2];
+    // At rest the thumb is white in both schemes: its 31 pt part reads #ffffff (ios-host run
+    // 45230061151, iOS 18.6, `measure_lists.toml` `press1."<a>".slider.normal` `fill`).
     let thumb = RuleBuilder::new(PartStyle::default())
         .base([
-            fill(c.surface),
+            fill(c.white),
             PartProp::MinSize(thumb_size),
             PartProp::MaxSize(thumb_size),
         ])
@@ -2021,11 +2023,12 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.slider_thumb_hover)],
         )
-        // Touched, the thumb as at rest: 0 of its pixels change (ios-host run 45230061151,
-        // `changed_parts.toml` `press1."<a>".slider.pressed` `changed_px` 0).
+        // Touched, the thumb as at rest: 0 of its pixels change, still #ffffff (ios-host run
+        // 45230061151, `changed_parts.toml` `press1."<a>".slider.pressed` `changed_px` 0;
+        // `measure_lists.toml` `press1."<a>".slider.pressed` `fill`).
         .rule(
             RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
-            [fill(c.surface)],
+            [fill(c.white)],
         )
         .rule(RuleSelector::on(WidgetState::DISABLED), [fill(c.row_hover)])
         .build();

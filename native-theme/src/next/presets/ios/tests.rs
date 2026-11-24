@@ -596,3 +596,20 @@ fn the_card_s_corners_are_continuous() {
         );
     }
 }
+
+/// The slider's thumb is white at rest and touched in both schemes, as
+/// UISlider draws it (ios-host run 45230061151, `measure_lists.toml`
+/// `press1."<a>".slider.{normal,pressed}` `fill` #ffffff).
+#[test]
+fn the_slider_thumb_is_white_at_rest_and_touched() {
+    for theme in both_schemes() {
+        for state in [WidgetState::NONE, WidgetState::PRESSED] {
+            assert_eq!(
+                theme.slider.thumb(state).fill,
+                Paint::Solid(hex(0xffffff)),
+                "{:?} {state:?}",
+                theme.context.scheme
+            );
+        }
+    }
+}

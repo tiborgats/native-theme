@@ -1174,7 +1174,7 @@
     },
     "thumb": {
       "base": {
-        "fill": "#f2f2f7",
+        "fill": "#ffffff",
         "min_size": [
           28.0,
           28.0
@@ -1201,7 +1201,7 @@
             "disabled"
           ],
           "thumb": {
-            "fill": "#f2f2f7"
+            "fill": "#ffffff"
           }
         },
         {
