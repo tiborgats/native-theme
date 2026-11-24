@@ -575,26 +575,53 @@ fn the_scroll_area_scrolls_inside_its_frame(cx: &mut TestAppContext) {
 /// (setting/page.rs:285-315, scroll/scrollable.rs:19-29) and reserves only the
 /// `px_4` each group's row is wrapped in, inside the list (setting/page.rs:299-303);
 /// kde-breeze's groove is 21px, wider than that, so without a gutter on the
-/// group the bar covers the rows.
+/// group the bar covers the rows. With the installed 0.8.0 theme's groove
+/// (`scrollbar.track(NONE; orientation=Vertical).min_size[0]`) patched to
+/// twice its width, the row keeps off the wider groove.
 #[gpui::test]
 fn a_settings_row_keeps_off_the_page_scrollbar(cx: &mut TestAppContext) {
+    use native_theme::next::{Orientation, PartPatch, ScrollbarRule, ThemePatch};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Layout);
-    let measured = next_scrollbar_of(&mut cx, &showcase);
-    assert!(
-        matches!(measured, Some((Some(groove), false)) if groove > px(0.)),
-        "kde-breeze must draw a non-overlay groove"
-    );
-    let Some((Some(groove), _)) = measured else {
+    let kept_off = |cx: &mut VisualTestContext, which: &str| {
+        let measured = next_scrollbar_of(cx, &showcase);
+        assert!(
+            matches!(measured, Some((Some(groove), false)) if groove > px(0.)),
+            "{which}: kde-breeze must draw a non-overlay groove"
+        );
+        let Some((Some(groove), _)) = measured else {
+            return None;
+        };
+        let frame = bounds_of(cx, "settings-frame");
+        let row = bounds_of(cx, PROBE_SETTINGS_ROW);
+        assert!(
+            frame.right() - row.right() >= groove,
+            "{which}: the row ends {:?} before the frame's right edge; a {groove:?} groove covers it",
+            frame.right() - row.right()
+        );
+        Some(groove)
+    };
+    let Some(groove) = kept_off(&mut cx, "kde-breeze") else {
         return;
     };
-    let frame = bounds_of(&mut cx, "settings-frame");
-    let row = bounds_of(&mut cx, PROBE_SETTINGS_ROW);
-    assert!(
-        frame.right() - row.right() >= groove,
-        "the row ends {:?} before the frame's right edge; a {groove:?} groove covers it",
-        frame.right() - row.right()
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else { return };
+    let wider = f32::from(groove) * 2.;
+    r.apply_patch(
+        &ThemePatch::new().scrollbar(
+            ScrollbarRule::new()
+                .orientation(Orientation::Vertical)
+                .track(PartPatch::new().min_size([Some(wider), None])),
+        ),
+    );
+    install_next(&mut cx, &r);
+    show(&mut cx, &showcase, Page::Layout);
+    assert_eq!(
+        kept_off(&mut cx, "the patched groove"),
+        Some(px(wider)),
+        "the installed 0.8.0 theme's groove is not the patched one"
     );
 }
 
@@ -6339,7 +6366,8 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
         crate::support::next_resolved(cx).map(|r| crate::demo::heading_role(&r.typography))
     });
     assert!(
-        matches!(role, Some(Ok(ref role)) if role.home == "typography.headline"),
+        matches!(role, Some(ref role) if role.home == "typography.headline"
+            && role.size.is_some() && role.weight.is_some()),
         "kde-breeze's 0.8.0 theme gives no headline role: {role:?}"
     );
     let heading = bounds_of(&mut cx, "basic-heading-buttons");
@@ -11440,19 +11468,20 @@ fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
 /// hovered menu row (`menu.item(HOVER).stroke`) and a hovered list row
 /// (`list.highlight(HOVER).stroke`), the Theme menu's System row
 /// (`MenuLook::next_of`), the Overlays page's first menu row
-/// (`MenuRowsPaint::of`), the Basic List's first row (`list_hover_edge`) and
+/// (`MenuRowsLook::of`), the Basic List's first row (`list_hover_edge`) and
 /// the Basic table's first row (`TableLook`), each hovered, draw an outline;
-/// with both strokes patched to 0 wide in their own colours, each draws
-/// none, filled as before, so the pointer is on it.
+/// with both strokes patched to 0 wide in their own colours, and with both
+/// stated as `Stroke::None` (spec §10 rule 2: width 0, transparent), each
+/// draws none, filled as before, so the pointer is on it.
 #[gpui::test]
-fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
+fn no_row_is_outlined_where_the_hover_stroke_is_0_wide_or_none(cx: &mut TestAppContext) {
     use native_theme::next::{ListRule, MenuRule, PartPatch, Stroke, ThemePatch, WidgetState};
     use native_theme_gpui::next::state_stroke_color_of;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     let r = next_theme(&mut cx, &showcase);
     assert!(r.is_some(), "no 0.8.0 theme is installed");
-    let Some(mut r) = r else { return };
+    let Some(r) = r else { return };
     let to_model = |c: gpui::Hsla| {
         let c = gpui::Rgba::from(c);
         native_theme::next::Color::new(c.r, c.g, c.b, c.a)
@@ -11498,27 +11527,38 @@ fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
             "{row} under the pointer under kde-breeze light is not filled or not outlined, so the patched case proves nothing: {fill:?}, {edge:?}"
         );
     }
-    r.apply_patch(
-        &ThemePatch::new()
-            .menu(
-                MenuRule::new()
-                    .states(WidgetState::HOVER)
-                    .item(PartPatch::new().stroke(Stroke::uniform(0., menu_edge))),
-            )
-            .list(
-                ListRule::new()
-                    .states(WidgetState::HOVER)
-                    .highlight(PartPatch::new().stroke(Stroke::uniform(0., list_edge))),
-            ),
-    );
-    install_next(&mut cx, &r);
-    let unlined = drawn(&mut cx);
-    for ((row, (fill, _)), (_, after)) in outlined.iter().zip(&unlined) {
-        assert_eq!(
-            *after,
-            (*fill, None),
-            "{row} under the pointer is not filled as before, or is outlined at a width of 0"
+    let cases = [
+        (
+            "0 wide",
+            Stroke::uniform(0., menu_edge),
+            Stroke::uniform(0., list_edge),
+        ),
+        ("none", Stroke::None, Stroke::None),
+    ];
+    for (how, menu_stroke, list_stroke) in cases {
+        let mut patched = r.clone();
+        patched.apply_patch(
+            &ThemePatch::new()
+                .menu(
+                    MenuRule::new()
+                        .states(WidgetState::HOVER)
+                        .item(PartPatch::new().stroke(menu_stroke)),
+                )
+                .list(
+                    ListRule::new()
+                        .states(WidgetState::HOVER)
+                        .highlight(PartPatch::new().stroke(list_stroke)),
+                ),
         );
+        install_next(&mut cx, &patched);
+        let unlined = drawn(&mut cx);
+        for ((row, (fill, _)), (_, after)) in outlined.iter().zip(&unlined) {
+            assert_eq!(
+                *after,
+                (*fill, None),
+                "{row} under the pointer is not filled as before, or is outlined where the hover stroke is stated {how}"
+            );
+        }
     }
 }
 
@@ -11532,10 +11572,13 @@ fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
 /// text colour is the one the frame laid the text out in
 /// (`elements::label_probe`). The press only: a release on the row runs its
 /// action, which closes the menu and switches the theme, so the button is
-/// let go off the row (trial T-L1 case 2 checked the released frame).
+/// let go off the row (trial T-L1 case 2 checked the released frame). With
+/// `menu.item(PRESSED).fill` patched to `colors.window.border` and
+/// `menu.item_label(PRESSED).color` to `colors.window.foreground`, the
+/// Overlays page's pressed row follows the patch.
 #[gpui::test]
 fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
-    use native_theme::next::WidgetState;
+    use native_theme::next::{MenuRule, Paint, PartPatch, TextPatch, ThemePatch, WidgetState};
     use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_color_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
@@ -11624,6 +11667,101 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
         (fill, None, vec![text]),
         "the Overlays page's pressed first menu row is not filled with menu.active_background, lettered menu.active_text_color, outlined in nothing"
     );
+    let colours = r.colors.window.border.zip(r.colors.window.foreground);
+    assert!(
+        colours.is_some(),
+        "kde-breeze light states no colors.window.border or foreground, which the patch is made of"
+    );
+    let Some((border, foreground)) = colours else {
+        return;
+    };
+    let mut patched = r.clone();
+    patched.apply_patch(
+        &ThemePatch::new().menu(
+            MenuRule::new()
+                .states(WidgetState::PRESSED)
+                .item(PartPatch::new().fill(Paint::Solid(border)))
+                .item_label(TextPatch::new().color(foreground)),
+        ),
+    );
+    install_next(&mut cx, &patched);
+    show(&mut cx, &showcase, Page::Overlays);
+    let patched_fill = state_fill_of(&patched.menu.item(WidgetState::PRESSED));
+    let patched_text = state_text_color_of(&patched.menu.item_label(WidgetState::PRESSED));
+    assert!(
+        patched_fill.is_some() && patched_fill != fill && patched_text != text,
+        "the patch does not change kde-breeze light's pressed menu fill and text, so the drawing cannot show it is read"
+    );
+    assert_eq!(
+        pressed(
+            &mut cx,
+            "overlays-menu-row-undo",
+            &["overlays-menu-row-undo-label".to_owned()],
+        ),
+        (patched_fill, None, vec![patched_text]),
+        "the Overlays page's pressed first menu row does not follow the patched menu.item(PRESSED).fill and menu.item_label(PRESSED).color"
+    );
+}
+
+/// A pressed menu row's look is what a rule states for `menu.item(PRESSED)`
+/// and `menu.item_label(PRESSED)` asked of that state alone (spec §2,
+/// `from_state`; `demo::MenuRowsParts`): adwaita states its hovered row
+/// with an `on(HOVER)` rule, which also answers a `HOVER|PRESSED` query,
+/// and no pressed look, so its Overlays menu row keeps its hover look while
+/// pressed and its info claims no pressed look; kde-breeze light states an
+/// `on(PRESSED)` fill and text, which the row takes and claims.
+#[gpui::test]
+fn a_menu_rows_pressed_look_is_asked_of_the_pressed_state_alone(cx: &mut TestAppContext) {
+    use crate::demo::{MenuRowsLook, MenuRowsParts};
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{state_fill_of, state_text_color_of};
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for preset in ["adwaita", "kde-breeze"] {
+        use_light_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Overlays);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let fill = state_fill_of(&r.menu.item(WidgetState::PRESSED));
+        let text = state_text_color_of(&r.menu.item_label(WidgetState::PRESSED));
+        let either = WidgetState::HOVER | WidgetState::PRESSED;
+        if preset == "adwaita" {
+            assert!(
+                fill.is_none() && state_fill_of(&r.menu.item(either)).is_some(),
+                "adwaita no longer states a hovered menu row by an on(HOVER) rule and no pressed one, which this test tells apart"
+            );
+        } else {
+            assert!(
+                fill.is_some() && text.is_some(),
+                "kde-breeze light no longer states a pressed menu fill and text"
+            );
+        }
+        let t = cx.update(|_w, cx| Theme::global(cx).clone());
+        let border_width = cx.update(|_w, cx| crate::support::demo_border_width(cx));
+        let look = MenuRowsLook::of(&MenuRowsParts::of(&r), &t, border_width);
+        assert_eq!(
+            (look.active, look.active_text),
+            (fill, text),
+            "{preset}: the menu rows' pressed look is not menu.item(PRESSED)'s asked alone"
+        );
+        let info = settle_on(&mut cx, &showcase, "overlays-menu-row-copy");
+        assert!(info.is_some(), "{preset}: the menu row shows no info");
+        let Some(info) = info else { return };
+        let by_role = |role: &str| {
+            info.colors
+                .iter()
+                .find(|c| c.role == role)
+                .map(|c| (c.field, c.value))
+        };
+        assert_eq!(
+            (by_role("pressed item"), by_role("pressed item text")),
+            (
+                fill.map(|fill| ("menu.item(PRESSED).fill", fill)),
+                text.map(|text| ("menu.item_label(PRESSED).color", text))
+            ),
+            "{preset}: the menu row's info does not claim the pressed look menu.item(PRESSED) states alone: {info:?}"
+        );
+    }
 }
 
 /// E4: the Theme menu's popup lays its rows out as Breeze does, under
@@ -11790,10 +11928,11 @@ fn the_table_headers_separators_take_their_colour(cx: &mut TestAppContext) {
 /// installed 0.8.0 theme's `list.highlight(HOVER)` stroke, its colour at its
 /// width, a box over the row in its suffix (`demo::ListRow`), and at rest
 /// they are not: under kde-breeze light, rows 1 and 3; the selected row 2
-/// never.
+/// never. With that stroke's colour patched to `colors.window.foreground`,
+/// the first row under the pointer is outlined in the patched colour.
 #[gpui::test]
 fn a_hovered_list_row_takes_the_hover_border(cx: &mut TestAppContext) {
-    use native_theme::next::WidgetState;
+    use native_theme::next::{ListRule, PartPatch, Stroke, ThemePatch, WidgetState};
     use native_theme_gpui::next::{state_stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
@@ -11829,6 +11968,37 @@ fn a_hovered_list_row_takes_the_hover_border(cx: &mut TestAppContext) {
             "{row} under the pointer: the outline is not list.hover_border_color on an unselected row alone"
         );
     }
+    let foreground = r.as_ref().and_then(|r| r.colors.window.foreground);
+    let (Some(r), Some(foreground), Some((colour, width))) = (r, foreground, expected) else {
+        return;
+    };
+    let mut patched = r.clone();
+    patched.apply_patch(
+        &ThemePatch::new().list(
+            ListRule::new()
+                .states(WidgetState::HOVER)
+                .highlight(PartPatch::new().stroke(Stroke::uniform(width, foreground))),
+        ),
+    );
+    install_next(&mut cx, &patched);
+    show(&mut cx, &showcase, Page::Basic);
+    let hovered = patched.list.highlight(WidgetState::HOVER);
+    let patched_edge = state_stroke_color_of(&hovered).zip(stroke_width_of(&hovered));
+    assert!(
+        patched_edge.is_some_and(|(patched, _)| patched != colour),
+        "the patch does not change kde-breeze light's list.highlight(HOVER) stroke colour, so the drawing cannot show it is read"
+    );
+    let row = "basic-list-row-0";
+    hover(&mut cx, far);
+    draw(&mut cx);
+    let at = bounds_of(&mut cx, row).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        last_edge_inside(&mut cx, row),
+        patched_edge,
+        "{row} under the pointer is not outlined in the patched list.highlight(HOVER) stroke"
+    );
 }
 
 /// The Data page's unselected Tree row under the pointer is outlined in
@@ -13079,51 +13249,214 @@ fn the_menu_rows_frame_falls_back_to_the_popovers(cx: &mut TestAppContext) {
     assert_eq!(menu_frame_value(none, none, stroke_width_of), None);
 }
 
-/// The menu rows are painted with the menu's look where the theme gives
-/// one, and with the popover's tokens, the accent under the pointer, square
-/// rows and the showcase's own frame where it leaves a home the look needs
-/// without a value gpui can take, which no bundled preset does
-/// (`demo::MenuRowsPaint::of`): read on kde-breeze light's look and on none.
+/// What a menu-rows look draws, property by property: the frame's fill, the
+/// text, the hover fill and text, the frame's edge width, colour and corner
+/// radius, the rows' corners.
+type MenuRowsDrawn = (
+    gpui::Hsla,
+    gpui::Hsla,
+    gpui::Hsla,
+    gpui::Hsla,
+    (Pixels, Option<crate::demo::FrameFrom>),
+    gpui::Hsla,
+    (Pixels, Option<crate::demo::FrameFrom>),
+    Option<Pixels>,
+);
+
+/// One case of `a_menu_row_property_the_theme_leaves_unstated_alone_takes_the_showcases_own`:
+/// the property's home, how it is cleared from the parts, its place in
+/// [`MenuRowsDrawn`] and the showcase's own token it takes (empty where it
+/// is not a colour).
+type MenuRowsCase = (
+    &'static str,
+    fn(&mut crate::demo::MenuRowsParts),
+    usize,
+    &'static str,
+);
+
+fn menu_rows_drawn(look: &crate::demo::MenuRowsLook) -> MenuRowsDrawn {
+    (
+        look.background,
+        look.text,
+        look.hover,
+        look.hover_text,
+        look.frame_width,
+        look.frame_colour,
+        look.frame_radius,
+        look.radius,
+    )
+}
+
+/// The menu rows take, property by property, what the theme states, and
+/// where it leaves one property without a value gpui can take, the
+/// showcase's own for that property alone (spec §10, rule 0;
+/// `demo::MenuRowsLook::of`), which no bundled preset does: kde-breeze
+/// light's menu parts with one property cleared from its part --
+/// `menu.panel(NONE).fill`, `menu.item_label(NONE).color`,
+/// `menu.item(HOVER).fill`, `menu.item_label(HOVER).color`, the stroke of
+/// `menu.panel(NONE)` and `popover.panel`, their corners, and
+/// `menu.item(NONE).corners` -- draw that property alone as the showcase's
+/// own (`popover`, `popover_foreground`, `accent`, `accent_foreground`, the
+/// showcase frame's width and `border`, its `radius`, square rows) and
+/// every other one as before; parts stating nothing (no theme installed)
+/// draw every property as the showcase's own, and the row's info then
+/// claims each colour at the showcase's own token (the info's claims read
+/// the theme itself, so a cleared part cannot be fed to it).
+/// The showcase's own tokens are adwaita dark's, so each differs from the
+/// value kde-breeze light states.
 #[gpui::test]
-fn the_menu_rows_keep_the_popovers_tokens_without_a_menu_look(cx: &mut TestAppContext) {
-    use crate::demo::{MenuRowsLook, MenuRowsPaint};
+fn a_menu_row_property_the_theme_leaves_unstated_alone_takes_the_showcases_own(
+    cx: &mut TestAppContext,
+) {
+    use crate::demo::{MenuRowsLook, MenuRowsParts};
+    use native_theme::next::{PartStated, TextStated};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    // The showcase's own tokens from another theme than the parts', so
+    // that each differs from the value the parts state.
+    use_preset(&mut cx, &showcase, "adwaita");
+    cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(AppColorMode::Dark)), cx));
+    cx.run_until_parked();
+    let t = cx.update(|_w, cx| Theme::global(cx).clone());
+    assert!(
+        t.mode.is_dark(),
+        "adwaita was not installed in its dark variant"
+    );
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     let r = next_theme(&mut cx, &showcase);
-    let look = r.as_ref().map(MenuRowsLook::next_of);
-    assert!(
-        matches!(look, Some(Ok(_))),
-        "kde-breeze light gives the menu rows no look: {:?}",
-        look.as_ref().map(|look| look.as_ref().err())
-    );
-    let Some(Ok(look)) = look else { return };
-    let t = cx.update(|_w, cx| Theme::global(cx).clone());
-    let menu = MenuRowsPaint::of(Some(&look), &t);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let border_width = cx.update(|_w, cx| crate::support::demo_border_width(cx));
+    let stated = MenuRowsParts::of(&r);
+    let full = menu_rows_drawn(&MenuRowsLook::of(&stated, &t, border_width));
+    let own = menu_rows_drawn(&MenuRowsLook::of(
+        &MenuRowsParts::default(),
+        &t,
+        border_width,
+    ));
     assert_eq!(
-        (menu.background, menu.text, menu.hover, menu.hover_text),
-        (look.background, look.text, look.hover, look.hover_text)
+        own,
+        (
+            t.popover,
+            t.popover_foreground,
+            t.accent,
+            t.accent_foreground,
+            (border_width, None),
+            t.border,
+            (t.radius, None),
+            None,
+        ),
+        "parts stating nothing do not draw the menu rows as the showcase's own"
     );
-    assert_eq!(menu.row_radius, look.radius);
-    assert_eq!(
-        menu.frame,
-        Some((
-            px(look.frame.width.0),
-            look.frame.colour,
-            px(look.frame.radius.0)
-        ))
-    );
-    let popover = MenuRowsPaint::of(None, &t);
-    assert_eq!(
-        popover,
-        MenuRowsPaint {
-            background: t.popover,
-            text: t.popover_foreground,
-            hover: t.accent,
-            hover_text: t.accent_foreground,
-            row_radius: None,
-            frame: None,
+    let icon = crate::support::SampleIcon {
+        icon: IconName::Copy,
+        drawn: ChromeIcon::Missing("Copy"),
+        set: "material".into(),
+    };
+    let cases: [MenuRowsCase; 7] = [
+        (
+            "menu.panel(NONE).fill",
+            |p| p.panel.stated = p.panel.stated.difference(PartStated::FILL),
+            0,
+            "popover",
+        ),
+        (
+            "menu.item_label(NONE).color",
+            |p| p.label.stated = p.label.stated.difference(TextStated::COLOR),
+            1,
+            "popover_foreground",
+        ),
+        (
+            "menu.item(HOVER).fill",
+            |p| p.hovered.stated = p.hovered.stated.difference(PartStated::FILL),
+            2,
+            "accent",
+        ),
+        (
+            "menu.item_label(HOVER).color",
+            |p| p.hovered_label.stated = p.hovered_label.stated.difference(TextStated::COLOR),
+            3,
+            "accent_foreground",
+        ),
+        (
+            "the panels' stroke",
+            |p| {
+                p.panel.stated = p.panel.stated.difference(PartStated::STROKE);
+                p.popover.stated = p.popover.stated.difference(PartStated::STROKE);
+            },
+            4,
+            "border",
+        ),
+        (
+            "the panels' corners",
+            |p| {
+                p.panel.stated = p.panel.stated.difference(PartStated::CORNERS);
+                p.popover.stated = p.popover.stated.difference(PartStated::CORNERS);
+            },
+            6,
+            "",
+        ),
+        (
+            "menu.item(NONE).corners",
+            |p| p.rest.stated = p.rest.stated.difference(PartStated::CORNERS),
+            7,
+            "",
+        ),
+    ];
+    let mut tokens = Vec::new();
+    for (home, clear, property, token) in cases {
+        let mut parts = stated.clone();
+        clear(&mut parts);
+        let drawn = menu_rows_drawn(&MenuRowsLook::of(&parts, &t, border_width));
+        let mut expected = full;
+        match property {
+            0 => expected.0 = own.0,
+            1 => expected.1 = own.1,
+            2 => expected.2 = own.2,
+            3 => expected.3 = own.3,
+            4 => (expected.4, expected.5) = (own.4, own.5),
+            6 => expected.6 = own.6,
+            _ => expected.7 = own.7,
         }
+        assert_ne!(
+            full, expected,
+            "{home}: kde-breeze light's value equals the showcase's own, so clearing it proves nothing"
+        );
+        assert_eq!(
+            drawn, expected,
+            "with {home} unstated, the menu rows do not take the showcase's own for it alone"
+        );
+        tokens.push(token);
+    }
+    let roles = [
+        ("bg (the frame's)", "popover", t.popover),
+        ("text", "popover_foreground", t.popover_foreground),
+        ("hover", "accent", t.accent),
+        ("hover text", "accent_foreground", t.accent_foreground),
+        ("frame edge", "border", t.border),
+    ];
+    assert!(
+        roles.iter().all(|(_, token, _)| tokens.contains(token)),
+        "a case of the showcase's own tokens went untested: {tokens:?}"
     );
+    let unthemed = MenuRowsLook::of(&MenuRowsParts::default(), &t, border_width);
+    let info = crate::info::overlays::menu_row(
+        &t,
+        None,
+        &MenuRowsParts::default(),
+        &unthemed,
+        "Copy",
+        &icon,
+    );
+    for (role, token, value) in roles {
+        assert_eq!(
+            info.colors
+                .iter()
+                .find(|c| c.role == role)
+                .map(|c| (c.field, c.value)),
+            Some((token, value)),
+            "with no theme, the menu row's info does not claim its {role} at the showcase's own {token}"
+        );
+    }
 }
 
 /// The Overlays page's menu rows' info claims the 0.8.0 homes the rows are
@@ -13133,7 +13466,7 @@ fn the_menu_rows_keep_the_popovers_tokens_without_a_menu_look(cx: &mut TestAppCo
 /// rounding the frame.
 #[gpui::test]
 fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
-    use crate::demo::{FrameFrom, MenuRowsLook};
+    use crate::demo::{FrameFrom, MenuRowsLook, MenuRowsParts};
     use native_theme::next::WidgetState;
     use native_theme_gpui::next::{fill_of, text_color_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -13144,13 +13477,17 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
         let r = next_theme(&mut cx, &showcase);
         assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
         let Some(r) = r else { return };
-        let look = MenuRowsLook::next_of(&r);
+        let t = cx.update(|_w, cx| Theme::global(cx).clone());
+        let border_width = cx.update(|_w, cx| crate::support::demo_border_width(cx));
+        let look = MenuRowsLook::of(&MenuRowsParts::of(&r), &t, border_width);
+        let froms = look.frame_width.1.zip(look.frame_radius.1);
         assert!(
-            look.is_ok(),
-            "{preset}: the menu rows' look is unstated at {:?}",
-            look.err()
+            froms.is_some(),
+            "{preset}: neither the menu's panel nor the popover's states the frame"
         );
-        let Ok(look) = look else { return };
+        let Some((width_from, radius_from)) = froms else {
+            return;
+        };
         let info = settle_on(&mut cx, &showcase, "overlays-menu-row-copy");
         assert!(info.is_some(), "{preset}: the menu row shows no info");
         let Some(info) = info else { return };
@@ -13200,11 +13537,11 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
                 "{preset}: the menu row's info claims the {token} token, which no longer paints it: {info:?}"
             );
         }
-        let field = match look.frame.width.1 {
+        let field = match width_from {
             FrameFrom::Menu => "menu.panel(NONE).stroke.color",
             FrameFrom::Popover => "popover.panel.stroke.color",
         };
-        let corners = match look.frame.radius.1 {
+        let corners = match radius_from {
             FrameFrom::Menu => "menu.panel(NONE).corners",
             FrameFrom::Popover => "popover.panel.corners",
         };
@@ -13213,11 +13550,11 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
             .iter()
             .find(|n| n.what == "frame edge")
             .map(|n| n.text.clone());
-        if look.frame.width.0 > 0.0 {
+        if look.frame_width.0 > px(0.) {
             branches.0 = true;
             assert_eq!(
                 by_role("frame edge"),
-                look.frame.colour.map(|colour| (field, colour)),
+                Some((field, look.frame_colour)),
                 "{preset}: the menu row's info does not claim the {field} its frame is edged with: {info:?}"
             );
         } else {
@@ -19971,9 +20308,10 @@ fn the_toggle_state_line_names_upstreams_fill_where_none_is_stated() {
 
 /// The section heading's role where the theme states no headline, as a user
 /// theme may: the body, its line box its size by the multiplier where it
-/// states no line height; and where that style states no size or no weight,
-/// the home, so the heading keeps the showcase's own style. No bundled
-/// preset leaves the headline out, so kde-breeze's is changed by hand.
+/// states no line height; and where that style states neither a size nor a
+/// weight, none of the three, so the heading keeps the showcase's own
+/// style, and its info names both homes. No bundled preset leaves the
+/// headline out, so kde-breeze's is changed by hand.
 #[test]
 fn a_heading_without_a_headline_takes_the_body_or_says_what_is_unstated() {
     use crate::demo::heading_role;
@@ -19984,29 +20322,121 @@ fn a_heading_without_a_headline_takes_the_body_or_says_what_is_unstated() {
     typography.headline = None;
     typography.body.stated = typography.body.stated.difference(TextStated::LINE_HEIGHT);
     let body = &typography.body;
+    let role = heading_role(&typography);
     assert_eq!(
-        heading_role(&typography).map(|role| (role.home, role.size, role.line_height)),
-        Ok((
+        (role.home, role.size, role.line_height),
+        (
             "typography.body",
-            px(body.size_px),
-            px(body.size_px * typography.line_height_multiplier)
-        ))
+            Some(px(body.size_px)),
+            Some(px(body.size_px * typography.line_height_multiplier))
+        )
     );
     typography.body.stated = typography.body.stated.difference(TextStated::WEIGHT);
-    assert_eq!(
-        heading_role(&typography).map(|role| role.home),
-        Err("typography.body.weight")
-    );
     typography.body.stated = typography.body.stated.difference(TextStated::SIZE_PX);
+    let role = heading_role(&typography);
     assert_eq!(
-        heading_role(&typography).map(|role| role.home),
-        Err("typography.body.size_px")
+        (role.home, role.size, role.line_height, role.weight),
+        ("typography.body", None, None, None)
     );
-    let shown = crate::info::text::heading(&Theme::default(), Some(Err("typography.body.size_px")))
-        .to_text();
+    let shown = crate::info::text::heading(&Theme::default(), Some(role)).to_text();
     assert!(
-        shown.contains("the theme states no value gpui can take at typography.body.size_px"),
+        shown.contains(
+            "the theme states no value gpui can take at typography.body.size_px or typography.body.weight"
+        ),
         "{shown}"
+    );
+}
+
+/// A heading whose role states its weight but no size keeps the weight and
+/// takes the showcase's own `text_base` for the size alone, its line box
+/// the Label's own unless a line height is stated (spec §10, rule 0, per
+/// property), and its info says each: kde-breeze's headline with its size
+/// cleared, then with its line height cleared too.
+#[test]
+fn a_heading_without_a_size_keeps_its_weight() {
+    use crate::demo::heading_role;
+    use native_theme::next::TextStated;
+    let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let mut typography = r.typography.clone();
+    assert!(
+        typography.headline.is_some(),
+        "kde-breeze states no typography.headline"
+    );
+    let Some(headline) = typography.headline.as_mut() else {
+        return;
+    };
+    assert!(
+        headline.stated.contains(TextStated::WEIGHT),
+        "kde-breeze's headline states no weight, which this test keeps"
+    );
+    headline.stated = headline.stated.difference(TextStated::SIZE_PX);
+    let (weight, line) = (headline.weight, headline.line_height);
+    let line_stated = headline.stated.contains(TextStated::LINE_HEIGHT);
+    let role = heading_role(&typography);
+    assert_eq!(
+        (role.home, role.size, role.line_height, role.weight),
+        (
+            "typography.headline",
+            None,
+            line_stated.then_some(px(line)),
+            Some(gpui::FontWeight(f32::from(weight)))
+        ),
+        "with typography.headline.size_px unstated, the heading does not keep its weight alone"
+    );
+    if let Some(headline) = typography.headline.as_mut() {
+        headline.stated = headline.stated.difference(TextStated::LINE_HEIGHT);
+    }
+    let role = heading_role(&typography);
+    assert_eq!(
+        (role.size, role.line_height, role.weight),
+        (None, None, Some(gpui::FontWeight(f32::from(weight))))
+    );
+    let shown = crate::info::text::heading(&Theme::default(), Some(role)).to_text();
+    assert!(
+        shown.contains("the showcase's own text_base")
+            && shown.contains("typography.headline.size_px")
+            && shown.contains(&format!("its weight, {}", f32::from(weight))),
+        "the heading's info does not say it keeps its weight over the showcase's own size: {shown}"
+    );
+}
+
+/// A heading whose role states its size but no weight keeps the size and
+/// its line box and takes the showcase's own semibold for the weight alone
+/// (spec §10, rule 0, per property), and its info says so: kde-breeze's
+/// headline with its weight cleared.
+#[test]
+fn a_heading_without_a_weight_keeps_its_size() {
+    use crate::demo::heading_role;
+    use native_theme::next::TextStated;
+    let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let mut typography = r.typography.clone();
+    let full = heading_role(&typography);
+    assert!(
+        full.size.is_some() && full.line_height.is_some(),
+        "kde-breeze's headline states no size, which this test keeps"
+    );
+    assert!(
+        typography.headline.is_some(),
+        "kde-breeze states no typography.headline"
+    );
+    let Some(headline) = typography.headline.as_mut() else {
+        return;
+    };
+    headline.stated = headline.stated.difference(TextStated::WEIGHT);
+    let role = heading_role(&typography);
+    assert_eq!(
+        (role.home, role.size, role.line_height, role.weight),
+        ("typography.headline", full.size, full.line_height, None),
+        "with typography.headline.weight unstated, the heading does not keep its size alone"
+    );
+    let shown = crate::info::text::heading(&Theme::default(), Some(role)).to_text();
+    assert!(
+        shown.contains("the showcase's own semibold")
+            && shown.contains("typography.headline.weight")
+            && shown.contains("its size_px"),
+        "the heading's info does not say it keeps its size over the showcase's own weight: {shown}"
     );
 }
 

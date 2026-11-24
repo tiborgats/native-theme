@@ -102,7 +102,6 @@ use gpui_component::{
 };
 use native_theme::icons::IconSet;
 use native_theme::next::WidgetState;
-use native_theme::theme::ResolvedPadding;
 use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
@@ -115,9 +114,9 @@ use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, next_native_
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
-    SampleListDelegate, SampleTableDelegate, contrast_held, next_geometry, next_inactive,
-    next_metric, next_resolved, next_value, refined, requested_preferences, toolbar_variant,
-    with_gap, with_padding,
+    SampleListDelegate, SampleTableDelegate, contrast_held, demo_border_width, next_geometry,
+    next_inactive, next_metric, next_resolved, next_value, refined, requested_preferences,
+    toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -695,40 +694,11 @@ impl MenuLook {
     }
 }
 
-/// `el` padded by the stated sides of `padding`, and on a side it leaves
-/// unstated by `x` (left and right) or `y` (top and bottom), where given: a
-/// side neither states is left as it is.
-fn padded<E: Styled, L: Into<DefiniteLength> + Copy>(
-    el: E,
-    padding: &ResolvedPadding,
-    x: Option<L>,
-    y: Option<L>,
-) -> E {
-    let side = |stated: Option<f32>, unstated: Option<L>| -> Option<DefiniteLength> {
-        stated.map(|v| px(v).into()).or(unstated.map(Into::into))
-    };
-    let el = match side(padding.top, y) {
-        Some(v) => el.pt(v),
-        None => el,
-    };
-    let el = match side(padding.right, x) {
-        Some(v) => el.pr(v),
-        None => el,
-    };
-    let el = match side(padding.bottom, y) {
-        Some(v) => el.pb(v),
-        None => el,
-    };
-    match side(padding.left, x) {
-        Some(v) => el.pl(v),
-        None => el,
-    }
-}
-
-/// [`padded`] on the 0.8.0 model: `el` padded by the sides of `sides`, a
-/// part's padding as `next::padding_of` reads it (top, right, bottom, left,
-/// each `None` where unstated), and on a side it leaves unstated by `x`
-/// (left and right) or `y` (top and bottom), where given.
+/// `el` padded by the sides of `sides`, a part's padding as
+/// `next::padding_of` reads it (top, right, bottom, left, each `None` where
+/// unstated), and on a side it leaves unstated by `x` (left and right) or
+/// `y` (top and bottom), where given: a side neither states is left as it
+/// is.
 fn next_padded<E: Styled, L: Into<DefiniteLength> + Copy>(
     el: E,
     sides: [Option<f32>; 4],
@@ -3700,9 +3670,10 @@ pub(crate) fn alert(
 
 /// A section heading reading `text`, in the installed 0.8.0 theme's
 /// section-heading role ([`heading_role`]): its size, line box and weight,
-/// as the iced showcase's section titles are. Without an installed theme,
-/// or where its role states no size or weight, upstream's `text_base`,
-/// semibold. `id` is its info's id and its debug selector.
+/// as the iced showcase's section titles are, property by property (spec
+/// §10, rule 0): where its role states no size, upstream's `text_base`; no
+/// line box, the Label's own; no weight, semibold; and all three without an
+/// installed theme. `id` is its info's id and its debug selector.
 pub(crate) fn heading(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3711,12 +3682,17 @@ pub(crate) fn heading(
 ) -> Stateful<Div> {
     let role = next_value(cx, |r| heading_role(&r.typography));
     let label = Label::new(text);
-    let label = match role {
-        Some(Ok(role)) => label
-            .text_size(role.size)
-            .line_height(role.line_height)
-            .font_weight(role.weight),
-        _ => label.text_base().font_semibold(),
+    let label = match role.and_then(|role| role.size) {
+        Some(size) => label.text_size(size),
+        None => label.text_base(),
+    };
+    let label = match role.and_then(|role| role.line_height) {
+        Some(line_height) => label.line_height(line_height),
+        None => label,
+    };
+    let label = match role.and_then(|role| role.weight) {
+        Some(weight) => label.font_weight(weight),
+        None => label.font_semibold(),
     };
     label
         .info(ui, id, info::text::heading(cx.theme(), role))
@@ -3732,50 +3708,37 @@ pub(crate) struct HeadingRole {
     /// The text style read: `typography.headline`, or `typography.body`
     /// where the theme states no headline.
     pub(crate) home: &'static str,
-    /// Its `size_px`, which the theme's text scale has already scaled.
-    pub(crate) size: Pixels,
-    /// Its line box ([`line_box`]).
-    pub(crate) line_height: Pixels,
-    /// Its `weight`.
-    pub(crate) weight: FontWeight,
+    /// Its `size_px`, which the theme's text scale has already scaled;
+    /// `None` where it states none: the showcase's own `text_base`.
+    pub(crate) size: Option<Pixels>,
+    /// Its line box ([`line_box`]) where it states a line height or a size;
+    /// `None` where it states neither: the Label's own.
+    pub(crate) line_height: Option<Pixels>,
+    /// Its `weight`; `None` where it states none: the showcase's own
+    /// semibold.
+    pub(crate) weight: Option<FontWeight>,
 }
 
 /// The section heading's role in `typography`: `headline`, the platform's
 /// section heading (`docs/platform-facts.md` §2.19, 0.7.2's
 /// `text_scale.section_heading`), or `body` where the theme states no
-/// headline (spec §4, `Typography`: a caller falls back to `body`). `Err`
-/// with the home where that style states no size or no weight: the heading
-/// keeps the showcase's own style (spec §10, rule 0).
-pub(crate) fn heading_role(
-    typography: &native_theme::next::Typography,
-) -> Result<HeadingRole, &'static str> {
+/// headline (spec §4, `Typography`: a caller falls back to `body`). Each
+/// property that style leaves unstated is `None`, where the heading keeps
+/// the showcase's own for that property alone (spec §10, rule 0).
+pub(crate) fn heading_role(typography: &native_theme::next::Typography) -> HeadingRole {
     use native_theme::next::TextStated;
-    let (style, home, size_home, weight_home) = match &typography.headline {
-        Some(headline) => (
-            headline,
-            "typography.headline",
-            "typography.headline.size_px",
-            "typography.headline.weight",
-        ),
-        None => (
-            &typography.body,
-            "typography.body",
-            "typography.body.size_px",
-            "typography.body.weight",
-        ),
+    let (style, home) = match &typography.headline {
+        Some(headline) => (headline, "typography.headline"),
+        None => (&typography.body, "typography.body"),
     };
-    if !style.stated.contains(TextStated::SIZE_PX) {
-        return Err(size_home);
-    }
-    if !style.stated.contains(TextStated::WEIGHT) {
-        return Err(weight_home);
-    }
-    Ok(HeadingRole {
+    let stated = |property| style.stated.contains(property);
+    HeadingRole {
         home,
-        size: px(style.size_px),
-        line_height: px(line_box(typography, style)),
-        weight: FontWeight(f32::from(style.weight)),
-    })
+        size: stated(TextStated::SIZE_PX).then(|| px(style.size_px)),
+        line_height: (stated(TextStated::LINE_HEIGHT) || stated(TextStated::SIZE_PX))
+            .then(|| px(line_box(typography, style))),
+        weight: stated(TextStated::WEIGHT).then(|| FontWeight(f32::from(style.weight))),
+    }
 }
 
 /// The line box of `style`, one of `typography`'s text styles: its
@@ -9931,68 +9894,128 @@ impl MenuRowsFrame {
     }
 }
 
-/// The Overlays page's menu rows ([`menu_rows`]) as the installed 0.8.0
-/// theme paints them, the showcase's menus' look: the frame's fill and
-/// edge, a row's text, its fill and text under the pointer, the outline a
-/// rule states for a hovered row, the fill and text one states for a
-/// pressed row, and the row's corners.
+/// The parts of the installed 0.8.0 theme the Overlays page's menu rows
+/// ([`menu_rows`]) are painted from, each evaluated once; `Default` where
+/// no 0.8.0 theme is installed, every part stating nothing.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct MenuRowsParts {
+    /// `menu.panel(NONE)`.
+    pub(crate) panel: native_theme::next::PartStyle,
+    /// `popover.panel`, the frame's where the menu's panel states none.
+    pub(crate) popover: native_theme::next::PartStyle,
+    /// `menu.item(NONE)`.
+    pub(crate) rest: native_theme::next::PartStyle,
+    /// `menu.item_label(NONE)`.
+    pub(crate) label: native_theme::next::TextStyle,
+    /// `menu.item(HOVER)` and `menu.item_label(HOVER)`.
+    pub(crate) hovered: native_theme::next::PartStyle,
+    pub(crate) hovered_label: native_theme::next::TextStyle,
+    /// `menu.item(PRESSED)` and `menu.item_label(PRESSED)`, asked of the
+    /// pressed state alone (spec §2, `from_state`): a rule stated for the
+    /// hover state does not answer for a pressed row.
+    pub(crate) pressed: native_theme::next::PartStyle,
+    pub(crate) pressed_label: native_theme::next::TextStyle,
+}
+
+impl MenuRowsParts {
+    pub(crate) fn of(r: &native_theme::next::ResolvedTheme) -> Self {
+        let m = &r.menu;
+        Self {
+            panel: m.panel(WidgetState::NONE),
+            popover: r.popover.panel.clone(),
+            rest: m.item(WidgetState::NONE),
+            label: m.item_label(WidgetState::NONE),
+            hovered: m.item(WidgetState::HOVER),
+            hovered_label: m.item_label(WidgetState::HOVER),
+            pressed: m.item(WidgetState::PRESSED),
+            pressed_label: m.item_label(WidgetState::PRESSED),
+        }
+    }
+}
+
+/// The Overlays page's menu rows ([`menu_rows`]) as their parts paint them,
+/// the showcase's menus' look, property by property (spec §10, rule 0):
+/// what the parts state, and where they leave a property without a value
+/// gpui can take, the showcase's own for that property alone.
 pub(crate) struct MenuRowsLook {
-    /// `menu.panel(NONE).fill`.
+    /// `menu.panel(NONE).fill`, else the popover's `popover` token.
     pub(crate) background: Hsla,
-    /// `menu.item_label(NONE).color`.
+    /// `menu.item_label(NONE).color`, else `popover_foreground`.
     pub(crate) text: Hsla,
-    /// `menu.item(HOVER).fill`.
+    /// `menu.item(HOVER).fill`, else `accent`, as a PopupMenu's item.
     pub(crate) hover: Hsla,
-    /// `menu.item_label(HOVER).color`.
+    /// `menu.item_label(HOVER).color`, else `accent_foreground`.
     pub(crate) hover_text: Hsla,
     /// A hovered row's outline, the stroke a rule states for
     /// `menu.item(HOVER)`, at its width; `None` where no rule states one,
     /// or it is 0 wide.
     pub(crate) edge: Option<(Hsla, Pixels)>,
-    /// A pressed row's fill and text, `menu.item(HOVER|PRESSED).fill` and
-    /// `menu.item_label(HOVER|PRESSED).color` where a rule states each for
-    /// the pressed state, the row keeping its hover look otherwise.
+    /// A pressed row's fill and text, `menu.item(PRESSED).fill` and
+    /// `menu.item_label(PRESSED).color` where a rule states each for the
+    /// pressed state, the row keeping its hover look otherwise.
     pub(crate) active: Option<Hsla>,
     pub(crate) active_text: Option<Hsla>,
     /// `menu.item(NONE).corners`, `None` where unstated: square rows.
     pub(crate) radius: Option<Pixels>,
-    pub(crate) frame: MenuRowsFrame,
-    /// `menu.panel(NONE)`'s stated padding sides.
-    pub(crate) panel_padding: ResolvedPadding,
+    /// The frame's edge width and the panel it is from ([`menu_frame_value`]
+    /// on the stroke's width), else the showcase's own frame's
+    /// (`NativeStyled::demo_frame`) with no panel.
+    pub(crate) frame_width: (Pixels, Option<FrameFrom>),
+    /// The frame's edge colour: the stroke colour of the panel its width is
+    /// from, transparent where that panel states its stroke as none, else
+    /// the showcase's own frame's `border` token.
+    pub(crate) frame_colour: Hsla,
+    /// The frame's corner radius and the panel it is from, else the
+    /// showcase's own frame's `radius` token with no panel.
+    pub(crate) frame_radius: (Pixels, Option<FrameFrom>),
+    /// `menu.panel(NONE)`'s padding sides, `None` where unstated: no
+    /// padding there.
+    pub(crate) panel_padding: [Option<f32>; 4],
 }
 
 impl MenuRowsLook {
-    /// The rows' look under `r`, or the home `r` leaves without a value
-    /// gpui can take that the look needs, where the rows keep the popover's
-    /// tokens (spec §10, rule 0).
-    pub(crate) fn next_of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
-        let m = &r.menu;
-        let hovered = m.item(WidgetState::HOVER);
-        let pressed = WidgetState::HOVER | WidgetState::PRESSED;
-        let edge_width = next::stroke_width_of(&hovered).filter(|width| *width > 0.0);
-        let [top, right, bottom, left] = next::padding_of(&m.panel(WidgetState::NONE));
-        Ok(Self {
-            background: next::fill_of(&m.panel(WidgetState::NONE))
-                .ok_or("menu.panel(NONE).fill")?,
-            text: next::text_color_of(&m.item_label(WidgetState::NONE))
-                .ok_or("menu.item_label(NONE).color")?,
-            hover: next::fill_of(&hovered).ok_or("menu.item(HOVER).fill")?,
-            hover_text: next::text_color_of(&m.item_label(WidgetState::HOVER))
-                .ok_or("menu.item_label(HOVER).color")?,
-            edge: next::state_stroke_color_of(&hovered)
+    /// The rows' look from `p`, over the showcase's own for each property
+    /// `p` leaves unstated: the popover's tokens of `t` and the accent
+    /// under the pointer, no outline, the hover look while pressed, square
+    /// rows, the showcase's own frame (`border_width`, the `border` and
+    /// `radius` tokens) and no panel padding.
+    pub(crate) fn of(
+        p: &MenuRowsParts,
+        t: &gpui_component::theme::Theme,
+        border_width: Pixels,
+    ) -> Self {
+        let edge_width = next::stroke_width_of(&p.hovered).filter(|width| *width > 0.0);
+        let width = menu_frame_value(&p.panel, &p.popover, next::stroke_width_of);
+        let frame_colour = match width {
+            Some((_, FrameFrom::Menu)) => next::stroke_color_of(&p.panel).unwrap_or(t.transparent),
+            Some((_, FrameFrom::Popover)) => {
+                next::stroke_color_of(&p.popover).unwrap_or(t.transparent)
+            }
+            None => t.border,
+        };
+        let radius = menu_frame_value(&p.panel, &p.popover, next::radius_of);
+        Self {
+            background: next::fill_of(&p.panel).unwrap_or(t.popover),
+            text: next::text_color_of(&p.label).unwrap_or(t.popover_foreground),
+            hover: next::fill_of(&p.hovered).unwrap_or(t.accent),
+            hover_text: next::text_color_of(&p.hovered_label).unwrap_or(t.accent_foreground),
+            edge: next::state_stroke_color_of(&p.hovered)
                 .zip(edge_width)
                 .map(|(colour, width)| (colour, px(width))),
-            active: next::state_fill_of(&m.item(pressed)),
-            active_text: next::state_text_color_of(&m.item_label(pressed)),
-            radius: next::radius_of(&m.item(WidgetState::NONE)).map(px),
-            frame: MenuRowsFrame::next_of(r)?,
-            panel_padding: ResolvedPadding {
-                top,
-                right,
-                bottom,
-                left,
+            active: next::state_fill_of(&p.pressed),
+            active_text: next::state_text_color_of(&p.pressed_label),
+            radius: next::radius_of(&p.rest).map(px),
+            frame_width: match width {
+                Some((width, from)) => (px(width), Some(from)),
+                None => (border_width, None),
             },
-        })
+            frame_colour,
+            frame_radius: match radius {
+                Some((radius, from)) => (px(radius), Some(from)),
+                None => (t.radius, None),
+            },
+            panel_padding: next::padding_of(&p.panel),
+        }
     }
 
     /// A row's outline, laid over the whole row, its padding included, so
@@ -10036,64 +10059,19 @@ impl MenuRowsLook {
     }
 }
 
-/// What the Overlays page's menu rows and their frame are painted with:
-/// `look`'s, or, where the installed theme gives none -- it leaves a home
-/// the look needs without a value gpui can take, or none is installed --
-/// the popover's tokens of `t`, the accent under the pointer and square
-/// rows (spec §10, rule 0).
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct MenuRowsPaint {
-    pub(crate) background: Hsla,
-    pub(crate) text: Hsla,
-    pub(crate) hover: Hsla,
-    pub(crate) hover_text: Hsla,
-    pub(crate) row_radius: Option<Pixels>,
-    /// The frame's edge width and colour and its corner radius, from the
-    /// menu's panel or the popover's ([`MenuRowsFrame`]); `None` where the
-    /// rows keep the popover's tokens, and the frame is the showcase's own
-    /// (`NativeStyled::demo_frame`).
-    pub(crate) frame: Option<(Pixels, Option<Hsla>, Pixels)>,
-}
-
-impl MenuRowsPaint {
-    pub(crate) fn of(look: Option<&MenuRowsLook>, t: &gpui_component::theme::Theme) -> Self {
-        match look {
-            Some(look) => Self {
-                background: look.background,
-                text: look.text,
-                hover: look.hover,
-                hover_text: look.hover_text,
-                row_radius: look.radius,
-                frame: Some((
-                    px(look.frame.width.0),
-                    look.frame.colour,
-                    px(look.frame.radius.0),
-                )),
-            },
-            None => Self {
-                background: t.popover,
-                text: t.popover_foreground,
-                hover: t.accent,
-                hover_text: t.accent_foreground,
-                row_radius: None,
-                frame: None,
-            },
-        }
-    }
-}
-
 /// The menu rows an application draws itself, one per `(id, icon, label)`
 /// of `rows`, in a frame painted as the showcase's menus are, from the
 /// installed 0.8.0 theme ([`MenuRowsLook`]): `menu.panel(NONE).fill` edged
 /// and rounded by the menu's panel, or the popover's where the menu states
-/// none ([`MenuRowsFrame`]), and padded by the sides `menu.panel(NONE)`
+/// none ([`menu_frame_value`]), and padded by the sides `menu.panel(NONE)`
 /// states, the rows in `menu.item_label(NONE).color`, hovered in
 /// `menu.item(HOVER).fill` and `menu.item_label(HOVER).color` and outlined
 /// in the stroke a rule states for `menu.item(HOVER)`, pressed in what one
-/// states for `menu.item(HOVER|PRESSED)`, rounded by `menu.item(NONE)`'s
-/// corners; where the theme states no value gpui can take at a home the
-/// look needs, or before one is installed, the popover's tokens and the
-/// accent (spec §10, rule 0). Each icon is the chosen icon theme's, and a row whose
+/// states for `menu.item(PRESSED)`, rounded by `menu.item(NONE)`'s
+/// corners; each property the theme leaves without a value gpui can take,
+/// or every one before a theme is installed, takes the showcase's own: the
+/// popover's tokens, the accent, the showcase's frame (spec §10, rule 0).
+/// Each icon is the chosen icon theme's, and a row whose
 /// icon that theme lacks shows its label alone. Upstream's `MenuItemElement` is crate-private and
 /// `PopupMenu` builds its own rows, so `geometry::menu_item` has no widget
 /// to refine: these rows are the receiver it documents.
@@ -10104,31 +10082,27 @@ pub(crate) fn menu_rows(
 ) -> Div {
     let t = cx.theme();
     let native = next_resolved(cx);
-    let look = native.and_then(|r| MenuRowsLook::next_of(r).ok());
-    let paint = MenuRowsPaint::of(look.as_ref(), t);
-    let frame = v_flex()
-        .w(MENU_ROWS_WIDTH)
-        .bg(paint.background)
-        .text_color(paint.text);
-    let frame = match (paint.frame, &look) {
-        (Some((width, colour, radius)), Some(look)) => padded(
-            frame
-                .border(width)
-                .border_color(colour.unwrap_or(t.transparent))
-                .rounded(radius)
-                .overflow_hidden(),
-            &look.panel_padding,
-            None::<Pixels>,
-            None,
-        ),
-        _ => frame.demo_frame(cx),
-    };
-    let (hover_bg, hover_text, radius) = (paint.hover, paint.hover_text, paint.row_radius);
+    let parts = native.map(MenuRowsParts::of).unwrap_or_default();
+    let look = MenuRowsLook::of(&parts, t, demo_border_width(cx));
+    let frame = next_padded(
+        v_flex()
+            .w(MENU_ROWS_WIDTH)
+            .bg(look.background)
+            .text_color(look.text)
+            .border(look.frame_width.0)
+            .border_color(look.frame_colour)
+            .rounded(look.frame_radius.0)
+            .overflow_hidden(),
+        look.panel_padding,
+        None::<Pixels>,
+        None,
+    );
+    let (hover_bg, hover_text, radius) = (look.hover, look.hover_text, look.radius);
     frame
         .debug_selector(|| MENU_ROWS_FRAME.into())
         .children(rows.iter().map(|(id, icon, label)| {
             let (id, label) = (*id, *label);
-            let mut row_info = info::overlays::menu_row(t, native, label, icon);
+            let mut row_info = info::overlays::menu_row(t, native, &parts, &look, label, icon);
             if icon.shown() {
                 let _ = info::next_native_value(
                     cx,
@@ -10149,7 +10123,7 @@ pub(crate) fn menu_rows(
                 .hover(move |this| this.bg(hover_bg).text_color(hover_text))
                 .children(icon.next_glyph_sized(cx, next::geometry::icon_size_small))
                 .child(label)
-                .children(look.as_ref().and_then(|look| look.edge(t.transparent)));
+                .children(look.edge(t.transparent));
             #[cfg(test)]
             let row = row.child(crate::elements::label_probe(ui, format!("{id}-label")));
             // Pressed before `info`, which wraps the row in an element of
@@ -10162,10 +10136,7 @@ pub(crate) fn menu_rows(
                 "menu_item",
                 &mut row_info,
             )
-            .map(|row| match &look {
-                Some(look) => look.pressed(row),
-                None => row,
-            })
+            .map(|row| look.pressed(row))
             .info(ui, id, row_info)
             .debug_selector(move || id.into())
         }))
