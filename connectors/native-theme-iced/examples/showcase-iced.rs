@@ -3656,10 +3656,7 @@ fn update_inner(state: &mut State, message: Message) {
 // ---------------------------------------------------------------------------
 
 fn view(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let inp_pad = native_theme_iced::input_padding(resolved);
-
-    let content = content_panel(state, inp_pad);
+    let content = content_panel(state);
     let content = tagged("chrome.content", content);
     let body: Element<'_, Message> = if state.side_panel_visible {
         let body = row![
@@ -3724,13 +3721,13 @@ fn view(state: &State) -> Element<'_, Message> {
 /// scrolls, inside the installed 0.8.0 theme's `layout.window_margin`
 /// (a container's own padding, none, where that is unstated), its scroll bar
 /// `iced_next::styles::scrollbar` in `iced_next::styles::scrollable`.
-fn content_panel(state: &State, inp_pad: Padding) -> Element<'_, Message> {
+fn content_panel(state: &State) -> Element<'_, Message> {
     let r = state.next_shown();
     let window = r.layout.window_margin.map_or(Padding::ZERO, Padding::from);
     let tab_content: Element<'_, Message> = match state.active_tab {
         Tab::Basic => view_basic(state),
         Tab::Buttons => view_buttons(state),
-        Tab::Inputs => view_inputs(state, inp_pad),
+        Tab::Inputs => view_inputs(state),
         Tab::Selection => view_selection(state),
         Tab::Range => view_range(state),
         Tab::Display => view_display(state),
@@ -16282,10 +16279,10 @@ fn text_input_info(state: &State) -> String {
         ("border-radius", radius_s.as_str()),
         (
             "padding",
-            "input_padding — each side input.border.padding states, plus \
-             input.border.line_width (the theme's padding lies inside the border, \
-             which iced paints over its padding); iced's \
-             text_input::DEFAULT_PADDING for the others",
+            "next_input_padding — the padding inside input.field(NONE)'s border, \
+             native_theme_iced::next::input_padding; iced's text_input::DEFAULT_PADDING \
+             on a side it leaves unstated, and on every side where the field's stroke is \
+             per side",
         ),
         ("text", text.as_str()),
     ];
@@ -16396,103 +16393,122 @@ fn text_editor_info(state: &State) -> String {
     )
 }
 
-fn view_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
+fn view_inputs(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let i = &resolved.input;
-    let radius = i.border.corner_radius;
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
+    let typography = &next.typography;
+    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
+    let radius = resolved.input.border.corner_radius;
 
-    let header = section_header(
+    let header = next_section_header(
         "Inputs",
         "Single-line TextInput and multi-line TextEditor",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
-    let single_line = {
-        let input = text_input("Type something here...", &state.text_input_value)
-            .id(TEXT_INPUT_ID)
+    // The fields as the Basic page's text fields are, on the installed 0.8.0
+    // theme: their text `input.text(NONE)`, their padding
+    // [`next_input_padding`], at least `input.field(NONE).min_size[1]` tall
+    // ([`next_control_line`]), the focus ring round each following the
+    // field's corners ([`next_field_radius`]); their colours and corners
+    // still `styles::text_input`'s.
+    let input_field = next.input.field(WidgetState::NONE);
+    let input_label = next.input.text(WidgetState::NONE);
+    let inp_pad = next_input_padding(next);
+    let input_line = next_control_line(next, &input_label, input_field.min_size[1], inp_pad);
+    let input_radius = next_field_radius(&input_field);
+    let field = |placeholder: &'static str| {
+        text_input(placeholder, &state.text_input_value)
             .on_input(Message::TextInputChanged)
-            .size(scaled_text_size(resolved.input.font.size, a11y))
-            .font(theme_font(&resolved.input.font))
+            .size(input_label.size_px)
+            .line_height(input_line)
+            .next_font(&input_label, |field, font| field.font(font))
             .style(styles::text_input(resolved))
-            .padding(inp_pad);
+            .padding(inp_pad)
+    };
 
-        hoverable(
-            UnlistedKey::TextInput,
-            column![
-                text("TextInput (single line)").role(section_title(ts), resolved, a11y),
-                native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, input),
-                text(format!(
+    let single_line = hoverable(
+        UnlistedKey::TextInput,
+        column![
+            title("TextInput (single line)"),
+            native_theme_iced::focus_ring(
+                resolved,
+                input_radius,
+                field("Type something here...").id(TEXT_INPUT_ID)
+            ),
+            next_caption_text(
+                state,
+                format!(
                     "Characters: {}  |  input.border.corner_radius: {radius:.0}px",
                     state.text_input_value.len()
-                ))
-                .role(&ts.caption, resolved, a11y),
-            ]
-            .spacing(gap.widget)
-            .into(),
-        )
-    };
-
-    let secure_input = {
-        let input = text_input("Password field...", &state.text_input_value)
-            .on_input(Message::TextInputChanged)
-            .secure(true)
-            .size(scaled_text_size(resolved.input.font.size, a11y))
-            .font(theme_font(&resolved.input.font))
-            .style(styles::text_input(resolved))
-            .padding(inp_pad);
-
-        hoverable(
-            UnlistedKey::SecureTextInput,
-            column![
-                text("TextInput (secure / password)").role(section_title(ts), resolved, a11y),
-                native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, input),
-            ]
-            .spacing(gap.widget)
-            .into(),
-        )
-    };
-
-    let multi_line = hoverable(
-        UnlistedKey::TextEditor,
-        column![
-            text("TextEditor (multi-line)").role(section_title(ts), resolved, a11y),
-            probe(
-                probes::TEXT_EDITOR,
-                Fill,
-                native_theme_iced::focus_ring(
-                    resolved,
-                    resolved.text_area.border.corner_radius,
-                    text_editor(&state.text_editor_content)
-                        .on_action(Message::EditorAction)
-                        .size(scaled_text_size(resolved.input.font.size, a11y))
-                        .font(theme_font(&resolved.input.font))
-                        .style(styles::text_editor(resolved))
-                        .padding(native_theme_iced::text_area_padding(resolved))
-                        .height(Length::Fixed(180.0)),
                 ),
-            ),
-            text("Supports multi-line editing, selection, and scrolling").role(
-                &ts.caption,
-                resolved,
-                a11y
+                None
             ),
         ]
         .spacing(gap.widget)
         .into(),
     );
 
+    let secure_input = hoverable(
+        UnlistedKey::SecureTextInput,
+        column![
+            title("TextInput (secure / password)"),
+            native_theme_iced::focus_ring(
+                resolved,
+                input_radius,
+                field("Password field...").secure(true)
+            ),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
+
+    // The editor as the Basic page's text area is: the lines of
+    // `text_area.text(NONE)` ([`next_line_box`]), the padding
+    // [`next_text_area_padding`], the focus ring following the field's
+    // corners; the showcase's own 180 px tall.
+    let area_field = next.text_area.field(WidgetState::NONE);
+    let area_label = next.text_area.text(WidgetState::NONE);
+    let multi_line = hoverable(
+        UnlistedKey::TextEditor,
+        column![
+            title("TextEditor (multi-line)"),
+            probe(
+                probes::TEXT_EDITOR,
+                Fill,
+                native_theme_iced::focus_ring(
+                    resolved,
+                    next_field_radius(&area_field),
+                    text_editor(&state.text_editor_content)
+                        .on_action(Message::EditorAction)
+                        .size(area_label.size_px)
+                        .line_height(iced::Pixels(next_line_box(typography, &area_label)))
+                        .next_font(&area_label, |area, font| area.font(font))
+                        .style(styles::text_editor(resolved))
+                        .padding(next_text_area_padding(next))
+                        .height(Length::Fixed(180.0)),
+                ),
+            ),
+            next_caption_text(
+                state,
+                "Supports multi-line editing, selection, and scrolling",
+                None
+            ),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
+
+    // The rules between the groups `separator.thickness` thick, their
+    // colour still `styles::rule`'s.
+    let divider = || rule::horizontal(next.separator.thickness).style(styles::rule(resolved));
     column![
         header,
         single_line,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        divider(),
         secure_input,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        divider(),
         multi_line,
     ]
     .spacing(gap.section)
@@ -26105,10 +26121,13 @@ mod tests {
 
     /// Button labels, inputs and body text are drawn at the theme's sizes.
     /// iced fixes its default text size when the renderer is created, so text
-    /// given no size is drawn at iced's default under every theme. The
-    /// Buttons page's label and description in the installed 0.8.0 theme's
-    /// line boxes ([`next_line_box`]) of `button.label(NONE)` and
-    /// `typography.body`; the Inputs page's field on the 0.7.2 theme.
+    /// given no size is drawn at iced's default under every theme. On the
+    /// installed 0.8.0 theme: the Buttons page's label and description in
+    /// the line boxes ([`next_line_box`]) of `button.label(NONE)` and
+    /// `typography.body`; the Inputs page's field `input.text(NONE)`'s size
+    /// by `typography.line_height_multiplier`, raised to
+    /// `input.field(NONE).min_size[1]` where stated, plus
+    /// [`next_input_padding`] (`native_theme_iced::next::control_line_height`).
     #[test]
     fn text_bearing_widgets_take_the_theme_sizes() {
         for preset in ["kde-breeze", "adwaita"] {
@@ -26119,9 +26138,13 @@ mod tests {
             let button_line =
                 next_line_box(&next.typography, &next.button.label(WidgetState::NONE));
             let body_line = next_line_box(&next.typography, &next.typography.body);
-            let resolved = &state.current_resolved;
-            let input_height =
-                line_of(resolved.input.font.size) + native_theme_iced::input_padding(resolved).y();
+            let input_label = next.input.text(WidgetState::NONE);
+            let pad = next_input_padding(next);
+            let own = input_label.size_px * next.typography.line_height_multiplier;
+            let input_height = match next.input.field(WidgetState::NONE).min_size[1] {
+                Some(min) => own.max(min - pad.y()) + pad.y(),
+                None => next_line_box(&next.typography, &input_label) + pad.y(),
+            };
 
             let mut ui = interface(&state);
             let label = height_of(&mut ui, "Primary");
@@ -26146,8 +26169,8 @@ mod tests {
             };
             assert!(
                 (input - input_height).abs() < 0.01,
-                "{preset}: a text input is {input}px tall, input.font and its padding give \
-                 {input_height}px"
+                "{preset}: a text input is {input}px tall, input.text(NONE), \
+                 input.field(NONE).min_size and next_input_padding give {input_height}px"
             );
         }
     }
@@ -29363,6 +29386,100 @@ mod tests {
         match (
             at("Interactive button styles from the resolved theme"),
             at("Primary Actions"),
+        ) {
+            (Some(description), Some(title))
+                if near(
+                    title.y - (description.y + description.height),
+                    13.0 + 4.0 + 19.0,
+                ) => {}
+            pair => faults.push(format!("the description and the first title: {pair:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// The Inputs page lays itself out on the installed 0.8.0 theme alone
+    /// ([`view_inputs`]): kde-breeze with, on the 0.8.0 theme only, a 20 px
+    /// field text, a field padded 9 on every side and at least 60 tall, a
+    /// 19 px caption on a 29 px line, a 13 px widget gap, a 19 px section
+    /// gap and a 4 px separator draws the single-line field
+    /// `max(20 × line_height_multiplier, 60 − padding) + padding` tall
+    /// ([`next_input_padding`]), 13 px under its title and over its caption,
+    /// the caption 29 tall, and the first group's title 13 + 4 + 19 px under
+    /// the header's description.
+    #[test]
+    fn the_inputs_page_lays_out_on_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.input.rules]]\n\
+             field.padding = { top = 9.0, right = 9.0, bottom = 9.0, left = 9.0 }\n\
+             field.min_size = [\"none\", 60.0]\ntext.size_px = 20.0\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Inputs);
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            if let Some(caption) = r.typography.caption.as_mut() {
+                caption.size_px = 19.0;
+                caption.line_height = 29.0;
+                caption.stated = caption.stated.union(TextStated::LINE_HEIGHT);
+            }
+            r.layout.widget_gap = Some(13.0);
+            r.layout.section_gap = Some(19.0);
+            r.separator.thickness = 4.0;
+        });
+        let next = state.next_shown();
+        let old = &state.current_resolved;
+        if native_theme_iced::next::text_scale(next)
+            .caption
+            .line_height
+            != 29.0
+            || old.input.font.size == 20.0
+            || old.input.min_height == 60.0
+            || old.text_scale.caption.line_height == 29.0
+            || state.layout.widget_gap == Some(13.0)
+            || state.layout.section_gap == Some(19.0)
+            || old.separator.line_width == 4.0
+        {
+            return Err("the splice states 0.7.2's sizes, or no caption".into());
+        }
+        let pad = next_input_padding(next);
+        if pad == native_theme_iced::input_padding(old) {
+            return Err(format!("the 0.8.0 padding {pad:?} is 0.7.2's"));
+        }
+        let own = 20.0 * next.typography.line_height_multiplier;
+        let field_height = own.max(60.0 - pad.y()) + pad.y();
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let mut ui = interface(&state);
+        let field = match ui.find(selector::id(TEXT_INPUT_ID)) {
+            Ok(target) => target.bounds(),
+            Err(error) => return Err(format!("{TEXT_INPUT_ID}: {error}")),
+        };
+        if !near(field.height, field_height) {
+            faults.push(format!("the field is {field:?}, not {field_height} tall"));
+        }
+        let found = texts(&mut ui);
+        let at = |label: &str| {
+            found
+                .iter()
+                .find(|(content, _)| content.starts_with(label))
+                .map(|(_, bounds)| *bounds)
+        };
+        match (at("TextInput (single line)"), at("Characters: ")) {
+            (Some(title), Some(caption))
+                if near(field.y - (title.y + title.height), 13.0)
+                    && near(caption.y - (field.y + field.height), 13.0)
+                    && near(caption.height, 29.0) => {}
+            pair => faults.push(format!(
+                "the title and the caption round {field:?}: {pair:?}"
+            )),
+        }
+        match (
+            at("Single-line TextInput and multi-line TextEditor"),
+            at("TextInput (single line)"),
         ) {
             (Some(description), Some(title))
                 if near(
