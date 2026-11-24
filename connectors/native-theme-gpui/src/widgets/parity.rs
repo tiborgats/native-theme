@@ -433,6 +433,30 @@ const FROM_HOME: &[Difference] = &[
                  listed difference)",
     },
     Difference {
+        leaf: "CheckboxLook::radio hover_fill",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states checkbox.hover_background #e0e0e5 / #444446, \
+                 uncited, for the radio button too; the 0.8.0 preset states no rule for \
+                 radio.indicator(HOVER).fill (not measured; the check box measured in the same \
+                 run draws hovered as at rest, os-probe run 45198750893, macOS 15, \
+                 `*.hovered.checkbox_off` differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed \
+                 difference, \"unstated\" there), so the look's hovered fill is the rest fill \
+                 radio.indicator(NONE).fill",
+    },
+    Difference {
+        leaf: "SliderLook::thumb_color",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 leaves slider.thumb_color unset, so it is \
+                 defaults.surface_color, #f2f2f7 / #1c1c1e; the 0.8.0 preset states UISlider's \
+                 thumb as measured, white in both schemes, slider.thumb(NONE).fill (ios-host \
+                 run 45230061151, iOS 18.6, `measure_lists.toml` `press1.\"<a>\".slider.normal` \
+                 `fill` #ffffffff, docs/evidence/ios-host/2026-11-23-run-45230061151/ on \
+                 m2-fs4d; native-theme/tests/next_homes.toml, row slider.thumb_color, a listed \
+                 difference)",
+    },
+    Difference {
         leaf: "SwitchLook hover_track",
         presets: &["macos-monterey"],
         reason: "0.7.2's macos-monterey states switch.hover_unchecked_background #c8c8cd / \
@@ -742,9 +766,10 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             SliderLook::of(&old, disabled),
             SliderLook::next_of(&new, disabled),
         );
-        // The hovered thumb apart, so a listed difference of it leaves the
-        // rest of the look compared.
+        // The thumb's fill and the hovered thumb apart, so a listed
+        // difference of either leaves the rest of the look compared.
         let unhovered = |look: SliderLook| SliderLook {
+            thumb_color: gpui::transparent_black(),
             hover_thumb: None,
             ..look
         };
@@ -753,6 +778,20 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             &state,
             old_slider.map(unhovered),
             new_slider.map(unhovered),
+        );
+        // `SliderLook::next_of`: the thumb's fill, at `DISABLED` where the
+        // slider is disabled.
+        let thumb_state = if disabled {
+            WidgetState::DISABLED
+        } else {
+            WidgetState::NONE
+        };
+        r.home_leaf(
+            "SliderLook::thumb_color",
+            &state,
+            old_slider.map(|look| look.thumb_color),
+            new_slider.map(|look| look.thumb_color),
+            crate::next::fill_of(&new.slider.thumb(thumb_state)),
         );
         // `SliderLook::next_of`: the hovered thumb's stated fill, whole,
         // where the slider is enabled.
@@ -941,11 +980,17 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 new_radio.map(|look| look.hover_border),
                 outline.map(|(_, hover)| hover),
             );
-            r.leaf(
+            // `CheckboxLook::next_radio`: the hovered fill a rule states,
+            // else the rest fill, where the radio is enabled and unchecked.
+            let radio = |at| new.radio.indicator(at);
+            r.home_leaf(
                 "CheckboxLook::radio hover_fill",
                 &state,
                 old_radio.map(|look| look.hover_fill),
                 new_radio.map(|look| look.hover_fill),
+                crate::next::state_fill_of(&radio(WidgetState::HOVER))
+                    .or_else(|| crate::next::fill_of(&radio(WidgetState::NONE)))
+                    .map(|hover| (!checked && !disabled).then_some(hover)),
             );
         }
     }

@@ -701,12 +701,30 @@ const DIFFERENCES: &[Difference] = &[
                  its stored config string are input.field(NONE)'s stroke colour \
                  (input_outline_of); every other leaf of the theme is equal",
     },
+    Difference {
+        leaf: SLIDER_THUMB,
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 leaves slider.thumb_color unset, so it is \
+                 defaults.surface_color, #f2f2f7 / #1c1c1e; the 0.8.0 preset states UISlider's \
+                 thumb as measured, white in both schemes (ios-host run 45230061151, iOS 18.6, \
+                 `measure_lists.toml` `press1.\"<a>\".slider.normal` `fill` #ffffffff, \
+                 docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d; \
+                 native-theme/tests/next_homes.toml, row slider.thumb_color, a listed \
+                 difference), so the slider_thumb slot, its token and its stored config string \
+                 are slider.thumb(NONE)'s fill (slider_thumb_of); every other leaf of the theme \
+                 is equal",
+    },
 ];
 
 /// The leaf of [`DIFFERENCES`]' entry for the text field's outline: the
 /// `ThemeColor` slot `input`, its token and its stored config string,
-/// compared by [`input_as_old`].
+/// compared by [`slot_as_old`] ([`STATED_SLOTS`]).
 const INPUT_OUTLINE: &str = "to_theme: input";
+
+/// The leaf of [`DIFFERENCES`]' entry for the slider's thumb: the
+/// `ThemeColor` slot `slider_thumb`, its token and its stored config string,
+/// compared by [`slot_as_old`] ([`STATED_SLOTS`]).
+const SLIDER_THUMB: &str = "to_theme: slider_thumb";
 
 /// The text field's outline as the connector reads it for the `input` slot
 /// (`to_theme`): `input.field(NONE)`'s stroke colour, the form of
@@ -716,31 +734,87 @@ fn input_outline_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
     super::stroke_color(&field, "input.field(NONE).stroke.color").ok()
 }
 
-/// `theme` with its `input` slot as `from`'s, where `theme` holds the
-/// outline the preset states, `stated`, light then dark
-/// ([`input_outline_of`]): the colour and the token of the theme's mode,
-/// and the stored config string of each scheme whose `stated` is given; the
-/// colours compared by their hex strings, as an upstream rebuild of the
-/// theme from its stored config (`Theme::change`) round-trips them. `None`
-/// where `theme` does not hold it, or where it is `from`'s, the listed
-/// difference then describing nothing.
-fn input_as_old(
+/// The slider's thumb as the connector reads it for the `slider_thumb` slot
+/// (`next::colors`): `slider.thumb(NONE)`'s fill, the form of
+/// [`SLIDER_THUMB`]'s entries; `None` where it is unstated.
+fn slider_thumb_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
+    let thumb = new.slider.thumb(native_theme::next::WidgetState::NONE);
+    super::fill(&thumb, "slider.thumb(NONE).fill").ok()
+}
+
+/// A `ThemeColor` slot whose listed difference is the colour the connector
+/// reads at one home of the preset, compared by [`slot_as_old`]: the leaf of
+/// its entries, what its failure names, that colour, and the slot's colour,
+/// token and stored config string, read and copied.
+struct StatedSlot {
+    leaf: &'static str,
+    what: &'static str,
+    of: fn(&native_theme::next::ResolvedTheme) -> Option<Hsla>,
+    color: fn(&ThemeColor) -> Hsla,
+    token: fn(&ThemeTokens) -> ThemeToken,
+    config: fn(&ThemeConfigColors) -> Option<SharedString>,
+    /// Copies the slot's colour and token of the second theme into the first.
+    copy: fn(&mut GpuiTheme, &GpuiTheme),
+    /// Copies the slot's stored config string of the second into the first.
+    copy_config: fn(&mut ThemeConfigColors, &ThemeConfigColors),
+}
+
+/// The slots [`DIFFERENCES`] lists as a colour stated at one home.
+const STATED_SLOTS: &[StatedSlot] = &[
+    StatedSlot {
+        leaf: INPUT_OUTLINE,
+        what: "the text field's stated outline",
+        of: input_outline_of,
+        color: |c| c.input,
+        token: |t| t.input,
+        config: |c| c.input.clone(),
+        copy: |theme, from| {
+            theme.colors.input = from.colors.input;
+            theme.tokens.input = from.tokens.input;
+        },
+        copy_config: |config, from| config.input = from.input.clone(),
+    },
+    StatedSlot {
+        leaf: SLIDER_THUMB,
+        what: "the slider thumb's stated fill",
+        of: slider_thumb_of,
+        color: |c| c.slider_thumb,
+        token: |t| t.slider_thumb,
+        config: |c| c.slider_thumb.clone(),
+        copy: |theme, from| {
+            theme.colors.slider_thumb = from.colors.slider_thumb;
+            theme.tokens.slider_thumb = from.tokens.slider_thumb;
+        },
+        copy_config: |config, from| config.slider_thumb = from.slider_thumb.clone(),
+    },
+];
+
+/// `theme` with its `slot` as `from`'s, where `theme` holds the colour the
+/// preset states, `stated`, light then dark (the slot's `of`): the colour
+/// and the token of the theme's mode, and the stored config string of each
+/// scheme whose `stated` is given; the colours compared by their hex
+/// strings, as an upstream rebuild of the theme from its stored config
+/// (`Theme::change`) round-trips them. `None` where `theme` does not hold
+/// it, or where it is `from`'s, the listed difference then describing
+/// nothing.
+fn slot_as_old(
     theme: &GpuiTheme,
     from: &GpuiTheme,
     stated: [Option<Hsla>; 2],
+    slot: &StatedSlot,
 ) -> Option<GpuiTheme> {
     let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
     let [light, dark] = stated;
     let own = if theme.is_dark() { dark } else { light }?;
-    if hex(theme.colors.input) != hex(own)
-        || hex(from.colors.input) == hex(own)
-        || theme.tokens.input != ThemeToken::from(theme.colors.input)
+    let color = (slot.color)(&theme.colors);
+    if hex(color) != hex(own)
+        || hex((slot.color)(&from.colors)) == hex(own)
+        || (slot.token)(&theme.tokens) != ThemeToken::from(color)
     {
         return None;
     }
     let mut patched = theme.clone();
-    patched.colors.input = from.colors.input;
-    patched.tokens.input = from.tokens.input;
+    (slot.copy)(&mut patched, from);
     for (config, source, stated) in [
         (&mut patched.light_theme, &from.light_theme, light),
         (&mut patched.dark_theme, &from.dark_theme, dark),
@@ -748,11 +822,11 @@ fn input_as_old(
         let Some(stated) = stated else {
             continue;
         };
-        if config.colors.input != hex(stated) {
+        if (slot.config)(&config.colors) != hex(stated) {
             return None;
         }
         let mut stored = (**config).clone();
-        stored.colors.input = source.colors.input.clone();
+        (slot.copy_config)(&mut stored.colors, &source.colors);
         *config = std::rc::Rc::new(stored);
     }
     Some(patched)
@@ -1290,29 +1364,32 @@ fn compare_theme(
         }
         None => new_theme,
     };
-    let new_theme = match report.listed(INPUT_OUTLINE) {
-        Some(listed) => {
-            report.count(INPUT_OUTLINE);
-            let stated = input_outline_of(new);
-            let stated = if is_dark {
-                [None, stated]
-            } else {
-                [stated, None]
-            };
-            match input_as_old(&new_theme, &old_theme, stated) {
-                Some(patched) => patched,
-                None => {
-                    report.failures.push(format!(
-                        "{}: {INPUT_OUTLINE}: the listed difference ({}) no longer describes \
-                         it: 0.7.2 input {:?}, 0.8.0 input {:?}",
-                        report.label, listed.reason, old_theme.colors.input, new_theme.colors.input
-                    ));
-                    new_theme
-                }
-            }
+    let mut new_theme = new_theme;
+    for slot in STATED_SLOTS {
+        let Some(listed) = report.listed(slot.leaf) else {
+            continue;
+        };
+        report.count(slot.leaf);
+        let stated = (slot.of)(new);
+        let stated = if is_dark {
+            [None, stated]
+        } else {
+            [stated, None]
+        };
+        if let Some(patched) = slot_as_old(&new_theme, &old_theme, stated, slot) {
+            new_theme = patched;
+        } else {
+            report.failures.push(format!(
+                "{}: {}: the listed difference ({}) no longer describes it: 0.7.2 {:?}, 0.8.0 \
+                 {:?}",
+                report.label,
+                slot.leaf,
+                listed.reason,
+                (slot.color)(&old_theme.colors),
+                (slot.color)(&new_theme.colors)
+            ));
         }
-        None => new_theme,
-    };
+    }
     let failures = report.failures.len();
     let config = |t: &GpuiTheme, own: bool| {
         if is_dark == own {
@@ -2456,10 +2533,10 @@ fn every_listed_difference_names_a_covered_preset() {
 /// pressed fills of each scheme ([`button_states_of`]), with the button
 /// state slots of [`BUTTON_STATES`] as that theme's ([`button_states_as`]),
 /// or as a failure where they are not what the connector derives from the
-/// fills; where `input` is given, that theme and the 0.8.0 preset's text
-/// field outline of each scheme ([`input_outline_of`]), with the `input`
-/// slot as that theme's ([`input_as_old`]), or as a failure where it is not
-/// the stated outline. Where `handles` is given, the resize handles of gpui-base's global
+/// fills; for each of `stated`, a slot of [`STATED_SLOTS`] with that theme
+/// and the 0.8.0 preset's colour of each scheme for it, with the slot as
+/// that theme's ([`slot_as_old`]), or as a failure where it is not the
+/// stated colour. Where `handles` is given, the resize handles of gpui-base's global
 /// and of the base overrides are given as 0.7.2's of the same scheme, or as
 /// a failure where they are not the 0.8.0 preset's homes
 /// ([`resize_handles_of`], [`DIFFERENCES`]' [`RESIZE_HANDLES`] entries) or
@@ -2468,7 +2545,7 @@ fn installed(
     cx: &gpui::App,
     row_hover_listed: Option<[Option<Hsla>; 2]>,
     button_states: Option<(&GpuiTheme, SchemeStates)>,
-    input: Option<(&GpuiTheme, [Option<Hsla>; 2])>,
+    stated: &[StatedPatch<'_>],
     handles: Option<SchemeHandles>,
 ) -> (Vec<(&'static str, String)>, GpuiTheme) {
     let styled = GpuiTheme::global(cx);
@@ -2488,11 +2565,14 @@ fn installed(
         }
         None => Ok(theme),
     });
-    let patched = patched.and_then(|theme| match input {
-        Some((from, stated)) => input_as_old(&theme, from, stated)
-            .ok_or_else(|| format!("{INPUT_OUTLINE}: not the text field's stated outline")),
-        None => Ok(theme),
-    });
+    let patched = stated
+        .iter()
+        .fold(patched, |patched, (slot, from, schemes)| {
+            patched.and_then(|theme| {
+                slot_as_old(&theme, from, *schemes, slot)
+                    .ok_or_else(|| format!("{}: not {}", slot.leaf, slot.what))
+            })
+        });
     let styled_debug = patched.map_or_else(|failure| failure, |theme| format!("{theme:?}"));
     let base = gpui_base::Theme::global(cx);
     let as_old = |handle: Option<Hsla>, active: Option<Hsla>| match handles {
@@ -2547,6 +2627,11 @@ type Installed = [(Vec<(&'static str, String)>, GpuiTheme); 2];
 /// and the 0.8.0 preset's homes ([`resize_handles_of`]).
 type SchemeHandles = [((Option<Hsla>, Option<Hsla>), Option<(Hsla, Hsla)>); 2];
 
+/// A slot of [`STATED_SLOTS`] to patch in what is installed ([`installed`]):
+/// the 0.7.2 side's styled theme at the same point and the 0.8.0 preset's
+/// colour for the slot in each scheme, light then dark.
+type StatedPatch<'a> = (&'static StatedSlot, &'a GpuiTheme, [Option<Hsla>; 2]);
+
 /// The two schemes of `key` (0.7.2) or `preset` (0.8.0) applied, light then
 /// dark, with no variant stored before: what is installed after the calls,
 /// and after an upstream switch to light mode (`Theme::change`), which the
@@ -2554,7 +2639,7 @@ type SchemeHandles = [((Option<Hsla>, Option<Hsla>), Option<(Hsla, Hsla)>); 2];
 /// for the 0.7.2 side, and for the 0.8.0 side what the 0.7.2 side installed,
 /// whose styled themes the push button's hovered and pressed slots are
 /// patched from where [`DIFFERENCES`]' [`BUTTON_STATES`] entry names the
-/// preset, and the `input` slot where its [`INPUT_OUTLINE`] entry does.
+/// preset, and each slot of [`STATED_SLOTS`] where an entry of its leaf does.
 fn apply_both(
     cx: &mut gpui::TestAppContext,
     key: &str,
@@ -2611,20 +2696,26 @@ fn apply_both(
         .and_then(|old| old.get(at))
         .map(|(_, from)| (from, states))
     };
-    let outlines = {
-        let mut schemes = themes
+    let stated = |at: usize| -> Vec<StatedPatch<'_>> {
+        let Some((_, from)) = old.and_then(|old| old.get(at)) else {
+            return Vec::new();
+        };
+        STATED_SLOTS
             .iter()
-            .map(|(_, (_, _, _, new))| input_outline_of(new));
-        [schemes.next().flatten(), schemes.next().flatten()]
-    };
-    let input = |at: usize| {
-        old.filter(|_| {
-            DIFFERENCES
-                .iter()
-                .any(|d| d.leaf == INPUT_OUTLINE && d.presets.contains(&key))
-        })
-        .and_then(|old| old.get(at))
-        .map(|(_, from)| (from, outlines))
+            .filter(|slot| {
+                DIFFERENCES
+                    .iter()
+                    .any(|d| d.leaf == slot.leaf && d.presets.contains(&key))
+            })
+            .map(|slot| {
+                let mut schemes = themes.iter().map(|(_, (_, _, _, new))| (slot.of)(new));
+                (
+                    slot,
+                    from,
+                    [schemes.next().flatten(), schemes.next().flatten()],
+                )
+            })
+            .collect()
     };
     let handles_listed = next
         && DIFFERENCES
@@ -2643,10 +2734,10 @@ fn apply_both(
         None => None,
     };
     let after =
-        cx.update(|cx| installed(cx, row_hover_listed, button_states(0), input(0), handles));
+        cx.update(|cx| installed(cx, row_hover_listed, button_states(0), &stated(0), handles));
     cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
     let switched =
-        cx.update(|cx| installed(cx, row_hover_listed, button_states(1), input(1), handles));
+        cx.update(|cx| installed(cx, row_hover_listed, button_states(1), &stated(1), handles));
     Ok([after, switched])
 }
 

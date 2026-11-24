@@ -480,6 +480,16 @@ const HOVER: &str = "the theme states no value for the hovered widget: 0.7.2 lea
      alone), and the connector keeps iced's own style for that status (docs/v0.8.0-spec.md \
      §2, from_state; §10, rule 0)";
 
+/// The reason of macos-monterey's hovered radio fill, which 0.7.2 states.
+const MONTEREY_RADIO_HOVER: &str = "the hovered radio's fill: 0.7.2's macos-monterey states \
+     checkbox.hover_background #e0e0e5 / #444446, uncited, which its connector drew on the \
+     radio button too; the 0.8.0 preset states no rule for radio.indicator(HOVER).fill (not \
+     measured; the check box measured in the same run draws hovered as at rest, os-probe run \
+     45198750893, macOS 15, `*.hovered.checkbox_off` differs from the normal capture in 0 \
+     pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+     native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed difference, \
+     \"unstated\" there), so the fill is iced's own for the status, as HOVER's other options";
+
 /// A style function whose stroke lies inside the box on `presets`.
 const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Difference {
     Difference {
@@ -2205,8 +2215,9 @@ const DIFFERENCES: &[Difference] = &[
         "radio",
         &["macos-monterey"],
         LineAlign::Inside,
-        hovered(false, false, true),
-    ),
+        hovered(true, true, true),
+    )
+    .stating(&[], &[INSIDE, HOVER, MONTEREY_RADIO_HOVER]),
     stated_fields(
         "radio",
         &["windows-11"],
@@ -2370,7 +2381,7 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "slider",
-        presets: &["material-3", "ios-13"],
+        presets: &["material-3"],
         listed: Listed {
             states: States {
                 rail: true,
@@ -2383,6 +2394,32 @@ const DIFFERENCES: &[Difference] = &[
             Field::HandleBackground,
             home!(fill, slider.thumb(PRESSED)),
         )]],
+        reason: &[SLIDER_RAIL, STATED],
+    },
+    // ios-13: also the thumb at rest, UISlider's measured white, where 0.7.2
+    // left slider.thumb_color unset (defaults.surface_color).
+    Difference {
+        leaf: "slider",
+        presets: &["ios-13"],
+        listed: Listed {
+            states: States {
+                rail: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        stated: &[&[
+            set(
+                at!(NONE),
+                Field::HandleBackground,
+                home!(fill, slider.thumb(NONE)),
+            ),
+            set(
+                at!(PRESSED),
+                Field::HandleBackground,
+                home!(fill, slider.thumb(PRESSED)),
+            ),
+        ]],
         reason: &[SLIDER_RAIL, STATED],
     },
     // Breeze's handle outline (scrollbar.thumb(UNFOCUSED_VIEW), (HOVER) and
