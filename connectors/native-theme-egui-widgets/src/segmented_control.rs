@@ -45,7 +45,8 @@ use crate::parts::Parts;
 /// which the text and its padding can exceed; the outline adds its width above and below.
 /// A segment's padding is `segmented_control.border.padding` inside the outline: the scope's
 /// `button_padding` holds the stated side plus the border's width, which the button takes off
-/// again for the stroke it no longer paints (`egui/src/widget_style.rs:163-165`). Where
+/// again for the stroke it no longer paints (`egui/src/widget_style.rs:163-165`), in every
+/// state the resting stroke's width, so a segment keeps its size hovered and pressed. Where
 /// `segmented_control.border.padding` states neither its top nor its bottom, the scope's
 /// vertical padding is one the theme does not state for this widget, so it is narrowed, never
 /// widened, until a one-line segment is `segment_height` tall: `0.5 · (segment_height − the
@@ -193,6 +194,7 @@ impl egui::Widget for SegmentedControl<'_> {
                 }
                 let mut outline = Outline::of(ui);
                 lay_over_group(ui.visuals_mut(), hover);
+                keep_resting_margin(ui.visuals_mut());
                 if let Some((ground, before)) = disabled {
                     let alpha = ui.visuals().disabled_alpha();
                     if alpha < 1.0 {
@@ -458,6 +460,20 @@ fn lay_over_group(v: &mut egui::Visuals, hover: Option<egui::Color32>) {
     let hovered = hover.unwrap_or(egui::Color32::TRANSPARENT);
     w.hovered.weak_bg_fill = hovered;
     w.active.weak_bg_fill = hovered;
+}
+
+/// The scope's hovered, pressed and open stroke widths set to the resting one's: egui lays a
+/// button out at the inner margin `button_padding + expansion − bg_stroke.width` of its state
+/// (`egui/src/theme/default_style.rs:54-71`, `egui/src/containers/frame.rs:313-323`), which a
+/// segment keeps while it paints no stroke (`Stroke::NONE`, [`row`]), so a state's stroke wider
+/// than the resting one would grow the segment by the difference. The segments paint none of
+/// these strokes, so the widths change their size alone.
+fn keep_resting_margin(v: &mut egui::Visuals) {
+    let w = &mut v.widgets;
+    let rest = w.inactive.bg_stroke.width;
+    w.hovered.bg_stroke.width = rest;
+    w.active.bg_stroke.width = rest;
+    w.open.bg_stroke.width = rest;
 }
 
 /// A disabled control faded as one widget by `alpha`, the scope's `disabled_alpha`

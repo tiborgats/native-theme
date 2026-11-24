@@ -1770,10 +1770,10 @@ macro_rules! per_page {
 }
 
 /// A test per preset of the 0.8.0 model ([`native_theme::next::Preset::ALL`]), named after the
-/// preset, each `$run(preset)`, so that nextest runs the presets in parallel, and a test that
-/// the tests name every preset.
+/// preset, each `$run(preset, $arg…)`, so that nextest runs the presets in parallel, and a test
+/// that the tests name every preset.
 macro_rules! per_preset {
-    ($run:ident) => {
+    ($run:ident $(, $arg:expr)*) => {
         const PRESETS: &[native_theme::next::Preset] = &[
             native_theme::next::Preset::Adwaita,
             native_theme::next::Preset::KdeBreeze,
@@ -1789,31 +1789,31 @@ macro_rules! per_preset {
         }
         #[test]
         fn adwaita() -> Result<(), String> {
-            $run(native_theme::next::Preset::Adwaita)
+            $run(native_theme::next::Preset::Adwaita $(, $arg)*)
         }
         #[test]
         fn kde_breeze() -> Result<(), String> {
-            $run(native_theme::next::Preset::KdeBreeze)
+            $run(native_theme::next::Preset::KdeBreeze $(, $arg)*)
         }
         #[test]
         fn macos_monterey() -> Result<(), String> {
-            $run(native_theme::next::Preset::MacosMonterey)
+            $run(native_theme::next::Preset::MacosMonterey $(, $arg)*)
         }
         #[test]
         fn macos_tahoe() -> Result<(), String> {
-            $run(native_theme::next::Preset::MacosTahoe)
+            $run(native_theme::next::Preset::MacosTahoe $(, $arg)*)
         }
         #[test]
         fn windows_11() -> Result<(), String> {
-            $run(native_theme::next::Preset::Windows11)
+            $run(native_theme::next::Preset::Windows11 $(, $arg)*)
         }
         #[test]
         fn material_3() -> Result<(), String> {
-            $run(native_theme::next::Preset::Material3)
+            $run(native_theme::next::Preset::Material3 $(, $arg)*)
         }
         #[test]
         fn ios_13() -> Result<(), String> {
-            $run(native_theme::next::Preset::Ios13)
+            $run(native_theme::next::Preset::Ios13 $(, $arg)*)
         }
     };
 }
@@ -7596,18 +7596,52 @@ const GROWS_WHEN_HOVERED: &[&str] = &[
 ];
 
 /// No other widget changes size when hovered, as no native control does: on every page, under
-/// a preset whose buttons have a resting border (kde-breeze, installed on any platform,
-/// [`open_page_under`]), each recorded widget keeps its rect with the pointer on it, but egui's
-/// own selectables (`GROWS_WHEN_HOVERED`). One test per page.
+/// every bundled preset in light and in dark, each installed on any platform
+/// ([`open_page_under`]), each recorded widget keeps its rect with the pointer on it, but egui's
+/// own selectables (`GROWS_WHEN_HOVERED`). One test per mode, page and preset.
 mod no_widget_changes_size_when_hovered {
-    use super::*;
-    per_page!(no_widget_changes_size_when_hovered_on);
+    /// A module per page of `$theme`'s mode, each a test per preset; the pages listed are
+    /// every page.
+    macro_rules! per_page_and_preset {
+        ($theme:ident: $($module:ident = $page:ident),* $(,)?) => {
+            const _: fn(super::super::Page) = |page| match page {
+                $(super::super::Page::$page)|* => {}
+            };
+            $(mod $module {
+                use super::super::super::*;
+                per_preset!(
+                    no_widget_changes_size_when_hovered_on,
+                    Page::$page,
+                    egui::Theme::$theme
+                );
+            })*
+        };
+    }
+    mod light {
+        per_page_and_preset!(Light:
+            basic = Basic, buttons = Buttons, inputs = Inputs, selection = Selection,
+            range = Range, data = Data, text = Text, containers = Containers,
+            overlays = Overlays, colour = Colour, icons = Icons, theme_map = ThemeMap,
+        );
+    }
+    mod dark {
+        per_page_and_preset!(Dark:
+            basic = Basic, buttons = Buttons, inputs = Inputs, selection = Selection,
+            range = Range, data = Data, text = Text, containers = Containers,
+            overlays = Overlays, colour = Colour, icons = Icons, theme_map = ThemeMap,
+        );
+    }
 }
 
-fn no_widget_changes_size_when_hovered_on(page: Page) -> Result<(), String> {
+fn no_widget_changes_size_when_hovered_on(
+    preset: native_theme::next::Preset,
+    page: Page,
+    theme: egui::Theme,
+) -> Result<(), String> {
     let mut grew = Vec::new();
     let mut compared = 0usize;
-    let mut harness = open_page_under(page, egui::Theme::Light, "kde-breeze");
+    let preset = preset.as_str();
+    let mut harness = open_page_under(page, theme, preset);
     harness.remove_cursor();
     harness.run_steps(2);
     let rest: Vec<(egui::Id, &'static str, egui::Rect)> = harness
@@ -7640,10 +7674,13 @@ fn no_widget_changes_size_when_hovered_on(page: Page) -> Result<(), String> {
         harness.remove_cursor();
         harness.run_steps(2);
     }
-    assert!(compared > 0, "{page:?}: no widget was compared");
+    assert!(
+        compared > 0,
+        "{preset} {theme:?} {page:?}: no widget was compared"
+    );
     assert!(
         grew.is_empty(),
-        "sized differently when hovered:\n  {}",
+        "{preset} {theme:?}: sized differently when hovered:\n  {}",
         grew.join("\n  ")
     );
     Ok(())
