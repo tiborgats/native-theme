@@ -78,6 +78,11 @@ const TWO_FLAGS: &str = "read only where a rule for the first flag alone states 
 const NO_DISABLED_RADIO: &str = "iced 0.14's radio has no disabled status (iced_widget \
      0.14.2 src/radio.rs, `Status`: Active and Hovered), so `next::styles::radio` draws none";
 
+/// Why no row reads the switch's label colour.
+const SWITCH_LABEL: &str = "the showcase colours the switch's label, the text it lays beside \
+     iced's `Toggler`; no connector style reads it (`next::styles::toggler` keeps iced's own \
+     `text_color`, src/styles.rs, `toggler_from`)";
+
 /// The colour homes no row reads, or no patch states, that the 0.7.2 tables
 /// do not already name by a leaf the table of homes places there.
 const UNREAD_HOMES: &[UnreadHome] = &[
@@ -106,6 +111,21 @@ const UNREAD_HOMES: &[UnreadHome] = &[
         kind: "no receiver",
         why: "iced 0.14's slider has no focused status (iced_widget 0.14.2 src/slider.rs, \
              `Status`: Active, Hovered and Dragged)",
+    },
+    UnreadHome {
+        home: "switch.label(CHECKED).color",
+        kind: "ruled",
+        why: SWITCH_LABEL,
+    },
+    UnreadHome {
+        home: "switch.label(DISABLED).color",
+        kind: "ruled",
+        why: SWITCH_LABEL,
+    },
+    UnreadHome {
+        home: "switch.label(NONE).color",
+        kind: "ruled",
+        why: SWITCH_LABEL,
     },
     UnreadHome {
         home: "switch.thumb(HOVER|CHECKED).fill",

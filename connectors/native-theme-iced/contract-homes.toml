@@ -1540,6 +1540,27 @@ entry = "status_bar"
 kind = "no widget"
 why = "iced 0.14 and `iced_aw` 0.14.1 have no status bar"
 
+[homes."switch.label(CHECKED).color"]
+leaves = ["defaults.font.color"]
+named = "UNREAD_HOMES"
+entry = "switch.label(CHECKED).color"
+kind = "ruled"
+why = "the showcase colours the switch's label, the text it lays beside iced's `Toggler`; no connector style reads it (`next::styles::toggler` keeps iced's own `text_color`, src/styles.rs, `toggler_from`)"
+
+[homes."switch.label(DISABLED).color"]
+leaves = ["defaults.disabled_text_color"]
+named = "UNREAD_HOMES"
+entry = "switch.label(DISABLED).color"
+kind = "ruled"
+why = "the showcase colours the switch's label, the text it lays beside iced's `Toggler`; no connector style reads it (`next::styles::toggler` keeps iced's own `text_color`, src/styles.rs, `toggler_from`)"
+
+[homes."switch.label(NONE).color"]
+leaves = ["defaults.font.color"]
+named = "UNREAD_HOMES"
+entry = "switch.label(NONE).color"
+kind = "ruled"
+why = "the showcase colours the switch's label, the text it lays beside iced's `Toggler`; no connector style reads it (`next::styles::toggler` keeps iced's own `text_color`, src/styles.rs, `toggler_from`)"
+
 [homes."switch.thumb(CHECKED).fill"]
 leaves = ["switch.thumb_background"]
 moves = [

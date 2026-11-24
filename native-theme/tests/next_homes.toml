@@ -110,7 +110,13 @@ homes = ["typography.body.style"]
 
 [[row]]
 key = "defaults.font.color"
-homes = ["typography.body.color"]
+homes = [
+    "typography.body.color",
+    "switch.label(NONE).color",
+    "switch.label(CHECKED).color",
+]
+homes_by_preset = { "adwaita" = ["typography.body.color"], "ios-13" = ["typography.body.color"] }
+note = "the switch's label too, which 0.7.2's showcases drew in defaults.font.color; adwaita states its own, AdwSwitchRow's title in the row's text colour (switch_label, src/next/presets/adwaita.rs), and ios-13 none (iOS's switch draws no label; switch, src/next/presets/ios.rs), so there the body text alone"
 
 [[row]]
 key = "defaults.line_height"
@@ -202,7 +208,12 @@ homes = ["colors.text_selection.foreground"]
 
 [[row]]
 key = "defaults.disabled_text_color"
-homes = ["colors.disabled_text"]
+homes = [
+    "colors.disabled_text",
+    "switch.label(DISABLED).color",
+]
+homes_by_preset = { "adwaita" = ["colors.disabled_text"], "ios-13" = ["colors.disabled_text"], "kde-breeze" = ["colors.disabled_text"], "macos-monterey" = ["colors.disabled_text"], "macos-tahoe" = ["colors.disabled_text"], "material-3" = ["colors.disabled_text"], "windows-11" = ["colors.disabled_text"] }
+note = "the disabled switch's label too, which 0.7.2's showcases drew in defaults.disabled_text_color; every preset states its own (switch_label in src/next/presets/: adwaita the row's text at the disabled opacity, kde-breeze Breeze's disabled text at 0.6, material-3 Android's label at 0.6, windows-11 ToggleSwitchContentForegroundDisabled, which differs from it under the high-contrast reader; the macOS label states no disabled colour, unmeasured, and ios-13 no label), so there the disabled text alone"
 
 [[row]]
 key = "defaults.danger_color"
