@@ -1093,7 +1093,7 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
             "tab.tab(SELECTED).stroke.color",
             stroke_color_of(&r.tab.tab(WidgetState::SELECTED)),
             Some(f32::from(look.border_width)),
-            "native-theme-gpui/widgets/tab_bar.rs:370",
+            "native-theme-gpui/widgets/tab_bar.rs:403",
         ))
         .color(claim(
             "rule under the bar",
@@ -1216,24 +1216,37 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
 }
 
 /// `info` with the focus ring `widgets::TabBar` draws round a tab under the
-/// 0.8.0 theme `r`, as `FocusRing::next_of` reads it
-/// (native-theme-gpui/widgets/mod.rs): `focus_ring.stroke`'s colour, its
-/// width wide, inside the tab; a ring the bar cannot draw
-/// (`widgets::focus_ring_unmapped`) is named at its home.
+/// 0.8.0 theme `r`, as `FocusRing::next_indicator` reads it
+/// (native-theme-gpui/widgets/mod.rs): the tab's own where the theme states
+/// one (`tab.tab(FOCUSED).focus`, `widgets::part_focus`), else the global
+/// ring; its stroke's colour, its width wide, inside the tab, and its second
+/// ring inward from it where stated. A ring the bar cannot draw
+/// (`widgets::part_ring_unmapped`) is named at its home, and what the inset
+/// draws other than stated (`TabLook::next_ring_unmapped`) is not mapped.
 #[cfg(feature = "widgets")]
 fn tab_bar_ring(info: WidgetInfo, r: &NextTheme) -> WidgetInfo {
-    if let Some(unmapped) = native_theme_gpui::widgets::focus_ring_unmapped(r) {
+    use native_theme::next::{FocusTrigger, Stroke};
+    use native_theme_gpui::widgets::{RingHomes, part_focus, part_ring_unmapped};
+    let part = r.tab.tab(WidgetState::FOCUSED);
+    let Some((f, homes)) = part_focus(r, &part, RingHomes::TAB) else {
+        return info.config(
+            "focus ring",
+            "none: the theme states tab.tab(FOCUSED).focus with no indicator, so the tab has none (native-theme-gpui/widgets/mod.rs, part_focus)",
+        );
+    };
+    if let Some(unmapped) = part_ring_unmapped(r, &part, RingHomes::TAB) {
         return info.config(
             "focus ring",
             format!(
-                "none: the theme states no value gpui can take at {} (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+                "none: the theme states no value gpui can take at {} (native-theme-gpui/widgets/mod.rs, FocusRing::next_indicator)",
                 unmapped.home()
             ),
         );
     }
-    let offset = r.focus_ring.offset;
-    let stroke = match &r.focus_ring.stroke {
-        native_theme::next::Stroke::Uniform { width, .. }
+    let at = homes.kind.strip_suffix(".kind").unwrap_or(homes.kind);
+    let offset = f.offset;
+    let stroke = match &f.stroke {
+        Stroke::Uniform { width, .. }
             if width.is_finite() && offset.is_finite() && *width > 0.0 =>
         {
             Some(*width)
@@ -1243,28 +1256,76 @@ fn tab_bar_ring(info: WidgetInfo, r: &NextTheme) -> WidgetInfo {
     let Some(width) = stroke else {
         return info.config(
             "focus ring",
-            "none: the theme states no ring, its focus_ring.stroke.width not positive, or its focus_ring.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_of)",
+            format!(
+                "none: the theme states no ring, its {at}.stroke.width not positive, or its {at}.offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::next_indicator)"
+            ),
         );
     };
-    info.colors(stated_claim(
-        "focus ring",
-        "focus_ring.stroke.color",
-        ring_stroke_color_of(&r.focus_ring.stroke),
-        "native-theme-gpui/widgets/mod.rs:521",
-    ))
-    .config(
+    let inner = match &f.inner_stroke {
+        Stroke::Uniform { width, .. } if width.is_finite() && *width > 0.0 => Some(*width),
+        _ => None,
+    };
+    let info = if homes == RingHomes::GLOBAL {
+        info.colors(stated_claim(
+            "focus ring",
+            "focus_ring.stroke.color",
+            ring_stroke_color_of(&r.focus_ring.stroke),
+            "native-theme-gpui/widgets/mod.rs:523",
+        ))
+        .colors(inner.and_then(|_| {
+            stated_claim(
+                "focus ring inner",
+                "focus_ring.inner_stroke.color",
+                ring_stroke_color_of(&r.focus_ring.inner_stroke),
+                "native-theme-gpui/widgets/mod.rs:524",
+            )
+        }))
+    } else {
+        info.config(
+            "focus ring",
+            format!(
+                "the tab's own ring in place of the global one: {} and, where stated, {}, as stated (native-theme-gpui/widgets/mod.rs, part_focus, FocusRing::next_indicator)",
+                homes.stroke, homes.inner_stroke
+            ),
+        )
+    };
+    let info = info.config(
         "focus ring",
         format!(
-            "{} an inset shadow focus_ring.stroke.width, {}px, wide inside the tab (native-theme-gpui/widgets/tab_bar.rs, TabBar). focus_ring.offset, {}px, is not reached: the tabs' row scrolls and clips what lies outside it, so a ring outside the tab would lose a band",
-            if r.focus_ring.trigger == Some(native_theme::next::FocusTrigger::KeyboardOnly) {
+            "{} an inset shadow {at}.stroke.width, {}px, wide inside the tab against its edge, in the tab's corners{} (native-theme-gpui/widgets/tab_bar.rs, TabBar)",
+            if f.trigger == Some(FocusTrigger::KeyboardOnly) {
                 "on the focused tab, for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, focus_followed_key):"
             } else {
                 "on the focused tab:"
             },
             px_text(width),
-            px_text(offset)
+            match inner {
+                Some(inner) => format!(
+                    ", and {at}.inner_stroke {}px wide inward from it, a band in the shadow's inner corners",
+                    px_text(inner)
+                ),
+                None => String::new(),
+            }
         ),
-    )
+    );
+    TabLook::next_ring_unmapped(r, &part)
+        .into_iter()
+        .fold(info, |info, unmapped| {
+            let note = if unmapped.home() == homes.offset {
+                format!(
+                    "not mapped: {}, {}px: the inset lies against the tab's edge, the offset minus the stroke's width, -{}px; the tabs' row scrolls sideways and clips what lies left of the first tab and right of the last, so a ring placed outside a tab would lose a band there (native-theme-gpui/widgets/tab_bar.rs, TabLook::next_ring_unmapped; gpui-pre/style.rs, overflow_mask)",
+                    unmapped.home(),
+                    px_text(offset),
+                    px_text(width)
+                )
+            } else {
+                format!(
+                    "not mapped: {}: the inset shadow takes the tab's own corners (native-theme-gpui/widgets/tab_bar.rs, TabLook::next_ring_unmapped; gpui-pre/window.rs, paint_inset_shadows)",
+                    unmapped.home()
+                )
+            };
+            info.config("focus ring", note)
+        })
 }
 
 /// Each side of a segment's padding as `demo::segmented` draws it: a side

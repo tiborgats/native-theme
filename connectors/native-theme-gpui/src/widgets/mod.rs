@@ -512,6 +512,8 @@ pub struct RingHomes {
     pub inner_stroke: &'static str,
     /// Its `corners`, concentric.
     pub corners: &'static str,
+    /// Its `offset`, where a control cannot place it.
+    pub offset: &'static str,
 }
 
 impl RingHomes {
@@ -521,6 +523,7 @@ impl RingHomes {
         stroke: "focus_ring.stroke.color",
         inner_stroke: "focus_ring.inner_stroke.color",
         corners: "focus_ring.corners",
+        offset: "focus_ring.offset",
     };
     /// The theme-drawn check box's indicator's own, `checkbox.indicator`.
     pub const CHECKBOX: Self = Self {
@@ -528,6 +531,7 @@ impl RingHomes {
         stroke: "checkbox.indicator(FOCUSED).focus.stroke.color",
         inner_stroke: "checkbox.indicator(FOCUSED).focus.inner_stroke.color",
         corners: "checkbox.indicator(FOCUSED).focus.corners",
+        offset: "checkbox.indicator(FOCUSED).focus.offset",
     };
     /// The theme-drawn radio's indicator's own, `radio.indicator`.
     pub const RADIO: Self = Self {
@@ -535,6 +539,7 @@ impl RingHomes {
         stroke: "radio.indicator(FOCUSED).focus.stroke.color",
         inner_stroke: "radio.indicator(FOCUSED).focus.inner_stroke.color",
         corners: "radio.indicator(FOCUSED).focus.corners",
+        offset: "radio.indicator(FOCUSED).focus.offset",
     };
     /// The theme-drawn switch's track's own, `switch.track`.
     pub const SWITCH: Self = Self {
@@ -542,6 +547,7 @@ impl RingHomes {
         stroke: "switch.track(FOCUSED).focus.stroke.color",
         inner_stroke: "switch.track(FOCUSED).focus.inner_stroke.color",
         corners: "switch.track(FOCUSED).focus.corners",
+        offset: "switch.track(FOCUSED).focus.offset",
     };
     /// The theme-drawn slider's thumb's own, `slider.thumb`.
     pub const SLIDER: Self = Self {
@@ -549,6 +555,7 @@ impl RingHomes {
         stroke: "slider.thumb(FOCUSED).focus.stroke.color",
         inner_stroke: "slider.thumb(FOCUSED).focus.inner_stroke.color",
         corners: "slider.thumb(FOCUSED).focus.corners",
+        offset: "slider.thumb(FOCUSED).focus.offset",
     };
     /// The theme-drawn tab bar's tab's own, `tab.tab`.
     pub const TAB: Self = Self {
@@ -556,6 +563,7 @@ impl RingHomes {
         stroke: "tab.tab(FOCUSED).focus.stroke.color",
         inner_stroke: "tab.tab(FOCUSED).focus.inner_stroke.color",
         corners: "tab.tab(FOCUSED).focus.corners",
+        offset: "tab.tab(FOCUSED).focus.offset",
     };
 }
 

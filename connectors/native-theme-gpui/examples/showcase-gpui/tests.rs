@@ -21849,7 +21849,7 @@ fn look_findings(
 
 /// What is wrong with the focus ring `info` claims, if anything: a control
 /// that can take the focus claims `focus_ring.stroke`'s colour, read by
-/// `FocusRing::next_of` (native-theme-gpui/widgets/mod.rs:521), where the
+/// `FocusRing::next_of` (native-theme-gpui/widgets/mod.rs:523), where the
 /// theme states a ring the controls draw --
 /// one stroke `focus_ring.stroke.width` above 0, a finite `focus_ring.offset`
 /// and nothing `widgets::focus_ring_unmapped` names -- and none otherwise.
@@ -21876,7 +21876,7 @@ fn next_ring_findings(
         (
             crate::info::next_stated(color),
             "focus_ring.stroke.color",
-            "native-theme-gpui/widgets/mod.rs:521",
+            "native-theme-gpui/widgets/mod.rs:523",
         )
     });
     if found == expected {

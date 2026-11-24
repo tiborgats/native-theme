@@ -1367,14 +1367,14 @@ fn next_focus_ring(
             "focus ring",
             "focus_ring.stroke.color",
             ring_stroke_color_of(&r.focus_ring.stroke),
-            "native-theme-gpui/widgets/mod.rs:521",
+            "native-theme-gpui/widgets/mod.rs:523",
         ))
         .colors(inner.and_then(|_| {
             stated_claim(
                 "focus ring inner",
                 "focus_ring.inner_stroke.color",
                 ring_stroke_color_of(&r.focus_ring.inner_stroke),
-                "native-theme-gpui/widgets/mod.rs:522",
+                "native-theme-gpui/widgets/mod.rs:524",
             )
         }))
     } else {

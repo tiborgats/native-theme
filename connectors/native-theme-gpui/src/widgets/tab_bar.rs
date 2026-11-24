@@ -348,6 +348,39 @@ impl TabLook {
             outward_radius: side(t.outward_radius).ok()?.filter(|r| *r > px(0.)),
         })
     }
+
+    /// The fields of the focus ring [`TabBar`] draws round a tab, `part` the
+    /// tab at its focused state, that it draws other than a 0.8.0 theme `r`
+    /// states, at their homes: the tab's own ring where the theme states one
+    /// (`tab.tab(FOCUSED).focus`), else the global one
+    /// ([`part_focus`](super::part_focus)). The ring is an inset shadow,
+    /// against the tab's edge and inside it, in the tab's own corners: so
+    /// stated `corners` are not drawn, nor an `offset` other than minus the
+    /// stroke's width, the one that puts the stroke's band against the edge
+    /// inside the tab (spec §2, `FocusIndicator`). Empty where the ring is
+    /// drawn as stated, or none is drawn
+    /// ([`part_ring_unmapped`](super::part_ring_unmapped) names a ring no
+    /// theme-drawn control draws).
+    #[must_use]
+    pub fn next_ring_unmapped(
+        r: &native_theme::next::ResolvedTheme,
+        part: &native_theme::next::PartStyle,
+    ) -> Vec<Unmapped> {
+        let Some((f, homes)) = super::part_focus(r, part, super::RingHomes::TAB) else {
+            return Vec::new();
+        };
+        let Ok(Some(ring)) = super::FocusRing::next_indicator(f, &homes) else {
+            return Vec::new();
+        };
+        let mut unmapped = Vec::new();
+        if ring.offset != -ring.width {
+            unmapped.push(Unmapped(homes.offset));
+        }
+        if ring.corners.is_some() {
+            unmapped.push(Unmapped(homes.corners));
+        }
+        unmapped
+    }
 }
 
 /// The selected tab's corner radius where a 0.8.0 theme states none:
@@ -494,7 +527,9 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// tab, and the arrow keys, Home and End move it to the next, previous, first
 /// and last enabled tab. The tab that has it shows the theme's focus ring
 /// (`defaults.focus_ring_color`, `focus_ring_width`) as an inset shadow
-/// inside its edge, as wide as the ring; where the theme says the platform
+/// inside its edge, as wide as the ring, and a 0.8.0 theme's second ring
+/// (`focus_ring.inner_stroke`) as a band inward from it; its offset and its
+/// corners are the inset's ([`TabLook::next_ring_unmapped`]); where the theme says the platform
 /// shows its ring for keyboard focus only (`defaults.focus_ring_keyboard_only`),
 /// only for a focus that followed a key press, kept until the focus moves, so
 /// through a click on another tab, which moves none; the strip scrolls the tab
@@ -818,7 +853,13 @@ impl RenderOnce for TabBar {
                 // While the tab has the focus (where the theme says keyboard
                 // only, a focus that followed a key, `focus_followed_key`): the
                 // theme's ring as an inset shadow, inside the tab, its spread
-                // the ring's width.
+                // the ring's width; the second ring, where the theme states
+                // one, a band of its width inward from the first, as
+                // `FocusRing::draw` lays it, its corners the shadow's inner
+                // ones (gpui-pre 0.3.12 `src/window.rs`,
+                // `paint_inset_shadows`: the tab's less the spread, floored
+                // at 0). The offset and the corners are the inset's
+                // (`TabLook::next_ring_unmapped`).
                 .when_some(
                     if is_selected {
                         selected_ring
@@ -826,6 +867,25 @@ impl RenderOnce for TabBar {
                         idle_ring
                     },
                     |tab, ring| {
+                        let inner =
+                            ring.inner
+                                .filter(|_| focused == Some(ix))
+                                .map(|(color, width)| {
+                                    let top = if is_selected {
+                                        f32::from(look.radius)
+                                    } else {
+                                        0.
+                                    };
+                                    let radii =
+                                        [top, top, 0., 0.].map(|r| (r - ring.width).max(0.));
+                                    let edge = f32::from(look.border_width);
+                                    super::band(
+                                        [edge, edge, f32::from(bottom), edge],
+                                        -ring.width,
+                                        Some(super::FOCUS_RING_INNER_SELECTOR),
+                                        &super::ring_band(radii, width, color),
+                                    )
+                                });
                         tab.focus(move |style| {
                             style.shadow(vec![gpui::BoxShadow {
                                 color: ring.color,
@@ -835,6 +895,7 @@ impl RenderOnce for TabBar {
                                 inset: true,
                             }])
                         })
+                        .children(inner)
                     },
                 )
                 // Right to left, the last tab, the leftmost, takes the free

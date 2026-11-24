@@ -6357,6 +6357,112 @@ fn a_part_that_states_no_ring_or_one_gpui_cannot_draw_draws_none(cx: &mut TestAp
     }
 }
 
+/// kde-breeze, patched to state `own` as the tab's own focus ring.
+fn with_own_tab_ring(
+    own: std::sync::Arc<native_theme::next::FocusIndicator>,
+) -> native_theme::next::ResolvedTheme {
+    use native_theme::next::{
+        PartPatch, Preset, TabRule, Theme as NextTheme, ThemeContext, ThemePatch,
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    r.apply_patch(&ThemePatch::new().tab(TabRule::new().tab(PartPatch::new().focus(Some(own)))));
+    r
+}
+
+/// The tab bar's ring, an inset shadow, draws a stated second ring as a band
+/// of its width inward from the first, on the tab the keyboard focuses only:
+/// the tab's bounds less the first ring's width, in the second ring's colour.
+#[gpui::test]
+fn a_focused_tab_draws_the_second_ring_inward_from_the_first(cx: &mut TestAppContext) {
+    let r = with_own_tab_ring(own_ring());
+    let cx = window_with_next_resolved(
+        cx,
+        &r,
+        Box::new(|_, _| {
+            TabBar::new("t")
+                .w_full()
+                .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
+                .into_any_element()
+        }),
+    );
+    assert!(
+        cx.debug_bounds(FOCUS_RING_INNER_SELECTOR).is_none(),
+        "no second ring at rest"
+    );
+    focus_next(cx);
+    cx.simulate_keystrokes("right");
+    redraw(cx);
+    let tab = bounds(cx, "tab1");
+    let band = tab.dilate(px(-2.0));
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_INNER_SELECTOR),
+        Some(band),
+        "the second ring inside the first, 2 px in from the tab's edge"
+    );
+    let inner = quads_round(cx, band, 0.0);
+    assert!(
+        inner
+            .iter()
+            .any(|q| q.border_color == crate::next::hsla(INNER)),
+        "in the second ring's colour: {inner:?}"
+    );
+}
+
+/// What the tab bar's inset ring cannot place is named at its home: an
+/// offset other than minus the stroke's width and stated corners, of the
+/// tab's own ring where the theme states one, else of the global ring;
+/// nothing where the inset draws the ring as stated.
+#[test]
+fn a_tab_ring_offset_or_corners_the_inset_cannot_place_is_unmapped() {
+    use native_theme::next::{
+        Corners, FocusIndicator, FocusKind, Preset, Stroke, Theme as NextTheme, ThemeContext,
+        WidgetState,
+    };
+    let unmapped = |r: &native_theme::next::ResolvedTheme| {
+        TabLook::next_ring_unmapped(r, &r.tab.tab(WidgetState::FOCUSED))
+    };
+    let r = with_own_tab_ring(own_ring());
+    assert_eq!(
+        unmapped(&r),
+        [Unmapped("tab.tab(FOCUSED).focus.offset")],
+        "1 px out is not the inset's -2"
+    );
+    let against_the_edge = |corners: Option<Corners>| {
+        std::sync::Arc::new(FocusIndicator::new(
+            FocusKind::Ring,
+            Stroke::uniform(2.0, OUTER),
+            Stroke::None,
+            -2.0,
+            corners,
+            None,
+        ))
+    };
+    assert_eq!(unmapped(&with_own_tab_ring(against_the_edge(None))), []);
+    assert_eq!(
+        unmapped(&with_own_tab_ring(against_the_edge(Some(
+            Corners::uniform(4.0)
+        )))),
+        [Unmapped("tab.tab(FOCUSED).focus.corners")]
+    );
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let width = match r.focus_ring.stroke {
+        Stroke::Uniform { width, .. } => width,
+        _ => 0.0,
+    };
+    assert!(width > 0.0, "kde-breeze states a ring of one stroke");
+    r.focus_ring.offset = -width;
+    assert_eq!(unmapped(&r), []);
+    r.focus_ring.offset = 0.0;
+    r.focus_ring.corners = Some(Corners::uniform(3.0));
+    assert_eq!(
+        unmapped(&r),
+        [
+            Unmapped("focus_ring.offset"),
+            Unmapped("focus_ring.corners")
+        ]
+    );
+}
+
 /// A disabled checked box's mark is read at its own home where a rule states
 /// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`), not
 /// in the label's disabled colour; a theme that states none keeps 0.7.2's

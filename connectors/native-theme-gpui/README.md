@@ -1151,10 +1151,17 @@ reports not mapped.
 Where the theme says the platform shows its ring for keyboard focus
 only, a control draws it only for a focus that followed a key press: the answer
 is `Window::last_input_was_keyboard` when the focus arrives, kept until it
-leaves. The theme-drawn `TabBar` rings the focused tab by the same rule, inside
-the tab, in `defaults.focus_ring_color` and `focus_ring_width`;
-`focus_ring_offset` is not reached there, since the tabs' scrolling row would
-cut a band outside the tab away. A click selects a tab without focusing it;
+leaves. The theme-drawn `TabBar` rings the focused tab by the same rule (with
+`tab.tab`'s own ring where a 0.8.0 theme states one) as an inset shadow inside
+the tab, against its edge, in `defaults.focus_ring_color` and
+`focus_ring_width`, and a 0.8.0 theme's `focus_ring.inner_stroke` as a second
+band inward from it. The ring's offset (unless it is minus the width, which
+puts the band against the edge) and its stated corners are not drawn there,
+and Widget Info reports them not mapped (`TabLook::next_ring_unmapped`): the
+ring keeps inside the tab and in its corners because the tabs' row scrolls
+sideways, and gpui clips a scrolling box on its scrolling axis (gpui-pre
+0.3.12 `src/style.rs`, `Style::overflow_mask`), so a ring outside the tabs
+would lose its band left of the first tab and right of the last. A click selects a tab without focusing it;
 the tabs take the focus from the keyboard, the arrow keys moving it along the
 bar. gpui-component's own widgets draw their 3 px ring in `ring` with its
 alpha set to 0.5, whatever the colour's own, where `Theme::focus_ring` is on
