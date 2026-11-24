@@ -1046,14 +1046,14 @@ note      = "per call: menu_bar_modifier, a menu-bar title's button_padding.y"
 
 ["menu.active_background"]
 verdict  = "unmappable"
-homes = ["menu.item(HOVER|PRESSED).fill"]
+homes = ["menu.item(PRESSED).fill"]
 sub_tag  = "egui-limited"
 upstream = "egui: a pressed state apart from the focused one (Widgets::style gives a focused widget active)"
 note     = "egui draws a keyboard-focused item in widgets.active (egui-0.37.0/src/widget_style/mod.rs:212-222) and moves the focus along a menu's items with the arrow keys (src/containers/menu.rs:233-288): the pressed look would stay on every keyboard-selected item, so a pressed item keeps the hover look"
 
 ["menu.active_text_color"]
 verdict  = "unmappable"
-homes = ["menu.item_label(HOVER|PRESSED).color"]
+homes = ["menu.item_label(PRESSED).color"]
 sub_tag  = "egui-limited"
 upstream = "egui: a pressed state apart from the focused one (Widgets::style gives a focused widget active)"
 note     = "as menu.active_background: a pressed item keeps menu.hover_text_color"
