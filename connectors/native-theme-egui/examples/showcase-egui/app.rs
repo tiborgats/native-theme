@@ -668,19 +668,6 @@ impl OldAtlas {
             })),
         })
     }
-
-    /// This atlas with `edit` made of its two 0.7.2 themes, which the pages not yet ported read;
-    /// the installed atlas and its 0.8.0 themes stay as they are.
-    #[cfg(test)]
-    pub(crate) fn with_old(self, edit: impl Fn(&mut native_theme_egui::ResolvedTheme)) -> Self {
-        let [mut light, mut dark] = (*self.old).clone();
-        edit(&mut light);
-        edit(&mut dark);
-        Self {
-            old: std::sync::Arc::new([light, dark]),
-            ..self
-        }
-    }
 }
 
 impl std::ops::Deref for OldAtlas {

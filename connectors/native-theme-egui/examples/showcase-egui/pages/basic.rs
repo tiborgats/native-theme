@@ -1380,15 +1380,6 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &
     list(reg, state, atlas, ui);
 }
 
-/// A tool button's icon size, `toolbar.button_icon(NONE).size`, where the installed 0.8.0 theme
-/// `r` states it; `None` where it does not, or none is installed.
-fn tool_icon_size(r: Option<&ResolvedTheme>) -> Option<f32> {
-    let icon = r?.toolbar.button_icon(NextState::NONE);
-    icon.stated
-        .contains(native_theme::next::IconStated::SIZE)
-        .then_some(icon.size)
-}
-
 /// The outline a rule of the installed 0.8.0 theme `r` states for a toolbar button in `state`
 /// (`toolbar.button(<state>).stroke`, its `from_state` bit set), one stroke of one colour; none
 /// where its width is not positive; `None` where no rule states one, or in a form egui cannot
@@ -1410,7 +1401,7 @@ fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
 
 /// The Icons group's first row: four icon-only tool buttons, as the toolbar's
 /// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste, Delete and Edit at
-/// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme ([`tool_icon_size`]; where it
+/// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme ([`demo::tool_icon_size`]; where it
 /// states none, each button's label in place of its icon, which its Widget Info names), in the
 /// toolbar's scope, its items the scope's `item_spacing.x` apart (`toolbar.item_gap`, else the
 /// connector's `layout.widget_gap`, else egui's own), each a tool button
@@ -1428,10 +1419,8 @@ fn icon_buttons(
     chosen: &(IconSet, Option<String>),
 ) {
     let r = atlas.next_shown(ui.ctx());
-    let size = tool_icon_size(r);
-    let padding = r.map_or([None; 4], |r| {
-        next::padding_of(&r.button.body(NextState::NONE))
-    });
+    let size = demo::tool_icon_size(r);
+    let padding = demo::tool_padding(r);
     let (set, icon_theme) = chosen;
     let image_at = |ui: &egui::Ui, role| {
         size.and_then(|size| demo::role_image(ui, role, *set, icon_theme.as_deref(), size))

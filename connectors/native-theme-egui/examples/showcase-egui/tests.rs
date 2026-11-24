@@ -2918,33 +2918,34 @@ fn the_nested_panels_stay_inside_the_page() {
     }
 }
 
-/// The status bar is as tall as its content — one line of `status_bar.font` — and its padding,
-/// as the model states no status-bar height: not a push button's `button.min_height`, which the
-/// base style's `interact_size.y` carries (kde-breeze: a 3 + 18 + 2 bar under a 32 button).
+/// The status bar is as tall as its content — one line of `status_bar.label` — and its padding,
+/// `status_bar.bar.padding` of the installed 0.8.0 theme, as the model states no status-bar
+/// height: not a push button's least height, which the base style's `interact_size.y` carries
+/// (kde-breeze: a 3 + 18 + 2 bar under a 32 button).
 #[test]
-fn the_status_bar_is_one_line_and_its_padding_tall() {
+fn the_status_bar_is_one_line_and_its_padding_tall() -> Result<(), String> {
     let mut harness = open(
         egui::Theme::Light,
         cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]),
     );
     harness.run_steps(4);
-    let t = harness
+    let Some(r) = harness
         .state()
         .atlas
-        .old_resolved(egui::Theme::Light)
-        .clone();
-    let size = native_theme_egui::scaled_text_size(
-        t.status_bar.font.size,
-        harness.state().atlas.accessibility(),
-    );
+        .next_resolved(egui::Theme::Light)
+        .cloned()
+    else {
+        return Err("no 0.8.0 theme installed".into());
+    };
+    // `status_bar.label`'s size, which the theme's resolve has scaled already.
+    let size = r.status_bar.label.size_px;
     let line = harness
         .ctx
         .fonts_mut(|f| f.row_height(&egui::FontId::proportional(size)));
-    let padding = &t.status_bar.border.padding;
-    let (top, bottom) = (
-        padding.top.unwrap_or_default(),
-        padding.bottom.unwrap_or_default(),
-    );
+    let [top, _, bottom, _] = native_theme_egui::next::padding_of(&r.status_bar.bar);
+    let (Some(top), Some(bottom)) = (top, bottom) else {
+        return Err("kde-breeze states no status_bar.bar padding above and below".into());
+    };
     let bar = harness
         .state()
         .registry
@@ -2964,8 +2965,9 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
         .map(|r| r.rect.height())
         .fold(0.0, f32::max);
     // And the separator line above it, which the panel keeps room for outside its frame
-    // (`egui/src/containers/panel.rs:950-966`), in `status_bar.border.line_width`.
-    let rule = t.status_bar.border.line_width;
+    // (`egui/src/containers/panel.rs:950-966`), in `status_bar.bar.stroke.width`.
+    let rule = native_theme_egui::next::stroke_width_of(&r.status_bar.bar)
+        .ok_or("kde-breeze states no status_bar.bar stroke width")?;
     let content = line.max(toggle);
     let expected = rule + top + content + bottom;
     assert!(
@@ -2974,40 +2976,52 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
          line, a {toggle} toggle) + {bottom} is {expected}",
         bar.height()
     );
+    Ok(())
 }
 
 /// The status bar's padding on a side the theme leaves unstated, `(vertical, horizontal)`, as
 /// the gpui showcase's bar draws it at a scale of 1: gpui-component's `py_1`/`px_2`, a quarter
-/// and a half of the scaled `defaults.font.size`, each rounded to a whole pixel with a half
-/// toward zero, as gpui rounds a padding before layout (gpui-pre 0.3.12 `src/taffy.rs:534-538`,
-/// `round_to_device_pixel`; `src/util.rs:130-133`, `round_half_toward_zero`).
-fn gpui_status_bar_padding(harness: &Harness<'_, App>) -> (f32, f32) {
-    let atlas = &harness.state().atlas;
-    let rem = atlas
-        .accessibility()
-        .scaled(atlas.old_resolved(egui::Theme::Light).defaults.font.size);
+/// and a half of the installed 0.8.0 theme's `typography.body.size_px`, which its resolve has
+/// scaled already, each rounded to a whole pixel with a half toward zero, as gpui rounds a
+/// padding before layout (gpui-pre 0.3.12 `src/taffy.rs:534-538`, `round_to_device_pixel`;
+/// `src/util.rs:130-133`, `round_half_toward_zero`).
+fn gpui_status_bar_padding(harness: &Harness<'_, App>) -> Result<(f32, f32), String> {
+    let rem = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?
+        .typography
+        .body
+        .size_px;
     let whole = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
-    (whole(rem / 4.0), whole(rem / 2.0))
+    Ok((whole(rem / 4.0), whole(rem / 2.0)))
 }
 
 /// The status bar is padded as the gpui showcase's on a side the theme leaves unstated, a half
 /// pixel rounded toward zero as gpui rounds it, where egui rounded it away from zero: under
-/// catppuccin-mocha, material-3 and windows-11 (a 14 px font, a quarter of it 3.5) 3 px above
-/// and below, where 4. The expectation is read from each resolved theme at test time.
+/// material-3 and windows-11 (a 14 px font, a quarter of it 3.5) 3 px above and below, where 4.
+/// The expectation is read from each installed 0.8.0 theme at test time.
 #[test]
-fn the_status_bar_padding_rounds_a_half_as_gpuis_does() {
-    for preset in ["catppuccin-mocha", "material-3", "windows-11"] {
-        let harness = open_scaled(preset, "basic", 1.0);
-        let atlas = &harness.state().atlas;
-        let t = atlas.old_resolved(egui::Theme::Light).clone();
-        let p = &t.status_bar.border.padding;
+fn the_status_bar_padding_rounds_a_half_as_gpuis_does() -> Result<(), String> {
+    for preset in ["material-3", "windows-11"] {
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or("no 0.8.0 theme installed")?;
         assert!(
-            [p.top, p.right, p.bottom, p.left]
+            native_theme_egui::next::padding_of(&r.status_bar.bar)
                 .iter()
                 .all(Option::is_none),
             "{preset} states a status-bar padding"
         );
-        let (vertical, horizontal) = gpui_status_bar_padding(&harness);
+        assert_eq!(
+            r.typography.body.size_px, 14.0,
+            "{preset}'s body text is not 14 px, so no half is rounded"
+        );
+        let (vertical, horizontal) = gpui_status_bar_padding(&harness)?;
         let status = place_of(&harness, "chrome.status_bar");
         let toggle = place_of(&harness, "chrome.status_bar.toggle");
         assert!(
@@ -3015,14 +3029,15 @@ fn the_status_bar_padding_rounds_a_half_as_gpuis_does() {
             "{preset}: the status bar's toggle is {} from the bar's left, not {horizontal}",
             toggle.left() - status.left()
         );
-        let size =
-            native_theme_egui::scaled_text_size(t.status_bar.font.size, atlas.accessibility());
+        let size = r.status_bar.label.size_px;
         let line = harness
             .ctx
             .fonts_mut(|f| f.row_height(&egui::FontId::proportional(size)));
         // The panel keeps room for its line, rounded to a whole point, outside its frame
         // (`egui/src/containers/panel.rs:961-965`).
-        let rule = t.status_bar.border.line_width.round();
+        let rule = native_theme_egui::next::stroke_width_of(&r.status_bar.bar)
+            .ok_or_else(|| format!("{preset} states no status_bar.bar stroke width"))?
+            .round();
         let expected = rule + vertical + line.max(toggle.height()) + vertical;
         assert!(
             (status.height() - expected).abs() < 0.25,
@@ -3031,6 +3046,7 @@ fn the_status_bar_padding_rounds_a_half_as_gpuis_does() {
             status.height()
         );
     }
+    Ok(())
 }
 
 /// The status bar keeps the shown Widget Info's title and cuts the environment short in the
@@ -3203,26 +3219,33 @@ fn every_record_notes(harness: &Harness<'_, App>, id: &str, parts: &[&str]) -> b
 /// padded as the gpui showcase's are, and Widget Info says so: the toolbar's first button
 /// `TOOLBAR_PADDING` in from the bar's left and top, the menu bar's first title
 /// `MENU_BAR_PADDING` from its left, the status bar gpui-component's `py_1`/`px_2` at the
-/// scaled `defaults.font.size` (a quarter of it above and below, a half at the sides, each
-/// rounded to a whole point a half toward zero, [`gpui_status_bar_padding`]), where egui's own
-/// panel margin stood. macos-tahoe is a preset of
+/// installed 0.8.0 theme's `typography.body.size_px` (a quarter of it above and below, a half
+/// at the sides, each rounded to a whole point a half toward zero,
+/// [`gpui_status_bar_padding`]), where egui's own panel margin stood; the paddings
+/// `toolbar.bar(NONE).padding` and `status_bar.bar.padding`. macos-tahoe is a preset of
 /// another platform here, so it is installed directly. Under [`TEST_PRESET`], which states
 /// `container_margin` but no toolbar padding, the toolbar's unstated sides are noted as that
 /// margin (I m3, J m3 (a)); kde-breeze states every side of both bars and notes none.
 #[test]
-fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none() {
+fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
+-> Result<(), String> {
     use crate::chrome::{MENU_BAR_PADDING, TOOLBAR_PADDING};
-    let harness = open_scaled("macos-tahoe", "basic", 1.0);
-    let atlas = &harness.state().atlas;
-    let t = atlas.old_resolved(egui::Theme::Light).clone();
-    assert_eq!(atlas.layout().container_margin, None);
-    let unstated = |p: &native_theme::theme::ResolvedPadding| {
-        [p.top, p.right, p.bottom, p.left]
-            .iter()
-            .all(Option::is_none)
-    };
-    assert!(unstated(&t.toolbar.border.padding) && unstated(&t.status_bar.border.padding));
-    assert_eq!(t.toolbar.item_gap, None);
+    use native_theme::next::WidgetState;
+    use native_theme_egui::next::padding_of;
+    let harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?
+        .clone();
+    assert_eq!(r.layout.container_margin, None);
+    let unstated = |p: [Option<f32>; 4]| p.iter().all(Option::is_none);
+    assert!(
+        unstated(padding_of(&r.toolbar.bar(WidgetState::NONE)))
+            && unstated(padding_of(&r.status_bar.bar))
+    );
+    assert_eq!(r.toolbar.item_gap, None);
 
     let bar = place_of(&harness, "chrome.toolbar");
     let first = place_of(&harness, "chrome.toolbar.command_palette");
@@ -3263,7 +3286,7 @@ fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
         element_notes(&harness, "chrome.menu_bar")
     );
 
-    let (vertical, horizontal) = gpui_status_bar_padding(&harness);
+    let (vertical, horizontal) = gpui_status_bar_padding(&harness)?;
     let status = place_of(&harness, "chrome.status_bar");
     let toggle = place_of(&harness, "chrome.status_bar.toggle");
     assert!(
@@ -3271,13 +3294,15 @@ fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
         "the status bar's toggle is {} from the bar's left, not {horizontal}",
         toggle.left() - status.left()
     );
-    let size = native_theme_egui::scaled_text_size(t.status_bar.font.size, atlas.accessibility());
+    let size = r.status_bar.label.size_px;
     let line = harness
         .ctx
         .fonts_mut(|f| f.row_height(&egui::FontId::proportional(size)));
     // The panel keeps room for its line, rounded to a whole point, outside its frame
     // (`egui/src/containers/panel.rs:961-965`): macos-tahoe's line is half a pixel.
-    let rule = t.status_bar.border.line_width.round();
+    let rule = native_theme_egui::next::stroke_width_of(&r.status_bar.bar)
+        .ok_or("macos-tahoe states no status_bar.bar stroke width")?
+        .round();
     let expected = rule + vertical + line.max(toggle.height()) + vertical;
     assert!(
         (status.height() - expected).abs() < 0.5,
@@ -3331,6 +3356,7 @@ fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
             element_notes(&harness, id)
         );
     }
+    Ok(())
 }
 
 /// The macos-tahoe atlas, built as `from_preset` builds it, with its layout's `widget_gap`
@@ -3434,26 +3460,33 @@ fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gap
     Ok(())
 }
 
-/// F row 5: where `sidebar.border.padding` states some sides, the side panel keeps them, and a
-/// side it leaves unstated takes `layout.container_margin`, as the gpui showcase's panel does,
-/// where egui's own panel margin stood: windows-11 states the horizontal sides alone, so the
-/// panel's top and bottom are the margin, and Widget Info says so (I m3, J m3 (a)); adwaita
-/// states all four, and the panel keeps them. windows-11 is a preset of another platform here,
-/// so it is installed directly.
+/// F row 5: where `sidebar.container(NONE).padding` of the installed 0.8.0 theme states some
+/// sides, the side panel keeps them, and a side it leaves unstated takes
+/// `layout.container_margin`, as the gpui showcase's panel does, where egui's own panel margin
+/// stood: windows-11 states the horizontal sides alone, so the panel's top and bottom are the
+/// margin, and Widget Info says so (I m3, J m3 (a)); adwaita states all four, and the panel
+/// keeps them. windows-11 is a preset of another platform here, so it is installed directly.
 #[test]
-fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
-    let harness = open_scaled("windows-11", "basic", 1.0);
-    let atlas = &harness.state().atlas;
-    let padding = atlas
-        .old_resolved(egui::Theme::Light)
-        .sidebar
-        .border
-        .padding;
-    let Some(margin) = atlas.layout().container_margin else {
-        panic!("windows-11 states layout.container_margin");
+fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() -> Result<(), String> {
+    use native_theme::next::WidgetState;
+    let sides = |harness: &Harness<'_, App>| {
+        harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .map(|r| {
+                (
+                    native_theme_egui::next::padding_of(&r.sidebar.container(WidgetState::NONE)),
+                    r.layout.container_margin,
+                )
+            })
+            .ok_or("the showcase installs no 0.8.0 theme")
     };
-    let (Some(left), None, None) = (padding.left, padding.top, padding.bottom) else {
-        panic!("windows-11 states sidebar.border.padding across alone: {padding:?}");
+    let harness = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
+    let ([top, _, bottom, left], margin) = sides(&harness)?;
+    let margin = margin.ok_or("windows-11 states no layout.container_margin")?;
+    let (Some(left), None, None) = (left, top, bottom) else {
+        return Err("windows-11 states sidebar.container(NONE).padding not across alone".into());
     };
     let panel = place_of(&harness, "chrome.side_panel");
     let settings = place_of(&harness, "chrome.side_panel.settings");
@@ -3486,15 +3519,9 @@ fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
         cli(&[("--theme", "adwaita"), ("--tab", "basic")]),
     );
     harness.run_steps(4);
-    let padding = harness
-        .state()
-        .atlas
-        .old_resolved(egui::Theme::Light)
-        .sidebar
-        .border
-        .padding;
-    let (Some(top), Some(bottom), Some(left)) = (padding.top, padding.bottom, padding.left) else {
-        panic!("adwaita states every side of sidebar.border.padding: {padding:?}");
+    let ([top, _, bottom, left], _) = sides(&harness)?;
+    let (Some(top), Some(bottom), Some(left)) = (top, bottom, left) else {
+        return Err("adwaita does not state every side of sidebar.container(NONE).padding".into());
     };
     let panel = place_of(&harness, "chrome.side_panel");
     let settings = place_of(&harness, "chrome.side_panel.settings");
@@ -3509,6 +3536,7 @@ fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
             "adwaita: the side panel's {what} padding is {distance}, not {expected}"
         );
     }
+    Ok(())
 }
 
 /// G, H and I: each side of a dialog takes the installed 0.8.0 theme's stated
@@ -6365,58 +6393,89 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
     assert_eq!(top_line, 0, "no line along the view's edge");
 }
 
-/// E3 (issue #4's leftovers): the menu bar is filled with `toolbar.background_color`
-/// (`chrome::menu_panel`; kde-breeze light #dee0e2, Breeze's tools area, docs/platform-facts.md
-/// §2.13), not the window's, and the title of the open menu takes the bar's open fill
-/// (`menu.bar_open_background`) with the pointer off it, where `chrome::menu_bar` swaps
-/// `widgets.open` in; a closed title is not so filled.
+/// E3 (issue #4's leftovers): the menu bar is filled with the installed 0.8.0 theme's
+/// `menu_bar.bar(NONE).fill` (`chrome::menu_panel`; kde-breeze light #dee0e2, Breeze's tools
+/// area, docs/platform-facts.md §2.13), not the window's, and the title of the open menu takes
+/// the bar's open fill (`menu_bar.item(OPEN).fill`) with the pointer off it, where
+/// `chrome::menu_bar` swaps `widgets.open` in; a closed title is not so filled. Under
+/// kde-breeze with the bar's fill patched to magenta, which the 0.7.2 `toolbar.background_color`
+/// beside it is not, the bar is filled in magenta.
 #[test]
-fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() {
-    let colour = native_theme_egui::convert::to_color32;
-    let mut harness = open_scaled("kde-breeze", "basic", 1.0);
-    harness.state_mut().open_menu = Some("theme".to_string());
-    harness.run_steps(4);
-    let t = harness
+fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() -> Result<(), String> {
+    use native_theme::next::{MenuBarRule, Paint, PartPatch, ThemePatch, WidgetState};
+    use native_theme_egui::next::{fill_of, state_fill_of};
+    fn check(harness: &mut Harness<'static, App>, want: egui::Color32) -> Result<(), String> {
+        harness.state_mut().open_menu = Some("theme".to_string());
+        harness.run_steps(4);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or("no 0.8.0 theme installed")?;
+        let open = state_fill_of(&r.menu_bar.item(WidgetState::OPEN))
+            .ok_or("kde-breeze states no open title fill")?;
+        let rects: Vec<egui::epaint::RectShape> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) => Some(r.clone()),
+                _ => None,
+            })
+            .collect();
+        let bar = place_of(harness, "chrome.menu_bar");
+        assert!(
+            rects
+                .iter()
+                .any(|r| near_rect(r.rect, bar) && r.fill == want),
+            "the menu bar's fill {want:?} at {bar:?}"
+        );
+        let filled = |id: &str| {
+            let title = place_of(harness, id);
+            rects
+                .iter()
+                .any(|r| r.rect.contains(title.center()) && r.fill == open)
+        };
+        assert!(filled("chrome.menu_bar.theme"), "the open title's fill");
+        assert!(
+            !filled("chrome.menu_bar.file"),
+            "a closed title is not filled"
+        );
+        Ok(())
+    }
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?;
+    let fill =
+        fill_of(&r.menu_bar.bar(WidgetState::NONE)).ok_or("kde-breeze states no bar fill")?;
+    assert_eq!(fill, egui::Color32::from_rgb(0xde, 0xe0, 0xe2));
+    assert_ne!(
+        fill,
+        harness.ctx.style_of(egui::Theme::Light).visuals.panel_fill
+    );
+    check(&mut harness, fill)?;
+    let magenta = native_theme::next::Color::from_srgb8(255, 0, 255, 255);
+    let (mut harness, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |_| {
+        Some(
+            ThemePatch::new()
+                .menu_bar(MenuBarRule::new().bar(PartPatch::new().fill(Paint::Solid(magenta)))),
+        )
+    })?;
+    let old = harness
         .state()
         .atlas
         .old_resolved(egui::Theme::Light)
-        .clone();
-    assert_eq!(
-        t.toolbar.background_color,
-        native_theme::Rgba::rgb(0xde, 0xe0, 0xe2)
+        .toolbar
+        .background_color;
+    assert_ne!(
+        native_theme_egui::convert::to_color32(old),
+        egui::Color32::from_rgb(255, 0, 255),
+        "the 0.7.2 toolbar.background_color is the patched fill, so the patch proves nothing"
     );
-    assert_ne!(t.window.background_color, t.toolbar.background_color);
-    let open = t
-        .menu
-        .bar_open_background
-        .expect("kde-breeze states the open fill");
-    let rects: Vec<egui::epaint::RectShape> = harness
-        .output()
-        .shapes
-        .iter()
-        .filter_map(|clipped| match &clipped.shape {
-            egui::Shape::Rect(r) => Some(r.clone()),
-            _ => None,
-        })
-        .collect();
-    let bar = place_of(&harness, "chrome.menu_bar");
-    assert!(
-        rects
-            .iter()
-            .any(|r| near_rect(r.rect, bar) && r.fill == colour(t.toolbar.background_color)),
-        "the menu bar's fill at {bar:?}"
-    );
-    let filled = |id: &str| {
-        let title = place_of(&harness, id);
-        rects
-            .iter()
-            .any(|r| r.rect.contains(title.center()) && r.fill == colour(open))
-    };
-    assert!(filled("chrome.menu_bar.theme"), "the open title's fill");
-    assert!(
-        !filled("chrome.menu_bar.file"),
-        "a closed title is not filled"
-    );
+    check(&mut harness, egui::Color32::from_rgb(255, 0, 255))
 }
 
 /// S10 (E4's geometry): the open Theme menu's popup, framed by `demo::menu_modifier` on the
@@ -8043,20 +8102,18 @@ fn set_content_width(harness: &mut Harness<'_, App>, width: f32) {
 
 /// The showcase on its Basic page in `theme`, windows-11 installed through the Theme row's path
 /// (`install_under`: a preset of another platform, which `--theme` does not take here), then
-/// both models' themes changed alike and installed as an install keeps them
-/// (`OldAtlas::edited`, `OldAtlas::with_old`, `App::adopt_pair`), at rest: each 0.8.0 theme,
-/// which the Basic bar reads (`demo::TabLook::next`), with `tab.active_outward_corner_radius`
-/// set to `radius` and `edit_next` made of it; each 0.7.2 one, which the chrome's bars read
-/// until they move (`demo::TabLook::old`), with the radius set too and `edit` made of it. The
-/// preset states 4 on both (G3 T15); the tests set the radius on the resolved themes, whose
-/// fields are public, to try it unstated and at other values too.
+/// its 0.8.0 themes changed and installed as an install keeps them (`OldAtlas::edited`,
+/// `App::adopt_pair`), at rest: each 0.8.0 theme, which the three tab bars read
+/// (`demo::TabLook::next`), with `tab.active_outward_corner_radius` set to `radius` and
+/// `edit_next` made of it; the 0.7.2 themes beside them as the preset gives them. The preset
+/// states 4 (G3 T15); the tests set the radius on the resolved themes, whose fields are public,
+/// to try it unstated and at other values too.
 fn open_curving_out(
     theme: egui::Theme,
     radius: Option<f32>,
-    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
     edit_next: impl Fn(&mut native_theme::next::ResolvedTheme),
 ) -> Result<Harness<'static, App>, String> {
-    open_curving_out_at(theme, radius, 1.0, edit, edit_next)
+    open_curving_out_at(theme, radius, 1.0, edit_next)
 }
 
 /// [`open_curving_out`] at `pixels_per_point` physical pixels per point.
@@ -8064,7 +8121,6 @@ fn open_curving_out_at(
     theme: egui::Theme,
     radius: Option<f32>,
     pixels_per_point: f32,
-    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
     edit_next: impl Fn(&mut native_theme::next::ResolvedTheme),
 ) -> Result<Harness<'static, App>, String> {
     let mut harness = open_at(
@@ -8074,17 +8130,10 @@ fn open_curving_out_at(
     );
     harness.run_steps(4);
     install_under(&mut harness, theme, "windows-11");
-    let atlas = harness
-        .state()
-        .atlas
-        .edited(|r| {
-            r.tab.active_outward_corner_radius = radius;
-            edit_next(r);
-        })?
-        .with_old(|t| {
-            t.tab.active_outward_corner_radius = radius;
-            edit(t);
-        });
+    let atlas = harness.state().atlas.edited(|r| {
+        r.tab.active_outward_corner_radius = radius;
+        edit_next(r);
+    })?;
     let ctx = harness.ctx.clone();
     harness.state_mut().adopt_pair(&ctx, atlas);
     harness.run_steps(4);
@@ -8096,40 +8145,27 @@ fn open_curving_out_at(
 /// The fill and the outline the selected tab `one_id` of the bar `bar_id` of [`TAB_BARS`] has
 /// its flares painted in: the Basic bar's the ones egui draws that tab's frame in, its tab
 /// scope's selected button's, which the connector writes from the installed 0.8.0 theme's
-/// `tab.tab(SELECTED)` (`demo::TabLook::next`); a chrome bar's the 0.7.2 theme's
-/// `tab.active_background` and `tab.border` (`demo::TabLook::old`).
+/// `tab.tab(SELECTED)` (`demo::TabLook::next`), on each of the three bars.
 fn flare_paint(
     harness: &Harness<'_, App>,
-    theme: egui::Theme,
-    [bar_id, one_id]: [&str; 2],
+    one_id: &str,
 ) -> Result<(egui::Color32, egui::Stroke), String> {
-    let state = harness.state();
-    if bar_id.starts_with("basic.") {
-        let one = state
-            .registry
-            .places()
-            .get(one_id)
-            .copied()
-            .ok_or_else(|| format!("{one_id} is not placed"))?;
-        harness
-            .output()
-            .shapes
-            .iter()
-            .find_map(|clipped| match &clipped.shape {
-                egui::Shape::Rect(s) if near_rect(s.rect, one) => Some((s.fill, s.stroke)),
-                _ => None,
-            })
-            .ok_or_else(|| format!("{one_id}: no frame is painted on the tab"))
-    } else {
-        let t = state.atlas.old_resolved(theme);
-        Ok((
-            native_theme_egui::convert::to_color32(t.tab.active_background),
-            egui::Stroke::new(
-                t.tab.border.line_width,
-                native_theme_egui::convert::to_color32(t.tab.border.color),
-            ),
-        ))
-    }
+    let one = harness
+        .state()
+        .registry
+        .places()
+        .get(one_id)
+        .copied()
+        .ok_or_else(|| format!("{one_id} is not placed"))?;
+    harness
+        .output()
+        .shapes
+        .iter()
+        .find_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(s) if near_rect(s.rect, one) => Some((s.fill, s.stroke)),
+            _ => None,
+        })
+        .ok_or_else(|| format!("{one_id}: no frame is painted on the tab"))
 }
 
 /// The three tab bars `demo::tab_bar` draws: each bar's element, its first tab's, which is the
@@ -8311,8 +8347,8 @@ fn the_page_tabs_scroll_the_open_tab_into_view() {
 /// `(x0 - 3, y1 - 4)`, clipped to `[x0 - 3, x0 + 1] x [y1 - 4, y1]`, the right about
 /// `(x1 + 3, y1 - 4)`, clipped to `[x1 - 1, x1 + 3] x [y1 - 4, y1]`; in each, the fill an
 /// annulus from 3 to `4 * sqrt(2) + 1` in the selected tab's fill, then the outline one from 3
-/// to 4 in its outline's colour ([`flare_paint`]: the Basic bar's from the 0.8.0 tab scope, the
-/// chrome's `tab.active_background` and `tab.border.color`). epaint strokes a circle outside its
+/// to 4 in its outline's colour ([`flare_paint`]: each bar's from the 0.8.0 tab scope).
+/// epaint strokes a circle outside its
 /// radius (`epaint-0.36.2` `src/tessellator.rs:1531`), so each annulus is a circle of its inner
 /// radius stroked as wide as the annulus, and tessellated it reaches from 3 to
 /// `4 * sqrt(2) + 1`. Under them, after every tab, a strip in the fill lays over the selected
@@ -8321,17 +8357,9 @@ fn the_page_tabs_scroll_the_open_tab_into_view() {
 #[test]
 fn the_tab_bars_draw_the_selected_tabs_outward_corners() -> Result<(), String> {
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
-        let square_feet = open_curving_out(theme, None, |_| {}, |_| {})?;
-        let harness = open_curving_out(theme, Some(4.0), |_| {}, |_| {})?;
+        let square_feet = open_curving_out(theme, None, |_| {})?;
+        let harness = open_curving_out(theme, Some(4.0), |_| {})?;
         let state = harness.state();
-        assert_eq!(
-            state
-                .atlas
-                .old_resolved(theme)
-                .tab
-                .active_outward_corner_radius,
-            Some(4.0)
-        );
         assert_eq!(
             state
                 .atlas
@@ -8354,7 +8382,7 @@ fn the_tab_bars_draw_the_selected_tabs_outward_corners() -> Result<(), String> {
                 place(places, one_id),
                 place(places, two_id),
             );
-            let (fill, outline) = flare_paint(&harness, theme, [bar_id, one_id])?;
+            let (fill, outline) = flare_paint(&harness, one_id)?;
             assert_eq!(
                 outline.width, 1.0,
                 "{theme:?} {bar_id}: windows-11's outline"
@@ -8473,7 +8501,7 @@ fn the_tab_bars_draw_the_selected_tabs_outward_corners() -> Result<(), String> {
 fn at_a_fractional_scale_the_flares_sit_on_the_tabs_pixel_grid() -> Result<(), String> {
     use egui::emath::GuiRounding as _;
     let ppp = 1.25;
-    let harness = open_curving_out_at(egui::Theme::Light, Some(4.0), ppp, |_| {}, |_| {})?;
+    let harness = open_curving_out_at(egui::Theme::Light, Some(4.0), ppp, |_| {})?;
     assert!(near(harness.ctx.pixels_per_point(), ppp));
     let shapes = &harness.output().shapes;
     let places = harness.state().registry.places();
@@ -8510,31 +8538,25 @@ fn at_a_fractional_scale_the_flares_sit_on_the_tabs_pixel_grid() -> Result<(), S
     Ok(())
 }
 
-/// Without an outline (`tab.border.line_width` 0 on the 0.7.2 model, `tab.tab(SELECTED)`'s
-/// stroke none on the 0.8.0 one), each flare is the fill alone, an annulus from the radius, 4, to
-/// `4 * sqrt(2) + 1`, in a square at the tab's outer edge, and no strip covers a bottom edge the
-/// tab does not have.
+/// Without an outline (`tab.tab(SELECTED)`'s stroke none on the installed 0.8.0 theme), each
+/// flare is the fill alone, an annulus from the radius, 4, to `4 * sqrt(2) + 1`, in a square at
+/// the tab's outer edge, and no strip covers a bottom edge the tab does not have.
 #[test]
 fn without_an_outline_the_fill_begins_at_the_radius() -> Result<(), String> {
     use native_theme::next::{PartPatch, Stroke, TabRule, ThemePatch, WidgetState};
-    let harness = open_curving_out(
-        egui::Theme::Light,
-        Some(4.0),
-        |t| t.tab.border.line_width = 0.0,
-        |r| {
-            r.apply_patch(
-                &ThemePatch::new().tab(
-                    TabRule::new()
-                        .states(WidgetState::SELECTED)
-                        .tab(PartPatch::new().stroke(Stroke::None)),
-                ),
-            );
-        },
-    )?;
+    let harness = open_curving_out(egui::Theme::Light, Some(4.0), |r| {
+        r.apply_patch(
+            &ThemePatch::new().tab(
+                TabRule::new()
+                    .states(WidgetState::SELECTED)
+                    .tab(PartPatch::new().stroke(Stroke::None)),
+            ),
+        );
+    })?;
     let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
     let shapes = &harness.output().shapes;
     for [bar_id, one_id, _] in TAB_BARS {
-        let (fill, outline) = flare_paint(&harness, egui::Theme::Light, [bar_id, one_id])?;
+        let (fill, outline) = flare_paint(&harness, one_id)?;
         assert_eq!(outline.width, 0.0, "{bar_id}: the outline is still drawn");
         let one = harness
             .state()
@@ -8567,12 +8589,24 @@ fn without_an_outline_the_fill_begins_at_the_radius() -> Result<(), String> {
     Ok(())
 }
 
-/// With the radius unstated, or stated as one no tab bar draws (0, not finite), no circle is
-/// drawn and no strip: the selected tab keeps its bottom edge.
+/// With the radius unstated on the installed 0.8.0 theme, or stated as one no tab bar draws (0,
+/// not finite), no circle is drawn and no strip: the selected tab keeps its bottom edge, the
+/// 0.7.2 theme beside it stating 4 as windows-11 does, which no bar reads.
 #[test]
 fn without_the_radius_the_tab_bars_draw_no_flares() -> Result<(), String> {
     for radius in [None, Some(0.0), Some(f32::NAN)] {
-        let harness = open_curving_out(egui::Theme::Light, radius, |_| {}, |_| {})?;
+        let harness = open_curving_out(egui::Theme::Light, radius, |_| {})?;
+        let old = harness
+            .state()
+            .atlas
+            .old_resolved(egui::Theme::Light)
+            .tab
+            .active_outward_corner_radius;
+        assert_eq!(
+            old,
+            Some(4.0),
+            "the 0.7.2 windows-11 states no radius of 4, so the case proves nothing"
+        );
         let shapes = &harness.output().shapes;
         let circles: Vec<_> = shapes
             .iter()
@@ -8589,8 +8623,8 @@ fn without_the_radius_the_tab_bars_draw_no_flares() -> Result<(), String> {
             })
             .collect();
         assert!(circles.is_empty(), "{radius:?}: circles drawn: {circles:?}");
-        for [bar_id, one_id, _] in TAB_BARS {
-            let (fill, _) = flare_paint(&harness, egui::Theme::Light, [bar_id, one_id])?;
+        for [_, one_id, _] in TAB_BARS {
+            let (fill, _) = flare_paint(&harness, one_id)?;
             let one = harness
                 .state()
                 .registry
@@ -8613,53 +8647,32 @@ fn without_the_radius_the_tab_bars_draw_no_flares() -> Result<(), String> {
 }
 
 /// With a bottom indicator and the radius both stated, no strip is painted, since the line
-/// covers the bottom edge, and the flares are painted over the line as without it: on the
-/// 0.7.2 model `tab.active_indicator_color`, `active_indicator_width` and `active_indicator_side`,
-/// on the 0.8.0 one `tab.indicator(SELECTED)`'s fill and exact height and `tab.indicator_side`.
+/// covers the bottom edge, and the flares are painted over the line as without it, on each of
+/// the three bars: the installed 0.8.0 theme's `tab.indicator(SELECTED)`'s fill and exact height
+/// and `tab.indicator_side`.
 #[test]
 fn a_bottom_indicator_lies_under_the_flares() -> Result<(), String> {
     use native_theme::next::{
         Color, Paint, PartPatch, TabIndicatorSide, TabRule, ThemePatch, WidgetState,
     };
     let magenta = Color::from_srgb8(255, 0, 255, 255);
-    let harness = open_curving_out(
-        egui::Theme::Light,
-        Some(4.0),
-        |t| {
-            t.tab.active_indicator_color = Some(t.defaults.accent_color);
-            t.tab.active_indicator_width = Some(2.0);
-            t.tab.active_indicator_side = Some(native_theme::theme::TabIndicatorSide::Bottom);
-        },
-        |r| {
-            r.apply_patch(
-                &ThemePatch::new().tab(
-                    TabRule::new().states(WidgetState::SELECTED).indicator(
-                        PartPatch::new()
-                            .fill(Paint::Solid(magenta))
-                            .min_size([None, Some(2.0)])
-                            .max_size([None, Some(2.0)]),
-                    ),
+    let harness = open_curving_out(egui::Theme::Light, Some(4.0), |r| {
+        r.apply_patch(
+            &ThemePatch::new().tab(
+                TabRule::new().states(WidgetState::SELECTED).indicator(
+                    PartPatch::new()
+                        .fill(Paint::Solid(magenta))
+                        .min_size([None, Some(2.0)])
+                        .max_size([None, Some(2.0)]),
                 ),
-            );
-            r.tab.indicator_side = Some(TabIndicatorSide::Bottom);
-        },
-    )?;
-    let old_accent = native_theme_egui::convert::to_color32(
-        harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .defaults
-            .accent_color,
-    );
+            ),
+        );
+        r.tab.indicator_side = Some(TabIndicatorSide::Bottom);
+    })?;
     let shapes = &harness.output().shapes;
-    for [bar_id, one_id, _] in TAB_BARS {
-        let (fill, _) = flare_paint(&harness, egui::Theme::Light, [bar_id, one_id])?;
-        let accent = if bar_id.starts_with("basic.") {
-            egui::Color32::from_rgb(255, 0, 255)
-        } else {
-            old_accent
-        };
+    let accent = egui::Color32::from_rgb(255, 0, 255);
+    for [_, one_id, _] in TAB_BARS {
+        let (fill, _) = flare_paint(&harness, one_id)?;
         let one = harness
             .state()
             .registry
@@ -11811,79 +11824,6 @@ fn a_capture_without_the_scale_factor_is_refused() {
         Err("the display's scale factor is unknown".to_string())
     );
     assert_eq!(content(Some(1.25)), Ok(((1600, 900), 1.25)));
-}
-
-/// The one check that a tool button's hover outline is drawn: the «toolbar» scope writes its
-/// colour (`toolbar.button_hover_border_color`), and `demo::tool_button` its width per call,
-/// at width 0 nothing being drawn. In a «toolbar» scope after `demo::tool_button` with the edge
-/// `demo::toolbar_edge` gives, as the chrome's toolbar and the Basic page's icon row call it,
-/// kde-breeze light, which states the outline, draws it `button.border.line_width` wide hovered
-/// and pressed, in its colour, and none at rest; adwaita light, which does not, draws none in
-/// the three.
-#[test]
-fn a_tool_buttons_outline_has_the_borders_width() {
-    let prefs = AccessibilityPreferences::default();
-    for (preset, outlined) in [("kde-breeze", true), ("adwaita", false)] {
-        let (atlas, t) = from_preset(preset, false, &prefs).expect("a bundled preset");
-        assert_eq!(
-            t.toolbar.button_hover_border_color.is_some(),
-            outlined,
-            "{preset} states the toolbar's hover outline"
-        );
-        let ctx = egui::Context::default();
-        atlas.install(&ctx);
-        ctx.set_theme(egui::Theme::Light);
-        let mut reg = crate::demo::Registry::default();
-        let mut widths = None;
-        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
-            crate::demo::scoped(
-                &mut reg,
-                ui,
-                native_theme_egui::Role::Toolbar,
-                native_theme_egui::RoleVariant::Normal,
-                "icon button",
-                |ui| {
-                    crate::demo::tool_button(
-                        ui,
-                        &t.button.border.padding,
-                        crate::demo::toolbar_edge(&t),
-                    );
-                    let w = &ui.style().visuals.widgets;
-                    widths = Some((
-                        [
-                            w.inactive.bg_stroke.width,
-                            w.hovered.bg_stroke.width,
-                            w.active.bg_stroke.width,
-                        ],
-                        [w.hovered.bg_stroke.color, w.active.bg_stroke.color],
-                    ));
-                    ui.add(egui::Button::new("Copy"))
-                },
-            );
-        });
-        // The font atlas's upload, which no renderer takes here (`epaint/src/textures.rs:337`).
-        out.textures_delta.clear();
-        let edge = t.button.border.line_width;
-        let want = if outlined {
-            assert!(edge > 0.0, "{preset} states a border width");
-            [0.0, edge, edge]
-        } else {
-            [0.0; 3]
-        };
-        assert_eq!(
-            widths.map(|(w, _)| w),
-            Some(want),
-            "{preset}: [inactive, hovered, active]"
-        );
-        if let Some(colour) = t.toolbar.button_hover_border_color {
-            let colour = native_theme_egui::convert::to_color32(colour);
-            assert_eq!(
-                widths.map(|(_, c)| c),
-                Some([colour; 2]),
-                "{preset}: the «toolbar» scope's outline colour, [hovered, active]"
-            );
-        }
-    }
 }
 
 /// The Basic page's edit-mode switch starts checked and a click switches it: its AccessKit node

@@ -288,98 +288,39 @@ pub(crate) fn ghost(ui: &mut egui::Ui) {
     rest.bg_stroke.color = egui::Color32::TRANSPARENT;
 }
 
-/// Make the rest of `ui` a tool button's, the icon-only button of a toolbar, the status bar and
-/// the tab row's page menu: Ghost ([`ghost`]), padded by `button.border.padding` and with no
-/// minimum height, so it is its icon and that padding. Where `edge` is `Some(width)`, the
-/// toolbar's hover outline (`toolbar.button_hover_border_color`, which the «toolbar» scope
-/// writes as the hovered and active stroke colour) is drawn that wide under the pointer and
-/// while pressed, at rest none; egui takes a stroke's width from the padding inside the frame,
-/// so the button's size does not change
-/// (`Frame::apply_stroke_and_expansion_without_layout_shift`). `None` draws no border in any
-/// state. egui pads a button by one pair (`Spacing::button_padding`), so the left side pads
-/// left and right and the top side top and bottom; a side the theme leaves unstated keeps the
-/// scope's own.
-pub(crate) fn tool_button(
-    ui: &mut egui::Ui,
-    padding: &native_theme::theme::ResolvedPadding,
-    edge: Option<f32>,
-) {
-    ghost(ui);
-    let own = ui.spacing().button_padding;
-    let spacing = ui.spacing_mut();
-    spacing.button_padding =
-        egui::vec2(padding.left.unwrap_or(own.x), padding.top.unwrap_or(own.y));
-    spacing.interact_size.y = 0.0;
-    let edge = edge.filter(|w| *w > 0.0);
-    let widgets = &mut ui.style_mut().visuals.widgets;
-    for (state, pointer) in [
-        (&mut widgets.noninteractive, false),
-        (&mut widgets.inactive, false),
-        (&mut widgets.hovered, true),
-        (&mut widgets.active, true),
-        (&mut widgets.open, false),
-    ] {
-        state.bg_stroke.width = match edge {
-            Some(width) if pointer => width,
-            _ => 0.0,
-        };
-        state.expansion = 0.0;
-    }
-}
-
-/// The `edge` a toolbar's tool button passes [`tool_button`]: `button.border.line_width`,
-/// where the theme states the toolbar's hover outline (`toolbar.button_hover_border_color`),
-/// else `None`.
-pub(crate) fn toolbar_edge(t: &native_theme::theme::ResolvedTheme) -> Option<f32> {
-    t.toolbar
-        .button_hover_border_color
-        .map(|_| t.button.border.line_width)
-}
-
-/// A toolbar row's items `toolbar.item_gap` apart, which the toolbar scope's
-/// `item_spacing.x` carries, and `layout.widget_gap` apart where the theme states no item gap,
-/// as the other two showcases space theirs.
-pub(crate) fn toolbar_gap(
-    ui: &mut egui::Ui,
-    t: &native_theme::theme::ResolvedTheme,
-    layout: &native_theme::theme::LayoutTheme,
-) {
-    if t.toolbar.item_gap.is_none()
-        && let Some(gap) = layout.widget_gap
-    {
-        ui.spacing_mut().item_spacing.x = gap;
-    }
-}
-
-/// The sides of `padding` the theme leaves unstated, top, right, bottom and left in that order,
-/// joined by ", " as a *Not themeable* line names them; `None` where it states all four.
-pub(crate) fn unstated_sides(padding: &native_theme::theme::ResolvedPadding) -> Option<String> {
-    let sides: Vec<&str> = [
-        ("top", padding.top),
-        ("right", padding.right),
-        ("bottom", padding.bottom),
-        ("left", padding.left),
-    ]
-    .into_iter()
-    .filter(|(_, stated)| stated.is_none())
-    .map(|(side, _)| side)
-    .collect();
+/// The sides of `padding`, top, right, bottom and left (`next::padding_of`'s order), the theme
+/// leaves unstated, joined by ", " in that order as a *Not themeable* line names them; `None`
+/// where it states all four.
+pub(crate) fn unstated_sides(padding: [Option<f32>; 4]) -> Option<String> {
+    let sides: Vec<&str> = ["top", "right", "bottom", "left"]
+        .into_iter()
+        .zip(padding)
+        .filter(|(_, stated)| stated.is_none())
+        .map(|(side, _)| side)
+        .collect();
     (!sides.is_empty()).then(|| sides.join(", "))
 }
 
-/// `padding` with each side it leaves unstated set to `fill` and each stated side `None`: the
-/// sides a frame takes from a fallback, for `convert::to_margin` over the frame's margin.
-pub(crate) fn unstated_as(
-    padding: &native_theme::theme::ResolvedPadding,
-    fill: f32,
-) -> native_theme::theme::ResolvedPadding {
-    let side = |stated: Option<f32>| stated.is_none().then_some(fill);
-    native_theme::theme::ResolvedPadding {
-        top: side(padding.top),
-        right: side(padding.right),
-        bottom: side(padding.bottom),
-        left: side(padding.left),
-    }
+/// `margin` with each side `padding` (top, right, bottom, left) leaves unstated set to that
+/// side of `fill`, as `convert::to_margin` sets a frame's margin, and each stated side as it
+/// is: a frame whose stated sides its surface already pads by takes a fallback on the others.
+pub(crate) fn pad_unstated(
+    margin: egui::Margin,
+    padding: [Option<f32>; 4],
+    fill: [f32; 4],
+) -> egui::Margin {
+    let [top, right, bottom, left] = padding;
+    let [fill_top, fill_right, fill_bottom, fill_left] = fill;
+    let side = |stated: Option<f32>, fill: f32| stated.is_none().then_some(fill);
+    native_theme_egui::convert::to_margin(
+        margin,
+        &native_theme::theme::ResolvedPadding {
+            top: side(top, fill_top),
+            right: side(right, fill_right),
+            bottom: side(bottom, fill_bottom),
+            left: side(left, fill_left),
+        },
+    )
 }
 
 pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
@@ -731,18 +672,10 @@ pub(crate) fn surfaced(
     let unstated = (surface == Surface::Dialog)
         .then(|| next_value(ui, |r| native_theme_egui::next::padding_of(&r.dialog.panel)))
         .flatten()
-        .and_then(|[top, right, bottom, left]| {
-            let padding = native_theme::theme::ResolvedPadding {
-                top,
-                right,
-                bottom,
-                left,
-            };
-            chrome.frame.inner_margin = native_theme_egui::convert::to_margin(
-                chrome.frame.inner_margin,
-                &unstated_as(&padding, DIALOG_PADDING_PX),
-            );
-            unstated_sides(&padding)
+        .and_then(|padding| {
+            chrome.frame.inner_margin =
+                pad_unstated(chrome.frame.inner_margin, padding, [DIALOG_PADDING_PX; 4]);
+            unstated_sides(padding)
         });
     let response = show(ui, chrome, reg)?;
     let mut seams = vec![Seam::Surface(surface)];
@@ -1575,34 +1508,13 @@ pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::Rich
 }
 
 /// `text` one line box tall: the size of the font `ui` sets a widget's text in (its
-/// `override_font_id`, else `style`'s) times `defaults.line_height`, the platform's line box, per
-/// call. The connector writes the line box only where it is taller than the font's own row
+/// `override_font_id`, else `style`'s) times the installed 0.8.0 theme's line height
+/// (`next::line_height`, the body text's), the platform's line box, per call. The connector
+/// writes the line box only where it is taller than the font's own row
 /// (`Spacing::extra_text_line_spacing`, which egui adds between rows, never above the first); a
 /// `TextStyle` is a font and nothing more, so a line box shorter than the row — Adwaita's 1.21 of
 /// a Cantarell-sized font — is reachable only per text, `RichText::line_height`
-/// (`egui/src/widget_text.rs:174`). Without an installed atlas of the 0.7.2 model, the text as
-/// it is.
-pub(crate) fn lined(
-    ui: &egui::Ui,
-    text: impl Into<String>,
-    style: egui::TextStyle,
-) -> egui::RichText {
-    let text = egui::RichText::new(text);
-    let Some(atlas) = crate::app::OldAtlas::from_ctx(ui.ctx()) else {
-        return text;
-    };
-    let size = ui
-        .style()
-        .override_font_id
-        .as_ref()
-        .map_or_else(|| style.resolve(ui.style()).size, |font| font.size);
-    let t = atlas.old_resolved(ui.ctx().theme());
-    text.line_height(Some(size * t.defaults.line_height))
-}
-
-/// [`lined`] on the 0.8.0 model: `text` one line box tall, the font's size times the installed
-/// 0.8.0 theme's line height (`next::line_height`, the body text's); without an installed
-/// 0.8.0 theme, the text as it is.
+/// (`egui/src/widget_text.rs:174`). Without an installed 0.8.0 theme, the text as it is.
 pub(crate) fn next_lined(
     ui: &egui::Ui,
     text: impl Into<String>,
@@ -1686,21 +1598,69 @@ pub(crate) fn next_metric(
     next_value(ui, |r| build(&r.layout)).flatten()
 }
 
-/// [`tool_button`] on the 0.8.0 model: the rest of `ui`, a «toolbar» scope, a tool button's:
-/// Ghost ([`ghost`]), padded by `padding`, the sides of `button.body(NONE).padding`
-/// (`next::padding_of`: top, right, bottom, left) of the installed 0.8.0 theme, and with no
-/// minimum height, so it is its icon and that padding. egui pads a button by one pair
-/// (`Spacing::button_padding`), so the left side pads left and right and the top side top and
-/// bottom; a side the theme leaves unstated keeps the scope's own. Its outline under the pointer
-/// and while pressed is the scope's: the connector writes `toolbar.button(HOVER)` and
-/// `toolbar.button(PRESSED)`'s stroke where a rule states it, and leaves the scope's own
-/// hovered and pressed button's where none does (spec §10, rule 0).
+/// Make the rest of `ui` a tool button's, the icon-only button of a toolbar, the status bar and
+/// the tab row's page menu: Ghost ([`ghost`]), padded by `padding`, the sides of
+/// `button.body(NONE).padding` ([`tool_padding`]: top, right, bottom, left) of the installed
+/// 0.8.0 theme, and with no minimum height, so it is its icon and that padding. egui pads a
+/// button by one pair (`Spacing::button_padding`), so the left side pads left and right and the
+/// top side top and bottom; a side the theme leaves unstated keeps the scope's own. Its outline
+/// under the pointer and while pressed is the scope's: in a «toolbar» scope the connector writes
+/// `toolbar.button(HOVER)` and `toolbar.button(PRESSED)`'s stroke where a rule states it, and
+/// leaves the scope's own hovered and pressed button's where none does (spec §10, rule 0).
 pub(crate) fn next_tool_button(ui: &mut egui::Ui, [top, _, _, left]: [Option<f32>; 4]) {
     ghost(ui);
     let own = ui.spacing().button_padding;
     let spacing = ui.spacing_mut();
     spacing.button_padding = egui::vec2(left.unwrap_or(own.x), top.unwrap_or(own.y));
     spacing.interact_size.y = 0.0;
+}
+
+/// The height egui gives an icon-only tool button with a `size` tall icon in a `Role::Button`
+/// scope over `ui` ([`next_tool_button`]), `top` its stated top padding, else the scope's own
+/// `button_padding.y`: the icon and, above and below it, the padding as egui frames a button,
+/// its inner margin whole points, the padding rounded less the resting border's width rounded
+/// (`Margin::from`, `epaint-0.37.0/src/margin.rs:108-120`;
+/// `Frame::apply_stroke_and_expansion_without_layout_shift`,
+/// `egui-0.37.0/src/containers/frame.rs:313-323`), and the border's own width outside it
+/// (`Frame::total_margin`). Without an installed atlas, the scope is `ui`'s own style.
+pub(crate) fn tool_button_height(ui: &egui::Ui, size: f32, top: Option<f32>) -> f32 {
+    let mut style = (**ui.style()).clone();
+    if let Some(atlas) = crate::app::OldAtlas::from_ctx(ui.ctx()) {
+        atlas
+            .role_modifier(ui.ctx().theme(), Role::Button, RoleVariant::Normal)
+            .apply(&mut style);
+    }
+    let padding = top.unwrap_or(style.spacing.button_padding.y);
+    let border = style.visuals.widgets.inactive.bg_stroke.width;
+    size + 2.0 * (padding.round() + (-border).round() + border)
+}
+
+/// A tool button's padding, `button.body(NONE).padding` of the installed 0.8.0 theme `r`, top,
+/// right, bottom, left, each where stated (`next::padding_of`); none without a 0.8.0 theme.
+pub(crate) fn tool_padding(r: Option<&native_theme::next::ResolvedTheme>) -> [Option<f32>; 4] {
+    r.map_or([None; 4], |r| {
+        native_theme_egui::next::padding_of(&r.button.body(native_theme::next::WidgetState::NONE))
+    })
+}
+
+/// A toolbar button's icon size, `toolbar.button_icon(NONE).size`, where the installed 0.8.0
+/// theme `r` states it; `None` where it does not, or none is installed: the button then shows
+/// its label in place of its icon.
+pub(crate) fn tool_icon_size(r: Option<&native_theme::next::ResolvedTheme>) -> Option<f32> {
+    let icon = r?
+        .toolbar
+        .button_icon(native_theme::next::WidgetState::NONE);
+    icon.stated
+        .contains(native_theme::next::IconStated::SIZE)
+        .then_some(icon.size)
+}
+
+/// `icons.sizes.small` of the installed 0.8.0 theme the window shows, the size of the chrome's
+/// small icons (the status bar's toggle, the page menu's caret, a dialog's close button, the
+/// error banner's icon); `None` where it states none, or none is installed: each then shows its
+/// label in place of its icon, or the banner its text alone.
+pub(crate) fn small_icon_size(ui: &egui::Ui) -> Option<f32> {
+    next_value(ui, |r| r.icons.sizes.small).flatten()
 }
 
 /// Text in the installed 0.8.0 theme's text role `role`, its
@@ -1757,22 +1717,6 @@ pub(crate) struct TabBar<'a, T> {
     pub tab_elements: &'a [&'static str],
 }
 
-/// The selected tab's line where the theme states it: `tab.active_indicator_color`,
-/// `tab.active_indicator_width`, a positive one, and `tab.active_indicator_side`.
-fn indicator_line(
-    t: &native_theme::theme::ResolvedTheme,
-) -> Option<(Rgba, f32, native_theme::theme::TabIndicatorSide)> {
-    let s = &t.tab;
-    let (Some(color), Some(width), Some(side)) = (
-        s.active_indicator_color,
-        s.active_indicator_width,
-        s.active_indicator_side,
-    ) else {
-        return None;
-    };
-    (width.is_finite() && width > 0.0).then_some((color, width, side))
-}
-
 /// The selected tab's line: its colour, its thickness, and the edge it lies along, the tab's
 /// top one or else its bottom one.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -1783,15 +1727,12 @@ pub(crate) struct TabLine {
 }
 
 /// What a row of tabs ([`tab_bar`]) draws beyond what its `Role::Tab` scope carries, read from
-/// one model's theme: [`TabLook::old`] from the 0.7.2 theme (the chrome's rows, until they move
-/// to the 0.8.0 model), [`TabLook::next`] from the installed 0.8.0 one (the Basic page's).
+/// the installed 0.8.0 theme ([`TabLook::next`]): the page and inspector tab rows' and the Basic
+/// page's.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct TabLook {
     /// The least tab width, which egui's `Button` never reads from the style.
     pub min_width: f32,
-    /// The gap between neighbouring tabs where the row sets one; `None` leaves the scope's own
-    /// `item_spacing.x`, which the connector writes from `tab.item_gap` where stated.
-    pub gap: Option<f32>,
     /// What the row's Widget Info names for the gap where the theme states none.
     pub gap_unstated: Option<&'static str>,
     /// The selected tab's line, where the theme states one ([`tab_indicator`]).
@@ -1799,77 +1740,35 @@ pub(crate) struct TabLook {
     /// The radius the selected tab's bottom corners curve out by into the bar, where the theme
     /// states a positive, finite one ([`tab_flares`]).
     pub flare: Option<f32>,
-    /// The flares' fill and outline; `None` takes the scope's selected tab's own,
-    /// `Visuals::selection.bg_fill` and the resting entry's `bg_stroke`, as egui draws a
-    /// selected button (egui-0.37.0 `src/theme/default_style.rs:41-52`).
-    pub flare_paint: Option<(egui::Color32, egui::Stroke)>,
     /// A tab's label, one line box tall.
     pub label: fn(&egui::Ui, &'static str) -> egui::RichText,
 }
 
 impl TabLook {
-    /// The look the 0.7.2 theme `t` states: `tab.min_width`, the tabs `tab.item_gap` apart and
-    /// side by side where unstated, the line of [`indicator_line`], the flares of
-    /// [`outward_radius`] in `tab.active_background` lined `tab.border.line_width` wide in
-    /// `tab.border.color`, the labels [`lined`].
-    pub(crate) fn old(t: &native_theme::theme::ResolvedTheme) -> Self {
-        let width = t.tab.border.line_width;
-        let width = if width.is_finite() {
-            width.max(0.0)
-        } else {
-            0.0
-        };
-        Self {
-            min_width: t.tab.min_width,
-            gap: Some(t.tab.item_gap.unwrap_or_default()),
-            gap_unstated: t
-                .tab
-                .item_gap
-                .is_none()
-                .then_some("not stated by the theme: none, the tabs side by side"),
-            line: indicator_line(t).map(|(colour, width, side)| TabLine {
-                colour: native_theme_egui::convert::to_color32(colour),
-                width,
-                top: side == native_theme::theme::TabIndicatorSide::Top,
-            }),
-            flare: outward_radius(t),
-            flare_paint: Some((
-                native_theme_egui::convert::to_color32(t.tab.active_background),
-                egui::Stroke::new(
-                    width,
-                    native_theme_egui::convert::to_color32(t.tab.border.color),
-                ),
-            )),
-            label: |ui, text| lined(ui, text, egui::TextStyle::Button),
-        }
-    }
-
     /// The look the installed 0.8.0 theme `r` states, each unstated part egui's own (spec §10
     /// rule 0): at least `tab.tab(NONE).min_size[0]` wide, else no least width, as egui's
     /// `Button` has none (egui-0.37.0 `src/widgets/button.rs:67`); the tabs the scope's
     /// `item_spacing.x` apart, `tab.item_gap` where stated, else the layout's own; the line of
-    /// [`next_indicator_line`]; the flares of [`next_outward_radius`] in the scope's selected
-    /// tab's fill and outline, the ones the connector writes from `tab.tab(SELECTED)`; the
-    /// labels [`next_lined`]. Without a 0.8.0 theme, egui's own tabs.
+    /// [`next_indicator_line`]; the flares of [`next_outward_radius`], which [`tab_bar`] paints in
+    /// the scope's selected tab's fill and outline, the ones the connector writes from
+    /// `tab.tab(SELECTED)`; the labels [`next_lined`]. Without a 0.8.0 theme, egui's own tabs.
     pub(crate) fn next(r: Option<&native_theme::next::ResolvedTheme>) -> Self {
         Self {
             min_width: r
                 .and_then(|r| r.tab.tab(native_theme::next::WidgetState::NONE).min_size[0])
                 .unwrap_or_default(),
-            gap: None,
             gap_unstated: r.is_none_or(|r| r.tab.item_gap.is_none()).then_some(
                 "not stated by the theme (tab.item_gap): egui's own, the gap between the \
                  widgets of a row (item_spacing.x)",
             ),
             line: r.and_then(next_indicator_line),
             flare: r.and_then(next_outward_radius),
-            flare_paint: None,
             label: |ui, text| next_lined(ui, text, egui::TextStyle::Button),
         }
     }
 }
 
-/// [`indicator_line`] on the 0.8.0 theme `r`: the selected tab's indicator,
+/// The selected tab's line on the 0.8.0 theme `r`: the selected tab's indicator,
 /// `tab.indicator(SELECTED)`, its `fill` the line's colour and its exact height (`min_size[1]`)
 /// its thickness, a positive one, along `tab.indicator_side` (spec §5, notes to the table), where
 /// the theme states all three; else no line, as egui's `Button` draws none.
@@ -1912,18 +1811,11 @@ fn tab_indicator(
     ui.painter().rect_filled(rect, radius, colour);
 }
 
-/// `tab.active_outward_corner_radius`, the radius the selected tab's bottom corners curve out
-/// by into the bar (docs/platform-facts.md §2.11, WinUI 3's `TabView`), where the theme states
-/// a positive one: [`tab_bar`] draws the flares for it and the Basic page's column rule makes
-/// room for them. `None` where it draws none: unstated, 0, or not a finite length.
-pub(crate) fn outward_radius(t: &native_theme::theme::ResolvedTheme) -> Option<f32> {
-    t.tab
-        .active_outward_corner_radius
-        .filter(|r| r.is_finite() && *r > 0.0)
-}
-
-/// [`outward_radius`] on the installed 0.8.0 theme `r`: `tab.active_outward_corner_radius`
-/// where it states a positive, finite one, else `None`.
+/// `tab.active_outward_corner_radius` of the installed 0.8.0 theme `r`, the radius the selected
+/// tab's bottom corners curve out by into the bar (docs/platform-facts.md §2.11, WinUI 3's
+/// `TabView`), where it states a positive, finite one: [`tab_bar`] draws the flares for it and
+/// the Basic page's column rule makes room for them. `None` where it draws none: unstated, 0,
+/// or not a finite length.
 pub(crate) fn next_outward_radius(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
     r.tab
         .active_outward_corner_radius
@@ -1932,9 +1824,11 @@ pub(crate) fn next_outward_radius(r: &native_theme::next::ResolvedTheme) -> Opti
 
 /// The selected tab's outward corners, about its outer bounds `tab`, painted with `painter`
 /// after every tab of the row, so over a neighbour's fill, and within the row's clip; `fill` and
-/// `outline` the selected tab's ([`TabLook::flare_paint`]), `bottom_line` whether its line
-/// ([`TabLook::line`]) lies along its bottom edge. With `r` the radius and `w` the outline's
-/// width (`tab.border.line_width` on the 0.7.2 model): first a strip in `fill` over the
+/// `outline` the selected tab's, the tab scope's `Visuals::selection.bg_fill` and resting
+/// `bg_stroke`, as egui draws a selected button (egui-0.37.0
+/// `src/theme/default_style.rs:41-52`), `bottom_line` whether its line ([`TabLook::line`])
+/// lies along its bottom edge. With `r` the radius and `w` the outline's width: first a strip
+/// in `fill` over the
 /// tab's bottom edge between its side edges, `[x0 + w, x1 - w] x [y1 - w, y1]`, since egui's
 /// `Button` strokes all four sides alike, unless a bottom-side indicator covers that edge
 /// already; then a flare at each foot, in an `r` by `r` square at the tab's bottom set `w` in
@@ -2005,7 +1899,7 @@ fn tab_flares(
 }
 
 /// Scrolls a scrolling tab row so its selected tab, the `index`th, drawn at `tab`, shows whole
-/// with its flares (`flare`, [`outward_radius`]), as the iced showcase's page tab strip scrolls
+/// with its flares (`flare`, [`next_outward_radius`]), as the iced showcase's page tab strip scrolls
 /// to the open tab (`reveal_open_tab`): once each time the selected tab, its place in the row or
 /// the row's view changes, which a page opened from anywhere (`--tab`, the palette, a menu, a
 /// click), a theme install and a window resize do, so a sideways scroll of the user's own stands
@@ -2047,8 +1941,8 @@ fn reveal_selected_tab(
 /// `tab.min_height`, the tab's padding and font (on the 0.8.0 model `tab.tab(<state>)`,
 /// `tab.label(<state>)`, `tab.bar(NONE)`) — at least `look`'s least width wide
 /// ([`TabLook::min_width`]), which egui's `Button` never reads from the style (connector spec
-/// §5.3, T18(a)), on a strip in `tab.bar_background`, the tabs `look`'s gap apart
-/// ([`TabLook::gap`]). `tab.border` is the selected tab's (docs/platform-facts.md §2.11: KDE
+/// §5.3, T18(a)), on a strip in `tab.bar_background`, the tabs the scope's `item_spacing.x`
+/// apart (`tab.item_gap` where stated). `tab.border` is the selected tab's (docs/platform-facts.md §2.11: KDE
 /// strokes the selected tab only, an unselected one with no pen; WinUI's selected tab alone has
 /// a border), so an unselected tab's stroke is set per call to the scope's width in no colour,
 /// which keeps every tab the size its padding gives; and a tab is rounded on its two top corners
@@ -2102,14 +1996,8 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     };
                     let no_pen =
                         egui::Stroke::new(idle.bg_stroke.width, egui::Color32::TRANSPARENT);
-                    // The flares in the selected tab's own fill and outline where `look` gives
-                    // none.
-                    let flare_paint = look
-                        .flare_paint
-                        .unwrap_or((ui.visuals().selection.bg_fill, idle.bg_stroke));
-                    if let Some(gap) = look.gap {
-                        ui.spacing_mut().item_spacing.x = gap;
-                    }
+                    // The flares in the selected tab's own fill and outline.
+                    let flare_paint = (ui.visuals().selection.bg_fill, idle.bg_stroke);
                     let gap = ui.spacing().item_spacing.x;
                     // Room for the end tabs' flares, inside the row's clip.
                     if let Some(r) = flare {
