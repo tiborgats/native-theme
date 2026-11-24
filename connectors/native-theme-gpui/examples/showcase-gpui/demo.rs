@@ -107,9 +107,7 @@ use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets;
-use native_theme_gpui::{
-    AccessibilityPreferences, ActiveNativeTheme as _, Native, geometry, variants,
-};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, variants};
 
 use crate::app::{Quit, ShowPage};
 use crate::elements::{self, ListedExt as _};
@@ -117,9 +115,9 @@ use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, next_native_
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
-    SampleListDelegate, SampleTableDelegate, contrast_held, native_value, next_geometry,
-    next_inactive, next_metric, next_resolved, next_value, refined, requested_preferences,
-    toolbar_variant, with_gap, with_padding,
+    SampleListDelegate, SampleTableDelegate, contrast_held, next_geometry, next_inactive,
+    next_metric, next_resolved, next_value, refined, requested_preferences, toolbar_variant,
+    with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -294,16 +292,7 @@ impl SampleIcon {
     }
 }
 
-/// `glyph` at the platform's size for the role the builder names; its own
-/// size before `apply` ran.
-fn native_sized_glyph(cx: &App, glyph: Glyph, role: fn(Native<'_>) -> Size) -> Glyph {
-    match native_value(cx, role) {
-        Some(size) => glyph.with_size(size),
-        None => glyph,
-    }
-}
-
-/// [`native_sized_glyph`] on the 0.8.0 model: `glyph` at the size the
+/// `glyph` at the size the
 /// `next::geometry` builder `role` gives the installed 0.8.0 theme; its own
 /// size where the theme states none, or before `next::apply` ran (spec §10,
 /// rule 0).
@@ -1584,11 +1573,10 @@ fn settings_tooltip(cx: &App, control: Stateful<Div>, text: SharedString) -> Sta
 /// What the palette Select's tooltip says: what is drawn from which model
 /// under a palette, which has no 0.7.2 equivalent.
 pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): \
-     gpui-component's theme colours and the connector's own widgets are drawn from the 0.8.0 \
-     theme with the palette. Still read from the 0.7.2 preset, which has no palettes, until \
-     their pages move to the 0.8.0 model: the button variant and rest fill the showcase gives \
-     the Basic page's default-button sample, and the showcase's own refinements on the pages \
-     and in the inspector not yet moved -- their colours, geometry and the inspector's text.";
+     gpui-component's theme colours, the connector's own widgets and the showcase's own \
+     refinements are drawn from the 0.8.0 theme with the palette. Still read from the 0.7.2 \
+     preset, which has no palettes: the colour the icons of the chosen icon theme are tinted \
+     with, and the fonts the status bar and the inspector name.";
 
 /// The palette Select over `state`, refined by `next::geometry::select`, as wide
 /// as the theme settings it is in: `none`, the theme's own colours, and the
@@ -10548,8 +10536,8 @@ pub(crate) fn gpui_icon(
         .debug_selector(move || id.to_string())
 }
 
-/// The icon contexts `defaults.icon_sizes` names, in the model's order, so
-/// the matches over them are exhaustive.
+/// The icon contexts `icons.sizes` names, in the model's order, so the
+/// matches over them are exhaustive.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum IconSizeContext {
     Toolbar,
@@ -10568,7 +10556,7 @@ impl IconSizeContext {
         Self::Panel,
     ];
 
-    /// The context's name, as `defaults.icon_sizes` spells its field.
+    /// The context's name, as `icons.sizes` spells its field.
     pub(crate) const fn name(self) -> &'static str {
         match self {
             Self::Toolbar => "toolbar",
@@ -10579,14 +10567,25 @@ impl IconSizeContext {
         }
     }
 
-    /// The builder that sizes an icon for the context.
-    pub(crate) fn builder(self) -> fn(Native<'_>) -> Size {
+    /// The `next::geometry` builder that sizes an icon for the context.
+    pub(crate) fn builder(self) -> fn(&native_theme::next::ResolvedTheme) -> next::Mapped<Size> {
         match self {
-            Self::Toolbar => geometry::icon_size_toolbar,
-            Self::Small => geometry::icon_size_small,
-            Self::Large => geometry::icon_size_large,
-            Self::Dialog => geometry::icon_size_dialog,
-            Self::Panel => geometry::icon_size_panel,
+            Self::Toolbar => next::geometry::icon_size_toolbar,
+            Self::Small => next::geometry::icon_size_small,
+            Self::Large => next::geometry::icon_size_large,
+            Self::Dialog => next::geometry::icon_size_dialog,
+            Self::Panel => next::geometry::icon_size_panel,
+        }
+    }
+
+    /// The home [`Self::builder`] reads (native-theme-gpui next/builders.rs).
+    pub(crate) const fn home(self) -> &'static str {
+        match self {
+            Self::Toolbar => "toolbar.button_icon(NONE).size",
+            Self::Small => "icons.sizes.small",
+            Self::Large => "icons.sizes.large",
+            Self::Dialog => "icons.sizes.dialog",
+            Self::Panel => "icons.sizes.panel",
         }
     }
 
@@ -10617,8 +10616,8 @@ impl IconSizeContext {
 
 /// A cell of the Icon Sizes section: `drawn`'s icon for `icon`, of the icon
 /// set named `set`, at the size `context` names, through that context's
-/// `geometry::icon_size_*` builder, above the context's name, under the
-/// theme installed as `preset`. Where the set
+/// `next::geometry::icon_size_*` builder, above the context's name, under
+/// the theme installed as `preset`. Where the set
 /// has no such icon the cell shows the name alone, never another set's
 /// icon.
 pub(crate) fn icon_size_cell(
@@ -10630,20 +10629,46 @@ pub(crate) fn icon_size_cell(
     set: &str,
     preset: &str,
 ) -> Stateful<Div> {
-    let size = match native_value(cx, context.builder()) {
+    let size = next_value(cx, context.builder()).and_then(Result::ok);
+    let px_size = match size {
         Some(Size::Size(size)) => Some(size.as_f32()),
         _ => None,
     };
-    let mut cell_info = info::icons::icon_size(cx.theme(), context, drawn, set, size, preset);
-    let icon =
-        chrome_glyph(drawn, icon).map(|icon| native_sized_glyph(cx, icon, context.builder()));
-    if icon.is_some() && size.is_some() {
-        cell_info = match context {
-            IconSizeContext::Toolbar => cell_info.geometry("icon_size_toolbar"),
-            IconSizeContext::Small => cell_info.geometry("icon_size_small"),
-            IconSizeContext::Large => cell_info.geometry("icon_size_large"),
-            IconSizeContext::Dialog => cell_info.geometry("icon_size_dialog"),
-            IconSizeContext::Panel => cell_info.geometry("icon_size_panel"),
+    let mut cell_info = info::icons::icon_size(cx.theme(), context, drawn, set, px_size, preset);
+    let icon = chrome_glyph(drawn, icon).map(|icon| glyph_at(icon, size));
+    if icon.is_some() {
+        let line = &mut cell_info;
+        let _ = match context {
+            IconSizeContext::Toolbar => info::next_native_value(
+                cx,
+                next::geometry::icon_size_toolbar,
+                "icon_size_toolbar",
+                line,
+            ),
+            IconSizeContext::Small => info::next_native_value(
+                cx,
+                next::geometry::icon_size_small,
+                "icon_size_small",
+                line,
+            ),
+            IconSizeContext::Large => info::next_native_value(
+                cx,
+                next::geometry::icon_size_large,
+                "icon_size_large",
+                line,
+            ),
+            IconSizeContext::Dialog => info::next_native_value(
+                cx,
+                next::geometry::icon_size_dialog,
+                "icon_size_dialog",
+                line,
+            ),
+            IconSizeContext::Panel => info::next_native_value(
+                cx,
+                next::geometry::icon_size_panel,
+                "icon_size_panel",
+                line,
+            ),
         };
     }
     let id = context.cell();

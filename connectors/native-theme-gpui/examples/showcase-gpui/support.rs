@@ -27,7 +27,7 @@ use native_theme::icons::{
 use native_theme::next::{Contrast, Palette, Preset};
 use native_theme_gpui::icons::{IconUse, load_gpui_icon, mask_drawable};
 use native_theme_gpui::next::Mapped;
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme, Native};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme};
 use native_theme_showcase_support::rows;
 
 use crate::demo::{self, BodyRow, DataTableRow};
@@ -234,20 +234,6 @@ apply_system_theme(&system, cx);
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// The 0.7.2 theme the theme settings' choice resolves to, beside the 0.8.0
-/// theme it installed (`Showcase::apply_theme_by_name`), for the pages not
-/// yet on the 0.8.0 model: `cx.native()` gives no 0.7.2 theme once a 0.8.0
-/// one is installed (`native_theme_gpui::next::apply`). Under a palette, which
-/// the 0.7.2 model has no equivalent of, it is the preset alone, in the
-/// scheme the palette resolved the 0.8.0 theme to.
-pub(crate) struct OldModel {
-    pub(crate) resolved: native_theme::theme::ResolvedTheme,
-    /// The preferences the theme was installed with.
-    pub(crate) accessibility: AccessibilityPreferences,
-}
-
-impl gpui::Global for OldModel {}
-
 /// The 0.8.0 theme of the installed choice resolved for an inactive window
 /// (`ThemeContext::window_active` false), beside the one installed, for the
 /// views of an inactive window (`native_theme_gpui::next::geometry::title_bar_inactive`).
@@ -345,22 +331,6 @@ pub(crate) fn palette_set_aside_text(palette: &str) -> String {
          drawn in its own High contrast colours; {palette} is laid over it again once High \
          contrast is off (docs/v0.8.0-spec.md §6, resolution step 1)"
     )
-}
-
-/// What the pages still on the 0.7.2 model read where they read
-/// `cx.native()`: the 0.7.2 theme installed, where one is
-/// (`native_theme_gpui::apply`), else the 0.7.2 theme of the choice the
-/// installed 0.8.0 theme was built from ([`OldModel`]); `None` before a
-/// theme was installed.
-pub(crate) fn old_native(cx: &App) -> Option<Native<'_>> {
-    cx.native().or_else(|| {
-        let installed = cx.native_theme()?;
-        installed.next_resolved(cx)?;
-        cx.try_global::<OldModel>().map(|old| Native {
-            resolved: &old.resolved,
-            accessibility: &old.accessibility,
-        })
-    })
 }
 
 /// The installed 0.8.0 theme for the styled theme's mode, or `None` before
@@ -543,12 +513,6 @@ pub(crate) fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> 
         Some(s) => widget.refine_style(s),
         None => widget,
     }
-}
-
-/// The value a size or length builder gives for the installed native theme,
-/// or `None` before `apply` ran (spec §9.3, §9.4).
-pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) -> Option<T> {
-    old_native(cx).map(build)
 }
 
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`

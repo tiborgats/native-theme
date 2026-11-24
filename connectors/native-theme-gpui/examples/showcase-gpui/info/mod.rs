@@ -168,18 +168,8 @@ impl WidgetInfo {
         });
         self
     }
-    /// The "geometry" line for the `geometry::` builder named `builder`,
-    /// from [`GEOMETRY_NOTES`]; the only way such a line is written.
-    pub fn geometry(self, builder: &'static str) -> Self {
-        let what = GEOMETRY_NOTES
-            .iter()
-            .find(|(name, _)| *name == builder)
-            .map_or("(no GEOMETRY_NOTES entry)", |(_, what)| *what);
-        self.config("geometry", format!("geometry::{builder}: {what}"))
-    }
     /// The "geometry" line for the `next::geometry` builder named `builder`,
-    /// from [`NEXT_GEOMETRY_NOTES`]; the only way such a line is written on
-    /// the 0.8.0 model.
+    /// from [`NEXT_GEOMETRY_NOTES`]; the only way such a line is written.
     pub fn next_geometry(self, builder: &'static str) -> Self {
         let what = NEXT_GEOMETRY_NOTES
             .iter()
@@ -237,27 +227,10 @@ impl WidgetInfo {
     }
 }
 
-/// What each `geometry::` builder carries, one entry per `pub fn` of
-/// `native-theme-gpui/src/geometry.rs` in its order, the value builders
-/// included, but for those whose every caller is on the 0.8.0 model, which
-/// [`NEXT_GEOMETRY_NOTES`] alone describes: `WidgetInfo::geometry` prints
-/// `geometry::<name>: <what>`. `every_geometry_builder_has_a_note` holds the
-/// two tables to geometry.rs.
-pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
-    (
-        "icon_size_toolbar",
-        "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
-    ),
-    ("icon_size_small", "defaults.icon_sizes.small"),
-    ("icon_size_large", "defaults.icon_sizes.large"),
-    ("icon_size_dialog", "defaults.icon_sizes.dialog"),
-    ("icon_size_panel", "defaults.icon_sizes.panel"),
-];
-
-/// [`GEOMETRY_NOTES`] for the builders of `native_theme_gpui::next::geometry`
-/// a widget on the 0.8.0 model records, each naming the homes its builder
-/// reads: `WidgetInfo::next_geometry` prints `geometry::<name>: <what>`. A
-/// builder whose every caller is on the 0.8.0 model has its entry here alone.
+/// What each builder of `native_theme_gpui::next::geometry` a widget records
+/// carries, the value builders included, each naming the homes its builder
+/// reads: `WidgetInfo::next_geometry` prints `geometry::<name>: <what>`.
+/// `every_geometry_builder_has_a_note` holds the table to the builders.
 pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "widget_gap",
@@ -392,6 +365,7 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     ("spinner_size", "spinner.diameter"),
     ("icon_size_large", "icons.sizes.large"),
+    ("icon_size_panel", "icons.sizes.panel"),
     (
         "tooltip",
         "the padding sides tooltip.panel states, its corner radius, tooltip.text's font — including its colour, which upstream would otherwise paint with popover_foreground —, typography.line_height_multiplier as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.panel.fill and tooltip.panel.stroke.color, which upstream would otherwise paint with the popover's fill and the window's border, the edge tooltip.panel.stroke.width wide in place of upstream's border_1, and shadow_md's two layers in colors.shadow where tooltip.panel states no shadows, no shadow where it states none, in place of upstream's shadow_md (gpui-component/tooltip.rs, Tooltip::render: bg, text_color, border_1, border_color and shadow_md, then refine_style)",

@@ -1007,7 +1007,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["icons.sizes.small"],
-        "gpui: geometry::icon_size_small sizes the icon (demo::native_sized)",
+        "gpui: next::geometry::icon_size_small sizes the icon",
     ),
     (
         "",

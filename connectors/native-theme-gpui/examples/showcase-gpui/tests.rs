@@ -27,7 +27,7 @@ use crate::info::{
     next_native_info, percent_text,
 };
 use crate::inspector::InspectorTab;
-use crate::support::{CAROUSEL_SLIDES, ChromeIcon, load_gpui_icons, native_value};
+use crate::support::{CAROUSEL_SLIDES, ChromeIcon, load_gpui_icons};
 use crate::{
     BASIC_INPUT_DISABLED, BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS,
     BUTTONS_LOADING_NO_ICON, BUTTONS_PRIMARY, BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART,
@@ -5264,8 +5264,8 @@ fn the_sidebar_samples_report_themselves(cx: &mut TestAppContext) {
 }
 
 /// The Icons page's Icon Sizes section shows an icon at every size
-/// `defaults.icon_sizes` names: each laid out at what its builder gives,
-/// and each reporting that builder and the field it reads. gpui-component's
+/// `icons.sizes` names: each laid out at what its `next::geometry` builder
+/// gives, and each reporting that builder and the home it reads. gpui-component's
 /// own set is chosen, so the icon is there to measure.
 ///
 /// A size platform-facts §2.1.8 documents none for on the installed native
@@ -5313,9 +5313,9 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
         show(&mut cx, &showcase, Page::Icons);
         for context in IconSizeContext::ALL {
             let size = read(&mut cx, &showcase, |_this, cx| {
-                native_value(cx, context.builder())
+                crate::support::next_value(cx, context.builder())
             });
-            let Some(gpui_component::Size::Size(size)) = size else {
+            let Some(Ok(gpui_component::Size::Size(size))) = size else {
                 panic!("{preset}: the {context:?} builder gives {size:?}, not a size");
             };
             let icon = bounds_of(&mut cx, context.icon_box());
@@ -5341,8 +5341,9 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
             assert!(
                 info.as_ref()
                     .and_then(|i| i.instance.iter().find(|n| n.what == "field"))
-                    .is_some_and(|f| f.text.contains(&format!("icon_sizes.{name}"))),
-                "{preset}: the {name} cell does not name its model field: {info:?}"
+                    .is_some_and(|f| f.text == context.home()),
+                "{preset}: the {name} cell does not name its home, {}: {info:?}",
+                context.home()
             );
             let marked = info
                 .as_ref()

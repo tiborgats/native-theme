@@ -2266,8 +2266,8 @@ impl Showcase {
     /// mode shown becomes the scheme it resolved to, the palette's where one
     /// is chosen. The 0.7.2 theme of the same choice -- the preset alone
     /// under a palette, which the 0.7.2 model has no equivalent of -- is
-    /// resolved in that scheme and kept beside it for the pages not yet on
-    /// the 0.8.0 model (`support::OldModel`), with the 0.8.0 theme resolved
+    /// resolved in that scheme for the icon choice and the fonts the
+    /// showcase keeps of it (`keep_system`, `keep_preset`), with the 0.8.0 theme resolved
     /// for an inactive window (`support::NextInactive`), and the preferences
     /// asked for, with why the theme's contrast is lower than they ask where
     /// it is and the palette High contrast set aside where it set one aside
@@ -2341,26 +2341,21 @@ impl Showcase {
         native_theme_gpui::next::apply(&resolved, cx)
             .map_err(|e| format!("Theme '{name}' cannot be installed: {e}"))?;
         self.is_dark = resolved.is_dark();
-        let old = match old {
+        match old {
             OldResolved::System(system) => self.keep_system(*system, window, cx),
             OldResolved::Preset(nt, shown) => self.keep_preset(&nt, *shown),
-        };
+        }
         cx.set_global(crate::support::Requested {
-            preferences: prefs.clone(),
+            preferences: prefs,
             contrast_held,
             palette_set_aside,
-        });
-        cx.set_global(crate::support::OldModel {
-            resolved: old,
-            accessibility: prefs,
         });
         cx.set_global(crate::support::NextInactive(inactive));
         Ok(())
     }
 
     /// Keep `system`, the 0.7.2 theme of the desktop's own installed in the
-    /// mode shown (`Showcase::system`), and what the showcase reads of it;
-    /// the variant of the mode shown is returned.
+    /// mode shown (`Showcase::system`), and what the showcase reads of it.
     ///
     /// The preset the pipeline settled on is what the preset switch's
     /// `default` row and the status bar name, so a change of it relabels
@@ -2370,9 +2365,9 @@ impl Showcase {
         system: native_theme::SystemTheme,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> native_theme::theme::ResolvedTheme {
+    ) {
         let mode = color_mode_of(self.is_dark);
-        let resolved = system.pick(mode).clone();
+        let resolved = system.pick(mode);
         self.original_font = resolved.defaults.font.clone();
         self.original_mono_font = resolved.defaults.mono_font.clone();
         // The mode shown's own variant's: `system.icon_theme` is the one of
@@ -2400,17 +2395,16 @@ impl Showcase {
             });
         }
         self.system = Some(system);
-        resolved
     }
 
     /// Keep what the showcase reads of `nt`, the 0.7.2 theme of a preset,
-    /// installed as `r`, its variant of the mode shown, which is returned.
+    /// installed as `r`, its variant of the mode shown.
     fn keep_preset(
         &mut self,
         #[cfg_attr(not(feature = "svg-rasterize"), allow(unused_variables))]
         nt: &native_theme::theme::Theme,
         r: native_theme::Resolved,
-    ) -> native_theme::theme::ResolvedTheme {
+    ) {
         self.has_toml_icon_theme = r.icon_theme_explicit;
         self.current_icon_set = r.icon_set;
         self.current_icon_theme = r.icon_theme.map(Cow::into_owned);
@@ -2430,7 +2424,6 @@ impl Showcase {
         }
         self.original_font = r.variant.defaults.font.clone();
         self.original_mono_font = r.variant.defaults.mono_font.clone();
-        r.variant
     }
 
     /// Install the theme of `name`: `default`, the desktop's own, or a
