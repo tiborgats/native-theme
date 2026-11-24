@@ -2633,3 +2633,62 @@ fn a_progress_bar_keeps_iceds_own_per_property() -> TestResult {
     }
     Ok(())
 }
+
+/// The scrollable keeps iced's own scrollable's look per property (spec
+/// §10, rule 0), in a view with the focus and in one without: with the
+/// scroller's fill at rest unstated, iced's own scroller and the theme's
+/// rail; with the rail's fill unstated, iced's own rail and the theme's
+/// scroller. The pointer is over the view, not a scroller, which shows a
+/// floating bar at rest.
+#[test]
+fn a_scrollable_keeps_iceds_own_per_property() -> TestResult {
+    use crate::styles::{ScrollbarSource, scrollable_from};
+    use iced_widget::scrollable::{Status, default};
+    let over_the_view = Status::Hovered {
+        is_horizontal_scrollbar_hovered: false,
+        is_vertical_scrollbar_hovered: false,
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    let at_rest = Status::Active {
+        is_horizontal_scrollbar_disabled: false,
+        is_vertical_scrollbar_disabled: false,
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let own = default(&theme, over_the_view);
+        let own_scroller = default(&theme, at_rest).vertical_rail.scroller.background;
+        for view in [WidgetState::NONE, WidgetState::UNFOCUSED_VIEW] {
+            let source = super::scrollbar_source(&r, view)?;
+            let at = |source: &ScrollbarSource| scrollable_from(source)(&theme, over_the_view);
+            let stated = at(&source);
+
+            let s = at(&ScrollbarSource {
+                thumb: None,
+                ..source
+            });
+            assert_eq!(
+                s.vertical_rail.scroller.background, own_scroller,
+                "{preset:?} {view:?} scroller"
+            );
+            assert_eq!(
+                s.vertical_rail.background, stated.vertical_rail.background,
+                "{preset:?} {view:?} rail"
+            );
+
+            let s = at(&ScrollbarSource {
+                track: None,
+                ..source
+            });
+            assert_eq!(
+                s.vertical_rail.background, own.vertical_rail.background,
+                "{preset:?} {view:?} rail"
+            );
+            assert_eq!(
+                s.vertical_rail.scroller.background, stated.vertical_rail.scroller.background,
+                "{preset:?} {view:?} scroller"
+            );
+        }
+    }
+    Ok(())
+}

@@ -3271,8 +3271,11 @@ pub fn scrollable(
 /// whether the bar floats.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ScrollbarSource {
-    pub track: Color,
-    pub thumb: Color,
+    /// The rail's fill and the scroller's at rest: each `None` where the
+    /// theme leaves it unstated, iced's own scrollable's (spec §10, rule 0);
+    /// the 0.7.2 model states each.
+    pub track: Option<Color>,
+    pub thumb: Option<Color>,
     /// The scroller under the pointer; `None` where the theme states nothing
     /// for the hovered thumb, iced's own then (spec §2, `from_state`).
     pub hovered_thumb: Option<Color>,
@@ -3300,8 +3303,8 @@ impl ScrollbarSource {
         let s = &resolved.scrollbar;
         let hovered = to_color(s.thumb_hover_color);
         Self {
-            track: to_color(s.track_color),
-            thumb: to_color(s.thumb_color),
+            track: Some(to_color(s.track_color)),
+            thumb: Some(to_color(s.thumb_color)),
             hovered_thumb: Some(hovered),
             dragged_thumb: Some(s.thumb_active_color.map_or(hovered, to_color)),
             overlay_mode: s.overlay_mode,
@@ -3339,7 +3342,7 @@ impl ScrollbarSource {
                     ..Line::outside(color)
                 };
                 Self {
-                    thumb,
+                    thumb: Some(thumb),
                     thumb_edge: Some((width, line(rest))),
                     thumb_radius: Some(pill()),
                     hovered_thumb_line: Some(line(hovered)),
@@ -3361,7 +3364,7 @@ pub(crate) fn scrollable_from(
     use iced_widget::scrollable::{AutoScroll, Rail, Scroller, Status, Style};
 
     let track = s.track;
-    let thumb = Background::Color(s.thumb);
+    let thumb = s.thumb.map(Background::Color);
     let hovered_thumb = s.hovered_thumb.map(Background::Color);
     let dragged_thumb = s.dragged_thumb.map(Background::Color);
     let thumb_edge = s.thumb_edge;
@@ -3380,7 +3383,14 @@ pub(crate) fn scrollable_from(
     move |theme, status| {
         let iced = iced_widget::scrollable::default(theme, status);
         let shown = !(floats && matches!(status, Status::Active { .. }));
-        let rail = if shown { track } else { Color::TRANSPARENT };
+        // A rail the theme leaves unstated is iced's own (spec §10, rule 0).
+        let rail = |own: Option<Background>| {
+            if shown {
+                track.map(Background::Color).or(own)
+            } else {
+                Some(Background::Color(Color::TRANSPARENT))
+            }
+        };
         // Which scroller the pointer is on decides that axis alone. The
         // disabled flags are named and ignored: an upstream addition to the
         // status then fails to compile here rather than falling into a `..`.
@@ -3403,6 +3413,9 @@ pub(crate) fn scrollable_from(
         let scroller = |axis: fn(&Style) -> Scroller,
                         state: Option<(Option<Background>, Option<Line>)>| {
             let (rest, now) = (axis(&rest), axis(&iced));
+            // A scroller the theme leaves unstated at rest is iced's own at
+            // rest (spec §10, rule 0).
+            let thumb = thumb.unwrap_or(rest.background);
             let outline = Outline {
                 line: thumb_edge.map_or(Line::outside(rest.border.color), |(_, line)| line),
                 width: thumb_edge.map_or(rest.border.width, |(width, _)| width),
@@ -3474,12 +3487,12 @@ pub(crate) fn scrollable_from(
                 snap: iced.container.snap,
             },
             vertical_rail: Rail {
-                background: Some(Background::Color(rail)),
+                background: rail(iced.vertical_rail.background),
                 border: iced.vertical_rail.border,
                 scroller: vertical,
             },
             horizontal_rail: Rail {
-                background: Some(Background::Color(rail)),
+                background: rail(iced.horizontal_rail.background),
                 border: iced.horizontal_rail.border,
                 scroller: horizontal,
             },

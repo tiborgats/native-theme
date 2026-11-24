@@ -1001,27 +1001,30 @@ fn slider_source(r: &ResolvedTheme, orientation: Orientation) -> Mapped<SliderSo
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no rail or thumb fill, or a
-/// stroke or corners iced cannot take.
+/// [`super::Unmapped`] where the theme states a fill, a stroke or corners
+/// iced cannot take; a rail or scroller fill at rest it leaves unstated is
+/// iced's own scrollable's (spec §10, rule 0).
 pub fn scrollable(
     r: &ResolvedTheme,
     view: WidgetState,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>,
 > {
+    Ok(old::scrollable_from(&scrollbar_source(r, view)?))
+}
+
+/// [`ScrollbarSource`] of the 0.8.0 model, in the view `view` says.
+fn scrollbar_source(r: &ResolvedTheme, view: WidgetState) -> Mapped<ScrollbarSource> {
     let s = &r.scrollbar;
-    let (rest, fill_home, stroke_home, corners_home) = if view.contains(WidgetState::UNFOCUSED_VIEW)
-    {
+    let (rest, stroke_home, corners_home) = if view.contains(WidgetState::UNFOCUSED_VIEW) {
         (
             WidgetState::UNFOCUSED_VIEW,
-            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
             "scrollbar.thumb(UNFOCUSED_VIEW).stroke",
             "scrollbar.thumb(UNFOCUSED_VIEW).corners",
         )
     } else {
         (
             WidgetState::NONE,
-            "scrollbar.thumb(NONE).fill",
             "scrollbar.thumb(NONE).stroke",
             "scrollbar.thumb(NONE).corners",
         )
@@ -1029,9 +1032,9 @@ pub fn scrollable(
     let thumb = s.thumb(rest);
     let hover = s.thumb(WidgetState::HOVER);
     let pressed = s.thumb(WidgetState::PRESSED);
-    Ok(old::scrollable_from(&ScrollbarSource {
-        track: fill(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
-        thumb: fill(&thumb, fill_home)?,
+    Ok(ScrollbarSource {
+        track: fill_of(&s.track(WidgetState::NONE)),
+        thumb: fill_of(&thumb),
         hovered_thumb: state_fill(&hover, "scrollbar.thumb(HOVER).fill")?,
         dragged_thumb: state_fill(&pressed, "scrollbar.thumb(PRESSED).fill")?,
         overlay_mode: s.overlay_mode,
@@ -1039,7 +1042,7 @@ pub fn scrollable(
         thumb_radius: radius_or_iced(&thumb, corners_home)?.map(Radius::new),
         hovered_thumb_line: state_line(&hover, "scrollbar.thumb(HOVER).stroke.color")?,
         dragged_thumb_line: state_line(&pressed, "scrollbar.thumb(PRESSED).stroke.color")?,
-    }))
+    })
 }
 
 /// [`crate::styles::scrollbar`]: the groove's and the thumb's thickness
