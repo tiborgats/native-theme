@@ -3077,9 +3077,12 @@ pub(crate) fn windows_cases() -> Vec<(
     // `SystemColorHighlightTextColorBrush` (Button_themeresources.xaml:79-80), lettered
     // `SystemControlHighlightBaseHighBrush`, the highlight (:83-84; generic.xaml:2069), and a
     // disabled one's label, `SystemControlDisabledBaseMediumLowBrush`, the grey
-    // text (Button_themeresources.xaml:85; generic.xaml:2026); a hovered and a pressed toolbar
-    // button, `SystemControlHighlightListLowBrush` / `…ListMediumBrush`, the highlight
-    // (AppBarButton_themeresources.xaml:41-42; generic.xaml:2079-2080).
+    // text (Button_themeresources.xaml:85; generic.xaml:2026); a button's outline,
+    // `SystemControlForegroundTransparentBrush`, the button text (Button_themeresources.xaml:86;
+    // generic.xaml:2054), hovered `SystemColorHighlightColorBrush` and pressed
+    // `SystemColorHighlightTextColorBrush` (Button_themeresources.xaml:87-88); a hovered and a
+    // pressed toolbar button, `SystemControlHighlightListLowBrush` / `…ListMediumBrush`, the
+    // highlight (AppBarButton_themeresources.xaml:41-42; generic.xaml:2079-2080).
     const HIGH_CONTRAST: &[&str] = &[
         "button.hover_background",
         "button.hover_text_color",
@@ -3087,6 +3090,7 @@ pub(crate) fn windows_cases() -> Vec<(
         "button.disabled_text_color",
         "button.active_background",
         "button.hover_border_color",
+        "button.border.color",
         "checkbox.checked_background",
         "checkbox.indicator_color",
         "checkbox.hover_background",

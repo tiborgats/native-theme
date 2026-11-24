@@ -323,7 +323,7 @@
         "fill": "#030303",
         "stroke": {
           "width": 1.0,
-          "color": "#020202",
+          "color": "#040404",
           "align": "outside"
         },
         "corners": 4.0,
@@ -363,7 +363,7 @@
             "fill": "#060606",
             "stroke": {
               "width": 1.0,
-              "color": "#050505",
+              "color": "#060606",
               "align": "outside"
             }
           }
@@ -375,7 +375,7 @@
           "body": {
             "stroke": {
               "width": 1.0,
-              "color": "#020202",
+              "color": "#050505",
               "align": "outside"
             }
           }

@@ -2307,8 +2307,10 @@ fn sized(mut label: TextStyle, size: FontSize, units: FontUnits) -> TextStyle {
 /// (0.7.2: `primary_text_color` is `defaults.accent_text_color` where
 /// unstated). Its label is the window's text, pressed the muted text, checked
 /// the accent's text, disabled the disabled text. Under high contrast the
-/// fill is the button face and the label the button text ([`HighContrast`]),
-/// hovered and pressed the highlight text behind the highlight.
+/// fill is the button face and the label and the outline the button text
+/// ([`HighContrast`]), hovered and pressed the highlight text behind the
+/// highlight, the outline hovered the highlight and pressed the highlight
+/// text.
 /// The flat variant is WinUI's subtle button, which has no checked form:
 /// `SubtleButtonStyle` styles a `Button` (`TargetType="Button"`,
 /// `Button_themeresources.xaml:297` at microsoft-ui-xaml 8463f45), which
@@ -2335,12 +2337,14 @@ fn button(
             shape: None,
         })
     };
+    // Under high contrast the outline is ButtonBorderBrush = SystemControlForegroundTransparentBrush
+    // (Button_themeresources.xaml:86 at microsoft-ui-xaml 8463f45), there SystemColorButtonTextColor
+    // (generic.xaml:2054 at 8463f45), the button text, not the window text the default border is.
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
-            roles
-                .window
-                .border
+            hc.button_text
+                .or(roles.window.border)
                 .map(|color| outside_stroke(layout.border_width, color)),
         )
         .base([
@@ -2366,24 +2370,27 @@ fn button(
         )
         // Pressed, the outline flat ControlStrokeColorDefault: ButtonBorderBrushPressed =
         // ControlStrokeColorDefaultBrush (Button_themeresources.xaml:138, :40, Pressed state
-        // :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45).
+        // :200-201; Common_themeresources_any.xaml:243, :39 at microsoft-ui-xaml 8463f45); under
+        // high contrast SystemColorHighlightTextColorBrush (Button_themeresources.xaml:88).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [
                 fill(hc.highlight_text.unwrap_or(c.control_fill_pressed)),
-                outside_stroke(layout.border_width, c.control_stroke),
+                outside_stroke(
+                    layout.border_width,
+                    hc.highlight_text.unwrap_or(c.control_stroke),
+                ),
             ],
         )
         // Hovered, the outline as at rest: ButtonBorderBrushPointerOver is the rest brush
-        // (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45).
+        // (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45); under high contrast
+        // SystemColorHighlightColorBrush (:87).
         .rules(
-            roles
-                .window
-                .border
+            hc.highlight
+                .or(roles.window.border)
                 .map(|_| RuleSelector::on(WidgetState::HOVER)),
-            roles
-                .window
-                .border
+            hc.highlight
+                .or(roles.window.border)
                 .map(|color| outside_stroke(layout.border_width, color)),
         )
         .rule(
@@ -3636,9 +3643,11 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 /// height; its buttons' hovered and pressed layers (under high contrast
 /// `hc`'s highlight) and checked fill, their labels' hovered (under high
 /// contrast alone), pressed and disabled colours (under high contrast `hc`'s
-/// highlight text, and its grey text for the disabled one); under high
-/// contrast a checked button's label, and its fill and label hovered, pressed
-/// and disabled, as WinUI's checked toggle pairs them; icons at
+/// highlight text, and its grey text for the disabled one); a checked
+/// button's label in the accent's text, pressed and disabled in its pressed
+/// and disabled forms, its fill disabled the accent's disabled fill, and
+/// under high contrast its fill and label hovered, pressed and disabled, as
+/// WinUI's checked toggle pairs them; icons at
 /// the toolbar's size (0.7.2: `toolbar.icon_size` is
 /// `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(
@@ -3689,7 +3698,8 @@ fn toolbar(
         // SystemColorHighlightColorBrush (AppBarToggleButton_themeresources.xaml:74 at
         // microsoft-ui-xaml 8463f45), the accent's fill above; hovered and pressed
         // …CheckedPointerOver / …CheckedPressed = SystemColorHighlightTextColorBrush (:75-76),
-        // disabled …CheckedDisabled = SystemColorGrayTextColorBrush (:77).
+        // disabled …CheckedDisabled = SystemColorGrayTextColorBrush (:77), outside high contrast
+        // AccentFillColorDisabledBrush (:12).
         .rules(
             hc.highlight_text
                 .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER)),
@@ -3700,10 +3710,9 @@ fn toolbar(
                 .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED)),
             hc.highlight_text.map(fill),
         )
-        .rules(
-            hc.gray_text
-                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED)),
-            hc.gray_text.map(fill),
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED),
+            [fill(hc.gray_text.unwrap_or(c.accent_fill_disabled))],
         )
         .build();
     let button_icon = RuleBuilder::new(IconStyle::default())
@@ -3738,30 +3747,35 @@ fn toolbar(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(hc.gray_text.unwrap_or(c.disabled_text))],
         )
-        // Checked under high contrast, AppBarToggleButtonForegroundChecked =
-        // SystemColorHighlightTextColorBrush (AppBarToggleButton_themeresources.xaml:87 at
-        // microsoft-ui-xaml 8463f45), on the highlight; hovered and pressed …CheckedPointerOver /
-        // …CheckedPressed = SystemColorHighlightColorBrush (:88-89), on the highlight text;
-        // disabled …CheckedDisabled = SystemColorWindowColorBrush (:90), on the grey text.
-        .rules(
-            hc.highlight_text
-                .map(|_| RuleSelector::on(WidgetState::CHECKED)),
-            hc.highlight_text.map(TextProp::Color),
+        // Checked, AppBarToggleButtonForegroundChecked = TextOnAccentFillColorPrimaryBrush
+        // (AppBarToggleButton_themeresources.xaml:22, :152 at microsoft-ui-xaml 8463f45), the
+        // accent's text, hovered the same (:23, :153), pressed TextOnAccentFillColorSecondaryBrush
+        // (:24, :154; #80000000 / #B3FFFFFF, Common_themeresources_any.xaml:13, :217), disabled
+        // TextOnAccentFillColorDisabled (:25, :155; #87FFFFFF / #FFFFFF, :14, :218). Under high
+        // contrast SystemColorHighlightTextColorBrush (AppBarToggleButton_themeresources.xaml:87), on
+        // the highlight; hovered and pressed …CheckedPointerOver / …CheckedPressed =
+        // SystemColorHighlightColorBrush (:88-89), on the highlight text; disabled
+        // …CheckedDisabled = SystemColorWindowColorBrush (:90), on the grey text.
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [TextProp::Color(
+                hc.highlight_text.unwrap_or(roles.accent.foreground),
+            )],
         )
         .rules(
             hc.highlight
                 .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::HOVER)),
             hc.highlight.map(TextProp::Color),
         )
-        .rules(
-            hc.highlight
-                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED)),
-            hc.highlight.map(TextProp::Color),
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [TextProp::Color(
+                hc.highlight.unwrap_or(c.accent_text_secondary),
+            )],
         )
-        .rules(
-            hc.window
-                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED)),
-            hc.window.map(TextProp::Color),
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED),
+            [TextProp::Color(hc.window.unwrap_or(c.accent_text_disabled))],
         )
         .build();
     ToolbarWidget::new(

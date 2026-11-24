@@ -2094,6 +2094,15 @@
           "button": {
             "fill": "#4cc2ff"
           }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "button": {
+            "fill": "#ffffff28"
+          }
         }
       ]
     },
@@ -2131,6 +2140,32 @@
           ],
           "button_label": {
             "color": "#ffffff5d"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "button_label": {
+            "color": "#000000"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#00000080"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#ffffff87"
           }
         }
       ]
