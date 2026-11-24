@@ -17282,7 +17282,16 @@ fn slider_info(state: &State) -> String {
 /// The Widget Info of the Range page's progress bars.
 fn progress_bar_info(state: &State) -> String {
     let resolved = &state.current_resolved;
-    let bar_girth_s = format!("{:.0}px", resolved.progress_bar.track_height);
+    // The girth the page lays the bars out at, [`next_progress_girth`].
+    let next = state.next_shown();
+    let girth = next_progress_girth(next);
+    let bar_girth_s = match next.progress_bar.track(WidgetState::NONE).min_size[1] {
+        Some(_) => format!("{girth:.0}px, progress_bar.track(NONE).min_size[1]"),
+        None => format!(
+            "{girth:.0}px, iced's own ProgressBar::DEFAULT_GIRTH: \
+             progress_bar.track(NONE).min_size[1] unstated"
+        ),
+    };
     widget_tooltip(
         "Progress Bar",
         &style_paints(
@@ -17334,58 +17343,57 @@ fn vertical_slider_info(state: &State) -> String {
 }
 
 fn view_range(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let pb = &resolved.progress_bar;
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
+    let title =
+        |label: &'static str| text(label).next_text(next_section_title(next), &next.typography);
+    let caption = |content: &'static str| next_caption_text(state, content, None);
 
-    let header = section_header(
+    let header = next_section_header(
         "Range Widgets",
         "Slider, VerticalSlider, and ProgressBar",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
 
-    let horiz_slider =
-        hoverable(
-            UnlistedKey::Slider,
-            column![
-                text("Horizontal Slider").role(section_title(ts), resolved, a11y),
-                row![
-                    probe(
-                        probes::SLIDER,
-                        Fill,
-                        slider(0.0..=100.0, state.slider_value, Message::SliderChanged)
-                            .style(styles::slider(resolved))
-                            .width(Fill)
-                    ),
-                    text(format!("{:.1}", state.slider_value))
-                        .body(resolved, a11y)
-                        .width(Length::Fixed(50.0)),
-                ]
-                .spacing(gap.widget)
-                .align_y(iced::Center),
-                text("Drag to change value. This slider drives the first progress bar below.")
-                    .role(&ts.caption, resolved, a11y),
+    // The sliders' rails and handles are still `styles::slider`'s, the
+    // 0.7.2 theme's, which sizes them; their values in `typography.body`,
+    // `layout.widget_gap` from the slider, on the installed 0.8.0 theme.
+    let horiz_slider = hoverable(
+        UnlistedKey::Slider,
+        column![
+            title("Horizontal Slider"),
+            row![
+                probe(
+                    probes::SLIDER,
+                    Fill,
+                    slider(0.0..=100.0, state.slider_value, Message::SliderChanged)
+                        .style(styles::slider(resolved))
+                        .width(Fill)
+                ),
+                text(format!("{:.1}", state.slider_value))
+                    .next_body(next)
+                    .width(Length::Fixed(50.0)),
             ]
             .spacing(gap.widget)
-            .into(),
-        );
+            .align_y(iced::Center),
+            caption("Drag to change value. This slider drives the first progress bar below."),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
 
     let step_slider = hoverable(
         UnlistedKey::SteppedSlider,
         column![
-            text("Slider with Step (5-unit increments)").role(section_title(ts), resolved, a11y),
+            title("Slider with Step (5-unit increments)"),
             row![
                 slider(0.0..=100.0, state.slider_step, Message::StepSliderChanged)
                     .step(5.0_f32)
                     .style(styles::slider(resolved))
                     .width(Fill),
                 text(format!("{:.0}", state.slider_step))
-                    .body(resolved, a11y)
+                    .next_body(next)
                     .width(Length::Fixed(50.0)),
             ]
             .spacing(gap.widget)
@@ -17398,7 +17406,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     let vert_slider = hoverable(
         UnlistedKey::VerticalSlider,
         column![
-            text("Vertical Slider").role(section_title(ts), resolved, a11y),
+            title("Vertical Slider"),
             row![
                 probe(
                     probes::VERTICAL_SLIDER,
@@ -17411,9 +17419,8 @@ fn view_range(state: &State) -> Element<'_, Message> {
                     .center_x(Length::Fixed(60.0))
                 ),
                 column![
-                    text(format!("Value: {:.1}", state.vslider_value)).body(resolved, a11y),
-                    text("Vertical sliders are useful\nfor volume controls,\nequalizers, etc.")
-                        .role(&ts.caption, resolved, a11y),
+                    text(format!("Value: {:.1}", state.vslider_value)).next_body(next),
+                    caption("Vertical sliders are useful\nfor volume controls,\nequalizers, etc."),
                 ]
                 .spacing(gap.widget),
             ]
@@ -17423,41 +17430,47 @@ fn view_range(state: &State) -> Element<'_, Message> {
         .into(),
     );
 
+    // The progress bars as the Basic page's: [`next_progress_girth`] across,
+    // their colours still `styles::progress_bar`'s.
+    let girth = Length::Fixed(next_progress_girth(next));
     let progress = hoverable(
         UnlistedKey::ProgressBar,
         column![
-            text("Progress Bars").role(section_title(ts), resolved, a11y),
-            text("Driven by horizontal slider value:").body(resolved, a11y),
+            title("Progress Bars"),
+            text("Driven by horizontal slider value:").next_body(next),
             progress_bar(0.0..=100.0, state.slider_value)
-                .girth(Length::Fixed(pb.track_height))
+                .girth(girth)
                 .style(styles::progress_bar(resolved)),
-            text("Separate progress control:").body(resolved, a11y),
+            text("Separate progress control:").next_body(next),
             row![
                 slider(0.0..=100.0, state.progress_value, Message::ProgressChanged)
                     .style(styles::slider(resolved))
                     .width(Fill),
                 text(format!("{:.0}%", state.progress_value))
-                    .body(resolved, a11y)
+                    .next_body(next)
                     .width(Length::Fixed(50.0)),
             ]
             .spacing(gap.widget)
             .align_y(iced::Center),
             progress_bar(0.0..=100.0, state.progress_value)
-                .girth(Length::Fixed(pb.track_height))
+                .girth(girth)
                 .style(styles::progress_bar(resolved)),
         ]
         .spacing(gap.widget)
         .into(),
     );
 
+    // The rules between the groups `separator.thickness` thick, their
+    // colour still `styles::rule`'s.
+    let divider = || rule::horizontal(next.separator.thickness).style(styles::rule(resolved));
     column![
         header,
         horiz_slider,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        divider(),
         step_slider,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        divider(),
         vert_slider,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        divider(),
         progress,
     ]
     .spacing(gap.section)
@@ -28555,8 +28568,8 @@ mod tests {
     /// are `layout.widget_gap` apart ([`Gaps`]), none where it is unstated,
     /// as on the Basic page, where the showcase's own 12 px stood: under
     /// every bundled preset in both modes, the Buttons page's Click me!
-    /// button and its counter (the installed 0.8.0 theme's gap), the Range
-    /// page's slider and its value, and the Display page's first two
+    /// button and its counter and the Range page's slider and its value (the
+    /// installed 0.8.0 theme's gap), and the Display page's first two
     /// tooltip buttons (the 0.7.2 theme's).
     #[test]
     fn the_pages_rows_are_a_widget_gap_apart() {
@@ -28594,7 +28607,7 @@ mod tests {
             gaps.push((
                 "the slider and its value",
                 shown.x - (slider.x + slider.width),
-                gap,
+                next_gap,
             ));
             drop(ui);
 
@@ -29777,6 +29790,102 @@ mod tests {
                 if near(
                     title.y - (description.y + description.height),
                     13.0 + 4.0 + 19.0,
+                ) => {}
+            pair => faults.push(format!("the description and the first title: {pair:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// The Range page lays itself out on the installed 0.8.0 theme alone
+    /// ([`view_range`]): kde-breeze with, on the 0.8.0 theme only, a 13 px
+    /// progress bar girth, a body on a 23 px line, a 19 px caption on a
+    /// 29 px line, a 15 px widget gap, a 21 px section gap and a 4 px
+    /// separator lays the body texts out 23 tall, the caption 29 tall, the
+    /// first progress bar 13 tall between its two labels (each a widget gap
+    /// from it), the slider's value a widget gap past the slider, and the
+    /// first group's title 15 + 4 + 21 px under the header's description.
+    #[test]
+    fn the_range_page_lays_out_on_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.progress_bar.rules]]\ntrack.min_size = [\"none\", 13.0]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Range);
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.typography.body.line_height = 23.0;
+            r.typography.body.stated = r.typography.body.stated.union(TextStated::LINE_HEIGHT);
+            if let Some(caption) = r.typography.caption.as_mut() {
+                caption.size_px = 19.0;
+                caption.line_height = 29.0;
+                caption.stated = caption.stated.union(TextStated::LINE_HEIGHT);
+            }
+            r.layout.widget_gap = Some(15.0);
+            r.layout.section_gap = Some(21.0);
+            r.separator.thickness = 4.0;
+        });
+        let next = state.next_shown();
+        let old = &state.current_resolved;
+        if native_theme_iced::next::text_scale(next)
+            .caption
+            .line_height
+            != 29.0
+            || next_progress_girth(next) != 13.0
+            || old.progress_bar.track_height == 13.0
+            || old.defaults.font.size * old.defaults.line_height == 23.0
+            || state.layout.widget_gap == Some(15.0)
+            || state.layout.section_gap == Some(21.0)
+            || old.separator.line_width == 4.0
+        {
+            return Err("the splice states 0.7.2's sizes, or no caption".into());
+        }
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let mut ui = interface(&state);
+        let slider = probe_bounds(&mut ui, probes::SLIDER);
+        let found = texts(&mut ui);
+        drop(ui);
+        let at = |label: &str| {
+            found
+                .iter()
+                .find(|(content, _)| content.starts_with(label))
+                .map(|(_, bounds)| *bounds)
+        };
+        for (label, want) in [
+            ("Driven by horizontal slider value:", 23.0),
+            ("Separate progress control:", 23.0),
+            ("Drag to change value.", 29.0),
+        ] {
+            match at(label) {
+                Some(bounds) if near(bounds.height, want) => {}
+                bounds => faults.push(format!("{label:?}: {bounds:?}, not {want} tall")),
+            }
+        }
+        match (
+            at("Driven by horizontal slider value:"),
+            at("Separate progress control:"),
+        ) {
+            (Some(above), Some(below))
+                if near(below.y - (above.y + above.height), 15.0 + 13.0 + 15.0) => {}
+            pair => faults.push(format!("the first progress bar's labels: {pair:?}")),
+        }
+        let value = format!("{:.1}", state.slider_value);
+        match at(&value) {
+            Some(shown) if near(shown.x - (slider.x + slider.width), 15.0) => {}
+            shown => faults.push(format!("the slider's value {shown:?}, past {slider:?}")),
+        }
+        match (
+            at("Slider, VerticalSlider, and ProgressBar"),
+            at("Horizontal Slider"),
+        ) {
+            (Some(description), Some(title))
+                if near(
+                    title.y - (description.y + description.height),
+                    15.0 + 4.0 + 21.0,
                 ) => {}
             pair => faults.push(format!("the description and the first title: {pair:?}")),
         }
