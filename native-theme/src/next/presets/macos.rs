@@ -374,9 +374,11 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     selection_background: srgb8(0x0064_e1ff),
     // `defaults.selection_text_color`: 0.7.2 macos-monterey.toml (uncited)
     selection_foreground: srgb8(0xffff_ffff),
-    // `defaults.selection_inactive_background`: 0.7.2 macos-monterey.toml (uncited)
+    // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3),
+    // unemphasizedSelectedContentBackgroundColor, the drawn row measured on macOS 15 and 26
     selection_inactive_background: srgb8(0xdcdc_dcff),
-    // `defaults.selection_inactive_text_color`: 0.7.2 macos-monterey.toml (uncited)
+    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3), labelColor, the
+    // unemphasized row's label measured on macOS 15 and 26
     selection_inactive_foreground: srgb8(0x0000_00d8),
     // `defaults.text_selection_background`: 0.7.2 macos-monterey.toml (uncited)
     text_selection_background: srgb8(0xb3d7_ffff),
@@ -619,9 +621,11 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     selection_background: srgb8(0x0059_d1ff),
     // `defaults.selection_text_color`: 0.7.2 macos-monterey.toml (uncited)
     selection_foreground: srgb8(0xffff_ffff),
-    // `defaults.selection_inactive_background`: 0.7.2 macos-monterey.toml (uncited)
+    // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3),
+    // unemphasizedSelectedContentBackgroundColor, the drawn row measured on macOS 15 and 26
     selection_inactive_background: srgb8(0x4646_46ff),
-    // `defaults.selection_inactive_text_color`: 0.7.2 macos-monterey.toml (uncited)
+    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3), labelColor, the
+    // unemphasized row's label measured on macOS 15 and 26
     selection_inactive_foreground: srgb8(0xffff_ffd8),
     // `defaults.text_selection_background`: 0.7.2 macos-monterey.toml (uncited)
     text_selection_background: srgb8(0x3f63_8bff),
@@ -866,9 +870,11 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     selection_background: srgb8(0x0064_e1ff),
     // `defaults.selection_text_color`: 0.7.2 macos-tahoe.toml (uncited)
     selection_foreground: srgb8(0xffff_ffff),
-    // `defaults.selection_inactive_background`: 0.7.2 macos-tahoe.toml (uncited)
+    // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3),
+    // unemphasizedSelectedContentBackgroundColor, the drawn row measured on macOS 15 and 26
     selection_inactive_background: srgb8(0xdcdc_dcff),
-    // `defaults.selection_inactive_text_color`: 0.7.2 macos-tahoe.toml (uncited)
+    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3), labelColor, the
+    // unemphasized row's label measured on macOS 15 and 26
     selection_inactive_foreground: srgb8(0x0000_00d8),
     // `defaults.text_selection_background`: 0.7.2 macos-tahoe.toml (uncited)
     text_selection_background: srgb8(0xb3d7_ffff),
@@ -1102,9 +1108,11 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     selection_background: srgb8(0x0059_d1ff),
     // `defaults.selection_text_color`: 0.7.2 macos-tahoe.toml (uncited)
     selection_foreground: srgb8(0xffff_ffff),
-    // `defaults.selection_inactive_background`: 0.7.2 macos-tahoe.toml (uncited)
+    // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3),
+    // unemphasizedSelectedContentBackgroundColor, the drawn row measured on macOS 15 and 26
     selection_inactive_background: srgb8(0x4646_46ff),
-    // `defaults.selection_inactive_text_color`: 0.7.2 macos-tahoe.toml (uncited)
+    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3), labelColor, the
+    // unemphasized row's label measured on macOS 15 and 26
     selection_inactive_foreground: srgb8(0xffff_ffd8),
     // `defaults.text_selection_background`: 0.7.2 macos-tahoe.toml (uncited)
     text_selection_background: srgb8(0x3f63_8bff),
@@ -3152,6 +3160,13 @@ fn list(
         .base(padding)
         .rule(alternate, [fill(c.list_alternate)])
         .build();
+    // A selected row in a view without the focus is drawn unemphasized: in a window whose table is
+    // not the first responder the row is filled with `unemphasizedSelectedContentBackgroundColor`
+    // and its label is `labelColor`, as outside the selection, #dcdcdc / #464646 under #000000d8 /
+    // #ffffffd8, measured on macOS 15 and 26 (platform-facts.md (§2.1.3),
+    // `selection_inactive_background` and `selection_inactive_text_color`); stated for
+    // `SELECTED | UNFOCUSED_VIEW` (spec §3, §5), after the selection's rules.
+    let unfocused_selected = WidgetState::SELECTED.union(WidgetState::UNFOCUSED_VIEW);
     // Hovered, transparent: the hovered row differs from its normal capture in 0 pixels; pressed,
     // the selection's, as the mouse-down selects the row (os-probe run 45198750893, macOS 15 and
     // 26, `*.hovered.table_row`, `*.pressed.table_row` `fill` #0064e1 / #0059d1).
@@ -3168,11 +3183,25 @@ fn list(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
         )
+        .rules(
+            roles
+                .selection
+                .unfocused_background
+                .map(|_| RuleSelector::on(unfocused_selected)),
+            roles.selection.unfocused_background.map(fill),
+        )
         .build();
     let item_label = RuleBuilder::new(label(&typography.body, roles.window.foreground))
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
+        )
+        .rules(
+            roles
+                .selection
+                .unfocused_foreground
+                .map(|_| RuleSelector::on(unfocused_selected)),
+            roles.selection.unfocused_foreground.map(TextProp::Color),
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),

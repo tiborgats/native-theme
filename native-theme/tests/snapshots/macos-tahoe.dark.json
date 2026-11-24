@@ -1448,6 +1448,15 @@
           "highlight": {
             "fill": "#0059d1"
           }
+        },
+        {
+          "states": [
+            "unfocused_view",
+            "selected"
+          ],
+          "highlight": {
+            "fill": "#464646"
+          }
         }
       ]
     },
@@ -1469,6 +1478,15 @@
           ],
           "item_label": {
             "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "unfocused_view",
+            "selected"
+          ],
+          "item_label": {
+            "color": "#ffffffd8"
           }
         },
         {

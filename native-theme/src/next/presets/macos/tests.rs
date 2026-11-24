@@ -2,7 +2,7 @@ use super::*;
 
 use crate::next::motion::DialogEntranceStyle;
 use crate::next::preset::Theme;
-use crate::next::query::{ButtonQuery, ListQuery, MotionPreference};
+use crate::next::query::{ButtonQuery, ListQuery, ListVariant, MotionPreference};
 use crate::next::style::PartStated;
 use crate::next::window::WindowState;
 
@@ -1264,4 +1264,68 @@ fn the_text_field_states_its_own_focus_ring() -> TestResult {
         assert_eq!(theme.focus_ring.offset, -1.0, "{preset:?}");
     }
     Ok(())
+}
+
+/// A selected row of a list or a table in a view without the focus is drawn
+/// unemphasized (platform-facts.md (§2.1.3), `selection_inactive_background`
+/// and `selection_inactive_text_color`): its highlight and label take the
+/// unfocused selection's pair, hovered too, while the focused view's
+/// selection keeps the emphasized pair and a disabled row its disabled text.
+#[test]
+fn an_unfocused_views_selected_row_is_unemphasized() {
+    let unfocused = WidgetState::SELECTED.union(WidgetState::UNFOCUSED_VIEW);
+    for (preset, theme) in every_theme() {
+        let scheme = theme.context.scheme;
+        let (fill, text) = match scheme {
+            Scheme::Dark => (srgb8(0x4646_46ff), srgb8(0xffff_ffd8)),
+            _ => (srgb8(0xdcdc_dcff), srgb8(0x0000_00d8)),
+        };
+        assert_eq!(
+            theme.colors.selection.unfocused_background,
+            Some(fill),
+            "{preset:?} {scheme:?}"
+        );
+        assert_eq!(
+            theme.colors.selection.unfocused_foreground,
+            Some(text),
+            "{preset:?} {scheme:?}"
+        );
+        for query in [
+            ListQuery::new(WidgetState::NONE),
+            ListQuery::from(ListVariant::Table),
+        ] {
+            for state in [unfocused, unfocused.union(WidgetState::HOVER)] {
+                let query = query.state(state);
+                assert_eq!(
+                    solid(&theme.list.highlight(query).fill),
+                    Some(fill),
+                    "{preset:?} {scheme:?} {state:?}"
+                );
+                assert_eq!(
+                    theme.list.item_label(query).color,
+                    text,
+                    "{preset:?} {scheme:?} {state:?}"
+                );
+            }
+        }
+        let selected = ListQuery::new(WidgetState::SELECTED);
+        assert_eq!(
+            solid(&theme.list.highlight(selected).fill),
+            Some(theme.colors.selection.background),
+            "{preset:?} {scheme:?}"
+        );
+        assert_eq!(
+            theme.list.item_label(selected).color,
+            theme.colors.selection.foreground,
+            "{preset:?} {scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .list
+                .item_label(ListQuery::new(unfocused.union(WidgetState::DISABLED)))
+                .color,
+            theme.colors.disabled_text,
+            "{preset:?} {scheme:?}"
+        );
+    }
 }
