@@ -12712,10 +12712,12 @@ fn widget_tooltip(
     s
 }
 
-/// Like [`widget_tooltip`] but appends the active theme font settings: the
-/// sizes text is drawn at, the theme's times the OS text-scaling factor, with
-/// the theme's own beside them where the factor is not 1, as the Display
-/// page's font line gives them.
+/// Like [`widget_tooltip`] but appends the installed 0.8.0 theme's fonts,
+/// `typography.body` and `typography.monospace`, as the Display page's font
+/// line gives them: each family as iced draws it ([`next_family_drawing`])
+/// at the size the theme resolved, the OS text-scaling factor already
+/// applied, with the size its source states beside it where the factor is
+/// not 1.
 fn widget_tooltip_themed(
     state: &State,
     name: &str,
@@ -12724,31 +12726,25 @@ fn widget_tooltip_themed(
     not_themeable: &[(&str, &str)],
 ) -> String {
     let mut s = widget_tooltip(name, colors, config, not_themeable);
-    let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
-    let size = |drawn: f32, stated: f32| {
-        if drawn == stated {
-            format!("{stated:.0}px")
+    let next = state.next_shown();
+    let scale = next.context.text_scale;
+    let size = |style: &TextStyle| {
+        if scale == 1.0 {
+            px_text(style.size_px)
         } else {
             format!(
-                "{drawn:.1}px (OS text scaling {:.2}: the theme states {stated:.1}px)",
-                a11y.text_scaling_factor
+                "{} (OS text scaling {scale:.2}: the theme states {})",
+                px_text(style.size_px),
+                next_status::defined_size(style)
             )
         }
     };
-    let ff = family_label(
-        &resolved.defaults.font.family,
-        &font_drawn(&resolved.defaults.font),
-    );
-    let fs = size(
-        native_theme_iced::font_size(resolved, a11y),
-        resolved.defaults.font.size,
-    );
-    let mf = family_label(&resolved.defaults.mono_font.family, &mono_drawn(resolved));
-    let ms = size(
-        native_theme_iced::mono_font_size(resolved, a11y),
-        resolved.defaults.mono_font.size,
-    );
+    let family = |style: &TextStyle, mono: bool| {
+        next_family_drawing(next_font_from_database(style, mono).as_ref()).label(&style.family)
+    };
+    let (body, mono) = (&next.typography.body, &next.typography.monospace);
+    let (ff, fs) = (family(body, false), size(body));
+    let (mf, ms) = (family(mono, true), size(mono));
     s.push_str(&format!(
         "\nTheme fonts:\n  Font: {ff} {fs}\n  Mono: {mf} {ms}\n"
     ));
@@ -16017,8 +16013,9 @@ fn button_info(state: &State) -> String {
     use button::Status;
     let resolved = &state.current_resolved;
     let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
-    let label = font_row("button.font", &resolved.button.font);
-    let min_size = next_button_min_size_row(state.next_shown());
+    let next = state.next_shown();
+    let label = next_font_row("button.label(NONE)", &next.button.label(WidgetState::NONE));
+    let min_size = next_button_min_size_row(next);
     let config = [
         ("border-radius", radius_s.as_str()),
         ("min size", min_size.as_str()),
@@ -16324,7 +16321,10 @@ fn text_input_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let i = &resolved.input;
     let radius_s = format!("{:.0}px", i.border.corner_radius);
-    let text = font_row("input.font", &resolved.input.font);
+    let text = next_font_row(
+        "input.text(NONE)",
+        &state.next_shown().input.text(WidgetState::NONE),
+    );
     let config = [
         ("border-radius", radius_s.as_str()),
         (
@@ -16401,7 +16401,11 @@ fn secure_text_input_info(state: &State) -> String {
             ("border-radius", &radius_s),
             (
                 "text",
-                font_row("input.font", &resolved.input.font).as_str(),
+                next_font_row(
+                    "input.text(NONE)",
+                    &state.next_shown().input.text(WidgetState::NONE),
+                )
+                .as_str(),
             ),
         ],
         &[("mode", "password / secure — dots replace chars")],
@@ -16433,7 +16437,11 @@ fn text_editor_info(state: &State) -> String {
             ("border-radius", &area_radius_s),
             (
                 "text",
-                font_row("input.font", &resolved.input.font).as_str(),
+                next_font_row(
+                    "text_area.text(NONE)",
+                    &state.next_shown().text_area.text(WidgetState::NONE),
+                )
+                .as_str(),
             ),
         ],
         &[
@@ -16628,7 +16636,11 @@ fn checkbox_info(state: &State) -> String {
             ("box size", &indicator_width_s),
             (
                 "label",
-                font_row("checkbox.font", &resolved.checkbox.font).as_str(),
+                next_font_row(
+                    "checkbox.label(NONE)",
+                    &next.checkbox.label(WidgetState::NONE),
+                )
+                .as_str(),
             ),
         ],
         &[(
@@ -16749,7 +16761,10 @@ fn pick_list_info(state: &State) -> String {
     let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
     // The arrow [`next_arrow_handle`] draws, at [`next_arrow_size`].
     let arrow_size_s = format!("{:.0}px", next_arrow_size(state.next_shown()));
-    let rows = font_row("combo_box.font", &resolved.combo_box.font);
+    let rows = next_font_row(
+        "combo_box.label(NONE)",
+        &state.next_shown().combo_box.label(WidgetState::NONE),
+    );
     let mut colours = style_paints(
         state,
         "styles::pick_list",
@@ -16891,7 +16906,11 @@ fn combo_box_info(state: &State) -> String {
             ("border-radius", &input_radius_s),
             (
                 "text and menu rows",
-                font_row("combo_box.font", &resolved.combo_box.font).as_str(),
+                next_font_row(
+                    "combo_box.label(NONE)",
+                    &state.next_shown().combo_box.label(WidgetState::NONE),
+                )
+                .as_str(),
             ),
         ],
         &[
@@ -17500,7 +17519,21 @@ fn card_info(state: &State) -> String {
 fn tooltip_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let next = state.next_shown();
-    let tip_radius_s = format!("{:.0}px", resolved.tooltip.border.corner_radius);
+    // The bubble's corners as [`showcase_tooltip`] draws them: as
+    // `iced_next::styles::tooltip` rounds them where it maps the bubble, and
+    // iced's own tooltip's, `container::transparent`'s square ones, where it
+    // does not.
+    let tip_radius_s = match iced_next::styles::tooltip(next) {
+        Ok(style) => format!(
+            "{}, tooltip.panel.corners",
+            px_text(style(&Theme::Light).border.radius.top_left)
+        ),
+        Err(unmapped) => format!(
+            "0px, iced's own tooltip's square corners (container::transparent, \
+             container.rs:563-575): {} gives iced no value",
+            unmapped.home()
+        ),
+    };
     // What [`showcase_tooltip`] dresses the bubble in on the installed 0.8.0
     // theme: its tip container's maximum width, its padding
     // ([`next_tooltip_padding`]) and its show delay
@@ -17847,7 +17880,13 @@ const LAYOUT_GRID_COLUMNS: usize = 4;
 /// The Widget Info of the Layout page's grid.
 fn grid_info(state: &State) -> String {
     let d = &state.current_resolved.defaults;
-    let swatches = swatches_line(state);
+    let next = state.next_shown();
+    let swatches = next_swatches_line(next);
+    let border_width_s = format!("{}, layout.border_width", px_text(next.layout.border_width));
+    let labels_s = next_font_row(
+        next_caption_home(next),
+        native_theme_iced::next::text_scale(next).caption,
+    );
     let columns =
         format!("{LAYOUT_GRID_COLUMNS}, the showcase's own: the model states no column count");
     widget_tooltip(
@@ -17863,6 +17902,8 @@ fn grid_info(state: &State) -> String {
                 "each cell's own: the ResolvedDefaults colour its caption names",
             ),
             ("cell radius", "defaults.border.corner_radius"),
+            ("cell border width", border_width_s.as_str()),
+            ("hex and label", labels_s.as_str()),
         ],
         &[
             (
@@ -17936,73 +17977,93 @@ fn pane_grid_info(state: &State) -> String {
 
 /// The four columns' text widths on the Layout page's table: role, size,
 /// weight and line height, the showcase's own; each cell adds its padding
-/// ([`layout_cell_padding`]).
+/// ([`next_layout_cell_padding`]).
 const LAYOUT_TEXT_WIDTHS: [f32; 4] = [160.0, 90.0, 90.0, 110.0];
 
-/// The padding of a Layout page table cell on a side `list.border.padding`
-/// leaves unstated (spec §3.1): the showcase's own, 4 px above and below and
-/// 8 at the sides, as the theme states nothing there and iced's `table`
-/// pads its cells by nothing a cell draws (iced_widget 0.14.2
-/// `src/table.rs:259`, `:312`). The gpui showcase has no constant of this
-/// role. The Table's Widget Info prints the padding drawn.
-const LAYOUT_CELL_PAD: Padding = Padding {
-    top: 4.0,
-    right: 8.0,
-    bottom: 4.0,
-    left: 8.0,
+/// iced's own padding of a table's cells, `Table`'s `padding_x` of 10 px at
+/// the sides and `padding_y` of 5 px above and below (iced_widget 0.14.2
+/// `src/table.rs:140-141`): a Layout page table cell's padding on a side
+/// `list.row(NONE).padding` leaves unstated (spec §10, rule 0), held inside
+/// the cell ([`next_layout_cell_padding`]), where iced pads outside it.
+const ICED_TABLE_CELL_PAD: Padding = Padding {
+    top: 5.0,
+    right: 10.0,
+    bottom: 5.0,
+    left: 10.0,
 };
 
-/// The padding each cell of the Layout page's table holds: the list's row
-/// padding, `list.border.padding`, as the Basic table's cells hold it, and
-/// [`LAYOUT_CELL_PAD`] on a side it leaves unstated. The table draws no
-/// `list.border` line round its cells, only iced's separators between
+/// The padding each cell of the Layout page's table holds on the installed
+/// 0.8.0 theme: the sides the list's row padding, `list.row(NONE).padding`,
+/// states, as the Basic table's cells hold them, and iced's own,
+/// [`ICED_TABLE_CELL_PAD`], on a side it leaves unstated. The table draws
+/// no `list.row` stroke round its cells, only iced's separators between
 /// them, so no line width lies inside the padding.
-fn layout_cell_padding(resolved: &ResolvedTheme) -> Padding {
-    native_theme_iced::padding_or(&resolved.list.border.padding, LAYOUT_CELL_PAD)
+fn next_layout_cell_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    stated_sides(&r.list.row(WidgetState::NONE), ICED_TABLE_CELL_PAD)
 }
 
-/// The Layout page's table header cells' height where the theme states
-/// `list.header_height`: that height, holding the cell's padding
-/// ([`layout_cell_padding`]) and no rule, grown above a text scale of 1 to
-/// hold its label in `list.header_font` at `defaults.line_height`, as gpui's
-/// table rows grow (`rows::scaled_height`).
-fn layout_header_height(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Option<f32> {
-    native_theme_iced::list_header_height(resolved).map(|h| {
-        rows::scaled_height(
-            h,
-            a11y,
-            resolved.list.header_font.size,
-            resolved.defaults.line_height,
-            layout_cell_padding(resolved).y(),
-            0.0,
-        )
-    })
+/// The Layout page's table header cells' height on the installed 0.8.0
+/// theme, whose text styles hold the text scale already, where it states a
+/// header height: at least `list.header(NONE).min_size[1]`
+/// (`iced_next::list_header_height`), grown to hold the header's label,
+/// `list.header_label(NONE)`'s line box ([`next_line_box`]), inside the
+/// cell's padding `pad` and no rule, as the Basic table's header grows.
+/// `None` where the theme states no header height: the cell is then its
+/// label's line box and padding.
+fn next_layout_header_height(r: &native_theme::next::ResolvedTheme, pad: Padding) -> Option<f32> {
+    let content = next_line_box(&r.typography, &r.list.header_label(WidgetState::NONE)) + pad.y();
+    iced_next::list_header_height(r).map(|least| least.max(content))
+}
+
+/// [`weight_label`] of `style`, a text style of the installed 0.8.0 theme,
+/// by what iced draws it in ([`next_font_from_database`]); where it gives
+/// no font iced can draw, the weight with iced's own font,
+/// `Font::DEFAULT`, which [`Typeset::next_text`] leaves a text in.
+fn next_weight_label(style: &TextStyle) -> String {
+    match next_font_from_database(style, false) {
+        Some(drawn) => weight_label(style.weight, &drawn),
+        None => format!(
+            "{} (iced's own font drawn, Font::DEFAULT: the style gives none iced can draw)",
+            style.weight
+        ),
+    }
 }
 
 /// The Widget Info of the Layout page's table.
 fn table_info(state: &State) -> String {
     let resolved = &state.current_resolved;
-    let line_width_s = format!(
-        "{:.0}px, separator.thickness",
-        state.next_shown().separator.thickness
-    );
+    let next = state.next_shown();
+    let line_width_s = format!("{:.0}px, separator.thickness", next.separator.thickness);
+    let pad = next_layout_cell_padding(next);
     let header_height_s = match (
-        native_theme_iced::list_header_height(resolved),
-        layout_header_height(resolved, &state.accessibility),
+        iced_next::list_header_height(next),
+        next_layout_header_height(next, pad),
     ) {
         (Some(h), Some(drawn)) if drawn > h => format!(
-            "{drawn:.0}px: list.header_height {h:.0}px, grown to hold its text at the OS \
-             text scale"
+            "{}: list.header(NONE).min_size[1] {}, grown to hold its label's line box \
+             (next_line_box) and the cell padding",
+            px_text(drawn),
+            px_text(h)
         ),
-        (Some(h), _) => format!("{h:.0}px, list.header_height"),
-        (None, _) => "its text's and the cell padding's (list.header_height unstated)".to_string(),
+        (Some(h), _) => format!("{}, list.header(NONE).min_size[1]", px_text(h)),
+        (None, _) => "its label's line box (next_line_box) and the cell padding: \
+                      list.header(NONE).min_size[1] unstated"
+            .to_string(),
     };
     let l = &resolved.list;
-    let pad = layout_cell_padding(resolved);
     let pad_s = format!(
-        "top {}px, right {}px, bottom {}px, left {}px: list.border.padding, as the Basic \
-         table's cells; LAYOUT_CELL_PAD, the showcase's own, on a side it leaves unstated",
+        "top {}px, right {}px, bottom {}px, left {}px: list.row(NONE).padding's stated sides, \
+         as the Basic table's cells; iced's own table padding (ICED_TABLE_CELL_PAD, \
+         table.rs:140-141) on a side it leaves unstated",
         pad.top, pad.right, pad.bottom, pad.left
+    );
+    let header_s = next_font_row(
+        "list.header_label(NONE)",
+        &next.list.header_label(WidgetState::NONE),
+    );
+    let cells_s = next_font_row(
+        "list.item_label(NONE)",
+        &next.list.item_label(WidgetState::NONE),
     );
     widget_tooltip(
         "Table",
@@ -18036,14 +18097,14 @@ fn table_info(state: &State) -> String {
         &[
             ("separator_x / separator_y", &line_width_s),
             ("cell padding", &pad_s),
-            (
-                "header",
-                font_row("list.header_font", &resolved.list.header_font).as_str(),
-            ),
+            ("header", &header_s),
             ("header height", &header_height_s),
+            ("cells", &cells_s),
             (
-                "cells",
-                font_row("list.item_font", &resolved.list.item_font).as_str(),
+                "rows",
+                "native_theme_iced::next::text_scale's four roles: typography.caption, \
+                 .headline, .title1 and .display, typography.body where one is unstated; \
+                 each size and line box (next_line_box) as resolved, the text scale applied",
             ),
         ],
         &[
@@ -18066,9 +18127,7 @@ fn table_info(state: &State) -> String {
 /// Grid, PaneGrid and Table: the three `iced_widget` modules that arrange
 /// other widgets rather than paint a control.
 fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
-    let a11y = &state.accessibility;
     let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
     let next = state.next_shown();
     let typography = &next.typography;
     let gap = Gaps::from_next(&next.layout);
@@ -18090,17 +18149,15 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
 
     // ---- Grid: the platform's own colors, four to a row ----
 
-    let swatch_border = native_theme_iced::border_color(resolved);
-    let swatch_bw = resolved.defaults.border.line_width;
-    let swatch_r = native_theme_iced::border_corner_radius(resolved);
+    // The swatches' frame `layout.border_width` wide on the installed 0.8.0
+    // theme; its colour and corners still the 0.7.2 theme's.
     let swatch_frame = iced::Border {
-        color: swatch_border,
-        width: swatch_bw,
-        radius: swatch_r.into(),
+        color: native_theme_iced::border_color(resolved),
+        width: next.layout.border_width,
+        radius: native_theme_iced::border_corner_radius(resolved).into(),
     };
-    let caption = &ts.caption;
     let cell = |label: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(label, color, swatch_frame, caption, resolved, a11y)
+        next_color_swatch(label, color, swatch_frame, next)
     };
     let d = &resolved.defaults;
 
@@ -18281,58 +18338,48 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
 
     // ---- Table: the resolved text scale, as data ----
 
+    // The four roles of `native_theme_iced::next::text_scale`, each as the
+    // installed 0.8.0 theme resolved it, the text scale already applied:
+    // its size, its weight as iced draws it, its line box.
+    let roles = native_theme_iced::next::text_scale(next);
+    let scale_row = |role: &'static str, style: &TextStyle| -> ScaleRow {
+        (
+            role,
+            px_text(style.size_px),
+            next_weight_label(style),
+            format!("{:.1}px", next_line_box(typography, style)),
+        )
+    };
     let scale_rows: Vec<ScaleRow> = vec![
-        (
-            "caption",
-            format!("{:.0}px", ts.caption.size),
-            weight_label(ts.caption.weight, &role_drawn(&ts.caption, resolved)),
-            format!("{:.1}px", ts.caption.line_height),
-        ),
-        (
-            "section_heading",
-            format!("{:.0}px", ts.section_heading.size),
-            weight_label(
-                ts.section_heading.weight,
-                &role_drawn(&ts.section_heading, resolved),
-            ),
-            format!("{:.1}px", ts.section_heading.line_height),
-        ),
-        (
-            "dialog_title",
-            format!("{:.0}px", ts.dialog_title.size),
-            weight_label(
-                ts.dialog_title.weight,
-                &role_drawn(&ts.dialog_title, resolved),
-            ),
-            format!("{:.1}px", ts.dialog_title.line_height),
-        ),
-        (
-            "display",
-            format!("{:.0}px", ts.display.size),
-            weight_label(ts.display.weight, &role_drawn(&ts.display, resolved)),
-            format!("{:.1}px", ts.display.line_height),
-        ),
+        scale_row("caption", roles.caption),
+        scale_row("section_heading", roles.section_heading),
+        scale_row("dialog_title", roles.dialog_title),
+        scale_row("display", roles.display),
     ];
 
     // iced pads a table's cells outside them (iced_widget 0.14.2
     // `src/table.rs:259`, `:312`), where nothing a cell draws reaches, so the
     // table pads nothing and each cell pads itself by the list's row padding
-    // (`layout_cell_padding`), as the Basic table's cells do: a header cell
-    // is filled with `list.header_background` to its edges, as the Basic
-    // table's header row is. A header cell is `list.header_height` tall
-    // where the theme states one, and its text's height and padding where it
-    // states none, as the rows' cells are. The rule under the header is
-    // iced's `separator_y`, which it draws between two rows (`:535-557`): it
-    // lies outside `list.header_height`, where the Basic table draws its
-    // header's line inside it.
-    let cell_pad = layout_cell_padding(resolved);
+    // ([`next_layout_cell_padding`]), as the Basic table's cells do: a
+    // header cell is filled with `list.header_background` to its edges, as
+    // the Basic table's header row is. A header cell is
+    // [`next_layout_header_height`] tall where the theme states a header
+    // height, and its label's line box and padding where it states none, as
+    // the rows' cells are. The rule under the header is iced's
+    // `separator_y`, which it draws between two rows (`:535-557`): it lies
+    // outside the header's height, where the Basic table draws its header's
+    // line inside it. The cells' colours still the 0.7.2 theme's.
+    let cell_pad = next_layout_cell_padding(next);
     let l = &resolved.list;
-    let header_height = layout_header_height(resolved, a11y);
+    let header_height = next_layout_header_height(next, cell_pad);
+    let header_label = next.list.header_label(WidgetState::NONE);
+    let item_label = next.list.item_label(WidgetState::NONE);
+    let (header_label, item_label) = (&header_label, &item_label);
     let (head_ink, head_fill) = (to_color(l.header_font.color), to_color(l.header_background));
     let header_cell = |title: &'static str, width: f32| -> Element<'_, Message> {
         container(
             text(title)
-                .themed(&l.header_font, resolved, a11y)
+                .next_text(header_label, typography)
                 .color(head_ink),
         )
         .padding(cell_pad)
@@ -18349,7 +18396,7 @@ fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     let body_cell = move |content: String| -> Element<'_, Message> {
         container(
             text(content)
-                .themed(&l.item_font, resolved, a11y)
+                .next_text(item_label, typography)
                 .color(item_ink),
         )
         .padding(cell_pad)
@@ -20571,9 +20618,10 @@ const SWATCH_LABEL_GAP_REMS: f32 = 0.5;
 const SWATCH_GAP_X: f32 = 16.0;
 const SWATCH_GAP_Y: f32 = 4.0;
 
-/// The Widget Info line of a table of colour swatches, the Theme Map's and
-/// the Layout page's Grid, which lay their swatches out by one rule: the
-/// showcase's own distances it draws them at, under the installed theme.
+/// The Widget Info line of a table of colour swatches on the 0.7.2 theme,
+/// the Theme Map's, which lays its swatches out by the Layout page Grid's
+/// rule ([`next_swatches_line`]): the showcase's own distances it draws
+/// them at, under the installed theme.
 fn swatches_line(state: &State) -> String {
     let label_gap = gpui_rems(
         SWATCH_LABEL_GAP_REMS,
@@ -20583,17 +20631,39 @@ fn swatches_line(state: &State) -> String {
     format!(
         "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), its label \
          {} below (SWATCH_LABEL_GAP_REMS, gpui's SWATCH_LABEL_GAP, a half of the scaled \
-         defaults.font.size); two rows SWATCH_GAP_Y (4px) apart, and on a Theme Map row two \
-         swatches SWATCH_GAP_X (16px) apart, the Grid's columns splitting its width evenly \
-         (iced's grid takes one spacing, grid.rs:63, :203-205): gpui's, as the theme states \
-         no swatch table",
+         defaults.font.size); two rows SWATCH_GAP_Y (4px) apart, and on a row two swatches \
+         SWATCH_GAP_X (16px) apart: gpui's, as the theme states no swatch table",
         px_text(label_gap)
     )
 }
 
-/// A colour swatch: `color`'s hex on a box of it framed by `border`,
-/// padded [`COLOR_SWATCH_PADDING`], over its `label`,
-/// [`SWATCH_LABEL_GAP_REMS`] below.
+/// [`swatches_line`] of the Layout page's Grid, on the installed 0.8.0
+/// theme `r` its swatches are laid out on ([`next_color_swatch`]).
+fn next_swatches_line(r: &native_theme::next::ResolvedTheme) -> String {
+    format!(
+        "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), its label \
+         {} below (SWATCH_LABEL_GAP_REMS, gpui's SWATCH_LABEL_GAP, a half of \
+         typography.body.size_px); two rows SWATCH_GAP_Y (4px) apart, the columns splitting \
+         the grid's width evenly (iced's grid takes one spacing, grid.rs:63, :203-205): \
+         gpui's, as the theme states no swatch table",
+        px_text(next_gpui_rems(SWATCH_LABEL_GAP_REMS, r))
+    )
+}
+
+/// The home of the caption `native_theme_iced::next::text_scale` gives:
+/// `typography.caption`, or `typography.body` where the theme defines no
+/// caption.
+fn next_caption_home(r: &native_theme::next::ResolvedTheme) -> &'static str {
+    if r.typography.caption.is_some() {
+        "typography.caption"
+    } else {
+        "typography.body"
+    }
+}
+
+/// A colour swatch on the 0.7.2 theme, the Theme Map's: [`swatch_of`] with
+/// its hex and label in `caption`, the label [`SWATCH_LABEL_GAP_REMS`]
+/// below.
 fn color_swatch<'a>(
     label: &'a str,
     color: Color,
@@ -20602,7 +20672,46 @@ fn color_swatch<'a>(
     resolved: &ResolvedTheme,
     a11y: &AccessibilityPreferences,
 ) -> Element<'a, Message> {
-    let hex = color_to_hex(color);
+    swatch_of(
+        color,
+        border,
+        text(color_to_hex(color)).role(caption, resolved, a11y),
+        text(label).role(caption, resolved, a11y),
+        gpui_rems(SWATCH_LABEL_GAP_REMS, resolved, a11y),
+    )
+}
+
+/// [`color_swatch`] on the installed 0.8.0 theme `r`, the Layout page
+/// Grid's: [`swatch_of`] with its hex and label in the caption
+/// `native_theme_iced::next::text_scale` gives ([`Typeset::next_text`]),
+/// the label [`SWATCH_LABEL_GAP_REMS`] of the 0.8.0 rem below
+/// ([`next_gpui_rems`]).
+fn next_color_swatch<'a>(
+    label: &'a str,
+    color: Color,
+    border: iced::Border,
+    r: &native_theme::next::ResolvedTheme,
+) -> Element<'a, Message> {
+    let caption = native_theme_iced::next::text_scale(r).caption;
+    swatch_of(
+        color,
+        border,
+        text(color_to_hex(color)).next_text(caption, &r.typography),
+        text(label).next_text(caption, &r.typography),
+        next_gpui_rems(SWATCH_LABEL_GAP_REMS, r),
+    )
+}
+
+/// A colour swatch: `hex`, the text of `color`'s hex, on a box of it framed
+/// by `border`, padded [`COLOR_SWATCH_PADDING`], over its `label`, `gap`
+/// below.
+fn swatch_of<'a>(
+    color: Color,
+    border: iced::Border,
+    hex: text::Text<'a>,
+    label: text::Text<'a>,
+    gap: f32,
+) -> Element<'a, Message> {
     // Determine if text should be light or dark for contrast
     let luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
     let text_color = if luminance > 0.5 {
@@ -20612,22 +20721,18 @@ fn color_swatch<'a>(
     };
 
     column![
-        container(
-            text(hex.clone())
-                .role(caption, resolved, a11y)
-                .color(text_color)
-        )
-        .padding(COLOR_SWATCH_PADDING)
-        .style(move |_theme: &Theme| container::Style {
-            background: Some(color.into()),
-            border,
-            ..Default::default()
-        })
-        .center_x(Length::Fixed(80.0))
-        .center_y(Length::Fixed(32.0)),
-        text(label).role(caption, resolved, a11y),
+        container(hex.color(text_color))
+            .padding(COLOR_SWATCH_PADDING)
+            .style(move |_theme: &Theme| container::Style {
+                background: Some(color.into()),
+                border,
+                ..Default::default()
+            })
+            .center_x(Length::Fixed(80.0))
+            .center_y(Length::Fixed(32.0)),
+        label,
     ]
-    .spacing(gpui_rems(SWATCH_LABEL_GAP_REMS, resolved, a11y))
+    .spacing(gap)
     .align_x(iced::Center)
     .into()
 }
@@ -21030,15 +21135,17 @@ fn role_drawn(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> Drawn
     font_from_database(&at_weight, false)
 }
 
-/// A Widget Info row for text in a theme font: the field it comes from,
-/// and the family, weight and style it is drawn in where they are not the
-/// ones stated.
+/// A Widget Info row for text in a 0.7.2 theme font, the Extra page's
+/// (`iced_aw`): the field it comes from, and the family, weight and style
+/// it is drawn in where they are not the ones stated.
+#[cfg(feature = "iced_aw")]
 fn font_row(field: &str, font: &ResolvedFontSpec) -> String {
     font_row_drawn(field, font, &font_drawn(font))
 }
 
 /// [`font_row`], given how the font is drawn. An upright font drawn upright
 /// names no style.
+#[cfg(any(feature = "iced_aw", test))]
 fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn) -> String {
     stated_font_row(field, &font.family, font.weight, font.style, drawn)
 }
@@ -26226,8 +26333,8 @@ mod tests {
     /// from the gpui showcase's source (`showcase-gpui/demo.rs` and
     /// `pages/mod.rs`): a `px(..)` constant in logical pixels, a `rems(..)`
     /// one as iced's `_REMS` constant of [`gpui_rems`]. The constants with no
-    /// gpui counterpart (`COLOR_SWATCH_PADDING`, `LAYOUT_CELL_PAD`,
-    /// `AW_MENU_GAP`) say so in their docs.
+    /// gpui counterpart (`COLOR_SWATCH_PADDING`, `AW_MENU_GAP`) say so in
+    /// their docs.
     #[test]
     fn the_paired_constants_are_gpuis() {
         const GPUI: [&str; 2] = [
@@ -28432,72 +28539,65 @@ mod tests {
     }
 
     /// The Layout page's table's stated header height holds its text at
-    /// every text scale, as gpui's `DataTable` rows do
-    /// (`native_theme_gpui::geometry::list_header_height`): at a factor of 1
-    /// a stated `list.header_height` is the header cell's height, verbatim;
-    /// above 1 it grows to at least the line box of the header font at its
-    /// scaled size and `defaults.line_height`, rounded up, plus the cell's
-    /// padding. iced's `table` makes its header cells, which hold their
-    /// padding and no rule, that height, and their line box at
-    /// `defaults.line_height` and padding where the theme states none
-    /// (catppuccin-mocha), as its rows are. Every expectation is computed
-    /// from the theme at test time, at text scales 1 and 1.5.
+    /// every text scale, as the Basic table's header does, on the installed
+    /// 0.8.0 theme, whose text styles hold the text scale already: a header
+    /// cell, which holds its padding ([`next_layout_cell_padding`]) and no
+    /// rule, is at least `list.header(NONE).min_size[1]` tall where the theme
+    /// states it, grown to hold the line box of `list.header_label(NONE)`
+    /// ([`next_line_box`]) and the padding; that line box and padding where
+    /// it states none, as the rows' cells are. The Table info prints the
+    /// height. Every expectation is computed from the theme at test time, at
+    /// text scales 1 and 1.5, over presets that state a header height and
+    /// one that does not.
     #[test]
     fn the_tables_headers_take_the_themes_header_height() {
         recording(|| {
-            for (preset, factor) in ["adwaita", "material-3", "macos-tahoe", "catppuccin-mocha"]
+            let mut faults = Vec::new();
+            let mut header_stated = BTreeSet::new();
+            for (preset, factor) in ["adwaita", "material-3", "macos-tahoe", "kde-breeze"]
                 .into_iter()
                 .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
             {
-                let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
-                accessibility.text_scaling_factor = factor;
-                let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                    Ok(installed) => installed,
-                    Err(error) => panic!("{preset}: {error}"),
+                let mut state = page_state(preset, Tab::Layout);
+                state.accessibility.text_scaling_factor = factor;
+                rescaled(&mut state, preset, false);
+                let next = state.next_shown();
+                let l = &next.list;
+                let [top, _, bottom, _] = iced_next::padding_of(&l.row(WidgetState::NONE));
+                let pad_y = top.unwrap_or(ICED_TABLE_CELL_PAD.top)
+                    + bottom.unwrap_or(ICED_TABLE_CELL_PAD.bottom);
+                let line = next_line_box(&next.typography, &l.header_label(WidgetState::NONE));
+                let stated = l.header(WidgetState::NONE).min_size[1];
+                header_stated.insert(stated.is_some());
+                let want = stated.map_or(line + pad_y, |h| h.max(line + pad_y));
+                let row = match stated {
+                    Some(h) if want > h => format!("header height: {}: ", px_text(want)),
+                    Some(_) => format!("header height: {}, ", px_text(want)),
+                    None => "header height: its label's line box".to_owned(),
                 };
-                let r = resolved.clone();
-                let stated = native_theme_iced::list_header_height(&r);
-                assert_eq!(stated.is_some(), preset != "catppuccin-mocha", "{preset}");
-                let l = &r.list;
-                let line_box =
-                    |size: f32| scaled_text_size(size, &accessibility) * r.defaults.line_height;
-                // A stated height, grown above a factor of 1 to hold a line of
-                // `size` inside `pad_y` and `rule`.
-                let grown = |height: f32, size: f32, pad_y: f32, rule: f32| {
-                    if factor > 1.0 {
-                        height.max(line_box(size).ceil() + pad_y + rule)
-                    } else {
-                        height
-                    }
-                };
-                let state = State {
-                    current_theme: theme,
-                    current_resolved: resolved,
-                    accessibility: accessibility.clone(),
-                    active_tab: Tab::Layout,
-                    ..State::default()
-                };
+                let info = table_info(&state);
                 let mut ui = interface(&state);
                 let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
-                let cell_pad = layout_cell_padding(&state.current_resolved).y();
-                let want = match stated {
-                    Some(h) => grown(h, l.header_font.size, cell_pad, 0.0),
-                    None => line_box(l.header_font.size) + cell_pad,
-                };
-                assert!(
-                    (cell.height - want).abs() < 0.01,
-                    "{preset} at {factor}: the Layout table's header cell is {} tall, want {want}",
-                    cell.height
-                );
-                if stated.is_some() {
-                    let info = table_info(&state);
-                    let row = format!("header height: {want:.0}px");
-                    assert!(
-                        info.lines().any(|line| line.trim().starts_with(&row)),
-                        "{preset} at {factor}: the Table info gives no \"{row}\":\n{info}"
-                    );
+                drop(ui);
+                if (cell.height - want).abs() >= 0.01 {
+                    faults.push(format!(
+                        "{preset} at {factor}: the Layout table's header cell is {} tall, \
+                         want {want}",
+                        cell.height
+                    ));
+                }
+                if !info.lines().any(|line| line.trim().starts_with(&row)) {
+                    faults.push(format!(
+                        "{preset} at {factor}: the Table info gives no {row:?}:\n{info}"
+                    ));
                 }
             }
+            assert_eq!(
+                header_stated.len(),
+                2,
+                "a preset that states the header's height and one that does not"
+            );
+            assert!(faults.is_empty(), "{faults:#?}");
         })
     }
 
@@ -28704,22 +28804,27 @@ mod tests {
         }
     }
 
-    /// M9-153 (theme-data): the Layout page's table pads its cells by
-    /// `list.border.padding`, as the Basic table does, and by
-    /// [`LAYOUT_CELL_PAD`] only on a side the theme leaves unstated: under
-    /// every bundled preset in both modes, the first header cell is its
-    /// column's text width plus that padding wide, its label and the
-    /// `section_heading` cell's text that padding's left side in from the
-    /// table's left edge, and the Table info prints the padding.
+    /// M9-153 (theme-data): the Layout page's table pads its cells by the
+    /// installed 0.8.0 theme's `list.row(NONE).padding`, as the Basic table
+    /// does, and by iced's own table padding, [`ICED_TABLE_CELL_PAD`], only
+    /// on a side the theme leaves unstated: under every bundled preset in
+    /// both modes, the first header cell is its column's text width plus
+    /// that padding wide, its label and the `section_heading` cell's text
+    /// that padding's left side in from the table's left edge, and the
+    /// Table info prints the padding.
     #[test]
     fn the_layout_table_pads_its_cells_by_the_lists_padding() {
         for (preset, dark) in every_preset_in_both_modes() {
             let mut state = loaded(preset, dark);
             state.active_tab = Tab::Layout;
-            let pad = native_theme_iced::padding_or(
-                &state.current_resolved.list.border.padding,
-                LAYOUT_CELL_PAD,
-            );
+            let [top, right, bottom, left] =
+                iced_next::padding_of(&state.next_shown().list.row(WidgetState::NONE));
+            let pad = Padding {
+                top: top.unwrap_or(ICED_TABLE_CELL_PAD.top),
+                right: right.unwrap_or(ICED_TABLE_CELL_PAD.right),
+                bottom: bottom.unwrap_or(ICED_TABLE_CELL_PAD.bottom),
+                left: left.unwrap_or(ICED_TABLE_CELL_PAD.left),
+            };
             let mut ui = interface(&state);
             let table = probe_bounds(&mut ui, probes::LAYOUT_TABLE);
             let header = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
@@ -29299,7 +29404,7 @@ mod tests {
         // left edge: the cell holds its padding, which iced's own table
         // padding would leave unfilled outside it.
         let column = LAYOUT_TEXT_WIDTHS.first().copied().unwrap_or_default()
-            + layout_cell_padding(&state.current_resolved).x();
+            + next_layout_cell_padding(state.next_shown()).x();
         if (header.x - table.x).abs() > 0.01 || (header.width - column).abs() > 0.01 {
             faults.push(format!(
                 "the first header cell is {header:?}, not the {column} px column at the \
@@ -30151,6 +30256,278 @@ mod tests {
             faults.push(format!(
                 "the panes' bodies {first:?} and {second:?} are {apart}px apart"
             ));
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// The Layout page's Grid and Table lay themselves out on the installed
+    /// 0.8.0 theme ([`view_layout`]): kde-breeze with, on the 0.8.0 theme
+    /// only, a 13 px caption on a 17 px line, an 18 px body, a 23 px
+    /// headline on a 31 px line, the list's rows padded 3, 7, 5 and 11 px
+    /// and its header at least 41 px tall lays the Grid's swatch label on a
+    /// 17 px line 9 px (half the body) under its swatch, the Table's header
+    /// cell 41 px tall and 160 + 18 px wide, its label and the rows' text
+    /// 11 px in from the table's edge, and the `section_heading` row
+    /// `23px` and `31.0px`; the Grid and Table infos say so.
+    #[test]
+    fn the_layout_grid_and_table_lay_out_on_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.list.rules]]\n\
+             row.padding = { top = 3.0, right = 7.0, bottom = 5.0, left = 11.0 }\n\
+             header.min_size = [\"none\", 41.0]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Layout);
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.typography.body.size_px = 18.0;
+            if let Some(caption) = r.typography.caption.as_mut() {
+                caption.size_px = 13.0;
+                caption.line_height = 17.0;
+                caption.stated = caption.stated.union(TextStated::LINE_HEIGHT);
+            }
+            if let Some(headline) = r.typography.headline.as_mut() {
+                headline.size_px = 23.0;
+                headline.line_height = 31.0;
+                headline.stated = headline.stated.union(TextStated::LINE_HEIGHT);
+            }
+        });
+        let next = state.next_shown();
+        let old = &state.current_resolved;
+        let is = |value: Option<f32>, want: f32| value.is_some_and(|value| value == want);
+        if !is(
+            next.typography.caption.as_ref().map(|c| c.line_height),
+            17.0,
+        ) || !is(next.typography.headline.as_ref().map(|h| h.size_px), 23.0)
+            || next_layout_cell_padding(next).left != 11.0
+            || !is(iced_next::list_header_height(next), 41.0)
+            || old.text_scale.caption.line_height == 17.0
+            || old.text_scale.section_heading.size == 23.0
+            || is(old.list.border.padding.left, 11.0)
+            || is(native_theme_iced::list_header_height(old), 41.0)
+            || gpui_rems(SWATCH_LABEL_GAP_REMS, old, &state.accessibility) == 9.0
+        {
+            return Err("the splice states 0.7.2's sizes, or no caption or headline".into());
+        }
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let mut ui = interface(&state);
+        let table = probe_bounds(&mut ui, probes::LAYOUT_TABLE);
+        let header = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
+        let found = texts(&mut ui);
+        drop(ui);
+        let at = |label: &str| {
+            found
+                .iter()
+                .find(|(content, _)| content == label)
+                .map(|(_, bounds)| *bounds)
+        };
+        let hex = color_to_hex(to_color(old.defaults.accent_color));
+        match (at(&hex), at("accent_color")) {
+            (Some(swatch), Some(label))
+                if near(label.height, 17.0) && near(label.y - (swatch.center_y() + 16.0), 9.0) => {}
+            pair => faults.push(format!("the accent swatch's hex and label: {pair:?}")),
+        }
+        if !near(header.height, 41.0) || !near(header.width, 160.0 + 18.0) {
+            faults.push(format!("the first header cell is {header:?}"));
+        }
+        for label in ["text_scale role", "section_heading"] {
+            match at(label) {
+                Some(cell) if near(cell.x - table.x, 11.0) => {}
+                other => faults.push(format!("{label:?} in the table {table:?}: {other:?}")),
+            }
+        }
+        let row = at("section_heading").map(|cell| cell.center_y());
+        for value in ["23px", "31.0px"] {
+            let in_row = found.iter().any(|(content, bounds)| {
+                content == value
+                    && table.contains(bounds.center())
+                    && row.is_some_and(|y| (bounds.center_y() - y).abs() < 0.5)
+            });
+            if !in_row {
+                faults.push(format!("the section_heading row shows no {value:?}"));
+            }
+        }
+        let grid = grid_info(&state);
+        let table_rows = table_info(&state);
+        for (info, want) in [
+            (
+                &grid,
+                "swatches: padded COLOR_SWATCH_PADDING (6px above and below, 4px at the \
+                 sides), its label 9px below",
+            ),
+            (&grid, "hex and label: typography.caption"),
+            (
+                &table_rows,
+                "cell padding: top 3px, right 7px, bottom 5px, left 11px: \
+                 list.row(NONE).padding",
+            ),
+            (
+                &table_rows,
+                "header height: 41px, list.header(NONE).min_size[1]",
+            ),
+            (&table_rows, "header: list.header_label(NONE)"),
+            (&table_rows, "cells: list.item_label(NONE)"),
+        ] {
+            if !info.lines().any(|line| line.trim().starts_with(want)) {
+                faults.push(format!("no row {want:?} in\n{info}"));
+            }
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
+    }
+
+    /// The Buttons, Inputs and Selection infos name the installed 0.8.0
+    /// theme's text styles their pages draw in ([`next_font_row`]): the
+    /// button's label row `button.label(NONE)`, the text fields'
+    /// `input.text(NONE)`, the editor's `text_area.text(NONE)`, the check
+    /// boxes' `checkbox.label(NONE)`, the drop-down's and the combo box's
+    /// `combo_box.label(NONE)`; the "Theme fonts" footer of the Button and
+    /// Inputs infos `typography.body`'s and `typography.monospace`'s
+    /// families as iced draws them ([`next_family_drawing`]) at their sizes,
+    /// spliced to 17.5 and 11.5 px on the 0.8.0 theme only, with, at text
+    /// scale 1.5, the sizes their source states beside them; and the Tooltip
+    /// info's border radius the bubble's, `tooltip.panel.corners`, patched
+    /// to 7 px on the 0.8.0 theme only (kde-breeze's).
+    #[test]
+    fn the_buttons_inputs_and_selection_infos_name_the_0_8_0_fonts() -> Result<(), String> {
+        let mut faults = Vec::new();
+        let state = page_state("kde-breeze", Tab::Buttons);
+        let next = state.next_shown();
+        let row = |name: &str, home: &str, style: &TextStyle| {
+            format!("{name}: {}", next_font_row(home, style))
+        };
+        let (input, combo) = (
+            next.input.text(WidgetState::NONE),
+            next.combo_box.label(WidgetState::NONE),
+        );
+        for (what, info, want) in [
+            (
+                "Button",
+                button_info(&state),
+                row(
+                    "label",
+                    "button.label(NONE)",
+                    &next.button.label(WidgetState::NONE),
+                ),
+            ),
+            (
+                "TextInput",
+                text_input_info(&state),
+                row("text", "input.text(NONE)", &input),
+            ),
+            (
+                "TextInput (secure)",
+                secure_text_input_info(&state),
+                row("text", "input.text(NONE)", &input),
+            ),
+            (
+                "TextEditor",
+                text_editor_info(&state),
+                row(
+                    "text",
+                    "text_area.text(NONE)",
+                    &next.text_area.text(WidgetState::NONE),
+                ),
+            ),
+            (
+                "Checkbox",
+                checkbox_info(&state),
+                row(
+                    "label",
+                    "checkbox.label(NONE)",
+                    &next.checkbox.label(WidgetState::NONE),
+                ),
+            ),
+            (
+                "PickList",
+                pick_list_info(&state),
+                row("label and menu rows", "combo_box.label(NONE)", &combo),
+            ),
+            (
+                "ComboBox",
+                combo_box_info(&state),
+                row("text and menu rows", "combo_box.label(NONE)", &combo),
+            ),
+        ] {
+            if !info.lines().any(|line| line.trim() == want) {
+                faults.push(format!("{what}: no row {want:?} in\n{info}"));
+            }
+        }
+
+        for factor in [1.0, 1.5] {
+            let mut state = page_state("kde-breeze", Tab::Buttons);
+            state.accessibility.text_scaling_factor = factor;
+            rescaled(&mut state, "kde-breeze", false);
+            if factor == 1.0 {
+                splice_next(&mut state, |r| {
+                    r.typography.body.size_px = 17.5;
+                    r.typography.monospace.size_px = 11.5;
+                });
+            }
+            let next = state.next_shown();
+            let (body, mono) = (&next.typography.body, &next.typography.monospace);
+            let old = &state.current_resolved.defaults;
+            if factor == 1.0 && (old.font.size == 17.5 || old.mono_font.size == 11.5) {
+                return Err("the splice states 0.7.2's sizes".into());
+            }
+            let family = |style: &TextStyle, mono: bool| {
+                next_family_drawing(next_font_from_database(style, mono).as_ref())
+                    .label(&style.family)
+            };
+            let size = |style: &TextStyle| {
+                if factor == 1.0 {
+                    px_text(style.size_px)
+                } else {
+                    format!(
+                        "{} (OS text scaling 1.50: the theme states {})",
+                        px_text(style.size_px),
+                        next_status::defined_size(style)
+                    )
+                }
+            };
+            let want = [
+                format!("Font: {} {}", family(body, false), size(body)),
+                format!("Mono: {} {}", family(mono, true), size(mono)),
+            ];
+            for (what, info) in [
+                ("Button", button_info(&state)),
+                ("TextInput", text_input_info(&state)),
+                ("TextEditor", text_editor_info(&state)),
+            ] {
+                let footer: Vec<&str> = info
+                    .lines()
+                    .skip_while(|line| line.trim() != "Theme fonts:")
+                    .skip(1)
+                    .map(str::trim)
+                    .collect();
+                if footer != want {
+                    faults.push(format!(
+                        "{what} at {factor}: the Theme fonts footer is {footer:?}, want {want:?}"
+                    ));
+                }
+            }
+        }
+
+        let patch =
+            native_theme::next::ThemePatch::from_toml("[widgets.tooltip]\npanel.corners = 7.0\n")
+                .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Display);
+        splice_next(&mut state, |r| r.apply_patch(&patch));
+        if state.current_resolved.tooltip.border.corner_radius == 7.0 {
+            return Err("kde-breeze's 0.7.2 tooltip is rounded 7 px".into());
+        }
+        let info = tooltip_info(&state);
+        let want = "border-radius: 7px, tooltip.panel.corners";
+        if !info.lines().any(|line| line.trim() == want) {
+            faults.push(format!("Tooltip: no row {want:?} in\n{info}"));
         }
         if faults.is_empty() {
             Ok(())
@@ -37036,49 +37413,46 @@ mod tests {
     }
 
     /// M9-093: under an OS text-scaling factor other than 1 the "Theme
-    /// fonts" lines give the size text is drawn at, `font_size(r, a11y)` and
-    /// `mono_font_size(r, a11y)`, with the theme's own beside it, as the
-    /// Display page's font line does; at 1 the theme's size alone.
+    /// fonts" lines of the infos the pages build give the size text is
+    /// drawn at, the installed 0.8.0 theme's `typography.body.size_px` and
+    /// `typography.monospace.size_px`, resolved at that factor, with the
+    /// size their source states beside it, as the Display page's font line
+    /// does; at 1 the resolved size alone.
     #[test]
     fn the_theme_fonts_lines_give_the_drawn_size() {
-        let mut state = State {
-            accessibility: native_theme_iced::AccessibilityPreferences::default(),
-            ..State::default()
-        };
-        let loaded = state.load_theme(&ThemeChoice::Preset("kde-breeze".to_owned()), false);
-        assert!(loaded.is_ok(), "{loaded:?}");
         for factor in [1.0, 1.5] {
+            let mut state = page_state("kde-breeze", Tab::Buttons);
             state.accessibility.text_scaling_factor = factor;
-            let r = &state.current_resolved.clone();
-            let a11y = &state.accessibility.clone();
+            rescaled(&mut state, "kde-breeze", false);
+            let next = state.next_shown().clone();
+            if factor != 1.0 && next.context.text_scale != factor {
+                panic!(
+                    "kde-breeze at {factor} resolved at {}",
+                    next.context.text_scale
+                );
+            }
             let infos = built_infos(&mut state);
             for title in ["Button (Primary)", "TextInput", "TextEditor (multi-line)"] {
                 let Some(info) = info_titled(&infos, title) else {
                     panic!("no page builds the {title} info");
                 };
-                for (key, drawn, stated) in [
-                    (
-                        "  Font: ",
-                        native_theme_iced::font_size(r, a11y),
-                        r.defaults.font.size,
-                    ),
-                    (
-                        "  Mono: ",
-                        native_theme_iced::mono_font_size(r, a11y),
-                        r.defaults.mono_font.size,
-                    ),
+                for (key, style) in [
+                    ("  Font: ", &next.typography.body),
+                    ("  Mono: ", &next.typography.monospace),
                 ] {
                     let line = info.lines().find(|l| l.starts_with(key));
+                    let drawn = px_text(style.size_px);
                     let want = if factor == 1.0 {
-                        format!(" {stated:.0}px")
+                        format!(" {drawn}")
                     } else {
                         format!(
-                            " {drawn:.1}px (OS text scaling {factor:.2}: the theme states {stated:.1}px)"
+                            " {drawn} (OS text scaling {factor:.2}: the theme states {})",
+                            next_status::defined_size(style)
                         )
                     };
                     assert!(
                         line.is_some_and(|l| l.ends_with(&want)),
-                        "{title} at {factor}: {line:?}, drawn at {drawn}px, the theme's {stated}px"
+                        "{title} at {factor}: {line:?}, want it to end {want:?}"
                     );
                 }
             }
