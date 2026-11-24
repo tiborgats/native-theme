@@ -707,10 +707,10 @@ homes = [
     "checkbox.indicator(HOVER).fill",
     "radio.indicator(HOVER).fill",
 ]
-difference_presets = ["kde-breeze", "windows-11"]
-difference_reason = "kde-breeze: 0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the rest fill for the check box's HOVER, where Breeze keeps it (spec §2, from_state); the radio button's HOVER keeps the rest fill unstated; windows-11: 0.7.2's uncited #0000000a / #ffffff0f was a layer over the rest fill; 0.8.0 states WinUI's whole hovered fill (spec §9, step 2), ControlAltFillColorTertiary for the check box and the radio button"
-difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (hover_background): no hover fill, the box keeps palette.button() (breezehelper.cpp:862 at breeze f0b1d75); windows-11: CheckBoxCheckBackgroundFillUncheckedPointerOver and RadioButtonOuterEllipseFillPointerOver = ControlAltFillColorTertiaryBrush (CheckBox_themeresources.xaml:230, :54; RadioButton_themeresources.xaml:139, :23), ControlAltFillColorTertiary #0F000000 / #0BFFFFFF (Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45)"
-difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#0000000f", dark = "#ffffff0b" } }
+difference_presets = ["kde-breeze", "windows-11", "macos-monterey", "macos-tahoe"]
+difference_reason = "kde-breeze: 0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the rest fill for the check box's HOVER, where Breeze keeps it (spec §2, from_state); the radio button's HOVER keeps the rest fill unstated; windows-11: 0.7.2's uncited #0000000a / #ffffff0f was a layer over the rest fill; 0.8.0 states WinUI's whole hovered fill (spec §9, step 2), ControlAltFillColorTertiary for the check box and the radio button; macos-monterey: 0.7.2's uncited #e0e0e5 / #444446; 0.8.0 states the check box's rest fill for HOVER, as AppKit draws a hovered check box as at rest, the radio button keeping 0.7.2's (not measured); macos-tahoe: 0.7.2 leaves it unset, 0.8.0 states the check box's rest fill for HOVER"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (hover_background): no hover fill, the box keeps palette.button() (breezehelper.cpp:862 at breeze f0b1d75); windows-11: CheckBoxCheckBackgroundFillUncheckedPointerOver and RadioButtonOuterEllipseFillPointerOver = ControlAltFillColorTertiaryBrush (CheckBox_themeresources.xaml:230, :54; RadioButton_themeresources.xaml:139, :23), ControlAltFillColorTertiary #0F000000 / #0BFFFFFF (Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45); macos-monterey, macos-tahoe: os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.checkbox_off` and `*.hovered.checkbox_on` differ from the normal capture in 0 pixels"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#0000000f", dark = "#ffffff0b" }, "macos-monterey" = { "checkbox.indicator(HOVER).fill" = { light = "#ffffff", dark = "#ffffff37" }, "radio.indicator(HOVER).fill" = { light = "#e0e0e5", dark = "#444446" } }, "macos-tahoe" = { "checkbox.indicator(HOVER).fill" = { light = "#00000019", dark = "#ffffff19" }, "radio.indicator(HOVER).fill" = { light = "#00000019", dark = "#ffffff19" } } }
 
 [[row]]
 key = "checkbox.hover_border_color"
@@ -946,6 +946,10 @@ note = "unset: FILL unstated, and a connector draws list.grid_color"
 key = "list.hover_background"
 homes = ["list.highlight(HOVER).fill"]
 unstated_if_unset = true
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset (no tint); 0.8.0 states no highlight (transparent) for HOVER, as AppKit draws a hovered table row as at rest (spec §10, rule 0 would otherwise give the toolkit's own)"
+difference_citation = "os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.table_row` differs from the normal capture in 0 pixels"
+difference_values = { "macos-monterey" = "#00000000", "macos-tahoe" = "#00000000" }
 
 [[row]]
 key = "list.hover_text_color"
@@ -1558,10 +1562,10 @@ homes = ["slider.disabled_opacity"]
 [[row]]
 key = "slider.thumb_hover_color"
 homes = ["slider.thumb(HOVER).fill"]
-difference_presets = ["kde-breeze", "windows-11", "adwaita"]
-difference_reason = "0.7.2 leaves it unset on kde-breeze and windows-11 (the rest fill by inheritance, no rule); 0.8.0 states the thumb's rest fill for HOVER, where the platform keeps it (spec §2, from_state); adwaita: 0.7.2's adwaita states an uncited hover colour (#ebebeb / #3a3a3e); 0.8.0 states libadwaita's $slider_hover_color, white, in both schemes"
-difference_citation = "kde-breeze: docs/platform-facts.md §2.9 (thumb_hover_color), the handle's fill is QPalette::Button in every state (breezestyle.cpp:8122 at breeze f0b1d75); windows-11: SliderOuterThumbBackground has no PointerOver variant (Slider_themeresources.xaml:123, Border :198 at microsoft-ui-xaml 8463f45); adwaita: _scale.scss:62-76 (`&:hover, &:active`), _colors.scss:289 at libadwaita 1.10.0"
-difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#ffffff", dark = "#454545" }, "adwaita" = "#ffffff" }
+difference_presets = ["kde-breeze", "windows-11", "adwaita", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset on kde-breeze and windows-11 (the rest fill by inheritance, no rule); 0.8.0 states the thumb's rest fill for HOVER, where the platform keeps it (spec §2, from_state); adwaita: 0.7.2's adwaita states an uncited hover colour (#ebebeb / #3a3a3e); 0.8.0 states libadwaita's $slider_hover_color, white, in both schemes; macos-monterey: 0.7.2's uncited #e0e0e0 (light); macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states the knob's rest fill for HOVER, as AppKit draws a hovered knob as at rest"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.9 (thumb_hover_color), the handle's fill is QPalette::Button in every state (breezestyle.cpp:8122 at breeze f0b1d75); windows-11: SliderOuterThumbBackground has no PointerOver variant (Slider_themeresources.xaml:123, Border :198 at microsoft-ui-xaml 8463f45); adwaita: _scale.scss:62-76 (`&:hover, &:active`), _colors.scss:289 at libadwaita 1.10.0; os-probe run 45198750893, macOS 15, and run 45217592058, macOS 26 (docs/evidence/os-probe/ on m2-fs4c), `*.hovered.slider_knob` differs from the normal capture in 0 pixels"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#ffffff", dark = "#454545" }, "adwaita" = "#ffffff", "macos-monterey" = { light = "#ffffff", dark = "#ffffff80" }, "macos-tahoe" = { light = "#ffffff", dark = "#ffffffd9" } }
 
 [[row]]
 key = "slider.disabled_fill_color"
@@ -1941,10 +1945,10 @@ note = "0.7.2 R-W: unset = tab.font.color, never null"
 [[row]]
 key = "tab.hover_background"
 homes = ["tab.tab(HOVER).fill"]
-difference_presets = ["adwaita"]
-difference_reason = "0.7.2's #e8e8e8 / #3a3a3e is its uncited menu hover; 0.8.0 states libadwaita's notebook tab hover, $hover_color, the window text at 7 %, a layer (the same fill a pressed tab takes)"
-difference_citation = "_notebook.scss:127-129 (`&:hover, &:active { background-color: $hover_color }`), _colors.scss:268, :33, :96 at libadwaita 1.10.0"
-difference_values = { "adwaita" = { light = "#0000060e", dark = "#ffffff12" } }
+difference_presets = ["adwaita", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's #e8e8e8 / #3a3a3e is its uncited menu hover; 0.8.0 states libadwaita's notebook tab hover, $hover_color, the window text at 7 %, a layer (the same fill a pressed tab takes); macos-monterey: 0.7.2's uncited #e8e8ed / #3a3a3c; macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states the tab's rest fill (the window's background) for HOVER, as AppKit draws a hovered tab as at rest"
+difference_citation = "_notebook.scss:127-129 (`&:hover, &:active { background-color: $hover_color }`), _colors.scss:268, :33, :96 at libadwaita 1.10.0; os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.tab` differs from the normal capture in 0 pixels"
+difference_values = { "adwaita" = { light = "#0000060e", dark = "#ffffff12" }, "macos-monterey" = { light = "#ececec", dark = "#323232" }, "macos-tahoe" = { light = "#ffffff", dark = "#1e1e1e" } }
 
 [[row]]
 key = "tab.font.family"
@@ -2027,6 +2031,10 @@ key = "sidebar.hover_background"
 homes = ["sidebar.item(HOVER).fill"]
 unstated_if_unset = true
 note = "0.7.2 R-W: unset = sidebar.background_color, never null; as list.hover_background (M0 row list.row(HOVER).fill)"
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset (no tint); 0.8.0 states no fill (transparent) for HOVER, as AppKit draws a hovered source-list row as at rest"
+difference_citation = "os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.source_list_row` differs from the normal capture in 0 pixels"
+difference_values = { "macos-monterey" = "#00000000", "macos-tahoe" = "#00000000" }
 
 [[row]]
 key = "sidebar.font.family"
@@ -2408,6 +2416,10 @@ difference_values = { "windows-11" = { light = "#0067c0e6", dark = "#4cc2ffe6" }
 [[row]]
 key = "switch.hover_unchecked_background"
 homes = ["switch.track(HOVER).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "macos-monterey: 0.7.2's uncited #c8c8cd / #4a4a4c; macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states the off track's rest fill for HOVER, as AppKit draws a hovered switch as at rest"
+difference_citation = "os-probe run 45208260830, macOS 15, and run 45217592058, macOS 26 (docs/evidence/os-probe/ on m2-fs4c), `*.hovered.switch_off` differs from the normal capture in 0 pixels"
+difference_values = { "macos-monterey" = { light = "#0000001a", dark = "#ffffff1a" }, "macos-tahoe" = { light = "#00000019", dark = "#ffffff19" } }
 
 [[row]]
 key = "switch.disabled_checked_background"
@@ -2772,6 +2784,10 @@ homes = ["segmented_control.disabled_opacity"]
 [[row]]
 key = "segmented_control.hover_background"
 homes = ["segmented_control.segment(HOVER).fill"]
+difference_presets = ["macos-monterey"]
+difference_reason = "0.7.2's uncited #e0e0e5 / #444446; 0.8.0 states no hover fill of a segment's own, as AppKit draws a hovered segment as at rest (the segment states no rest fill)"
+difference_citation = "os-probe run 45198750893 (macOS 15; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.segment` differs from the normal capture in 0 pixels"
+difference_values = { "macos-monterey" = "unstated" }
 
 [[row]]
 key = "segmented_control.font.family"
@@ -2849,25 +2865,29 @@ homes = ["card.container(NONE).fill"]
 key = "card.border.color"
 homes = ["card.container(NONE).stroke.color"]
 unstated_if_unset = true
-difference_presets = ["adwaita", "material-3"]
-difference_reason = "0.7.2's adwaita.toml states no card border; 0.8.0 states the card's outline as none, as libadwaita draws it; material-3.toml states none either; 0.8.0 states the filled card's outline as none"
-difference_citation = "docs/platform-facts.md §2.26 (border.color, border.line_width): none, `.card` sets no border, its outline is the first of three box shadows (_misc.scss:201-208 at libadwaita 1.10.0); material-3: docs/platform-facts.md §2.26, border.color none for the filled and the elevated card, border.line_width 0"
-difference_values = { "adwaita" = "none", "material-3" = "none" }
+difference_presets = ["adwaita", "material-3", "macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2's adwaita.toml states no card border; 0.8.0 states the card's outline as none, as libadwaita draws it; material-3.toml states none either; 0.8.0 states the filled card's outline as none; 0.7.2 states no box outline; 0.8.0 states NSBox's measured one: on macos-monterey black / white at a low alpha, on macos-tahoe none; ios-13: 0.7.2 states no card outline; 0.8.0 states none, as an .insetGrouped section's cell draws none"
+difference_citation = "docs/platform-facts.md §2.26 (border.color, border.line_width): none, `.card` sets no border, its outline is the first of three box shadows (_misc.scss:201-208 at libadwaita 1.10.0); material-3: docs/platform-facts.md §2.26, border.color none for the filled and the elevated card, border.line_width 0; os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.normal.box` `edge_*`; ios-13: ios-host run 45230061151 (iOS 18.6; docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d), the card render's `border_width_pt` 0 on every layer, `changed_parts.toml` `run1.\"<a>\".card.normal.edges`"
+difference_values = { "adwaita" = "none", "material-3" = "none", "macos-monterey" = { light = "#00000013", dark = "#ffffff26" }, "macos-tahoe" = "none", "ios-13" = "none" }
 
 [[row]]
 key = "card.border.corner_radius"
 homes = ["card.container(NONE).corners"]
 unstated_if_unset = true
 note = "Corners::uniform(radius)"
+difference_presets = ["macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2 states no box corners; 0.8.0 states NSBox's measured ones: 5 on macos-monterey (the edge fit 4.75-5.0), 12 on macos-tahoe (12.0-12.25); ios-13: 0.7.2 states no card corners; 0.8.0 states the .insetGrouped cell's corners of 10 (circular: its continuous curve no connector draws yet)"
+difference_citation = "os-probe runs 45198750893, 45208260830 (macOS 15) and 45217592058 (macOS 26), docs/evidence/os-probe/ on m2-fs4c, `*.normal.box` `corner_edge_*`; ios-13: ios-host run 45230061151 (iOS 18.6; docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d), `run1/index.toml` the card render, view `0.1` `corner_radius_pt` 10, `corner_curve` continuous, `masked_corners` 15"
+difference_values = { "macos-monterey" = 5.0, "macos-tahoe" = 12.0, "ios-13" = 10.0 }
 
 [[row]]
 key = "card.border.line_width"
 homes = ["card.container(NONE).stroke.width"]
 unstated_if_unset = true
-difference_presets = ["adwaita", "material-3"]
-difference_reason = "0.7.2's adwaita.toml states no card border; 0.8.0 states the card's outline as none, as libadwaita draws it; material-3.toml states none either; 0.8.0 states the filled card's outline as none"
-difference_citation = "docs/platform-facts.md §2.26 (border.color, border.line_width): none, `.card` sets no border, its outline is the first of three box shadows (_misc.scss:201-208 at libadwaita 1.10.0); material-3: docs/platform-facts.md §2.26, border.color none for the filled and the elevated card, border.line_width 0"
-difference_values = { "adwaita" = "none", "material-3" = "none" }
+difference_presets = ["adwaita", "material-3", "macos-monterey", "macos-tahoe", "ios-13"]
+difference_reason = "0.7.2's adwaita.toml states no card border; 0.8.0 states the card's outline as none, as libadwaita draws it; material-3.toml states none either; 0.8.0 states the filled card's outline as none; 0.7.2 states no box outline; 0.8.0 states NSBox's measured one: 1 px on macos-monterey, none on macos-tahoe; ios-13: 0.7.2 states no card outline; 0.8.0 states none, as an .insetGrouped section's cell draws none"
+difference_citation = "docs/platform-facts.md §2.26 (border.color, border.line_width): none, `.card` sets no border, its outline is the first of three box shadows (_misc.scss:201-208 at libadwaita 1.10.0); material-3: docs/platform-facts.md §2.26, border.color none for the filled and the elevated card, border.line_width 0; os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.normal.box` `edge_*`; ios-13: ios-host run 45230061151 (iOS 18.6; docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d), the card render's `border_width_pt` 0 on every layer"
+difference_values = { "adwaita" = "none", "material-3" = "none", "macos-monterey" = 1.0, "macos-tahoe" = "none", "ios-13" = "none" }
 
 [[row]]
 key = "card.border.shadow_enabled"
@@ -2905,10 +2925,10 @@ homes = ["expander.arrow(NONE).size"]
 [[row]]
 key = "expander.hover_background"
 homes = ["expander.header(HOVER).fill"]
-difference_presets = ["kde-breeze", "windows-11", "material-3"]
-difference_reason = "0.7.2 leaves it unset (no rule); 0.8.0 states the header's look under the pointer: on kde-breeze no fill (transparent), on windows-11 the header's rest fill CardBackgroundFillColorDefault, which 0.8.0 states at rest too; on material-3, where 0.7.2 states #1c1b1f14 / #e6e1e514 (uncited, not v0_192's on-surface), on-surface at the hover opacity 0.08, a full-width row's hover layer, Material 3 having no expander"
-difference_citation = "kde-breeze: docs/platform-facts.md §2.27 (hover_background), KCollapsibleGroupBox paints the arrow and the title only (kcollapsiblegroupbox.cpp:153-182 at kwidgetsaddons v6.30.0); windows-11: ExpanderHeaderBackground = CardBackgroundFillColorDefault, which no PointerOver or Pressed state sets (Expander.xaml:111; Expander_themeresources.xaml:29, :5, :122-165 at microsoft-ui-xaml 8463f45); material-3: docs/platform-facts.md §2.27 (no expander); list-item-hover-state-layer-color on-surface at hover-state-layer-opacity 0.08 (_md-comp-list.scss:85-88, v0_192 at material-web cbd34a8)"
-difference_values = { "kde-breeze" = "#00000000", "windows-11" = { light = "#ffffffb3", dark = "#ffffff0d" }, "material-3" = { light = "#1d1b2014", dark = "#e6e0e914" } }
+difference_presets = ["kde-breeze", "windows-11", "material-3", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2 leaves it unset (no rule); 0.8.0 states the header's look under the pointer: on kde-breeze no fill (transparent), on windows-11 the header's rest fill CardBackgroundFillColorDefault, which 0.8.0 states at rest too; on material-3, where 0.7.2 states #1c1b1f14 / #e6e1e514 (uncited, not v0_192's on-surface), on-surface at the hover opacity 0.08, a full-width row's hover layer, Material 3 having no expander; macos-monterey: 0.7.2's uncited #e0e0e5 / #444446; macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states no fill (transparent) at rest and for HOVER and PRESSED, as SwiftUI's DisclosureGroup draws none behind its title"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.27 (hover_background), KCollapsibleGroupBox paints the arrow and the title only (kcollapsiblegroupbox.cpp:153-182 at kwidgetsaddons v6.30.0); windows-11: ExpanderHeaderBackground = CardBackgroundFillColorDefault, which no PointerOver or Pressed state sets (Expander.xaml:111; Expander_themeresources.xaml:29, :5, :122-165 at microsoft-ui-xaml 8463f45); material-3: docs/platform-facts.md §2.27 (no expander); list-item-hover-state-layer-color on-surface at hover-state-layer-opacity 0.08 (_md-comp-list.scss:85-88, v0_192 at material-web cbd34a8); os-probe run 45214606115 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45214606115/ on m2-fs4d), `switch-label-macos-{15,26}/measure.toml` `*.normal.disclosure` `label_ink`, `*.hovered_disclosure_*` and `*.pressed_disclosure_*` `label_changed_from_rest_px` 0"
+difference_values = { "kde-breeze" = "#00000000", "windows-11" = { light = "#ffffffb3", dark = "#ffffff0d" }, "material-3" = { light = "#1d1b2014", dark = "#e6e0e914" }, "macos-monterey" = "#00000000", "macos-tahoe" = "#00000000" }
 
 [[row]]
 key = "expander.arrow_color"

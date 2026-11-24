@@ -20284,11 +20284,11 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
         ),
         Ok(SwitchLabelHome::WindowForegroundMuted) => (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/switch.rs:488",
+            "native-theme-gpui/widgets/switch.rs:476",
         ),
         _ => (
             "colors.window.foreground",
-            "native-theme-gpui/widgets/switch.rs:484",
+            "native-theme-gpui/widgets/switch.rs:472",
         ),
     };
     [track, hover, track_outline, thumb_outline, thumb, label]
@@ -20677,12 +20677,9 @@ fn a_theme_drawn_controls_info_prints_its_look() {
     );
 }
 
-/// The theme-drawn Switch's label in its info: on kde-breeze light, which
-/// states no switch label nor gap, gpui-component's own colour (the
-/// window's text, disabled `muted_foreground`, at the homes the connector
-/// fills them from), size and gap; on the same theme patched to state the
-/// label's colour, size and gap and a disabled colour, each at the
-/// switch's own home, the colour cited at the line `SwitchLook::next_of`
+/// The theme-drawn Switch's label in its info: on kde-breeze light patched
+/// to state the label's colour, size and gap and a disabled colour, each at
+/// the switch's own home, the colour cited at the line `SwitchLook::next_of`
 /// reads it at.
 #[cfg(feature = "widgets")]
 #[test]
@@ -20697,9 +20694,9 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
         Theme::preset(Preset::KdeBreeze)
             .resolve(&ThemeContext::default().with_scheme(Scheme::Light))
     };
-    // ios-13 states no label (no source), so its switch's label is gpui-component's own.
-    let plain =
-        Theme::preset(Preset::Ios13).resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+    // Every bundled preset states its switch label (M2.FS4): the choice of gpui-component's own
+    // colour for an unstated one is the connector's `label_home`, tested on an unstated label in
+    // `widgets::switch`'s tests.
     let mut patched = breeze();
     patched.apply_patch(
         &ThemePatch::new()
@@ -20719,38 +20716,21 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
     );
     let says = |text: Option<&str>, part: &str| text.is_some_and(|text| text.contains(part));
     let mut wrong = Vec::new();
-    for (r, homes, gap, size) in [
-        (
-            &plain,
-            [
-                (
-                    "colors.window.foreground",
-                    "native-theme-gpui/widgets/switch.rs:484",
-                ),
-                (
-                    "colors.window.foreground_muted",
-                    "native-theme-gpui/widgets/switch.rs:488",
-                ),
-            ],
-            "gap_2",
-            "text_sm",
-        ),
-        (
-            &patched,
-            [
-                (
-                    "switch.label(NONE).color",
-                    "native-theme-gpui/widgets/switch.rs:437",
-                ),
-                (
-                    "switch.label(DISABLED).color",
-                    "native-theme-gpui/widgets/switch.rs:439",
-                ),
-            ],
-            "switch.label_gap: 13px",
-            "switch.label(NONE).size_px 17px",
-        ),
-    ] {
+    for (r, homes, gap, size) in [(
+        &patched,
+        [
+            (
+                "switch.label(NONE).color",
+                "native-theme-gpui/widgets/switch.rs:437",
+            ),
+            (
+                "switch.label(DISABLED).color",
+                "native-theme-gpui/widgets/switch.rs:439",
+            ),
+        ],
+        "switch.label_gap: 13px",
+        "switch.label(NONE).size_px 17px",
+    )] {
         let ground = r.colors.window.background.map(next_stated);
         for (disabled, (field, cited)) in [false, true].into_iter().zip(homes) {
             let info = inputs::native_switch(r, "label", false, disabled);
@@ -21116,15 +21096,33 @@ fn a_group_box_claims_the_card_edge_only_where_one_is_drawn() {
             (format!("{name}, its card stroked as none"), r, t)
         });
     assert!(unstroked.is_some(), "no bundled 0.8.0 variant to patch");
+    // Every bundled preset states its card's stroke (M2.FS4), so the edge of a card whose stroke
+    // is unstated is read off a container that states nothing.
+    let cases = every_next_variant()
+        .into_iter()
+        .chain(unstroked)
+        .map(|(name, r, t)| (name, r.card.container(WidgetState::NONE), Some(r), t))
+        .chain(std::iter::once((
+            "a card whose stroke the theme leaves unstated".to_owned(),
+            native_theme::next::PartStyle::default(),
+            None,
+            Theme::default(),
+        )));
     let mut branches = (false, false, false);
-    for (name, r, t) in every_next_variant().into_iter().chain(unstroked) {
-        let container = r.card.container(WidgetState::NONE);
+    for (name, container, r, t) in cases {
         for kind in [
             GroupBoxKind::Normal,
             GroupBoxKind::Fill,
             GroupBoxKind::Outline,
         ] {
-            let info = crate::info::layout::next_group_box(&t, kind, Some(&r), None, "Title");
+            let info = match &r {
+                Some(r) => crate::info::layout::next_group_box(&t, kind, Some(r), None, "Title"),
+                None => crate::info::layout::unstated_card_edge(
+                    crate::info::WidgetInfo::new("GroupBox"),
+                    &t,
+                    kind,
+                ),
+            };
             let what = kind.name();
             let line = note_of(&info.config, "edge");
             match stroke_width_of(&container) {

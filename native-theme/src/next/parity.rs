@@ -3694,11 +3694,14 @@ fn reader_parity_macos() -> TestResult {
         } else {
             TAHOE_HOVER_BORDER
         };
+        let surface_rows = macos_surface_rows(&snapshot);
         let listed: Vec<&str> = table
             .row
             .iter()
             .map(|row| row.key.as_str())
-            .filter(|key| hover_border.contains(key) || listed.contains(key))
+            .filter(|key| {
+                hover_border.contains(key) || surface_rows.contains(key) || listed.contains(key)
+            })
             .collect();
         assert_reader_parity(
             name,
@@ -3723,6 +3726,35 @@ const MONTEREY_HOVER_BORDER: &[&str] = &[
     "input.hover_border_color",
     "combo_box.hover_border_color",
 ];
+
+/// M2.FS4: the rows of a macOS reader case whose listed difference is a colour role of the preset
+/// that the case's reader replaces (the roles of the preset alone against the preset under the
+/// case's settings): a hovered tab's fill, its rest one, the window's background; a hovered slider
+/// knob's, its rest one, which in the light scheme of both presets is the view's background.
+fn macos_surface_rows(snapshot: &crate::next::reader::SystemSnapshot) -> Vec<&'static str> {
+    use crate::next::preset::Theme as NextTheme;
+    use crate::next::query::Scheme;
+    let own = NextTheme::preset(snapshot.preset)
+        .resolve(&snapshot.context)
+        .colors;
+    let read = NextTheme::preset(snapshot.preset)
+        .with_system_overrides(snapshot.overrides.clone())
+        .resolve(&snapshot.context)
+        .colors;
+    [
+        (
+            own.window.background != read.window.background,
+            "tab.hover_background",
+        ),
+        (
+            snapshot.context.scheme == Scheme::Light && own.view.background != read.view.background,
+            "slider.thumb_hover_color",
+        ),
+    ]
+    .into_iter()
+    .filter_map(|(replaced, row)| replaced.then_some(row))
+    .collect()
+}
 
 /// The same rows on macos-tahoe, whose push button and pop-up button have no outline: the checked
 /// check box's and radio's and the text field's.

@@ -154,10 +154,14 @@ enum Field {
     PickedSplitColor,
     /// A pane grid's `hovered_split.color`.
     HoveredSplitColor,
+    /// `border.radius`, every corner: a uniform circular corner radius.
+    Radius,
+    /// A slider's filled rail, `rail.backgrounds.0`.
+    RailFill,
 }
 
 impl Field {
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 12] = [
         Self::Background,
         Self::HandleBackground,
         Self::TextColor,
@@ -168,6 +172,8 @@ impl Field {
         Self::Separator,
         Self::PickedSplitColor,
         Self::HoveredSplitColor,
+        Self::Radius,
+        Self::RailFill,
     ];
 }
 
@@ -251,6 +257,19 @@ mod read {
             .then(|| crate::next::stroke_width_of(part))
             .flatten()
             .map(Value::Width)
+    }
+
+    /// The corners, a uniform circular radius (the one form the builder hands
+    /// iced, `borders::radius`), as a width.
+    pub(super) fn corners(part: &PartStyle, gate: &PartStyle, state: WidgetState) -> Option<Value> {
+        use native_theme::next::{CornerCurve, CornerRadius};
+        if !part_stated(gate, PartStated::CORNERS, state) {
+            return None;
+        }
+        match (part.corners.radius, part.corners.curve) {
+            (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(Value::Width(r)),
+            _ => None,
+        }
     }
 
     /// A text style's colour.
@@ -548,18 +567,6 @@ const fn aw(
     }
 }
 
-/// The reason of a card whose outline the 0.8.0 theme leaves unstated.
-const CARD_STROKE: &str = "the theme states no stroke for the card: 0.7.2's preset leaves \
-     card.border's colour and width unset and its resolver makes up a transparent line 0 wide \
-     (validate_border), a value the 0.8.0 model does not carry (docs/v0.8.0-spec.md §5, notes \
-     to the table: a value 0.7.2's resolver makes up is not carried; the table of homes, \
-     card.border.*: unstated_if_unset), and the card's outline is iced_aw's own card's \
-     (iced_aw 0.14.1 src/style/card.rs, fn primary; docs/v0.8.0-spec.md §10, rule 0)";
-
-/// The reason of a card whose corners the 0.8.0 theme leaves unstated.
-const CARD_CORNERS: &str = "nor corners: 0.7.2's resolver makes up a square card \
-     (validate_border), and the radius is iced_aw's own card's";
-
 /// The reason of a selected tab whose outline the 0.8.0 theme leaves
 /// unstated.
 const TAB_STROKE: &str = "the theme states no outline for the selected tab: 0.7.2's preset \
@@ -578,21 +585,6 @@ const TAB_IDLE_STROKE: &str = "nor an outline for a tab not selected: windows-11
      outline is iced_aw's own tab bar's \
      (iced_aw 0.14.1 src/style/tab_bar.rs, Style's default: 1 wide; docs/v0.8.0-spec.md \
      §10, rule 0)";
-
-/// The reason of a hovered tab's fill the 0.8.0 theme states nothing for.
-const TAB_HOVER_FILL: &str = "the theme states no fill for the hovered tab: 0.7.2 leaves \
-     tab.hover_background unset (docs/inheritance-rules.toml, [no_inheritance]: no rule \
-     fills it), which its connector drew as the idle tab; the 0.8.0 theme has no rule for \
-     HOVER that states tab.tab's fill, and the fill is iced_aw's own for the status \
-     (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
-
-/// The reason of a hovered sidebar item 0.7.2's resolver fills in.
-const SIDEBAR_HOVER: &str = "the theme states no fill for the hovered sidebar item: 0.7.2's \
-     preset leaves sidebar.hover_background unset and its resolver fills it from the \
-     sidebar's background (docs/inheritance-rules.toml, sidebar.hover_background), a value the \
-     0.8.0 model does not carry (docs/v0.8.0-spec.md §5, notes to the table: a hovered \
-     sidebar item's fill); no rule for HOVER states sidebar.item's fill, and the fill is \
-     iced_aw's own for the status";
 
 /// The reason of a hovered list row 0.7.2's resolver fills in.
 const LIST_HOVER: &str = "the theme states no fill and no label for the hovered row: 0.7.2's \
@@ -1154,6 +1146,24 @@ const W11_CHECK_HOVER: &[Stated] = &[
         at!(HOVER),
         Field::Background,
         home!(fill, checkbox.indicator(HOVER)),
+    ),
+    CHECK_HOVER_STROKES[0],
+    CHECK_HOVER_STROKES[1],
+];
+
+/// macos-tahoe's check box under the pointer: the unchecked box's fill, the
+/// checked box's (`indicator(HOVER|CHECKED)` where the rule for HOVER states
+/// it), the strokes over them.
+const TAHOE_CHECK_HOVER: [Stated; 4] = [
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, checkbox.indicator(HOVER)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::Background,
+        home!(fill, checkbox.indicator(HOVER | CHECKED) by HOVER),
     ),
     CHECK_HOVER_STROKES[0],
     CHECK_HOVER_STROKES[1],
@@ -1763,6 +1773,39 @@ const DIFFERENCES: &[Difference] = &[
     inside("progress_bar", MACOS_WINDOWS),
     // card.container(NONE).
     inside("container_card", &["windows-11"]),
+    // card.container(NONE): NSBox's and the .insetGrouped cell's measured edge.
+    stated_fields(
+        "container_card",
+        &["macos-monterey"],
+        LineAlign::Outside,
+        &[&[
+            set(
+                at!(NONE),
+                Field::BorderWidth,
+                home!(width, card.container(NONE)),
+            ),
+            set(
+                at!(NONE),
+                Field::BorderColor,
+                home!(stroke, card.container(NONE)),
+            ),
+            set(
+                at!(NONE),
+                Field::Radius,
+                home!(corners, card.container(NONE)),
+            ),
+        ]],
+    ),
+    stated_fields(
+        "container_card",
+        &["macos-tahoe", "ios-13"],
+        LineAlign::Outside,
+        &[&[set(
+            at!(NONE),
+            Field::Radius,
+            home!(corners, card.container(NONE)),
+        )]],
+    ),
     // Breeze's progress groove, a pen centred on its edge
     // (progress_bar.track(NONE).stroke).
     Difference {
@@ -1800,7 +1843,19 @@ const DIFFERENCES: &[Difference] = &[
         &[&CHECK_HOVER_STROKES],
     ),
     stated_fields("checkbox", &["material-3"], LineAlign::Outside, &[M3_CHECK]),
-    inside("checkbox", &["macos-monterey"]),
+    stated_fields(
+        "checkbox",
+        &["macos-monterey"],
+        LineAlign::Inside,
+        &[&[
+            set(
+                at!(HOVER),
+                Field::Background,
+                home!(fill, checkbox.indicator(HOVER)),
+            ),
+            CHECK_HOVER_STROKES[0],
+        ]],
+    ),
     stated_fields(
         "checkbox",
         &["windows-11"],
@@ -1811,8 +1866,9 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["macos-tahoe"],
         LineAlign::Inside,
-        hovered(true, true, false),
-    ),
+        hovered(false, true, false),
+    )
+    .stating(&[&TAHOE_CHECK_HOVER], &[INSIDE, HOVER, STATED]),
     hover(
         "radio",
         &["kde-breeze"],
@@ -1871,7 +1927,6 @@ const DIFFERENCES: &[Difference] = &[
         presets: &[
             "kde-breeze",
             "adwaita",
-            "macos-monterey",
             "macos-tahoe",
             "material-3",
             "ios-13",
@@ -1885,6 +1940,24 @@ const DIFFERENCES: &[Difference] = &[
         },
         stated: &[],
         reason: &[HOVER_THUMB],
+    },
+    // macos-monterey's off track under the pointer, its rest fill (`track(HOVER)`).
+    Difference {
+        leaf: "toggler",
+        presets: &["macos-monterey"],
+        listed: Listed {
+            states: States {
+                hover_thumb: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        stated: &[&[set(
+            at!(HOVER),
+            Field::Background,
+            home!(fill, switch.track(HOVER)),
+        )]],
+        reason: &[HOVER_THUMB, STATED],
     },
     Difference {
         leaf: "toggler",
@@ -1913,23 +1986,11 @@ const DIFFERENCES: &[Difference] = &[
     // scheme); kde-breeze, windows-11 and adwaita state the hovered and the
     // pressed thumb's (`thumb(HOVER)`, `thumb(PRESSED)`), material-3 the
     // pressed one.
+    // macos-tahoe: the knob as at rest hovered and pressed, the filled rail's measured pressed
+    // fill (`active_track(PRESSED)`).
     Difference {
         leaf: "slider",
-        presets: &["macos-monterey/dark", "macos-tahoe"],
-        listed: Listed {
-            states: States {
-                hover_fill: true,
-                rail: true,
-                ..States::STATED
-            },
-            ..Listed::aligned(LineAlign::Outside)
-        },
-        stated: &[],
-        reason: &[HOVER, SLIDER_RAIL],
-    },
-    Difference {
-        leaf: "slider",
-        presets: &["macos-monterey/light", "ios-13"],
+        presets: &["macos-tahoe"],
         listed: Listed {
             states: States {
                 rail: true,
@@ -1937,12 +1998,28 @@ const DIFFERENCES: &[Difference] = &[
             },
             ..Listed::aligned(LineAlign::Outside)
         },
-        stated: &[],
-        reason: &[SLIDER_RAIL],
+        stated: &[&[
+            set(
+                at!(HOVER),
+                Field::HandleBackground,
+                home!(fill, slider.thumb(HOVER)),
+            ),
+            set(
+                at!(PRESSED),
+                Field::HandleBackground,
+                home!(fill, slider.thumb(PRESSED)),
+            ),
+            set(
+                at!(PRESSED),
+                Field::RailFill,
+                home!(fill, slider.active_track(PRESSED)),
+            ),
+        ]],
+        reason: &[SLIDER_RAIL, STATED],
     },
     Difference {
         leaf: "slider",
-        presets: &["kde-breeze", "windows-11", "adwaita"],
+        presets: &["kde-breeze", "windows-11", "adwaita", "macos-monterey"],
         listed: Listed {
             states: States {
                 rail: true,
@@ -1966,7 +2043,7 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "slider",
-        presets: &["material-3"],
+        presets: &["material-3", "ios-13"],
         listed: Listed {
             states: States {
                 rail: true,
@@ -2040,7 +2117,14 @@ const DIFFERENCES: &[Difference] = &[
         "segment",
         &["macos-tahoe"],
         LineAlign::Outside,
-        &[&SEGMENT_CORNERS],
+        &[
+            &SEGMENT_CORNERS,
+            &[set(
+                at!(PRESSED),
+                Field::Background,
+                home!(fill, segmented_control.segment(PRESSED)),
+            )],
+        ],
     ),
     // splitter.handle(HOVER), both splits' colour.
     stated_fields(
@@ -2054,7 +2138,23 @@ const DIFFERENCES: &[Difference] = &[
     // kde-breeze's pressed segment as 0.7.2 drew it (and kde-breeze's,
     // windows-11's and material-3's hovered header, `header(HOVER)`);
     // macos-tahoe states no hovered fill either.
-    pressed("segment", &["macos-monterey", "ios-13"], LineAlign::Outside),
+    pressed("segment", &["ios-13"], LineAlign::Outside),
+    // macos-monterey: an unselected segment's measured pressed fill; hovered, no fill of its own
+    // (`segment(HOVER)` unstated).
+    hover(
+        "segment",
+        &["macos-monterey"],
+        LineAlign::Outside,
+        hovered(true, false, false),
+    )
+    .stating(
+        &[&[set(
+            at!(PRESSED),
+            Field::Background,
+            home!(fill, segmented_control.segment(PRESSED)),
+        )]],
+        &[HOVER, STATED],
+    ),
     stated_fields(
         "segment",
         &["adwaita", "windows-11", "material-3"],
@@ -2065,10 +2165,17 @@ const DIFFERENCES: &[Difference] = &[
             home!(fill, segmented_control.segment(PRESSED)),
         )]],
     ),
-    pressed(
+    stated_fields(
         "expander",
-        &["macos-monterey", "ios-13"],
+        &["macos-monterey", "macos-tahoe"],
         LineAlign::Outside,
+        &[&EXPANDER_FILLS],
+    ),
+    stated_fields(
+        "expander",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&[EXPANDER_FILLS[1]]],
     ),
     stated_fields(
         "expander",
@@ -2084,13 +2191,39 @@ const DIFFERENCES: &[Difference] = &[
     ),
     // iced_aw: card.container(NONE).
     inside("aw::card", &["windows-11"]),
-    aw(
+    // NSBox's and the .insetGrouped cell's measured edge: macos-monterey's line and corners,
+    // macos-tahoe's and ios-13's corners over no line.
+    stated_fields(
         "aw::card",
-        &["macos-monterey", "macos-tahoe", "ios-13"],
+        &["macos-monterey"],
         LineAlign::Outside,
-        States::STATED,
-        (true, true),
-        &[CARD_STROKE, CARD_CORNERS],
+        &[&[
+            set(
+                at!(NONE),
+                Field::BorderWidth,
+                home!(width, card.container(NONE)),
+            ),
+            set(
+                at!(NONE),
+                Field::BorderColor,
+                home!(stroke, card.container(NONE)),
+            ),
+            set(
+                at!(NONE),
+                Field::Radius,
+                home!(corners, card.container(NONE)),
+            ),
+        ]],
+    ),
+    stated_fields(
+        "aw::card",
+        &["macos-tahoe", "ios-13"],
+        LineAlign::Outside,
+        &[&[set(
+            at!(NONE),
+            Field::Radius,
+            home!(corners, card.container(NONE)),
+        )]],
     ),
     // iced_aw: the menu's frame, popover.panel's stroke over menu.panel's
     // fill.
@@ -2113,39 +2246,67 @@ const DIFFERENCES: &[Difference] = &[
     ),
     aw(
         "aw::tab_bar",
-        &["macos-monterey", "ios-13"],
+        &["ios-13"],
         LineAlign::Outside,
         States::STATED,
         (true, false),
         &[TAB_STROKE, TAB_IDLE_STROKE],
     ),
+    // the macOS presets state a hovered tab's fill as its rest one (`tab.tab(HOVER)`).
     aw(
         "aw::tab_bar",
-        &["macos-tahoe"],
+        MACOS,
         LineAlign::Outside,
-        hovered(true, false, false),
+        States::STATED,
         (true, false),
-        &[TAB_STROKE, TAB_IDLE_STROKE, TAB_HOVER_FILL],
+        &[TAB_STROKE, TAB_IDLE_STROKE],
+    )
+    .stating(
+        &[&[set(
+            at!(HOVER),
+            Field::Background,
+            home!(fill, tab.tab(HOVER)),
+        )]],
+        &[TAB_STROKE, TAB_IDLE_STROKE, STATED],
     ),
     // iced_aw: sidebar.container(NONE)'s stroke and sidebar.item(HOVER).
+    // the macOS presets state no fill for a hovered source-list row (`sidebar.item(HOVER)`).
     aw(
         "aw::sidebar",
         MACOS,
         LineAlign::Inside,
-        hovered(true, false, false),
+        States::STATED,
         (false, false),
-        &[INSIDE, SIDEBAR_HOVER],
+        &[INSIDE],
+    )
+    .stating(
+        &[&[set(
+            at!(HOVER),
+            Field::Background,
+            home!(fill, sidebar.item(HOVER)),
+        )]],
+        &[INSIDE, STATED],
     ),
     // iced_aw: list.container(NONE)'s stroke, list.highlight(HOVER) and
     // list.item_label(HOVER).
     inside("aw::selection_list", &["windows-11"]),
+    // the macOS presets state no highlight for a hovered row (`list.highlight(HOVER)`); its
+    // label they leave to iced_aw.
     aw(
         "aw::selection_list",
         MACOS,
         LineAlign::Inside,
-        hovered(true, true, false),
+        hovered(false, true, false),
         (false, false),
         &[INSIDE, LIST_HOVER],
+    )
+    .stating(
+        &[&[set(
+            at!(HOVER),
+            Field::Background,
+            home!(fill, list.highlight(HOVER)),
+        )]],
+        &[INSIDE, LIST_HOVER, STATED],
     ),
     // link.label(HOVER): the macOS presets state none.
     Difference {
@@ -2655,7 +2816,9 @@ impl Fields for iced_widget::button::Style {
             | Field::IconColor
             | Field::Separator
             | Field::PickedSplitColor
-            | Field::HoveredSplitColor => return no_field(field, "button::Style"),
+            | Field::HoveredSplitColor
+            | Field::Radius
+            | Field::RailFill => return no_field(field, "button::Style"),
         }
         Ok(())
     }
@@ -2682,7 +2845,9 @@ impl Fields for iced_widget::checkbox::Style {
             | Field::InnerRadius
             | Field::Separator
             | Field::PickedSplitColor
-            | Field::HoveredSplitColor => {
+            | Field::HoveredSplitColor
+            | Field::Radius
+            | Field::RailFill => {
                 return no_field(field, "checkbox::Style");
             }
         }
@@ -2707,7 +2872,9 @@ impl Fields for iced_widget::radio::Style {
             | Field::InnerRadius
             | Field::Separator
             | Field::PickedSplitColor
-            | Field::HoveredSplitColor => {
+            | Field::HoveredSplitColor
+            | Field::Radius
+            | Field::RailFill => {
                 return no_field(field, "radio::Style");
             }
         }
@@ -2729,7 +2896,9 @@ impl Fields for iced_widget::toggler::Style {
             | Field::InnerRadius
             | Field::Separator
             | Field::PickedSplitColor
-            | Field::HoveredSplitColor => return no_field(field, "toggler::Style"),
+            | Field::HoveredSplitColor
+            | Field::Radius
+            | Field::RailFill => return no_field(field, "toggler::Style"),
         }
         Ok(())
     }
@@ -2743,6 +2912,9 @@ impl Fields for iced_widget::slider::Style {
             Field::HandleBackground => {
                 self.handle.background = Background::Color(color_of(field, &value)?);
             }
+            Field::RailFill => {
+                self.rail.backgrounds.0 = Background::Color(color_of(field, &value)?);
+            }
             Field::Background
             | Field::TextColor
             | Field::IconColor
@@ -2751,7 +2923,8 @@ impl Fields for iced_widget::slider::Style {
             | Field::InnerRadius
             | Field::Separator
             | Field::PickedSplitColor
-            | Field::HoveredSplitColor => return no_field(field, "slider::Style"),
+            | Field::HoveredSplitColor
+            | Field::Radius => return no_field(field, "slider::Style"),
         }
         Ok(())
     }
@@ -2774,7 +2947,9 @@ impl Fields for iced_widget::pick_list::Style {
             | Field::InnerRadius
             | Field::Separator
             | Field::PickedSplitColor
-            | Field::HoveredSplitColor => return no_field(field, "pick_list::Style"),
+            | Field::HoveredSplitColor
+            | Field::Radius
+            | Field::RailFill => return no_field(field, "pick_list::Style"),
         }
         Ok(())
     }
@@ -2786,6 +2961,7 @@ impl Fields for iced_widget::container::Style {
         use iced_core::Background;
         match field {
             Field::BorderWidth => self.border.width = width_of(field, &value)?,
+            Field::Radius => self.border.radius = width_of(field, &value)?.into(),
             Field::BorderColor => {
                 let fill = crate::styles::painted(self.background);
                 self.border.color = line_over(field, &value, fill)?;
@@ -2804,7 +2980,8 @@ impl Fields for iced_widget::container::Style {
             | Field::IconColor
             | Field::InnerRadius
             | Field::PickedSplitColor
-            | Field::HoveredSplitColor => return no_field(field, "container::Style"),
+            | Field::HoveredSplitColor
+            | Field::RailFill => return no_field(field, "container::Style"),
         }
         Ok(())
     }
@@ -2823,7 +3000,9 @@ impl Fields for iced_widget::pane_grid::Style {
             | Field::BorderWidth
             | Field::BorderColor
             | Field::InnerRadius
-            | Field::Separator => return no_field(field, "pane_grid::Style"),
+            | Field::Separator
+            | Field::Radius
+            | Field::RailFill => return no_field(field, "pane_grid::Style"),
         }
         Ok(())
     }
@@ -2857,9 +3036,92 @@ impl Fields for iced_aw::style::tab_bar::Style {
             | Field::InnerRadius
             | Field::Separator
             | Field::PickedSplitColor
-            | Field::HoveredSplitColor => return no_field(field, "tab_bar::Style"),
+            | Field::HoveredSplitColor
+            | Field::Radius
+            | Field::RailFill => return no_field(field, "tab_bar::Style"),
         }
         Ok(())
+    }
+}
+
+#[cfg(feature = "iced_aw")]
+impl Fields for iced_aw::style::card::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        match field {
+            Field::BorderWidth => self.border_width = width_of(field, &value)?,
+            Field::BorderColor => {
+                let fill = crate::styles::painted(Some(self.background));
+                self.border_color = line_over(field, &value, fill)?;
+            }
+            Field::Radius => self.border_radius = width_of(field, &value)?,
+            Field::Background
+            | Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor
+            | Field::RailFill => return no_field(field, "card::Style"),
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "iced_aw")]
+impl Fields for iced_aw::style::sidebar::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::Background => {
+                self.tab_label_background = Background::Color(color_of(field, &value)?);
+            }
+            Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::BorderWidth
+            | Field::BorderColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor
+            | Field::Radius
+            | Field::RailFill => return no_field(field, "sidebar::Style"),
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "iced_aw")]
+impl Fields for iced_aw::style::selection_list::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::Background => self.background = Background::Color(color_of(field, &value)?),
+            Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::BorderWidth
+            | Field::BorderColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor
+            | Field::Radius
+            | Field::RailFill => return no_field(field, "selection_list::Style"),
+        }
+        Ok(())
+    }
+}
+
+/// An `iced_aw` status as the state the 0.8.0 theme is queried with for a
+/// card, a sidebar or a selection list: the row under the pointer `HOVER`,
+/// every other status the rest (no field is stated for one).
+#[cfg(feature = "iced_aw")]
+fn hover_at(status: iced_aw::style::Status) -> Option<WidgetState> {
+    match status {
+        iced_aw::style::Status::Hovered => Some(WidgetState::HOVER),
+        _ => Some(WidgetState::NONE),
     }
 }
 
@@ -3385,14 +3647,19 @@ fn compare_styles(
         [()]
     );
     let c = &old.card;
-    style!(
+    stated_surface!(
         report,
         themes,
+        new,
         "container_card",
-        surface(o::container_card(old)),
-        n::container_card(new).map(surface),
-        panel(c.background_color, None, &c.border),
-        [()]
+        o::container_card(old),
+        n::container_card(new),
+        |l: Listed| o::panel_from(
+            to_color(c.background_color),
+            None,
+            Some(Outline::of(&c.border).aligned(l.align)),
+        ),
+        WidgetState::NONE
     );
     let dl = &old.dialog;
     style!(
@@ -3635,15 +3902,23 @@ fn compare_aw(
     }
 
     let card = CardSource::of(old);
-    listed_style!(
-        report,
-        themes,
-        "aw::card",
-        leaves(o::card(old), aw_leaves::card),
-        n::card(new).map(|f| leaves(f, aw_leaves::card)),
-        |l: Listed| leaves(o::card_from(&card.listed(l)), aw_leaves::card),
-        statuses
-    );
+    if let Some(new_card) = report.mapped("aw::card", n::card(new)) {
+        let (old_theme, new_theme) = themes;
+        let old_card = o::card(old);
+        for status in statuses {
+            report.stated_leaf(
+                &format!("aw::card({status:?})"),
+                Some(WidgetState::NONE),
+                (
+                    aw_leaves::card(old_card(old_theme, status)),
+                    aw_leaves::card(new_card(new_theme, status)),
+                ),
+                |l: Listed| o::card_from(&card.listed(l))(old_theme, status),
+                aw_leaves::card,
+                new,
+            );
+        }
+    }
     let menu = MenuSource::of(old);
     listed_style!(
         report,
@@ -3673,28 +3948,41 @@ fn compare_aw(
         }
     }
     let sidebar = ListSource::of_sidebar(old);
-    listed_style!(
-        report,
-        themes,
-        "aw::sidebar",
-        leaves(o::sidebar(old), aw_leaves::sidebar),
-        n::sidebar(new).map(|f| leaves(f, aw_leaves::sidebar)),
-        |l: Listed| leaves(o::sidebar_from(&sidebar.listed(l)), aw_leaves::sidebar),
-        statuses
-    );
+    if let Some(new_sidebar) = report.mapped("aw::sidebar", n::sidebar(new)) {
+        let (old_theme, new_theme) = themes;
+        let old_sidebar = o::sidebar(old);
+        for status in statuses {
+            report.stated_leaf(
+                &format!("aw::sidebar({status:?})"),
+                hover_at(status),
+                (
+                    aw_leaves::sidebar(old_sidebar(old_theme, status)),
+                    aw_leaves::sidebar(new_sidebar(new_theme, status)),
+                ),
+                |l: Listed| o::sidebar_from(&sidebar.listed(l))(old_theme, status),
+                aw_leaves::sidebar,
+                new,
+            );
+        }
+    }
     let list = ListSource::of_list(old);
-    listed_style!(
-        report,
-        themes,
-        "aw::selection_list",
-        leaves(o::selection_list(old), aw_leaves::selection_list),
-        n::selection_list(new).map(|f| leaves(f, aw_leaves::selection_list)),
-        |l: Listed| leaves(
-            o::selection_list_from(&list.listed(l)),
-            aw_leaves::selection_list
-        ),
-        statuses
-    );
+    if let Some(new_list) = report.mapped("aw::selection_list", n::selection_list(new)) {
+        let (old_theme, new_theme) = themes;
+        let old_list = o::selection_list(old);
+        for status in statuses {
+            report.stated_leaf(
+                &format!("aw::selection_list({status:?})"),
+                hover_at(status),
+                (
+                    aw_leaves::selection_list(old_list(old_theme, status)),
+                    aw_leaves::selection_list(new_list(new_theme, status)),
+                ),
+                |l: Listed| o::selection_list_from(&list.listed(l))(old_theme, status),
+                aw_leaves::selection_list,
+                new,
+            );
+        }
+    }
     plain!(
         report,
         themes,

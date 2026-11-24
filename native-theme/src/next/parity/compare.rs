@@ -516,7 +516,9 @@ fn compare_row(
                 new: got.to_string(),
             });
         }
+        // A difference listed as "unstated" is no rule for the state: its bit stays clear.
         if let Some(unresolved) = extra.unresolved
+            && !(listed.is_some() && value.is_null())
             && unresolved_states(unresolved, &row.key)
             && under_a_state(home, row.null_reference.as_deref())?
             && from_state_at(home, new)? == Some(false)

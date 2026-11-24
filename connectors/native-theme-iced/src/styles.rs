@@ -3702,12 +3702,14 @@ impl SegmentedSource {
         }
     }
 
-    /// The outline's stroke where it lies as `listed` says, and the pressed
-    /// fill unset where it names it, for the parity test's expected values.
+    /// The outline's stroke where it lies as `listed` says, and the hovered
+    /// and the pressed fill unset where it names them, for the parity test's
+    /// expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
         Self {
             border: self.border.aligned(listed.align),
+            hover_background: self.hover_background.filter(|_| !listed.states.hover_fill),
             pressed_background: self
                 .pressed_background
                 .filter(|_| !listed.states.pressed_fill),

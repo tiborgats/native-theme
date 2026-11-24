@@ -352,13 +352,14 @@ const DIFFERENCES: &[Difference] = &[
         reason: "0.7.2 fills an unstated list.hover_background with the list's own background \
                  (native-theme/src/resolve/inheritance.rs, widget-to-widget: no tint), and the \
                  connector paints a hovered list and table row with it; the 0.8.0 macOS \
-                 presets leave list.highlight(HOVER).fill unstated (native-theme/tests/\
-                 next_homes.toml, row list.hover_background, unstated_if_unset; \
-                 docs/platform-facts.md §2.15 gives no hover colour for a table row), so the \
-                 0.8.0 theme keeps gpui-component's own hovered row, its accent at 0.6 opacity \
-                 (gpui-component 0.10.0 src/theme/schema.rs, ThemeColor::apply_config), in \
-                 list_hover and table_hover, their tokens and their stored config strings \
-                 (docs/v0.8.0-spec.md §10, rule 0); every other leaf of the theme is equal",
+                 presets state list.highlight(HOVER).fill transparent, as AppKit draws a \
+                 hovered table row as at rest (os-probe run 45198750893, macOS 15 and 26, \
+                 `*.hovered.table_row` differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row list.hover_background, a listed \
+                 difference), so list_hover and table_hover, their tokens and their stored \
+                 config strings are that fill (row_hover_of); every other leaf of the theme is \
+                 equal",
     },
     Difference {
         leaf: "geometry::group_box_content",
@@ -367,12 +368,15 @@ const DIFFERENCES: &[Difference] = &[
                  (docs/platform-facts.md §2.26: NSBox's fill and border are not published), and \
                  0.7.2's validation fills them with transparent, 0 and 0 \
                  (native-theme/src/resolve/validate_helpers.rs), values no source gives; the \
-                 0.8.0 macOS presets leave card.container(NONE).stroke and its corners unstated \
-                 (native-theme/tests/next_homes.toml, rows card.border.color, \
-                 card.border.line_width and card.border.corner_radius, unstated_if_unset), so the \
-                 0.8.0 refinement sets no border width, no border colour and no corner radius and \
-                 the group box keeps gpui-component's own (docs/v0.8.0-spec.md §10, rule 0); \
-                 every other field of the refinement is equal",
+                 0.8.0 macOS presets state NSBox's measured edge (os-probe runs 45198750893, \
+                 45208260830 and 45217592058, `*.normal.box` `edge_*`, `corner_edge_*`, \
+                 docs/evidence/os-probe/ on m2-fs4c; native-theme/tests/next_homes.toml, rows \
+                 card.border.color, card.border.line_width and card.border.corner_radius, \
+                 listed differences): on macos-monterey a 1 px line, #00000013 / #ffffff26, and \
+                 corners of 5, on macos-tahoe no line and corners of 12; so the refinement's \
+                 corner radius is card.container(NONE)'s, and its border width and colour the \
+                 stroke's where one is drawn (card_edge_of); every other field of the \
+                 refinement is equal",
     },
     Difference {
         leaf: "geometry::group_box_content",
@@ -383,13 +387,14 @@ const DIFFERENCES: &[Difference] = &[
                  0.7.2's validation \
                  fills them with transparent, 0 and 0 \
                  (native-theme/src/resolve/validate_helpers.rs), values no source gives; the \
-                 0.8.0 ios-13 leaves card.container(NONE).stroke and its corners unstated \
-                 (native-theme/src/next/presets/ios.rs, `card`; native-theme/tests/\
-                 next_homes.toml, rows card.border.color, card.border.line_width and \
-                 card.border.corner_radius, unstated_if_unset), so the 0.8.0 refinement sets \
-                 no border width, no border colour and no corner radius and the group box \
-                 keeps gpui-component's own (docs/v0.8.0-spec.md §10, rule 0); every other \
-                 field of the refinement is equal",
+                 0.8.0 ios-13 states the .insetGrouped cell's measured edge, no line and \
+                 corners of 10 (ios-host run 45230061151, the card render, \
+                 docs/evidence/ios-host/2026-11-23-run-45230061151/ on m2-fs4d; \
+                 native-theme/tests/next_homes.toml, rows card.border.color, \
+                 card.border.line_width and card.border.corner_radius, listed differences), so \
+                 the refinement's corner radius is card.container(NONE)'s and its border 0.7.2's \
+                 width 0 in transparent (card_edge_of); every other field of the refinement is \
+                 equal",
     },
     Difference {
         leaf: "geometry::button_checked",
@@ -422,6 +427,20 @@ const DIFFERENCES: &[Difference] = &[
                  (Expander.xaml:111, Expander_themeresources.xaml:29, :5, :122-165 at \
                  microsoft-ui-xaml 8463f45), so the refinement's background is that fill; it \
                  sets nothing else",
+    },
+    Difference {
+        leaf: "geometry::accordion_hover",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macos-monterey states expander.hover_background #e0e0e5 / #444446, \
+                 uncited, and macos-tahoe states none (the refinement sets no background); the \
+                 0.8.0 presets state no fill, transparent, at rest, hovered and pressed, as \
+                 SwiftUI's DisclosureGroup draws none behind its title (os-probe run \
+                 45214606115, macOS 15 and 26, `switch-label-macos-{15,26}/measure.toml` \
+                 `*.hovered_disclosure_*` `label_changed_from_rest_px` 0, \
+                 docs/evidence/os-probe/2026-11-23-run-45214606115/ on m2-fs4d; \
+                 native-theme/tests/next_homes.toml, row expander.hover_background, a listed \
+                 difference), so the refinement's background is that fill; it sets nothing \
+                 else",
     },
     Difference {
         leaf: "geometry::accordion_hover",
@@ -684,7 +703,7 @@ const UNSTROKED_HOVER: &[&str] = &["material-3"];
 
 /// The presets of [`DIFFERENCES`]' `geometry::accordion_hover` entries on
 /// which 0.7.2 states an expander hover fill the 0.8.0 preset replaces.
-const RESTATED_ACCORDION_HOVER: &[&str] = &["material-3"];
+const RESTATED_ACCORDION_HOVER: &[&str] = &["material-3", "macos-monterey"];
 
 /// The leaf of [`DIFFERENCES`]' entry for the push button's and the flat
 /// button's hovered and pressed fills: the `ThemeColor` slots of
@@ -840,9 +859,41 @@ fn button_states_as(
     Some(patched)
 }
 
-/// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
-/// whose card leaves its corners unstated beside its stroke.
-const UNSTATED_CARD_CORNERS: &[&str] = &["macos-monterey", "macos-tahoe", "ios-13"];
+/// The card's edge as `geometry::group_box_content`'s entries in
+/// [`DIFFERENCES`] describe it: `card.container(NONE)`'s uniform circular
+/// corner radius, and its uniform stroke's width and colour where it draws
+/// one (`None` for a stroke stated as none, which leaves 0.7.2's width 0
+/// in transparent); `None` where the theme states either otherwise.
+fn card_edge_of(new: &native_theme::next::ResolvedTheme) -> Option<(f32, Option<(f32, Hsla)>)> {
+    use native_theme::next::{CornerCurve, CornerRadius, PartStated, Stroke, WidgetState};
+    let c = new.card.container(WidgetState::NONE);
+    if !c.stated.contains(PartStated::STROKE) || !c.stated.contains(PartStated::CORNERS) {
+        return None;
+    }
+    let radius = match (c.corners.radius, c.corners.curve) {
+        (CornerRadius::Uniform(r), CornerCurve::Circular) => r,
+        _ => return None,
+    };
+    let border = match c.stroke {
+        Stroke::None => None,
+        Stroke::Uniform { width, color, .. } => Some((width, super::hsla(color))),
+        _ => return None,
+    };
+    Some((radius, border))
+}
+
+/// A hovered list row's fill where a rule states it for `HOVER`,
+/// `list.highlight(HOVER).fill` as the connector reads a fill
+/// ([`super::fill_of`]): the form of [`ROW_HOVER`]'s entries on a preset
+/// that states it; `None` where none does, gpui-component's own then.
+fn row_hover_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
+    use native_theme::next::{PartStated, WidgetState};
+    let hovered = new.list.highlight(WidgetState::HOVER);
+    if !hovered.from_state.contains(PartStated::FILL) {
+        return None;
+    }
+    super::fill_of(&hovered)
+}
 
 /// The leaf of [`DIFFERENCES`]' entry for a hovered list or table row: the
 /// `ThemeColor` slots `list_hover` and `table_hover`, their tokens and their
@@ -857,12 +908,14 @@ const ROW_HOVER: &str = "to_theme: list_hover and table_hover";
 /// [`ROW_HOVER`] entry); `None` where it does not. The colours are compared
 /// by their hex strings, which an upstream rebuild of the theme from its
 /// stored config (`Theme::change`) round-trips them through.
-fn row_hover_as_list(theme: &GpuiTheme) -> Option<GpuiTheme> {
+fn row_hover_as_list(theme: &GpuiTheme, stated: Option<Hsla>) -> Option<GpuiTheme> {
     let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
-    let own = hex(theme
-        .colors
-        .accent
-        .opacity(super::UPSTREAM_LIST_HOVER_ACCENT_OPACITY));
+    let own = hex(stated.unwrap_or_else(|| {
+        theme
+            .colors
+            .accent
+            .opacity(super::UPSTREAM_LIST_HOVER_ACCENT_OPACITY)
+    }));
     let config = if theme.is_dark() {
         &theme.dark_theme
     } else {
@@ -1074,7 +1127,7 @@ fn compare_theme(
     let new_theme = match report.listed(ROW_HOVER) {
         Some(listed) => {
             report.count(ROW_HOVER);
-            match row_hover_as_list(&new_theme) {
+            match row_hover_as_list(&new_theme, row_hover_of(new)) {
                 Some(patched) => patched,
                 None => {
                     report.failures.push(format!(
@@ -1668,20 +1721,24 @@ fn compare_builders(
             if let Some(n) = report.mapped(group_box, super::builders::group_box_content(new)) {
                 report.count(group_box);
                 let o = crate::geometry::group_box_content(Native::unscaled(old));
-                let mut corrected = o.clone();
-                corrected.border_widths = Default::default();
-                corrected.border_color = None;
-                let mut invented = o.border_widths.top == Some(px(0.0).into())
+                let invented = o.border_widths.top == Some(px(0.0).into())
                     && o.border_color == Some(Hsla::transparent_black());
-                if UNSTATED_CARD_CORNERS.contains(&report.preset) {
+                let expected = card_edge_of(new).map(|(radius, border)| {
                     use gpui::Styled as _;
-                    corrected.corner_radii = Default::default();
-                    invented &= o.corner_radii
-                        == gpui::StyleRefinement::default()
-                            .rounded(px(0.0))
-                            .corner_radii;
-                }
-                if !invented || corrected != n {
+                    let mut e = o.clone();
+                    e.corner_radii = gpui::StyleRefinement::default()
+                        .rounded(px(radius))
+                        .corner_radii;
+                    if let Some((width, color)) = border {
+                        let s = gpui::StyleRefinement::default()
+                            .border(px(width))
+                            .border_color(color);
+                        e.border_widths = s.border_widths;
+                        e.border_color = s.border_color;
+                    }
+                    e
+                });
+                if !invented || expected.as_ref() == Some(&o) || expected != Some(n.clone()) {
                     report.failures.push(format!(
                         "{}: {group_box}: the listed difference ({}) no longer describes \
                          it: 0.7.2 {o:?}, 0.8.0 {n:?}",
@@ -2233,14 +2290,14 @@ fn every_listed_difference_names_a_covered_preset() {
 /// are 0.7.2's. The styled theme itself is returned beside.
 fn installed(
     cx: &gpui::App,
-    row_hover_listed: bool,
+    row_hover_listed: Option<[Option<Hsla>; 2]>,
     button_states: Option<(&GpuiTheme, SchemeStates)>,
     handles: Option<SchemeHandles>,
 ) -> (Vec<(&'static str, String)>, GpuiTheme) {
     let styled = GpuiTheme::global(cx);
     let is_dark = styled.is_dark();
-    let row_hover = if row_hover_listed {
-        row_hover_as_list(styled)
+    let row_hover = if let Some([light, dark]) = row_hover_listed {
+        row_hover_as_list(styled, if is_dark { dark } else { light })
             .ok_or_else(|| format!("{ROW_HOVER}: not gpui-component's own hovered row"))
     } else {
         Ok(styled.clone())
@@ -2349,10 +2406,14 @@ fn apply_both(
         }
         Ok(())
     })?;
-    let row_hover_listed = next
+    let row_hover_listed = (next
         && DIFFERENCES
             .iter()
-            .any(|d| d.leaf == ROW_HOVER && d.presets.contains(&key));
+            .any(|d| d.leaf == ROW_HOVER && d.presets.contains(&key)))
+    .then(|| {
+        let mut schemes = themes.iter().map(|(_, (_, _, _, new))| row_hover_of(new));
+        [schemes.next().flatten(), schemes.next().flatten()]
+    });
     let states = {
         let mut schemes = themes
             .iter()

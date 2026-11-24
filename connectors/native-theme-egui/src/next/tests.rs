@@ -964,7 +964,7 @@ fn a_next_atlas_menu_bar_modifier_is_the_menu_cell_with_its_titles()
 /// The checked box's hovered fill by rule 0 per property (spec §10): where a rule states
 /// `checkbox.indicator(HOVER).fill` alone, the combined state's fill; where none does, egui's
 /// own hovered fill where egui's stock entries change it from rest, else the checked fill. The
-/// pressed fill, which neither theme states, follows the same rule on both.
+/// pressed fill follows the same rule.
 #[test]
 fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error::Error>> {
     let own = egui::Theme::Light.default_style();
@@ -984,13 +984,9 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         let unstated = |r: &native_theme::next::ResolvedTheme, s: WidgetState| {
             super::build::state_fill(&r.checkbox.indicator(s)).is_none()
         };
-        if !(unstated(&plain, WidgetState::HOVER) && unstated(&plain, WidgetState::PRESSED)) {
-            continue;
-        }
         let Some(checked) = super::build::fill(&k.indicator(WidgetState::CHECKED)) else {
             continue;
         };
-        tried.push(key);
         let checked = crate::convert::to_color32(checked);
         let cell = |atlas: &crate::ThemeAtlas| {
             atlas
@@ -1002,8 +998,27 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         };
         let w = cell(&patched_light(preset, "")?);
         assert_eq!(w.inactive.bg_fill, checked, "{key}");
-        assert_eq!(w.hovered.bg_fill, by_rule_0(&own.hovered, checked), "{key}");
-        assert_eq!(w.active.bg_fill, by_rule_0(&own.active, checked), "{key}");
+        // Every bundled preset states its pressed box (M2.FS4): where a state's fill is stated,
+        // the combined state's; where it is unstated, rule 0.
+        let expected = |state: WidgetState, own: &egui::style::WidgetVisuals| {
+            if unstated(&plain, state) {
+                Some(by_rule_0(own, checked))
+            } else {
+                super::build::fill(&k.indicator(state | WidgetState::CHECKED))
+                    .map(crate::convert::to_color32)
+            }
+        };
+        assert_eq!(
+            Some(w.hovered.bg_fill),
+            expected(WidgetState::HOVER, &own.hovered),
+            "{key}"
+        );
+        assert_eq!(
+            Some(w.active.bg_fill),
+            expected(WidgetState::PRESSED, &own.active),
+            "{key}"
+        );
+        tried.push(key);
 
         let patched = Theme::preset(preset)
             .with_patch(ThemePatch::from_toml(hover)?)
@@ -1016,12 +1031,13 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
         .ok_or("the combined state has a fill")?;
         let w = cell(&patched_light(preset, hover)?);
         assert_eq!(w.hovered.bg_fill, crate::convert::to_color32(both), "{key}");
-        assert_eq!(w.active.bg_fill, by_rule_0(&own.active, checked), "{key}");
+        assert_eq!(
+            Some(w.active.bg_fill),
+            expected(WidgetState::PRESSED, &own.active),
+            "{key}"
+        );
     }
-    assert!(
-        !tried.is_empty(),
-        "no preset leaves both state fills unstated"
-    );
+    assert!(!tried.is_empty(), "no preset states a checked fill");
     Ok(())
 }
 

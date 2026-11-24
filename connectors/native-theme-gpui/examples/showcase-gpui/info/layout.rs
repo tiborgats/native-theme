@@ -241,17 +241,7 @@ fn next_card_edge(info: WidgetInfo, t: &Theme, r: &NextTheme, kind: GroupBoxKind
     let container = r.card.container(WidgetState::NONE);
     let outline = kind == GroupBoxKind::Outline;
     let Some(width) = stroke_width_of(&container) else {
-        return if outline {
-            info.color(claim(
-                "border",
-                "border",
-                t.border,
-                "gpui-component/group_box.rs:146",
-            ))
-            .config("edge", "the Outline variant's own border_1 in border: the theme states no card.container(NONE) stroke, so geometry::group_box_content sets none on the content (group_box.rs, GroupBox)")
-        } else {
-            info.config("edge", "none: the theme states no card.container(NONE) stroke, so geometry::group_box_content sets none on the content, and a Normal or Fill box draws none of its own (group_box.rs, GroupBox)")
-        };
+        return unstated_card_edge(info, t, kind);
     };
     info.colors(edge_claim(
         "edge",
@@ -265,6 +255,22 @@ fn next_card_edge(info: WidgetInfo, t: &Theme, r: &NextTheme, kind: GroupBoxKind
         (false, true) => "none: card.container(NONE)'s stroke is 0 wide, and geometry::group_box_content sets that width on the content, which the GroupBox refines last, so the Outline box's own border_1 gives way to it (group_box.rs, GroupBox)".to_string(),
         (false, false) => "none: card.container(NONE)'s stroke is 0 wide, so geometry::group_box_content draws no edge on the content, and a Normal or Fill box draws none of its own (group_box.rs, GroupBox)".to_string(),
     })
+}
+
+/// [`next_card_edge`] where the theme states no `card.container(NONE)`
+/// stroke: the variant's own edge.
+pub(crate) fn unstated_card_edge(info: WidgetInfo, t: &Theme, kind: GroupBoxKind) -> WidgetInfo {
+    if kind == GroupBoxKind::Outline {
+        info.color(claim(
+            "border",
+            "border",
+            t.border,
+            "gpui-component/group_box.rs:146",
+        ))
+        .config("edge", "the Outline variant's own border_1 in border: the theme states no card.container(NONE) stroke, so geometry::group_box_content sets none on the content (group_box.rs, GroupBox)")
+    } else {
+        info.config("edge", "none: the theme states no card.container(NONE) stroke, so geometry::group_box_content sets none on the content, and a Normal or Fill box draws none of its own (group_box.rs, GroupBox)")
+    }
 }
 
 /// A `GroupBox` of `kind` titled `title`, on the 0.8.0 model.

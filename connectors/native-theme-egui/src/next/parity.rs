@@ -330,8 +330,18 @@ const DIFFERENCES: &[Difference] = &[
     ),
     d(
         "Expander",
-        &[A, W, M, T],
+        &[A, W],
         ".visuals.widgets.{noninteractive,hovered,active}.bg_stroke.color",
+        Cause::OverFill,
+        "the expander's frame (expander.container(NONE)) is a translucent stroke laid inside \
+         it in the 0.8.0 theme, where 0.7.2 stated no alignment",
+    ),
+    // the macOS headers draw no fill hovered or pressed (M2.FS4), so the frame's stroke over
+    // them is 0.7.2's there
+    d(
+        "Expander",
+        &[M, T],
+        ".visuals.widgets.noninteractive.bg_stroke.color",
         Cause::OverFill,
         "the expander's frame (expander.container(NONE)) is a translucent stroke laid inside \
          it in the 0.8.0 theme, where 0.7.2 stated no alignment",
@@ -449,28 +459,14 @@ const DIFFERENCES: &[Difference] = &[
         FRAME_INSIDE,
     ),
     d("Card", &[W], ".stroke.color", Cause::OverFill, FRAME_INSIDE),
-    d(
-        "Card",
-        &[M, T, I],
-        ".stroke.width",
-        Cause::Base,
-        CARD_OUTLINE,
-    ),
-    d(
-        "Card",
-        &[A, M, T, M3, I],
-        ".stroke.color",
-        Cause::Base,
-        CARD_OUTLINE,
-    ),
-    d(
-        "Card",
-        &[M, T, I],
-        ".corner_radius.*",
-        Cause::Base,
-        CARD_OUTLINE,
-    ),
+    d("Card", &[A, M3], ".stroke.color", Cause::Base, CARD_OUTLINE),
+    d("Card", &[T, I], ".stroke.color", Cause::Base, CARD_NO_LINE),
 ];
+
+/// A card stroked as none (M2.FS4, measured).
+const CARD_NO_LINE: &str = "the 0.8.0 preset states the card's outline as none (M2.FS4, \
+     measured): the width is 0 (spec §10, rule 2), as 0.7.2's, and the colour under it the base \
+     style's, which draws nothing; 0.7.2 gave a transparent one";
 
 /// A model gap: a native preset that leaves a state's value unstated where the platform draws
 /// one, so that the mapping shows egui's own or the base style's there (spec §10, rule 0) — a
@@ -524,6 +520,8 @@ enum HomeValue {
     Color(Rgba),
     Line(Rgba),
     Width(f32),
+    /// A uniform circular corner radius, which the builder gives egui as a whole `u8`.
+    Radius(f32),
 }
 
 /// Whether `bit` of a part is stated for `state`: by a rule for the state (`from_state`), or,
@@ -641,6 +639,23 @@ macro_rules! home {
                     .then(|| super::stroke_width_of(&part))
                     .flatten()
                     .map(HomeValue::Width)
+            }
+        )
+    };
+    ($w:ident . $p:ident ($($s:ident)|+) . corners) => {
+        home!(
+            @at $w.$p($($s)|+).corners,
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                part_stated(&r.$w.$p(s), PartStated::CORNERS, s)
+            },
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                let part = r.$w.$p(s);
+                part_stated(&part, PartStated::CORNERS, s)
+                    .then(|| super::radius_of(&part))
+                    .flatten()
+                    .map(HomeValue::Radius)
             }
         )
     };
@@ -1265,6 +1280,157 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.active.bg_stroke.width",
         home!(tab.tab(PRESSED).stroke.width),
     ),
+    // M2.FS4b-c5 item 2: the measured macOS and iOS states (W/M2/FS4/measured.md)
+    s(
+        "Checkbox",
+        &[M, T],
+        ".visuals.widgets.active.bg_fill",
+        home!(checkbox.indicator(PRESSED).fill),
+    ),
+    s(
+        "Checkbox",
+        &[M],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(checkbox.indicator(HOVER).fill),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[T],
+        ".visuals.widgets.active.bg_fill",
+        home!(checkbox.indicator(CHECKED | PRESSED).fill),
+    ),
+    s(
+        "ComboBox",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(combo_box.field(PRESSED).fill),
+    ),
+    s(
+        "Expander",
+        &[M, I],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(expander.header(PRESSED).fill),
+    ),
+    s(
+        "Expander",
+        &[M],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(expander.header(HOVER).fill),
+    ),
+    s(
+        "Expander",
+        &[I],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(expander.header_label(PRESSED).color),
+    ),
+    s(
+        "List",
+        &[M, T, I],
+        ".visuals.widgets.active.bg_fill",
+        home!(list.highlight(PRESSED).fill),
+    ),
+    s(
+        "List",
+        &[M, T],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(list.highlight(HOVER).fill),
+    ),
+    s(
+        "SegmentedControl",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(segmented_control.segment(PRESSED).fill),
+    ),
+    s(
+        "SegmentedControl",
+        &[I],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(segmented_control.label(PRESSED).color),
+    ),
+    s(
+        "Sidebar",
+        &[M, T, I],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(sidebar.item_label(PRESSED).color),
+    ),
+    s(
+        "Sidebar",
+        &[M, T, I],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(sidebar.item(PRESSED).fill),
+    ),
+    s(
+        "Sidebar",
+        &[M, T],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(sidebar.item(HOVER).fill),
+    ),
+    s(
+        "Slider",
+        &[M, I],
+        ".visuals.widgets.active.bg_fill",
+        home!(slider.thumb(PRESSED).fill),
+    ),
+    s(
+        "Slider",
+        &[M],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(slider.thumb(HOVER).fill),
+    ),
+    s(
+        "Splitter",
+        &[M],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(splitter.handle(PRESSED).fill),
+    ),
+    s(
+        "Switch",
+        &[M, T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(switch.track(PRESSED).fill),
+    ),
+    s(
+        "Switch",
+        &[M],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(switch.track(HOVER).fill),
+    ),
+    s(
+        "Tab",
+        &[M, T, I],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(tab.tab(PRESSED).fill),
+    ),
+    s(
+        "Tab",
+        &[M],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(tab.tab(HOVER).fill),
+    ),
+    s(
+        "Toolbar",
+        &[M, T],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(toolbar.button_label(PRESSED).color),
+    ),
+    s(
+        "Card",
+        &[M],
+        ".stroke.color",
+        home!(card.container(NONE).stroke.color),
+    ),
+    s(
+        "Card",
+        &[M],
+        ".stroke.width",
+        home!(card.container(NONE).stroke.width),
+    ),
+    s(
+        "Card",
+        &[M, T, I],
+        ".corner_radius.*",
+        home!(card.container(NONE).corners),
+    ),
 ];
 
 /// A pop-up button or a segmented control stroked as none at rest.
@@ -1305,111 +1471,20 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         home!(scrollbar.thumb(PRESSED).fill),
     ),
     r0(
-        "Checkbox",
-        &[T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(checkbox.indicator(HOVER).fill),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T],
-        ".visuals.widgets.active.bg_fill",
-        home!(checkbox.indicator(PRESSED).fill),
-    ),
-    // the checked box's hover and press fill, the state asked alone (spec §2, `from_state`)
-    r0(
-        "Checkbox/Selected",
-        &[T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(checkbox.indicator(HOVER).fill),
-    ),
-    r0(
-        "Checkbox/Selected",
-        &[M, T],
-        ".visuals.widgets.active.bg_fill",
-        home!(checkbox.indicator(PRESSED).fill),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(checkbox.checkmark(HOVER).color),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(checkbox.checkmark(PRESSED).color),
-    ),
-    r0(
-        "ComboBox",
-        &[M, T],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(combo_box.field(PRESSED).fill),
-    ),
-    r0(
-        "ComboBox",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(combo_box.label(PRESSED).color),
-    ),
-    r0(
         "Expander",
-        &[T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(expander.header(HOVER).fill),
-    ),
-    r0(
-        "Expander",
-        &[M, T, I],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(expander.header(PRESSED).fill),
-    ),
-    r0(
-        "Expander",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(expander.header_label(HOVER).color),
     ),
     r0(
-        "Expander",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(expander.header_label(PRESSED).color),
-    ),
-    r0(
-        "Input",
-        &[M, T],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(input.field(PRESSED).stroke.color),
-    ),
-    r0(
-        "Input",
-        &[M, T],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(input.text(HOVER).color),
-    ),
-    r0(
-        "List",
-        &[M, T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(list.highlight(HOVER).fill),
-    ),
-    r0(
-        "List",
-        &[M, T, I],
-        ".visuals.widgets.active.bg_fill",
-        home!(list.highlight(PRESSED).fill),
-    ),
-    r0(
         "SegmentedControl",
-        &[T],
+        &[M, T],
         ".visuals.widgets.hovered.weak_bg_fill",
         home!(segmented_control.segment(HOVER).fill),
     ),
     r0(
         "SegmentedControl",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.active.weak_bg_fill",
         home!(segmented_control.segment(PRESSED).fill),
     ),
@@ -1420,88 +1495,16 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         home!(segmented_control.label(HOVER).color),
     ),
     r0(
-        "SegmentedControl",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(segmented_control.label(PRESSED).color),
-    ),
-    r0(
-        "Sidebar",
-        &[M, T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(sidebar.item(HOVER).fill),
-    ),
-    r0(
-        "Sidebar",
-        &[M, T, I],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(sidebar.item(PRESSED).fill),
-    ),
-    r0(
         "Sidebar",
         &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(sidebar.item_label(HOVER).color),
     ),
     r0(
-        "Sidebar",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(sidebar.item_label(PRESSED).color),
-    ),
-    r0(
-        "Slider",
-        &[M, T],
-        ".visuals.widgets.hovered.bg_fill",
-        home!(slider.thumb(HOVER).fill),
-    ),
-    r0(
-        "Slider",
-        &[M, T, I],
-        ".visuals.widgets.active.bg_fill",
-        home!(slider.thumb(PRESSED).fill),
-    ),
-    r0(
-        "Switch",
-        &[T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(switch.track(HOVER).fill),
-    ),
-    r0(
-        "Switch",
-        &[M, T],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(switch.track(PRESSED).fill),
-    ),
-    r0(
-        "Tab",
-        &[T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(tab.tab(HOVER).fill),
-    ),
-    r0(
-        "Tab",
-        &[M, T, I],
-        ".visuals.widgets.active.weak_bg_fill",
-        home!(tab.tab(PRESSED).fill),
-    ),
-    r0(
-        "Tab",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(tab.label(PRESSED).color),
-    ),
-    r0(
         "Toolbar",
-        &[M, T, I],
+        &[T, I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(toolbar.button_label(HOVER).color),
-    ),
-    r0(
-        "Toolbar",
-        &[M, T],
-        ".visuals.widgets.active.fg_stroke.color",
-        home!(toolbar.button_label(PRESSED).color),
     ),
     Gap {
         diff: d(
@@ -1513,27 +1516,11 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         ),
         home: home!(tab.label(SELECTED).color),
     },
-    Gap {
-        diff: d(
-            "Splitter",
-            &[T],
-            ".visuals.widgets.hovered.fg_stroke.color",
-            Cause::StateKeepsBase,
-            STATE_KEEPS_BASE,
-        ),
-        home: home!(splitter.handle(HOVER).fill),
-    },
     r0(
         "Splitter",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.active.fg_stroke.color",
         home!(splitter.handle(PRESSED).fill),
-    ),
-    r0(
-        "Input",
-        &[M, T],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(input.field(PRESSED).stroke.width),
     ),
     // the Scrollbar cell's thumb is the base style's `bg_fill` (`base_style_from`, §5.9)
     r0(
@@ -1832,6 +1819,7 @@ fn stated_leaf(
         HomeValue::Color(c) => Some(format!("{:?}", to_color32(c))),
         HomeValue::Line(c) => over(to_color32(c)),
         HomeValue::Width(w) => Some(format!("{w:?}")),
+        HomeValue::Radius(r) => Some(format!("{:?}", crate::convert::u8_from_f32_saturating(r))),
     }
 }
 
@@ -2280,6 +2268,11 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                         };
                         Some(format!("{:?}", line.over(Some(new_frame.fill))))
                     }
+                    (Cause::Stated(home), _) => stated_leaf(home, new, |color| {
+                        align.map(|align| {
+                            format!("{:?}", Line { color, align }.over(Some(new_frame.fill)))
+                        })
+                    }),
                     _ => None,
                 };
                 // each side's frame over the other side's base, against egui's preset there

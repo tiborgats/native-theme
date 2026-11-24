@@ -94,6 +94,58 @@ const DIFFERENCES: &[Difference] = &[
                  libadwaita 1.10.0)",
     },
     Difference {
+        leaf: "SwitchLook::label_gap",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 has no switch label, so the look has no gap; the 0.8.0 macOS presets \
+                 state SwiftUI's switch Toggle's, 8 (os-probe run 45210835145, macOS 15 and \
+                 26, `switch-label.toml` `[[item]] toggle_off` fitting width 33 + 8 + the \
+                 switch, docs/evidence/os-probe/2026-11-23-run-45210835145/ on m2-fs4d)",
+    },
+    Difference {
+        leaf: "TabLook::hover",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states tab.hover_background #e8e8ed / #3a3a3c, \
+                 uncited; the 0.8.0 preset states the tab's rest fill, the window's \
+                 background, for HOVER, as AppKit draws a hovered tab as at rest (os-probe run \
+                 45198750893, macOS 15, `*.hovered.tab` differs from the normal capture in 0 \
+                 pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row tab.hover_background, a listed \
+                 difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states checkbox.hover_background #e0e0e5 / #444446, \
+                 uncited; the 0.8.0 preset states the check box's rest fill for HOVER, as \
+                 AppKit draws a hovered check box as at rest (os-probe run 45198750893, macOS \
+                 15, `*.hovered.checkbox_off` differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed \
+                 difference)",
+    },
+    Difference {
+        leaf: "SwitchLook hover_track",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states switch.hover_unchecked_background #c8c8cd / \
+                 #4a4a4c, uncited; the 0.8.0 preset states the off track's rest fill for HOVER, \
+                 as AppKit draws a hovered switch as at rest (os-probe run 45208260830, macOS \
+                 15, `*.hovered.switch_off` differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45208260830/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row switch.hover_unchecked_background, a \
+                 listed difference)",
+    },
+    Difference {
+        leaf: "SliderLook",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states slider.thumb_hover_color #e0e0e0 (light), \
+                 uncited; the 0.8.0 preset states the knob's rest fill for HOVER, as AppKit \
+                 draws a hovered knob as at rest (os-probe run 45198750893, macOS 15, \
+                 `*.hovered.slider_knob` differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row slider.thumb_hover_color, a listed \
+                 difference); every other field of the look is equal",
+    },
+    Difference {
         leaf: "SwitchLook::label disabled",
         presets: &["material-3"],
         reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color, \

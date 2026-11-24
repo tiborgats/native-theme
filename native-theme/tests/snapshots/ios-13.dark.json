@@ -990,7 +990,51 @@
       ]
     },
     "label": {
-      "base": {}
+      "base": {
+        "family": "SF Pro",
+        "color": "#ffffff",
+        "size_px": 17.0,
+        "weight": 400,
+        "style": "normal",
+        "defined_size": {
+          "pt": 17.0
+        }
+      },
+      "rules": [
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        }
+      ]
     }
   },
   "slider": {
@@ -1072,6 +1116,17 @@
           ],
           "thumb": {
             "fill": "#3a3a3c"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "disabled"
+          ],
+          "thumb": {
+            "fill": "#1c1c1e"
           }
         },
         {
@@ -1232,6 +1287,17 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "tab": {
+            "fill": "#000000"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "tab": {
@@ -1255,6 +1321,14 @@
         {
           "states": [
             "hover"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
           ],
           "label": {
             "color": "#ffffff"
@@ -1400,6 +1474,14 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "highlight": {
+            "fill": "#3a3a3c"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "highlight": {
@@ -1423,6 +1505,14 @@
         {
           "states": [
             "hover"
+          ],
+          "item_label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
           ],
           "item_label": {
             "color": "#ffffff"
@@ -1492,6 +1582,14 @@
         },
         {
           "states": [
+            "pressed"
+          ],
+          "item": {
+            "fill": "#00000000"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "item": {
@@ -1512,6 +1610,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "pressed"
+          ],
+          "item_label": {
+            "color": "#ffffff4d"
+          }
+        },
         {
           "states": [
             "selected"
@@ -1739,6 +1845,17 @@
       "rules": [
         {
           "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "label": {
+            "color": "#dadade8b"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "label": {
@@ -1782,6 +1899,14 @@
           "header": {
             "fill": "#2c2c2e"
           }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "header": {
+            "fill": "#00000000"
+          }
         }
       ]
     },
@@ -1795,7 +1920,17 @@
         "defined_size": {
           "pt": 17.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "pressed"
+          ],
+          "header_label": {
+            "color": "#ebebf52e"
+          }
+        }
+      ]
     },
     "arrow": {
       "base": {
@@ -1808,7 +1943,9 @@
     "origin": "native",
     "container": {
       "base": {
-        "fill": "#1c1c1e"
+        "fill": "#1c1c1e",
+        "stroke": "none",
+        "corners": 10.0
       }
     }
   },

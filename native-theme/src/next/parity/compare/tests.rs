@@ -792,6 +792,48 @@ fn an_old_value_the_unresolved_theme_states_under_a_state_needs_its_from_state_b
     Ok(())
 }
 
+const LISTED_UNSTATED_UNDER_A_STATE: &str = r#"
+[[row]]
+key = "s.pressed_fill"
+homes = ["checkbox.indicator(PRESSED).fill"]
+difference_presets = ["kde-breeze"]
+difference_reason = "a reason"
+difference_citation = "a citation"
+difference_values = { "kde-breeze" = "unstated" }
+"#;
+
+#[test]
+fn a_difference_listed_as_unstated_under_a_state_needs_no_from_state_bit() -> TestResult {
+    // The unresolved theme states the key, but the listed difference says 0.8.0 states nothing
+    // there: the home's property unstated, its `from_state` bit clear, equals it.
+    let old = stated_old("#fcfcfc");
+    let extra = Extra {
+        unresolved: Some(&old),
+        with_context: None,
+    };
+    let table = rows(LISTED_UNSTATED_UNDER_A_STATE)?;
+    let report = compare_rows_with(
+        &table,
+        &old,
+        &stated_for_a_state(),
+        None,
+        Preset::KdeBreeze,
+        &extra,
+    )?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    // On a preset the difference does not list, the old value against the unstated home mismatches.
+    let other = compare_rows_with(
+        &table,
+        &old,
+        &stated_for_a_state(),
+        None,
+        Preset::Adwaita,
+        &extra,
+    )?;
+    assert_eq!(other.mismatched_keys(), vec!["s.pressed_fill"], "{other}");
+    Ok(())
+}
+
 #[test]
 fn an_old_value_the_unresolved_theme_leaves_unset_under_a_state_is_compared_by_its_value()
 -> TestResult {

@@ -196,7 +196,9 @@ use crate::next::platform::dynamic_type::{
     CATEGORIES, ContentSizeCategory, DEFAULT_CATEGORY, TextRole, dynamic_type,
 };
 use crate::next::preset::{Preset, ResolveInputs};
-use crate::next::presets::helpers::{Motion, dialog_entrance, motion, motion_tokens};
+use crate::next::presets::helpers::{
+    Motion, dialog_entrance, motion, motion_tokens, rest_color_rules,
+};
 use crate::next::query::{ButtonVariant, Contrast, Orientation, Scheme, ThemeContext, WidgetState};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
@@ -267,6 +269,14 @@ struct SchemeColors {
     disabled_fill: Color,
     disabled_label: Color,
     row_hover: Color,
+    /// A plain list row's highlight while touched.
+    list_pressed: Color,
+    /// A sidebar row's text while touched.
+    sidebar_pressed_label: Color,
+    /// An outline-disclosure header's text while touched.
+    expander_pressed_label: Color,
+    /// An unselected segment's label while touched.
+    segment_pressed_label: Color,
     input_disabled: Color,
     gray: Color,
     scrollbar_hover: Color,
@@ -391,6 +401,21 @@ const LIGHT: SchemeColors = SchemeColors {
     // `expander.hover_background`, `list.hover_background`, `sidebar.hover_background`,
     // `tab.hover_background`, `slider.disabled_thumb_color`: 0.7.2 ios-13.toml (uncited)
     row_hover: srgb8(0xe5e5_eaff),
+    // `list.highlight(PRESSED).fill`: a touched `UITableView` row, #d1d1d6, UIKit's background read
+    // the same (measured, ios-host run 45230061151, iOS 18.6, `measure_lists.toml`
+    // `press1."light".table_row.pressed` `fill`, `uikit_background_color`)
+    list_pressed: srgb8(0xd1d1_d6ff),
+    // `sidebar.item_label(PRESSED).color`: a touched `.sidebar` list row's text, black at alpha
+    // 77/255 (the same run, `press1."light".sidebar_row.pressed` `uikit_text_color`, `pressed_ink`)
+    sidebar_pressed_label: srgb8(0x0000_004d),
+    // `expander.header_label(PRESSED).color`: a touched `.sidebar` outline-disclosure header's
+    // text, #3c3c43 at alpha 46/255 (the same run, `press1."light".outline_header.pressed`
+    // `uikit_text_color`)
+    expander_pressed_label: srgb8(0x3c3c_432e),
+    // `segmented_control.label(PRESSED).color`: a touched unselected segment's label, #252528 at
+    // alpha 76/255 (the same run, `changed_parts.toml` `press1."light".segmented_control.pressed`
+    // `pressed_ink`, the solved layer)
+    segment_pressed_label: srgb8(0x2525_284c),
     // `input.disabled_background`: 0.7.2 ios-13.toml (uncited)
     input_disabled: srgb8(0xf2f2_f7ff),
     // `expander.arrow_color`, `scrollbar.thumb_active_color`: 0.7.2 ios-13.toml (uncited)
@@ -544,6 +569,21 @@ const DARK: SchemeColors = SchemeColors {
     // `expander.hover_background`, `list.hover_background`, `sidebar.hover_background`,
     // `tab.hover_background`, `slider.disabled_thumb_color`: 0.7.2 ios-13.toml (uncited)
     row_hover: srgb8(0x2c2c_2eff),
+    // `list.highlight(PRESSED).fill`: a touched `UITableView` row, #3a3a3c, UIKit's background read
+    // the same (measured, ios-host run 45230061151, iOS 18.6, `measure_lists.toml`
+    // `press1."dark".table_row.pressed` `fill`, `uikit_background_color`)
+    list_pressed: srgb8(0x3a3a_3cff),
+    // `sidebar.item_label(PRESSED).color`: a touched `.sidebar` list row's text, white at alpha
+    // 77/255 (the same run, `press1."dark".sidebar_row.pressed` `uikit_text_color`, `pressed_ink`)
+    sidebar_pressed_label: srgb8(0xffff_ff4d),
+    // `expander.header_label(PRESSED).color`: a touched `.sidebar` outline-disclosure header's
+    // text, #ebebf5 at alpha 46/255 (the same run, `press1."dark".outline_header.pressed`
+    // `uikit_text_color`)
+    expander_pressed_label: srgb8(0xebeb_f52e),
+    // `segmented_control.label(PRESSED).color`: a touched unselected segment's label, #dadade at
+    // alpha 139/255 (the same run, `changed_parts.toml` `press1."dark".segmented_control.pressed`
+    // `pressed_ink`, the solved layer)
+    segment_pressed_label: srgb8(0xdada_de8b),
     // `input.disabled_background`: 0.7.2 ios-13.toml (uncited)
     input_disabled: srgb8(0x2c2c_2eff),
     // `expander.arrow_color`, `scrollbar.thumb_active_color`: 0.7.2 ios-13.toml (uncited)
@@ -753,6 +793,10 @@ const DIALOG_BUTTON_ORDER: DialogButtonOrder = DialogButtonOrder::PrimaryRight;
 
 // `expander.header_height`: 0.7.2 ios-13.toml (uncited)
 const EXPANDER_HEADER_HEIGHT: f32 = 44.0;
+
+// `card.container.corners`: the `.insetGrouped` cell's layer, 10 pt (measured, ios-host run
+// 45230061151, iOS 18.6, `run1/index.toml` the card render, view `0.1` `corner_radius_pt`)
+const CARD_CORNER_RADIUS: f32 = 10.0;
 // `expander.arrow_icon_size`: 0.7.2 ios-13.toml (uncited)
 const EXPANDER_ARROW_SIZE: f32 = 12.0;
 
@@ -973,7 +1017,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(&colors, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography, &layout),
-        switch: switch(c, &colors),
+        switch: switch(c, &colors, &typography),
         dialog: dialog(&colors, &typography, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
@@ -1623,8 +1667,14 @@ fn list(
     let row = RuleBuilder::new(PartStyle::default())
         .rule(alternate, [fill(c.surface)])
         .build();
+    // Touched, the measured highlight (`list_pressed`), the text as at rest (ios-host run
+    // 45230061151, `press1."<a>".table_row.pressed` `uikit_text_color` #000000 / #ffffff).
     let highlight = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.list_pressed)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
@@ -1633,8 +1683,8 @@ fn list(
     // `list.hover_text_color`: 0.7.2 ios-13.toml (uncited), the rest colour, stated for `HOVER`
     // (spec §2, `from_state`), before the rules of the states that replace it.
     let item_label = RuleBuilder::new(label(&typography.body, None))
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        .rules(
+            [WidgetState::HOVER, WidgetState::PRESSED].map(RuleSelector::on),
             [TextProp::Color(typography.body.color)],
         )
         .rule(
@@ -1896,6 +1946,12 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.slider_thumb_hover)],
         )
+        // Touched, the thumb as at rest: 0 of its pixels change (ios-host run 45230061151,
+        // `changed_parts.toml` `press1."<a>".slider.pressed` `changed_px` 0).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::DISABLED),
+            [fill(c.surface)],
+        )
         .rule(RuleSelector::on(WidgetState::DISABLED), [fill(c.row_hover)])
         .build();
     SliderWidget::new(
@@ -2054,16 +2110,26 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             Some(TAB_MIN_HEIGHT),
         ])])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        // Touched, an unselected tab bar item as at rest: no pixel of it changes by more than the
+        // bar material's spread (ios-host run 45230061151, `changed_parts.toml`
+        // `press1."<a>".tab_bar.pressed` `max_level_change` 5 / 3).
+        .rules(
+            roles
+                .window
+                .background
+                .map(|_| RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED)),
+            roles.window.background.map(fill),
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(c.background)],
         )
         .build();
     // `tab.hover_text_color`: 0.7.2 ios-13.toml (uncited), the rest colour, stated for `HOVER`
-    // (spec §2, `from_state`), before the selected rule.
+    // (spec §2, `from_state`), before the selected rule; touched, as at rest (the same read).
     let label = RuleBuilder::new(label(&typography.body, None))
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        .rules(
+            [WidgetState::HOVER, WidgetState::PRESSED].map(RuleSelector::on),
             [TextProp::Color(typography.body.color)],
         )
         .rule(
@@ -2151,14 +2217,25 @@ fn sidebar(
         .base([fill(c.sidebar)])
         .base(border(roles, layout))
         .build();
+    // Touched, a `.sidebar` row draws no fill (UIKit's background #00000000 at rest and touched)
+    // and dims its text (`sidebar_pressed_label`) (ios-host run 45230061151,
+    // `press1."<a>".sidebar_row.{normal,pressed}` `fill`, `uikit_background_color`).
     let item = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(Color::TRANSPARENT)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
         )
         .build();
     let item_label = RuleBuilder::new(label(&typography.body, Some(c.label)))
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(c.sidebar_pressed_label)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -2207,7 +2284,7 @@ fn popover(
 /// its own; disabled off and disabled on their own fills. The thumb white,
 /// disabled too, of an exact size on or off (0.7.2 states no unchecked
 /// size).
-fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
+fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -2267,18 +2344,37 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         )
         .rule(RuleSelector::on(WidgetState::DISABLED), [fill(c.white)])
         .build();
+    // The label: the list row's `UILabel` beside a `UISwitch`, the system font in the Body text
+    // style, 17 pt, regular, in the label colour #000000 / #ffffff, the same with the switch on,
+    // touched or disabled (measured, ios-host run 45230061151, iOS 18.6, `measure_lists.toml`
+    // `run1."<a>".switch_row.{normal,selected,disabled,disabled_selected}` `label_text_color`,
+    // `label_font`; `press1."<a>".switch_row.pressed` `label_text_color`, `label_ink_box_px`;
+    // SwiftUI's disabled `Toggle` draws the enabled label, `switch_form.*.label_vs_uikit_row`).
+    // Hovered: not measured (no pointer on an iPhone).
+    let rest_label = label(&typography.body, Some(c.label));
+    let (selectors, color) = rest_color_rules(
+        &rest_label,
+        [
+            WidgetState::PRESSED,
+            WidgetState::CHECKED,
+            WidgetState::DISABLED,
+            WidgetState::CHECKED | WidgetState::DISABLED,
+        ],
+    );
+    let label = RuleBuilder::new(rest_label).rules(selectors, color).build();
     SwitchWidget::new(
         WidgetOrigin::Native,
         track,
         thumb,
-        // The label's colours and font: no source (iOS's switch draws no label; the list row's
-        // text is unpublished, "system default styling").
-        RuleBuilder::new(TextStyle::default()).build(),
+        label,
         // `label_side`, `label_gap_stretches`: "In iOS, iPadOS, watchOS, and tvOS, the label and
         // switch fill as much horizontal space as the toggle's parent offers by aligning the
         // label's leading edge and the switch's trailing edge with the containing view's
         // respective leading and trailing edges" (Apple, SwiftUI `ToggleStyle.switch`,
-        // developer.apple.com, read 2026-11-23). `label_gap`: unmeasured (the iOS host).
+        // developer.apple.com, read 2026-11-23). `label_gap`: none: the label leads at the cell's
+        // leading margin and the switch trails at the trailing one, the space between them what
+        // the row's width leaves (ios-host run 45230061151, `run1."<a>".switch_row.normal`
+        // `label_frame_pt`, `switch_frame_pt`, `gap_text_end_to_switch_pt`).
         Some(LabelSide::Leading),
         None,
         Some(true),
@@ -2437,7 +2533,13 @@ fn segmented_control(
             [fill(roles.accent.fill)],
         )
         .build();
+    // Touched, an unselected segment's label dims (`segment_pressed_label`); its fill and edge
+    // as at rest.
     let label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+            [TextProp::Color(c.segment_pressed_label)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.accent.foreground)],
@@ -2458,8 +2560,17 @@ fn segmented_control(
 /// states it (0.7.2: `card.background_color` is `defaults.surface_color`
 /// where unstated); 0.7.2 leaves its outline and its corners unset.
 fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
+    // No outline and corners of 10 on all four: the `.insetGrouped` section's only cell, border
+    // width 0 on every layer, corner radius 10 pt, `masked_corners` 15 (measured, ios-host run
+    // 45230061151, iOS 18.6, `run1/index.toml` the card render, view `0.1`; `changed_parts.toml`
+    // `run1."<a>".card.normal.edges`). Its `corner_curve` is continuous; the corners are stated
+    // circular, as no connector draws a continuous curve yet (each maps it to `Unmapped`).
     let container = RuleBuilder::new(PartStyle::default())
-        .base([fill(roles.card.background.unwrap_or(c.surface))])
+        .base([
+            fill(roles.card.background.unwrap_or(c.surface)),
+            PartProp::Stroke(Stroke::None),
+            corners(CARD_CORNER_RADIUS),
+        ])
         .build();
     CardWidget::new(WidgetOrigin::Native, container)
 }
@@ -2483,9 +2594,17 @@ fn expander(
             PartProp::Shadows(None),
         ])
         .build();
+    // Touched, a `.sidebar` outline-disclosure header draws no fill (UIKit's background #00000000
+    // at rest and touched) and dims its text (`expander_pressed_label`) (ios-host run
+    // 45230061151, `press1."<a>".outline_header.{normal,pressed}` `fill`,
+    // `uikit_background_color`).
     let header = RuleBuilder::new(PartStyle::default())
         .base([PartProp::MinSize([None, Some(EXPANDER_HEADER_HEIGHT)])])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(Color::TRANSPARENT)],
+        )
         .build();
     let arrow = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(EXPANDER_ARROW_SIZE), IconProp::Color(c.gray)])
@@ -2494,7 +2613,12 @@ fn expander(
         WidgetOrigin::Native,
         container,
         header,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(label(&typography.body, None))
+            .rule(
+                RuleSelector::on(WidgetState::PRESSED),
+                [TextProp::Color(c.expander_pressed_label)],
+            )
+            .build(),
         arrow,
         None,
         None,

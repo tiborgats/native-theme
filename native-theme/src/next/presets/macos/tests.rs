@@ -205,15 +205,30 @@ fn a_selected_item_wins_over_the_pointer() {
             "{preset:?}"
         );
     }
-    let monterey = Theme::preset(Preset::MacosMonterey).resolve(&ThemeContext::dark());
-    assert_ne!(
-        monterey.tab.tab(WidgetState::HOVER),
-        monterey.tab.tab(WidgetState::SELECTED)
-    );
-    assert_ne!(
-        monterey.segmented_control.segment(WidgetState::HOVER),
-        monterey.segmented_control.segment(WidgetState::SELECTED)
-    );
+    for (preset, theme) in every_theme() {
+        let selected = WidgetState::SELECTED;
+        let pressed = selected | WidgetState::PRESSED;
+        assert_eq!(
+            theme.tab.tab(pressed),
+            theme.tab.tab(selected),
+            "{preset:?}"
+        );
+        assert_eq!(
+            theme.segmented_control.segment(pressed),
+            theme.segmented_control.segment(selected),
+            "{preset:?}"
+        );
+        assert_ne!(
+            theme.tab.tab(WidgetState::PRESSED),
+            theme.tab.tab(selected),
+            "{preset:?}"
+        );
+        assert_ne!(
+            theme.segmented_control.segment(WidgetState::PRESSED),
+            theme.segmented_control.segment(selected),
+            "{preset:?}"
+        );
+    }
 }
 
 /// The on track keeps the accent under the pointer; disabled, the off track
