@@ -16188,7 +16188,6 @@ fn disabled_buttons_info(state: &State) -> String {
 }
 
 fn view_buttons(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     let typography = &next.typography;
@@ -16237,7 +16236,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                     ))
                     .padding(btn_pad)
                     .on_press(pressed.clone())
-                    .style(styles::button_primary(resolved)),
+                    .next_style(iced_next::styles::button_primary(next), |b, s| b.style(s)),
                 ),
                 probe(
                     secondary,
@@ -16248,7 +16247,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                     ))
                     .padding(btn_pad)
                     .on_press(pressed.clone())
-                    .style(styles::button(resolved)),
+                    .next_style(iced_next::styles::button(next), |b, s| b.style(s)),
                 ),
                 probe(
                     success,
@@ -16259,7 +16258,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                     ))
                     .padding(btn_pad)
                     .on_press(pressed.clone())
-                    .style(styles::button_success(resolved)),
+                    .next_style(iced_next::styles::button_success(next), |b, s| b.style(s)),
                 ),
                 probe(
                     warning,
@@ -16270,7 +16269,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                     ))
                     .padding(btn_pad)
                     .on_press(pressed.clone())
-                    .style(styles::button_warning(resolved)),
+                    .next_style(iced_next::styles::button_warning(next), |b, s| b.style(s)),
                 ),
                 probe(
                     danger,
@@ -16281,7 +16280,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                     ))
                     .padding(btn_pad)
                     .on_press(pressed.clone())
-                    .style(styles::button_danger(resolved)),
+                    .next_style(iced_next::styles::button_danger(next), |b, s| b.style(s)),
                 ),
                 probe(
                     text_style,
@@ -16292,7 +16291,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                     ))
                     .padding(btn_pad)
                     .on_press(pressed.clone())
-                    .style(styles::button_link(resolved)),
+                    .next_style(iced_next::styles::button_link(next), |b, s| b.style(s)),
                 ),
             ]
             .spacing(gap.widget),
@@ -16315,7 +16314,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                         btn_min
                     ))
                     .padding(btn_pad)
-                    .style(styles::button_primary(resolved)),
+                    .next_style(iced_next::styles::button_primary(next), |b, s| b.style(s)),
                 ),
                 probe(
                     disabled_secondary,
@@ -16325,7 +16324,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                         btn_min
                     ))
                     .padding(btn_pad)
-                    .style(styles::button(resolved)),
+                    .next_style(iced_next::styles::button(next), |b, s| b.style(s)),
                 ),
                 probe(
                     disabled_danger,
@@ -16335,7 +16334,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                         btn_min
                     ))
                     .padding(btn_pad)
-                    .style(styles::button_danger(resolved)),
+                    .next_style(iced_next::styles::button_danger(next), |b, s| b.style(s)),
                 ),
             ]
             .spacing(gap.widget),
@@ -16358,7 +16357,7 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
                 ))
                 .padding(btn_pad)
                 .on_press(pressed)
-                .style(styles::button_primary(resolved)),
+                .next_style(iced_next::styles::button_primary(next), |b, s| b.style(s)),
             ),
             text(counter_text).next_body(next),
         ]
@@ -36732,8 +36731,23 @@ mod tests {
         "rule",
     ];
 
-    /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`] on the
-    /// 0.7.2 model (`styles::<fn>(` not under `iced_next::`).
+    /// The style functions one of [`NEXT_PAGES`] draws with on the
+    /// installed 0.8.0 theme alone, beside [`NEXT_PAGE_STYLES`].
+    const NEXT_PAGE_OWN_STYLES: &[(&str, &[&str])] = &[(
+        "view_buttons",
+        &[
+            "button",
+            "button_primary",
+            "button_success",
+            "button_warning",
+            "button_danger",
+            "button_link",
+        ],
+    )];
+
+    /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`], nor of its
+    /// own [`NEXT_PAGE_OWN_STYLES`], on the 0.7.2 model (`styles::<fn>(` not
+    /// under `iced_next::`).
     #[test]
     fn the_pages_draw_with_the_0_8_0_styles() -> Result<(), String> {
         let source = strip_comments_and_strings(SHOWCASE);
@@ -36748,7 +36762,11 @@ mod tests {
                 .ok_or(format!("fn {page} has no body"))?;
             let close = close_of_block(&source, open).ok_or(format!("fn {page} is not closed"))?;
             let body = &source[open..close];
-            for style in NEXT_PAGE_STYLES {
+            let own = NEXT_PAGE_OWN_STYLES
+                .iter()
+                .filter(|(name, _)| name == page)
+                .flat_map(|(_, styles)| styles.iter());
+            for style in NEXT_PAGE_STYLES.iter().chain(own) {
                 let call = format!("styles::{style}(");
                 for (at, _) in body.match_indices(&call) {
                     let before = &body[..at];
