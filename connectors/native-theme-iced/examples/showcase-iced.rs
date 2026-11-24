@@ -23056,20 +23056,20 @@ mod tests {
         Ok(())
     }
 
-    /// Whether the same holds for the monospace font, "SF Mono": printed,
-    /// not asserted — UNVERIFIED (egui spec §15) whether any font database
-    /// holds that name, so the outcome is recorded, not required.
+    /// Whether the same holds for the installed 0.8.0 theme's monospace
+    /// font, `typography.monospace`, "SF Mono": printed, not asserted —
+    /// UNVERIFIED (egui spec §15) whether any font database holds that name,
+    /// so the outcome is recorded, not required.
     #[test]
     #[ignore = "needs macOS: run with --ignored on the macos-latest runner"]
-    fn macos_mono_font_in_the_font_database() {
+    fn macos_mono_font_in_the_font_database() -> Result<(), String> {
         if !cfg!(target_os = "macos") {
             eprintln!("macos_mono_font_in_the_font_database: not macOS, nothing to check");
-            return;
+            return Ok(());
         }
-        let (_, resolved) = native_theme_iced::from_preset("macos-monterey", false)
-            .expect("macos-monterey resolves");
-        let mono = &resolved.defaults.mono_font;
-        let family = native_theme_iced::system_font_family(mono);
+        let state = page_state("macos-monterey", Tab::Display);
+        let mono = &state.next_shown().typography.monospace;
+        let family = iced_next::system_font_family(mono).map_err(|e| e.to_string())?;
         let held = {
             let mut system = iced::advanced::graphics::text::font_system()
                 .write()
@@ -23080,6 +23080,7 @@ mod tests {
             "SF Mono: stated {:?}, system_font_family gives {family:?}, in iced's font database: {held}",
             mono.family
         );
+        Ok(())
     }
 
     /// The viewport the interaction test lays the interface out in.
@@ -33595,10 +33596,11 @@ mod tests {
         (
             "basic.text_inputs.focused",
             "defaults.focus_ring_color",
-            "styles::text_input's focused border is the ring's colour where \
-             input.focus_border_color is unstated and the ring is inset (styles.rs, \
-             `focus_color`): adwaita's ring is inset but it states the border colour, \
-             and macos-tahoe, which leaves it unstated, has no inset ring",
+            "on the 0.8.0 model no style row draws the ring: iced_next::styles::text_input \
+             draws no focus ring, an inset one included, and its focused border is \
+             input.field(FOCUSED).stroke.color or iced's own (next/styles.rs, \
+             `input_source`); native_theme_iced::next::focus_ring paints the ring over \
+             the field (next::part_focus's ring, focus_ring_route)",
         ),
         (
             "basic.icons.edit",
