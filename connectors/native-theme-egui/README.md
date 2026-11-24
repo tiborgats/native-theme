@@ -186,21 +186,30 @@ fn main() -> eframe::Result {
 }
 ```
 
-Or a bundled preset, with both its variants in one atlas. `is_dark` picks the
-`ResolvedTheme` returned beside the atlas; egui's own `set_theme` picks the
-scheme on screen. This recipe pins the scheme `is_dark` named. The atlas also
-carries the OS colour mode, so with `ThemePreference::System` the preset
-follows the OS instead, as `from_system`'s atlas does:
+Or a bundled preset with a bundled palette laid over it, in the 0.8.0 model
+(`native_theme::next`): the preset's geometry and fonts in the palette's
+colours. A palette locks both schemes to its own (`catppuccin-mocha` is dark),
+so both scheme slots resolve dark; each slot is resolved for an active and an
+inactive window, and `next::to_theme` builds one atlas of the four. That atlas
+carries no OS colour mode, so this recipe pins the scheme:
 
 ```rust,no_run
 use native_theme_egui::egui::{self, ThemePreference};
-use native_theme_egui::{AccessibilityPreferences, from_preset};
+use native_theme_egui::native_theme::next::{Palette, Preset, Theme, ThemeContext};
 
-fn install_preset(ctx: &egui::Context, is_dark: bool) -> native_theme_egui::Result<()> {
-    let prefs = AccessibilityPreferences::default();
-    let (atlas, _resolved) = from_preset("catppuccin-mocha", is_dark, &prefs)?;
-    atlas.install(ctx);
-    ctx.set_theme(if is_dark { ThemePreference::Dark } else { ThemePreference::Light });
+fn install_preset(ctx: &egui::Context) -> Result<(), Box<dyn std::error::Error>> {
+    let palette = Palette::from_name("catppuccin-mocha").ok_or("not a bundled palette")?;
+    let theme = Theme::preset(Preset::Material3).with_palette(palette);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|context| theme.resolve(&context));
+    native_theme_egui::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)?
+        .install(ctx);
+    ctx.set_theme(ThemePreference::Dark);
     Ok(())
 }
 ```
@@ -808,9 +817,9 @@ macOS, and `material-3` everywhere); Palette lays one of the bundled
 palettes (`Palette::BUNDLED_NAMES`) over it, or `none`, the preset's own
 colours, and locks both schemes to the palette's. The installed egui styles
 and frames are built from the 0.8.0 theme of that choice
-(`ThemeAtlas::next_builder`); the showcase's own refinements on the pages
-and the chrome still read the 0.7.2 preset, which has no palettes, until
-their pages move to the 0.8.0 model, as the Palette row's hover text says.
+(`ThemeAtlas::next_builder`), and the showcase's own refinements on the
+pages and the chrome read the same theme, as the Palette row's hover text
+says.
 Its flags `--theme`, `--palette`, `--variant`, `--icon-set`, `--tab` and
 `--screenshot` start it on a given preset, palette, variant, icon set and
 tab, or capture the window with its title bar to a PNG (macOS and Windows;
