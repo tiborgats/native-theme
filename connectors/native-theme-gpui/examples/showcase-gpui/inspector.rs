@@ -612,17 +612,35 @@ const NO_ROUTE: &str = "gpui: no route recorded";
 /// section names, in all three showcases.
 const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
 
-/// What Widget Info is drawn in under a native theme, the same in the three
-/// showcases (docs/showcase-elements.toml, "The Widget Info format"): every
-/// text in `sidebar.font`'s family and size, one line of it tall
-/// (`defaults.line_height`), in `sidebar.font.color`, a route in
-/// `defaults.muted_color`; `layout.widget_gap` before each row and
-/// `layout.section_gap` before each section, none where the layout states
-/// none; a swatch framed as `defaults.border` frames a control; the Copy
-/// button padded by `button.border`'s sides and rounded by its radius,
-/// filled with `button.hover_background` and lettered in
-/// `hover_text_color` under the pointer, `active_background` (where stated)
-/// and `active_text_color` while pressed.
+/// The Copy box's side padding where `button.body(NONE)` states no left or
+/// right padding: upstream's `Button`'s at the default Size, `px_2p5`
+/// (button/button.rs, `RenderOnce for Button`, the `Size::Medium` arm), which
+/// sets no top or bottom padding (its `h_8` sets the height).
+const COPY_PADDING_X: gpui::Rems = gpui::rems(0.625);
+
+/// What Widget Info is drawn in under an installed 0.8.0 theme, the same in
+/// the three showcases (docs/showcase-elements.toml, "The Widget Info
+/// format"), each value read at its home and, where the theme leaves it
+/// unstated, upstream's own for that property alone (spec §10, rule 0): every
+/// text in `sidebar.item_label(NONE)`'s family, size and weight (else the
+/// family and size upstream's `Root` sets, `font_family` and the rem size
+/// `font_size`, root.rs, and gpui's default weight), one line of it tall (its
+/// `line_height`, else its size by `typography.line_height_multiplier`), in
+/// its colour (else upstream's `sidebar_foreground`, sidebar/mod.rs), a route
+/// in `colors.window.foreground_muted` (else `muted_foreground`);
+/// `layout.widget_gap` before each row and `layout.section_gap` before each
+/// section, none where the layout states none; a swatch framed in
+/// `colors.window.border` (else `border`), `layout.border_width` wide and
+/// rounded by `layout.corner_radius`; the Copy button padded by
+/// `button.body(NONE)`'s sides (else upstream's `Button`'s,
+/// [`COPY_PADDING_X`] at the sides, none above and below) and rounded by its
+/// corners (else upstream's `radius`), filled with `button.body(HOVER).fill`
+/// and lettered in `button.label(HOVER).color` under the pointer,
+/// `button.body(PRESSED).fill` and `button.label(PRESSED).color` while
+/// pressed, each state asked alone (spec §2, `from_state`); where unstated,
+/// upstream's default `Button`'s `button_hover`, `button_active` and
+/// `button_foreground` (button/button.rs, `ButtonVariant::hovered`, `active`
+/// and `text_color`).
 /// With it, what the rows' values are read from: the resolved theme's JSON,
 /// and the layout, icon set and icon theme the showcase installed, which the
 /// JSON does not hold (`values::leaf_value`).
@@ -634,15 +652,15 @@ pub(crate) struct PanelLook {
     weight: gpui::FontWeight,
     text: gpui::Hsla,
     pub(crate) muted: gpui::Hsla,
-    row_gap: gpui::Pixels,
-    section_gap: gpui::Pixels,
+    row_gap: Option<gpui::Pixels>,
+    section_gap: Option<gpui::Pixels>,
     frame: (gpui::Hsla, gpui::Pixels, gpui::Pixels),
-    copy_padding: [gpui::Pixels; 4],
+    copy_padding: [Option<gpui::Pixels>; 4],
     copy_radius: gpui::Pixels,
     /// The Copy box's fill and text colour under the pointer.
     copy_hover: (gpui::Hsla, gpui::Hsla),
-    /// The Copy box's fill, where stated, and text colour while pressed.
-    copy_active: (Option<gpui::Hsla>, gpui::Hsla),
+    /// The Copy box's fill and text colour while pressed.
+    copy_active: (gpui::Hsla, gpui::Hsla),
     resolved: serde_json::Value,
     layout: native_theme::theme::LayoutTheme,
     icon_set: native_theme::theme::IconSet,
@@ -658,13 +676,11 @@ impl PanelLook {
     /// showcase keeps it from one install to the next
     /// (`Showcase::panel_look`).
     pub(crate) fn of(showcase: &Showcase, cx: &gpui::App) -> Option<Self> {
+        use native_theme::next::{TextStated, WidgetState};
+        let r = crate::support::next_resolved(cx)?;
         let n = crate::support::old_native(cx)?;
-        let r = n.resolved;
         let layout = showcase.layout.clone();
-        let size = native_theme_gpui::scaled_text_size(r.sidebar.font.size, n.accessibility);
-        let side = |v: Option<f32>| v.map_or(gpui::px(0.), gpui::px);
-        let p = &r.button.border.padding;
-        let resolved = theme_json(r);
+        let resolved = theme_json(n.resolved);
         let mut named = Vec::new();
         stated_families(&resolved, &mut named);
         let theme = cx.theme();
@@ -673,29 +689,70 @@ impl PanelLook {
             .map(|family| native_theme_gpui::font_family(&Arc::from(family.as_str())))
             .chain([theme.font_family.clone(), theme.mono_font_family.clone()]);
         let families = DrawnFamilies::of(asked, cx);
+        let label = r.sidebar.item_label(WidgetState::NONE);
+        let says = |bit: TextStated| label.stated.contains(bit);
+        let size = if says(TextStated::SIZE_PX) {
+            gpui::px(label.size_px)
+        } else {
+            theme.font_size
+        };
+        let line = if says(TextStated::LINE_HEIGHT) {
+            gpui::px(label.line_height)
+        } else {
+            gpui::px(size.as_f32() * r.typography.line_height_multiplier)
+        };
+        let gap = |metric: fn(
+            &native_theme::next::ResolvedTheme,
+        ) -> next::Mapped<Option<gpui::Pixels>>| { metric(r).ok().flatten() };
+        let body = r.button.body(WidgetState::NONE);
+        let [top, right, bottom, left] = next::padding_of(&body).map(|side| side.map(gpui::px));
+        let upstream_side = COPY_PADDING_X.to_pixels(theme.font_size);
+        let colour = |text: &native_theme::next::TextStyle| next::text_color_of(text);
         Some(Self {
-            family: native_theme_gpui::font_family(&r.sidebar.font.family),
-            size: gpui::px(size),
-            line: gpui::px(size * r.defaults.line_height),
-            weight: gpui::FontWeight(f32::from(r.sidebar.font.weight)),
-            text: stated(r.sidebar.font.color),
-            muted: stated(r.defaults.muted_color),
-            row_gap: side(layout.widget_gap),
-            section_gap: side(layout.section_gap),
+            family: if says(TextStated::FAMILY) {
+                native_theme_gpui::font_family(&label.family)
+            } else {
+                theme.font_family.clone()
+            },
+            size,
+            line,
+            weight: if says(TextStated::WEIGHT) {
+                gpui::FontWeight(f32::from(label.weight))
+            } else {
+                gpui::FontWeight::default()
+            },
+            text: colour(&label).unwrap_or(theme.sidebar_foreground),
+            muted: r
+                .colors
+                .window
+                .foreground_muted
+                .map_or(theme.muted_foreground, crate::info::next_stated),
+            row_gap: gap(next::geometry::widget_gap),
+            section_gap: gap(next::geometry::section_gap),
             frame: (
-                stated(r.defaults.border.color),
-                gpui::px(r.defaults.border.line_width),
-                gpui::px(r.defaults.border.corner_radius.max(0.)),
+                r.colors
+                    .window
+                    .border
+                    .map_or(theme.border, crate::info::next_stated),
+                gpui::px(r.layout.border_width),
+                gpui::px(r.layout.corner_radius.max(0.)),
             ),
-            copy_padding: [side(p.top), side(p.right), side(p.bottom), side(p.left)],
-            copy_radius: gpui::px(r.button.border.corner_radius.max(0.)),
+            copy_padding: [
+                top,
+                Some(right.unwrap_or(upstream_side)),
+                bottom,
+                Some(left.unwrap_or(upstream_side)),
+            ],
+            copy_radius: next::radius_of(&body)
+                .map_or(theme.radius, |radius| gpui::px(radius.max(0.))),
             copy_hover: (
-                stated(r.button.hover_background),
-                stated(r.button.hover_text_color),
+                next::fill_of(&r.button.body(WidgetState::HOVER)).unwrap_or(theme.button_hover),
+                colour(&r.button.label(WidgetState::HOVER)).unwrap_or(theme.button_foreground),
             ),
             copy_active: (
-                r.button.active_background.map(stated),
-                stated(r.button.active_text_color),
+                next::state_fill_of(&r.button.body(WidgetState::PRESSED))
+                    .unwrap_or(theme.button_active),
+                colour(&r.button.label(WidgetState::PRESSED)).unwrap_or(theme.button_foreground),
             ),
             resolved,
             layout,
@@ -710,26 +767,35 @@ impl PanelLook {
     /// the end of its info's first row, as [`listed_info`] lays it out under
     /// `margin`, the content's padding (`demo::side_panel_content_margin`):
     /// the top margin; the title row, as tall as the Copy box, one line of
-    /// the panel's type (`sidebar.font`'s size by `defaults.line_height`)
-    /// padded by `button.border.padding`'s top and bottom, and never shorter
-    /// than the title's line; `layout.section_gap` and the "Theme" section's
-    /// name, one line; then `layout.widget_gap` and the first row's two
-    /// lines, its leaf and value, and how gpui applies it.
-    pub(crate) fn body_min_height(&self, margin: Option<gpui::Pixels>) -> gpui::Pixels {
+    /// the panel's type padded by the Copy box's top and bottom, and never
+    /// shorter than the title's line; `layout.section_gap` and the "Theme"
+    /// section's name, one line; then `layout.widget_gap` and the first row's
+    /// two lines, its leaf and value, and how gpui applies it. A margin,
+    /// padding or gap the theme leaves unstated is none, and adds nothing.
+    /// gpui lays each box out with its edges at whole device pixels of
+    /// `scale`, the window's scale factor, so each part is counted taken up
+    /// to the next device pixel, the most room its box can take: a line box
+    /// of a fractional height (ios-13's 39.27 px at text scale 2) is laid out
+    /// taller than its line.
+    pub(crate) fn body_min_height(&self, margin: Option<gpui::Pixels>, scale: f32) -> gpui::Pixels {
         let [top, _, bottom, _] = self.copy_padding;
+        let laid = |height: f32| {
+            if scale > 0. {
+                (height * scale).ceil() / scale
+            } else {
+                height
+            }
+        };
+        let added = |parts: &[Option<gpui::Pixels>]| -> f32 {
+            parts.iter().flatten().map(|part| laid(part.as_f32())).sum()
+        };
         let line = self.line.as_f32();
-        let title_row = (line + top.as_f32() + bottom.as_f32()).max(line);
-        gpui::px(
-            margin.unwrap_or_default().as_f32()
-                + title_row
-                + self.section_gap.as_f32()
-                + line
-                + self.row_gap.as_f32()
-                + line * 2.,
-        )
+        let title_row = laid((line + added(&[top, bottom])).max(line));
+        gpui::px(added(&[margin, self.section_gap, self.row_gap]) + title_row + laid(line) * 3.)
     }
 
-    /// `text` in the panel's type: `sidebar.font` at its line height.
+    /// `text` in the panel's type: `sidebar.item_label(NONE)` at its line
+    /// height.
     pub(crate) fn text(&self, text: gpui::Div) -> gpui::Div {
         text.font_family(self.family.clone())
             .text_size(self.size)
@@ -851,8 +917,7 @@ fn listed_info(
                 .relative()
                 .w_full()
                 .items_start()
-                .gap(look.row_gap)
-                .mt(look.row_gap)
+                .when_some(look.row_gap, |row, gap| row.gap(gap).mt(gap))
                 .when_some(swatch, |row, swatch| {
                     row.child(swatch.children(first.then(|| {
                         // Out over the swatch's frame: an absolute child is
@@ -878,7 +943,7 @@ fn listed_info(
         .map(|note| {
             look.text(div())
                 .text_color(look.muted)
-                .mt(look.row_gap)
+                .when_some(look.row_gap, |note, gap| note.mt(gap))
                 .child(note.clone())
                 .into_any_element()
         })
@@ -894,19 +959,13 @@ fn listed_info(
         .id("inspector-copy")
         .relative()
         .cursor_pointer()
-        .pt(top)
-        .pr(right)
-        .pb(bottom)
-        .pl(left)
+        .when_some(top, |copy, side| copy.pt(side))
+        .when_some(right, |copy, side| copy.pr(side))
+        .when_some(bottom, |copy, side| copy.pb(side))
+        .when_some(left, |copy, side| copy.pl(side))
         .rounded(look.copy_radius)
         .hover(move |style| style.bg(hover_fill).text_color(hover_text))
-        .active(move |style| {
-            let style = style.text_color(active_text);
-            match active_fill {
-                Some(fill) => style.bg(fill),
-                None => style,
-            }
-        })
+        .active(move |style| style.bg(active_fill).text_color(active_text))
         .child("Copy")
         .child(elements::record(ui, "chrome.info.copy"))
         .on_click(move |_, _, cx| {
@@ -934,7 +993,7 @@ fn listed_info(
         .child(
             look.text(div().relative())
                 .font_weight(SEMIBOLD)
-                .mt(look.section_gap)
+                .when_some(look.section_gap, |name, gap| name.mt(gap))
                 .child("Theme")
                 .child(elements::record(ui, "chrome.info.section.theme")),
         )
@@ -944,7 +1003,7 @@ fn listed_info(
                 .child(
                     look.text(div())
                         .font_weight(SEMIBOLD)
-                        .mt(look.section_gap)
+                        .when_some(look.section_gap, |name, gap| name.mt(gap))
                         .child("Not themeable"),
                 )
                 .children(not_themeable)
@@ -988,6 +1047,7 @@ fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -
 
 impl Render for Inspector {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let scale = window.scale_factor();
         let (gap, margin, body_min) = self
             .showcase
             .upgrade()
@@ -1003,7 +1063,7 @@ impl Render for Inspector {
                     showcase
                         .panel_look
                         .as_ref()
-                        .map(|look| look.body_min_height(margin)),
+                        .map(|look| look.body_min_height(margin, scale)),
                 )
             })
             .unwrap_or_default();

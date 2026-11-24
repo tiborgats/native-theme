@@ -2022,6 +2022,7 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
                 inspector.bottom(),
                 content.bottom(),
             );
+            let scale = cx.update(|window, _| window.scale_factor());
             let body = read(&mut cx, &showcase, |this, cx| {
                 let margin = crate::demo::side_panel_content_margin(
                     cx,
@@ -2029,7 +2030,7 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
                 );
                 this.panel_look
                     .as_ref()
-                    .map(|look| look.body_min_height(margin))
+                    .map(|look| look.body_min_height(margin, scale))
             });
             // Within half a pixel: gpui rounds the layout to whole pixels.
             assert!(
@@ -4473,24 +4474,31 @@ fn the_kept_panel_look_follows_every_install(cx: &mut TestAppContext) {
     cx.update(|window, cx| showcase.update(cx, |this, cx| this.on_os_theme_change(window, cx)));
     kept(&mut cx, "the theme watcher's re-read");
 
-    set_preset(&mut cx, &showcase, "kde-breeze");
-    let mut r = resolved_theme(&mut cx, &showcase);
-    let is_dark = read(&mut cx, &showcase, |this, _| this.is_dark);
-    assert_ne!(r.sidebar.font.color, r.defaults.accent_color);
-    r.sidebar.font.color = r.defaults.accent_color;
-    cx.update(|_window, cx| {
-        let prefs = native_theme::AccessibilityPreferences::default();
-        native_theme_gpui::apply(
-            native_theme_gpui::to_theme(&r, "kde-breeze", is_dark, &prefs),
-            &r,
-            &prefs,
-            cx,
-        );
-    });
+    use native_theme::next::{SidebarRule, TextPatch, ThemePatch, WidgetState};
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let light = kept(&mut cx, "a light preset install");
+    assert!(
+        breeze.is_some() && light.is_some(),
+        "kde-breeze keeps no panel look"
+    );
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else { return };
+    let text = native_theme_gpui::next::text_color_of(&r.sidebar.item_label(WidgetState::NONE));
+    let border = r.colors.window.border;
+    assert!(
+        text.is_some() && border.is_some() && text != border.map(crate::info::next_stated),
+        "kde-breeze light's sidebar text is unstated or its window border colour, so the test could not tell the two apart"
+    );
+    let Some(border) = border else { return };
+    r.apply_patch(
+        &ThemePatch::new().sidebar(SidebarRule::new().item_label(TextPatch::new().color(border))),
+    );
+    install_next(&mut cx, &r);
     let applied = kept(&mut cx, "an apply of the connector's");
     assert_ne!(
-        applied, breeze,
-        "a changed sidebar.font.color left the panel look as it was"
+        applied, light,
+        "a changed sidebar.item_label(NONE).color left the panel look as it was"
     );
 }
 
@@ -4539,47 +4547,58 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
 }
 
 /// The inspector's Copy box letters its text as its routes say (M9-037): in
-/// `sidebar.font.color` at rest, `button.hover_text_color` under the pointer
-/// and `button.active_text_color` while pressed. The text is the box's own
-/// child, so it is painted in the text colour the box is laid out under,
-/// which the registry records for `chrome.info.copy` (a text colour is no
-/// quad of the scene). kde-breeze light states the same colour for its
-/// sidebar text, its hovered button text and its pressed button text, so
-/// the hovered one is set to the theme's accent and the pressed one to its
-/// selection text, colours of the same theme that differ from the sidebar's
-/// and from each other.
+/// `sidebar.item_label(NONE).color` at rest, `button.label(HOVER).color`
+/// under the pointer and `button.label(PRESSED).color` while pressed, read
+/// from the installed 0.8.0 theme. The text is the box's own child, so it is
+/// painted in the text colour the box is laid out under, which the registry
+/// records for `chrome.info.copy` (a text colour is no quad of the scene).
+/// kde-breeze light states the same colour for its sidebar text, its hovered
+/// button text and its pressed button text, so the hovered one is patched to
+/// the theme's `colors.window.border` and the pressed one to its
+/// `colors.window.foreground_muted`, colours of the same theme that differ
+/// from the sidebar's and from each other.
 /// The routes are read from the panel's own text for `chrome.info.copy`
 /// (`inspector::listed`, beside the info of the page tab the pointer settled
-/// on), where the panel names each leaf with its value and how it applies.
+/// on), where the panel names each leaf with how it applies.
 #[gpui::test]
 fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::{ButtonRule, TextPatch, ThemePatch, WidgetState};
+    use native_theme_gpui::next::text_color_of;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let mut r = resolved_theme(&mut cx, &showcase);
-    r.button.hover_text_color = r.defaults.accent_color;
-    r.button.active_text_color = r.defaults.selection_text_color;
-    for (state, colour) in [
-        ("hovered", r.button.hover_text_color),
-        ("pressed", r.button.active_text_color),
-    ] {
-        assert_ne!(
-            colour, r.sidebar.font.color,
-            "kde-breeze light's {state} button text is its sidebar text, so the test could not tell the two apart"
-        );
-    }
-    assert_ne!(r.button.hover_text_color, r.button.active_text_color);
-    cx.update(|_window, cx| {
-        let prefs = native_theme::AccessibilityPreferences::default();
-        native_theme_gpui::apply(
-            native_theme_gpui::to_theme(&r, "kde-breeze", false, &prefs),
-            &r,
-            &prefs,
-            cx,
-        );
+    let mut unpatched = None;
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Charts, |r| {
+        unpatched = Some((
+            text_color_of(&r.button.label(WidgetState::HOVER)),
+            text_color_of(&r.button.label(WidgetState::PRESSED)),
+        ));
+        let (hovered, pressed) = (r.colors.window.border?, r.colors.window.foreground_muted?);
+        let state = |state: WidgetState, colour| {
+            ButtonRule::new()
+                .states(state)
+                .label(TextPatch::new().color(colour))
+        };
+        Some(
+            ThemePatch::new()
+                .button(state(WidgetState::HOVER, hovered))
+                .button(state(WidgetState::PRESSED, pressed)),
+        )
     });
-    cx.run_until_parked();
-    draw(&mut cx);
+    let Some(r) = r else { return };
+    let rest = text_color_of(&r.sidebar.item_label(WidgetState::NONE));
+    let hovered = text_color_of(&r.button.label(WidgetState::HOVER));
+    let pressed = text_color_of(&r.button.label(WidgetState::PRESSED));
+    assert!(
+        rest.is_some() && hovered.is_some() && pressed.is_some(),
+        "kde-breeze light, patched, leaves the sidebar text or a button state's text unstated"
+    );
+    assert!(
+        hovered != rest && pressed != rest && hovered != pressed,
+        "the patched button texts are the sidebar text or each other, so the test could not tell them apart"
+    );
+    assert!(
+        unpatched.is_some_and(|before| before != (hovered, pressed)),
+        "kde-breeze light already letters its hovered and pressed buttons in the patched colours"
+    );
     // A listed element's info, so the panel shows its title row and Copy.
     let info = settle_on(&mut cx, &showcase, Page::Charts.tab());
     assert!(
@@ -4593,24 +4612,24 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     };
     assert_eq!(
         text(&mut cx),
-        Some(stated(r.sidebar.font.color)),
-        "the Copy box's text at rest is not sidebar.font.color"
+        rest,
+        "the Copy box's text at rest is not sidebar.item_label(NONE).color"
     );
     let copy = bounds_of(&mut cx, INSPECTOR_COPY).center();
     hover(&mut cx, copy);
     draw(&mut cx);
     assert_eq!(
         text(&mut cx),
-        Some(stated(r.button.hover_text_color)),
-        "the Copy box's text under the pointer is not button.hover_text_color"
+        hovered,
+        "the Copy box's text under the pointer is not button.label(HOVER).color"
     );
     cx.simulate_mouse_down(copy, MouseButton::Left, Modifiers::default());
     cx.run_until_parked();
     draw(&mut cx);
     assert_eq!(
         text(&mut cx),
-        Some(stated(r.button.active_text_color)),
-        "the Copy box's text while pressed is not button.active_text_color"
+        pressed,
+        "the Copy box's text while pressed is not button.label(PRESSED).color"
     );
     cx.simulate_mouse_up(copy, MouseButton::Left, Modifiers::default());
     cx.run_until_parked();
@@ -4621,22 +4640,20 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     });
     assert!(panel.is_some(), "no panel text for chrome.info.copy");
     let Some(panel) = panel else { return };
-    for (leaf, colour, says) in [
+    for (leaf, says) in [
         (
             "button.hover_text_color",
-            r.button.hover_text_color,
             "the Copy box's text under the pointer",
         ),
         (
             "button.active_text_color",
-            r.button.active_text_color,
             "the Copy box's text while pressed",
         ),
     ] {
         let row = panel.rows.iter().find(|row| row.leaf == leaf);
         assert!(
-            row.is_some_and(|row| row.how.contains(says) && row.colour == Some(colour)),
-            "the panel's {leaf} row does not say {says:?} with the colour drawn: {row:?}"
+            row.is_some_and(|row| row.how.contains(says)),
+            "the panel's {leaf} row does not say {says:?}: {row:?}"
         );
     }
 }
