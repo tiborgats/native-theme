@@ -777,7 +777,7 @@ fn next_label_size_note(info: WidgetInfo) -> WidgetInfo {
 fn one_label(info: WidgetInfo, hovered: &str) -> WidgetInfo {
     info.not_themeable(
         "hover text",
-        format!("secondary_foreground, as at rest: a custom variant letters every state in its one foreground (button/button.rs, ButtonVariant::text_color, Custom arm), so neither a hovered label a rule states, {hovered}, nor, where none does, gpui-component's own ghost's, accent_foreground under the pointer (button/button.rs:1242, ButtonVariant::hovered, Ghost arm), can be drawn"),
+        format!("secondary_foreground, as at rest: a custom variant letters every state in its one foreground (button/button.rs, ButtonVariant::text_color, Custom arm), so neither a hovered label a rule states, {hovered}, nor, where none does, gpui-component's own ghost's, accent_foreground under the pointer (button/button.rs, ButtonVariant::hovered, Ghost arm), can be drawn"),
     )
 }
 
@@ -1124,7 +1124,7 @@ fn toolbar_checked_colors(
                     "selected bg",
                     "secondary_active",
                     t.secondary_active,
-                    "native-theme-gpui/next/builders.rs:699",
+                    "native-theme-gpui/next/mod.rs:736",
                 )),
                 _ => None,
             };
