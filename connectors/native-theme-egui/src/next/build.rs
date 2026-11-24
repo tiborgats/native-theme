@@ -5,9 +5,9 @@
 //! rule 0); a place a note names is the home's.
 
 use native_theme::next::{
-    ButtonQuery, Color, FocusKind, FocusTrigger, IconStated, IconStyle, ListQuery, Orientation,
-    PartStated, PartStyle, Preset, ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle,
-    WidgetState, WindowState,
+    ButtonQuery, CheckboxWidget, Color, FocusKind, FocusTrigger, IconStated, IconStyle, ListQuery,
+    Orientation, PartStated, PartStyle, Preset, ResolvedTheme, Stroke, StyleQuery, TextStated,
+    TextStyle, WidgetState, WindowState,
 };
 
 use super::{Mapped, Unmapped, padding_of, radius_of, reads, stroke_width_of};
@@ -24,7 +24,9 @@ use crate::style::cells::{
 use crate::style::frames::{FrameSource, SurfaceSource};
 use crate::style::line::LineAlign;
 use crate::style::states::{Edge, StateLine};
-use crate::style::variants::{CheckedBox, Disabled, PrimaryDisabled, VariantSource};
+use crate::style::variants::{
+    CheckedBox, Disabled, MarkedBox, MixedBox, PrimaryDisabled, VariantSource,
+};
 
 /// A colour of the 0.8.0 model as the 0.7.2 model's: its 8-bit sRGB channels with straight
 /// alpha, which the builders convert as they convert a 0.7.2 colour.
@@ -880,6 +882,98 @@ fn state_edge(part: &PartStyle, home: &'static str) -> Option<(StateLine, LineAl
     state_line(part, home).map(|line| (line, edge(part).1))
 }
 
+/// The homes a note names a [`MarkedBox`]'s values by: its fill and outline width at rest, and
+/// the hovered and the pressed ones.
+struct MarkedHomes {
+    fill: &'static str,
+    width: &'static str,
+    state_fill: [&'static str; 2],
+    state_width: [&'static str; 2],
+}
+
+/// The box `flag` marks (`CHECKED`, `INDETERMINATE`): its fill where a rule states one for the
+/// flag; its outline colour, the flag's query's, transparent for one stated as none (spec §10,
+/// rule 2), so the box does not keep the unchecked box's over its own fill; and under the
+/// pointer and pressed, each of fill and outline the combined state's where a rule states it
+/// for `HOVER` or `PRESSED` asked alone, else `None`, and the box keeps egui's own treatment of
+/// the hover or the press (spec §2, `from_state`: a connector that keeps its own treatment of
+/// one flag over a value stated for another asks that flag alone).
+fn marked_box(k: &CheckboxWidget, flag: WidgetState, homes: MarkedHomes) -> MarkedBox {
+    use WidgetState as S;
+    let part = k.indicator(flag);
+    let stated_fill = |state: WidgetState, home: &'static str| {
+        state_fill(&k.indicator(state)).and_then(|_| fill_at(&k.indicator(state | flag), home))
+    };
+    let stated_line = |state: WidgetState, home: &'static str| {
+        k.indicator(state)
+            .from_state
+            .contains(PartStated::STROKE)
+            .then(|| line_of(&k.indicator(state | flag), home))
+    };
+    let [hover_fill, press_fill] = homes.state_fill;
+    let [hover_width, press_width] = homes.state_width;
+    MarkedBox {
+        fill: state_fill_at(&part, homes.fill),
+        outline: line_of(&part, homes.width).color,
+        align: edge(&part).1,
+        state_fill: [
+            stated_fill(S::HOVER, hover_fill),
+            stated_fill(S::PRESSED, press_fill),
+        ],
+        state_border: [
+            stated_line(S::HOVER, hover_width),
+            stated_line(S::PRESSED, press_width),
+        ],
+    }
+}
+
+/// The mixed check box of the 0.8.0 theme `r`, as a rule states it for `INDETERMINATE`: the
+/// box ([`marked_box`]), its outline's width at rest, and its mark's colour at rest and, where a
+/// rule states one for `HOVER` or `PRESSED` asked alone, the combined state's, and its width.
+pub(crate) fn mixed_box(r: &ResolvedTheme) -> MixedBox {
+    use WidgetState as S;
+    let k = &r.checkbox;
+    let flag = S::INDETERMINATE;
+    let mark = k.checkmark(flag);
+    let state_mark = |state: WidgetState| {
+        state_icon_color(&k.checkmark(state)).and_then(|_| icon_color(&k.checkmark(state | flag)))
+    };
+    MixedBox {
+        look: marked_box(
+            k,
+            flag,
+            MarkedHomes {
+                fill: "checkbox.indicator(INDETERMINATE).fill",
+                width: "checkbox.indicator(INDETERMINATE).stroke.width",
+                state_fill: [
+                    "checkbox.indicator(HOVER|INDETERMINATE).fill",
+                    "checkbox.indicator(PRESSED|INDETERMINATE).fill",
+                ],
+                state_width: [
+                    "checkbox.indicator(HOVER|INDETERMINATE).stroke.width",
+                    "checkbox.indicator(PRESSED|INDETERMINATE).stroke.width",
+                ],
+            },
+        ),
+        width: state_line(
+            &k.indicator(flag),
+            "checkbox.indicator(INDETERMINATE).stroke.width",
+        )
+        .and_then(|line| line.width),
+        mark: [
+            state_icon_color(&mark),
+            state_mark(S::HOVER),
+            state_mark(S::PRESSED),
+        ],
+        mark_width: mark
+            .from_state
+            .contains(IconStated::STROKE_WIDTH)
+            .then_some(mark.stroke_width)
+            .flatten()
+            .map(|v| (v, "checkbox.checkmark(INDETERMINATE).stroke_width")),
+    }
+}
+
 /// [`VariantSource`] of the 0.8.0 model. A disabled or checked value is the one a rule states
 /// for that state. The checked box's fill and outline under the pointer or pressed keep egui's
 /// own treatment of the hover or the press, each property apart, unless the theme states one
@@ -892,24 +986,7 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
     let cb = &r.combo_box;
     let k = &r.checkbox;
     let i = &r.input;
-    let checked = k.indicator(S::CHECKED);
-    let (_, checked_align) = edge(&checked);
-    // a checked outline stated as none is transparent (spec §10, rule 2), so the checked cell
-    // does not keep the unchecked box's
-    let checked_outline = line_of(&checked, "checkbox.indicator(CHECKED).stroke.width");
     let primary_disabled = ButtonQuery::primary().with_state(S::DISABLED);
-    // the combined state's outline where a rule states one for `state` alone
-    let checked_state_line = |state: WidgetState, home: &'static str| {
-        k.indicator(state)
-            .from_state
-            .contains(PartStated::STROKE)
-            .then(|| line_of(&k.indicator(state | S::CHECKED), home))
-    };
-    // the combined state's fill where a rule states one for `state` alone
-    let checked_state_fill = |state: WidgetState, home: &'static str| {
-        state_fill(&k.indicator(state))
-            .and_then(|_| fill_at(&k.indicator(state | S::CHECKED), home))
-    };
     VariantSource {
         button: disabled(
             &b.label(S::DISABLED),
@@ -940,20 +1017,22 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
             )
         },
         checked: CheckedBox {
-            fill: state_fill_at(&checked, "checkbox.indicator(CHECKED).fill"),
-            outline: checked_outline.color,
-            align: checked_align,
-            state_fill: [
-                checked_state_fill(S::HOVER, "checkbox.indicator(HOVER|CHECKED).fill"),
-                checked_state_fill(S::PRESSED, "checkbox.indicator(PRESSED|CHECKED).fill"),
-            ],
-            state_border: [
-                checked_state_line(S::HOVER, "checkbox.indicator(HOVER|CHECKED).stroke.width"),
-                checked_state_line(
-                    S::PRESSED,
-                    "checkbox.indicator(PRESSED|CHECKED).stroke.width",
-                ),
-            ],
+            look: marked_box(
+                k,
+                S::CHECKED,
+                MarkedHomes {
+                    fill: "checkbox.indicator(CHECKED).fill",
+                    width: "checkbox.indicator(CHECKED).stroke.width",
+                    state_fill: [
+                        "checkbox.indicator(HOVER|CHECKED).fill",
+                        "checkbox.indicator(PRESSED|CHECKED).fill",
+                    ],
+                    state_width: [
+                        "checkbox.indicator(HOVER|CHECKED).stroke.width",
+                        "checkbox.indicator(PRESSED|CHECKED).stroke.width",
+                    ],
+                },
+            ),
             disabled_fill: state_fill(&k.indicator(S::DISABLED)).and_then(|_| {
                 fill_at(
                     &k.indicator(S::DISABLED | S::CHECKED),

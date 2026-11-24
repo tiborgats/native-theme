@@ -2201,7 +2201,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                     let checked = variant != RoleVariant::Disabled;
                     let variant_over = |color: egui::Color32, path: &str| {
                         let (align, weak) = if checked {
-                            (new_variant_src.checked.align, Some(false))
+                            (new_variant_src.checked.look.align, Some(false))
                         } else {
                             outline_of(*role, &new_cells)?
                         };

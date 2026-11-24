@@ -832,3 +832,15 @@ connector = "iced"
 name = "next::to_color32"
 kind = "absent"
 reason = "egui's conversion of a model colour to its `Color32` (connectors/native-theme-egui/src/next/mod.rs, `to_color32`), public so the egui showcase converts a leaf it draws itself with the connector's own conversion, not a twin of it; iced's conversion of a model colour is its own type's, `next::to_color` (src/next/mod.rs), crate-private"
+
+[[exception]]
+connector = "gpui"
+name = "next::mixed_checkbox"
+kind = "absent"
+reason = "egui's mixed check box: egui draws `Checkbox::indeterminate` as its unchecked box with a dash in the scope's visuals (egui 0.37.0 src/widgets/checkbox.rs:135-141), and the atlas has no cell for the mixed state, so the function lays what the theme states for `INDETERMINATE` over the unchecked box's visuals per call, through the code the atlas lays the checked box with (connectors/native-theme-egui/src/next/mod.rs, `mixed_checkbox`'s doc). gpui draws its check box in its own widget, which takes its parts from the theme itself and shows the mixed state as when checked with gpui-component's dash (connectors/native-theme-gpui/src/widgets/checkbox.rs, `Checkbox::indeterminate`'s doc)"
+
+[[exception]]
+connector = "iced"
+name = "next::mixed_checkbox"
+kind = "absent"
+reason = "egui's mixed check box: egui draws `Checkbox::indeterminate` as its unchecked box with a dash in the scope's visuals (egui 0.37.0 src/widgets/checkbox.rs:135-141), and the atlas has no cell for the mixed state, so the function lays what the theme states for `INDETERMINATE` over the unchecked box's visuals per call, through the code the atlas lays the checked box with (connectors/native-theme-egui/src/next/mod.rs, `mixed_checkbox`'s doc). iced's checkbox has no mixed state (iced_widget 0.14.2 src/checkbox.rs: `is_checked` alone)"

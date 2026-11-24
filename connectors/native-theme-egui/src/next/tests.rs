@@ -483,6 +483,189 @@ fn a_disabled_boxs_stated_outline_is_drawn() -> Result<(), Box<dyn std::error::E
     Ok(())
 }
 
+/// The mixed box `super::mixed_checkbox` lays over the light `Role::Checkbox` `Normal` cell of
+/// `preset` with `patch` laid over it, with the 0.8.0 light theme it lays it from.
+fn mixed_over_normal(
+    preset: Preset,
+    patch: &str,
+) -> Result<
+    (
+        egui::Visuals,
+        egui::Visuals,
+        native_theme::next::ResolvedTheme,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let atlas = patched_light(preset, patch)?;
+    let normal = atlas
+        .scheme(egui::Theme::Light)
+        .cell(crate::Role::Checkbox, crate::RoleVariant::Normal)
+        .visuals
+        .clone();
+    let r = Theme::preset(preset)
+        .with_patch(ThemePatch::from_toml(patch)?)
+        .resolve(&ThemeContext::light());
+    let mut mixed = normal.clone();
+    let notes = super::mixed_checkbox(&r, egui::Theme::Light, &mut mixed);
+    assert!(notes.is_empty(), "{preset:?}: {notes:?}");
+    Ok((normal, mixed, r))
+}
+
+/// The mixed box takes what a rule states for `INDETERMINATE` at rest, and under the pointer and
+/// pressed what a rule states for `HOVER` or `PRESSED` asked alone, the combined state's value;
+/// where none does, egui's own treatment of the hover or the press, as the checked box takes it
+/// (spec §2, `from_state`: the flag asked alone; §10, rule 0): on every preset with the same
+/// fill and outline stated for `CHECKED` and for `INDETERMINATE`, the mixed box's hovered and
+/// pressed fill and outline colour are the checked cell's, and where `indicator(HOVER)` states
+/// no fill, egui's own hovered one where egui's changes between rest and hover, else the mixed
+/// fill. A rule for `HOVER` and one for `HOVER` with `INDETERMINATE` give the latter.
+#[test]
+fn the_mixed_box_under_the_pointer_asks_the_state_alone() -> Result<(), Box<dyn std::error::Error>>
+{
+    use native_theme::next::{IconStated, PartStated};
+
+    let [magenta, green, blue, cyan] =
+        [[0xff, 0, 0xff], [0, 0xff, 0], [0, 0, 0xff], [0, 0xff, 0xff]]
+            .map(|[r, g, b]| egui::Color32::from_rgb(r, g, b));
+    let look = "indicator.fill = \"#ff00ff\"\n\
+                indicator.stroke = { width = 3.0, color = \"#00ff00\" }\n";
+    let rules = format!(
+        "[[widgets.checkbox.rules]]\nstates = [\"indeterminate\"]\n{look}checkmark.color = \"#0000ff\"\n\
+         [[widgets.checkbox.rules]]\nstates = [\"checked\"]\n{look}"
+    );
+    let stock = egui::Theme::Light.default_style().visuals.widgets;
+    let mut unstated_hover = 0;
+    for &(key, preset) in PRESETS {
+        let (_, mixed, r) = mixed_over_normal(preset, &rules)?;
+        let w = &mixed.widgets;
+        assert_eq!(w.inactive.bg_fill, magenta, "{key}: the mixed fill");
+        assert_eq!(
+            w.inactive.bg_stroke,
+            egui::Stroke::new(3.0, green),
+            "{key}: the mixed outline"
+        );
+        assert_eq!(w.inactive.fg_stroke.color, blue, "{key}: the mixed mark");
+        let checked = patched_light(preset, &rules)?;
+        let checked = &checked
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, crate::RoleVariant::Selected)
+            .visuals
+            .widgets;
+        for (name, state, m, c) in [
+            ("hovered", WidgetState::HOVER, w.hovered, checked.hovered),
+            ("pressed", WidgetState::PRESSED, w.active, checked.active),
+        ] {
+            let alone = r.checkbox.indicator(state).from_state;
+            if alone.contains(PartStated::FILL) {
+                let combined = r.checkbox.indicator(state | WidgetState::INDETERMINATE);
+                assert_eq!(
+                    Some(m.bg_fill),
+                    super::fill_of(&combined),
+                    "{key}: the {name} fill stated for the state"
+                );
+            } else {
+                assert_eq!(m.bg_fill, c.bg_fill, "{key}: the {name} fill");
+            }
+            if !alone.contains(PartStated::STROKE) {
+                assert_eq!(
+                    m.bg_stroke.color, c.bg_stroke.color,
+                    "{key}: the {name} outline"
+                );
+            }
+        }
+        if !r
+            .checkbox
+            .indicator(WidgetState::HOVER)
+            .from_state
+            .contains(PartStated::FILL)
+        {
+            unstated_hover += 1;
+            let own = if stock.hovered.bg_fill == stock.inactive.bg_fill {
+                magenta
+            } else {
+                stock.hovered.bg_fill
+            };
+            assert_eq!(w.hovered.bg_fill, own, "{key}: egui's own hover");
+        }
+        if !r
+            .checkbox
+            .checkmark(WidgetState::HOVER)
+            .from_state
+            .contains(IconStated::COLOR)
+        {
+            let own = if stock.hovered.fg_stroke.color == stock.inactive.fg_stroke.color {
+                blue
+            } else {
+                stock.hovered.fg_stroke.color
+            };
+            assert_eq!(w.hovered.fg_stroke.color, own, "{key}: the hovered mark");
+        }
+
+        let hover = format!(
+            "{rules}[[widgets.checkbox.rules]]\nstates = [\"hover\"]\nindicator.fill = \"#ffff00\"\n\
+             [[widgets.checkbox.rules]]\nstates = [\"hover\", \"indeterminate\"]\n\
+             indicator.fill = \"#00ffff\"\n"
+        );
+        let (_, mixed, _) = mixed_over_normal(preset, &hover)?;
+        assert_eq!(
+            mixed.widgets.hovered.bg_fill, cyan,
+            "{key}: the fill stated for the hover and the mixed state"
+        );
+    }
+    assert!(
+        unstated_hover > 0,
+        "no preset leaves the hovered indicator's fill unstated"
+    );
+    Ok(())
+}
+
+/// A see-through outline stated for the mixed state is drawn over the fill under it, as the
+/// connector's cells draw one ([`crate::style::line::Line::over`]): one inside the box's edge
+/// is composited over the box's fill (egui fills a rect up to the stroke's inner edge, epaint
+/// 0.37.0 `src/tessellator.rs`, `stroke_and_fill_path`), one outside it is handed to egui as
+/// stated. Where a rule states a mark, the label keeps the colour it has at rest.
+#[test]
+fn a_translucent_mixed_outline_is_drawn_over_its_fill() -> Result<(), Box<dyn std::error::Error>> {
+    let magenta = egui::Color32::from_rgb(0xff, 0x00, 0xff);
+    let half_green = egui::Color32::from_rgba_unmultiplied(0x00, 0xff, 0x00, 0x80);
+    let rule = |align: &str| {
+        format!(
+            "[[widgets.checkbox.rules]]\nstates = [\"indeterminate\"]\n\
+             indicator.fill = \"#ff00ff\"\n\
+             indicator.stroke = {{ width = 2.0, color = \"#00ff0080\", align = \"{align}\" }}\n\
+             checkmark.color = \"#0000ff\"\n"
+        )
+    };
+    for &(key, preset) in PRESETS {
+        let (normal, inside, r) = mixed_over_normal(preset, &rule("inside"))?;
+        assert_eq!(
+            inside.widgets.inactive.bg_stroke.color,
+            magenta.blend(half_green),
+            "{key}: inside"
+        );
+        let (_, outside, _) = mixed_over_normal(preset, &rule("outside"))?;
+        assert_eq!(
+            outside.widgets.inactive.bg_stroke.color, half_green,
+            "{key}: outside"
+        );
+        let label = normal
+            .override_text_color
+            .unwrap_or(normal.widgets.inactive.fg_stroke.color);
+        assert_eq!(inside.override_text_color, Some(label), "{key}: the label");
+        // a scope whose label egui letters in the mark's colour
+        let mut bare = normal.clone();
+        bare.override_text_color = None;
+        let notes = super::mixed_checkbox(&r, egui::Theme::Light, &mut bare);
+        assert!(notes.is_empty(), "{key}: {notes:?}");
+        assert_eq!(
+            bare.override_text_color,
+            Some(normal.widgets.inactive.fg_stroke.color),
+            "{key}: the label held to its resting colour"
+        );
+    }
+    Ok(())
+}
+
 /// A tool button's and a menu item's hovered and pressed outline widths are the ones a rule
 /// states for the state.
 #[test]

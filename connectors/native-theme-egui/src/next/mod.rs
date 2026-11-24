@@ -1148,6 +1148,37 @@ pub fn expander_icon(r: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Re
     crate::accessors::expander_icon_from(expander_arrow(r))
 }
 
+/// Lay the mixed check box of `r` over `visuals`, the visuals of a scope
+/// that draws the unchecked box (the atlas's `Role::Checkbox` `Normal`
+/// cell of `scheme`), for a `Checkbox::indeterminate` drawn in it. egui
+/// draws a mixed box as its unchecked one with a dash in the mark's stroke
+/// (egui 0.37.0 `src/widgets/checkbox.rs:135-141`), and the atlas has no
+/// cell for it, so what the theme states for `INDETERMINATE` is laid over
+/// the unchecked box per call: the indicator's fill and outline as the
+/// atlas lays the checked box's over the unchecked one, a translucent
+/// outline drawn over the fill under it, and the mark's colour and width;
+/// a hovered or pressed value the theme states for `HOVER` or `PRESSED`
+/// asked alone is the combined state's, an unstated one egui's own
+/// treatment of the hover or the press in `scheme` (spec §2, `from_state`;
+/// §10, rule 0). Returns the notes on values written otherwise than
+/// stated, as the atlas's.
+#[must_use = "the notes report values written otherwise than stated"]
+pub fn mixed_checkbox(
+    r: &ResolvedTheme,
+    scheme: egui::Theme,
+    visuals: &mut egui::Visuals,
+) -> Vec<crate::Note> {
+    let own = egui::Theme::default_style(scheme);
+    let mut notes = Vec::new();
+    crate::style::variants::mixed_cell(
+        visuals,
+        &build::mixed_box(r),
+        crate::style::states::Unstated::Egui(&own.visuals.widgets),
+        &mut notes,
+    );
+    notes
+}
+
 /// [`crate::icons::icon_size`]: the icon size for a context, in logical
 /// pixels (`icons.sizes.small`, `.toolbar`, `.panel`, `.dialog`, `.large`).
 ///

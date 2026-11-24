@@ -39,7 +39,8 @@ pub(crate) fn show(
             |ui| ui.add(egui::Checkbox::new(&mut checked, "Checked")),
         );
         // The mixed box: the unchecked box with what the theme states for the mixed state
-        // (`MixedLook`), not the checked look.
+        // (`mixed_look`), not the checked look.
+        let mut notes = Vec::new();
         demo::scoped(
             reg,
             ui,
@@ -47,9 +48,7 @@ pub(crate) fn show(
             normal,
             "checkbox (indeterminate)",
             |ui| {
-                if let Some(look) = demo::next_value(ui, MixedLook::of) {
-                    look.apply(ui.visuals_mut());
-                }
+                notes = mixed_look(ui);
                 ui.add(
                     egui::Checkbox::new(&mut state.indeterminate, "Indeterminate")
                         .indeterminate(true),
@@ -57,6 +56,9 @@ pub(crate) fn show(
             },
         );
         reg.note_last("mixed state", MIXED_NOTE);
+        for note in notes {
+            reg.note_last("mixed state", &format!("{note:?}"));
+        }
         // Unchecked and disabled, the `Disabled` cell; the Basic page draws a checked one in
         // `SelectedDisabled`.
         let mut disabled = false;
@@ -174,92 +176,26 @@ pub(crate) fn show(
 /// the mixed state.
 pub(crate) const MIXED_NOTE: &str = "egui draws a mixed box as its unchecked one with a dash in \
      the mark's stroke (egui 0.37.0 src/widgets/checkbox.rs:135-141); the fill, outline and mark \
-     the theme states for INDETERMINATE are laid over it per call (pages::selection::MixedLook), \
-     each unstated one the unchecked box's";
+     the theme states for INDETERMINATE are laid over it per call (next::mixed_checkbox, \
+     pages::selection::mixed_look), each unstated one the unchecked box's, and under the pointer \
+     and pressed egui's own treatment of the hover or the press where the theme states none for \
+     HOVER or PRESSED asked alone";
 
-/// What the installed 0.8.0 theme states for the mixed check box, per interaction entry: at
-/// rest `checkbox.indicator(INDETERMINATE)` and `checkbox.checkmark(INDETERMINATE)`, under the
-/// pointer and pressed the query with `HOVER` or `PRESSED` too; each property where a rule for a
-/// flag of the query states it (spec §2, `from_state`), else `None`, and the entry keeps the
-/// `Normal` cell's (spec §10, rule 0): egui draws a mixed box as its unchecked one, its visuals
-/// picked by the interaction alone (egui 0.37.0 `src/theme/mod.rs:31-38`,
-/// `src/theme/default_style.rs:176`), its frame from `bg_fill` and `bg_stroke` (`:193`, `:198`)
-/// and its dash in `fg_stroke` (`src/widgets/checkbox.rs:135-141`).
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub(crate) struct MixedLook {
-    /// The resting, the hovered and the pressed entry's.
-    pub(crate) entries: [MixedEntry; 3],
-}
-
-/// One interaction entry of [`MixedLook`].
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub(crate) struct MixedEntry {
-    pub(crate) fill: Option<egui::Color32>,
-    pub(crate) stroke_width: Option<f32>,
-    pub(crate) stroke_color: Option<egui::Color32>,
-    pub(crate) mark: Option<egui::Color32>,
-    pub(crate) mark_width: Option<f32>,
-}
-
-impl MixedLook {
-    /// The mixed box's look on the 0.8.0 theme `r`.
-    pub(crate) fn of(r: &native_theme::next::ResolvedTheme) -> Self {
-        use native_theme::next::{IconStated, PartStated, WidgetState as S};
-        use native_theme_egui::next;
-        let entry = |state: S| {
-            let q = state | S::INDETERMINATE;
-            let part = r.checkbox.indicator(q);
-            let mark = r.checkbox.checkmark(q);
-            let stroke = part.from_state.contains(PartStated::STROKE);
-            MixedEntry {
-                fill: next::state_fill_of(&part),
-                stroke_width: stroke.then(|| next::stroke_width_of(&part)).flatten(),
-                stroke_color: next::state_stroke_color_of(&part),
-                mark: mark
-                    .from_state
-                    .contains(IconStated::COLOR)
-                    .then(|| next::to_color32(mark.color)),
-                mark_width: mark
-                    .from_state
-                    .contains(IconStated::STROKE_WIDTH)
-                    .then_some(mark.stroke_width)
-                    .flatten(),
-            }
-        };
-        Self {
-            entries: [S::NONE, S::HOVER, S::PRESSED].map(entry),
+/// Lay the installed 0.8.0 theme's mixed check box over the visuals of `ui`, the unchecked
+/// box's scope (`next::mixed_checkbox`, in the scheme egui draws), and return the notes on the
+/// values it wrote otherwise than stated; without a 0.8.0 theme, egui's own mixed box and no
+/// note.
+pub(crate) fn mixed_look(ui: &mut egui::Ui) -> Vec<native_theme_egui::Note> {
+    let scheme = ui.ctx().theme();
+    let mut visuals = ui.visuals().clone();
+    let notes = demo::next_value(ui, |r| {
+        native_theme_egui::next::mixed_checkbox(r, scheme, &mut visuals)
+    });
+    match notes {
+        Some(notes) => {
+            *ui.visuals_mut() = visuals;
+            notes
         }
-    }
-
-    /// Lay the look over `v`, the mixed box's scope's visuals. Where it states a mark, the label
-    /// is first held to the colour it has at rest, as the connector's checked-disabled cell
-    /// holds it: egui letters a check box's label in the mark's `fg_stroke` where
-    /// `override_text_color` is unset (egui 0.37.0 `src/theme/default_style.rs:182-186`,
-    /// `src/widget_text.rs:831-835`).
-    pub(crate) fn apply(&self, v: &mut egui::Visuals) {
-        if v.override_text_color.is_none() && self.entries.iter().any(|e| e.mark.is_some()) {
-            v.override_text_color = Some(v.widgets.inactive.fg_stroke.color);
-        }
-        let w = &mut v.widgets;
-        for (entry, look) in [&mut w.inactive, &mut w.hovered, &mut w.active]
-            .into_iter()
-            .zip(self.entries)
-        {
-            if let Some(fill) = look.fill {
-                entry.bg_fill = fill;
-            }
-            if let Some(width) = look.stroke_width {
-                entry.bg_stroke.width = width;
-            }
-            if let Some(colour) = look.stroke_color {
-                entry.bg_stroke.color = colour;
-            }
-            if let Some(mark) = look.mark {
-                entry.fg_stroke.color = mark;
-            }
-            if let Some(width) = look.mark_width {
-                entry.fg_stroke.width = width;
-            }
-        }
+        None => Vec::new(),
     }
 }

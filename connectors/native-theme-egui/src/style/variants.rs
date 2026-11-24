@@ -15,10 +15,13 @@
 
 use egui::style::WidgetVisuals;
 
-use super::base::{Read, stroke};
+use super::base::{Read, length, stroke};
 use super::line::{Line, LineAlign};
 use super::roles::CellInput;
-use super::states::{FillField, StateLine, Unstated, state_borders};
+use super::states::{
+    FillField, OpenFrom, StateLine, StateSource, TextSource, Unstated, state_borders,
+    write_states_with,
+};
 use crate::convert::{Rgba, to_color32};
 use crate::style::note_transparent_fill;
 use crate::{Note, ResolvedTheme, Role};
@@ -35,15 +38,21 @@ pub(crate) struct Disabled {
     pub border: Option<(StateLine, LineAlign)>,
 }
 
-/// The checked box.
-pub(crate) struct CheckedBox {
+/// A box a state flag marks, the checked one or the mixed one: its fill and outline colour at
+/// rest, where its stroke lies, and its fill and outline under the pointer and pressed.
+pub(crate) struct MarkedBox {
     pub fill: Read<Rgba>,
     pub outline: Option<Rgba>,
     pub align: LineAlign,
-    /// The hovered and the pressed checked box's fill.
+    /// The hovered and the pressed box's fill.
     pub state_fill: [Read<Rgba>; 2],
-    /// The hovered and the pressed checked box's outline.
+    /// The hovered and the pressed box's outline.
     pub state_border: [Option<StateLine>; 2],
+}
+
+/// The checked box.
+pub(crate) struct CheckedBox {
+    pub look: MarkedBox,
     /// The checked box's fill where the theme states a disabled fill.
     pub disabled_fill: Read<Rgba>,
     /// The checked box's mark where the theme states a disabled mark.
@@ -120,11 +129,13 @@ impl VariantSource {
                 },
             ),
             checked: CheckedBox {
-                fill: Some((k.checked_background, "checkbox.checked_background")),
-                outline: Some(k.border.color),
-                align: LineAlign::Outside,
-                state_fill: [None; 2],
-                state_border: [StateLine::colour(k.hover_border_color); 2],
+                look: MarkedBox {
+                    fill: Some((k.checked_background, "checkbox.checked_background")),
+                    outline: Some(k.border.color),
+                    align: LineAlign::Outside,
+                    state_fill: [None; 2],
+                    state_border: [StateLine::colour(k.hover_border_color); 2],
+                },
                 disabled_fill: k
                     .disabled_background
                     .map(|c| (c, "checkbox.disabled_background")),
@@ -235,7 +246,6 @@ pub(crate) fn selected_cell(
     if role != Role::Checkbox {
         return None;
     }
-    let k = &src.checked;
     let mut style = normal.clone();
     // The checked box: `checkbox_style` fills from the state's `bg_fill`
     // (`egui/src/widget_style.rs:182`) and outlines from `bg_stroke` (`:184`), and its hover
@@ -248,7 +258,26 @@ pub(crate) fn selected_cell(
     } else {
         Unstated::Copy
     };
-    let w = &mut style.visuals.widgets;
+    marked_box(
+        &mut style.visuals.widgets,
+        &src.checked.look,
+        unstated,
+        notes,
+    );
+    Some(style)
+}
+
+/// The box a state flag marks, `k`, laid over `w`, the unchecked box's entries: its fill in
+/// every entry; under the pointer and pressed the fill the theme states for that state, else
+/// what `unstated` gives for the fill at rest; its outline colour drawn over the fill of each
+/// entry ([`Line::over`]), and under the pointer and pressed the outline the theme states for
+/// that state, else what `unstated` gives ([`state_borders`]).
+pub(crate) fn marked_box(
+    w: &mut egui::style::Widgets,
+    k: &MarkedBox,
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
     if let Some(fill) = noted(k.fill, notes) {
         for entry in [
             &mut w.noninteractive,
@@ -260,7 +289,7 @@ pub(crate) fn selected_cell(
             entry.bg_fill = fill;
         }
         // Under the pointer and on a press, the fill the theme states for the state, else what
-        // `unstated` gives for the checked fill at rest.
+        // `unstated` gives for the fill at rest.
         let own_fill = |e: &WidgetVisuals| e.bg_fill;
         let [hover, press] = k.state_fill;
         let hovered = noted(hover, notes).unwrap_or_else(|| unstated.hovered(fill, own_fill));
@@ -285,7 +314,78 @@ pub(crate) fn selected_cell(
         unstated,
         notes,
     );
-    Some(style)
+}
+
+/// The mixed check box: the [`MarkedBox`] of the mixed state, its outline's width at rest, and
+/// its mark's colour at rest, under the pointer and pressed and its width, each where a rule
+/// states it.
+pub(crate) struct MixedBox {
+    pub look: MarkedBox,
+    pub width: Read<f32>,
+    pub mark: [Option<Rgba>; 3],
+    pub mark_width: Read<f32>,
+}
+
+/// The mixed box `m` laid over `v`, the visuals of the unchecked box's scope: egui draws a mixed
+/// box as its unchecked one with a dash in the mark's stroke (egui 0.37.0
+/// `src/widgets/checkbox.rs:135-141`). The outline's width at rest goes into every entry
+/// ([`stroke`]) before [`marked_box`] lays the box over them, as the checked box's cell does;
+/// the mark's colours go into `fg_stroke` as the unchecked box's cell writes its check mark
+/// ([`write_states_with`]), an unstated hovered or pressed one what `unstated` gives, and its
+/// width into every entry, one in every state (§6.1). Where it states a mark, the label is first
+/// held to the colour it has at rest: egui letters a check box's label in the mark's
+/// `fg_stroke` where `override_text_color` is unset (egui 0.37.0
+/// `src/theme/default_style.rs:182-186`, `src/widget_text.rs:831-835`).
+pub(crate) fn mixed_cell(
+    v: &mut egui::Visuals,
+    m: &MixedBox,
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
+    if let Some((width, path)) = m.width {
+        for e in every_entry(&mut v.widgets) {
+            e.bg_stroke = stroke(path, e.bg_stroke, e.bg_stroke.color, width, notes);
+        }
+    }
+    marked_box(&mut v.widgets, &m.look, unstated, notes);
+    let [idle, hover, active] = m.mark;
+    if idle.is_some() || hover.is_some() || active.is_some() {
+        if v.override_text_color.is_none() {
+            v.override_text_color = Some(v.widgets.inactive.fg_stroke.color);
+        }
+        write_states_with(
+            &mut v.widgets,
+            &StateSource {
+                fill: None,
+                text: Some(TextSource {
+                    idle,
+                    hover,
+                    active,
+                    in_noninteractive: true,
+                }),
+                border: None,
+                open: OpenFrom::Inactive,
+            },
+            unstated,
+            notes,
+        );
+    }
+    if let Some((width, path)) = m.mark_width {
+        for e in every_entry(&mut v.widgets) {
+            e.fg_stroke.width = length(path, width, e.fg_stroke.width, notes);
+        }
+    }
+}
+
+/// The five entries of `w`.
+fn every_entry(w: &mut egui::style::Widgets) -> [&mut WidgetVisuals; 5] {
+    [
+        &mut w.noninteractive,
+        &mut w.inactive,
+        &mut w.hovered,
+        &mut w.active,
+        &mut w.open,
+    ]
 }
 
 /// The `SelectedDisabled` cell of `role`, from its `Selected` cell `selected`, or `None` where
@@ -323,7 +423,12 @@ pub(crate) fn selected_disabled_cell(
         if let Some(text) = text {
             v.widgets.inactive.fg_stroke.color = text;
         }
-        outline_over(&mut v.widgets.inactive, k.outline, k.align, FillField::Bg);
+        outline_over(
+            &mut v.widgets.inactive,
+            k.look.outline,
+            k.look.align,
+            FillField::Bg,
+        );
     }
     if let Some(border) = k.disabled_border {
         stated_outline(&mut v.widgets.inactive, border, notes);

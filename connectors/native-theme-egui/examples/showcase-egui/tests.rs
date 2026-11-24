@@ -2309,7 +2309,7 @@ fn the_toggle_takes_the_checked_colours_alone() -> Result<(), String> {
     Ok(())
 }
 
-/// The mixed check box reads the mixed state from the 0.8.0 model (`pages::selection::MixedLook`,
+/// The mixed check box reads the mixed state from the 0.8.0 model (`next::mixed_checkbox`,
 /// spec §2 `from_state`): on kde-breeze with a rule for `INDETERMINATE` stating the box's fill
 /// and outline and the mark's colour, the box is painted in that fill and outline and its dash
 /// in that colour, and its label keeps the unchecked box's colour.
@@ -2324,10 +2324,17 @@ fn the_mixed_box_reads_the_mixed_state() -> Result<(), String> {
     })?;
     let [magenta, green, blue] = [[0xff, 0, 0xff], [0, 0xff, 0], [0, 0, 0xff]]
         .map(|[r, g, b]| egui::Color32::from_rgb(r, g, b));
-    let rest = crate::pages::selection::MixedLook::of(&r).entries[0];
+    let mut visuals = egui::Visuals::light();
+    let notes = native_theme_egui::next::mixed_checkbox(&r, egui::Theme::Light, &mut visuals);
+    let rest = visuals.widgets.inactive;
     assert_eq!(
-        (rest.fill, rest.stroke_width, rest.stroke_color, rest.mark),
-        (Some(magenta), Some(3.0), Some(green), Some(blue)),
+        (
+            rest.bg_fill,
+            rest.bg_stroke,
+            rest.fg_stroke.color,
+            notes.len()
+        ),
+        (magenta, egui::Stroke::new(3.0, green), blue, 0),
         "the mixed state's stated values"
     );
     let rect = harness
@@ -2365,7 +2372,7 @@ fn the_mixed_box_reads_the_mixed_state() -> Result<(), String> {
 
 /// A radio button and a check box take no selected flag of their own: the checked look is
 /// `RoleVariant::Selected` (§4.4), picked per instance from its state; the mixed box is the
-/// unchecked one with what the theme states for the mixed state (`pages::selection::MixedLook`).
+/// unchecked one with what the theme states for the mixed state (`next::mixed_checkbox`).
 #[test]
 fn a_checked_radio_or_box_is_drawn_selected() {
     let variant_of = |harness: &Harness<'_, App>, kind: &str| {
