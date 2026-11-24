@@ -1041,15 +1041,22 @@ fn method_text() -> String {
     format!(
         "activation policy set to Regular, finishLaunching and activation as in the key-window section; each sheet is a titled NSWindow (closable, miniaturizable, resizable, empty title) holding a backdrop (an NSBox, custom, no border, no title, over the whole content view, hidden for the window's own background) and a grid of controls, each given setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize: and sized to fit, centred in its row on whole points; the window is made key with makeKeyAndOrderFront: and makeFirstResponder: nil, the run loop pumped until isKeyWindow, then the mode's condition is set (mode_method); per appearance the window's appearance is set and the run loop pumped {SETTLE_STEPS} steps of {} ms, then each state is set (states) and per backdrop the window displayed, the run loop pumped {SETTLE_STEPS} steps ({HOVER_STEPS} after a cursor move) and the window captured with screencapture -x -o -l <windowNumber> to <appearance>/[<sheet>/]<state>[-<button>][-over-<backdrop>].png (the push sheet's captures in <appearance>/, as spike M wrote them); isKeyWindow and NSApp isActive are read just before and just after each capture (key_at_capture: both reads of isKeyWindow are true); each capture over the window's background is compared with the same appearance's normal one inside each button's frame grown by {DIFF_MARGIN} pt (diff_from_normal: the pixels whose bytes differ and the largest difference of one byte); the cursor is parked ({}) before the normal capture and after the hovered and clicked ones; every cursor move warps the cursor and posts its mouse-moved only where windowNumberAtPoint: at its target, read before, gives the probe's window (window_at_target, window_at_target_is_ours), else nothing is moved or posted and the move is the error",
         PUMP_STEP.as_millis(),
-        park_text(),
+        park_text(Parking::Buttons),
     )
 }
 
-/// How `Pass::park` parks the cursor, for the method texts.
-fn park_text() -> String {
+/// How `Pass::park` parks the cursor for `parking`, for the method texts:
+/// that pass's point, the condition, and both points.
+fn park_text(parking: Parking) -> String {
+    let own = match parking {
+        Parking::Buttons | Parking::Controls => "on the middle of its content view's left margin",
+        Parking::Motion | Parking::Events | Parking::Transition => {
+            "on the middle of its content view's bottom margin"
+        }
+    };
     format!(
-        "inside the window on the middle of its content view's bottom margin, half its width across and {} pt from its bottom edge (below every sheet's grid, outside every control and every recording's crop round a control), where windowNumberAtPoint: there gives the probe's window and hitTest: the content view itself, every caller parking with the backdrop box hidden (view_at_park_point), else not moved and the error",
-        BUTTON_MARGIN / 2.0
+        "inside the window {own} (park_point_in_content_xy), where windowNumberAtPoint: there gives the probe's window and hitTest: the content view itself, every caller parking with the backdrop box hidden (view_at_park_point), else not moved and the error, which names the other window's owner, layer and bounds (CGWindowListCopyWindowInfo); the button and controls passes' sheets park on the middle of the left margin, {m} pt from the content view's left edge and half its height up (left of every control and every frame compared), the motion, events and transition passes on the middle of the bottom margin, half the content view's width across and {m} pt from its bottom edge (below every control, outside every recording's crop round one)",
+        m = BUTTON_MARGIN / 2.0
     )
 }
 
@@ -1360,7 +1367,11 @@ impl Pass<'_> {
 
         let mut normal = Table::new();
         if pointer {
-            out::put_table(&mut normal, "cursor", self.park(&sheet.window));
+            out::put_table(
+                &mut normal,
+                "cursor",
+                self.park(&sheet.window, Parking::Buttons),
+            );
         }
         let normal_shots = self.shots(sheet, &mut normal, &dir, &rel, "normal", &all, false, None);
         if self.mode == Mode::Key {
@@ -1568,7 +1579,11 @@ impl Pass<'_> {
             );
             out::put_table(&mut hovered, &case.name, h);
         }
-        out::put_table(&mut hovered, "cursor_parked", self.park(window));
+        out::put_table(
+            &mut hovered,
+            "cursor_parked",
+            self.park(window, Parking::Buttons),
+        );
         out::put_table(t, "hovered", hovered);
 
         let mut clicked = Table::new();
@@ -1598,7 +1613,11 @@ impl Pass<'_> {
             );
             out::put_table(&mut clicked, &case.name, c);
         }
-        out::put_table(&mut clicked, "cursor_parked", self.park(window));
+        out::put_table(
+            &mut clicked,
+            "cursor_parked",
+            self.park(window, Parking::Buttons),
+        );
         out::put_table(t, "clicked", clicked);
     }
 
@@ -1986,7 +2005,8 @@ impl Pass<'_> {
                 &mut t,
                 "error",
                 out::unavailable(format!(
-                    "the window at the target is window {at_target}, not the probe's {}: the cursor is not moved",
+                    "the window at the target is window {at_target} ({}), not the probe's {}: the cursor is not moved",
+                    window_text(at_target),
                     window.windowNumber()
                 )),
             );
@@ -2034,7 +2054,8 @@ impl Pass<'_> {
             add_error(
                 &mut t,
                 &format!(
-                    "after the move the window under the cursor is window {under}, not the probe's {}",
+                    "after the move the window under the cursor is window {under} ({}), not the probe's {}",
+                    window_text(under),
                     window.windowNumber()
                 ),
             );
@@ -2042,18 +2063,23 @@ impl Pass<'_> {
         t
     }
 
-    /// Where `park` parks the cursor in `window`, in AppKit's screen
-    /// points: the middle of its content view's bottom margin (`park_point`), where
-    /// the view there (`hitTest:` of the content view's superview) is the
-    /// content view itself (`parks_on_content`): no control lies under it.
-    /// The point and the views from the one hit up to the content view are
-    /// read into `t` (`park_point_in_content_xy`, `view_at_park_point`);
+    /// Where `park` parks the cursor in `window` for `parking`, in AppKit's
+    /// screen points: that pass's point in its content view (`park_point`),
+    /// where the view there (`hitTest:` of the content view's superview) is
+    /// the content view itself (`parks_on_content`): no control lies under
+    /// it. The point and the views from the one hit up to the content view
+    /// are read into `t` (`park_point_in_content_xy`, `view_at_park_point`);
     /// where another view is hit, the reason.
-    fn park_target(&self, window: &NSWindow, t: &mut Table) -> Result<NSPoint, String> {
+    fn park_target(
+        &self,
+        window: &NSWindow,
+        parking: Parking,
+        t: &mut Table,
+    ) -> Result<NSPoint, String> {
         let content = window
             .contentView()
             .ok_or_else(|| "the window has no content view: the cursor is not parked".to_owned())?;
-        let local = park_point(&content);
+        let local = park_point(parking, content.bounds());
         out::put(
             t,
             "park_point_in_content_xy",
@@ -2084,12 +2110,12 @@ impl Pass<'_> {
         }
     }
 
-    /// Park the cursor inside `window` at `park_target`'s point, as
-    /// `move_cursor` moves it; where that point is not empty the cursor is
-    /// not moved and the park is the error.
-    fn park(&self, window: &NSWindow) -> Table {
+    /// Park the cursor inside `window` at `park_target`'s point for
+    /// `parking`, as `move_cursor` moves it; where that point is not empty
+    /// the cursor is not moved and the park is the error.
+    fn park(&self, window: &NSWindow, parking: Parking) -> Table {
         let mut reads = Table::new();
-        let mut t = match self.park_target(window, &mut reads) {
+        let mut t = match self.park_target(window, parking, &mut reads) {
             Ok(screen) => self.move_cursor(window, screen),
             Err(reason) => {
                 let mut t = Table::new();
@@ -2107,15 +2133,16 @@ impl Pass<'_> {
     /// timeline that moves the cursor there itself, read now on the main
     /// thread: the point where it is empty and `windowNumberAtPoint:` there
     /// gives `window`, else the reason.
-    fn park_quartz(&self, window: &NSWindow) -> Result<NSPoint, String> {
+    fn park_quartz(&self, window: &NSWindow, parking: Parking) -> Result<NSPoint, String> {
         let mut reads = Table::new();
-        let screen = self.park_target(window, &mut reads)?;
+        let screen = self.park_target(window, parking, &mut reads)?;
         let under = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(screen, 0, self.mtm);
         if under == window.windowNumber() {
             Ok(self.quartz(screen))
         } else {
             Err(format!(
-                "the window at the park point is window {under}, not the probe's {}",
+                "the window at the park point is window {under} ({}), not the probe's {}",
+                window_text(under),
                 window.windowNumber()
             ))
         }
@@ -2136,7 +2163,14 @@ impl Pass<'_> {
                     0,
                     self.mtm,
                 );
-                (under != number).then(|| format!("({:.1}, {:.1}) window {under}", p.x, p.y))
+                (under != number).then(|| {
+                    format!(
+                        "({:.1}, {:.1}) window {under} ({})",
+                        p.x,
+                        p.y,
+                        window_text(under)
+                    )
+                })
             })
             .collect();
         if let Some(first) = other.first() {
@@ -2528,19 +2562,97 @@ fn release_to_own_process(at: NSPoint, escape: bool) -> String {
     )
 }
 
-/// Where `Pass::park` parks the cursor, in `content`'s coordinates: the
-/// middle of its bottom margin, half its width across and `BUTTON_MARGIN /
-/// 2` up, below every sheet's grid, so outside every control and every
-/// recording's crop round a control (the transition pass's crops reach
-/// `CROP_MARGIN` round a button of the regular row, which the middle of the
-/// left margin lay inside; at the corner, 10 pt from both edges, hitTest:
-/// gave the window's frame view in run 45473409745).
-fn park_point(content: &NSView) -> NSPoint {
-    let b = content.bounds();
-    NSPoint::new(
-        b.origin.x + b.size.width / 2.0,
-        b.origin.y + BUTTON_MARGIN / 2.0,
+/// The pass that parks the cursor, which decides where (`park_point`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Parking {
+    /// The button pass's sheets.
+    Buttons,
+    /// The controls pass's sheets.
+    Controls,
+    /// The motion pass's window.
+    Motion,
+    /// The events pass's window.
+    Events,
+    /// The focus transition pass's push sheet.
+    Transition,
+}
+
+/// Where `Pass::park` parks the cursor for `parking`, in the coordinates of
+/// a content view whose bounds are `bounds`. The button and controls
+/// sheets: the middle of the left margin, `BUTTON_MARGIN / 2` in and half
+/// the height up, left of every control and of every frame their captures
+/// compare, where each sheet reads its backdrop (`Sheet::backdrop_point`);
+/// their rest captures and the macOS 26 glass buttons' hovers were taken
+/// there in run 45456990497 (parked on the bottom margin in run
+/// 45476265646, the hovered glass buttons of `styles_b` differed from their
+/// rest in at most 14 pixels by 1 byte, against 590 to 2552 pixels in run
+/// 45456990497). The motion, events and transition passes: the middle of the
+/// bottom margin, half the width across and `BUTTON_MARGIN / 2` up, below
+/// every control and outside every recording's crop round one (the
+/// transition pass's crops reach `CROP_MARGIN` round a button of the
+/// regular row, which the middle of the left margin lies inside; at the
+/// corner, 10 pt from both edges, hitTest: gave the window's frame view in
+/// run 45473409745).
+fn park_point(parking: Parking, bounds: NSRect) -> NSPoint {
+    match parking {
+        Parking::Buttons | Parking::Controls => NSPoint::new(
+            bounds.origin.x + BUTTON_MARGIN / 2.0,
+            bounds.origin.y + bounds.size.height / 2.0,
+        ),
+        Parking::Motion | Parking::Events | Parking::Transition => NSPoint::new(
+            bounds.origin.x + bounds.size.width / 2.0,
+            bounds.origin.y + BUTTON_MARGIN / 2.0,
+        ),
+    }
+}
+
+/// A window a pass parks the cursor in, for the test that its park point
+/// lies outside the window's crops: its content size and, in its content
+/// view's coordinates, a region per crop that holds it, from the pass's
+/// constants (a control sized to fit lies between its origin and the
+/// content view's far edges, `from_origin`).
+#[cfg(test)]
+struct ParkCase {
+    parking: Parking,
+    window: &'static str,
+    content: NSSize,
+    crops: Vec<(&'static str, NSRect)>,
+}
+
+/// The region from `origin` to `content`'s far edges, grown by `margin`:
+/// where a control placed at `origin` and sized to fit lies, with its crop
+/// `margin` round it.
+#[cfg(test)]
+fn from_origin(origin: NSPoint, content: NSSize, margin: f64) -> NSRect {
+    NSRect::new(
+        NSPoint::new(origin.x - margin, origin.y - margin),
+        NSSize::new(
+            content.width - origin.x + 2.0 * margin,
+            content.height - origin.y + 2.0 * margin,
+        ),
     )
+}
+
+/// The button pass's sheets: every button placed from `BUTTON_MARGIN` in
+/// (`push_sheet_in`, `style_sheet_with`), each compared and read inside its
+/// frame grown by `DIFF_MARGIN`.
+#[cfg(test)]
+fn park_cases() -> Vec<ParkCase> {
+    [
+        ("push", BUTTON_CONTENT_SIZE),
+        ("styles", STYLE_CONTENT_SIZE),
+    ]
+    .into_iter()
+    .map(|(window, content)| ParkCase {
+        parking: Parking::Buttons,
+        window,
+        content,
+        crops: vec![(
+            "every button",
+            from_origin(NSPoint::new(BUTTON_MARGIN, 0.0), content, DIFF_MARGIN),
+        )],
+    })
+    .collect()
 }
 
 /// Whether the park point is empty: a view is hit there and it is the
@@ -2548,6 +2660,13 @@ fn park_point(content: &NSView) -> NSPoint {
 /// over it.
 fn parks_on_content<T: ?Sized>(hit: Option<&T>, is_content: impl Fn(&T) -> bool) -> bool {
     hit.is_some_and(is_content)
+}
+
+/// Window `number` as the window server lists it, for an error that names
+/// it (`ffi::window_info`: its owner's name, layer and bounds), or why the
+/// window server cannot say.
+fn window_text(number: isize) -> String {
+    ffi::window_info(number).unwrap_or_else(|reason| reason)
 }
 
 /// Into `t`, `reason` as its `error`, after the error already there where
@@ -2885,6 +3004,73 @@ mod tests {
         assert!(parks_on_content(Some(&0), is_content));
         assert!(!parks_on_content(Some(&1), is_content));
         assert!(!parks_on_content(None, is_content));
+    }
+
+    fn inside(p: NSPoint, r: NSRect) -> bool {
+        p.x >= r.origin.x
+            && p.x <= r.origin.x + r.size.width
+            && p.y >= r.origin.y
+            && p.y <= r.origin.y + r.size.height
+    }
+
+    /// Every pass's park point lies inside its windows' content views and
+    /// outside each of their crops. Left out: the events pass's drag-over
+    /// recording, whose crop is the whole content view (`events::park_cases`),
+    /// and the controls pass's toolbar sheet, whose one target lies in the
+    /// toolbar, a frame no constant gives.
+    #[test]
+    fn each_pass_parks_inside_its_content_and_outside_its_crops() {
+        let mut cases = park_cases();
+        cases.extend(controls::park_cases());
+        cases.extend(motion::park_cases());
+        cases.extend(events::park_cases());
+        cases.extend(transition::park_cases());
+        for parking in [
+            Parking::Buttons,
+            Parking::Controls,
+            Parking::Motion,
+            Parking::Events,
+            Parking::Transition,
+        ] {
+            assert!(
+                cases.iter().any(|c| c.parking == parking),
+                "{parking:?} has no case"
+            );
+        }
+        for case in &cases {
+            let bounds = NSRect::new(NSPoint::new(0.0, 0.0), case.content);
+            let p = park_point(case.parking, bounds);
+            assert!(
+                inside(p, bounds),
+                "{:?} parks at {p:?} outside the {} window's content {bounds:?}",
+                case.parking,
+                case.window
+            );
+            assert!(!case.crops.is_empty(), "{} has no crop", case.window);
+            for (name, crop) in &case.crops {
+                assert!(
+                    !inside(p, *crop),
+                    "{:?} parks at {p:?} inside the {} window's crop of {name}, {crop:?}",
+                    case.parking,
+                    case.window
+                );
+            }
+        }
+    }
+
+    /// The sheets' point, the middle of the left margin, lies inside the
+    /// transition pass's crops: that pass parks on the bottom margin.
+    #[test]
+    fn the_left_margin_lies_inside_a_transition_crop() {
+        let cases = transition::park_cases();
+        let crossed = cases.iter().any(|case| {
+            let p = park_point(
+                Parking::Buttons,
+                NSRect::new(NSPoint::new(0.0, 0.0), case.content),
+            );
+            case.crops.iter().any(|(_, crop)| inside(p, *crop))
+        });
+        assert!(crossed);
     }
 
     #[test]

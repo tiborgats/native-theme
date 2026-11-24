@@ -22,7 +22,7 @@ use toml::Table;
 use super::timeline::{
     self, Posted, Recording, action, click, grown, key, post, quartz_centre, screen_frame,
 };
-use super::{Pass, SETTLE_STEPS};
+use super::{Parking, Pass, SETTLE_STEPS};
 use crate::macos::{APPEARANCES, control_common, ffi, ns, point_text, rect, rect_text};
 use crate::out;
 
@@ -109,7 +109,11 @@ pub(super) fn motion_table(pass: &Pass<'_>, version: &NSOperatingSystemVersion) 
         ),
     }
     out::put(&mut t, "window_frame_xywh", rect(controls.window.frame()));
-    out::put_table(&mut t, "cursor", pass.park(&controls.window));
+    out::put_table(
+        &mut t,
+        "cursor",
+        pass.park(&controls.window, Parking::Motion),
+    );
     let mut views = Table::new();
     let c = &controls;
     let glass_view = match &c.glass {
@@ -150,7 +154,7 @@ pub(super) fn motion_table(pass: &Pass<'_>, version: &NSOperatingSystemVersion) 
         controls.content.setNeedsDisplay(true);
         pass.settle(&controls.window, SETTLE_STEPS);
         let mut per = Table::new();
-        let park = match pass.park_quartz(&controls.window) {
+        let park = match pass.park_quartz(&controls.window, Parking::Motion) {
             Ok(park) => park,
             Err(reason) => {
                 out::put(
@@ -534,6 +538,30 @@ fn method_text() -> String {
         rect_text(READ_ONLY_FRAME),
         rect_text(TICKER_FRAME),
         rect_text(OTHER_FRAME),
-        super::park_text(),
+        super::park_text(Parking::Motion),
     )
+}
+
+/// The window's recordings' crops (`recordings`), each its subject grown by
+/// `CROP_MARGIN`: the buttons and radios sized to fit from their origins
+/// (radio's crop the union of both radios, from the first's origin), the
+/// search field and text views at their frames.
+#[cfg(test)]
+pub(super) fn park_cases() -> Vec<super::ParkCase> {
+    let content = WINDOW_FRAME.size;
+    let fitted = |origin| super::from_origin(origin, content, CROP_MARGIN);
+    vec![super::ParkCase {
+        parking: Parking::Motion,
+        window: "motion",
+        content,
+        crops: vec![
+            ("press-push", fitted(PUSH_ORIGIN)),
+            ("press-glass", fitted(GLASS_ORIGIN)),
+            ("radio", fitted(RADIO_A_ORIGIN)),
+            ("search-cancel", grown(SEARCH_FRAME, CROP_MARGIN)),
+            ("caret-long", grown(CARET_FRAME, CROP_MARGIN)),
+            ("caret-mixed", grown(MIXED_FRAME, CROP_MARGIN)),
+            ("caret-read-only", grown(READ_ONLY_FRAME, CROP_MARGIN)),
+        ],
+    }]
 }

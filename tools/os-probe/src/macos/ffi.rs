@@ -26,7 +26,7 @@ use objc2_app_kit::{
     NSTextField, NSToolbar, NSToolbarDelegate, NSToolbarItem, NSView, NSWindow, NSWindowStyleMask,
 };
 use objc2_core_foundation::{
-    CFArray, CFBundle, CFDictionary, CFRange, CFRetained, CFString, CFType,
+    CFArray, CFBundle, CFDictionary, CFNumber, CFRange, CFRetained, CFString, CFType,
 };
 use objc2_core_text::{CTFont, kCTFontOpticalSizeAttribute};
 use objc2_foundation::{
@@ -316,6 +316,79 @@ pub(super) fn superview(view: &NSView) -> Option<Retained<NSView>> {
 /// `CGWindowListCopyWindowInfo` entry); an error where the window server
 /// lists no such window or the entry has no owner.
 pub(super) fn window_owner_pid(number: isize) -> Result<i64, String> {
+    let (id, entry) = window_entry(number)?;
+    // SAFETY: reads a CoreGraphics `extern` CFString constant.
+    let key = unsafe { objc2_core_graphics::kCGWindowOwnerPID };
+    entry
+        .get(key)
+        .and_then(|value| value.downcast::<CFNumber>().ok())
+        .and_then(|pid| pid.as_i64())
+        .ok_or_else(|| format!("window {id}'s entry has no kCGWindowOwnerPID number"))
+}
+
+/// Window `number` as the window server lists it (its
+/// `CGWindowListCopyWindowInfo` entry): its owner's name
+/// (`kCGWindowOwnerName`), its layer (`kCGWindowLayer`) and its bounds
+/// (`kCGWindowBounds`, in Quartz's global display points), each said to be
+/// missing where the entry lacks it; an error where the window server lists
+/// no such window.
+pub(super) fn window_info(number: isize) -> Result<String, String> {
+    let (id, entry) = window_entry(number)?;
+    // SAFETY: reads CoreGraphics `extern` CFString constants.
+    let (owner_key, layer_key, bounds_key) = unsafe {
+        (
+            objc2_core_graphics::kCGWindowOwnerName,
+            objc2_core_graphics::kCGWindowLayer,
+            objc2_core_graphics::kCGWindowBounds,
+        )
+    };
+    let owner = entry
+        .get(owner_key)
+        .and_then(|value| value.downcast::<CFString>().ok())
+        .map_or_else(
+            || "no kCGWindowOwnerName string".to_owned(),
+            |name| format!("owner \"{name}\""),
+        );
+    let layer = entry
+        .get(layer_key)
+        .and_then(|value| value.downcast::<CFNumber>().ok())
+        .and_then(|layer| layer.as_i64())
+        .map_or_else(
+            || "no kCGWindowLayer number".to_owned(),
+            |layer| format!("layer {layer}"),
+        );
+    let bounds = entry
+        .get(bounds_key)
+        .and_then(|value| value.downcast::<CFDictionary>().ok())
+        .and_then(|bounds| {
+            // SAFETY: CGWindow.h documents kCGWindowBounds' value as a
+            // CFDictionary of CGRectCreateDictionaryRepresentation, whose
+            // keys are CFStrings; each value read is checked by `downcast`
+            // before it is used.
+            let bounds =
+                unsafe { CFRetained::cast_unchecked::<CFDictionary<CFString, CFType>>(bounds) };
+            ["X", "Y", "Width", "Height"]
+                .iter()
+                .map(|key| {
+                    bounds
+                        .get(&CFString::from_static_str(key))
+                        .and_then(|value| value.downcast::<CFNumber>().ok())
+                        .and_then(|n| n.as_f64())
+                })
+                .collect::<Option<Vec<f64>>>()
+        })
+        .map_or_else(
+            || "no kCGWindowBounds X, Y, Width and Height numbers".to_owned(),
+            |b| format!("bounds {b:?} (Quartz x, y, width, height)"),
+        );
+    Ok(format!("window {id}: {owner}, {layer}, {bounds}"))
+}
+
+/// Window `number`'s `CGWindowListCopyWindowInfo` entry, with its id; an
+/// error where the window server lists no such window.
+fn window_entry(
+    number: isize,
+) -> Result<(u32, CFRetained<CFDictionary<CFString, CFType>>), String> {
     let id = u32::try_from(number).map_err(|e| format!("window number {number}: {e}"))?;
     let list = objc2_core_graphics::CGWindowListCopyWindowInfo(
         objc2_core_graphics::CGWindowListOption::OptionIncludingWindow,
@@ -330,13 +403,7 @@ pub(super) fn window_owner_pid(number: isize) -> Result<i64, String> {
     let entry = list
         .get(0)
         .ok_or_else(|| format!("the window server lists no window {id}"))?;
-    // SAFETY: reads a CoreGraphics `extern` CFString constant.
-    let key = unsafe { objc2_core_graphics::kCGWindowOwnerPID };
-    entry
-        .get(key)
-        .and_then(|value| value.downcast::<objc2_core_foundation::CFNumber>().ok())
-        .and_then(|pid| pid.as_i64())
-        .ok_or_else(|| format!("window {id}'s entry has no kCGWindowOwnerPID number"))
+    Ok((id, entry))
 }
 
 /// `NSDefaultRunLoopMode`, the mode the probe pumps its events in.

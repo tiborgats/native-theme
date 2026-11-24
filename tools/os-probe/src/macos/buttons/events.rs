@@ -31,7 +31,7 @@ use objc2_foundation::{NSArray, NSDate, NSPoint, NSRange, NSRect, NSSize, NSUser
 use toml::{Table, Value};
 
 use super::timeline::{self, Posted, Recording, action, drag_line, grown, key, post, screen_frame};
-use super::{Pass, SETTLE_STEPS};
+use super::{Parking, Pass, SETTLE_STEPS};
 use crate::macos::{
     APPEARANCES, control_common, default_value, ffi, ns, point_text, pump, rect, rect_text,
 };
@@ -165,7 +165,7 @@ pub(super) fn events_table(pass: &Pass<'_>) -> Table {
         out::put(&mut frames, name, rect(screen_frame(view)));
     }
     out::put_table(&mut t, "frames_screen_xywh", frames);
-    out::put_table(&mut t, "cursor", pass.park(&c.window));
+    out::put_table(&mut t, "cursor", pass.park(&c.window, Parking::Events));
 
     out::put_table(&mut t, "double_click", double_click_table(pass, &c));
     out::put_table(&mut t, "drag_start", drag_start_table(pass, &c));
@@ -589,7 +589,11 @@ fn tool_tip_table(pass: &Pass<'_>, c: &Controls) -> Table {
     for (name, rest_ms) in TIP_TRIALS {
         let mut row = Table::new();
         let rested = Instant::now();
-        out::put_table(&mut row, "cursor_parked", pass.park(&c.window));
+        out::put_table(
+            &mut row,
+            "cursor_parked",
+            pass.park(&c.window, Parking::Events),
+        );
         let rest = Duration::from_millis(rest_ms);
         let _ = pump_clicks(pass.app, rest.saturating_sub(rested.elapsed()));
         out::put(
@@ -675,7 +679,11 @@ fn tool_tip_table(pass: &Pass<'_>, c: &Controls) -> Table {
         }
         out::put_table(&mut t, name, row);
     }
-    out::put_table(&mut t, "cursor_parked_after", pass.park(&c.window));
+    out::put_table(
+        &mut t,
+        "cursor_parked_after",
+        pass.park(&c.window, Parking::Events),
+    );
     let _ = pump_clicks(pass.app, Duration::from_millis(500));
     t
 }
@@ -832,7 +840,7 @@ fn method_text() -> String {
         rect_text(TARGET_FRAME),
         rect_text(TABLE_FRAME),
         rect_text(TICKER_FRAME),
-        super::park_text(),
+        super::park_text(Parking::Events),
         point_text(EMPTY_POINT),
         point_text(NSPoint::new(PRESS_AT.0, PRESS_AT.1)),
         crate::macos::PUMP_STEP
@@ -840,4 +848,18 @@ fn method_text() -> String {
             .as_millis(),
         TIP_WAIT.as_millis(),
     )
+}
+
+/// The window's recordings' crops (`recordings`): typing-pointer's, the
+/// target text view grown by `TYPING_CROP_MARGIN`. Drag-over's crop is the
+/// content view itself, which holds every point the cursor can be parked
+/// at inside the window, so it is left out.
+#[cfg(test)]
+pub(super) fn park_cases() -> Vec<super::ParkCase> {
+    vec![super::ParkCase {
+        parking: Parking::Events,
+        window: "events",
+        content: WINDOW_FRAME.size,
+        crops: vec![("typing-pointer", grown(TARGET_FRAME, TYPING_CROP_MARGIN))],
+    }]
 }
