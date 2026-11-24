@@ -2111,6 +2111,32 @@ pub fn native_switch(
                 ),
                 None => "none stated at switch.label_gap: gpui-component's own gap_2 (gpui-component/switch.rs, Switch::render)".to_owned(),
             },
+        )
+        .config(
+            "label side",
+            match r.switch.label_side {
+                Some(native_theme::next::LabelSide::Leading) => "switch.label_side Leading: the label before the track, in the reading direction (native-theme-gpui/widgets/switch.rs, Switch::row)",
+                Some(native_theme::next::LabelSide::Trailing) => "switch.label_side Trailing: the label after the track, in the reading direction (native-theme-gpui/widgets/switch.rs, Switch::row)",
+                None => "none stated at switch.label_side: gpui-component's own, the label after the track (gpui-component/switch.rs, label_side, Side::Right)",
+            },
+        )
+        .config(
+            "label gap stretches",
+            match r.switch.label_gap_stretches {
+                Some(true) => "switch.label_gap_stretches true: a row laid out wider than its content puts the width left over between the label and the track, the two at its ends (native-theme-gpui/widgets/switch.rs, Switch::row)",
+                Some(false) => "switch.label_gap_stretches false: a row laid out wider than its content keeps the label and the track together at the gap, at its start (native-theme-gpui/widgets/switch.rs, Switch::row)",
+                None => "none stated at switch.label_gap_stretches: gpui-component's own, the label and the track together at the gap, at the row's start (gpui-component/switch.rs, Switch::render)",
+            },
+        )
+        .config(
+            "state glyphs",
+            match SwitchLook::next_glyphs_unmapped(r) {
+                Some(unmapped) => format!(
+                    "not mapped: the theme states {} true, the track's on and off glyphs, which gpui-component's switch does not draw and the model gives no glyph of (native-theme-gpui/widgets/switch.rs, SwitchLook::next_glyphs_unmapped; gpui-component/switch.rs, Switch::render)",
+                    unmapped.home()
+                ),
+                None => "none: switch.show_state_glyphs false or unstated, and gpui-component's switch draws none (gpui-component/switch.rs, Switch::render)".to_owned(),
+            },
         );
     let info = if disabled {
         info.config("disabled", if rest.opacity < 1. {

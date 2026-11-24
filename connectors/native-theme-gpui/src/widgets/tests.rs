@@ -6102,6 +6102,96 @@ fn a_switch_draws_its_stated_label_gap_and_size(cx: &mut TestAppContext) {
     assert_ne!(px(gap), default_gap, "unlike gap_2");
 }
 
+/// The switch's label lies on the side `switch.label_side` states: before
+/// the track where leading, after it where trailing, and after it, as
+/// gpui-component's, where the theme states none; `switch.label_gap` apart.
+#[gpui::test]
+fn a_switch_lays_its_label_on_the_side_the_theme_states(cx: &mut TestAppContext) {
+    use native_theme::next::{LabelSide, Preset, ThemeContext};
+    for side in [Some(LabelSide::Leading), Some(LabelSide::Trailing), None] {
+        let mut r =
+            native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.switch.label_side = side;
+        let gap = px(r.switch.label_gap.unwrap_or_default());
+        let cx = window_with_next_resolved(
+            cx,
+            &r,
+            Box::new(|_, _| Switch::new("s").label("On").into_any_element()),
+        );
+        let track = bounds(cx, "native-switch-track");
+        let label = bounds(cx, "native-switch-label");
+        if side == Some(LabelSide::Leading) {
+            assert_eq!(
+                track.left() - label.right(),
+                gap,
+                "{side:?}: before the track"
+            );
+        } else {
+            assert_eq!(
+                label.left() - track.right(),
+                gap,
+                "{side:?}: after the track"
+            );
+        }
+    }
+}
+
+/// A switch laid out wider than its content puts the width left over between
+/// its label and its track where `switch.label_gap_stretches` is true, the
+/// two at the row's ends; where it is false or unstated, the two stay
+/// together at `switch.label_gap` at the row's start.
+#[gpui::test]
+fn a_wide_switch_stretches_its_gap_only_where_the_theme_says(cx: &mut TestAppContext) {
+    use native_theme::next::{Preset, ThemeContext};
+    for stretches in [Some(true), Some(false), None] {
+        let mut r =
+            native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.switch.label_gap_stretches = stretches;
+        let gap = px(r.switch.label_gap.unwrap_or_default());
+        let cx = window_with_next_resolved(
+            cx,
+            &r,
+            Box::new(|_, _| Switch::new("s").label("On").w(px(180.)).into_any_element()),
+        );
+        let row = bounds(cx, "native-switch-row");
+        let track = bounds(cx, "native-switch-track");
+        let label = bounds(cx, "native-switch-label");
+        assert_eq!(row.size.width, px(180.), "{stretches:?}: the row's width");
+        assert_eq!(
+            track.left(),
+            row.left(),
+            "{stretches:?}: the track at the start"
+        );
+        if stretches == Some(true) {
+            assert_eq!(label.right(), row.right(), "the label at the row's end");
+            assert!(
+                label.left() - track.right() > gap,
+                "the width left over between"
+            );
+        } else {
+            assert_eq!(label.left() - track.right(), gap, "{stretches:?}: together");
+        }
+    }
+}
+
+/// The on and off glyphs `switch.show_state_glyphs` asks for are not drawn,
+/// and named unmapped at their home; a theme that states none or states that
+/// the track shows none has nothing unmapped.
+#[test]
+fn the_state_glyphs_a_theme_asks_for_are_unmapped() {
+    use native_theme::next::{Preset, ThemeContext};
+    let mut r =
+        native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    for (glyphs, unmapped) in [
+        (Some(true), Some(Unmapped("switch.show_state_glyphs"))),
+        (Some(false), None),
+        (None, None),
+    ] {
+        r.switch.show_state_glyphs = glyphs;
+        assert_eq!(SwitchLook::next_glyphs_unmapped(&r), unmapped, "{glyphs:?}");
+    }
+}
+
 /// Under a 0.8.0 theme installed through `next::apply`, which leaves no 0.7.2
 /// theme for `cx.native()`, every theme-drawn control is drawn from the theme,
 /// not as gpui-component's own: each lays out the part only its theme-drawn
