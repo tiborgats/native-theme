@@ -32623,7 +32623,10 @@ mod tests {
     }
 
     /// D13b: a separator spans the segments' height: under kde-breeze, which
-    /// states a `separator_width`, the line between Day and Week is the
+    /// states a `segmented_control.separator_width` on the installed 0.8.0
+    /// theme the page lays it out by ([`NextSegmented`]; the line's colour is
+    /// still `styles::segmented_control`'s, the 0.7.2 border colour), the
+    /// line between Day and Week is the
     /// border colour a point below the segments' top and a point above their
     /// bottom, the row's `Shrink` height giving the separator's `Fill` the
     /// segments' height and not the page's.
@@ -32631,9 +32634,10 @@ mod tests {
     fn the_separators_span_the_segments_height() {
         let state = page_state("kde-breeze", Tab::Basic);
         let sc = state.current_resolved.segmented_control.clone();
+        let geometry = NextSegmented::of(state.next_shown());
         assert!(
-            sc.separator_width > 0.0,
-            "kde-breeze states no separator width"
+            geometry.separator_width > 0.0,
+            "kde-breeze states no segmented_control.separator_width on the 0.8.0 model"
         );
         assert_eq!(sc.border.color.a, 255, "kde-breeze's line colour is opaque");
         let (image, rects, scale) = basic_frame(&state);
@@ -32656,7 +32660,7 @@ mod tests {
         }
         assert!(
             rect("basic.segmented.control").height
-                < day.height + 4.0 * sc.border.line_width.max(1.0),
+                < day.height + 4.0 * geometry.outline.unwrap_or_default().max(1.0),
             "the control grew past its segments"
         );
     }
