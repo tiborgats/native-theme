@@ -152,54 +152,89 @@ fn segmented_in_last_column(columns: usize) -> bool {
         .is_some_and(|column| column.contains(&SEGMENTED_GROUP))
 }
 
-/// How many columns the page lays its groups out in, from the theme alone, as the gpui and
-/// iced pages count them: the most, of five down to one, whose width,
+/// What the page's column rule ([`column_count`]) reads of the installed 0.8.0 theme, each
+/// length 0 where the theme states none, as the gpui and iced pages space theirs
+/// (`spacing(0)` where unstated), and without an installed 0.8.0 theme.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct ColumnRule {
+    /// `layout.window_margin`.
+    pub(crate) margin: f32,
+    /// `layout.section_gap`.
+    pub(crate) gap: f32,
+    /// `layout.widget_gap`.
+    pub(crate) widget_gap: f32,
+    /// `scrollbar.overlay_mode`; egui's own `ScrollStyle::floating` without a 0.8.0 theme.
+    pub(crate) overlay: bool,
+    /// The scroll bar's groove width, `next::scrollbar_groove_width`, egui's own
+    /// `ScrollStyle::bar_width` where the theme states none.
+    pub(crate) groove: f32,
+    /// The widest fixed-width control the theme states on the page: `combo_box.field(NONE)
+    /// .min_size[0]`, the two tabs at `tab.tab(NONE).min_size[0]` `tab.item_gap` apart with room
+    /// for both of the selected tab's flares, `2 * tab.active_outward_corner_radius` where the
+    /// tab bar draws them (`demo::next_outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH`.
+    pub(crate) widest: f32,
+}
+
+impl ColumnRule {
+    /// The rule of the installed 0.8.0 theme `r`, where `own` is egui's scroll style, which an
+    /// unstated scroll bar keeps.
+    pub(crate) fn of(
+        r: Option<&native_theme::next::ResolvedTheme>,
+        own: &egui::style::ScrollStyle,
+    ) -> Self {
+        let metric = |read: fn(&native_theme::next::LayoutMetrics) -> Option<f32>| {
+            r.and_then(|r| read(&r.layout)).unwrap_or_default()
+        };
+        let tab_min = r
+            .and_then(|r| r.tab.tab(NextState::NONE).min_size[0])
+            .unwrap_or_default();
+        let item_gap = r.and_then(|r| r.tab.item_gap).unwrap_or_default();
+        let flare = r.and_then(demo::next_outward_radius).unwrap_or_default();
+        let tabs = tab_min + tab_min + item_gap + flare + flare;
+        Self {
+            margin: metric(|l| l.window_margin),
+            gap: metric(|l| l.section_gap),
+            widget_gap: metric(|l| l.widget_gap),
+            overlay: r.map_or(own.floating, |r| r.scrollbar.overlay_mode),
+            groove: r
+                .and_then(|r| next::scrollbar_groove_width(r).ok())
+                .unwrap_or(own.bar_width),
+            widest: combo_min_width(r)
+                .unwrap_or_default()
+                .max(tabs)
+                .max(BASIC_WIDE)
+                .max(BASIC_WIDTH),
+        }
+    }
+}
+
+/// How many columns the page lays its groups out in, from the theme alone (`rule`), as the gpui
+/// and iced pages count them: the most, of five down to one, whose width,
 /// `(page - (n - 1) * layout.section_gap) / n`, holds the widest fixed-width control the theme
-/// states on the page — `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart with room for both of the selected tab's flares, `2 * tab.active_outward_corner_radius`
-/// where `demo::tab_bar` draws them (`demo::outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH` —
-/// where `page` is `content_width` less `layout.window_margin` on both sides and, where
-/// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a scrolling page keeps free.
-/// The column also holds `segmented`, the Segmented control's own width as egui laid it out
-/// (`DemoState::segmented_width`), whose segments stay on one row: the control may reach into the
-/// section gap after its column, but keeps `layout.widget_gap`, the gap the page's rows keep
-/// between neighbouring widgets (Button and Primary), from the next column's left edge (M9-166);
-/// in the last column it may reach into the page's right margin, `layout.window_margin`, keeping
-/// `layout.widget_gap` from the content panel's edge or its scroll bar: where
-/// `scrollbar.overlay_mode` is true the bar floats over that margin, its `scrollbar.groove_width`
-/// taken off the room. One where not even one
-/// does: the page is then wider than its area.
-pub(crate) fn column_count(
-    t: &native_theme_egui::ResolvedTheme,
-    layout: &native_theme::theme::LayoutTheme,
-    content_width: f32,
-    segmented: f32,
-) -> usize {
-    let margin = layout.window_margin.unwrap_or_default();
-    let gap = layout.section_gap.unwrap_or_default();
-    let bar = &t.scrollbar;
-    let gutter = if bar.overlay_mode {
-        0.0
-    } else {
-        bar.groove_width
-    };
+/// states on the page (`ColumnRule::widest`), where `page` is `content_width` less
+/// `layout.window_margin` on both sides and, where `scrollbar.overlay_mode` is false, the groove
+/// width a scrolling page keeps free. The column also holds `segmented`, the Segmented
+/// control's own width as egui laid it out (`DemoState::segmented_width`), whose segments stay
+/// on one row: the control may reach into the section gap after its column, but keeps
+/// `layout.widget_gap`, the gap the page's rows keep between neighbouring widgets (Button and
+/// Primary), from the next column's left edge (M9-166); in the last column it may reach into
+/// the page's right margin, `layout.window_margin`, keeping `layout.widget_gap` from the content
+/// panel's edge or its scroll bar: where `scrollbar.overlay_mode` is true the bar floats over
+/// that margin, its groove width taken off the room. One where not even one does: the page is
+/// then wider than its area.
+pub(crate) fn column_count(rule: &ColumnRule, content_width: f32, segmented: f32) -> usize {
+    let ColumnRule {
+        margin,
+        gap,
+        widget_gap,
+        overlay,
+        groove,
+        widest,
+    } = *rule;
+    let gutter = if overlay { 0.0 } else { groove };
     // a floating bar takes no width of the page, and is drawn over its right margin
-    let overlay = if bar.overlay_mode {
-        bar.groove_width
-    } else {
-        0.0
-    };
+    let overlay = if overlay { groove } else { 0.0 };
     let page = content_width - margin - margin - gutter;
-    let flare = demo::outward_radius(t).unwrap_or_default();
-    let tabs =
-        t.tab.min_width + t.tab.min_width + t.tab.item_gap.unwrap_or_default() + flare + flare;
-    let widest = t
-        .combo_box
-        .min_width
-        .max(tabs)
-        .max(BASIC_WIDE)
-        .max(BASIC_WIDTH);
-    let widget_gap = layout.widget_gap.unwrap_or_default();
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -268,14 +303,10 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let gap = atlas.layout().section_gap.unwrap_or_default();
+    let rule = ColumnRule::of(atlas.next_shown(ui.ctx()), &ui.spacing().scroll);
+    let gap = rule.gap;
     let origin = ui.cursor().min;
-    let count = column_count(
-        atlas.old_resolved(ui.ctx().theme()),
-        atlas.layout(),
-        state.content_width,
-        state.segmented_width,
-    );
+    let count = column_count(&rule, state.content_width, state.segmented_width);
     let columns = count as f32;
     let page_width = ui.available_width();
     let width = ((page_width - gap * (columns - 1.0)) / columns).max(0.0);

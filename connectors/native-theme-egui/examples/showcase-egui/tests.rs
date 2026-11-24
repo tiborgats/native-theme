@@ -635,6 +635,15 @@ fn the_chrome_is_where_the_layout_puts_it() {
     assert_eq!(harness.state().settings.page, Page::Buttons);
 }
 
+/// The Basic page's column rule of the 0.8.0 theme `harness` installed in `theme`'s slot, with
+/// egui's scroll style of that scheme (`pages::basic::ColumnRule::of`).
+fn column_rule(harness: &Harness<'_, App>, theme: egui::Theme) -> crate::pages::basic::ColumnRule {
+    crate::pages::basic::ColumnRule::of(
+        harness.state().atlas.next_resolved(theme),
+        &harness.ctx.style_of(theme).spacing.scroll,
+    )
+}
+
 /// M9x CI item 9, the controller's rulings (M9-166, and item 15(1) of the round 2-3 review):
 /// the Basic page's column count holds the Segmented control's own width as egui laid it out,
 /// so the control may reach into the section gap but keeps `layout.widget_gap` from the next
@@ -648,18 +657,11 @@ fn the_chrome_is_where_the_layout_puts_it() {
 #[test]
 fn the_column_count_holds_the_segmented_control() {
     let mut faults = Vec::new();
-    for preset in native_theme::theme::Theme::list_presets()
-        .iter()
-        .map(|p| p.key)
-    {
+    for preset in native_theme::next::Preset::ALL.iter().map(|p| p.as_str()) {
         for scale in [1.0, 2.25] {
-            let harness = open_scaled(preset, "basic", scale);
-            let gap = harness
-                .state()
-                .atlas
-                .layout()
-                .widget_gap
-                .unwrap_or_default();
+            let harness = open_page_scaled(Page::Basic, preset, scale);
+            let rule = column_rule(&harness, egui::Theme::Light);
+            let gap = rule.widget_gap;
             let places = harness.state().registry.places();
             let columns: Vec<egui::Rect> = places
                 .iter()
@@ -686,23 +688,9 @@ fn the_column_count_holds_the_segmented_control() {
                     control.right()
                 ));
             }
-            let margin = harness
-                .state()
-                .atlas
-                .layout()
-                .window_margin
-                .unwrap_or_default();
-            // A floating bar is drawn over the right margin, its stated groove wide.
-            let bar = &harness
-                .state()
-                .atlas
-                .old_resolved(egui::Theme::Light)
-                .scrollbar;
-            let floating = if bar.overlay_mode {
-                bar.groove_width
-            } else {
-                0.0
-            };
+            let margin = rule.margin;
+            // A floating bar is drawn over the right margin, its groove wide.
+            let floating = if rule.overlay { rule.groove } else { 0.0 };
             // Half a pixel: the page puts each column's left edge on a whole pixel
             // (`pages::basic::show`), the count's columns being exact.
             if !next.is_finite() && control.right() > page.right() + margin - floating - gap + 0.5 {
@@ -7589,8 +7577,7 @@ fn the_basic_page_has_every_group_in_its_column() {
         );
         harness.run_steps(4);
         let count = column_count(
-            harness.state().atlas.old_resolved(egui::Theme::Light),
-            harness.state().atlas.layout(),
+            &column_rule(&harness, egui::Theme::Light),
             harness.state().demo_state.content_width,
             harness.state().demo_state.segmented_width,
         );
@@ -7725,14 +7712,19 @@ fn the_basic_page_fits_the_window_across() {
     }
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
         for columns in [5, 4] {
-            let mut harness = open_scaled_in(theme, "macos-tahoe", "basic", 1.0);
-            let state = harness.state();
-            let width = count_boundary(
-                state.atlas.old_resolved(theme),
-                state.atlas.layout(),
-                state.demo_state.segmented_width,
-                columns,
-            ) + 1.0;
+            let mut harness = open_page_under(Page::Basic, theme, "macos-tahoe");
+            let rule = column_rule(&harness, theme);
+            assert_eq!(
+                harness
+                    .state()
+                    .atlas
+                    .next_resolved(theme)
+                    .map(|r| r.layout.section_gap),
+                Some(None),
+                "macos-tahoe {theme:?} states a section gap"
+            );
+            let width =
+                count_boundary(&rule, harness.state().demo_state.segmented_width, columns) + 1.0;
             set_content_width(&mut harness, width);
             let state = harness.state();
             assert!(
@@ -7742,8 +7734,7 @@ fn the_basic_page_fits_the_window_across() {
             );
             assert_eq!(
                 column_count(
-                    state.atlas.old_resolved(theme),
-                    state.atlas.layout(),
+                    &column_rule(&harness, theme),
                     state.demo_state.content_width,
                     state.demo_state.segmented_width,
                 ),
@@ -7754,11 +7745,8 @@ fn the_basic_page_fits_the_window_across() {
         }
     }
     // Every bundled preset at the largest text scale (item 15(1) of the round 2-3 review).
-    for preset in native_theme::theme::Theme::list_presets()
-        .iter()
-        .map(|p| p.key)
-    {
-        let harness = open_scaled_in(egui::Theme::Light, preset, "basic", 2.25);
+    for preset in native_theme::next::Preset::ALL.iter().map(|p| p.as_str()) {
+        let harness = open_page_scaled(Page::Basic, preset, 2.25);
         fits_across(&harness, egui::Theme::Light, &format!("{preset} at 2.25"));
     }
 }
@@ -7784,8 +7772,7 @@ fn fits_across(harness: &Harness<'_, App>, theme: egui::Theme, what: &str) {
         .filter(|id| id.starts_with("basic.column_"))
         .count();
     let count = column_count(
-        state.atlas.old_resolved(theme),
-        state.atlas.layout(),
+        &column_rule(harness, theme),
         state.demo_state.content_width,
         state.demo_state.segmented_width,
     );
@@ -7803,23 +7790,18 @@ fn fits_across(harness: &Harness<'_, App>, theme: egui::Theme, what: &str) {
     }
 }
 
-/// The least content width at which `column_count` lays `columns` columns out under `t` and
-/// `layout`, with a Segmented control `segmented` wide, to a hundredth of a point.
-fn count_boundary(
-    t: &native_theme_egui::ResolvedTheme,
-    layout: &native_theme::theme::LayoutTheme,
-    segmented: f32,
-    columns: usize,
-) -> f32 {
+/// The least content width at which `column_count` lays `columns` columns out under `rule`,
+/// with a Segmented control `segmented` wide, to a hundredth of a point.
+fn count_boundary(rule: &crate::pages::basic::ColumnRule, segmented: f32, columns: usize) -> f32 {
     use crate::pages::basic::column_count;
     let (mut fewer, mut enough) = (0.0_f32, 4.0 * crate::WINDOW_SIZE.x);
     assert!(
-        column_count(t, layout, enough, segmented) >= columns,
+        column_count(rule, enough, segmented) >= columns,
         "{columns} columns at no width"
     );
     while enough - fewer > 0.01 {
         let mid = 0.5 * (fewer + enough);
-        if column_count(t, layout, mid, segmented) >= columns {
+        if column_count(rule, mid, segmented) >= columns {
             enough = mid;
         } else {
             fewer = mid;
@@ -8415,38 +8397,37 @@ fn a_bottom_indicator_lies_under_the_flares() {
 }
 
 /// The Basic page's column rule makes room for both of the selected tab's flares, as the gpui
-/// page's does: under windows-11, whose widest fixed-width control is the two tabs, a page
-/// whose fifth holds the two tabs and 4px more lays out five columns, and four once the theme
-/// states an outward corner radius of 4, whose two flares need 8; five again for a radius
-/// `demo::tab_bar` draws no flares for, 0, negative or not finite.
+/// page's does: under windows-11's 0.8.0 theme, whose widest fixed-width control is the two
+/// tabs, a page whose fifth holds the two tabs and 4px more lays out five columns, and four once
+/// the theme states an outward corner radius of 4, whose two flares need 8; five again for a
+/// radius the tab bar draws no flares for, 0, negative or not finite. The page counts on the
+/// installed 0.8.0 theme: a patched radius lays out fewer columns.
 #[test]
-fn the_basic_page_makes_room_for_both_flares() {
-    use crate::pages::basic::column_count;
-    let atlas = windows_11_atlas(Some(4.0), |_| {});
-    let stated = atlas.resolved_for(egui::Theme::Light).cloned();
-    assert!(stated.is_some(), "the atlas holds its 0.7.2 themes");
-    let Some(stated) = stated else { return };
-    let layout = atlas.layout();
+fn the_basic_page_makes_room_for_both_flares() -> Result<(), String> {
+    use crate::pages::basic::{ColumnRule, column_count};
+    use native_theme::next::{Preset, Theme, ThemeContext, WidgetState};
+    let own = egui::style::ScrollStyle::default();
+    let mut stated = Theme::preset(Preset::Windows11).resolve(&ThemeContext::light());
+    stated.tab.active_outward_corner_radius = Some(4.0);
     let mut unstated = stated.clone();
     unstated.tab.active_outward_corner_radius = None;
-    let margin = layout.window_margin.unwrap_or_default();
-    let gap = layout.section_gap.unwrap_or_default();
-    let bar = &stated.scrollbar;
-    let gutter = if bar.overlay_mode {
-        0.0
-    } else {
-        bar.groove_width
-    };
-    let t = &stated.tab;
-    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
-    let content = 5.0 * (tabs + 4.0) + 4.0 * gap + margin + margin + gutter;
+    let rule = ColumnRule::of(Some(&unstated), &own);
+    let gutter = if rule.overlay { 0.0 } else { rule.groove };
+    let tab_min = stated.tab.tab(WidgetState::NONE).min_size[0]
+        .ok_or("windows-11 states no tab.tab(NONE).min_size[0]")?;
+    let tabs = tab_min + tab_min + stated.tab.item_gap.unwrap_or_default();
     assert_eq!(
-        column_count(&unstated, layout, content, 0.0),
+        rule.widest, tabs,
+        "windows-11's widest fixed-width control is the two tabs"
+    );
+    let content = 5.0 * (tabs + 4.0) + 4.0 * rule.gap + rule.margin + rule.margin + gutter;
+    assert_eq!(
+        column_count(&rule, content, 0.0),
         5,
         "without outward corners the two tabs fit a fifth"
     );
     assert_eq!(
-        column_count(&stated, layout, content, 0.0),
+        column_count(&ColumnRule::of(Some(&stated), &own), content, 0.0),
         4,
         "the two tabs and both flares do not fit a fifth"
     );
@@ -8454,11 +8435,50 @@ fn the_basic_page_makes_room_for_both_flares() {
         let mut undrawn = stated.clone();
         undrawn.tab.active_outward_corner_radius = Some(radius);
         assert_eq!(
-            column_count(&undrawn, layout, content, 0.0),
+            column_count(&ColumnRule::of(Some(&undrawn), &own), content, 0.0),
             5,
             "a radius of {radius} keeps room for flares the bar does not draw"
         );
     }
+    // The page counts on the installed 0.8.0 theme: kde-breeze, whose tabs curve out on
+    // neither model, patched to a radius whose two flares fill a fifth of the page, lays out
+    // fewer columns than it does unpatched.
+    let laid = |harness: &Harness<'_, App>| {
+        harness
+            .state()
+            .registry
+            .places()
+            .keys()
+            .filter(|id| id.starts_with("basic.column_"))
+            .count()
+    };
+    let stock = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    assert_eq!(
+        stock
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .map(|r| r.tab.active_outward_corner_radius),
+        Some(None),
+        "kde-breeze's tabs curve out"
+    );
+    let flare = stock.state().demo_state.content_width / 10.0;
+    let (patched, r) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |_| {
+        Some(
+            native_theme::next::ThemePatch::new().widget_rules(
+                native_theme::next::WidgetPatchMap::new()
+                    .tab(native_theme::next::TabPatch::new().active_outward_corner_radius(flare)),
+            ),
+        )
+    })?;
+    assert_eq!(r.tab.active_outward_corner_radius, Some(flare));
+    assert!(
+        laid(&patched) < laid(&stock),
+        "kde-breeze: {} columns under a patched outward radius of {flare}, {} without",
+        laid(&patched),
+        laid(&stock)
+    );
+    Ok(())
 }
 
 /// A page's section headings are set in the theme's section-heading role

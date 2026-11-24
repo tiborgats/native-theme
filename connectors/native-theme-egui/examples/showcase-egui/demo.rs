@@ -1825,6 +1825,14 @@ pub(crate) fn outward_radius(t: &native_theme::theme::ResolvedTheme) -> Option<f
         .filter(|r| r.is_finite() && *r > 0.0)
 }
 
+/// [`outward_radius`] on the installed 0.8.0 theme `r`: `tab.active_outward_corner_radius`
+/// where it states a positive, finite one, else `None`.
+pub(crate) fn next_outward_radius(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
+    r.tab
+        .active_outward_corner_radius
+        .filter(|r| r.is_finite() && *r > 0.0)
+}
+
 /// The selected tab's outward corners, about its outer bounds `tab`, painted with `painter`
 /// after every tab of the row, so over a neighbour's fill, and within the row's clip. With `r`
 /// the radius and `w` `tab.border.line_width`: first a strip `tab.active_background` over the
