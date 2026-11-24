@@ -6703,6 +6703,115 @@ fn a_header_section_takes_the_pressed_fill_else_the_hovered_one() -> Result<(), 
     Ok(())
 }
 
+/// The Basic list's and table's rows are drawn as the spec's list `row`, then `highlight` over
+/// it (spec §5, "The list's `row` and `highlight`"): no bundled preset states a fill for a row
+/// that is not an alternate one (each states the alternate stripe alone, and neither the list
+/// nor the table is striped), so kde-breeze light is patched with one, the window border, for
+/// the rows that are not alternate ones. Each visible list row and each table row is then
+/// filled in it across its whole place, and the selected one's highlight fill is painted after
+/// it, over it; the stripe stays the preset's.
+#[test]
+fn a_list_row_is_filled_in_its_stated_fill_under_its_highlight() -> Result<(), String> {
+    use crate::pages::basic::{LIST_VISIBLE, TABLE_ROWS, TABLE_SELECTED};
+    use native_theme::next::{
+        ListKind, ListQuery, ListRule, ListVariant, Paint, PartPatch, Preset, Theme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    use native_theme_egui::next::{fill_of, state_fill_of};
+
+    let row_of = |r: &native_theme::next::ResolvedTheme, alternate: bool| {
+        let q = ListQuery::new(WidgetState::NONE).variant(ListKind {
+            variant: ListVariant::Plain,
+            alternate,
+        });
+        fill_of(&r.list.row(q))
+    };
+    let own = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    if row_of(&own, false).is_some() || row_of(&own, true).is_none() {
+        return Err(
+            "kde-breeze states a fill for a plain row, or no stripe: the patch \
+                    proves nothing"
+                .to_owned(),
+        );
+    }
+    let (mut harness, r) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |r| {
+        Some(
+            ThemePatch::new().list(
+                ListRule::new()
+                    .alternate(false)
+                    .row(PartPatch::new().fill(Paint::Solid(r.colors.window.border?))),
+            ),
+        )
+    })?;
+    let border = r.colors.window.border.map(crate::demo::next_color32);
+    let fill = row_of(&r, false);
+    if fill.is_none() || fill != border || row_of(&r, true) != row_of(&own, true) {
+        return Err(format!(
+            "the patched plain row's fill {fill:?} is not the window border {border:?}, or \
+             the stripe changed"
+        ));
+    }
+    harness.run_steps(SETTLE);
+    let selected_list = harness.state().demo_state.basic_list;
+    let mut rows: Vec<(String, bool, ListVariant)> = (0..LIST_VISIBLE)
+        .map(|i| {
+            (
+                format!("basic.list.row_{}", i + 1),
+                i == selected_list,
+                ListVariant::Plain,
+            )
+        })
+        .collect();
+    rows.extend((0..TABLE_ROWS.len()).map(|i| {
+        (
+            format!("basic.table.row_{}", i + 1),
+            i == TABLE_SELECTED,
+            ListVariant::Table,
+        )
+    }));
+    let shapes: Vec<egui::epaint::RectShape> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(r) => Some(r.clone()),
+            _ => None,
+        })
+        .collect();
+    for (id, selected, variant) in rows {
+        let place = harness.state().registry.places()[&id];
+        let at = |colour: Option<egui::Color32>| {
+            shapes.iter().position(|s| {
+                Some(s.fill) == colour && place.contains_rect(s.rect) && s.rect.is_positive()
+            })
+        };
+        let under = shapes
+            .iter()
+            .position(|s| Some(s.fill) == fill && near_rect(s.rect, place));
+        assert!(
+            under.is_some(),
+            "{id}: not filled in the row's fill across its place"
+        );
+        if selected {
+            let q = ListQuery::new(WidgetState::SELECTED).variant(ListKind {
+                variant,
+                alternate: false,
+            });
+            let lit = state_fill_of(&r.list.highlight(q));
+            assert!(
+                lit.is_some() && lit != fill,
+                "{id}: kde-breeze states the highlight"
+            );
+            let over = at(lit);
+            assert!(
+                over.is_some() && over > under,
+                "{id}: the highlight {over:?} is not painted over the row {under:?}"
+            );
+        }
+    }
+    Ok(())
+}
+
 /// The swap of `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md` 7.H.2, on the 0.8.0
 /// model: a selected list or table row is asked with `UNFOCUSED_VIEW` while the window is not
 /// active (spec §5, the list's `highlight`). A pass with `RawInput::focused` false, which

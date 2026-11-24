@@ -1902,11 +1902,14 @@ fn in_state<T: PartialEq>(stated: Option<T>, rest: T, own: (T, T)) -> T {
     }
 }
 
-/// What a list or table row draws, of the installed 0.8.0 theme: its highlight's fill (`None`
-/// for none) and stroke, its text colour, the highlight's margin, top, right, bottom and left,
-/// each where stated, and its corners' radius where stated; and the properties egui's own
-/// selectable row gives it, for its Widget Info.
+/// What a list or table row draws, of the installed 0.8.0 theme: the row's own fill under its
+/// highlight, `list.row(<state>).fill` where the theme states it (`None` for none, egui's own
+/// selectable row filling nothing under its frame); its highlight's fill (`None` for none) and
+/// stroke, its text colour, the highlight's margin, top, right, bottom and left, each where
+/// stated, and its corners' radius where stated; and the properties egui's own selectable row
+/// gives it, for its Widget Info.
 pub(crate) struct RowLook {
+    pub(crate) row: Option<egui::Color32>,
     pub(crate) fill: Option<egui::Color32>,
     pub(crate) stroke: egui::Stroke,
     pub(crate) text: egui::Color32,
@@ -1920,7 +1923,9 @@ pub(crate) const OWN_ROW: &str = "highlight where unstated";
 
 impl RowLook {
     /// The look of a row of a list of `variant` in `ui`, its `Role::List` scope, of the
-    /// installed 0.8.0 theme `r` (spec §5, the list's `highlight`): not selected and not under
+    /// installed 0.8.0 theme `r` (spec §5, the list's `row` and `highlight`): in every state the
+    /// row's fill `list.row(<state>).fill` where the theme states it, under the highlight; not
+    /// selected and not under
     /// the pointer, no highlight, its text `list.item_label(<view>).color`, else egui's own;
     /// selected or under the pointer, `list.highlight(<state>)`'s fill and stroke and
     /// `list.item_label(<state>).color` where a rule states them for the state (spec §2,
@@ -1941,6 +1946,7 @@ impl RowLook {
         let own = own_row(ui, selected, response);
         let Some(r) = r else {
             return Self {
+                row: None,
                 fill: own.0,
                 stroke: own.1,
                 text: own.2,
@@ -1965,6 +1971,7 @@ impl RowLook {
             state = state.union(NextState::HOVER);
         }
         let q = list_query(variant, state);
+        let row = next::fill_of(&l.row(q));
         let part = l.highlight(q);
         let margin = {
             let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
@@ -1979,6 +1986,7 @@ impl RowLook {
         let corners = next::radius_of(&part);
         if !selected && !hovered {
             return Self {
+                row,
                 fill: None,
                 stroke: egui::Stroke::NONE,
                 text: label.unwrap_or(rest.2),
@@ -2016,6 +2024,7 @@ impl RowLook {
             }
         }
         Self {
+            row,
             fill: in_state(fill.map(Some), None, (rest.0, own.0)),
             stroke: in_state(stroke, egui::Stroke::NONE, (rest.1, own.1)),
             text: in_state(text, label.unwrap_or(rest.2), (rest.2, own.2)),
@@ -2064,8 +2073,9 @@ impl RowLook {
 /// `list_frame`, in one `Role::List` scope (its selection colours and item font), of the
 /// installed 0.8.0 theme. egui has no list widget, and the leaves egui never reads from the
 /// style are per call (connector spec §5.4, T18(a)): each row is painted here, `row_metrics`
-/// tall and inset, in its `RowLook` (spec §5, the list's `highlight`: the row, then its
-/// highlight inset by its margin), a property the theme leaves unstated egui's own selectable
+/// tall and inset, in its `RowLook` (spec §5, the list's `row` and `highlight`: the row's fill
+/// where stated, then its highlight inset by its margin), a property the theme leaves unstated
+/// egui's own selectable
 /// row's, which the row's Widget Info names.
 fn list(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
     let r = atlas.next_shown(ui.ctx());
@@ -2196,13 +2206,47 @@ fn scroll_bar(
     Some((groove, thumb))
 }
 
+/// What the list's view, `ui`'s clip, shows of `b`, a box across a row, rounded by `inner`, the
+/// frame's inner radius, at each corner where it meets a corner of `edges`, the frame's inside,
+/// square elsewhere; `None` where the view shows none of it.
+fn in_view(
+    ui: &egui::Ui,
+    b: egui::Rect,
+    (edges, inner): (egui::Rect, f32),
+) -> Option<(egui::Rect, egui::CornerRadius)> {
+    let view = ui.clip_rect();
+    let shown = egui::Rect::from_x_y_ranges(
+        b.x_range(),
+        b.top().max(view.top())..=b.bottom().min(view.bottom()),
+    );
+    if !shown.is_positive() {
+        return None;
+    }
+    // The scroll area lays the rows out on whole pixels and then on egui's layout grid
+    // (`egui/src/containers/scroll_area.rs:797-803`; `emath/src/gui_rounding.rs:58-70`), which
+    // moves each edge by at most half a pixel and half a grid step from the frame's inside: half
+    // a point under a 0.5 pt line at one pixel per point. A row is far taller, and a solid bar's
+    // groove far wider, than that.
+    let off = 0.5 / ui.pixels_per_point() + 0.5 * egui::emath::GUI_ROUNDING;
+    let meets = |a: f32, b: f32| (a - b).abs() <= off;
+    let top = meets(shown.top(), edges.top());
+    let bottom = meets(shown.bottom(), edges.bottom());
+    let left = meets(shown.left(), edges.left());
+    let right = meets(shown.right(), edges.right());
+    let corners = inner_corners(
+        inner,
+        [top && left, top && right, bottom && left, bottom && right],
+    );
+    Some((shown, corners))
+}
+
 /// One list row across the list, `height` tall, its text `inset` in, one `line` tall and
-/// centred vertically, in its [`RowLook`]: its highlight is the row inset by the highlight's
-/// margin ([`RowLook::highlight_box`]); where the highlight's corners are stated, the whole box
-/// is filled and outlined, rounded by them, and the scroll area's clip, the view, cuts it, as
-/// Breeze clips a row to the view; elsewhere what the view shows of the box is, rounded by
-/// `inner`, the frame's inner radius, at a corner where it meets a corner of `edges`, the
-/// frame's inside. Its response, its text's rectangle, and its *Not themeable* line where egui's
+/// centred vertically, in its [`RowLook`]: first the row's own fill where the theme states one,
+/// across the row as the view shows it ([`in_view`]); then its highlight, the row inset by the
+/// highlight's margin ([`RowLook::highlight_box`]); where the highlight's corners are stated,
+/// the whole box is filled and outlined, rounded by them, and the scroll area's clip, the view,
+/// cuts it, as Breeze clips a row to the view; elsewhere what the view shows of the box is
+/// ([`in_view`]). Its response, its text's rectangle, and its *Not themeable* line where egui's
 /// own row gives it a property.
 fn list_row(
     ui: &mut egui::Ui,
@@ -2217,6 +2261,12 @@ fn list_row(
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
     response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, selected, text));
     let look = RowLook::of(ui, r, ListVariant::Plain, selected, Some(&response));
+    // The row first, square across its whole rectangle as Breeze paints it, then its highlight.
+    if let Some(fill) = look.row
+        && let Some((shown, corners)) = in_view(ui, rect, (edges, inner))
+    {
+        ui.painter().rect_filled(shown, corners, fill);
+    }
     let lit = look.highlight_box(rect);
     let drawn = look.fill.is_some() || look.stroke.width > 0.0;
     if drawn && let Some(radius) = look.corners {
@@ -2228,52 +2278,30 @@ fn list_row(
             ui.painter()
                 .rect_stroke(lit, corners, look.stroke, egui::StrokeKind::Inside);
         }
-    } else if drawn {
-        let view = ui.clip_rect();
-        let shown = egui::Rect::from_x_y_ranges(
-            lit.x_range(),
-            lit.top().max(view.top())..=lit.bottom().min(view.bottom()),
-        );
-        if shown.is_positive() {
-            // The scroll area lays the rows out on whole pixels and then on egui's layout grid
-            // (`egui/src/containers/scroll_area.rs:797-803`; `emath/src/gui_rounding.rs:58-70`),
-            // which moves each edge by at most half a pixel and half a grid step from the frame's
-            // inside: half a point under a 0.5 pt line at one pixel per point. A row is far
-            // taller, and a solid bar's groove far wider, than that.
-            let off = 0.5 / ui.pixels_per_point() + 0.5 * egui::emath::GUI_ROUNDING;
-            let meets = |a: f32, b: f32| (a - b).abs() <= off;
-            let top = meets(shown.top(), edges.top());
-            let bottom = meets(shown.bottom(), edges.bottom());
-            let left = meets(shown.left(), edges.left());
-            let right = meets(shown.right(), edges.right());
-            let corners = inner_corners(
-                inner,
-                [top && left, top && right, bottom && left, bottom && right],
+    } else if drawn && let Some((shown, corners)) = in_view(ui, lit, (edges, inner)) {
+        if let Some(fill) = look.fill {
+            ui.painter().rect_filled(shown, corners, fill);
+        }
+        // The row's outline on the fill's shape, inside it, as Breeze's line is
+        // (`egui-0.37.0/src/painter.rs:406-414`, `epaint-0.37.0/src/stroke.rs:102-111`), clipped
+        // to the view as the fill is: a row partly scrolled out draws no line along the view's
+        // edge. The line is on the fill's shape, its arcs on the fill's; on a side the view cuts
+        // the clip stops one line width short of the fill, so the line along that edge is not
+        // drawn.
+        let stroke = look.stroke;
+        if stroke.width > 0.0 {
+            let short = |cut: bool| if cut { stroke.width } else { 0.0 };
+            let clip = egui::Rect::from_x_y_ranges(
+                shown.x_range(),
+                shown.top() + short(lit.top() < shown.top())
+                    ..=shown.bottom() - short(lit.bottom() > shown.bottom()),
             );
-            if let Some(fill) = look.fill {
-                ui.painter().rect_filled(shown, corners, fill);
-            }
-            // The row's outline on the fill's shape, inside it, as Breeze's line is
-            // (`egui-0.37.0/src/painter.rs:406-414`, `epaint-0.37.0/src/stroke.rs:102-111`),
-            // clipped to the view as the fill is: a row partly scrolled out draws no line along
-            // the view's edge. The line is on the fill's shape, its arcs on the fill's; on a side
-            // the view cuts the clip stops one line width short of the fill, so the line along
-            // that edge is not drawn.
-            let stroke = look.stroke;
-            if stroke.width > 0.0 {
-                let short = |cut: bool| if cut { stroke.width } else { 0.0 };
-                let clip = egui::Rect::from_x_y_ranges(
-                    shown.x_range(),
-                    shown.top() + short(lit.top() < shown.top())
-                        ..=shown.bottom() - short(lit.bottom() > shown.bottom()),
-                );
-                ui.painter().with_clip_rect(clip).rect_stroke(
-                    shown,
-                    corners,
-                    stroke,
-                    egui::StrokeKind::Inside,
-                );
-            }
+            ui.painter().with_clip_rect(clip).rect_stroke(
+                shown,
+                corners,
+                stroke,
+                egui::StrokeKind::Inside,
+            );
         }
     }
     let label = paint_cell_text(ui, text, font, look.text, (rect, inset, line));
@@ -2326,8 +2354,9 @@ pub(crate) fn header_section_fill(
 /// theme reaches (egui_extras' `TableBuilder` paints only its stripes), so it is painted here as
 /// the list's rows are: the header in `list.header(NONE).fill` where stated, its titles in
 /// `list.header_label(NONE)` (the Data page's `TableHeader`), `row_metrics` tall and inset, the
-/// rows `row_metrics` tall, each in its `RowLook` (the selected one's highlight inset by its
-/// margin and, where stated, rounded by its corners), the header's fill rounded at the top and
+/// rows `row_metrics` tall, each in its `RowLook` (the row's own fill where stated, then over it
+/// the selected one's highlight inset by its margin and, where stated, rounded by its corners),
+/// the header's fill rounded at the top and
 /// the last row's highlight at the bottom where they meet the frame and the highlight states no
 /// corners (`inner_corners`); each header section hovered and pressed in its fill where a rule
 /// states it (`header_section_fill`), rounded where the section meets the frame's top corner; a
@@ -2433,8 +2462,16 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                             egui::vec2(inner, row_height),
                         );
                         let look = RowLook::of(ui, r, table, i == TABLE_SELECTED, None);
-                        let lit = look.highlight_box(row);
                         let last = i.saturating_add(1) == TABLE_ROWS.len();
+                        // the row first, across the whole of it, then its highlight
+                        if let Some(fill) = look.row {
+                            painter.rect_filled(
+                                row,
+                                inner_corners(inner_radius, [false, false, last, last]),
+                                fill,
+                            );
+                        }
+                        let lit = look.highlight_box(row);
                         let corners = look.corners.map_or_else(
                             || inner_corners(inner_radius, [false, false, last, last]),
                             |radius| to_corner_radius(egui::CornerRadius::ZERO, radius),
