@@ -12026,13 +12026,12 @@ fn number_steps_line(pad: Padding) -> String {
     )
 }
 
-/// Whether the theme outlines the slider's handle at rest: a stated
-/// `slider.thumb_border_color` and a finite `.thumb_border_line_width` above
-/// 0, as `styles::slider` draws it.
-fn slider_rest_outline(r: &ResolvedTheme) -> bool {
-    r.slider.thumb_border_color.is_some()
-        && r.slider
-            .thumb_border_line_width
+/// Whether the installed 0.8.0 theme outlines the slider's handle at rest:
+/// `slider.thumb(NONE).stroke` stated one stroke, finite and above 0 wide,
+/// as `iced_next::styles::slider` draws it where it maps the slider.
+fn slider_rest_outline(r: &native_theme::next::ResolvedTheme) -> bool {
+    iced_next::styles::slider(r).is_ok()
+        && iced_next::stroke_width_of(&r.slider.thumb(WidgetState::NONE))
             .is_some_and(|w| w.is_finite() && w > 0.0)
 }
 
@@ -12062,12 +12061,12 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
                 .into(),
         ],
         "Expander" => vec!["arrow shape: a filled triangle on a canvas".into()],
-        // The model has no thumb shadow (docs/todo.md, *Slider: the thumb's
-        // outline or shadow*); its outline at rest is stated by some themes
-        // only (`slider.thumb_border_color`, `.thumb_border_line_width`), and
-        // where it is not, iced's handle has no border (`styles::slider`).
-        "Slider" if slider_rest_outline(&state.current_resolved) => {
-            vec!["thumb shadow: none, the model states no shadow".into()]
+        // iced's slider handle takes no shadow (iced_widget 0.14.2
+        // `src/slider.rs`, `Handle`); its outline at rest is stated by some
+        // themes only (`slider.thumb(NONE).stroke`), and where it is not,
+        // iced's handle has no border (`iced_next::styles::slider`).
+        "Slider" if slider_rest_outline(state.next_shown()) => {
+            vec!["thumb shadow: none, iced's slider handle takes no shadow".into()]
         }
         "Slider" => vec![
             "thumb outline and shadow: none, iced's handle unbordered, so a thumb in \
@@ -12932,6 +12931,84 @@ fn style_paints<S: Copy + std::fmt::Debug, O>(
             })
         })
         .collect()
+}
+
+/// [`style_paints`] of a 0.8.0 style, `style` as the connector maps it on
+/// the installed theme. Where the connector cannot map it
+/// (`iced_next::Unmapped`) the page's widget is iced's own
+/// ([`NextDressed::next_style`]), so each row is what `own`, iced's own
+/// style function `own_name`, paints at `status`, with the home the theme
+/// gives iced no value at.
+#[allow(clippy::too_many_arguments)]
+fn next_paints<S: Copy + std::fmt::Debug, O, F: Fn(&Theme, S) -> O>(
+    state: &State,
+    function: &str,
+    style: iced_next::Mapped<F>,
+    (own_name, own): (&str, fn(&Theme, S) -> O),
+    inks: fn(&O) -> Vec<(&'static str, Ink)>,
+    status: S,
+    rows: &[(&'static str, &'static str)],
+    zero: &str,
+) -> Vec<Paint> {
+    let unmapped = match style {
+        Ok(style) => return style_paints(state, function, style, inks, status, rows, zero),
+        Err(unmapped) => unmapped,
+    };
+    let painted = inks(&own(&state.current_theme, status));
+    let status = Some(format!(" ({status:?})")).filter(|s| s != " (())");
+    rows.iter()
+        .filter_map(|&(role, field)| {
+            let (_, ink) = painted.iter().find(|(f, _)| *f == field)?;
+            Some(Paint {
+                role,
+                source: format!(
+                    "iced's own, {own_name}{}: {function} not mapped, {unmapped}",
+                    status.as_deref().unwrap_or("")
+                ),
+                ink: *ink,
+                zero: format!("iced's own {own_name}"),
+            })
+        })
+        .collect()
+}
+
+/// Why an edge drawn from `part`'s stroke, `home`'s
+/// (`button.body(NONE)`), is 0 wide where it is: the stroke unstated, stated
+/// none, or stated 0 wide.
+fn stroke_zero(part: &PartStyle, home: &str) -> String {
+    if !part.stated.contains(PartStated::STROKE) {
+        return format!("{home}.stroke unstated");
+    }
+    match &part.stroke {
+        Stroke::None => format!("{home}.stroke none"),
+        Stroke::Uniform { width, .. } => format!("{home}.stroke.width {width}"),
+        Stroke::Complex(_) => format!("{home}.stroke per side"),
+    }
+}
+
+/// A part's corner radius as a Widget Info row: `part`'s, `home`'s
+/// (`button.body(NONE)`), where it states one radius iced draws
+/// (`iced_next::radius_of`); else `drawn`, the radius the style the page
+/// draws the widget in gives iced, as iced's own, with what the theme
+/// lacks; `drawn` as iced's own style's where the connector cannot map the
+/// widget's style, `unmapped`.
+fn corners_row(
+    part: &PartStyle,
+    home: &str,
+    drawn: f32,
+    unmapped: Option<iced_next::Unmapped>,
+) -> String {
+    if let Some(unmapped) = unmapped {
+        return format!("{}, iced's own: {unmapped}", px_text(drawn));
+    }
+    match iced_next::radius_of(part) {
+        Some(radius) => format!("{}, {home}.corners", px_text(radius)),
+        None if part.stated.contains(PartStated::CORNERS) => format!(
+            "{}, iced's own: {home}.corners states a form iced cannot draw",
+            px_text(drawn)
+        ),
+        None => format!("{}, iced's own: {home}.corners unstated", px_text(drawn)),
+    }
 }
 
 /// What a colour row's text says after the row and its status: the colour
@@ -16213,93 +16290,68 @@ impl<Message> canvas::Program<Message> for DisclosureArrow {
     }
 }
 
-/// The colours `styles::toggler` paints the Selection page's switches in at
-/// rest, on and off: their tracks, the outlines the theme states, and the
-/// thumbs.
+/// The colours `iced_next::styles::toggler` paints the Selection page's
+/// switches in at rest, on and off, on the installed 0.8.0 theme: their
+/// tracks, the outlines the theme states, and the thumbs.
 fn toggler_paints(state: &State) -> Vec<Paint> {
     use toggler::Status;
-    let r = &state.current_resolved;
+    let r = state.next_shown();
     let s = &r.switch;
+    let own = (
+        "toggler::default",
+        toggler::default as fn(&Theme, Status) -> _,
+    );
     let mut paints = Vec::new();
-    for (is_toggled, track, outline, thumb, colour) in [
+    for (is_toggled, track, outline, thumb, at) in [
         (
             true,
             "on track",
             "on track outline",
             "on thumb",
-            (
-                "switch.checked_track_border_color",
-                s.checked_track_border_color,
-            ),
+            (WidgetState::CHECKED, "switch.track(CHECKED)"),
         ),
         (
             false,
             "off track",
             "off track outline",
             "off thumb",
-            (
-                "switch.unchecked_track_border_color",
-                s.unchecked_track_border_color,
-            ),
+            (WidgetState::NONE, "switch.track(NONE)"),
         ),
     ] {
         let status = Status::Active { is_toggled };
-        let style = || styles::toggler(r);
-        paints.extend(style_paints(
+        let style = || iced_next::styles::toggler(r);
+        paints.extend(next_paints(
             state,
             "styles::toggler",
             style(),
+            own,
             toggler_inks,
             status,
             &[(track, "background"), (thumb, "foreground")],
             "",
         ));
-        paints.extend(style_paints(
+        paints.extend(next_paints(
             state,
             "styles::toggler",
             style(),
+            own,
             toggler_inks,
             status,
             &[(outline, "background_border_color")],
-            &outline_zero(
-                colour,
-                ("switch.track_border_line_width", s.track_border_line_width),
-            ),
+            &stroke_zero(&s.track(at.0), at.1),
         ));
     }
-    paints.extend(style_paints(
+    paints.extend(next_paints(
         state,
         "styles::toggler",
-        styles::toggler(r),
+        iced_next::styles::toggler(r),
+        own,
         toggler_inks,
         Status::Active { is_toggled: true },
         &[("thumb outline", "foreground_border_color")],
-        &outline_zero(
-            ("switch.thumb_border_color", s.thumb_border_color),
-            ("switch.thumb_border_line_width", s.thumb_border_line_width),
-        ),
+        &stroke_zero(&s.thumb(WidgetState::CHECKED), "switch.thumb(CHECKED)"),
     ));
     paints
-}
-
-/// Why a switch's or a slider handle's outline is 0 wide: `styles::toggler`
-/// and `styles::slider` draw one only where the theme states its colour and
-/// a width, so the leaf of the two it leaves unstated, or the width it
-/// states 0.
-fn outline_zero(
-    (colour_leaf, colour): (&str, Option<native_theme::color::Rgba>),
-    (width_leaf, width): (&str, Option<f32>),
-) -> String {
-    let mut why = Vec::new();
-    if colour.is_none() {
-        why.push(format!("{colour_leaf} unstated"));
-    }
-    match width {
-        None => why.push(format!("{width_leaf} unstated")),
-        Some(w) if w <= 0.0 => why.push(format!("{width_leaf} 0")),
-        Some(_) => {}
-    }
-    why.join(", ")
 }
 
 /// The size rows of a switch's Widget Info as [`next_switch`] draws it on
@@ -16488,12 +16540,6 @@ fn switch_info(state: &State) -> String {
 // Tab: Buttons
 // ---------------------------------------------------------------------------
 
-/// Why an edge the connector draws from `<table>.border` is 0 wide where it
-/// is: that border's own line width.
-fn line_zero(table: &str) -> String {
-    format!("{table}.border.line_width 0")
-}
-
 /// The minimum size a push button on the installed 0.8.0 theme is laid out
 /// at, and the homes and helpers it comes from, the Buttons page's and the
 /// Extra page's card buttons': `button.body(NONE).min_size`, each axis
@@ -16513,9 +16559,19 @@ fn next_button_min_size_row(r: &native_theme::next::ResolvedTheme) -> String {
 /// rest and under the pointer.
 fn button_info(state: &State) -> String {
     use button::Status;
-    let resolved = &state.current_resolved;
-    let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
     let next = state.next_shown();
+    let primary = || iced_next::styles::button_primary(next);
+    let own = (
+        "button::primary",
+        button::primary as fn(&Theme, Status) -> _,
+    );
+    let body = next.button.body(ButtonQuery::primary());
+    let home = "button.body(NONE; variant=Primary)";
+    let drawn = match primary() {
+        Ok(style) => style(&state.current_theme, Status::Active),
+        Err(_) => button::primary(&state.current_theme, Status::Active),
+    };
+    let radius_s = corners_row(&body, home, drawn.border.radius.top_left, primary().err());
     let label = next_font_row("button.label(NONE)", &next.button.label(WidgetState::NONE));
     let min_size = next_button_min_size_row(next);
     let config = [
@@ -16530,11 +16586,11 @@ fn button_info(state: &State) -> String {
         ("shadow", "iced's own — the model has no shadow geometry"),
         ("label", label.as_str()),
     ];
-    let primary = || styles::button_primary(resolved);
-    let mut colours = style_paints(
+    let mut colours = next_paints(
         state,
         "styles::button_primary",
         primary(),
+        own,
         button_inks,
         Status::Active,
         &[
@@ -16542,12 +16598,13 @@ fn button_info(state: &State) -> String {
             ("text", "text_color"),
             ("border", "border"),
         ],
-        &line_zero("button"),
+        &stroke_zero(&body, home),
     );
-    colours.extend(style_paints(
+    colours.extend(next_paints(
         state,
         "styles::button_primary",
         primary(),
+        own,
         button_inks,
         Status::Hovered,
         &[("hover bg", "background"), ("hover text", "text_color")],
@@ -16557,54 +16614,79 @@ fn button_info(state: &State) -> String {
 }
 
 /// The Widget Info of the Buttons page's disabled row: each of its three
-/// classes as `class_button` and `styles::button` draw it disabled.
+/// classes as the page's `iced_next::styles` functions draw it disabled on
+/// the installed 0.8.0 theme.
 fn disabled_buttons_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    type ButtonStyle = Box<dyn Fn(&Theme, button::Status) -> button::Style>;
-    let classes: [(&str, ButtonStyle, [&'static str; 3]); 3] = [
+    let next = state.next_shown();
+    type ButtonStyle = iced_next::Mapped<Box<dyn Fn(&Theme, button::Status) -> button::Style>>;
+    fn boxed(
+        style: iced_next::Mapped<impl Fn(&Theme, button::Status) -> button::Style + 'static>,
+    ) -> ButtonStyle {
+        style.map(|style| Box::new(style) as Box<dyn Fn(&Theme, button::Status) -> button::Style>)
+    }
+    let plain = ("button.body(NONE)", next.button.body(WidgetState::NONE));
+    let primary = (
+        "button.body(NONE; variant=Primary)",
+        next.button.body(ButtonQuery::primary()),
+    );
+    let classes: [(&str, ButtonStyle, _, [&'static str; 3]); 3] = [
         (
             "styles::button_primary",
-            Box::new(styles::button_primary(resolved)),
+            boxed(iced_next::styles::button_primary(next)),
+            &primary,
             ["primary bg", "primary text", "primary border"],
         ),
         (
             "styles::button",
-            Box::new(styles::button(resolved)),
+            boxed(iced_next::styles::button(next)),
+            &plain,
             ["secondary bg", "secondary text", "secondary border"],
         ),
         (
             "styles::button_danger",
-            Box::new(styles::button_danger(resolved)),
+            boxed(iced_next::styles::button_danger(next)),
+            &plain,
             ["danger bg", "danger text", "danger border"],
         ),
     ];
+    let own = (
+        "button::primary",
+        button::primary as fn(&Theme, button::Status) -> _,
+    );
     let mut colours = Vec::new();
-    for (function, style, [bg, text, border]) in classes {
-        colours.extend(style_paints(
+    for (function, style, (home, body), [bg, text, border]) in classes {
+        colours.extend(next_paints(
             state,
             function,
             style,
+            own,
             button_inks,
             button::Status::Disabled,
             &[(bg, "background"), (text, "text_color"), (border, "border")],
-            &line_zero("button"),
+            &stroke_zero(body, home),
         ));
     }
+    let disabled_fill = next
+        .button
+        .body(WidgetState::DISABLED)
+        .from_state
+        .contains(PartStated::FILL);
     let pair = format!(
-        "{}, faded by button.disabled_opacity ({})",
-        match resolved.button.disabled_background {
-            Some(_) => {
-                "button.disabled_background with button.disabled_text_color, for every class"
-            }
-            None => {
-                "where the theme states no button.disabled_background, the primary and \
-                 danger classes keep their own pair, the plain button its own fill with \
-                 button.disabled_text_color"
-            }
+        "{}, {}",
+        if disabled_fill {
+            "button.body(DISABLED).fill with button.label(DISABLED).color, for every class"
+        } else {
+            "where no rule states button.body(DISABLED).fill, the primary and danger classes \
+             keep their own pair, the plain button its own fill with \
+             button.label(DISABLED).color"
         },
-        resolved.button.disabled_opacity
+        match next.button.disabled_opacity {
+            Some(opacity) => format!("faded by button.disabled_opacity ({opacity})"),
+            None =>
+                "faded as iced fades a disabled button: button.disabled_opacity unstated".to_owned(),
+        }
     );
-    let min_size = next_button_min_size_row(state.next_shown());
+    let min_size = next_button_min_size_row(next);
     widget_tooltip(
         "Disabled Buttons",
         &colours,
@@ -16820,13 +16902,9 @@ fn view_buttons(state: &State) -> Element<'_, Message> {
 /// rest, under the pointer and focused.
 fn text_input_info(state: &State) -> String {
     use text_input::Status;
-    let resolved = &state.current_resolved;
-    let i = &resolved.input;
-    let radius_s = format!("{:.0}px", i.border.corner_radius);
-    let text = next_font_row(
-        "input.text(NONE)",
-        &state.next_shown().input.text(WidgetState::NONE),
-    );
+    let next = state.next_shown();
+    let radius_s = input_corners(state);
+    let text = next_font_row("input.text(NONE)", &next.input.text(WidgetState::NONE));
     let config = [
         ("border-radius", radius_s.as_str()),
         (
@@ -16838,12 +16916,13 @@ fn text_input_info(state: &State) -> String {
         ),
         ("text", text.as_str()),
     ];
-    let field = || styles::text_input(resolved);
-    let zero = line_zero("input");
-    let mut colours = style_paints(
+    let field = || iced_next::styles::text_input(next);
+    let zero = stroke_zero(&next.input.field(WidgetState::NONE), "input.field(NONE)");
+    let mut colours = next_paints(
         state,
         "styles::text_input",
         field(),
+        ICED_TEXT_INPUT,
         text_input_inks,
         Status::Active,
         &[
@@ -16859,10 +16938,11 @@ fn text_input_info(state: &State) -> String {
         (Status::Hovered, "hover border"),
         (Status::Focused { is_hovered: false }, "focus border"),
     ] {
-        colours.extend(style_paints(
+        colours.extend(next_paints(
             state,
             "styles::text_input",
             field(),
+            ICED_TEXT_INPUT,
             text_input_inks,
             status,
             &[(role, "border")],
@@ -16884,20 +16964,53 @@ fn text_input_info(state: &State) -> String {
     )
 }
 
+/// iced's own text field style, which a field the connector cannot dress
+/// is drawn in.
+const ICED_TEXT_INPUT: (&str, fn(&Theme, text_input::Status) -> text_input::Style) =
+    ("text_input::default", text_input::default);
+
+/// iced's own container style, `Container`'s default class, which a
+/// container the connector cannot dress is drawn in, as a style of no
+/// status.
+const ICED_CONTAINER: (&str, fn(&Theme, ()) -> container::Style) =
+    ("container::transparent", |theme, ()| {
+        container::transparent(theme)
+    });
+
+/// The text fields' corner radius row on the installed 0.8.0 theme,
+/// `input.field(NONE).corners` ([`corners_row`]), at the radius the field's
+/// style draws.
+fn input_corners(state: &State) -> String {
+    let next = state.next_shown();
+    let style = iced_next::styles::text_input(next);
+    let at_rest = text_input::Status::Active;
+    let drawn = match &style {
+        Ok(style) => style(&state.current_theme, at_rest),
+        Err(_) => text_input::default(&state.current_theme, at_rest),
+    };
+    corners_row(
+        &next.input.field(WidgetState::NONE),
+        "input.field(NONE)",
+        drawn.border.radius.top_left,
+        style.err(),
+    )
+}
+
 /// The Widget Info of the Inputs page's password field.
 fn secure_text_input_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
+    let next = state.next_shown();
+    let radius_s = input_corners(state);
     widget_tooltip(
         "TextInput (secure)",
-        &style_paints(
+        &next_paints(
             state,
             "styles::text_input",
-            styles::text_input(resolved),
+            iced_next::styles::text_input(next),
+            ICED_TEXT_INPUT,
             text_input_inks,
             text_input::Status::Active,
             &[("border", "border"), ("bg", "background")],
-            &line_zero("input"),
+            &stroke_zero(&next.input.field(WidgetState::NONE), "input.field(NONE)"),
         ),
         &[
             ("border-radius", &radius_s),
@@ -16916,24 +17029,40 @@ fn secure_text_input_info(state: &State) -> String {
 
 /// The Widget Info of the Inputs page's multi-line editor.
 fn text_editor_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let area_radius_s = format!("{:.0}px", resolved.text_area.border.corner_radius);
+    let next = state.next_shown();
+    let area = next.text_area.field(WidgetState::NONE);
+    let style = || iced_next::styles::text_editor(next);
+    let at_rest = text_editor::Status::Active;
+    let drawn = match style() {
+        Ok(style) => style(&state.current_theme, at_rest),
+        Err(_) => text_editor::default(&state.current_theme, at_rest),
+    };
+    let area_radius_s = corners_row(
+        &area,
+        "text_area.field(NONE)",
+        drawn.border.radius.top_left,
+        style().err(),
+    );
     widget_tooltip_themed(
         state,
         "TextEditor (multi-line)",
-        &style_paints(
+        &next_paints(
             state,
             "styles::text_editor",
-            styles::text_editor(resolved),
+            style(),
+            (
+                "text_editor::default",
+                text_editor::default as fn(&Theme, text_editor::Status) -> _,
+            ),
             text_editor_inks,
-            text_editor::Status::Active,
+            at_rest,
             &[
                 ("border", "border"),
                 ("bg", "background"),
                 ("text", "value"),
                 ("selection", "selection"),
             ],
-            &line_zero("text_area"),
+            &stroke_zero(&area, "text_area.field(NONE)"),
         ),
         &[
             ("border-radius", &area_radius_s),
@@ -17092,14 +17221,29 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
 /// The Widget Info of the Selection page's checkboxes, checked and not.
 fn checkbox_info(state: &State) -> String {
     use checkbox::Status;
-    let resolved = &state.current_resolved;
-    let c = &resolved.checkbox;
-    let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
+    let next = state.next_shown();
+    let indicator = next.checkbox.indicator(WidgetState::NONE);
+    let style = || iced_next::styles::checkbox(next);
+    let own = (
+        "checkbox::primary",
+        checkbox::primary as fn(&Theme, Status) -> _,
+    );
+    let at_rest = Status::Active { is_checked: false };
+    let drawn = match style() {
+        Ok(style) => style(&state.current_theme, at_rest),
+        Err(_) => checkbox::primary(&state.current_theme, at_rest),
+    };
+    let checkbox_radius_s = corners_row(
+        &indicator,
+        "checkbox.indicator(NONE)",
+        drawn.border.radius.top_left,
+        style().err(),
+    );
+    let zero = stroke_zero(&indicator, "checkbox.indicator(NONE)");
     // The gap and the box the page lays the check boxes out by, on the
     // installed 0.8.0 theme: `checkbox.label_gap` and
     // [`next_check_box_size`], the box's side, which `Checkbox::size`
     // (checkbox.rs:176, laid out at :287) takes.
-    let next = state.next_shown();
     let label_gap_s = format!("{:.0}px, checkbox.label_gap", next.checkbox.label_gap);
     let box_size = next_check_box_size(next);
     let indicator_width_s = match next.checkbox.indicator(WidgetState::NONE).min_size[0] {
@@ -17128,14 +17272,15 @@ fn checkbox_info(state: &State) -> String {
             ],
         ),
     ] {
-        colours.extend(style_paints(
+        colours.extend(next_paints(
             state,
             "styles::checkbox",
-            styles::checkbox(resolved),
+            style(),
+            own,
             checkbox_inks,
             Status::Active { is_checked },
             &rows,
-            &line_zero("checkbox"),
+            &zero,
         ));
     }
     widget_tooltip(
@@ -17165,7 +17310,6 @@ fn checkbox_info(state: &State) -> String {
 /// The Widget Info of the Selection page's radio buttons, selected and not.
 fn radio_info(state: &State) -> String {
     use radio::Status;
-    let resolved = &state.current_resolved;
     // The gap, the circle and the dot [`next_radio`] lays the radios out by
     // on the installed 0.8.0 theme: `iced_next::radio`'s `Radio::spacing`
     // and `Radio::size` and the dot it lays over the circle, where the theme
@@ -17252,14 +17396,18 @@ fn radio_info(state: &State) -> String {
             ],
         ),
     ] {
-        colours.extend(style_paints(
+        colours.extend(next_paints(
             state,
             "styles::radio",
-            styles::radio(resolved),
+            iced_next::styles::radio(next),
+            ("radio::default", radio::default as fn(&Theme, Status) -> _),
             radio_inks,
             Status::Active { is_selected },
             &rows,
-            &line_zero("checkbox"),
+            &stroke_zero(
+                &next.radio.indicator(WidgetState::NONE),
+                "radio.indicator(NONE)",
+            ),
         ));
     }
     widget_tooltip("Radio", &colours, &sizes, &unthemed)
@@ -17267,27 +17415,42 @@ fn radio_info(state: &State) -> String {
 
 /// The Widget Info of the Selection page's pick list and its menu.
 fn pick_list_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let cb = &resolved.combo_box;
-    let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
+    let next = state.next_shown();
+    let field = next.combo_box.field(WidgetState::NONE);
+    let style = || iced_next::styles::pick_list(next);
+    let at_rest = pick_list::Status::Active;
+    let drawn = match style() {
+        Ok(style) => style(&state.current_theme, at_rest),
+        Err(_) => pick_list::default(&state.current_theme, at_rest),
+    };
+    let combo_radius_s = corners_row(
+        &field,
+        "combo_box.field(NONE)",
+        drawn.border.radius.top_left,
+        style().err(),
+    );
     // The arrow [`next_arrow_handle`] draws, at [`next_arrow_size`].
-    let arrow_size_s = format!("{:.0}px", next_arrow_size(state.next_shown()));
+    let arrow_size_s = format!("{:.0}px", next_arrow_size(next));
     let rows = next_font_row(
         "combo_box.label(NONE)",
-        &state.next_shown().combo_box.label(WidgetState::NONE),
+        &next.combo_box.label(WidgetState::NONE),
     );
-    let mut colours = style_paints(
+    let mut colours = next_paints(
         state,
         "styles::pick_list",
-        styles::pick_list(resolved),
+        style(),
+        (
+            "pick_list::default",
+            pick_list::default as fn(&Theme, pick_list::Status) -> _,
+        ),
         pick_list_inks,
-        pick_list::Status::Active,
+        at_rest,
         &[
             ("bg", "background"),
             ("text", "text_color"),
             ("border", "border"),
         ],
-        &line_zero("combo_box"),
+        &stroke_zero(&field, "combo_box.field(NONE)"),
     );
     colours.extend(menu_paints(state));
     widget_tooltip(
@@ -17311,12 +17474,31 @@ fn pick_list_info(state: &State) -> String {
     )
 }
 
-/// The colours `styles::menu` paints a drop-down's menu in.
+/// Why a menu's frame is 0 wide where it is ([`stroke_zero`]): its border
+/// is `menu.panel(NONE)`'s stroke where that states one, else
+/// `popover.panel`'s, as `iced_next::styles::menu` and
+/// `iced_next::styles::aw::menu` take it.
+fn menu_frame_zero(r: &native_theme::next::ResolvedTheme) -> String {
+    let panel = r.menu.panel(WidgetState::NONE);
+    if panel.stated.contains(PartStated::STROKE) {
+        stroke_zero(&panel, "menu.panel(NONE)")
+    } else {
+        stroke_zero(&r.popover.panel, "popover.panel")
+    }
+}
+
+/// The colours `iced_next::styles::menu` paints a drop-down's menu in on
+/// the installed 0.8.0 theme.
 fn menu_paints(state: &State) -> Vec<Paint> {
-    style_paints(
+    let next = state.next_shown();
+    let zero = menu_frame_zero(next);
+    next_paints(
         state,
         "styles::menu",
-        statusless(styles::menu(&state.current_resolved)),
+        iced_next::styles::menu(next).map(statusless),
+        ("menu::default", |theme, ()| {
+            iced::overlay::menu::default(theme)
+        }),
         menu_inks,
         (),
         &[
@@ -17326,7 +17508,7 @@ fn menu_paints(state: &State) -> Vec<Paint> {
             ("menu selected text", "selected_text_color"),
             ("menu border", "border"),
         ],
-        &line_zero("popover"),
+        &zero,
     )
 }
 
@@ -17427,14 +17609,15 @@ fn iced_toggler_info(state: &State) -> String {
 
 /// The Widget Info of the Selection page's combo box.
 fn combo_box_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let input_radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
+    let next = state.next_shown();
+    let input_radius_s = input_corners(state);
     widget_tooltip(
         "ComboBox (searchable dropdown)",
-        &style_paints(
+        &next_paints(
             state,
             "styles::text_input",
-            styles::text_input(resolved),
+            iced_next::styles::text_input(next),
+            ICED_TEXT_INPUT,
             text_input_inks,
             text_input::Status::Active,
             &[
@@ -17442,7 +17625,7 @@ fn combo_box_info(state: &State) -> String {
                 ("text", "value"),
                 ("border", "border"),
             ],
-            &line_zero("input"),
+            &stroke_zero(&next.input.field(WidgetState::NONE), "input.field(NONE)"),
         )
         .into_iter()
         .chain(menu_paints(state))
@@ -17776,13 +17959,20 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 /// `hovered`, under the pointer.
 fn slider_paints(state: &State, hovered: bool) -> Vec<Paint> {
     use slider::Status;
-    let resolved = &state.current_resolved;
-    let s = &resolved.slider;
-    let width = ("slider.thumb_border_line_width", s.thumb_border_line_width);
-    let mut paints = style_paints(
+    let r = state.next_shown();
+    let own = (
+        "slider::default",
+        slider::default as fn(&Theme, Status) -> _,
+    );
+    // Both orientations' styles paint alike: the query's orientation moves
+    // the rail's thickness alone (`iced_next::styles::vertical_slider`).
+    let style = || iced_next::styles::slider(r);
+    let zero = stroke_zero(&r.slider.thumb(WidgetState::NONE), "slider.thumb(NONE)");
+    let mut paints = next_paints(
         state,
         "styles::slider",
-        styles::slider(resolved),
+        style(),
+        own,
         slider_inks,
         Status::Active,
         &[
@@ -17792,39 +17982,29 @@ fn slider_paints(state: &State, hovered: bool) -> Vec<Paint> {
         ],
         "",
     );
-    paints.extend(style_paints(
+    paints.extend(next_paints(
         state,
         "styles::slider",
-        styles::slider(resolved),
+        style(),
+        own,
         slider_inks,
         Status::Active,
         &[("handle outline", "handle.border_color")],
-        &outline_zero(("slider.thumb_border_color", s.thumb_border_color), width),
+        &zero,
     ));
     if hovered {
-        paints.extend(style_paints(
+        paints.extend(next_paints(
             state,
             "styles::slider",
-            styles::slider(resolved),
+            style(),
+            own,
             slider_inks,
             Status::Hovered,
-            &[("hovered handle", "handle.background")],
-            "",
-        ));
-        paints.extend(style_paints(
-            state,
-            "styles::slider",
-            styles::slider(resolved),
-            slider_inks,
-            Status::Hovered,
-            &[("hovered handle outline", "handle.border_color")],
-            &outline_zero(
-                (
-                    "slider.thumb_hover_border_color and slider.thumb_border_color",
-                    s.thumb_hover_border_color.or(s.thumb_border_color),
-                ),
-                width,
-            ),
+            &[
+                ("hovered handle", "handle.background"),
+                ("hovered handle outline", "handle.border_color"),
+            ],
+            &zero,
         ));
     }
     paints
@@ -17846,7 +18026,6 @@ fn slider_info(state: &State) -> String {
 
 /// The Widget Info of the Range page's progress bars.
 fn progress_bar_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     // The girth the page lays the bars out at, [`next_progress_girth`].
     let next = state.next_shown();
     let girth = next_progress_girth(next);
@@ -17859,10 +18038,13 @@ fn progress_bar_info(state: &State) -> String {
     };
     widget_tooltip(
         "Progress Bar",
-        &style_paints(
+        &next_paints(
             state,
             "styles::progress_bar",
-            statusless(styles::progress_bar(resolved)),
+            iced_next::styles::progress_bar(next).map(statusless),
+            ("progress_bar::primary", |theme, ()| {
+                progress_bar::primary(theme)
+            }),
             progress_bar_inks,
             (),
             &[
@@ -17870,7 +18052,10 @@ fn progress_bar_info(state: &State) -> String {
                 ("track bg", "background"),
                 ("border", "border"),
             ],
-            &line_zero("progress_bar"),
+            &stroke_zero(
+                &next.progress_bar.track(WidgetState::NONE),
+                "progress_bar.track(NONE)",
+            ),
         ),
         &[("girth", &bar_girth_s)],
         &[
@@ -18059,18 +18244,30 @@ fn view_range(state: &State) -> Element<'_, Message> {
 
 /// The Widget Info of the Display page's styled containers.
 fn card_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
-    let card_radius_s = format!("{:.0}px", resolved.card.border.corner_radius);
+    let next = state.next_shown();
+    let card = next.card.container(WidgetState::NONE);
+    let style = || iced_next::styles::container_card(next);
+    let drawn = match style() {
+        Ok(style) => style(&state.current_theme),
+        Err(_) => container::transparent(&state.current_theme),
+    };
+    let card_radius_s = corners_row(
+        &card,
+        "card.container(NONE)",
+        drawn.border.radius.top_left,
+        style().err(),
+    );
     widget_tooltip(
         "Styled Containers (card)",
-        &style_paints(
+        &next_paints(
             state,
             "styles::container_card",
-            statusless(styles::container_card(resolved)),
+            style().map(statusless),
+            ICED_CONTAINER,
             container_inks,
             (),
             &[("bg", "background"), ("border", "border")],
-            &line_zero("card"),
+            &stroke_zero(&card, "card.container(NONE)"),
         ),
         &[
             ("border-radius", &card_radius_s),
@@ -18092,7 +18289,6 @@ fn card_info(state: &State) -> String {
 /// The Widget Info of the Display page's tooltips, which
 /// [`showcase_tooltip`] builds.
 fn tooltip_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     // The bubble's corners as [`showcase_tooltip`] draws them: as
     // `iced_next::styles::tooltip` rounds them where it maps the bubble, and
@@ -18162,10 +18358,11 @@ fn tooltip_info(state: &State) -> String {
     }
     widget_tooltip(
         "Tooltip",
-        &style_paints(
+        &next_paints(
             state,
             "styles::tooltip",
-            statusless(styles::tooltip(resolved)),
+            iced_next::styles::tooltip(next).map(statusless),
+            ICED_CONTAINER,
             container_inks,
             (),
             &[
@@ -18173,7 +18370,7 @@ fn tooltip_info(state: &State) -> String {
                 ("text", "text_color"),
                 ("border", "border"),
             ],
-            &line_zero("tooltip"),
+            &stroke_zero(&next.tooltip.panel, "tooltip.panel"),
         ),
         &config,
         &unthemed,
@@ -18529,7 +18726,6 @@ fn grid_info(state: &State) -> String {
 
 /// The Widget Info of the Layout page's pane grid.
 fn pane_grid_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let divider_width_s = format!(
         "{:.0}px, splitter.divider_width",
@@ -18540,10 +18736,11 @@ fn pane_grid_info(state: &State) -> String {
     let controls_min_s = next_button_min_size_row(next);
     widget_tooltip(
         "PaneGrid",
-        &style_paints(
+        &next_paints(
             state,
             "styles::pane_grid",
-            statusless(styles::pane_grid(resolved)),
+            iced_next::styles::pane_grid(next).map(statusless),
+            ("pane_grid::default", |theme, ()| pane_grid::default(theme)),
             pane_grid_inks,
             (),
             &[
@@ -18637,7 +18834,6 @@ fn next_weight_label(style: &TextStyle) -> String {
 
 /// The Widget Info of the Layout page's table.
 fn table_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let line_width_s = format!("{:.0}px, separator.thickness", next.separator.thickness);
     let pad = next_layout_cell_padding(next);
@@ -18656,7 +18852,6 @@ fn table_info(state: &State) -> String {
                       list.header(NONE).min_size[1] unstated"
             .to_string(),
     };
-    let l = &resolved.list;
     let pad_s = format!(
         "top {}px, right {}px, bottom {}px, left {}px: list.row(NONE).padding's stated sides, \
          as the Basic table's cells; iced's own table padding (ICED_TABLE_CELL_PAD, \
@@ -18671,35 +18866,70 @@ fn table_info(state: &State) -> String {
         "list.item_label(NONE)",
         &next.list.item_label(WidgetState::NONE),
     );
+    // The header's fill and the texts' inks as [`view_layout`] draws them:
+    // where the theme states none, no fill and the colour around the text.
+    let mut paints = Vec::new();
+    let mut unthemed = Vec::new();
+    let fill_home = "list.header(NONE).fill";
+    match iced_next::fill_of(&next.list.header(WidgetState::NONE), fill_home) {
+        Ok(Some(fill)) => paints.push(Paint::leaf("header fill", fill_home, fill)),
+        Ok(None) => unthemed.push((
+            "header fill",
+            format!("none, iced's own container's: {fill_home} unstated"),
+        )),
+        Err(unmapped) => unthemed.push((
+            "header fill",
+            format!("none, iced's own container's: {unmapped}"),
+        )),
+    }
+    for (role, home, label) in [
+        (
+            "header text",
+            "list.header_label(NONE).color",
+            next.list.header_label(WidgetState::NONE),
+        ),
+        (
+            "cell text",
+            "list.item_label(NONE).color",
+            next.list.item_label(WidgetState::NONE),
+        ),
+    ] {
+        match iced_next::text_color_of(&label) {
+            Some(ink) => paints.push(Paint::leaf(role, home, ink)),
+            None => unthemed.push((role, format!("the colour around it: {home} unstated"))),
+        }
+    }
+    paints.push(Paint::leaf(
+        "separators",
+        "iced's background.strong, read live",
+        state
+            .current_theme
+            .extended_palette()
+            .background
+            .strong
+            .color,
+    ));
+    let mut not_themeable: Vec<(&str, &str)> = unthemed
+        .iter()
+        .map(|(role, why)| (*role, why.as_str()))
+        .collect();
+    not_themeable.extend([
+        (
+            "Style",
+            "iced_widget 0.14.2 gives Table a Catalog and a Style but no \
+             `.style(..)` or `.class(..)` setter (table.rs:149-196), so its \
+             separator colors stay table::default(theme), which reads \
+             palette.background.strong (table.rs:717-724)",
+        ),
+        (
+            "separator.color",
+            "has no receiver here; the hex above is the one on screen, not \
+             the platform's separator colour",
+        ),
+    ]);
     widget_tooltip(
         "Table",
-        &[
-            Paint::leaf(
-                "header fill",
-                "list.header_background",
-                to_color(l.header_background),
-            ),
-            Paint::leaf(
-                "header text",
-                "list.header_font.color",
-                to_color(l.header_font.color),
-            ),
-            Paint::leaf(
-                "cell text",
-                "list.item_font.color",
-                to_color(l.item_font.color),
-            ),
-            Paint::leaf(
-                "separators",
-                "iced's background.strong, read live",
-                state
-                    .current_theme
-                    .extended_palette()
-                    .background
-                    .strong
-                    .color,
-            ),
-        ],
+        &paints,
         &[
             ("separator_x / separator_y", &line_width_s),
             ("cell padding", &pad_s),
@@ -18713,20 +18943,7 @@ fn table_info(state: &State) -> String {
                  each size and line box (next_line_box) as resolved, the text scale applied",
             ),
         ],
-        &[
-            (
-                "Style",
-                "iced_widget 0.14.2 gives Table a Catalog and a Style but no \
-                 `.style(..)` or `.class(..)` setter (table.rs:149-196), so its \
-                 separator colors stay table::default(theme), which reads \
-                 palette.background.strong (table.rs:717-724)",
-            ),
-            (
-                "separator.line_color",
-                "has no receiver here; the hex above is the one on screen, not \
-                 the platform's separator colour",
-            ),
-        ],
+        &not_themeable,
     )
 }
 
@@ -19892,11 +20109,15 @@ type AwStatus = iced_aw::style::Status;
 /// open one, `Hovered` under the pointer, `Disabled` otherwise,
 /// `tab_bar.rs:589-595`, `sidebar.rs:981-985`; a selection-list row for
 /// `Selected`, `Hovered` or `Active`, `selection_list/list.rs:241-258`).
+/// The style is the 0.8.0 one as the connector maps it on the installed
+/// theme, `own`, iced_aw's own (`primary`, each widget's default class),
+/// where it cannot ([`next_paints`]).
 #[cfg(feature = "iced_aw")]
-fn aw_paints<O>(
+fn aw_paints<O, F: Fn(&Theme, AwStatus) -> O + Clone>(
     state: &State,
     function: &str,
-    style: impl Fn(&Theme, AwStatus) -> O + Clone,
+    style: iced_next::Mapped<F>,
+    own: (&str, fn(&Theme, AwStatus) -> O),
     inks: fn(&O) -> Vec<(&'static str, Ink)>,
     statuses: &[(AwStatus, &[(&'static str, &'static str)])],
     zero: &str,
@@ -19904,7 +20125,16 @@ fn aw_paints<O>(
     statuses
         .iter()
         .flat_map(|&(status, rows)| {
-            style_paints(state, function, style.clone(), inks, status, rows, zero)
+            next_paints(
+                state,
+                function,
+                style.clone(),
+                own,
+                inks,
+                status,
+                rows,
+                zero,
+            )
         })
         .collect()
 }
@@ -19912,7 +20142,6 @@ fn aw_paints<O>(
 #[cfg(feature = "iced_aw")]
 /// The Widget Info of the Extra page's iced_aw Card.
 fn aw_card_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     // The corners as `iced_next::styles::aw::card` rounds them where it maps
     // the card, iced_aw's own (`card::primary`) where it does not or the
@@ -19943,7 +20172,11 @@ fn aw_card_info(state: &State) -> String {
         &aw_paints(
             state,
             "styles::aw::card",
-            styles::aw::card(resolved),
+            iced_next::styles::aw::card(next),
+            (
+                "iced_aw::style::card::primary",
+                iced_aw::style::card::primary,
+            ),
             aw_card_inks,
             &[(
                 AwStatus::Active,
@@ -19955,7 +20188,10 @@ fn aw_card_info(state: &State) -> String {
                     ("border", "border_color"),
                 ],
             )],
-            &line_zero("card"),
+            &stroke_zero(
+                &next.card.container(WidgetState::NONE),
+                "card.container(NONE)",
+            ),
         ),
         &[
             ("radius", radius_s.as_str()),
@@ -19996,12 +20232,17 @@ fn aw_card_info(state: &State) -> String {
 #[cfg(feature = "iced_aw")]
 /// The Widget Info of the Extra page's iced_aw MenuBar and context menu.
 fn aw_menu_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
+    let style = || iced_next::styles::aw::menu(next);
+    let own = (
+        "iced_aw::style::menu_bar::primary",
+        iced_aw::style::menu_bar::primary as fn(&Theme, AwStatus) -> _,
+    );
     let mut paints = aw_paints(
         state,
         "styles::aw::menu",
-        styles::aw::menu(resolved),
+        style(),
+        own,
         aw_menu_inks,
         &[(
             AwStatus::Active,
@@ -20012,18 +20253,21 @@ fn aw_menu_info(state: &State) -> String {
                 ("panel border", "menu.border"),
             ],
         )],
-        &line_zero("popover"),
+        &menu_frame_zero(next),
     );
-    // The path's outline is 0 wide where the theme states none, iced_aw's
-    // own, or where it states one at a 0 line width.
-    let path_zero = match resolved.menu.hover_border_color {
-        Some(_) => line_zero("defaults"),
-        None => "menu.hover_border_color unstated".to_owned(),
+    // The path's outline is 0 wide where no rule states the highlight's
+    // stroke, iced_aw's own, or where one states it none or 0 wide.
+    let hover = next.menu.item(WidgetState::HOVER);
+    let path_zero = if hover.from_state.contains(PartStated::STROKE) {
+        stroke_zero(&hover, "menu.item(HOVER)")
+    } else {
+        "no rule states menu.item(HOVER).stroke".to_owned()
     };
     paints.extend(aw_paints(
         state,
         "styles::aw::menu",
-        styles::aw::menu(resolved),
+        style(),
+        own,
         aw_menu_inks,
         &[(AwStatus::Active, &[("path border", "path.border")])],
         &path_zero,
@@ -20134,7 +20378,6 @@ fn aw_menu_info(state: &State) -> String {
 #[cfg(feature = "iced_aw")]
 /// The Widget Info of the Extra page's iced_aw TabBar and Tabs.
 fn aw_tab_bar_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let room = next_flare_room(next);
     let outward = if room > 0.0 {
@@ -20156,7 +20399,11 @@ fn aw_tab_bar_info(state: &State) -> String {
         &aw_paints(
             state,
             "styles::aw::tab_bar",
-            styles::aw::tab_bar(resolved),
+            iced_next::styles::aw::tab_bar(next),
+            (
+                "iced_aw::style::tab_bar::primary",
+                iced_aw::style::tab_bar::primary,
+            ),
             aw_tab_bar_inks,
             &[
                 (
@@ -20183,7 +20430,7 @@ fn aw_tab_bar_info(state: &State) -> String {
                     ],
                 ),
             ],
-            &line_zero("tab"),
+            &stroke_zero(&next.tab.tab(WidgetState::SELECTED), "tab.tab(SELECTED)"),
         ),
         &[
             (
@@ -20229,13 +20476,17 @@ fn aw_tab_bar_info(state: &State) -> String {
 #[cfg(feature = "iced_aw")]
 /// The Widget Info of the Extra page's iced_aw Sidebar.
 fn aw_sidebar_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
+    let next = state.next_shown();
     widget_tooltip(
         "Sidebar",
         &aw_paints(
             state,
             "styles::aw::sidebar",
-            styles::aw::sidebar(resolved),
+            iced_next::styles::aw::sidebar(next),
+            (
+                "iced_aw::style::sidebar::primary",
+                iced_aw::style::sidebar::primary,
+            ),
             aw_sidebar_inks,
             &[
                 (
@@ -20262,7 +20513,10 @@ fn aw_sidebar_info(state: &State) -> String {
                     ],
                 ),
             ],
-            &line_zero("sidebar"),
+            &stroke_zero(
+                &next.sidebar.container(WidgetState::NONE),
+                "sidebar.container(NONE)",
+            ),
         ),
         &[(
             "label",
@@ -20283,13 +20537,12 @@ fn aw_sidebar_info(state: &State) -> String {
 #[cfg(feature = "iced_aw")]
 /// The Widget Info of the Extra page's iced_aw Spinner.
 fn aw_spinner_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     widget_tooltip(
         "Spinner",
         &style_paints(
             state,
             "styles::aw::spinner",
-            statusless(styles::aw::spinner(resolved)),
+            statusless(iced_next::styles::aw::spinner(state.next_shown())),
             container_inks,
             (),
             &[("orbiting dot", "text_color")],
@@ -20315,7 +20568,6 @@ fn aw_spinner_info(state: &State) -> String {
 #[cfg(feature = "iced_aw")]
 /// The Widget Info of the Extra page's iced_aw SelectionList.
 fn aw_selection_list_info(state: &State) -> String {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let row_height_s = match next.list.row(WidgetState::NONE).min_size[1] {
         Some(h) => format!(
@@ -20333,7 +20585,11 @@ fn aw_selection_list_info(state: &State) -> String {
         &aw_paints(
             state,
             "styles::aw::selection_list",
-            styles::aw::selection_list(resolved),
+            iced_next::styles::aw::selection_list(next),
+            (
+                "iced_aw::style::selection_list::primary",
+                iced_aw::style::selection_list::primary,
+            ),
             aw_selection_list_inks,
             &[
                 (
@@ -20359,7 +20615,10 @@ fn aw_selection_list_info(state: &State) -> String {
                     ],
                 ),
             ],
-            &line_zero("list"),
+            &stroke_zero(
+                &next.list.container(WidgetState::NONE),
+                "list.container(NONE)",
+            ),
         ),
         &[
             (
@@ -22664,7 +22923,15 @@ fn main() -> iced::Result {
         .font(iced_aw::ICED_AW_FONT_BYTES)
         .title(|_: &State| WINDOW_TITLE.to_string())
         .theme(theme)
-        .style(|state: &State, theme: &Theme| styles::application(&state.current_resolved)(theme))
+        .style(
+            // The window's fill on the installed 0.8.0 theme, iced's own
+            // application style where the connector cannot map it.
+            |state: &State, theme: &Theme| match iced_next::styles::application(state.next_shown())
+            {
+                Ok(style) => style(theme),
+                Err(_) => iced::theme::default(theme),
+            },
+        )
         .subscription(subscription)
         .window_size(WINDOW_SIZE)
         .centered();
@@ -26206,9 +26473,12 @@ mod tests {
 
     /// The showcase functions that read one of [`REPLACED`] for iced's own
     /// value of each property the theme leaves unstated in a status (spec
-    /// §10, rule 0), as `(class, function)`: the widget wears the function,
-    /// not the class.
+    /// §10, rule 0), or of a widget whose style the connector cannot map
+    /// and leaves iced's own (the Widget Info of the Buttons page), as
+    /// `(class, function)`: the widget wears the function, not the class.
     const RULE_0_SOURCES: &[(&str, &str)] = &[
+        ("button::primary", "fn button_info("),
+        ("button::primary", "fn disabled_buttons_info("),
         ("button::text", "fn ghost_button("),
         ("button::text", "fn menu_row("),
         ("button::text", "fn menu_title("),
@@ -26365,8 +26635,10 @@ mod tests {
         if cfg!(feature = "iced_aw") {
             for function in public_functions(include_str!("../src/styles/aw.rs")) {
                 let call = format!("styles::aw::{function}");
+                let next = format!("iced_next::styles::aw::{function}");
                 assert!(
-                    !call_sites(&source, &call).is_empty(),
+                    !call_sites(&source, &call).is_empty()
+                        || !call_sites(&source, &next).is_empty(),
                     "styles::aw::{function} has no call site in the showcase"
                 );
             }
@@ -35874,20 +36146,20 @@ mod tests {
     }
 
     /// M9x CI item I3 (M9-171): the Slider's Widget Info names what the
-    /// theme is silent on round the thumb. The model states no thumb outline
-    /// or shadow (`docs/property-registry.toml` `[slider]`) and iced's handle
-    /// draws no border (`styles::slider`), so under macos-tahoe light, whose
-    /// thumb is `defaults.surface_color` `#ffffff` on a `#ffffff` window, the
-    /// thumb does not show; the info says so, as "Not themeable". Under
-    /// kde-breeze light, which outlines the thumb at rest (E8,
-    /// `slider.thumb_border_color`), it names the shadow alone.
+    /// theme is silent on round the thumb, on the installed 0.8.0 theme.
+    /// iced's handle takes no shadow, and no border where the theme states
+    /// no thumb stroke (`iced_next::styles::slider`), so under macos-tahoe
+    /// light, which states no `slider.thumb(NONE).stroke` above 0 wide, the
+    /// thumb is drawn with no outline; the info says so, as "Not
+    /// themeable". Under kde-breeze light, which outlines the thumb at rest
+    /// (E8), it names the shadow alone.
     #[test]
     fn the_sliders_info_names_the_thumbs_unstated_outline() {
         let Some(slider) = elements::element("basic.slider.control") else {
             panic!("basic.slider.control is not in the list");
         };
         let state = loaded("macos-tahoe", false);
-        assert!(!slider_rest_outline(&state.current_resolved));
+        assert!(!slider_rest_outline(state.next_shown()));
         let lines = iced_not_themeable(&state, slider);
         assert!(
             lines
@@ -35897,7 +36169,7 @@ mod tests {
         );
         let state = loaded("kde-breeze", false);
         assert!(
-            slider_rest_outline(&state.current_resolved),
+            slider_rest_outline(state.next_shown()),
             "kde-breeze light states the thumb's outline at rest"
         );
         let lines = iced_not_themeable(&state, slider);
@@ -38756,15 +39028,22 @@ mod tests {
 
     /// What the row `row` (`styles::<fn>.<field>`) paints at `status`, the
     /// `{:?}` of the widget's status (`None` for a function that takes
-    /// none), on `r`: the connector's style function called as the page calls
-    /// it. `None` where the test draws no such row or status.
-    fn row_ink(row: &str, status: Option<&str>, r: &ResolvedTheme, theme: &Theme) -> Option<Ink> {
+    /// none), on `r`, the installed 0.8.0 theme: the connector's 0.8.0 style
+    /// function called as the page calls it. `None` where the test draws no
+    /// such row or status, or where the connector cannot map the style.
+    fn row_ink(
+        row: &str,
+        status: Option<&str>,
+        r: &native_theme::next::ResolvedTheme,
+        theme: &Theme,
+    ) -> Option<Ink> {
         fn at<S: Copy + std::fmt::Debug, O>(
-            style: impl Fn(&Theme, S) -> O,
+            style: iced_next::Mapped<impl Fn(&Theme, S) -> O>,
             statuses: &[S],
             inks: fn(&O) -> Vec<(&'static str, Ink)>,
             (theme, status, field): (&Theme, Option<&str>, &str),
         ) -> Option<Ink> {
+            let style = style.ok()?;
             let named = |s: &S| {
                 let text = format!("{s:?}");
                 match status {
@@ -38783,9 +39062,19 @@ mod tests {
         let (function, field) = row.split_once('.')?;
         let call = (theme, status, field);
         match function {
-            "styles::button" => at(styles::button(r), &buttons, button_inks, call),
-            "styles::button_primary" => at(styles::button_primary(r), &buttons, button_inks, call),
-            "styles::button_danger" => at(styles::button_danger(r), &buttons, button_inks, call),
+            "styles::button" => at(iced_next::styles::button(r), &buttons, button_inks, call),
+            "styles::button_primary" => at(
+                iced_next::styles::button_primary(r),
+                &buttons,
+                button_inks,
+                call,
+            ),
+            "styles::button_danger" => at(
+                iced_next::styles::button_danger(r),
+                &buttons,
+                button_inks,
+                call,
+            ),
             "styles::text_input" => {
                 use text_input::Status as S;
                 let statuses = [
@@ -38795,7 +39084,12 @@ mod tests {
                     S::Focused { is_hovered: true },
                     S::Disabled,
                 ];
-                at(styles::text_input(r), &statuses, text_input_inks, call)
+                at(
+                    iced_next::styles::text_input(r),
+                    &statuses,
+                    text_input_inks,
+                    call,
+                )
             }
             "styles::text_editor" => {
                 use text_editor::Status as S;
@@ -38806,7 +39100,12 @@ mod tests {
                     S::Focused { is_hovered: true },
                     S::Disabled,
                 ];
-                at(styles::text_editor(r), &statuses, text_editor_inks, call)
+                at(
+                    iced_next::styles::text_editor(r),
+                    &statuses,
+                    text_editor_inks,
+                    call,
+                )
             }
             "styles::checkbox" => {
                 use checkbox::Status as S;
@@ -38818,7 +39117,7 @@ mod tests {
                     ]
                 });
                 at(
-                    styles::checkbox(r),
+                    iced_next::styles::checkbox(r),
                     statuses.as_flattened(),
                     checkbox_inks,
                     call,
@@ -38828,7 +39127,12 @@ mod tests {
                 use radio::Status as S;
                 let statuses = [false, true]
                     .map(|is_selected| [S::Active { is_selected }, S::Hovered { is_selected }]);
-                at(styles::radio(r), statuses.as_flattened(), radio_inks, call)
+                at(
+                    iced_next::styles::radio(r),
+                    statuses.as_flattened(),
+                    radio_inks,
+                    call,
+                )
             }
             "styles::toggler" => {
                 use toggler::Status as S;
@@ -38840,7 +39144,7 @@ mod tests {
                     ]
                 });
                 at(
-                    styles::toggler(r),
+                    iced_next::styles::toggler(r),
                     statuses.as_flattened(),
                     toggler_inks,
                     call,
@@ -38854,29 +39158,44 @@ mod tests {
                     S::Opened { is_hovered: false },
                     S::Opened { is_hovered: true },
                 ];
-                at(styles::pick_list(r), &statuses, pick_list_inks, call)
+                at(
+                    iced_next::styles::pick_list(r),
+                    &statuses,
+                    pick_list_inks,
+                    call,
+                )
             }
-            "styles::menu" => at(statusless(styles::menu(r)), &[()], menu_inks, call),
+            "styles::menu" => at(
+                iced_next::styles::menu(r).map(statusless),
+                &[()],
+                menu_inks,
+                call,
+            ),
             "styles::slider" => {
                 use slider::Status as S;
                 let statuses = [S::Active, S::Hovered, S::Dragged];
-                at(styles::slider(r), &statuses, slider_inks, call)
+                at(iced_next::styles::slider(r), &statuses, slider_inks, call)
             }
             "styles::progress_bar" => at(
-                statusless(styles::progress_bar(r)),
+                iced_next::styles::progress_bar(r).map(statusless),
                 &[()],
                 progress_bar_inks,
                 call,
             ),
             "styles::container_card" => at(
-                statusless(styles::container_card(r)),
+                iced_next::styles::container_card(r).map(statusless),
                 &[()],
                 container_inks,
                 call,
             ),
-            "styles::tooltip" => at(statusless(styles::tooltip(r)), &[()], container_inks, call),
+            "styles::tooltip" => at(
+                iced_next::styles::tooltip(r).map(statusless),
+                &[()],
+                container_inks,
+                call,
+            ),
             "styles::pane_grid" => at(
-                statusless(styles::pane_grid(r)),
+                iced_next::styles::pane_grid(r).map(statusless),
                 &[()],
                 pane_grid_inks,
                 call,
@@ -38893,22 +39212,38 @@ mod tests {
                     S::Selected,
                 ];
                 match aw {
-                    "styles::aw::card" => at(styles::aw::card(r), &statuses, aw_card_inks, call),
-                    "styles::aw::menu" => at(styles::aw::menu(r), &statuses, aw_menu_inks, call),
-                    "styles::aw::tab_bar" => {
-                        at(styles::aw::tab_bar(r), &statuses, aw_tab_bar_inks, call)
-                    }
-                    "styles::aw::sidebar" => {
-                        at(styles::aw::sidebar(r), &statuses, aw_sidebar_inks, call)
-                    }
+                    "styles::aw::card" => at(
+                        iced_next::styles::aw::card(r),
+                        &statuses,
+                        aw_card_inks,
+                        call,
+                    ),
+                    "styles::aw::menu" => at(
+                        iced_next::styles::aw::menu(r),
+                        &statuses,
+                        aw_menu_inks,
+                        call,
+                    ),
+                    "styles::aw::tab_bar" => at(
+                        iced_next::styles::aw::tab_bar(r),
+                        &statuses,
+                        aw_tab_bar_inks,
+                        call,
+                    ),
+                    "styles::aw::sidebar" => at(
+                        iced_next::styles::aw::sidebar(r),
+                        &statuses,
+                        aw_sidebar_inks,
+                        call,
+                    ),
                     "styles::aw::selection_list" => at(
-                        styles::aw::selection_list(r),
+                        iced_next::styles::aw::selection_list(r),
                         &statuses,
                         aw_selection_list_inks,
                         call,
                     ),
                     "styles::aw::spinner" => at(
-                        statusless(styles::aw::spinner(r)),
+                        Ok(statusless(iced_next::styles::aw::spinner(r))),
                         &[()],
                         container_inks,
                         call,
@@ -38921,26 +39256,50 @@ mod tests {
         }
     }
 
-    /// Whether `reason`, what a "not drawn (..)" row gives, holds on `json`:
-    /// each of its `<leaf> <value>` parts names a leaf of the theme that is
-    /// 0, or unstated.
-    fn zero_reason_holds(reason: &str, json: &serde_json::Value) -> bool {
-        reason.split(", ").all(|part| {
-            let Some((leaf, value)) = part.rsplit_once(' ') else {
-                return false;
-            };
-            let pointer = format!("/{}", leaf.replace('.', "/"));
-            let read = json
-                .pointer(&pointer)
-                .or_else(|| json.pointer(&format!("{pointer}_px")));
-            match value {
-                "0" => read
-                    .and_then(serde_json::Value::as_f64)
-                    .is_some_and(|v| v == 0.0),
-                "unstated" => read.is_none_or(serde_json::Value::is_null),
-                _ => false,
+    /// Whether `reason`, what a "not drawn (..)" row gives, holds on `r`,
+    /// the installed 0.8.0 theme, read at its home (`ruled_style`, the
+    /// popover's and the tooltip's panels by their fields): the part states
+    /// no stroke, states it none or 0 wide; no rule of the state states the
+    /// part's stroke; or the splitter's divider is 0 wide.
+    fn zero_reason_holds(reason: &str, r: &native_theme::next::ResolvedTheme) -> bool {
+        use native_theme_showcase_support::next::values::{Styled, ruled_style};
+        let part = |home: &str| -> Option<PartStyle> {
+            match home {
+                "popover.panel" => return Some(r.popover.panel.clone()),
+                "tooltip.panel" => return Some(r.tooltip.panel.clone()),
+                _ => {}
             }
-        })
+            let (head, query) = home.strip_suffix(')')?.split_once('(')?;
+            let (widget, part) = head.split_once('.')?;
+            match ruled_style(r, widget, part, query) {
+                Ok(Some((Styled::Part(style), _))) => Some(style),
+                _ => None,
+            }
+        };
+        if reason == "splitter.divider_width 0" {
+            return r.splitter.divider_width == 0.0;
+        }
+        if let Some(home) = reason
+            .strip_prefix("no rule states ")
+            .and_then(|rest| rest.strip_suffix(".stroke"))
+        {
+            return part(home).is_some_and(|p| !p.from_state.contains(PartStated::STROKE));
+        }
+        let Some((home, kind)) = reason.split_once(".stroke") else {
+            return false;
+        };
+        let Some(p) = part(home) else {
+            return false;
+        };
+        let stated = p.stated.contains(PartStated::STROKE);
+        match kind {
+            " unstated" => !stated,
+            " none" => stated && matches!(p.stroke, Stroke::None),
+            ".width 0" => {
+                stated && matches!(p.stroke, Stroke::Uniform { width, .. } if width == 0.0)
+            }
+            _ => false,
+        }
     }
 
     /// A colour line's text after its role, where it names a style row
@@ -39053,7 +39412,7 @@ mod tests {
     /// with the leaf that makes it so where that output's edge is 0 wide; a
     /// widget the connector draws names no colour but such a row, and only
     /// rows of the functions its page draws it with.
-    fn colour_row_faults(state: &State, info: &str, json: &serde_json::Value) -> Vec<String> {
+    fn colour_row_faults(state: &State, info: &str) -> Vec<String> {
         let mut faults = Vec::new();
         let title = info.lines().next().unwrap_or_default();
         let drawn_with = DRAWN_WITH
@@ -39092,8 +39451,7 @@ mod tests {
             if contract_homes().is_none_or(|export| !export.rows.contains_key(row)) {
                 faults.push(format!("{title}: {row} is no row of the export"));
             }
-            let Some(ink) = row_ink(row, status, &state.current_resolved, &state.current_theme)
-            else {
+            let Some(ink) = row_ink(row, status, state.next_shown(), &state.current_theme) else {
                 faults.push(format!(
                     "{title}: {row} at {status:?} is no row the test draws"
                 ));
@@ -39112,7 +39470,7 @@ mod tests {
                 }
                 (None, Some((_, reason))) => {
                     let reason = reason.strip_suffix(')').unwrap_or(reason);
-                    if !zero_reason_holds(reason, json) {
+                    if !zero_reason_holds(reason, state.next_shown()) {
                         faults.push(format!("{title}: \"{line}\": the theme says otherwise"));
                     }
                 }
@@ -39136,7 +39494,7 @@ mod tests {
     fn every_page_colour_is_the_style_output_at_its_status() {
         let mut failures = Vec::new();
         let mut titles = BTreeSet::new();
-        over_bundled_infos(|state, combination, infos, json| {
+        over_bundled_infos(|state, combination, infos, _| {
             for info in infos {
                 let title = info.lines().next().unwrap_or_default();
                 titles.insert(title.to_owned());
@@ -39146,7 +39504,7 @@ mod tests {
                     }
                 }
                 failures.extend(
-                    colour_row_faults(state, info, json)
+                    colour_row_faults(state, info)
                         .into_iter()
                         .map(|f| format!("{combination}: {f}")),
                 );
@@ -39195,28 +39553,23 @@ mod tests {
 
     /// Minor 1 of the M9b T4 review: each field an extractor names is the
     /// field of the style output by that name. For every style row a page
-    /// widget's info shows, a 0.7.2 leaf of a home the export's
-    /// `rows."<row>".homes` lists, spliced in a platform combination the home
-    /// moves the row in at a status the move names and the test draws, moves
-    /// the extractor's field of that row's name; read by the contract's own
-    /// record, not by the extractor. (The page's colour rows are still drawn
-    /// in the 0.7.2 `styles::*`, the export's rows are `next::styles`'; a
-    /// home's 0.7.2 leaves bridge the two.)
+    /// widget's info shows, a home the export's `rows."<row>".homes` lists,
+    /// patched on the installed 0.8.0 theme ([`with_home`]) in a platform
+    /// combination the home moves the row in, at a status the move names and
+    /// the test draws, moves the extractor's field of that row's name; read
+    /// by the contract's own record, not by the extractor.
     #[test]
-    fn every_extractor_field_moves_with_a_leaf_of_its_row() {
+    fn every_extractor_field_moves_with_a_home_of_its_row() {
         let Some(export) = contract_homes() else {
             panic!("contract-homes.toml does not parse");
         };
-        type Platform = (String, ResolvedTheme, serde_json::Value, Theme);
-        let platform: Vec<Platform> = bundled_combinations()
+        type Platform = (String, native_theme::next::ResolvedTheme, Theme);
+        let platform: Vec<Platform> = next_combinations()
             .into_iter()
             .filter(|(label, _)| export.combinations.contains(label))
-            .map(|(label, r)| match serde_json::to_value(&r) {
-                Ok(json) => {
-                    let theme = native_theme_iced::to_theme(&r, "splice");
-                    (label, r, json, theme)
-                }
-                Err(error) => panic!("{label}: {error}"),
+            .map(|(label, r)| match iced_next::to_theme(&r) {
+                Ok(theme) => (label, r, theme),
+                Err(unmapped) => panic!("{label}: {unmapped}"),
             })
             .collect();
         let mut shown = BTreeSet::new();
@@ -39230,14 +39583,12 @@ mod tests {
         let mut failures = Vec::new();
         for row in &shown {
             let homes = export.rows.get(row).map_or(&[][..], |r| r.homes.as_slice());
-            // Each 0.7.2 leaf of a home with a move of the row, at each
-            // status of the move the test draws, in each platform combination
-            // the home moves it in.
+            // Each home with a move of the row, at each status of the move
+            // the test draws, in each platform combination the home moves it
+            // in.
             let mut tried = 0;
             let moved = homes.iter().any(|home| {
-                let (Some(HomeReach::Moves(moves)), Some(leaves)) =
-                    (export.homes.get(home), export.leaves.get(home))
-                else {
+                let Some(HomeReach::Moves(moves)) = export.homes.get(home) else {
                     return false;
                 };
                 moves.iter().filter(|m| m.row == *row).any(|m| {
@@ -39245,7 +39596,7 @@ mod tests {
                         true => vec![None],
                         false => m.statuses.iter().map(|s| Some(s.as_str())).collect(),
                     };
-                    platform.iter().any(|(label, r, json, theme)| {
+                    platform.iter().any(|(label, r, theme)| {
                         if m.except.iter().any(|e| e == label) {
                             return false;
                         }
@@ -39254,18 +39605,10 @@ mod tests {
                             if base.is_none() {
                                 return false;
                             }
-                            leaves.iter().any(|leaf| {
-                                tried += 1;
-                                let pointer = format!("/{}", leaf.replace('.', "/"));
-                                ["#123456", "#fedcba", "#12345680"].iter().any(|hex| {
-                                    let mut spliced = json.clone();
-                                    let Some(value) = spliced.pointer_mut(&pointer) else {
-                                        return false;
-                                    };
-                                    *value = serde_json::Value::from(*hex);
-                                    serde_json::from_value::<ResolvedTheme>(spliced).is_ok_and(
-                                        |spliced| row_ink(row, status, &spliced, theme) != base,
-                                    )
+                            tried += 1;
+                            ["#123456", "#fedcba", "#12345680"].iter().any(|hex| {
+                                with_home(r, home, hex).is_some_and(|patched| {
+                                    row_ink(row, status, &patched, theme) != base
                                 })
                             })
                         })
@@ -39276,8 +39619,8 @@ mod tests {
                 failures.push(format!("{row}: no home of the export moves it where drawn"));
             } else if !moved {
                 failures.push(format!(
-                    "{row}: no 0.7.2 leaf of the homes that move it, spliced where they move \
-                     it, moves the extractor's field"
+                    "{row}: no home that moves it, patched where it moves it, moves the \
+                     extractor's field"
                 ));
             }
         }
@@ -40574,52 +40917,54 @@ mod tests {
 
     /// Decision 13 of issue #4's step 1
     /// (`docs/archive/todo_v0.7.1_kde-open-items-step1-spec.md`): the leaf a
-    /// menu's Widget Info names for its undrawn line is the leaf the style
-    /// draws that line from. Under material-3 light, whose popover line is 0
-    /// wide, the drop-down's "menu border" row and, with `iced_aw`, the Extra
-    /// page's "panel border" row each name a leaf; spliced to 3, it makes the
+    /// menu's Widget Info names for its undrawn line is the home the style
+    /// draws that line from, on the installed 0.8.0 theme. Under material-3
+    /// light, whose popover line is 0 wide, the drop-down's "menu border" row
+    /// and, with `iced_aw`, the Extra page's "panel border" row each name a
+    /// stroke 0 wide; patched to a stroke 3 wide at that home, it makes the
     /// style's border 3 wide.
     #[test]
-    fn the_menu_infos_name_the_width_the_menus_draw() {
+    fn the_menu_infos_name_the_width_the_menus_draw() -> Result<(), String> {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             ..State::default()
         };
-        assert!(state.install_in_mode(
+        if !state.install_in_mode(
             ThemeChoice::Preset("material-3".to_owned()),
-            AppColorMode::Light
-        ));
-        let Ok(json) = serde_json::to_value(&state.current_resolved) else {
-            panic!("material-3 does not serialise");
-        };
-        let splice = |leaf: &str| {
-            let mut spliced = json.clone();
-            let Some(value) = spliced.pointer_mut(&format!("/{}", leaf.replace('.', "/"))) else {
-                panic!("{leaf} is not in the resolved theme");
+            AppColorMode::Light,
+        ) {
+            return Err("material-3 does not install".into());
+        }
+        let patched = |reason: &str| -> Result<native_theme::next::ResolvedTheme, String> {
+            let home = reason
+                .strip_suffix(".stroke.width 0")
+                .ok_or_else(|| format!("the zero names no stroke 0 wide: {reason:?}"))?;
+            let stroke = "panel.stroke = { width = 3.0, color = \"#13579b\" }\n";
+            let toml = match home {
+                "popover.panel" => format!("[widgets.popover]\n{stroke}"),
+                "menu.panel(NONE)" => format!("[[widgets.menu.rules]]\n{stroke}"),
+                other => return Err(format!("no patch for {other}")),
             };
-            *value = serde_json::Value::from(3.0);
-            let Ok(spliced) = serde_json::from_value::<ResolvedTheme>(spliced) else {
-                panic!("{leaf}: the splice does not parse");
-            };
-            spliced
+            let patch = native_theme::next::ThemePatch::from_toml(&toml)
+                .map_err(|error| format!("the patch: {error:?}"))?;
+            let mut r = state.next_shown().clone();
+            r.apply_patch(&patch);
+            Ok(r)
         };
         let mut failures = Vec::new();
 
-        let Some(paint) = menu_paints(&state)
+        let paint = menu_paints(&state)
             .into_iter()
             .find(|p| p.role == "menu border")
-        else {
-            panic!("menu_paints has no \"menu border\" row");
-        };
-        let Some(leaf) = paint.zero.strip_suffix(" 0") else {
-            panic!("the drop-down's zero names no 0 leaf: {:?}", paint.zero);
-        };
-        let spliced = splice(leaf);
-        let theme = native_theme_iced::to_theme(&spliced, "splice");
-        let width = styles::menu(&spliced)(&theme).border.width;
+            .ok_or("menu_paints has no \"menu border\" row")?;
+        let r = patched(&paint.zero)?;
+        let style = iced_next::styles::menu(&r).map_err(|unmapped| unmapped.to_string())?;
+        let width = style(&state.current_theme).border.width;
         if width != 3.0 {
             failures.push(format!(
-                "the drop-down's Info names {leaf}, and styles::menu draws {width} with it at 3"
+                "the drop-down's Info names {}, and iced_next::styles::menu draws {width} \
+                 with it at 3",
+                paint.zero
             ));
         }
 
@@ -40631,23 +40976,131 @@ mod tests {
                 .find(|l| l.starts_with("  panel border: "))
                 .and_then(|l| l.rsplit_once(", not drawn ("))
                 .and_then(|(_, reason)| reason.strip_suffix(')'))
-                .and_then(|reason| reason.strip_suffix(" 0"));
-            let Some(leaf) = named else {
-                panic!("aw_menu_info names no undrawn panel border:\n{info}");
-            };
-            let spliced = splice(leaf);
-            let theme = native_theme_iced::to_theme(&spliced, "splice");
-            let width = styles::aw::menu(&spliced)(&theme, AwStatus::Active)
+                .ok_or_else(|| format!("aw_menu_info names no undrawn panel border:\n{info}"))?;
+            let r = patched(named)?;
+            let style = iced_next::styles::aw::menu(&r).map_err(|unmapped| unmapped.to_string())?;
+            let width = style(&state.current_theme, AwStatus::Active)
                 .menu_border
                 .width;
             if width != 3.0 {
                 failures.push(format!(
-                    "the Extra page's Info names {leaf}, and styles::aw::menu draws {width} with it at 3"
+                    "the Extra page's Info names {named}, and iced_next::styles::aw::menu \
+                     draws {width} with it at 3"
                 ));
             }
         }
 
-        assert!(failures.is_empty(), "{failures:#?}");
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
+    }
+
+    /// A page widget whose 0.8.0 style the connector cannot map is iced's
+    /// own ([`NextDressed::next_style`]), and its Widget Info says so
+    /// ([`next_paints`]): on kde-breeze patched to a menu panel filled with
+    /// a gradient alone, which iced cannot paint, every colour row of the
+    /// drop-down's menu is what `iced::overlay::menu::default` paints,
+    /// naming the home; the table's header, patched so too, is not filled,
+    /// naming its home. The zero reasons ([`stroke_zero`]) and the corners
+    /// row ([`corners_row`]) of each form, read directly.
+    #[test]
+    fn an_unmapped_style_is_shown_as_iced_s_own() -> Result<(), String> {
+        use native_theme::next::{
+            GradientStop, ListRule, MenuRule, Paint, PaintLayer, PartPatch, ThemePatch,
+        };
+        let gradient = PartPatch::new().fill(Paint::layers(vec![PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: std::sync::Arc::from(vec![
+                GradientStop {
+                    offset: 0.0,
+                    color: native_theme::next::Color::rgb(1.0, 0.0, 0.0),
+                },
+                GradientStop {
+                    offset: 1.0,
+                    color: native_theme::next::Color::rgb(0.0, 0.0, 1.0),
+                },
+            ]),
+            blend: Default::default(),
+        }]));
+        let patch = ThemePatch::new()
+            .menu(MenuRule::new().panel(gradient.clone()))
+            .list(ListRule::new().header(gradient));
+        let mut state = page_state("kde-breeze", Tab::Selection);
+        splice_next(&mut state, |r| r.apply_patch(&patch));
+        let unmapped = iced_next::styles::menu(state.next_shown())
+            .err()
+            .ok_or("the patched menu still maps")?;
+        let mut faults = Vec::new();
+        let own = menu_inks(&iced::overlay::menu::default(&state.current_theme));
+        let paints = menu_paints(&state);
+        if paints.is_empty() {
+            faults.push("menu_paints gives no row".to_owned());
+        }
+        let source = format!("iced's own, menu::default: styles::menu not mapped, {unmapped}");
+        for paint in &paints {
+            if paint.source != source {
+                faults.push(format!(
+                    "{}: {:?}, want {source:?}",
+                    paint.role, paint.source
+                ));
+            }
+            if !own.iter().any(|(_, ink)| *ink == paint.ink) {
+                faults.push(format!(
+                    "{}: {:?} is not menu::default's",
+                    paint.role, paint.ink
+                ));
+            }
+        }
+        let header = "  header fill: none, iced's own container's: the theme states no value \
+                      iced can take at list.header(NONE).fill";
+        let table = table_info(&state);
+        if !table.lines().any(|line| line == header) {
+            faults.push(format!("the table's info has no {header:?}:\n{table}"));
+        }
+
+        let unstated = PartStyle::default();
+        let mut none = PartStyle::default();
+        none.stated = PartStated::STROKE;
+        let mut zero = PartStyle::default();
+        zero.stated = PartStated::STROKE | PartStated::CORNERS;
+        zero.stroke = Stroke::Uniform {
+            width: 0.0,
+            color: native_theme::next::Color::rgb(0.0, 0.0, 0.0),
+            align: StrokeAlign::Inside,
+        };
+        zero.corners = native_theme::next::Corners::uniform(4.0);
+        let unmapped_row = format!("2px, iced's own: {unmapped}");
+        for (got, want) in [
+            (
+                stroke_zero(&unstated, "a.b(NONE)"),
+                "a.b(NONE).stroke unstated",
+            ),
+            (stroke_zero(&none, "a.b(NONE)"), "a.b(NONE).stroke none"),
+            (stroke_zero(&zero, "a.b(NONE)"), "a.b(NONE).stroke.width 0"),
+            (
+                corners_row(&zero, "a.b(NONE)", 2.0, None),
+                "4px, a.b(NONE).corners",
+            ),
+            (
+                corners_row(&unstated, "a.b(NONE)", 2.0, None),
+                "2px, iced's own: a.b(NONE).corners unstated",
+            ),
+            (
+                corners_row(&zero, "a.b(NONE)", 2.0, Some(unmapped)),
+                unmapped_row.as_str(),
+            ),
+        ] {
+            if got != want {
+                faults.push(format!("{got:?}, want {want:?}"));
+            }
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
+        }
     }
 
     /// The functions a hand-written route names: the word before the colon of
