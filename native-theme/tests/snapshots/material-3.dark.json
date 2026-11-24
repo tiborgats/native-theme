@@ -841,8 +841,7 @@
         },
         {
           "states": [
-            "disabled",
-            "checked"
+            "disabled"
           ],
           "indicator": {
             "stroke": {

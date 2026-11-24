@@ -100,6 +100,32 @@ fn the_segments_are_parted_by_their_outline() {
     }
 }
 
+/// A disabled radio's ring is on-surface at 0.38, checked or not, under the
+/// pointer or pressed too: material-web fills the whole icon with
+/// disabled-unselected-icon-color / disabled-selected-icon-color at their
+/// 0.38 opacity (_radio.scss:163-166, :180-183;
+/// v0_192/_md-comp-radio-button.scss:28-33).
+#[test]
+fn a_disabled_radio_s_ring_takes_the_disabled_content_checked_or_not() {
+    for theme in both_schemes() {
+        let disabled_content = match theme.context.scheme {
+            Scheme::Dark => DARK.disabled_content,
+            _ => LIGHT.disabled_content,
+        };
+        let ring = Stroke::uniform(CHECKBOX_BORDER_WIDTH, disabled_content);
+        let disabled = WidgetState::DISABLED;
+        for state in [
+            disabled,
+            disabled | WidgetState::HOVER,
+            disabled | WidgetState::PRESSED,
+            disabled | WidgetState::CHECKED,
+            disabled | WidgetState::CHECKED | WidgetState::HOVER,
+        ] {
+            assert_eq!(theme.radio.indicator(state).stroke, ring, "{state:?}");
+        }
+    }
+}
+
 /// Right to left mirrors the per-side values the preset states unequal on
 /// the left and the right, the combo box's padding, and nothing else.
 #[test]

@@ -1963,7 +1963,10 @@ fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Radio
     // _md-comp-radio-button.scss:45, v0_192); disabled and checked,
     // disabled-selected-icon-color on-surface at disabled-selected-icon-opacity 0.38
     // (_radio.scss:180-183; _md-comp-radio-button.scss:28-29), the ring and the dot not
-    // overlapping, so each at alpha 0.38. Nothing fills the space between them in any state.
+    // overlapping, so each at alpha 0.38; disabled and unchecked the same,
+    // disabled-unselected-icon-color on-surface at disabled-unselected-icon-opacity 0.38
+    // (_radio.scss:163-166; _md-comp-radio-button.scss:30-33), so the ring takes it on any
+    // disabled radio. Nothing fills the space between them in any state.
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
             fill(roles.accent.fill),
@@ -1984,7 +1987,7 @@ fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Radio
             [fill(TRANSPARENT)],
         )
         .rule(
-            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            RuleSelector::on(WidgetState::DISABLED),
             [stroke(CHECKBOX_BORDER_WIDTH, c.disabled_content)],
         )
         .build();
