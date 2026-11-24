@@ -73,6 +73,61 @@ fn the_switch_s_track_follows_its_precedences() {
     }
 }
 
+/// What WebKit draws pressed and hovered (spec §2, `from_state`): a pressed
+/// check box's fill and mark, and a pressed select's fill and text, at
+/// `pressedStateOpacity`; a pressed off switch, a pressed field's outline, a
+/// hovered field's text, a hovered button's label and a hovered or pressed
+/// button's border as at rest, that border 1px of `systemBackground`.
+#[test]
+fn the_pressed_and_hovered_states_are_webkit_s() {
+    let at = |c: Color| c.mul_alpha(PRESSED_STATE_OPACITY);
+    for (theme, c) in both_schemes().iter().zip([LIGHT, DARK]) {
+        let pressed = WidgetState::PRESSED;
+        let hover = WidgetState::HOVER;
+        let none = WidgetState::NONE;
+        let accent = theme.colors.accent;
+        assert_eq!(
+            theme.checkbox.indicator(pressed).fill,
+            Paint::Solid(at(c.background))
+        );
+        assert_eq!(
+            theme
+                .checkbox
+                .indicator(pressed | WidgetState::CHECKED)
+                .fill,
+            Paint::Solid(at(accent.fill))
+        );
+        assert_eq!(
+            theme.checkbox.checkmark(pressed).color,
+            at(accent.foreground)
+        );
+        assert_eq!(theme.checkbox.checkmark(hover).color, accent.foreground);
+        assert_eq!(
+            theme.combo_box.field(pressed).fill,
+            Paint::Solid(at(c.secondary_fill))
+        );
+        assert_eq!(theme.combo_box.label(pressed).color, at(c.system_blue));
+        assert_eq!(
+            theme.switch.track(pressed).fill,
+            theme.switch.track(none).fill
+        );
+        assert_eq!(
+            theme.input.field(pressed).stroke,
+            theme.input.field(none).stroke
+        );
+        assert_eq!(theme.input.text(hover).color, theme.input.text(none).color);
+        assert_eq!(
+            theme.button.label(ButtonQuery::new(hover)).color,
+            c.system_blue
+        );
+        let rest = theme.button.body(ButtonQuery::new(none)).stroke;
+        assert_eq!(rest, Stroke::uniform(BUTTON_BORDER_WIDTH, c.background));
+        for state in [hover, pressed] {
+            assert_eq!(theme.button.body(ButtonQuery::new(state)).stroke, rest);
+        }
+    }
+}
+
 /// The preset states no per-side value that differs on the left and the
 /// right: right to left changes nothing but the context.
 #[test]

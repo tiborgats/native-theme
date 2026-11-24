@@ -192,9 +192,9 @@ impl SwitchLook {
     ///
     /// A checked track's hover is read at `HOVER|CHECKED` where a rule states
     /// the hovered track's fill, as the query with that flag alone says
-    /// (`switch.track(HOVER).from_state`, spec §2): a value stated equal to
-    /// the checked track's is a hover layer too, and none is drawn where no
-    /// rule states one.
+    /// (`switch.track(HOVER).from_state`, spec §2): the hovered track's whole
+    /// fill (spec §9, step 2), drawn in place of the track's, one equal to it
+    /// included; where no rule states one, the track without the pointer.
     ///
     /// # Errors
     ///
@@ -318,7 +318,7 @@ impl SwitchLook {
     }
 
     fn from_reads(s: &SwitchReads, disabled: bool) -> Option<Self> {
-        let hover_track = (!disabled).then(|| s.hover.map_or(s.base, |hover| over(s.base, hover)));
+        let hover_track = (!disabled).then(|| s.hover.unwrap_or(s.base));
         let outline = |colour: Option<Hsla>, width: Option<f32>| match colour.zip(width) {
             Some((colour, width)) => length(width).map(|width| (Some(colour), width)),
             None => Some((None, px(0.))),
@@ -578,7 +578,7 @@ impl SwitchLabelFont {
 }
 
 /// The values [`SwitchLook::next_of`] builds the look from: the track at rest
-/// in the checked state and at the switch's state, its hover layer, the thumb
+/// in the checked state and at the switch's state, its hovered fill, the thumb
 /// at the switch's state, the outlines' colours and widths (an outline where
 /// both are stated), the label's colour and the sizes.
 struct SwitchReads {
@@ -975,10 +975,10 @@ mod tests {
 
     use super::*;
 
-    /// kde-breeze light, which states no switch label nor label gap, with
-    /// `patch` laid over it.
-    fn breeze(patch: &ThemePatch) -> ResolvedTheme {
-        let mut r = Theme::preset(Preset::KdeBreeze)
+    /// ios-13 light, which states no switch label nor label gap (no
+    /// source), with `patch` laid over it.
+    fn unlabelled(patch: &ThemePatch) -> ResolvedTheme {
+        let mut r = Theme::preset(Preset::Ios13)
             .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
         r.apply_patch(patch);
         r
@@ -987,9 +987,11 @@ mod tests {
     /// Where the theme states no label, its colour is gpui-component's own:
     /// the window's text, disabled `muted_foreground`, at the homes
     /// `next::apply` fills them from; no gap and no font property is taken.
+    /// ios-13 states none of them (no source).
     #[test]
     fn an_unstated_switch_label_is_gpui_components_own() -> Mapped<()> {
-        let r = breeze(&ThemePatch::new());
+        let r = Theme::preset(Preset::Ios13)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
         let text = hsla(stated(r.colors.window.foreground, "foreground")?);
         let muted = hsla(stated(r.colors.window.foreground_muted, "muted")?);
         for checked in [false, true] {
@@ -1023,7 +1025,7 @@ mod tests {
     fn a_stated_switch_label_is_read_at_its_homes() -> Mapped<()> {
         let red = Color::rgb(1.0, 0.0, 0.0);
         let blue = Color::rgb(0.0, 0.0, 1.0);
-        let r = breeze(
+        let r = unlabelled(
             &ThemePatch::new()
                 .widget_rules(WidgetPatchMap::new().switch(SwitchPatch::new().label_gap(13.0)))
                 .switch(
@@ -1059,7 +1061,7 @@ mod tests {
     #[test]
     fn a_checked_label_colour_is_not_the_disabled_checked_one() -> Mapped<()> {
         let red = Color::rgb(1.0, 0.0, 0.0);
-        let r = breeze(
+        let r = unlabelled(
             &ThemePatch::new().switch(
                 SwitchRule::new()
                     .states(WidgetState::CHECKED)

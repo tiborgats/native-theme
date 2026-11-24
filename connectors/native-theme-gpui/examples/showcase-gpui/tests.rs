@@ -6643,7 +6643,7 @@ fn a_theme_drawn_spinner_claims_the_homes_it_draws_from() {
     use crate::demo::{SpinnerIcons, SpinnerKind};
     use crate::info::feedback::{native_spinner, spinner_by_upstream};
     use crate::info::next_stated;
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let arc = SpinnerIcons::default();
     let tinted = SpinnerIcons {
         set: Some(IconSet::Material),
@@ -8290,9 +8290,9 @@ fn two_heading_levels_show_different_infos(cx: &mut TestAppContext) {
 /// `typography.monospace` (M9-014), as the Basic page's Monospace type line
 /// does: its family, size (`Theme::mono_font_size`, the stated size the
 /// text scale scales, then rounds where the platform's sizes are whole
-/// pixels), weight and line box (kde-breeze's monospace states no line
-/// height, so its size by `typography.line_height_multiplier`), at text
-/// scale 1 and 1.5; and its info's size line names that size.
+/// pixels), weight and line box (kde-breeze's monospace states its line
+/// height, the multiplier times its size by spec §4), at text scale 1 and
+/// 1.5; and its info's size line names that size.
 #[gpui::test]
 fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -8315,10 +8315,9 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
         let Some(r) = r else { return };
         let mono = &r.typography.monospace;
         assert!(
-            !mono
-                .stated
+            mono.stated
                 .contains(native_theme::next::TextStated::LINE_HEIGHT),
-            "kde-breeze's monospace now states a line height: compare the sample's line box with it"
+            "kde-breeze's monospace states no line height"
         );
         let size = theme.mono_font_size;
         assert_eq!(
@@ -8339,7 +8338,7 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
                 native_theme_gpui::next::mono_font_weight(&r)
                     .ok()
                     .map(|weight| gpui::FontWeight(f32::from(weight))),
-                Some((size * r.typography.line_height_multiplier).into()),
+                Some(px(mono.line_height).into()),
             ),
             "at text scale {scale} the monospace sample does not take typography.monospace's family, size, weight and line box"
         );
@@ -8359,10 +8358,10 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
 
 /// Where the installed theme's `typography.monospace` states a line height,
 /// the monospace sample's line box is that line height, not its size by
-/// `typography.line_height_multiplier` (`demo::next_text_in`). No bundled
-/// preset states one for it, so the theme is kde-breeze's with a line
-/// height stated by hand: its size plus its size by the multiplier, which
-/// is neither of the two the sample could otherwise take.
+/// `typography.line_height_multiplier` (`demo::next_text_in`). The theme is
+/// kde-breeze's with its monospace line height replaced by hand: its size
+/// plus its size by the multiplier, which is neither the preset's line
+/// height nor the size by the multiplier.
 #[gpui::test]
 fn a_stated_mono_line_height_is_the_samples_line_box(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -8370,13 +8369,12 @@ fn a_stated_mono_line_height_is_the_samples_line_box(cx: &mut TestAppContext) {
         .resolve(&native_theme::next::ThemeContext::default());
     let mono = &mut r.typography.monospace;
     let multiplier = r.typography.line_height_multiplier;
-    assert!(
-        !mono
-            .stated
-            .contains(native_theme::next::TextStated::LINE_HEIGHT),
-        "kde-breeze's monospace states a line height of its own: hand-build none"
-    );
     let stated = mono.size_px + mono.size_px * multiplier;
+    assert!(
+        (stated - mono.line_height).abs() > 1.0,
+        "the hand-built line height {stated} is kde-breeze's own {}",
+        mono.line_height
+    );
     mono.line_height = stated;
     mono.stated |= native_theme::next::TextStated::LINE_HEIGHT;
     let installed = cx.update(|_window, cx| native_theme_gpui::next::apply(&r, cx));
@@ -9757,7 +9755,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose(&mut cx, "Material (bundled)");
-    let (material, _) = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
+    let (material, _) = load_gpui_icons(Some(native_theme::icons::IconSet::Material), None, None);
     for name in chrome_icon_names() {
         let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
         assert_eq!(
@@ -10046,7 +10044,7 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
-    let (material, _) = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
+    let (material, _) = load_gpui_icons(Some(native_theme::icons::IconSet::Material), None, None);
     for (page, selector, name) in PAGE_SAMPLE_ICONS {
         show(&mut cx, &showcase, page);
         let icon = read(&mut cx, &showcase, |this, _| this.sample_icon(name.clone()));
@@ -15416,7 +15414,7 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
     set_preset(&mut cx, &showcase, "material-3");
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.icon_set_enum),
-        Some(native_theme::theme::IconSet::Material),
+        Some(native_theme::icons::IconSet::Material),
         "material-3 did not take its bundled Material icons, so the switch below does not \
          start from a bundled set"
     );
@@ -16036,7 +16034,7 @@ fn icon_choice_state(
     showcase: &Entity<Showcase>,
 ) -> (
     IconSetChoice,
-    Option<native_theme::theme::IconSet>,
+    Option<native_theme::icons::IconSet>,
     String,
     Option<String>,
 ) {
@@ -16061,7 +16059,7 @@ fn icon_choice_state(
 /// is available, `system` where it is not, as the Select's rows are.
 #[gpui::test]
 fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let listed = "a-listed-icon-theme";
     list_icon_themes(&mut cx, &showcase, &[listed]);
@@ -20393,36 +20391,73 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
     );
 }
 
-/// A Bordered Button is built as the stock `Default` one where no rule of
-/// the installed 0.8.0 theme states a hovered button's stroke,
-/// `button.body(HOVER).stroke.color` (adwaita, both modes), so its info is
-/// `Default`'s, and as itself where one does (kde-breeze).
+/// A Bordered Button is built as itself under every bundled 0.8.0 theme a
+/// rule of which states a hovered button's stroke,
+/// `button.body(HOVER).stroke.color`, and as the stock `Default` one under
+/// one that states none; at least one preset states it. Where no bundled
+/// preset leaves it unstated, `a_bordered_button_is_the_default_one_where_no_hover_border_is_stated`
+/// tests that branch on `ButtonKind::built_with`.
 #[gpui::test]
-fn a_bordered_button_is_the_default_one_where_no_hover_border_is_stated(cx: &mut TestAppContext) {
+fn a_bordered_button_is_itself_where_a_hover_border_is_stated(cx: &mut TestAppContext) {
     use crate::demo::ButtonKind;
-    use native_theme::next::{Preset, Scheme, Theme as NextTheme, ThemeContext};
+    use native_theme::next::{
+        PartStated, Preset, Scheme, Theme as NextTheme, ThemeContext, WidgetState,
+    };
     cx.update(|cx| {
         gpui_kit::init(cx);
-        for (preset, built) in [
-            (Preset::Adwaita, ButtonKind::Default),
-            (Preset::KdeBreeze, ButtonKind::Bordered),
-        ] {
+        let mut bordered = 0usize;
+        for &preset in Preset::ALL {
             for is_dark in [false, true] {
                 let scheme = if is_dark { Scheme::Dark } else { Scheme::Light };
                 let r =
                     NextTheme::preset(preset).resolve(&ThemeContext::default().with_scheme(scheme));
                 let installed = native_theme_gpui::next::apply(&r, cx);
                 assert!(installed.is_ok(), "{preset:?}/{is_dark}: {installed:?}");
+                let stated = r
+                    .button
+                    .body(WidgetState::HOVER)
+                    .from_state
+                    .contains(PartStated::STROKE);
+                let expected = if stated {
+                    bordered += 1;
+                    ButtonKind::Bordered
+                } else {
+                    ButtonKind::Default
+                };
                 let got = ButtonKind::Bordered.built(cx);
                 assert!(
-                    got == built,
+                    got == expected,
                     "{preset:?}/{is_dark}: a Bordered Button is built as {}, not {}",
                     got.name(),
-                    built.name()
+                    expected.name()
                 );
             }
         }
+        assert!(
+            bordered > 0,
+            "no bundled 0.8.0 preset states button.body(HOVER).stroke, so a Bordered Button is never built as itself"
+        );
     });
+}
+
+/// A Bordered Button is built as the stock `Default` one where the theme
+/// states no hover border, as a user theme may, and as itself where it
+/// states one; every other kind is built as itself either way.
+#[test]
+fn a_bordered_button_is_the_default_one_where_no_hover_border_is_stated() {
+    use crate::demo::ButtonKind;
+    assert!(ButtonKind::Bordered.built_with(false) == ButtonKind::Default);
+    assert!(ButtonKind::Bordered.built_with(true) == ButtonKind::Bordered);
+    for kind in [ButtonKind::Default, ButtonKind::Primary, ButtonKind::Ghost] {
+        for hover_border in [false, true] {
+            assert!(
+                kind.built_with(hover_border) == kind,
+                "a {} Button is built as {}",
+                kind.name(),
+                kind.built_with(hover_border).name()
+            );
+        }
+    }
 }
 
 /// A disabled refined Button's info prints the fade `geometry::button_disabled`
@@ -20687,10 +20722,12 @@ fn checkbox_homes(
 /// kde-breeze light patched so that a rule with no required state clears
 /// the hovered track's fill (`not_states(CHECKED)`, spec §2: a later rule
 /// without required states clears the `from_state` bit) and the tracks are
-/// translucent, so that a hover layer laid over the track shows: a `HOVER`
-/// rule; one beside a `HOVER|CHECKED` rule differing from the checked
-/// track, and beside one equal to it; a `HOVER|CHECKED` rule alone, which
-/// the query with `HOVER` alone does not see (spec §2, `from_state`); none.
+/// translucent: a `HOVER` rule; one beside a `HOVER|CHECKED` rule differing
+/// from the checked track, and beside one equal to it; a `HOVER|CHECKED`
+/// rule alone, which the query with `HOVER` alone does not see (spec §2,
+/// `from_state`); none. The look draws the hovered track's own fill (spec
+/// §9, step 2), so a hover stated equal to the checked track is stated but
+/// draws as that track.
 #[cfg(feature = "widgets")]
 #[test]
 fn switch_hover_stated_decides_as_the_switch_look_does() {
@@ -20709,9 +20746,15 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
             .track(PartPatch::new().fill(fill.clone()))
     };
     let hovered_on = WidgetState::HOVER | WidgetState::CHECKED;
+    // (case, rules, stated, drawn checked): unchecked, a stated hover draws
     let cases = [
-        ("no hover rule", vec![], false),
-        ("a HOVER rule", vec![rule(WidgetState::HOVER, &hover)], true),
+        ("no hover rule", vec![], false, false),
+        (
+            "a HOVER rule",
+            vec![rule(WidgetState::HOVER, &hover)],
+            true,
+            true,
+        ),
         (
             "a HOVER rule and a HOVER|CHECKED rule differing from CHECKED",
             vec![
@@ -20719,19 +20762,22 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
                 rule(hovered_on, &hover_on),
             ],
             true,
+            true,
         ),
         (
             "a HOVER rule and a HOVER|CHECKED rule equal to CHECKED",
             vec![rule(WidgetState::HOVER, &hover), rule(hovered_on, &on)],
             true,
+            false,
         ),
         (
             "a HOVER|CHECKED rule alone",
             vec![rule(hovered_on, &hover_on)],
             false,
+            false,
         ),
     ];
-    for (case, rules, stated) in cases {
+    for (case, rules, stated, drawn_checked) in cases {
         let patch = rules.into_iter().fold(
             ThemePatch::new()
                 .switch(
@@ -20751,7 +20797,7 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
                 .map_err(|unstated| unstated.home());
             assert_eq!(
                 layered,
-                Ok(stated),
+                Ok(if checked { drawn_checked } else { stated }),
                 "{case}, checked {checked}: SwitchLook::next_of"
             );
             assert_eq!(
@@ -21308,7 +21354,9 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
         Theme::preset(Preset::KdeBreeze)
             .resolve(&ThemeContext::default().with_scheme(Scheme::Light))
     };
-    let plain = breeze();
+    // ios-13 states no label (no source), so its switch's label is gpui-component's own.
+    let plain =
+        Theme::preset(Preset::Ios13).resolve(&ThemeContext::default().with_scheme(Scheme::Light));
     let mut patched = breeze();
     patched.apply_patch(
         &ThemePatch::new()
@@ -24893,7 +24941,7 @@ fn widget_icons_report(
 /// The set the widget icons loaded, and whether it is fixed (else they
 /// follow the theme); `None` where they loaded none.
 #[cfg(feature = "svg-rasterize")]
-fn widget_icons_set(cx: &mut VisualTestContext) -> Option<(native_theme::theme::IconSet, bool)> {
+fn widget_icons_set(cx: &mut VisualTestContext) -> Option<(native_theme::icons::IconSet, bool)> {
     match widget_icons_report(cx) {
         Some(native_theme_gpui::icons::WidgetIconsReport::Loaded(set)) => {
             Some((set.set, set.fixed))
@@ -24926,7 +24974,7 @@ fn two_colour_svg(top: &str, bottom: &str) -> native_theme::icons::IconData {
 ))]
 #[gpui::test]
 fn the_icon_theme_select_puts_the_widget_icons_in_its_state(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     use native_theme_gpui::icons::WidgetIconsReport;
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
     use_preset_with_palette(&mut cx, &showcase, "material-3", "catppuccin-mocha");
@@ -25016,7 +25064,7 @@ fn the_widget_icons_follow_the_set_the_chrome_draws(cx: &mut TestAppContext) {
 ))]
 #[gpui::test]
 fn a_fixed_row_keeps_the_widget_icons_where_the_detection_fails(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     use native_theme_gpui::icons::WidgetIconsReport;
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "adwaita");

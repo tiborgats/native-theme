@@ -3,16 +3,17 @@
 //! manifest that maps egui's.
 
 use native_theme_egui::convert::to_color32;
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font};
+use native_theme_egui::{Role, RoleVariant, list_header_font};
 
 use super::{DemoState, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 use crate::info::{Manifest, Row, Verdict};
 
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     manifest: &Result<Manifest, String>,
     json: &crate::info::JsonCache,
     ui: &mut egui::Ui,
@@ -56,7 +57,7 @@ pub(crate) fn show(
         .iter()
         .filter(|r| state.theme_map_filter.is_none_or(|v| r.verdict == v))
         .collect();
-    let t = atlas.resolved_for(theme);
+    let t = atlas.old_resolved(theme);
     // The header as the Data page's table has it: `list.header_font` at its weight
     // (`demo::weighted_family`) and scaled size (`list_header_font`), in
     // `list.header_font.color` (§10.4's Data row), not `RichText::strong`, which is the scope's

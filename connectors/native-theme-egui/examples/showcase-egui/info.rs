@@ -2,8 +2,8 @@
 
 use std::str::FromStr;
 
+use crate::app::OldAtlas;
 use native_theme::theme::ResolvedFontSpec;
-use native_theme_egui::ThemeAtlas;
 use native_theme_showcase_support::info::ListedInfo;
 use native_theme_showcase_support::{status, values};
 
@@ -290,10 +290,10 @@ impl Manifest {
 /// four `LayoutTheme` leaves under `layout` as T3 injects them (§13.1): under the
 /// manifest's names, since `LayoutTheme` serialises them as `*_px` and skips a `None`.
 pub(crate) fn theme_json(
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     theme: egui::Theme,
 ) -> Result<serde_json::Value, String> {
-    let mut json = values::theme_json(atlas.resolved_for(theme))?;
+    let mut json = values::theme_json(atlas.old_resolved(theme))?;
     let layout = atlas.layout();
     if let Some(object) = json.as_object_mut() {
         object.insert(
@@ -335,7 +335,7 @@ pub(crate) struct JsonCache {
 impl JsonCache {
     pub(crate) fn get(
         &self,
-        atlas: &ThemeAtlas,
+        atlas: &OldAtlas,
         theme: egui::Theme,
     ) -> &Result<serde_json::Value, String> {
         let cell = match theme {
@@ -810,7 +810,7 @@ impl InfoView {
         elements: &[crate::elements::ShowcaseElement],
         manifest: &Manifest,
         (json, preset): (&serde_json::Value, &str),
-        (atlas, ctx): (&ThemeAtlas, &egui::Context),
+        (atlas, ctx): (&OldAtlas, &egui::Context),
     ) -> Self {
         let scheme = ctx.theme();
         let families = crate::demo::DrawnFamilies::of(ctx, atlas);
@@ -1258,11 +1258,11 @@ pub(crate) fn widget_tab(
 /// window-frame facts of §10.4, and the manifest's `[unwritten]` table.
 pub(crate) fn theme_tab(
     ui: &mut egui::Ui,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     semibold: &crate::demo::Semibold,
     manifest: &Result<Manifest, String>,
 ) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     // The section names as the Widget tab draws its own (`widget_tab`): one heading style in
     // the panel, whichever tab is shown.
     let text = InfoText::of(ui, t);

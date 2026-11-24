@@ -450,6 +450,7 @@ use native_theme_test_fixtures as icon_fixture;
 #[cfg(feature = "widgets")]
 mod focus_ring;
 pub mod icons;
+pub mod next;
 pub mod palette;
 #[cfg(feature = "spinner")]
 pub mod spinner;
@@ -475,10 +476,10 @@ pub use native_theme;
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::color::Rgba;
 pub use native_theme::error::Error;
-pub use native_theme::icons::{AnimatedIcon, IconData, IconProvider, IconRole, TransformAnimation};
-pub use native_theme::theme::{
-    ColorMode, DialogButtonOrder, IconSet, ResolvedTheme, Theme, ThemeMode,
+pub use native_theme::icons::{
+    AnimatedIcon, IconData, IconProvider, IconRole, IconSet, TransformAnimation,
 };
+pub use native_theme::theme::{ColorMode, DialogButtonOrder, ResolvedTheme, Theme, ThemeMode};
 #[cfg(feature = "watch")]
 pub use native_theme::watch::ThemeChangeEvent;
 pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
@@ -572,18 +573,31 @@ fn build_theme(
 ) -> iced_core::theme::Theme {
     let pal = palette::to_palette(resolved);
 
-    // Capture only the Rgba values (Copy, 4 bytes each) instead of
+    // Capture only the colours (Copy, 16 bytes each) instead of
     // cloning the entire ResolvedTheme (~2KB with heap data).
     let colors = extended::OverrideColors {
-        placeholder: resolved.input.placeholder_color,
-        surface: resolved.defaults.surface_color,
-        foreground: resolved.defaults.text_color,
-        accent_fg: resolved.defaults.accent_text_color,
-        success_fg: resolved.defaults.success_text_color,
-        danger_fg: resolved.defaults.danger_text_color,
-        warning_fg: resolved.defaults.warning_text_color,
+        placeholder: palette::to_color(resolved.input.placeholder_color),
+        surface: palette::to_color(resolved.defaults.surface_color),
+        foreground: palette::to_color(resolved.defaults.text_color),
+        accent_fg: palette::to_color(resolved.defaults.accent_text_color),
+        success_fg: palette::to_color(resolved.defaults.success_text_color),
+        danger_fg: palette::to_color(resolved.defaults.danger_text_color),
+        warning_fg: palette::to_color(resolved.defaults.warning_text_color),
     };
 
+    theme_from(name, pal, colors, mode)
+}
+
+/// The iced theme of a palette and the extended palette's overrides, read
+/// from either model: iced's extended palette generated from `pal`, with
+/// `colors` written over it and `Extended::is_dark` set from `mode` where one
+/// is given.
+pub(crate) fn theme_from(
+    name: &str,
+    pal: iced_core::theme::Palette,
+    colors: extended::OverrideColors,
+    mode: Option<ColorMode>,
+) -> iced_core::theme::Theme {
     iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {
         let mut ext = iced_core::theme::palette::Extended::generate(p);
         extended::apply_overrides(&mut ext, &colors);
@@ -921,7 +935,22 @@ pub fn control_line_height(
     min_height: f32,
     padding: iced_core::Padding,
 ) -> iced_core::text::LineHeight {
-    let own = text_size * resolved.defaults.line_height;
+    line_height_from(
+        resolved.defaults.line_height,
+        text_size,
+        min_height,
+        padding,
+    )
+}
+
+/// [`control_line_height()`] of the theme's line height `multiplier`.
+pub(crate) fn line_height_from(
+    multiplier: f32,
+    text_size: f32,
+    min_height: f32,
+    padding: iced_core::Padding,
+) -> iced_core::text::LineHeight {
+    let own = text_size * multiplier;
     let room = min_height - padding.top - padding.bottom;
     iced_core::text::LineHeight::Absolute(iced_core::Pixels(own.max(room)))
 }
@@ -1008,13 +1037,54 @@ where
     Message: Clone + 'a,
     Renderer: iced_core::Renderer + 'a,
 {
+    switch_from(
+        switch_look(resolved),
+        styles::toggler_over(resolved, backdrop),
+        is_toggled,
+        on_toggle,
+    )
+}
+
+/// The sizes a [`switch_over()`] is laid out at: the track's width and
+/// height, and the thumb's diameter on and off.
+#[cfg(feature = "widgets")]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct SwitchLook {
+    pub(crate) track_width: f32,
+    pub(crate) track_height: f32,
+    pub(crate) thumb_diameter: f32,
+    pub(crate) unchecked_thumb_diameter: f32,
+}
+
+/// [`SwitchLook`] of the 0.7.2 model.
+#[cfg(feature = "widgets")]
+pub(crate) fn switch_look(resolved: &native_theme::theme::ResolvedTheme) -> SwitchLook {
     let s = &resolved.switch;
-    let track = styles::toggler_over(resolved, backdrop);
-    let round = iced_core::border::Radius::new(s.track_height / 2.0);
+    SwitchLook {
+        track_width: s.track_width,
+        track_height: s.track_height,
+        thumb_diameter: s.thumb_diameter,
+        unchecked_thumb_diameter: s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter),
+    }
+}
+
+/// [`switch_over()`] at `look`'s sizes, coloured by `track`.
+#[cfg(feature = "widgets")]
+pub(crate) fn switch_from<'a, Message, Renderer>(
+    look: SwitchLook,
+    track: impl Fn(&iced_core::Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + 'a,
+    is_toggled: bool,
+    on_toggle: Option<Message>,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: Clone + 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    let round = iced_core::border::Radius::new(look.track_height / 2.0);
     let diameter = if is_toggled {
-        s.thumb_diameter
+        look.thumb_diameter
     } else {
-        s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
+        look.unchecked_thumb_diameter
     };
 
     // A thumb taller than the track overhangs it above and below, and sits
@@ -1025,8 +1095,8 @@ where
         is_toggled,
         on_toggle,
         style: Box::new(track),
-        width: s.track_width,
-        track_height: s.track_height,
+        width: look.track_width,
+        track_height: look.track_height,
         round,
         diameter,
         last_status: None,
@@ -1276,13 +1346,61 @@ where
     Message: Clone + 'a,
     Renderer: iced_core::text::Renderer + 'a,
 {
+    radio_from(
+        radio_look(resolved),
+        styles::radio(resolved),
+        radio,
+        is_selected,
+    )
+}
+
+/// The sizes and the dot a [`radio()`] draws: the circle's width (iced's
+/// own, `Radio::DEFAULT_SIZE`, where `None`), the gap to the label, and the
+/// dot's diameter and colour where the theme states a dot size.
+#[cfg(feature = "widgets")]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct RadioLook {
+    pub(crate) width: Option<f32>,
+    pub(crate) label_gap: f32,
+    pub(crate) dot: Option<(f32, iced_core::Color)>,
+}
+
+/// [`RadioLook`] of the 0.7.2 model.
+#[cfg(feature = "widgets")]
+pub(crate) fn radio_look(resolved: &native_theme::theme::ResolvedTheme) -> RadioLook {
+    let c = &resolved.checkbox;
+    RadioLook {
+        width: Some(c.radio_indicator_width.unwrap_or(c.indicator_width)),
+        label_gap: c.label_gap,
+        dot: c
+            .radio_dot_diameter
+            .map(|d| (d, palette::to_color(c.indicator_color))),
+    }
+}
+
+/// [`radio()`] at `look`, styled by `style`.
+#[cfg(feature = "widgets")]
+pub(crate) fn radio_from<'a, Message, Renderer>(
+    look: RadioLook,
+    style: impl Fn(&iced_core::Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + 'a,
+    radio: iced_widget::Radio<'a, Message, iced_core::Theme, Renderer>,
+    is_selected: bool,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: Clone + 'a,
+    Renderer: iced_core::text::Renderer + 'a,
+{
     use iced_widget::container;
 
-    let c = &resolved.checkbox;
-    let style = styles::radio(resolved);
-    let width = c.radio_indicator_width.unwrap_or(c.indicator_width);
-    let radio = radio.size(width).spacing(c.label_gap);
-    let Some(dot) = c.radio_dot_diameter.filter(|d| d.is_finite() && *d >= 0.0) else {
+    let (radio, width) = match look.width {
+        Some(width) => (radio.size(width), width),
+        None => (
+            radio,
+            iced_widget::Radio::<'a, Message, iced_core::Theme, Renderer>::DEFAULT_SIZE,
+        ),
+    };
+    let radio = radio.spacing(look.label_gap);
+    let Some((dot, colour)) = look.dot.filter(|(d, _)| d.is_finite() && *d >= 0.0) else {
         return radio.style(style).into();
     };
     let radio = radio.style(move |theme, status| iced_widget::radio::Style {
@@ -1291,7 +1409,6 @@ where
     });
     // Laid out whether selected or not, so the radio keeps its place in the
     // widget tree, and its state, as the selection changes.
-    let colour = palette::to_color(c.indicator_color);
     let mark = container(iced_widget::Space::new())
         .width(dot)
         .height(dot)
@@ -1343,10 +1460,22 @@ pub fn pick_list_handle<Renderer>(
 where
     Renderer: iced_core::text::Renderer,
 {
+    handle_at::<Renderer>(Some(resolved.combo_box.arrow_icon_size))
+}
+
+/// [`pick_list_handle()`] at `size`, or at the size iced gives
+/// `Handle::Arrow` where `None`.
+#[cfg(feature = "widgets")]
+pub(crate) fn handle_at<Renderer>(
+    size: Option<f32>,
+) -> iced_widget::pick_list::Handle<Renderer::Font>
+where
+    Renderer: iced_core::text::Renderer,
+{
     iced_widget::pick_list::Handle::Static(iced_widget::pick_list::Icon {
         font: Renderer::ICON_FONT,
         code_point: Renderer::SCROLL_DOWN_ICON,
-        size: Some(iced_core::Pixels(resolved.combo_box.arrow_icon_size)),
+        size: size.map(iced_core::Pixels),
         line_height: iced_core::text::LineHeight::default(),
         shaping: iced_core::text::Shaping::Basic,
     })
@@ -1406,11 +1535,107 @@ where
     Message: 'a,
     Renderer: iced_core::Renderer + 'a,
 {
+    tab_indicator_with(tab_indicator_look(&resolved.tab), tab, active)
+}
+
+/// [`tab_indicator()`] of the line `look` draws, none where `None`.
+#[cfg(feature = "widgets")]
+pub(crate) fn tab_indicator_with<'a, Message, Renderer>(
+    look: Option<IndicatorLook>,
+    tab: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+    active: bool,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
     let tab = tab.into();
-    match tab_indicator_line(resolved) {
-        Some(line) if active => iced_widget::Stack::new().push(tab).push(line).into(),
+    match look {
+        Some(look) if active => iced_widget::Stack::new()
+            .push(tab)
+            .push(indicator_line(look))
+            .into(),
         _ => tab,
     }
+}
+
+/// The line [`tab_indicator_line()`] draws: its colour, its thickness, the
+/// edge it runs along and its corners, rounded on top as the tab's top
+/// corners are where it runs along the top.
+#[cfg(feature = "widgets")]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct IndicatorLook {
+    pub(crate) color: iced_core::Color,
+    pub(crate) width: f32,
+    pub(crate) align: iced_core::alignment::Vertical,
+    pub(crate) radius: iced_core::border::Radius,
+}
+
+/// The corners of a line along the top that is rounded as the tab's top
+/// corners are, `r`.
+#[cfg(feature = "widgets")]
+pub(crate) fn top_corners(r: f32) -> iced_core::border::Radius {
+    iced_core::border::Radius {
+        top_left: r,
+        top_right: r,
+        bottom_right: 0.0,
+        bottom_left: 0.0,
+    }
+}
+
+/// [`IndicatorLook`] of the 0.7.2 model: `None` where
+/// [`tab_indicator_strip`] is.
+#[cfg(feature = "widgets")]
+pub(crate) fn tab_indicator_look(
+    t: &native_theme::theme::ResolvedTabTheme,
+) -> Option<IndicatorLook> {
+    use iced_core::alignment::Vertical;
+    use native_theme::theme::TabIndicatorSide;
+
+    let (color, width, side) = tab_indicator_strip(t)?;
+    let (align, radius) = match side {
+        TabIndicatorSide::Top => (Vertical::Top, top_corners(t.border.corner_radius)),
+        TabIndicatorSide::Bottom => (Vertical::Bottom, iced_core::border::Radius::default()),
+    };
+    Some(IndicatorLook {
+        color,
+        width,
+        align,
+        radius,
+    })
+}
+
+/// The line `look` draws, as wide as the space it is given.
+#[cfg(feature = "widgets")]
+pub(crate) fn indicator_line<'a, Message, Renderer>(
+    look: IndicatorLook,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    let IndicatorLook {
+        color,
+        width,
+        align,
+        radius,
+    } = look;
+    let strip = iced_widget::container(iced_widget::Space::new())
+        .width(iced_core::Length::Fill)
+        .height(width)
+        .style(move |_| iced_widget::container::Style {
+            background: Some(color.into()),
+            border: iced_core::Border {
+                radius,
+                ..iced_core::Border::default()
+            },
+            ..iced_widget::container::Style::default()
+        });
+    iced_widget::container(strip)
+        .width(iced_core::Length::Fill)
+        .height(iced_core::Length::Fill)
+        .align_y(align)
+        .into()
 }
 
 /// The line that marks the active tab, alone: a strip
@@ -1433,44 +1658,7 @@ where
     Message: 'a,
     Renderer: iced_core::Renderer + 'a,
 {
-    use iced_core::alignment::Vertical;
-    use native_theme::theme::TabIndicatorSide;
-
-    let t = &resolved.tab;
-    let (color, width, side) = tab_indicator_strip(t)?;
-    let (align, radius) = match side {
-        TabIndicatorSide::Top => {
-            let r = t.border.corner_radius;
-            (
-                Vertical::Top,
-                iced_core::border::Radius {
-                    top_left: r,
-                    top_right: r,
-                    bottom_right: 0.0,
-                    bottom_left: 0.0,
-                },
-            )
-        }
-        TabIndicatorSide::Bottom => (Vertical::Bottom, iced_core::border::Radius::default()),
-    };
-    let strip = iced_widget::container(iced_widget::Space::new())
-        .width(iced_core::Length::Fill)
-        .height(width)
-        .style(move |_| iced_widget::container::Style {
-            background: Some(color.into()),
-            border: iced_core::Border {
-                radius,
-                ..iced_core::Border::default()
-            },
-            ..iced_widget::container::Style::default()
-        });
-    Some(
-        iced_widget::container(strip)
-            .width(iced_core::Length::Fill)
-            .height(iced_core::Length::Fill)
-            .align_y(align)
-            .into(),
-    )
+    tab_indicator_look(&resolved.tab).map(indicator_line)
 }
 
 /// The strip [`tab_indicator_line()`] draws: its colour, its thickness and
@@ -1557,8 +1745,22 @@ where
     Message: 'a,
     Renderer: iced_core::Renderer + 'a,
 {
+    tab_flares_with(tab_flares::tab_flares_look(&resolved.tab), tabs, selected)
+}
+
+/// [`tab_flares()`] of the flares `look` draws, none where `None`.
+#[cfg(feature = "widgets")]
+pub(crate) fn tab_flares_with<'a, Message, Renderer>(
+    look: Option<tab_flares::FlareLook>,
+    tabs: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+    selected: &[usize],
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
     let tabs = tabs.into();
-    match tab_flares::tab_flares_look(&resolved.tab) {
+    match look {
         Some(look) => tab_flares::TabFlares::new(tabs, look, selected).into(),
         None => tabs,
     }
@@ -1925,10 +2127,21 @@ fn drawn_family(
     spec: &native_theme::theme::ResolvedFontSpec,
     substitute: impl FnOnce(&str) -> Option<String>,
 ) -> std::sync::Arc<str> {
-    let face = |family: &str| native_theme::fonts::system_face(family, spec.weight, spec.style);
-    face(&spec.family)
-        .or_else(|| substitute(&spec.family).and_then(|substitute| face(&substitute)))
-        .map_or_else(|| spec.family.clone(), |face| face.family)
+    family_drawn(&spec.family, spec.weight, spec.style, substitute)
+}
+
+/// [`drawn_family`] of a font of `family`, `weight` and `style`.
+#[cfg(feature = "system-fonts")]
+pub(crate) fn family_drawn(
+    family: &std::sync::Arc<str>,
+    weight: u16,
+    style: native_theme::theme::FontStyle,
+    substitute: impl FnOnce(&str) -> Option<String>,
+) -> std::sync::Arc<str> {
+    let face = |name: &str| native_theme::fonts::system_face(name, weight, style);
+    face(family)
+        .or_else(|| substitute(family).and_then(|substitute| face(&substitute)))
+        .map_or_else(|| family.clone(), |face| face.family)
 }
 
 /// The iced `Font` a theme font is drawn in: the family
@@ -1949,12 +2162,28 @@ fn drawn_family(
 #[cfg(feature = "system-fonts")]
 #[must_use]
 pub fn font(spec: &native_theme::theme::ResolvedFontSpec) -> iced_core::Font {
+    font_of(&spec.family, spec.weight, spec.style)
+}
+
+/// [`font`] of a font of `family`, `weight` and `style`.
+#[cfg(feature = "system-fonts")]
+pub(crate) fn font_of(
+    family: &std::sync::Arc<str>,
+    weight: u16,
+    style: native_theme::theme::FontStyle,
+) -> iced_core::Font {
     use iced_core::font::Style;
     use native_theme::theme::FontStyle;
+    let drawn = family_drawn(
+        family,
+        weight,
+        style,
+        native_theme::fonts::substitute_family_cached,
+    );
     iced_core::Font {
-        family: iced_core::font::Family::Name(leaked_family(&system_font_family(spec))),
-        weight: to_iced_weight(spec.weight),
-        style: match spec.style {
+        family: iced_core::font::Family::Name(leaked_family(&drawn)),
+        weight: to_iced_weight(weight),
+        style: match style {
             FontStyle::Normal => Style::Normal,
             FontStyle::Italic => Style::Italic,
             FontStyle::Oblique => Style::Oblique,

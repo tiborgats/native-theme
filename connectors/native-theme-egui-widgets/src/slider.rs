@@ -218,7 +218,7 @@ impl egui::Widget for Slider<'_> {
         let under = crate::fade::outer_fade(ui);
         let as_one = (!enabled && ui.is_enabled()) || under.is_some();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
-            let t = atlas.resolved_for(ui.ctx().theme());
+            let t = atlas.resolved_for(ui.ctx().theme())?;
             let look = Look::of(t);
             let ground = as_one.then(|| backdrop.unwrap_or_else(|| to_color32(look.background)));
             Geometry::of(&t.slider, width).map(|g| (g, look, ground))

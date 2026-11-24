@@ -3,23 +3,24 @@
 
 use egui::Button;
 use native_theme::icons::IconRole;
-use native_theme::theme::IconSet;
+use native_theme::icons::IconSet;
 use native_theme_egui::icons::{IconContext, icon_size};
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::{Role, RoleVariant};
 use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::switch::Switch;
 
 use super::{DemoState, button_min_size, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     let (set, icon_theme) = chosen;
     let size = icon_size(t, IconContext::Small);
     let normal = RoleVariant::Normal;

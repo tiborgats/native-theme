@@ -4,8 +4,11 @@ use crate::next::geometry::{
     ComplexStroke, CornerCurve, CornerRadius, Corners, ShadowLayer, Stroke, StrokeAlign,
     StrokeSide, Transform,
 };
+use crate::next::layout::LabelSide;
 use crate::next::paint::{BlendMode, ComplexPaint, GradientStop, MaterialKind, Paint, PaintLayer};
-use crate::next::patch::{ButtonRule, IconPatch, PartPatch, TextPatch};
+use crate::next::patch::{
+    ButtonRule, IconPatch, PartPatch, SwitchPatch, TextPatch, WidgetPatchMap,
+};
 use crate::next::query::{ButtonShape, ButtonVariant, Scheme, ThemeContext, WidgetState};
 use crate::next::style::{FocusIndicator, FocusKind, FontWidth};
 
@@ -410,6 +413,38 @@ fn widget_tables() -> TestResult {
         Some(Paint::Solid(Color::from_hex("#202020")?))
     );
     assert_eq!(patch.widget_rules.button.icon_text_gap, Some(6.0));
+    Ok(())
+}
+
+#[test]
+fn switch_label_placement_reads_and_round_trips() -> TestResult {
+    let patch = ThemePatch::from_toml(
+        "[widgets.switch]\nlabel_side = \"leading\"\nlabel_gap_stretches = true\n",
+    )?;
+    assert_eq!(
+        patch.widget_rules.switch.label_side,
+        Some(LabelSide::Leading)
+    );
+    assert_eq!(patch.widget_rules.switch.label_gap_stretches, Some(true));
+    let expected = ThemePatch::new().widget_rules(
+        WidgetPatchMap::new().switch(
+            SwitchPatch::new()
+                .label_side(LabelSide::Leading)
+                .label_gap_stretches(true),
+        ),
+    );
+    assert_eq!(patch, expected);
+    let trailing = ThemePatch::new().widget_rules(
+        WidgetPatchMap::new().switch(
+            SwitchPatch::new()
+                .label_side(LabelSide::Trailing)
+                .label_gap_stretches(false),
+        ),
+    );
+    for patch in [expected, trailing] {
+        let text = toml::to_string(&patch)?;
+        assert_eq!(ThemePatch::from_toml(&text)?, patch, "{text}");
+    }
     Ok(())
 }
 

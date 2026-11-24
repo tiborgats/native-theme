@@ -663,7 +663,7 @@ pub(crate) struct PanelLook {
     copy_active: (gpui::Hsla, gpui::Hsla),
     resolved: serde_json::Value,
     layout: native_theme::theme::LayoutTheme,
-    icon_set: native_theme::theme::IconSet,
+    icon_set: native_theme::icons::IconSet,
     icon_theme: Option<String>,
     /// What gpui draws each family of `resolved` in, and `Theme::font_family`
     /// and `mono_font_family`.

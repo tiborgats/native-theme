@@ -191,6 +191,7 @@ mod install_tests;
 mod mapping_doc;
 #[cfg(test)]
 mod mapping_tests;
+pub mod next;
 mod plugin;
 mod roles;
 mod style;
@@ -213,7 +214,7 @@ pub use accessors::{
     tooltip_show_delay, warning_text_color, window_title_bar_font, window_title_bar_text_color,
 };
 pub use atlas::Note;
-pub use atlas::{Builder, ThemeAtlas};
+pub use atlas::{Builder, NextBuilder, ThemeAtlas};
 pub use ext::{Loaded, SystemThemeExt, from_preset, from_system, to_theme};
 pub use ext::{NativeThemeUiExt, menu_bar_modifier, role_modifier};
 pub use plugin::register_focus_shape;
@@ -245,9 +246,9 @@ pub use native_theme;
 //                                         it resolves as `crate::SystemTheme` inside egui at
 //                                         context.rs:252 and :2479)
 pub use native_theme::error::Error;
-pub use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, TransformAnimation};
+pub use native_theme::icons::{AnimatedIcon, IconProvider, IconRole, IconSet, TransformAnimation};
 pub use native_theme::theme::{
-    ColorMode, DialogButtonOrder, FontStyle, IconSet, LayoutTheme, ResolvedTheme, ThemeMode,
+    ColorMode, DialogButtonOrder, FontStyle, LayoutTheme, ResolvedTheme, ThemeMode,
 };
 pub use native_theme::{AccessibilityPreferences, Result};
 

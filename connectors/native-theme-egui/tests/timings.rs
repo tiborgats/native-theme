@@ -10,7 +10,8 @@
 use std::borrow::Cow;
 use std::time::{Duration, Instant};
 
-use native_theme::theme::{IconSet, Theme};
+use native_theme::icons::IconSet;
+use native_theme::theme::Theme;
 use native_theme_egui::icons::{IconKey, custom_icon_to_image_source};
 use native_theme_egui::{
     AccessibilityPreferences, IconProvider, IconRole, NativeThemeUiExt, Role, RoleVariant,

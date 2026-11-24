@@ -46,8 +46,9 @@ pub(crate) const fn denan(v: f32) -> f32 {
 
 /// Saturating, rounding `f32` -> `u8`, for `epaint::CornerRadius` (four `u8`,
 /// `epaint/src/corner_radius.rs:13-25`).
-/// `epaint::Shadow::{blur, spread}` (`epaint/src/shadow.rs:20`, `:23`) are cited for their
-/// representable range only — this crate never writes shadow geometry (spec §6.14).
+/// `epaint::Shadow::{blur, spread}` (`epaint/src/shadow.rs:20`, `:23`) are `u8` too: the 0.8.0
+/// model's stated shadow geometry is written through this (`style::base::DropShadow`); the 0.7.2
+/// model has none (spec §6.14).
 ///
 /// `NaN` -> 0; `v <= 0.0` -> 0; `v >= 255.0` -> 255; otherwise round-half-away-from-zero.
 /// `f32::round`, not `round_ties_even`, so a value this crate converts and a value epaint
@@ -65,9 +66,8 @@ pub fn u8_from_f32_saturating(v: f32) -> u8 {
 }
 
 /// Saturating, rounding `f32` -> `i8`, for `epaint::Margin` (four `i8`,
-/// `epaint/src/margin.rs:15-20`) — the only `i8` sink this crate writes from theme data.
-/// `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`) is cited for its representable
-/// range only; this crate never writes shadow geometry (spec §6.14).
+/// `epaint/src/margin.rs:15-20`), and for `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`),
+/// written from the 0.8.0 model's stated shadow geometry alone (`style::base::DropShadow`).
 ///
 /// `NaN` -> 0, **not** −128, because [`denan`] runs first: `f32::NAN.max(-128.0)` is
 /// `-128.0`, so a `NaN` margin would otherwise become the most-negative margin.
@@ -254,24 +254,36 @@ pub fn to_margin(
 /// sum at `f32::MAX`, so [`to_margin`] saturates it rather than mistaking it for a non-finite
 /// side. A `None` or non-finite side stays `None`, which every consumer resolves to egui's own
 /// value.
+#[cfg(test)]
 #[inline]
 #[must_use]
 pub(crate) fn padding_with_border(
     border: &native_theme::theme::ResolvedWidgetBorder,
 ) -> native_theme::theme::ResolvedPadding {
-    let finite = |stated: Option<f32>| stated.filter(|v| v.is_finite());
-    let stated = &border.padding;
-    native_theme::theme::ResolvedWidgetBorder {
-        line_width: clamp_length(finite_or(border.line_width, 0.0)),
-        padding: native_theme::theme::ResolvedPadding {
-            top: finite(stated.top),
-            right: finite(stated.right),
-            bottom: finite(stated.bottom),
-            left: finite(stated.left),
-        },
-        ..border.clone()
+    padding_with_line(&border.padding, border.line_width)
+}
+
+/// `padding_with_border` of a padding and a line width given apart: each stated, finite
+/// side plus `clamp_length(finite_or(line_width, 0.0))`, saturated at `f32::MAX` as core's
+/// `ResolvedWidgetBorder::padding_outside` saturates it.
+#[inline]
+#[must_use]
+pub(crate) fn padding_with_line(
+    padding: &native_theme::theme::ResolvedPadding,
+    line_width: f32,
+) -> native_theme::theme::ResolvedPadding {
+    let width = clamp_length(finite_or(line_width, 0.0));
+    let side = |stated: Option<f32>| {
+        stated
+            .filter(|v| v.is_finite())
+            .map(|v| (v + width).min(f32::MAX))
+    };
+    native_theme::theme::ResolvedPadding {
+        top: side(padding.top),
+        right: side(padding.right),
+        bottom: side(padding.bottom),
+        left: side(padding.left),
     }
-    .padding_outside()
 }
 
 /// The expander's border as its padding counts it: `expander.border` with its line width 0
@@ -279,6 +291,7 @@ pub(crate) fn padding_with_border(
 /// (ledger M9-178), so a stated padding side lies inside a border only where the companion
 /// crate's `Expander` draws its frame round header and body, as the iced connector pads the
 /// header by the stated sides alone since M9-176.
+#[cfg(test)]
 #[inline]
 #[must_use]
 pub(crate) fn expander_padding_border(
@@ -309,13 +322,23 @@ pub(crate) fn expander_padding_border(
 /// cap. The expander reads `.x` on its trailing side only
 /// (`egui/src/containers/collapsing_header.rs:526`), so its call site takes `.y` from this
 /// function and writes `.x` from `padding_with_border(border).right` alone (spec §7.4).
+#[cfg(test)]
 #[inline]
 #[must_use]
 pub(crate) fn to_button_padding(
     base: egui::Vec2,
     border: &native_theme::theme::ResolvedWidgetBorder,
 ) -> egui::Vec2 {
-    let padding = padding_with_border(border);
+    button_padding_outside(base, &padding_with_border(border))
+}
+
+/// `to_button_padding` of a padding already measured from the outside of its border.
+#[inline]
+#[must_use]
+pub(crate) fn button_padding_outside(
+    base: egui::Vec2,
+    padding: &native_theme::theme::ResolvedPadding,
+) -> egui::Vec2 {
     let pair = |a: Option<f32>, b: Option<f32>, own: f32| {
         clamp_length(f32::midpoint(a.unwrap_or(own), b.unwrap_or(own)))
     };
@@ -361,7 +384,7 @@ pub fn to_stroke(base: egui::Stroke, color: Rgba, line_width_px: f32) -> egui::S
 
 /// `epaint::Shadow` from a native shadow colour, keeping `base`'s geometry. See spec §6.14.
 ///
-/// native-theme carries **no** shadow geometry — only `shadow_enabled: bool`
+/// The 0.7.2 model carries **no** shadow geometry — only `shadow_enabled: bool`
 /// (`native-theme/src/model/border.rs:235`, `:251`) — while `epaint::Shadow` needs
 /// `offset: [i8; 2]` (`epaint/src/shadow.rs:15`), `blur: u8` (`:20`) and `spread: u8` (`:23`).
 /// Only the colour is replaced; `enabled == false` yields `Shadow::NONE`

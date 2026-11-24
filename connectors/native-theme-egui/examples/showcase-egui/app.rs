@@ -4,7 +4,7 @@
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use native_theme::icons::{IconSetChoice, default_icon_choice};
-use native_theme::{AccessibilityPreferences, SystemTheme, theme::IconSet};
+use native_theme::{AccessibilityPreferences, SystemTheme, icons::IconSet};
 use native_theme_egui::{SystemThemeExt as _, ThemeAtlas, from_preset};
 use native_theme_showcase_support::capture::{Content, FrameCapture};
 use native_theme_showcase_support::cli::{self, Output, Outputs};
@@ -309,9 +309,51 @@ pub(crate) fn effective_preferences(
     }
 }
 
+/// The text of the error [`OldAtlas::of`]'s `None` gives.
+pub(crate) const NOT_OLD: &str = "the atlas holds no 0.7.2 theme, which the showcase's pages read";
+
+/// An atlas of the 0.7.2 model with the two themes it was built from, which the showcase's
+/// pages read through [`OldAtlas::old_resolved`] until they are ported to the 0.8.0 model, as
+/// the gpui showcase keeps its `OldModel`; it derefs to the atlas.
+#[derive(Clone)]
+pub(crate) struct OldAtlas {
+    atlas: ThemeAtlas,
+    old: std::sync::Arc<[native_theme_egui::ResolvedTheme; 2]>,
+}
+
+impl OldAtlas {
+    /// `atlas` with its 0.7.2 themes, light then dark; `None` for an atlas of the 0.8.0 model
+    /// (`native_theme_egui::next::to_theme`).
+    pub(crate) fn of(atlas: ThemeAtlas) -> Option<Self> {
+        let light = atlas.resolved_for(egui::Theme::Light)?.clone();
+        let dark = atlas.resolved_for(egui::Theme::Dark)?.clone();
+        Some(Self {
+            atlas,
+            old: std::sync::Arc::new([light, dark]),
+        })
+    }
+
+    /// The 0.7.2 theme of `theme`'s scheme.
+    pub(crate) fn old_resolved(&self, theme: egui::Theme) -> &native_theme_egui::ResolvedTheme {
+        let [light, dark] = &*self.old;
+        match theme {
+            egui::Theme::Light => light,
+            egui::Theme::Dark => dark,
+        }
+    }
+}
+
+impl std::ops::Deref for OldAtlas {
+    type Target = ThemeAtlas;
+
+    fn deref(&self) -> &ThemeAtlas {
+        &self.atlas
+    }
+}
+
 pub(crate) struct App {
     /// The one field for theme state (§10.4's third rule).
-    pub(crate) atlas: ThemeAtlas,
+    pub(crate) atlas: OldAtlas,
     pub(crate) settings: Settings,
     /// The platform preset `default` builds on, `SystemTheme::preset` since the last read of
     /// the OS: the name the Theme row, the command palette and the status bar give `default`,
@@ -415,7 +457,7 @@ impl App {
     pub(crate) fn new(
         cc: &eframe::CreationContext<'_>,
         cli: &CliArgs,
-    ) -> native_theme::Result<Self> {
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         egui_extras::install_image_loaders(&cc.egui_ctx);
         let mut settings = Settings::initial();
         apply_cli_args(&mut settings, cli);
@@ -450,7 +492,7 @@ impl App {
             settings: settings.clone(),
         }));
         let mut app = Self {
-            atlas: atlas.clone(),
+            atlas: OldAtlas::of(atlas.clone()).ok_or(NOT_OLD)?,
             settings,
             default_preset,
             semibold: demo::Semibold::default(),
@@ -619,7 +661,12 @@ impl App {
     /// the theme error cleared, since a theme now loaded. `apply` runs it, so does the watcher's
     /// hand-off, which leaves the mode as it is, and so do the tests that install an atlas of
     /// their own; it sets no theme preference, so a test that holds a scheme keeps it.
+    /// An atlas of the 0.8.0 model is not installed: the theme error says so.
     pub(crate) fn adopt(&mut self, ctx: &egui::Context, atlas: ThemeAtlas) {
+        let Some(atlas) = OldAtlas::of(atlas) else {
+            self.theme_error = Some(NOT_OLD.to_owned());
+            return;
+        };
         atlas.install(ctx);
         self.semibold.register(ctx, &atlas);
         self.atlas = atlas;

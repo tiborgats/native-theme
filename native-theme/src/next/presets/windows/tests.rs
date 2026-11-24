@@ -22,7 +22,8 @@ fn the_preset_defines_the_normal_contrast_alone() {
 #[test]
 fn the_constant_colours_are_their_8_bit_channels() {
     assert_eq!(LIGHT.window_foreground.to_srgb8(), [0x00, 0x00, 0x00, 0xe4]);
-    assert_eq!(DARK.switch_hover_on.to_srgb8(), [0x20, 0x20, 0x20, 0x19]);
+    assert_eq!(DARK.checkbox_hover.to_srgb8(), [0xff, 0xff, 0xff, 0x0b]);
+    assert_eq!(DARK.switch_hover_on, None);
     assert_eq!(DARK.scrollbar_thumb, None);
 }
 
@@ -121,6 +122,33 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_loses_it_when_disabl
                 .fill,
             theme.checkbox.indicator(WidgetState::DISABLED).fill
         );
+    }
+}
+
+/// The hovered on switch and the hovered check box are WinUI's whole
+/// hovered fills (spec §9, step 2): `AccentFillColorSecondary`, the on
+/// track's accent fill at 0.9 opacity, and `ControlAltFillColorTertiary`.
+#[test]
+fn the_hovered_switch_and_check_box_are_whole_fills() {
+    let [light, dark] = both_schemes();
+    for (theme, checkbox_hover) in [(light, [0, 0, 0, 0x0f]), (dark, [0xff, 0xff, 0xff, 0x0b])] {
+        let on = solid(&theme.switch.track(WidgetState::CHECKED).fill);
+        let on_hover = solid(
+            &theme
+                .switch
+                .track(WidgetState::HOVER | WidgetState::CHECKED)
+                .fill,
+        );
+        assert_eq!(
+            on_hover,
+            on.map(|c| c.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY))
+        );
+        for hovered in [
+            theme.checkbox.indicator(WidgetState::HOVER).fill,
+            theme.radio.indicator(WidgetState::HOVER).fill,
+        ] {
+            assert_eq!(solid(&hovered).map(Color::to_srgb8), Some(checkbox_hover));
+        }
     }
 }
 
@@ -396,6 +424,48 @@ fn the_system_s_high_contrast_colours_make_high_available() {
     let dark = theme.resolve(&ThemeContext::dark().with_contrast(Contrast::High));
     assert_eq!(dark.context.contrast, Contrast::Normal);
     assert_eq!(dark.colors.accent.fill, accent);
+}
+
+/// Under high contrast the hovered on switch is the system's button face
+/// (`ToggleSwitchFillOnPointerOver` = `SystemColorButtonFaceColorBrush`,
+/// ToggleSwitch_themeresources.xaml:88), whatever the accent.
+#[test]
+fn a_high_contrast_hovered_on_switch_is_the_button_face() {
+    use crate::next::reader::{OsColors, OsSurfaceOverrides};
+    let accent = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    let face = Color::from_srgb8(3, 3, 3, 0xff);
+    let colors = OsColors {
+        surfaces: Some(OsSurfaceOverrides {
+            button: Some(SurfaceColors {
+                background: Some(face),
+                ..SurfaceColors::default()
+            }),
+            ..OsSurfaceOverrides::default()
+        }),
+        ..OsColors::default()
+    };
+    let system = SystemOverrides {
+        accent: Some(accent),
+        color_schemes: vec![((Scheme::Light, Contrast::High), colors)],
+        ..SystemOverrides::default()
+    };
+    let theme = Theme::preset(Preset::Windows11).with_system_overrides(system);
+    let high = theme.resolve(&ThemeContext::light().with_contrast(Contrast::High));
+    assert_eq!(high.context.contrast, Contrast::High);
+    assert_eq!(
+        high.switch
+            .track(WidgetState::HOVER | WidgetState::CHECKED)
+            .fill,
+        Paint::Solid(face)
+    );
+    let normal = theme.resolve(&ThemeContext::light());
+    assert_eq!(
+        normal
+            .switch
+            .track(WidgetState::HOVER | WidgetState::CHECKED)
+            .fill,
+        Paint::Solid(accent.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY))
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -773,11 +843,6 @@ fn a_palette_recolours_what_it_states_and_nothing_else() {
                 stroke_color(&t.checkbox.indicator(none).stroke),
                 solid(
                     &t.switch
-                        .track(WidgetState::HOVER | WidgetState::CHECKED)
-                        .fill,
-                ),
-                solid(
-                    &t.switch
                         .track(WidgetState::DISABLED | WidgetState::CHECKED)
                         .fill,
                 ),
@@ -796,6 +861,16 @@ fn a_palette_recolours_what_it_states_and_nothing_else() {
             ]
         };
         assert_eq!(unchanged(&theme), unchanged(&preset), "{scheme:?}");
+        assert_eq!(
+            solid(
+                &theme
+                    .switch
+                    .track(WidgetState::HOVER | WidgetState::CHECKED)
+                    .fill
+            ),
+            Some(p.accent.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY)),
+            "{scheme:?}"
+        );
     }
 }
 

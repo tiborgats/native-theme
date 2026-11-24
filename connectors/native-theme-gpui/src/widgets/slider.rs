@@ -52,9 +52,9 @@ pub struct SliderLook {
     pub fill: Hsla,
     /// The thumb: `thumb_color`, or `disabled_thumb_color` disabled.
     pub thumb_color: Hsla,
-    /// The thumb under the pointer: `thumb_hover_color` over `thumb_color`,
-    /// or the thumb at rest where no hover is stated, where the slider is
-    /// enabled.
+    /// The thumb under the pointer: `thumb_hover_color` over `thumb_color` (a 0.8.0
+    /// theme's hovered thumb, its whole fill, as it is), or the thumb at rest where no
+    /// hover is stated, where the slider is enabled.
     pub hover_thumb: Option<Hsla>,
     /// The thumb's outline, which the model does not state: gpui-component's
     /// fill colour at half alpha (gpui-component's, slider.rs:224-227).
@@ -322,10 +322,7 @@ impl SliderLook {
     }
 
     fn from_reads(s: &SliderReads, disabled: bool) -> Option<Self> {
-        let hover_thumb = (!disabled).then(|| {
-            s.hover
-                .map_or(s.rest_thumb, |hover| over(s.rest_thumb, hover))
-        });
+        let hover_thumb = (!disabled).then(|| s.hover.unwrap_or(s.rest_thumb));
         let track_height = length(s.track_height)?;
         let thumb_diameter = length(s.thumb_diameter)?;
         Some(Self {
@@ -344,7 +341,7 @@ impl SliderLook {
 
 /// The values [`SliderLook::next_of`] builds the look from: the rail, the
 /// filled stretch and the thumb at the slider's state, the thumb at rest and
-/// its hover layer.
+/// its hovered fill, the whole fill (spec §9, step 2).
 struct SliderReads {
     track: Hsla,
     fill: Hsla,

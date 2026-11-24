@@ -100,8 +100,9 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
+use native_theme::icons::IconSet;
 use native_theme::next::WidgetState;
-use native_theme::theme::{IconSet, ResolvedPadding};
+use native_theme::theme::ResolvedPadding;
 use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
@@ -3929,11 +3930,17 @@ impl ButtonKind {
             Self::PrimaryOutline => button.primary().outline(),
         }
     }
-    /// The kind a Button asked for as `self` is built as: `Default` for
-    /// `Bordered` where the theme states no hover border, `self` otherwise.
+    /// The kind a Button asked for as `self` is built as under the installed
+    /// theme: [`Self::built_with`] whether it states a hover border.
     pub(crate) fn built(self, cx: &App) -> Self {
+        self.built_with(bordered(cx).is_some())
+    }
+    /// The kind a Button asked for as `self` is built as: `Default` for
+    /// `Bordered` where the theme states no hover border (`hover_border`
+    /// false), `self` otherwise.
+    pub(crate) fn built_with(self, hover_border: bool) -> Self {
         match self {
-            Self::Bordered if bordered(cx).is_none() => Self::Default,
+            Self::Bordered if !hover_border => Self::Default,
             kind => kind,
         }
     }

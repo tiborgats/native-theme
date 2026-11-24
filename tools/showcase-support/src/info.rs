@@ -6,7 +6,8 @@
 //! its own toolkit, in the panel's typography.
 
 use native_theme::color::Rgba;
-use native_theme::theme::{IconSet, LayoutTheme, ResolvedFontSpec};
+use native_theme::icons::IconSet;
+use native_theme::theme::{LayoutTheme, ResolvedFontSpec};
 
 use crate::elements::ShowcaseElement;
 use crate::values::leaf_value;
@@ -129,6 +130,7 @@ mod tests {
             name: "Button".into(),
             parent: "window".into(),
             leaves: leaves.iter().map(|leaf| (*leaf).to_string()).collect(),
+            homes: Vec::new(),
             states: states.iter().map(|state| (*state).to_string()).collect(),
             part: false,
             when: None,

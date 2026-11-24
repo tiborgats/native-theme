@@ -270,10 +270,10 @@ pub use native_theme;
 // Issue 8 + 48: re-export Result, Rgba, Error, DialogButtonOrder
 pub use native_theme::color::Rgba;
 pub use native_theme::error::Error;
-pub use native_theme::icons::{AnimatedIcon, IconData, IconProvider, IconRole, TransformAnimation};
-pub use native_theme::theme::{
-    ColorMode, DialogButtonOrder, IconSet, ResolvedTheme, Theme, ThemeMode,
+pub use native_theme::icons::{
+    AnimatedIcon, IconData, IconProvider, IconRole, IconSet, TransformAnimation,
 };
+pub use native_theme::theme::{ColorMode, DialogButtonOrder, ResolvedTheme, Theme, ThemeMode};
 #[cfg(feature = "watch")]
 pub use native_theme::watch::{ThemeChangeEvent, ThemeSubscription};
 pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
@@ -842,8 +842,9 @@ pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
 /// state layers: source-over with straight alpha in sRGB, so the result
 /// covers `layer.a + base.a × (1 − layer.a)`
 /// ([`native_theme::color::composite_over`], which takes the layer first,
-/// through `gpui::Rgba`). The filled buttons' hover and pressed fills
-/// (`ThemeColor::button_hover`, `button_active`, …) and the widgets' hover
+/// through `gpui::Rgba`). The filled buttons' hover and pressed fills of a
+/// 0.7.2 theme, whose model states them as layers
+/// (`ThemeColor::button_hover`, `button_active`, …), and the widgets' hover
 /// states are this composite of the theme's layer over the fill it covers,
 /// so an application drawing a layered state of its own — a stated
 /// `hover_background` over a control's fill — matches them through it. An

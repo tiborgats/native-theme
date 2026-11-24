@@ -2254,7 +2254,7 @@ fn a_loading_progress_bar_stands_still_under_reduced_motion(cx: &mut TestAppCont
 /// `spinner.diameter`, and the arc for a set without one.
 #[gpui::test]
 fn the_spinner_is_the_icon_sets_indicator_or_an_arc(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let cx = window_with(
         cx,
         Some(("kde-breeze", ColorMode::Light)),
@@ -6032,6 +6032,31 @@ fn a_focused_control_draws_a_next_themes_ring(cx: &mut TestAppContext) {
     );
 }
 
+/// A disabled checked box's mark is read at its own home where a rule states
+/// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`), not
+/// in the label's disabled colour; a theme that states none keeps 0.7.2's
+/// reading, the label's disabled colour where a disabled fill is stated.
+#[test]
+fn a_disabled_mark_is_read_at_its_own_home() -> crate::next::Mapped<()> {
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let r = NextTheme::preset(Preset::Material3).resolve(&ctx);
+        let surface = crate::next::hsla(
+            r.checkbox
+                .checkmark(WidgetState::DISABLED | WidgetState::CHECKED)
+                .color,
+        );
+        let look = CheckboxLook::next_of(&r, true, true)?;
+        assert_eq!(look.mark, surface, "{ctx:?}");
+        assert_ne!(look.mark, look.label, "{ctx:?}");
+
+        let kde = NextTheme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let look = CheckboxLook::next_of(&kde, true, true)?;
+        assert_eq!(look.mark, look.label, "{ctx:?}");
+    }
+    Ok(())
+}
+
 /// The body text of a 0.8.0 theme: kde-breeze light states its size and
 /// weight, which `ThemeSource::body_text` takes; with either left unstated,
 /// `next::body_text_unmapped` names that home and there is no body text.
@@ -6060,4 +6085,33 @@ fn a_next_themes_body_text_is_none_where_its_size_or_weight_is_unstated() {
         assert_eq!(crate::next::body_text_unmapped(&r), Some(Unmapped(home)));
         assert_eq!(ThemeSource::Next(&r).body_text(), None, "{home}");
     }
+}
+
+/// A checked disabled box's mark is read where a rule states it for
+/// `DISABLED` and its colour is stated at `DISABLED|CHECKED`, as the radio's
+/// disabled dot is; a stated rule with the checked mark's colour unstated
+/// names that home, and no rule for `DISABLED` is no disabled mark.
+#[test]
+fn a_checked_disabled_mark_is_read_only_where_stated() {
+    use native_theme::next::{Color, IconStated, IconStyle};
+    let red = Color::rgb(1.0, 0.0, 0.0);
+    let mut checked = IconStyle::default();
+    checked.color = red;
+    checked.stated = IconStated::COLOR;
+    let mut disabled = IconStyle::default();
+    disabled.from_state = IconStated::COLOR;
+    assert_eq!(
+        checkbox::checked_disabled_mark(&disabled, &checked),
+        Ok(Some(crate::next::hsla(red)))
+    );
+    assert_eq!(
+        checkbox::checked_disabled_mark(&IconStyle::default(), &checked),
+        Ok(None)
+    );
+    let mut unstated = checked.clone();
+    unstated.stated = IconStated::default();
+    assert_eq!(
+        checkbox::checked_disabled_mark(&disabled, &unstated),
+        Err(Unmapped("checkbox.checkmark(DISABLED|CHECKED).color"))
+    );
 }

@@ -313,7 +313,7 @@ fn spinner_look(
     reduce_motion: bool,
     icons: &crate::demo::SpinnerIcons,
 ) -> WidgetInfo {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let s = &r.spinner;
     let drawn = format!("{}px across: ", f32::from(look.diameter));
     let ratio = |ratio: &str, name: &str| {

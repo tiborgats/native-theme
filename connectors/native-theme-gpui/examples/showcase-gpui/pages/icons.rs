@@ -3,8 +3,8 @@
 use gpui::{AnyElement, App, Context, IntoElement, ParentElement, Styled, div, prelude::*};
 use gpui_component::{IconName, IconNamed as _, h_flex, v_flex};
 
+use native_theme::icons::IconSet;
 use native_theme::icons::icon_name as native_icon_name;
-use native_theme::theme::IconSet;
 
 use native_theme_gpui::next;
 
