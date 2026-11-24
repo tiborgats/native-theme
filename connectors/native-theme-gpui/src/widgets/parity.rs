@@ -22,7 +22,7 @@ use std::fmt::Debug;
 
 use gpui::px;
 use gpui_component::Size;
-use native_theme::next::{Preset, ThemeContext, WidgetState};
+use native_theme::next::{PartStated, Preset, ThemeContext, WidgetState};
 
 use super::{
     CheckboxLook, FocusRing, LabelFont, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook,
@@ -55,10 +55,13 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "SwitchLook::label disabled",
         presets: &["macos-monterey", "macos-tahoe", "ios-13"],
-        reason: "the 0.8.0 preset states no disabled colour of switch.label, so a disabled \
-                 switch's label is gpui-component's own, muted_foreground, \
-                 colors.window.foreground_muted (spec §10, rule 0), where the 0.7.2 look took \
-                 defaults.disabled_text_color",
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color; the \
+                 0.8.0 presets state the disabled switch's label at its rest colour, as the \
+                 platform draws it: macOS labelColor (os-probe run 45210835145, macOS 15 and \
+                 26, `switch-label-macos-{15,26}/measure.toml` `*.normal.toggle_*_disabled` \
+                 within 3 levels of the 13 pt labelColor reference), ios-13 the list row's \
+                 label colour #000000 / #ffffff (ios-host run 45230061151, iOS 18.6, \
+                 `measure_lists.toml` `run1.\"<a>\".switch_row.disabled` `label_text_color`)",
     },
     Difference {
         leaf: "SwitchLook::label disabled",
@@ -92,58 +95,6 @@ const DIFFERENCES: &[Difference] = &[
                  (ToggleSwitch_themeresources.xaml:499-503 at microsoft-ui-xaml 8463f45); \
                  adwaita 6, the least gap of AdwSwitchRow's header box (_lists.scss:132 at \
                  libadwaita 1.10.0)",
-    },
-    Difference {
-        leaf: "SwitchLook::label_gap",
-        presets: &["macos-monterey", "macos-tahoe"],
-        reason: "0.7.2 has no switch label, so the look has no gap; the 0.8.0 macOS presets \
-                 state SwiftUI's switch Toggle's, 8 (os-probe run 45210835145, macOS 15 and \
-                 26, `switch-label.toml` `[[item]] toggle_off` fitting width 33 + 8 + the \
-                 switch, docs/evidence/os-probe/2026-11-23-run-45210835145/ on m2-fs4d)",
-    },
-    Difference {
-        leaf: "TabLook::hover",
-        presets: &["macos-monterey"],
-        reason: "0.7.2's macos-monterey states tab.hover_background #e8e8ed / #3a3a3c, \
-                 uncited; the 0.8.0 preset states the tab's rest fill, the window's \
-                 background, for HOVER, as AppKit draws a hovered tab as at rest (os-probe run \
-                 45198750893, macOS 15, `*.hovered.tab` differs from the normal capture in 0 \
-                 pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
-                 native-theme/tests/next_homes.toml, row tab.hover_background, a listed \
-                 difference)",
-    },
-    Difference {
-        leaf: "CheckboxLook::of hover_fill",
-        presets: &["macos-monterey"],
-        reason: "0.7.2's macos-monterey states checkbox.hover_background #e0e0e5 / #444446, \
-                 uncited; the 0.8.0 preset states the check box's rest fill for HOVER, as \
-                 AppKit draws a hovered check box as at rest (os-probe run 45198750893, macOS \
-                 15, `*.hovered.checkbox_off` differs from the normal capture in 0 pixels, \
-                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
-                 native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed \
-                 difference)",
-    },
-    Difference {
-        leaf: "SwitchLook hover_track",
-        presets: &["macos-monterey"],
-        reason: "0.7.2's macos-monterey states switch.hover_unchecked_background #c8c8cd / \
-                 #4a4a4c, uncited; the 0.8.0 preset states the off track's rest fill for HOVER, \
-                 as AppKit draws a hovered switch as at rest (os-probe run 45208260830, macOS \
-                 15, `*.hovered.switch_off` differs from the normal capture in 0 pixels, \
-                 docs/evidence/os-probe/2026-11-23-run-45208260830/ on m2-fs4c; \
-                 native-theme/tests/next_homes.toml, row switch.hover_unchecked_background, a \
-                 listed difference)",
-    },
-    Difference {
-        leaf: "SliderLook",
-        presets: &["macos-monterey"],
-        reason: "0.7.2's macos-monterey states slider.thumb_hover_color #e0e0e0 (light), \
-                 uncited; the 0.8.0 preset states the knob's rest fill for HOVER, as AppKit \
-                 draws a hovered knob as at rest (os-probe run 45198750893, macOS 15, \
-                 `*.hovered.slider_knob` differs from the normal capture in 0 pixels, \
-                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
-                 native-theme/tests/next_homes.toml, row slider.thumb_hover_color, a listed \
-                 difference); every other field of the look is equal",
     },
     Difference {
         leaf: "SwitchLook::label disabled",
@@ -294,23 +245,13 @@ const DIFFERENCES: &[Difference] = &[
                  same part on ios-13",
     },
     Difference {
-        leaf: "SliderLook",
+        leaf: "SliderLook::hover_thumb",
         presets: &["adwaita"],
         reason: "0.7.2's adwaita states an uncited slider.thumb_hover_color (#ebebeb / \
                  #3a3a3e); 0.8.0's adwaita states libadwaita's $slider_hover_color, white in \
                  both schemes (_scale.scss:62-76, _colors.scss:289 at libadwaita 1.10.0; \
                  native-theme/tests/next_homes.toml, row slider.thumb_hover_color, a listed \
                  difference), so the look's hovered thumb is white",
-    },
-    Difference {
-        leaf: "SwitchLabelFont",
-        presets: &["ios-13"],
-        reason: "the 0.8.0 ios-13 states no font of switch.label (no source: iOS's switch \
-                 draws no label), so a switch's label is lettered in gpui-component's own font \
-                 (spec §10, rule 0): text_sm (input_text_size(Size::Medium)) in the window's \
-                 family and weight (gpui-component 0.10.0 switch.rs, Switch::render), where \
-                 the 0.7.2 switch took the body text's size and weight (SwitchTheme states no \
-                 label font)",
     },
     Difference {
         leaf: "SwitchLabelFont",
@@ -321,14 +262,77 @@ const DIFFERENCES: &[Difference] = &[
             "macos-monterey",
             "macos-tahoe",
             "material-3",
+            "ios-13",
         ],
         reason: "the 0.8.0 presets state switch.label as the platform's switch label, the \
                  body font (kde-breeze qqc2-desktop-style's control.font, adwaita \
                  AdwSwitchRow's title, windows-11 ToggleSwitch's content, macOS the body \
-                 font, material-3 Android's MaterialSwitch text), its family and slant \
+                 font, material-3 Android's MaterialSwitch text, ios-13 the list row's \
+                 UILabel in the Body text style), its family and slant \
                  included, where the 0.7.2 switch took the body text's size and weight alone \
                  and left the family and slant to the window's (SwitchTheme states no label \
                  font); the size and weight are the same",
+    },
+];
+
+/// The listed differences whose 0.8.0 value the test computes from the
+/// home the reason names: the 0.7.2 look's leaf set to the home's value
+/// through the conversion the 0.8.0 constructor applies to it, without
+/// calling that constructor ([`Report::home_leaf`]). The leaf must differ
+/// from 0.7.2's and equal that value; a home left unstated fails.
+const FROM_HOME: &[Difference] = &[
+    Difference {
+        leaf: "SwitchLook::label_gap",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 has no switch label, so the look has no gap; the 0.8.0 macOS presets \
+                 state switch.label_gap, SwiftUI's switch Toggle's, 8 (os-probe run \
+                 45210835145, macOS 15 and 26, `switch-label.toml` `[[item]] toggle_off` \
+                 fitting width 33 + 8 + the switch, \
+                 docs/evidence/os-probe/2026-11-23-run-45210835145/ on m2-fs4d)",
+    },
+    Difference {
+        leaf: "TabLook::hover",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states tab.hover_background #e8e8ed / #3a3a3c, \
+                 uncited; the 0.8.0 preset states tab.tab(HOVER).fill, the tab's rest fill, \
+                 the window's background, as AppKit draws a hovered tab as at rest (os-probe \
+                 run 45198750893, macOS 15, `*.hovered.tab` differs from the normal capture in \
+                 0 pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row tab.hover_background, a listed \
+                 difference), drawn over the bar",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states checkbox.hover_background #e0e0e5 / #444446, \
+                 uncited; the 0.8.0 preset states checkbox.indicator(HOVER).fill, the check \
+                 box's rest fill, as AppKit draws a hovered check box as at rest (os-probe run \
+                 45198750893, macOS 15, `*.hovered.checkbox_off` differs from the normal \
+                 capture in 0 pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on \
+                 m2-fs4c; native-theme/tests/next_homes.toml, row checkbox.hover_background, a \
+                 listed difference)",
+    },
+    Difference {
+        leaf: "SwitchLook hover_track",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states switch.hover_unchecked_background #c8c8cd / \
+                 #4a4a4c, uncited; the 0.8.0 preset states switch.track(HOVER).fill, the off \
+                 track's rest fill, as AppKit draws a hovered switch as at rest (os-probe run \
+                 45208260830, macOS 15, `*.hovered.switch_off` differs from the normal capture \
+                 in 0 pixels, docs/evidence/os-probe/2026-11-23-run-45208260830/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row switch.hover_unchecked_background, a \
+                 listed difference)",
+    },
+    Difference {
+        leaf: "SliderLook::hover_thumb",
+        presets: &["macos-monterey"],
+        reason: "0.7.2's macos-monterey states slider.thumb_hover_color #e0e0e0 (light), \
+                 uncited; the 0.8.0 preset states slider.thumb(HOVER).fill, the knob's rest \
+                 fill, as AppKit draws a hovered knob as at rest (os-probe run 45198750893, \
+                 macOS 15, `*.hovered.slider_knob` differs from the normal capture in 0 \
+                 pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row slider.thumb_hover_color, a listed \
+                 difference)",
     },
 ];
 
@@ -362,6 +366,31 @@ impl Report {
         old: Option<T>,
         new: Mapped<T>,
     ) {
+        self.compare(leaf, state, old, new, None);
+    }
+
+    /// Compare one leaf as [`Report::leaf`] does, and where a [`FROM_HOME`]
+    /// entry lists it on this preset, the 0.8.0 answer with `expected`, the
+    /// value computed from the entry's home (`None` where it is unstated).
+    fn home_leaf<T: PartialEq + Debug>(
+        &mut self,
+        leaf: &'static str,
+        state: &str,
+        old: Option<T>,
+        new: Mapped<T>,
+        expected: Option<T>,
+    ) {
+        self.compare(leaf, state, old, new, Some(expected));
+    }
+
+    fn compare<T: PartialEq + Debug>(
+        &mut self,
+        leaf: &'static str,
+        state: &str,
+        old: Option<T>,
+        new: Mapped<T>,
+        expected: Option<Option<T>>,
+    ) {
         self.compared += 1;
         let differs = match (&old, &new) {
             (Some(old), Ok(new)) => old != new,
@@ -370,10 +399,17 @@ impl Report {
         if !differs {
             return;
         }
-        if DIFFERENCES
+        let computed = FROM_HOME
             .iter()
-            .any(|d| d.leaf == leaf && d.presets.contains(&self.preset))
-        {
+            .find(|d| d.leaf == leaf && d.presets.contains(&self.preset));
+        let described = match (computed, &expected, &new) {
+            (None, _, _) => DIFFERENCES
+                .iter()
+                .any(|d| d.leaf == leaf && d.presets.contains(&self.preset)),
+            (Some(_), Some(Some(expected)), Ok(new)) => expected == new,
+            (Some(_), _, _) => false,
+        };
+        if described {
             self.listed.push(leaf);
             return;
         }
@@ -381,8 +417,20 @@ impl Report {
             Ok(new) => format!("{new:?}"),
             Err(Unmapped(home)) => format!("unmapped at {home}"),
         };
+        let listed = match (computed, expected) {
+            (Some(d), Some(expected)) => format!(
+                ", from its home {expected:?}: the listed difference ({}) no longer \
+                 describes it",
+                d.reason
+            ),
+            (Some(d), None) => format!(
+                ": listed ({}) as computed from its home, but compared without it",
+                d.reason
+            ),
+            (None, _) => String::new(),
+        };
         self.failures.push(format!(
-            "{}: {leaf}{state}: 0.7.2 {old:?}, 0.8.0 {new}",
+            "{}: {leaf}{state}: 0.7.2 {old:?}, 0.8.0 {new}{listed}",
             self.label
         ));
     }
@@ -461,19 +509,45 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         old_tab.map(unhovered),
         new_tab.map(unhovered),
     );
-    r.leaf(
+    // `TabLook::next_of`: the hovered tab's stated fill over the bar.
+    let tab_hover = crate::next::state_fill_of(&new.tab.tab(WidgetState::HOVER))
+        .zip(old_tab)
+        .map(|(hover, look)| super::over(look.bar, hover));
+    r.home_leaf(
         "TabLook::hover",
         "",
         old_tab.map(|look| look.hover),
         new_tab.map(|look| look.hover),
+        tab_hover,
     );
     for disabled in [false, true] {
         let state = format!(" disabled={disabled}");
+        let (old_slider, new_slider) = (
+            SliderLook::of(&old, disabled),
+            SliderLook::next_of(&new, disabled),
+        );
+        // The hovered thumb apart, so a listed difference of it leaves the
+        // rest of the look compared.
+        let unhovered = |look: SliderLook| SliderLook {
+            hover_thumb: None,
+            ..look
+        };
         r.leaf(
             "SliderLook",
             &state,
-            SliderLook::of(&old, disabled),
-            SliderLook::next_of(&new, disabled),
+            old_slider.map(unhovered),
+            new_slider.map(unhovered),
+        );
+        // `SliderLook::next_of`: the hovered thumb's stated fill, whole,
+        // where the slider is enabled.
+        let thumb_hover = crate::next::state_fill_of(&new.slider.thumb(WidgetState::HOVER))
+            .map(|hover| (!disabled).then_some(hover));
+        r.home_leaf(
+            "SliderLook::hover_thumb",
+            &state,
+            old_slider.map(|look| look.hover_thumb),
+            new_slider.map(|look| look.hover_thumb),
+            thumb_hover,
         );
         r.leaf(
             "ThumbOutline",
@@ -495,11 +569,12 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 hover_track: None,
                 ..look
             };
-            r.leaf(
+            r.home_leaf(
                 "SwitchLook::label_gap",
                 &state,
                 old_switch.map(|look| look.label_gap),
                 new_switch.map(|look| look.label_gap),
+                new.switch.label_gap.and_then(super::length).map(Some),
             );
             r.leaf(
                 "SwitchLook",
@@ -507,11 +582,29 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_switch.map(unlabelled),
                 new_switch.map(unlabelled),
             );
-            r.leaf(
+            // `SwitchLook::next_of`: the hovered track's stated fill, whole
+            // (on, at `HOVER|CHECKED` where a rule states it for `HOVER`),
+            // where the switch is enabled.
+            let hovered = new.switch.track(WidgetState::HOVER);
+            let track_hover = if checked {
+                hovered
+                    .from_state
+                    .contains(PartStated::FILL)
+                    .then(|| {
+                        crate::next::fill_of(
+                            &new.switch.track(WidgetState::HOVER | WidgetState::CHECKED),
+                        )
+                    })
+                    .flatten()
+            } else {
+                crate::next::state_fill_of(&hovered)
+            };
+            r.home_leaf(
                 "SwitchLook hover_track",
                 &state,
                 old_switch.map(|look| look.hover_track),
                 new_switch.map(|look| look.hover_track),
+                track_hover.map(|hover| (!disabled).then_some(hover)),
             );
             r.leaf(
                 if disabled {
@@ -575,11 +668,15 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_box.map(|look| look.hover_border),
                 new_box.map(|look| look.hover_border),
             );
-            r.leaf(
+            // `CheckboxLook::next_of`: the hovered box's stated fill, whole,
+            // where it is enabled and unchecked.
+            r.home_leaf(
                 "CheckboxLook::of hover_fill",
                 &state,
                 old_box.map(|look| look.hover_fill),
                 new_box.map(|look| look.hover_fill),
+                crate::next::state_fill_of(&new.checkbox.indicator(WidgetState::HOVER))
+                    .map(|hover| (!checked && !disabled).then_some(hover)),
             );
             let (old_radio, new_radio) = (
                 CheckboxLook::radio(&old, checked, disabled),
@@ -733,7 +830,7 @@ fn every_look_is_the_same_from_both_models() -> crate::Result<()> {
             listed.extend(report.listed.into_iter().map(|leaf| (key, leaf)));
         }
     }
-    for d in DIFFERENCES {
+    for d in DIFFERENCES.iter().chain(FROM_HOME) {
         for preset in d.presets {
             if !listed.contains(&(*preset, d.leaf)) {
                 failures.push(format!(

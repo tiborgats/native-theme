@@ -20284,11 +20284,11 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
         ),
         Ok(SwitchLabelHome::WindowForegroundMuted) => (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/switch.rs:476",
+            "native-theme-gpui/widgets/switch.rs:487",
         ),
         _ => (
             "colors.window.foreground",
-            "native-theme-gpui/widgets/switch.rs:472",
+            "native-theme-gpui/widgets/switch.rs:481",
         ),
     };
     [track, hover, track_outline, thumb_outline, thumb, label]
@@ -20680,7 +20680,8 @@ fn a_theme_drawn_controls_info_prints_its_look() {
 /// The theme-drawn Switch's label in its info: on kde-breeze light patched
 /// to state the label's colour, size and gap and a disabled colour, each at
 /// the switch's own home, the colour cited at the line `SwitchLook::next_of`
-/// reads it at.
+/// reads it at; and on ios-13 light, which states the label but no gap, the
+/// gap gpui-component's own.
 #[cfg(feature = "widgets")]
 #[test]
 fn a_switchs_info_reads_its_label_at_its_own_homes() {
@@ -20714,23 +20715,35 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
                     .label(TextPatch::new().color(Color::rgb(0.0, 0.0, 1.0))),
             ),
     );
+    // ios-13 states no switch.label_gap: the row's width sets the space (next/presets/ios.rs).
+    let ios =
+        Theme::preset(Preset::Ios13).resolve(&ThemeContext::default().with_scheme(Scheme::Light));
     let says = |text: Option<&str>, part: &str| text.is_some_and(|text| text.contains(part));
     let mut wrong = Vec::new();
-    for (r, homes, gap, size) in [(
-        &patched,
-        [
-            (
-                "switch.label(NONE).color",
-                "native-theme-gpui/widgets/switch.rs:437",
-            ),
-            (
-                "switch.label(DISABLED).color",
-                "native-theme-gpui/widgets/switch.rs:439",
-            ),
-        ],
-        "switch.label_gap: 13px",
-        "switch.label(NONE).size_px 17px",
-    )] {
+    let stated_homes = [
+        (
+            "switch.label(NONE).color",
+            "native-theme-gpui/widgets/switch.rs:437",
+        ),
+        (
+            "switch.label(DISABLED).color",
+            "native-theme-gpui/widgets/switch.rs:439",
+        ),
+    ];
+    for (r, homes, gap, size) in [
+        (
+            &patched,
+            stated_homes,
+            "switch.label_gap: 13px",
+            "switch.label(NONE).size_px 17px",
+        ),
+        (
+            &ios,
+            stated_homes,
+            "gap_2",
+            "switch.label(NONE).size_px 17px",
+        ),
+    ] {
         let ground = r.colors.window.background.map(next_stated);
         for (disabled, (field, cited)) in [false, true].into_iter().zip(homes) {
             let info = inputs::native_switch(r, "label", false, disabled);

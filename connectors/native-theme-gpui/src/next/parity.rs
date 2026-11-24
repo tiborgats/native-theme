@@ -883,16 +883,11 @@ fn card_edge_of(new: &native_theme::next::ResolvedTheme) -> Option<(f32, Option<
 }
 
 /// A hovered list row's fill where a rule states it for `HOVER`,
-/// `list.highlight(HOVER).fill` as the connector reads a fill
-/// ([`super::fill_of`]): the form of [`ROW_HOVER`]'s entries on a preset
-/// that states it; `None` where none does, gpui-component's own then.
+/// `list.highlight(HOVER).fill` as the connector reads a state's fill
+/// ([`super::state_fill_of`]): the form of [`ROW_HOVER`]'s entries on a
+/// preset that states it; `None` where none does, gpui-component's own then.
 fn row_hover_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
-    use native_theme::next::{PartStated, WidgetState};
-    let hovered = new.list.highlight(WidgetState::HOVER);
-    if !hovered.from_state.contains(PartStated::FILL) {
-        return None;
-    }
-    super::fill_of(&hovered)
+    super::state_fill_of(&new.list.highlight(native_theme::next::WidgetState::HOVER))
 }
 
 /// The leaf of [`DIFFERENCES`]' entry for a hovered list or table row: the
@@ -902,8 +897,9 @@ const ROW_HOVER: &str = "to_theme: list_hover and table_hover";
 
 /// `theme` with its hovered list and table row as 0.7.2 paints them where
 /// the preset states no hover, the list's own fill (colour, token and the
-/// stored config's string of the theme's mode), where `theme` holds
-/// gpui-component's own hovered row there, its accent at
+/// stored config's string of the theme's mode), where `theme` holds the
+/// hovered row the preset states, `stated` ([`row_hover_of`]), or where that
+/// is `None` gpui-component's own, its accent at
 /// [`super::UPSTREAM_LIST_HOVER_ACCENT_OPACITY`] ([`DIFFERENCES`]'
 /// [`ROW_HOVER`] entry); `None` where it does not. The colours are compared
 /// by their hex strings, which an upstream rebuild of the theme from its

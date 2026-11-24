@@ -467,23 +467,33 @@ fn next_label(
         checked,
         disabled,
     );
-    let colour = match home {
-        SwitchLabelHome::WindowForeground => hsla(stated(
-            r.colors.window.foreground,
-            "colors.window.foreground",
-        )?),
-        SwitchLabelHome::WindowForegroundMuted => hsla(stated(
-            r.colors.window.foreground_muted,
-            "colors.window.foreground_muted",
-        )?),
-        SwitchLabelHome::Disabled | SwitchLabelHome::DisabledChecked => {
-            text_color(&r.switch.label(WidgetState::DISABLED | shown), home.path())?
+    Ok((label_colour(r, home)?, home))
+}
+
+/// The colour at a switch label's `home` ([`next_label`]): the switch's own
+/// label at the home's state, or the window's text gpui-component's own
+/// colour is filled from.
+fn label_colour(r: &native_theme::next::ResolvedTheme, home: SwitchLabelHome) -> Mapped<Hsla> {
+    use native_theme::next::WidgetState;
+    let state = match home {
+        SwitchLabelHome::WindowForeground => {
+            return Ok(hsla(stated(
+                r.colors.window.foreground,
+                "colors.window.foreground",
+            )?));
         }
-        SwitchLabelHome::Rest | SwitchLabelHome::Checked => {
-            text_color(&r.switch.label(shown), home.path())?
+        SwitchLabelHome::WindowForegroundMuted => {
+            return Ok(hsla(stated(
+                r.colors.window.foreground_muted,
+                "colors.window.foreground_muted",
+            )?));
         }
+        SwitchLabelHome::Rest => WidgetState::NONE,
+        SwitchLabelHome::Checked => WidgetState::CHECKED,
+        SwitchLabelHome::Disabled => WidgetState::DISABLED,
+        SwitchLabelHome::DisabledChecked => WidgetState::DISABLED | WidgetState::CHECKED,
     };
-    Ok((colour, home))
+    text_color(&r.switch.label(state), home.path())
 }
 
 /// The home of a switch's label colour ([`next_label`]) from the label the
@@ -1044,6 +1054,38 @@ mod tests {
         ] {
             assert_eq!(SwitchLook::next_label_home(&r, checked, disabled)?, home);
         }
+        Ok(())
+    }
+
+    /// gpui-component's own label colours, which no bundled preset reaches
+    /// (each states its switch label), are read at the window's text:
+    /// `foreground` at `colors.window.foreground`, `muted_foreground` at
+    /// `colors.window.foreground_muted`; a theme stating neither lacks them.
+    #[test]
+    fn gpui_components_own_label_colours_are_the_window_text() -> Mapped<()> {
+        let red = Color::rgb(1.0, 0.0, 0.0);
+        let blue = Color::rgb(0.0, 0.0, 1.0);
+        let mut r = unlabelled(&ThemePatch::new());
+        r.colors.window.foreground = Some(red);
+        r.colors.window.foreground_muted = Some(blue);
+        assert_eq!(
+            label_colour(&r, SwitchLabelHome::WindowForeground)?,
+            hsla(red)
+        );
+        assert_eq!(
+            label_colour(&r, SwitchLabelHome::WindowForegroundMuted)?,
+            hsla(blue)
+        );
+        r.colors.window.foreground = None;
+        r.colors.window.foreground_muted = None;
+        assert_eq!(
+            label_colour(&r, SwitchLabelHome::WindowForeground),
+            Err(Unmapped("colors.window.foreground"))
+        );
+        assert_eq!(
+            label_colour(&r, SwitchLabelHome::WindowForegroundMuted),
+            Err(Unmapped("colors.window.foreground_muted"))
+        );
         Ok(())
     }
 

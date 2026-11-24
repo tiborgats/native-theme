@@ -1164,3 +1164,69 @@ fn tahoe_s_pressed_and_disabled_checked_button_mix_the_accent_in_force() {
         );
     }
 }
+
+/// The pressed fills `macos-tahoe` measured on the default accent (the
+/// checked box's, the slider's filled track's, the source-list row's) stand
+/// under that accent, given explicitly or by a palette, and drop under
+/// another, given either way ([`lay_accent_over`]): the checked box and the
+/// filled track then keep their fill pressed, the row takes the selection's.
+#[test]
+fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
+    let pressed = |theme: &ResolvedTheme| {
+        [
+            solid(
+                &theme
+                    .checkbox
+                    .indicator(WidgetState::CHECKED | WidgetState::PRESSED)
+                    .fill,
+            ),
+            solid(&theme.slider.active_track(WidgetState::PRESSED).fill),
+            solid(&theme.sidebar.item(WidgetState::PRESSED).fill),
+        ]
+    };
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let c = constants(Preset::MacosTahoe, scheme);
+        let measured = [
+            c.checkbox_checked_pressed,
+            c.slider_fill_pressed,
+            c.sidebar_pressed,
+        ];
+        assert!(measured.iter().all(Option::is_some), "{scheme:?}");
+        let preset = || Theme::preset(Preset::MacosTahoe);
+        let default_palette = Palette {
+            accent: c.accent,
+            ..distinct_palette(scheme)
+        };
+        for (how, theme) in [
+            ("alone", preset().resolve(&ctx)),
+            ("explicit", preset().with_accent(c.accent).resolve(&ctx)),
+            (
+                "palette",
+                preset().with_palette(default_palette).resolve(&ctx),
+            ),
+        ] {
+            assert_eq!(pressed(&theme), measured, "{scheme:?} {how}");
+        }
+        for (how, theme) in [
+            ("explicit", preset().with_accent(hex(RED)).resolve(&ctx)),
+            (
+                "palette",
+                preset()
+                    .with_palette(distinct_palette(scheme))
+                    .resolve(&ctx),
+            ),
+        ] {
+            assert_eq!(
+                pressed(&theme),
+                [
+                    solid(&theme.checkbox.indicator(WidgetState::CHECKED).fill),
+                    solid(&theme.slider.active_track(WidgetState::NONE).fill),
+                    solid(&theme.sidebar.item(WidgetState::SELECTED).fill),
+                ],
+                "{scheme:?} {how}"
+            );
+            assert_ne!(pressed(&theme), measured, "{scheme:?} {how}");
+        }
+    }
+}

@@ -259,17 +259,21 @@ mod read {
             .map(Value::Width)
     }
 
-    /// The corners, a uniform circular radius (the one form the builder hands
-    /// iced, `borders::radius`), as a width.
+    /// The corners as the builder hands them to iced (`borders::radius`,
+    /// [`crate::next::radius_of`]), as a width.
+    #[cfg(feature = "widgets")]
     pub(super) fn corners(part: &PartStyle, gate: &PartStyle, state: WidgetState) -> Option<Value> {
-        use native_theme::next::{CornerCurve, CornerRadius};
-        if !part_stated(gate, PartStated::CORNERS, state) {
-            return None;
-        }
-        match (part.corners.radius, part.corners.curve) {
-            (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(Value::Width(r)),
-            _ => None,
-        }
+        part_stated(gate, PartStated::CORNERS, state)
+            .then(|| crate::next::radius_of(part))
+            .flatten()
+            .map(Value::Width)
+    }
+
+    /// The style functions, which alone read corners, are compared with the
+    /// `widgets` feature only: no value without it.
+    #[cfg(not(feature = "widgets"))]
+    pub(super) fn corners(_: &PartStyle, _: &PartStyle, _: WidgetState) -> Option<Value> {
+        None
     }
 
     /// A text style's colour.
@@ -2270,7 +2274,7 @@ const DIFFERENCES: &[Difference] = &[
         &[TAB_STROKE, TAB_IDLE_STROKE, STATED],
     ),
     // iced_aw: sidebar.container(NONE)'s stroke and sidebar.item(HOVER).
-    // the macOS presets state no fill for a hovered source-list row (`sidebar.item(HOVER)`).
+    // the macOS presets state a hovered source-list row's fill transparent (`sidebar.item(HOVER)`).
     aw(
         "aw::sidebar",
         MACOS,
@@ -2290,7 +2294,7 @@ const DIFFERENCES: &[Difference] = &[
     // iced_aw: list.container(NONE)'s stroke, list.highlight(HOVER) and
     // list.item_label(HOVER).
     inside("aw::selection_list", &["windows-11"]),
-    // the macOS presets state no highlight for a hovered row (`list.highlight(HOVER)`); its
+    // the macOS presets state a hovered row's highlight transparent (`list.highlight(HOVER)`); its
     // label they leave to iced_aw.
     aw(
         "aw::selection_list",
@@ -3118,10 +3122,10 @@ impl Fields for iced_aw::style::selection_list::Style {
 /// card, a sidebar or a selection list: the row under the pointer `HOVER`,
 /// every other status the rest (no field is stated for one).
 #[cfg(feature = "iced_aw")]
-fn hover_at(status: iced_aw::style::Status) -> Option<WidgetState> {
+fn hover_at(status: iced_aw::style::Status) -> WidgetState {
     match status {
-        iced_aw::style::Status::Hovered => Some(WidgetState::HOVER),
-        _ => Some(WidgetState::NONE),
+        iced_aw::style::Status::Hovered => WidgetState::HOVER,
+        _ => WidgetState::NONE,
     }
 }
 
@@ -3954,7 +3958,7 @@ fn compare_aw(
         for status in statuses {
             report.stated_leaf(
                 &format!("aw::sidebar({status:?})"),
-                hover_at(status),
+                Some(hover_at(status)),
                 (
                     aw_leaves::sidebar(old_sidebar(old_theme, status)),
                     aw_leaves::sidebar(new_sidebar(new_theme, status)),
@@ -3972,7 +3976,7 @@ fn compare_aw(
         for status in statuses {
             report.stated_leaf(
                 &format!("aw::selection_list({status:?})"),
-                hover_at(status),
+                Some(hover_at(status)),
                 (
                     aw_leaves::selection_list(old_list(old_theme, status)),
                     aw_leaves::selection_list(new_list(new_theme, status)),

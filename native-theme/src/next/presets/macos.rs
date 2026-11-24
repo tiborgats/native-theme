@@ -2536,10 +2536,18 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 }
 
 /// Drops the pressed colours the probe measured on the default accent (the
-/// checked box's, the slider's filled track's, the source-list row's): AppKit
-/// derives them from the accent by a function no source states, so under
-/// another accent the checked box and the slider keep their rest fill
-/// pressed and the row takes the selection's.
+/// checked box's, the slider's filled track's, the source-list row's): under
+/// the default accent the first two equal, within one level, the pressed
+/// checked button's mix of the accent by [`BUTTON_CHECKED_PRESSED_MIX`]
+/// (#006be1 light; #1f8aff and #1e8aff dark), the row's does not (#0076fb /
+/// #1c96ff); whether any of them follows that mix, or another function of
+/// the accent, under another accent is not measured, so they are dropped,
+/// not derived: the checked box and the slider keep their rest fill pressed
+/// and the row takes the selection's. Once dropped, they stay dropped: a
+/// later layer that lays the preset's accent back (a palette's or the
+/// explicit accent over a system accent) compares it with the accent then in
+/// force, not the preset's, and does not restore them, which leaves the
+/// unmeasured rest fill rather than a colour measured for another accent.
 fn drop_accent_measurements(c: &mut SchemeColors) {
     c.checkbox_checked_pressed = None;
     c.slider_fill_pressed = None;
@@ -3142,7 +3150,7 @@ fn list(
         .base(padding)
         .rule(alternate, [fill(c.list_alternate)])
         .build();
-    // Hovered, no highlight: the hovered row differs from its normal capture in 0 pixels; pressed,
+    // Hovered, transparent: the hovered row differs from its normal capture in 0 pixels; pressed,
     // the selection's, as the mouse-down selects the row (os-probe run 45198750893, macOS 15 and
     // 26, `*.hovered.table_row`, `*.pressed.table_row` `fill` #0064e1 / #0059d1).
     let highlight = RuleBuilder::new(PartStyle::default())
@@ -3770,7 +3778,7 @@ fn sidebar(
     let container = RuleBuilder::new(PartStyle::default())
         .base([fill(c.sidebar_background), outline(layout, c.border)])
         .build();
-    // Hovered, no fill: the hovered source-list row differs from its normal capture in 0 pixels
+    // Hovered, transparent: the hovered source-list row differs from its normal capture in 0 pixels
     // (os-probe run 45198750893, macOS 15 and 26, `*.hovered.source_list_row`); pressed, the
     // generation's measured fill, else the selection's (`*.pressed.source_list_row` `fill`).
     let item = RuleBuilder::new(PartStyle::default())
