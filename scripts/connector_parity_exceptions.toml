@@ -551,6 +551,12 @@ kind = "absent"
 reason = "iced's wrapper rings a field the application wraps (connectors/native-theme-iced/src/lib.rs, `focus_ring`'s doc); the egui connector's install plugin strokes the theme's ring round whichever widget holds the focus at the end of each pass, with no call of the application's (src/plugin.rs, `paint_focus_ring`)"
 
 [[exception]]
+connector = ["gpui", "egui"]
+name = ["next::ring_look", "next::focus_ring_with"]
+kind = "absent"
+reason = "iced's `next::focus_ring` keeps the field it is given, so iced's `next` maps the ring apart (`ring_look`) and wraps the field in a ring it mapped (`focus_ring_with`), for an application that draws the field alone where the ring is unmapped (connectors/native-theme-iced/src/next/mod.rs, `focus_ring_with`'s doc); gpui and egui have no `next::focus_ring`, each for the reason its `focus_ring` entry above gives: gpui-component draws a focused Input's ring itself, and the egui connector's install plugin strokes the ring with no call of the application's"
+
+[[exception]]
 connector = "gpui"
 name = "pick_list_handle"
 kind = "absent"

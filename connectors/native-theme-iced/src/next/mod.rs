@@ -71,6 +71,8 @@ use native_theme::next::{
 
 use crate::ColorMode;
 use crate::extended::OverrideColors;
+#[cfg(feature = "widgets")]
+pub use crate::focus_ring::RingLook;
 
 /// A source a value needs that the theme leaves unstated, or states in a
 /// form the connector cannot hand to iced (a gradient fill, a per-side
@@ -1267,10 +1269,7 @@ pub(crate) fn ring_stroke(stroke: &Stroke, home: &'static str) -> Mapped<Option<
 /// [`Unmapped`] where the indicator is not a ring (`focus_ring.kind`), or a
 /// stroke is per side or the corners concentric ([`borders::corner_radii`]).
 #[cfg(feature = "widgets")]
-pub(crate) fn ring_look(
-    r: &ResolvedTheme,
-    radius: f32,
-) -> Mapped<Option<crate::focus_ring::RingLook>> {
+pub fn ring_look(r: &ResolvedTheme, radius: f32) -> Mapped<Option<RingLook>> {
     use native_theme::next::{FocusKind, FocusTrigger};
 
     let f = &r.focus_ring;
@@ -1315,7 +1314,24 @@ where
     Message: 'a,
     Renderer: iced_core::Renderer + 'a,
 {
-    Ok(crate::focus_ring::FocusRing::new(field.into(), ring_look(r, corner_radius)?).into())
+    Ok(focus_ring_with(ring_look(r, corner_radius)?, field))
+}
+
+/// [`focus_ring`] of a ring [`ring_look`] mapped: `field`, and round it
+/// while it holds the keyboard focus, `look`; the field with no ring where
+/// `look` is `None`. A caller that draws the field alone where the ring is
+/// [`Unmapped`] asks [`ring_look`] once and hands the field here, which
+/// [`focus_ring`] cannot do, as it keeps the field it is given.
+#[cfg(feature = "widgets")]
+pub fn focus_ring_with<'a, Message, Renderer>(
+    look: Option<RingLook>,
+    field: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    crate::focus_ring::FocusRing::new(field.into(), look).into()
 }
 
 /// What [`spinner`] reads: its diameter, stroke width, colour and period

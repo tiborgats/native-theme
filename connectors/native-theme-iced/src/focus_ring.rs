@@ -24,10 +24,13 @@ use native_theme::theme::ResolvedTheme;
 
 use crate::palette::to_color;
 
-/// What [`crate::focus_ring()`] draws, read from the theme's
-/// `defaults.focus_ring_*` ([`ring_look`]).
+/// The focus ring a focused field is drawn with, as the theme states it:
+/// what [`crate::focus_ring()`] draws, read from the theme's
+/// `defaults.focus_ring_*` ([`ring_look`]), and what
+/// [`crate::next::focus_ring_with`] draws, read from the 0.8.0 model's
+/// `focus_ring` ([`crate::next::ring_look`]).
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct RingLook {
+pub struct RingLook {
     /// `defaults.focus_ring_color`.
     pub(crate) color: Color,
     /// `defaults.focus_ring_width`: positive and finite.

@@ -7742,24 +7742,15 @@ const ICED_FIELD_RADIUS: f32 = 2.0;
 /// `corner_radius`; the field alone, as iced draws it with no ring, where
 /// the connector maps no ring for the theme (`native_theme_iced::next::Unmapped`:
 /// the indicator is not a ring, a stroke is per side or the corners
-/// concentric). `focus_ring` keeps the field it is given, so the mapping is
-/// asked round an empty space first; both asks read the theme's ring alone,
-/// so the second gives what the first did.
+/// concentric). The ring is mapped once (`iced_next::ring_look`) and drawn
+/// round the field by `iced_next::focus_ring_with`.
 fn next_focus_ring<'a>(
     r: &native_theme::next::ResolvedTheme,
     corner_radius: f32,
     field: impl Into<Element<'a, Message>>,
 ) -> Element<'a, Message> {
-    let probe = iced_next::focus_ring::<Message, iced::Renderer>(
-        r,
-        corner_radius,
-        iced::widget::Space::new(),
-    );
-    match probe {
-        Ok(_) => match iced_next::focus_ring(r, corner_radius, field) {
-            Ok(ringed) => ringed,
-            Err(_) => iced::widget::Space::new().into(),
-        },
+    match iced_next::ring_look(r, corner_radius) {
+        Ok(look) => iced_next::focus_ring_with(look, field),
         Err(_) => field.into(),
     }
 }
@@ -34236,7 +34227,11 @@ mod tests {
     /// ring shows for keyboard focus only, and a click is no key, so it runs
     /// twice: with `focus_ring.trigger` set to `None`, the
     /// ring's geometry at +1 as above, and as the preset states it, where
-    /// the pixel in the band is the ground's, to the same 3 per channel. The
+    /// the pixel in the band is the ground's, to the same 3 per channel.
+    /// Under macos-tahoe with the indicator made a fill, which iced's ring
+    /// cannot draw (`iced_next::ring_look` is `Unmapped`), the field is
+    /// drawn alone: it is laid out, and the pixel in the band is the
+    /// ground's. The
     /// Simulator runs no operation that gives a widget the focus, so the key
     /// path is the connector's tests' (`focus_ring.rs`,
     /// `where_the_theme_says_keyboard_only_a_click_draws_no_ring`,
@@ -34244,13 +34239,15 @@ mod tests {
     #[test]
     fn the_focused_field_draws_the_themes_ring_round_it() {
         let mut faults = Vec::new();
-        // (preset, the keyboard rule set to `None`, the ring expected)
+        // (preset, the keyboard rule set to `None`, the ring unmapped, the
+        // ring expected)
         let runs = [
-            ("macos-tahoe", false, true),
-            ("windows-11", true, true),
-            ("windows-11", false, false),
+            ("macos-tahoe", false, false, true),
+            ("windows-11", true, false, true),
+            ("windows-11", false, false, false),
+            ("macos-tahoe", false, true, false),
         ];
-        for (preset, rule_off, ringed) in runs {
+        for (preset, rule_off, unmapped, ringed) in runs {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let mut state = page_state(preset, Tab::Basic);
                 assert!(
@@ -34261,9 +34258,20 @@ mod tests {
                     state.next_resolved.focus_ring.trigger = None;
                     state.next_inactive.focus_ring.trigger = None;
                 }
+                if unmapped {
+                    let fill = native_theme::next::FocusKind::Fill;
+                    state.next_resolved.focus_ring.kind = fill;
+                    state.next_inactive.focus_ring.kind = fill;
+                }
                 let ring = state.next_shown().focus_ring.clone();
                 assert_eq!(
-                    ring.trigger != Some(native_theme::next::FocusTrigger::KeyboardOnly),
+                    iced_next::ring_look(state.next_shown(), 0.0).is_err(),
+                    unmapped,
+                    "{preset} {mode:?}: the ring's mapping is not as the run expects"
+                );
+                assert_eq!(
+                    !unmapped
+                        && ring.trigger != Some(native_theme::next::FocusTrigger::KeyboardOnly),
                     ringed,
                     "{preset} {mode:?}: the keyboard rule is not as the run expects"
                 );
