@@ -6,7 +6,7 @@ use native_theme_egui::native_theme::next::{
     LabelSide, ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
 };
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
-use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
+use native_theme_egui::{Note, ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
 
 use crate::parts::Parts;
 use crate::{next, scope};
@@ -114,13 +114,15 @@ impl<'a> Switch<'a> {
     }
 
     /// Where the 0.8.0 theme `r` states that the track shows on and off glyphs
-    /// (`switch.show_state_glyphs`, spec §5), that home, `"switch.show_state_glyphs"`, which
-    /// the switch does not draw (spec §10, rule 2): the model states no glyph, nor its size,
-    /// colour or place on the track, and egui's own `Checkbox` draws none. `None` where the
-    /// theme states none or states that the track shows none.
+    /// (`switch.show_state_glyphs`, spec §5), a [`Note::Unmapped`] at that home,
+    /// `"switch.show_state_glyphs"`, which the switch does not draw (spec §10, rule 2): the
+    /// model states no glyph, nor its size, colour or place on the track, and egui's own
+    /// `Checkbox` draws none. `None` where the theme states none or states that the track
+    /// shows none.
     #[must_use]
-    pub fn next_glyphs_unmapped(r: &NextResolvedTheme) -> Option<&'static str> {
-        (r.switch.show_state_glyphs == Some(true)).then_some("switch.show_state_glyphs")
+    pub fn next_glyphs_unmapped(r: &NextResolvedTheme) -> Option<Note> {
+        (r.switch.show_state_glyphs == Some(true))
+            .then(|| Note::unmapped("switch.show_state_glyphs"))
     }
 }
 

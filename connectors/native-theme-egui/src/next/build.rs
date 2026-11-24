@@ -5,15 +5,15 @@
 //! rule 0); a place a note names is the home's.
 
 use native_theme::next::{
-    ButtonQuery, CheckboxWidget, Color, FocusKind, FocusTrigger, IconStated, IconStyle, ListQuery,
-    Orientation, PartStated, PartStyle, Preset, ResolvedTheme, Stroke, StyleQuery, TextStated,
-    TextStyle, WidgetState, WindowState,
+    ButtonQuery, CheckboxWidget, Color, CornerRadius, FocusKind, FocusTrigger, IconStated,
+    IconStyle, ListQuery, Orientation, PartStated, PartStyle, Preset, ResolvedTheme, Stroke,
+    StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
 
 use super::{Mapped, Unmapped, padding_of, radius_of, reads, stroke_width_of};
+use crate::Note;
 use crate::convert::Rgba;
 use crate::plugin::FocusRingSource;
-use crate::style::Sources;
 use crate::style::base::{BaseSource, ButtonStates, DropShadow, Read, Sides};
 use crate::style::cells::{
     ButtonCell, CellSource, CheckboxCell, ComboBoxCell, DialogCell, ExpanderCell, InputCell,
@@ -27,6 +27,7 @@ use crate::style::states::{Edge, StateLine};
 use crate::style::variants::{
     CheckedBox, Disabled, MarkedBox, MixedBox, PrimaryDisabled, VariantSource,
 };
+use crate::style::{Sources, push_note};
 
 /// A colour of the 0.8.0 model as the 0.7.2 model's: its 8-bit sRGB channels with straight
 /// alpha, which the builders convert as they convert a 0.7.2 colour.
@@ -55,6 +56,46 @@ fn state_fill_at(part: &PartStyle, home: &'static str) -> Read<Rgba> {
     state_fill(part).map(|c| (c, home))
 }
 
+/// A [`Note::Unmapped`] at `home` where `part` states corners egui cannot draw as the one
+/// radius it rounds a widget by: radii that differ corner by corner, or concentric ones (spec
+/// §10, rule 2). egui's own radius stays, as [`radius_of`] gives none.
+fn meet_corners(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) {
+    if !part.stated.contains(PartStated::CORNERS) {
+        return;
+    }
+    let unmapped = match part.corners.radius {
+        CornerRadius::PerCorner {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        } => [top_right, bottom_right, bottom_left]
+            .iter()
+            .any(|r| *r != top_left),
+        CornerRadius::Concentric { .. } => true,
+        _ => false,
+    };
+    if unmapped {
+        push_note(notes, Note::Unmapped { path: home });
+    }
+}
+
+/// A [`Note::Unmapped`] at `home` where `part` states a stroke per side, which egui cannot
+/// draw as the one `egui::Stroke` it outlines a widget by (spec §10, rule 2). egui's own
+/// outline stays, as [`line()`] and [`stroke_width_of`] give none.
+fn meet_stroke(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) {
+    if part.stated.contains(PartStated::STROKE) && matches!(part.stroke, Stroke::Complex(_)) {
+        push_note(notes, Note::Unmapped { path: home });
+    }
+}
+
+/// [`radius_of`] with its home, `home` noted where egui cannot draw the corners
+/// ([`meet_corners`]).
+fn radius_at(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Read<f32> {
+    meet_corners(part, home, notes);
+    radius_of(part).map(|v| (v, home))
+}
+
 /// A part's stroke colour, where stated as one stroke of one colour in an alignment the
 /// connector knows.
 pub(crate) fn line(part: &PartStyle) -> Option<Rgba> {
@@ -68,15 +109,21 @@ pub(crate) fn line(part: &PartStyle) -> Option<Rgba> {
 
 /// The border a rule states for the queried state (its `from_state` bit), as [`line_of`] reads
 /// it; `None` where no rule states the stroke.
-pub(crate) fn state_line(part: &PartStyle, home: &'static str) -> Option<StateLine> {
+pub(crate) fn state_line(
+    part: &PartStyle,
+    home: &'static str,
+    notes: &mut Vec<Note>,
+) -> Option<StateLine> {
     part.from_state
         .contains(PartStated::STROKE)
-        .then(|| line_of(part, home))
+        .then(|| line_of(part, home, notes))
 }
 
 /// A part's border as a state's: its colour as [`line()`] reads it, transparent for a stroke
-/// stated as none (spec §10, rule 2), and its width, with `home`, the width's.
-fn line_of(part: &PartStyle, home: &'static str) -> StateLine {
+/// stated as none (spec §10, rule 2), and its width, with `home`, the width's, noted where
+/// stated per side ([`meet_stroke`]).
+fn line_of(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> StateLine {
+    meet_stroke(part, home, notes);
     let color = match part.stroke {
         Stroke::None if part.stated.contains(PartStated::STROKE) => Some(rgba(Color::TRANSPARENT)),
         _ => line(part),
@@ -87,11 +134,15 @@ fn line_of(part: &PartStyle, home: &'static str) -> StateLine {
     }
 }
 
-/// [`line()`] where a rule states it for the queried state (its `from_state` bit).
-pub(crate) fn state_line_color(part: &PartStyle) -> Option<Rgba> {
+/// [`line()`] where a rule states it for the queried state (its `from_state` bit), `home`
+/// noted where stated per side ([`meet_stroke`]).
+fn state_line_color(part: &PartStyle, home: &'static str, notes: &mut Vec<Note>) -> Option<Rgba> {
     part.from_state
         .contains(PartStated::STROKE)
-        .then(|| line(part))
+        .then(|| {
+            meet_stroke(part, home, notes);
+            line(part)
+        })
         .flatten()
 }
 
@@ -110,6 +161,15 @@ pub(crate) fn edge(part: &PartStyle) -> (Edge, LineAlign) {
         },
         align.unwrap_or(LineAlign::Outside),
     )
+}
+
+/// [`edge()`], its corners' and its stroke width's homes `paths` noted where egui cannot draw
+/// them ([`meet_corners`], [`meet_stroke`]).
+fn edge_at(part: &PartStyle, paths: [&'static str; 2], notes: &mut Vec<Note>) -> (Edge, LineAlign) {
+    let [corners, width] = paths;
+    meet_corners(part, corners, notes);
+    meet_stroke(part, width, notes);
+    edge(part)
 }
 
 /// A text style's colour, where stated.
@@ -164,7 +224,7 @@ fn drop_shadow(part: &PartStyle, home: &'static str) -> Option<DropShadow> {
 /// without the focus, where 0.7.2's `scrollbar.thumb_color` lives on kde-breeze; a theme with
 /// no rule for that state returns its plain thumb there. A caption or headline style the
 /// typography does not define is the body's (the table's `home_fallback`).
-pub(crate) fn base_source(r: &ResolvedTheme) -> BaseSource {
+pub(crate) fn base_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> BaseSource {
     let c = &r.colors;
     let t = &r.typography;
     let b = &r.button;
@@ -219,7 +279,7 @@ pub(crate) fn base_source(r: &ResolvedTheme) -> BaseSource {
         caret: Some(rgba(c.caret)),
         blink_on_ms: r.caret.blink_on_ms,
         blink_off_ms: r.caret.blink_off_ms,
-        window_radius: radius_of(&frame).map(|v| (v, "window.frame(normal).corners")),
+        window_radius: radius_at(&frame, "window.frame(normal).corners", notes),
         window_padding: sides(
             &frame,
             [
@@ -254,7 +314,7 @@ pub(crate) fn base_source(r: &ResolvedTheme) -> BaseSource {
             .timings
             .tooltip_show_ms
             .map(|ms| (f64::from(ms) / 1000.0) as f32),
-        button: button_states(r),
+        button: button_states(r, notes),
         thumb: thumb(r),
         title_bar_fill: fill(&r.window.title_bar(WindowState::default())),
         line_height: Some((
@@ -279,12 +339,16 @@ pub(crate) fn base_source(r: &ResolvedTheme) -> BaseSource {
 }
 
 /// The button's states the base style and the Button cell take.
-fn button_states(r: &ResolvedTheme) -> ButtonStates {
+fn button_states(r: &ResolvedTheme, notes: &mut Vec<Note>) -> ButtonStates {
     let b = &r.button;
     let rest = b.body(WidgetState::NONE);
     let hover = b.body(WidgetState::HOVER);
     let pressed = b.body(WidgetState::PRESSED);
-    let (border, align) = edge(&rest);
+    let border_paths = [
+        "button.body(NONE).corners",
+        "button.body(NONE).stroke.width",
+    ];
+    let (border, align) = edge_at(&rest, border_paths, notes);
     ButtonStates {
         fill: [
             fill_at(&rest, "button.body(NONE).fill"),
@@ -296,20 +360,18 @@ fn button_states(r: &ResolvedTheme) -> ButtonStates {
             state_text_color(&b.label(WidgetState::HOVER)),
         ],
         border,
-        border_paths: [
-            "button.body(NONE).corners",
-            "button.body(NONE).stroke.width",
-        ],
+        border_paths,
         align,
         // egui's `active` is press and keyboard focus alike: the focus ring's border where
         // the theme states one, else the pressed one
         state_border: [
-            state_line(&hover, "button.body(HOVER).stroke.width"),
+            state_line(&hover, "button.body(HOVER).stroke.width", notes),
             state_line(
                 &b.body(WidgetState::FOCUS_VISIBLE),
                 "button.body(FOCUS_VISIBLE).stroke.width",
+                notes,
             )
-            .or_else(|| state_line(&pressed, "button.body(PRESSED).stroke.width")),
+            .or_else(|| state_line(&pressed, "button.body(PRESSED).stroke.width", notes)),
         ],
     }
 }
@@ -330,30 +392,34 @@ fn thumb(r: &ResolvedTheme) -> [Read<Rgba>; 3] {
     ]
 }
 
-/// A part's outline with the homes of its corners and stroke width.
-fn outline(part: &PartStyle, paths: [&'static str; 2]) -> Outline {
-    let (edge, align) = edge(part);
+/// A part's outline with the homes of its corners and stroke width ([`edge_at`]).
+fn outline(part: &PartStyle, paths: [&'static str; 2], notes: &mut Vec<Note>) -> Outline {
+    let (edge, align) = edge_at(part, paths, notes);
     Outline { edge, paths, align }
 }
 
 /// The menu item's outline: its corners where stated, else, on the preset the table of homes
 /// names `menu.panel(NONE).corners` the home of `menu.border.corner_radius` on (material-3,
 /// whose menu rounds the panel alone), the panel's.
-fn menu_outline(r: &ResolvedTheme) -> Outline {
+fn menu_outline(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Outline {
     let m = &r.menu;
     let mut outline = outline(
         &m.item(WidgetState::NONE),
         ["menu.item(NONE).corners", "menu.item(NONE).stroke.width"],
+        notes,
     );
     if outline.edge.radius.is_none() && r.preset == Preset::Material3 {
-        outline.edge.radius = radius_of(&m.panel(WidgetState::NONE));
-        outline.paths[0] = "menu.panel(NONE).corners";
+        let home = "menu.panel(NONE).corners";
+        outline.edge.radius = radius_at(&m.panel(WidgetState::NONE), home, notes).map(|(v, _)| v);
+        outline.paths[0] = home;
     }
     outline
 }
 
-/// A panel part's separator line, with the home of its width.
-fn panel_edge(part: &PartStyle, width_path: &'static str) -> PanelEdge {
+/// A panel part's separator line, with the home of its width, noted where stated per side
+/// ([`meet_stroke`]).
+fn panel_edge(part: &PartStyle, width_path: &'static str, notes: &mut Vec<Note>) -> PanelEdge {
+    meet_stroke(part, width_path, notes);
     PanelEdge {
         color: line(part),
         width: stroke_width_of(part).map(|w| (w, width_path)),
@@ -410,7 +476,7 @@ fn opacity_at(v: Option<f32>, home: &'static str) -> Read<f32> {
 
 /// [`CellSource`] of the 0.8.0 model. A checked, selected or open state's value is the one a
 /// rule states for that state; a hover's or a press's as [`state_fill`] reads it.
-pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
+pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSource {
     use WidgetState as S;
     let b = &r.button;
     let rest = b.body(S::NONE);
@@ -446,7 +512,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
     let header = x.header(S::NONE);
     CellSource {
         button: ButtonCell {
-            states: button_states(r),
+            states: button_states(r, notes),
             pressed_label: state_text_color(&b.label(S::PRESSED)),
             primary_fill: fill(&b.body(primary)),
             primary_text: text_color(&b.label(primary)),
@@ -470,8 +536,8 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 text_color(&m.item_label(S::NONE)),
                 state_text_color(&m.item_label(S::HOVER)),
             ],
-            outline: menu_outline(r),
-            hover_border: state_line(&m.item(S::HOVER), "menu.item(HOVER).stroke.width"),
+            outline: menu_outline(r, notes),
+            hover_border: state_line(&m.item(S::HOVER), "menu.item(HOVER).stroke.width", notes),
             bar_padding: [
                 bar_left.map(|v| (v, "menu_bar.item(NONE).padding.left")),
                 bar_top.map(|v| (v, "menu_bar.item(NONE).padding.top")),
@@ -520,10 +586,15 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "input.field(NONE).corners",
                     "input.field(NONE).stroke.width",
                 ],
+                notes,
             ),
             state_border: [
-                state_line(&i.field(S::HOVER), "input.field(HOVER).stroke.width"),
-                state_line(&i.field(S::PRESSED), "input.field(PRESSED).stroke.width"),
+                state_line(&i.field(S::HOVER), "input.field(HOVER).stroke.width", notes),
+                state_line(
+                    &i.field(S::PRESSED),
+                    "input.field(PRESSED).stroke.width",
+                    notes,
+                ),
             ],
             placeholder: text_color(&i.placeholder(S::NONE)),
             selection: Some(rgba(r.colors.text_selection.background)),
@@ -557,15 +628,18 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "checkbox.indicator(NONE).corners",
                     "checkbox.indicator(NONE).stroke.width",
                 ],
+                notes,
             ),
             state_border: [
                 state_line(
                     &k.indicator(S::HOVER),
                     "checkbox.indicator(HOVER).stroke.width",
+                    notes,
                 ),
                 state_line(
                     &k.indicator(S::PRESSED),
                     "checkbox.indicator(PRESSED).stroke.width",
+                    notes,
                 ),
             ],
             mark_width: [
@@ -645,10 +719,11 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "tab.tab(SELECTED).corners",
                     "tab.tab(SELECTED).stroke.width",
                 ],
+                notes,
             ),
             state_border: [
-                state_line(&tb.tab(S::HOVER), "tab.tab(HOVER).stroke.width"),
-                state_line(&tb.tab(S::PRESSED), "tab.tab(PRESSED).stroke.width"),
+                state_line(&tb.tab(S::HOVER), "tab.tab(HOVER).stroke.width", notes),
+                state_line(&tb.tab(S::PRESSED), "tab.tab(PRESSED).stroke.width", notes),
             ],
             selected_fill: state_fill(&tb.tab(S::SELECTED)),
             selected_text: state_text_color(&tb.label(S::SELECTED)),
@@ -673,7 +748,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     &side.item_label(S::NONE),
                     "sidebar.item_label(NONE).size_px",
                 ),
-                edge: panel_edge(&side_box, "sidebar.container(NONE).stroke.width"),
+                edge: panel_edge(&side_box, "sidebar.container(NONE).stroke.width", notes),
             },
             selection: state_fill(&side.item(S::SELECTED)),
             selection_text: state_text_color(&side.item_label(S::SELECTED)),
@@ -690,7 +765,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     &tool.button_label(S::NONE),
                     "toolbar.button_label(NONE).size_px",
                 ),
-                edge: panel_edge(&bar, "toolbar.bar(NONE).stroke.width"),
+                edge: panel_edge(&bar, "toolbar.bar(NONE).stroke.width", notes),
             },
             bar_height: bar.min_size[1].map(|v| (v, "toolbar.bar(NONE).min_size[1]")),
             item_gap: tool.item_gap.map(|v| (v, "toolbar.item_gap")),
@@ -699,10 +774,15 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 state_fill(&tool.button(S::PRESSED)),
             ],
             button_border: [
-                state_line(&tool.button(S::HOVER), "toolbar.button(HOVER).stroke.width"),
+                state_line(
+                    &tool.button(S::HOVER),
+                    "toolbar.button(HOVER).stroke.width",
+                    notes,
+                ),
                 state_line(
                     &tool.button(S::PRESSED),
                     "toolbar.button(PRESSED).stroke.width",
+                    notes,
                 ),
             ],
             button_text: hover_press_text(|s| tool.button_label(s)),
@@ -719,14 +799,18 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
         status_bar: PanelCell {
             fill: fill(&r.status_bar.bar),
             text: text(&r.status_bar.label, "status_bar.label.size_px"),
-            edge: panel_edge(&r.status_bar.bar, "status_bar.bar.stroke.width"),
+            edge: panel_edge(&r.status_bar.bar, "status_bar.bar.stroke.width", notes),
         },
         list: ListCell {
             selection: state_fill(&l.highlight(S::SELECTED)),
             selection_text: state_text_color(&l.item_label(S::SELECTED)),
             grid: Some(rgba(l.grid_color)),
-            width: stroke_width_of(&list_box).map(|v| (v, "list.container(NONE).stroke.width")),
-            radius: radius_of(&list_box).map(|v| (v, "list.container(NONE).corners")),
+            width: {
+                let home = "list.container(NONE).stroke.width";
+                meet_stroke(&list_box, home, notes);
+                stroke_width_of(&list_box).map(|v| (v, home))
+            },
+            radius: radius_at(&list_box, "list.container(NONE).corners", notes),
             row_height: l.row(S::NONE).min_size[1].map(|v| (v, "list.row(NONE).min_size[1]")),
             highlight: [
                 state_fill_at(&l.highlight(S::HOVER), "list.highlight(HOVER).fill"),
@@ -746,7 +830,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 state_fill_at(&sw.track(S::HOVER), "switch.track(HOVER).fill"),
                 state_fill_at(&sw.track(S::PRESSED), "switch.track(PRESSED).fill"),
             ],
-            radius: radius_of(&sw_track).map(|v| (v, "switch.track(NONE).corners")),
+            radius: radius_at(&sw_track, "switch.track(NONE).corners", notes),
             height: sw_track.min_size[1].map(|v| (v, "switch.track(NONE).min_size[1]")),
             disabled_opacity: opacity_at(sw.disabled_opacity, "switch.disabled_opacity"),
         },
@@ -769,16 +853,26 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "combo_box.field(NONE).corners",
                     "combo_box.field(NONE).stroke.width",
                 ],
+                notes,
             ),
             state_border: [
-                state_line(&cb.field(S::HOVER), "combo_box.field(HOVER).stroke.width"),
+                state_line(
+                    &cb.field(S::HOVER),
+                    "combo_box.field(HOVER).stroke.width",
+                    notes,
+                ),
                 state_line(
                     &cb.field(S::PRESSED),
                     "combo_box.field(PRESSED).stroke.width",
+                    notes,
                 ),
             ],
             open_fill: state_fill(&cb.field(S::OPEN)),
-            open_border: state_line_color(&cb.field(S::OPEN)),
+            open_border: state_line_color(
+                &cb.field(S::OPEN),
+                "combo_box.field(OPEN).stroke.color",
+                notes,
+            ),
             min_height: cb_field.min_size[1].map(|v| (v, "combo_box.field(NONE).min_size[1]")),
             arrow: icon_size(&cb.chevron(S::NONE), "combo_box.chevron(NONE).size"),
             arrow_area: cb
@@ -815,15 +909,18 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "segmented_control.track(NONE).corners",
                     "segmented_control.track(NONE).stroke.width",
                 ],
+                notes,
             ),
             state_border: [
                 state_line(
                     &sc.segment(S::HOVER),
                     "segmented_control.segment(HOVER).stroke.width",
+                    notes,
                 ),
                 state_line(
                     &sc.segment(S::PRESSED),
                     "segmented_control.segment(PRESSED).stroke.width",
+                    notes,
                 ),
             ],
             selected_fill: state_fill(&sc.segment(S::SELECTED)),
@@ -857,6 +954,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "expander.container(NONE).corners",
                     "expander.container(NONE).stroke.width",
                 ],
+                notes,
             ),
             header_height: header.min_size[1].map(|v| (v, "expander.header(NONE).min_size[1]")),
             padding: sides(
@@ -896,8 +994,12 @@ fn disabled(label: &TextStyle, part: &PartStyle, home: &'static str, rest: &Part
 }
 
 /// The border a rule states for the queried state ([`state_line`]), and where it lies.
-fn state_edge(part: &PartStyle, home: &'static str) -> Option<(StateLine, LineAlign)> {
-    state_line(part, home).map(|line| (line, edge(part).1))
+fn state_edge(
+    part: &PartStyle,
+    home: &'static str,
+    notes: &mut Vec<Note>,
+) -> Option<(StateLine, LineAlign)> {
+    state_line(part, home, notes).map(|line| (line, edge(part).1))
 }
 
 /// The homes a note names a [`MarkedBox`]'s values by: its fill and outline width at rest, the
@@ -918,17 +1020,22 @@ struct MarkedHomes {
 /// for `HOVER` or `PRESSED` asked alone, else `None`, and the box keeps egui's own treatment of
 /// the hover or the press (spec §2, `from_state`: a connector that keeps its own treatment of
 /// one flag over a value stated for another asks that flag alone).
-fn marked_box(k: &CheckboxWidget, flag: WidgetState, homes: MarkedHomes) -> MarkedBox {
+fn marked_box(
+    k: &CheckboxWidget,
+    flag: WidgetState,
+    homes: MarkedHomes,
+    notes: &mut Vec<Note>,
+) -> MarkedBox {
     use WidgetState as S;
     let part = k.indicator(flag);
     let stated_fill = |state: WidgetState, home: &'static str| {
         state_fill(&k.indicator(state)).and_then(|_| fill_at(&k.indicator(state | flag), home))
     };
-    let stated_line = |state: WidgetState, home: &'static str| {
+    let stated_line = |state: WidgetState, home: &'static str, notes: &mut Vec<Note>| {
         k.indicator(state)
             .from_state
             .contains(PartStated::STROKE)
-            .then(|| line_of(&k.indicator(state | flag), home))
+            .then(|| line_of(&k.indicator(state | flag), home, notes))
     };
     // the mark's width where a rule states it for `asked`, the query `at`'s
     let mark_width = |asked: WidgetState, at: WidgetState, home: &'static str| {
@@ -944,16 +1051,16 @@ fn marked_box(k: &CheckboxWidget, flag: WidgetState, homes: MarkedHomes) -> Mark
     let [mark_rest, mark_hover, mark_press] = homes.mark_width;
     MarkedBox {
         fill: state_fill_at(&part, homes.fill),
-        width: state_line(&part, homes.width).and_then(|line| line.width),
-        outline: line_of(&part, homes.width).color,
+        width: state_line(&part, homes.width, notes).and_then(|line| line.width),
+        outline: line_of(&part, homes.width, notes).color,
         align: edge(&part).1,
         state_fill: [
             stated_fill(S::HOVER, hover_fill),
             stated_fill(S::PRESSED, press_fill),
         ],
         state_border: [
-            stated_line(S::HOVER, hover_width),
-            stated_line(S::PRESSED, press_width),
+            stated_line(S::HOVER, hover_width, notes),
+            stated_line(S::PRESSED, press_width, notes),
         ],
         mark_width: [
             mark_width(flag, flag, mark_rest),
@@ -966,7 +1073,7 @@ fn marked_box(k: &CheckboxWidget, flag: WidgetState, homes: MarkedHomes) -> Mark
 /// The mixed check box of the 0.8.0 theme `r`, as a rule states it for `INDETERMINATE`: the
 /// box ([`marked_box`]) and its mark's colour at rest and, where a rule states one for `HOVER`
 /// or `PRESSED` asked alone, the combined state's.
-pub(crate) fn mixed_box(r: &ResolvedTheme) -> MixedBox {
+pub(crate) fn mixed_box(r: &ResolvedTheme, notes: &mut Vec<Note>) -> MixedBox {
     use WidgetState as S;
     let k = &r.checkbox;
     let flag = S::INDETERMINATE;
@@ -994,6 +1101,7 @@ pub(crate) fn mixed_box(r: &ResolvedTheme) -> MixedBox {
                     "checkbox.checkmark(PRESSED|INDETERMINATE).stroke_width",
                 ],
             },
+            notes,
         ),
         mark: [
             state_icon_color(&k.checkmark(flag)),
@@ -1009,7 +1117,7 @@ pub(crate) fn mixed_box(r: &ResolvedTheme) -> MixedBox {
 /// for it (spec §2, `from_state`: the state asked alone), and are then the combined state's
 /// value; a checked box's disabled fill, mark and outline likewise. The disabled box takes the
 /// outline a rule states for the disabled state, else keeps its resting one.
-pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
+pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> VariantSource {
     use WidgetState as S;
     let b = &r.button;
     let cb = &r.combo_box;
@@ -1037,6 +1145,7 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
             border: state_edge(
                 &k.indicator(S::DISABLED),
                 "checkbox.indicator(DISABLED).stroke.width",
+                notes,
             ),
             ..disabled(
                 &k.label(S::DISABLED),
@@ -1066,6 +1175,7 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
                         "checkbox.checkmark(PRESSED|CHECKED).stroke_width",
                     ],
                 },
+                notes,
             ),
             disabled_fill: state_fill(&k.indicator(S::DISABLED)).and_then(|_| {
                 fill_at(
@@ -1082,7 +1192,11 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
                 .then(|| {
                     let part = k.indicator(S::DISABLED | S::CHECKED);
                     (
-                        line_of(&part, "checkbox.indicator(DISABLED|CHECKED).stroke.width"),
+                        line_of(
+                            &part,
+                            "checkbox.indicator(DISABLED|CHECKED).stroke.width",
+                            notes,
+                        ),
                         edge(&part).1,
                     )
                 }),
@@ -1108,9 +1222,9 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
 
 /// A surface's frame reads from its part, each with its home: `<home>.stroke.width`,
 /// `<home>.corners` and `<home>.padding.<side>`.
-fn surface(part: &PartStyle, homes: [&'static str; 7]) -> SurfaceSource {
+fn surface(part: &PartStyle, homes: [&'static str; 7], notes: &mut Vec<Note>) -> SurfaceSource {
     let [width, corners, top, right, bottom, left, shadows] = homes;
-    let (edge, align) = edge(part);
+    let (edge, align) = edge_at(part, [corners, width], notes);
     SurfaceSource {
         fill: fill(part),
         stroke: edge.color,
@@ -1142,22 +1256,35 @@ macro_rules! homes {
 /// is not active (`ThemeContext::window_active` false), whose title bar the
 /// `WindowTitleBar` frame fills from (the table of homes' `window.inactive_title_bar_background`
 /// row).
-pub(crate) fn frame_source(r: &ResolvedTheme, inactive: &ResolvedTheme) -> FrameSource {
+pub(crate) fn frame_source(
+    r: &ResolvedTheme,
+    inactive: &ResolvedTheme,
+    notes: &mut Vec<Note>,
+) -> FrameSource {
     use WidgetState as S;
     let window = WindowState::default();
     FrameSource {
-        window: surface(&r.window.frame(window), homes!("window.frame(normal)")),
+        window: surface(
+            &r.window.frame(window),
+            homes!("window.frame(normal)"),
+            notes,
+        ),
         title_bar: fill(&inactive.window.title_bar(window)),
-        dialog: surface(&r.dialog.panel, homes!("dialog.panel")),
-        popover: surface(&r.popover.panel, homes!("popover.panel")),
-        tooltip: surface(&r.tooltip.panel, homes!("tooltip.panel")),
-        card: surface(&r.card.container(S::NONE), homes!("card.container(NONE)")),
+        dialog: surface(&r.dialog.panel, homes!("dialog.panel"), notes),
+        popover: surface(&r.popover.panel, homes!("popover.panel"), notes),
+        tooltip: surface(&r.tooltip.panel, homes!("tooltip.panel"), notes),
+        card: surface(
+            &r.card.container(S::NONE),
+            homes!("card.container(NONE)"),
+            notes,
+        ),
         sidebar: surface(
             &r.sidebar.container(S::NONE),
             homes!("sidebar.container(NONE)"),
+            notes,
         ),
-        toolbar: surface(&r.toolbar.bar(S::NONE), homes!("toolbar.bar(NONE)")),
-        status_bar: surface(&r.status_bar.bar, homes!("status_bar.bar")),
+        toolbar: surface(&r.toolbar.bar(S::NONE), homes!("toolbar.bar(NONE)"), notes),
+        status_bar: surface(&r.status_bar.bar, homes!("status_bar.bar"), notes),
         shadow_color: rgba(r.colors.shadow),
         window_margin: r.layout.window_margin,
     }
@@ -1169,12 +1296,16 @@ pub(crate) fn frame_source(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Frame
 /// # Errors
 ///
 /// [`focus_ring_source`]'s.
-pub(crate) fn sources(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped<Sources> {
+pub(crate) fn sources(
+    r: &ResolvedTheme,
+    inactive: &ResolvedTheme,
+    notes: &mut Vec<Note>,
+) -> Mapped<Sources> {
     Ok(Sources {
-        base: base_source(r),
-        cells: cell_source(r),
-        variants: variant_source(r),
-        frames: frame_source(r, inactive),
+        base: base_source(r, notes),
+        cells: cell_source(r, notes),
+        variants: variant_source(r, notes),
+        frames: frame_source(r, inactive, notes),
         focus_ring: focus_ring_source(r)?,
         rule_0: true,
     })

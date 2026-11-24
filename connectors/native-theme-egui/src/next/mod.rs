@@ -1172,7 +1172,7 @@ pub fn mixed_checkbox(
     let mut notes = Vec::new();
     crate::style::variants::mixed_cell(
         visuals,
-        &build::mixed_box(r),
+        &build::mixed_box(r, &mut notes),
         crate::style::states::Unstated::Egui(&own.visuals.widgets),
         &mut notes,
     );

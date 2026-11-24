@@ -1329,7 +1329,9 @@ fn a_switch_stating_state_glyphs_reports_them_unmapped() -> TestResult {
     let patch = "[widgets.switch]\nshow_state_glyphs = true\n";
     assert_eq!(
         Switch::next_glyphs_unmapped(&patched(Preset::KdeBreeze, patch)?),
-        Some("switch.show_state_glyphs")
+        Some(native_theme_egui::Note::unmapped(
+            "switch.show_state_glyphs"
+        ))
     );
     let off = "[widgets.switch]\nshow_state_glyphs = false\n";
     assert_eq!(

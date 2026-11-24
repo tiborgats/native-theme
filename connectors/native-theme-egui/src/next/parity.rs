@@ -2074,7 +2074,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
             let (old_styles, new_styles) = (old_atlas.scheme(scheme), new_atlas.scheme(scheme));
             // each side's sources and cell input as its atlas compiled them
             let old_sources = crate::style::Sources::old(old, &prefs, &layout);
-            let new_sources = super::build::sources(new, inactive)?;
+            let new_sources = super::build::sources(new, inactive, &mut Vec::new())?;
             let cell_input = |sources: &crate::style::Sources| CellInput {
                 scheme,
                 row_height: crate::atlas::row_height(scheme, sources, &defs),
@@ -2083,7 +2083,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
             };
             let (old_input, new_input) = (cell_input(&old_sources), cell_input(&new_sources));
             let (old_base, new_base) = (&*old_styles.base, &*new_styles.base);
-            let new_src = base_source(new);
+            let new_src = base_source(new, &mut Vec::new());
             let own = leaves(&format!("{:#?}", scheme.default_style()));
             let old_leaves = leaves(&format!("{old_base:#?}"));
             let new_leaves = leaves(&format!("{new_base:#?}"));
@@ -2122,8 +2122,8 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                 bases: None,
             };
             compare(&side, old_base, new_base, &base_expected, &mut tally);
-            let new_cells = cell_source(new);
-            let new_variant_src = variant_source(new);
+            let new_cells = cell_source(new, &mut Vec::new());
+            let new_variant_src = variant_source(new, &mut Vec::new());
             for role in Role::all() {
                 let what = format!("{role:?}");
                 let old_cell = &**old_styles.cell(*role, RoleVariant::Normal);

@@ -51,7 +51,8 @@ Limits under the 0.8.0 model:
 * The switch's track draws no on and off glyphs where `switch.show_state_glyphs`
   asks for them: the model states no glyph, nor its size, colour or place on
   the track, and egui's own `Checkbox` draws none
-  (`Switch::next_glyphs_unmapped` names the home).
+  (`Switch::next_glyphs_unmapped` reports it as a `Note::Unmapped` at its
+  home).
 * The switch's label is lettered at `switch.label(NONE)`'s size in egui's
   `Proportional` family, as the connector's role fonts are
   (`native_theme_egui::next::text_role_font`): that family holds the face the

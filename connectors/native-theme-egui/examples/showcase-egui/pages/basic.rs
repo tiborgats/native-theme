@@ -867,7 +867,9 @@ fn radios(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
 /// `switch.show_state_glyphs` asks for, which the companion crate's switch does not draw
 /// (`Switch::next_glyphs_unmapped`).
 pub(crate) fn note_switch(reg: &mut Registry, r: Option<&ResolvedTheme>) {
-    if let Some(home) = r.and_then(Switch::next_glyphs_unmapped) {
+    if let Some(native_theme_egui::Note::Unmapped { path: home, .. }) =
+        r.and_then(Switch::next_glyphs_unmapped)
+    {
         reg.note_last(
             "state glyphs",
             &format!(

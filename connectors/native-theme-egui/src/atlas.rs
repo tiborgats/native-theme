@@ -12,7 +12,7 @@ use crate::{
     Surface,
 };
 
-/// A non-fatal observation made while compiling a [`ThemeAtlas`]. Six variants.
+/// A non-fatal observation made while compiling a [`ThemeAtlas`]. Seven variants.
 ///
 /// `#[non_exhaustive]` on the *enum* keeps adding a variant non-breaking; it does **not**
 /// protect a variant's payload, which stays exhaustively patternable downstream (verified with
@@ -88,6 +88,26 @@ pub enum Note {
         /// The family name the face was registered under.
         family: std::sync::Arc<str>,
     },
+    /// A 0.8.0 theme states a value in a form egui cannot draw, and egui's own stays in its
+    /// place (spec §10, rule 2): corners whose radii differ corner by corner, or concentric
+    /// ones (egui rounds a widget by one radius, [`crate::next::radius_of`]), or a stroke
+    /// stated per side (egui strokes a widget by one `egui::Stroke`). A whole-theme failure,
+    /// such as a focus indicator that is not a ring, is [`crate::next::Unmapped`] instead.
+    #[non_exhaustive]
+    Unmapped {
+        /// The value's home in the 0.8.0 model, as [`crate::next::Unmapped`] names it
+        /// (`"button.body(NONE).corners"`).
+        path: &'static str,
+    },
+}
+
+impl Note {
+    /// [`Note::Unmapped`] at `path`, for a companion crate that draws a 0.8.0 theme's value
+    /// beside the atlas and reports one it cannot draw on the same channel.
+    #[must_use]
+    pub const fn unmapped(path: &'static str) -> Self {
+        Self::Unmapped { path }
+    }
 }
 
 /// The builder's stored style patch (spec §4.3): a named type, because the spelled-out
@@ -1092,7 +1112,7 @@ impl<'a> NextBuilder<'a> {
         let patch = self.style_patch.as_deref();
         let mut compiled = |scheme, theme, inactive| {
             let prefs = crate::next::accessibility_of(theme);
-            let sources = crate::next::build::sources(theme, inactive)?;
+            let sources = crate::next::build::sources(theme, inactive, &mut notes)?;
             Ok(compile_scheme(
                 scheme, &sources, &prefs, &defs, &mut notes, patch,
             ))

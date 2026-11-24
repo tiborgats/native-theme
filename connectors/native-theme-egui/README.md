@@ -733,7 +733,13 @@ listed here, and a value the theme leaves unstated is egui's own
   `RectShape::stroke`). Where the theme states a part's stroke per side
   (`Stroke::Complex`), the part keeps egui's own stroke, as if the theme
   stated none, and the part reads (`next::stroke_color_of`,
-  `next::stroke_width_of`) return `None`.
+  `next::stroke_width_of`) return `None`; the atlas reports each such stroke
+  it meets as a `Note::Unmapped` at its home in `ThemeAtlas::notes`.
+- **Corners that differ corner by corner, or concentric ones.** The atlas
+  rounds each part by one radius (`next::radius_of`). Where the theme states
+  a part's radii per corner and they differ, or states them concentric with
+  a container, the part keeps egui's own radius, and the atlas reports it as
+  a `Note::Unmapped` at the corners' home.
 - **Shadows beyond one outset layer.** egui's `Shadow` is one outset
   shadow: an offset in whole points (`[i8; 2]`), a blur and a spread in
   whole points (`u8`), and a colour (`epaint-0.37.0/src/shadow.rs`), one

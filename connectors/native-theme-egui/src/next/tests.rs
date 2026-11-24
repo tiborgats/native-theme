@@ -160,7 +160,11 @@ fn patched_light(
     preset: Preset,
     patch: &str,
 ) -> Result<crate::ThemeAtlas, Box<dyn std::error::Error>> {
-    let theme = Theme::preset(preset).with_patch(ThemePatch::from_toml(patch)?);
+    atlas_of(&Theme::preset(preset).with_patch(ThemePatch::from_toml(patch)?))
+}
+
+/// The atlas `to_theme` builds from `theme`, light and dark.
+fn atlas_of(theme: &Theme) -> Result<crate::ThemeAtlas, Box<dyn std::error::Error>> {
     let [light, light_inactive, dark, dark_inactive] = [
         ThemeContext::light(),
         ThemeContext::light().with_window_active(false),
@@ -170,6 +174,84 @@ fn patched_light(
     .map(|ctx| theme.resolve(&ctx));
     let atlas = super::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
     Ok(atlas)
+}
+
+/// The paths of the `Note::Unmapped` notes of the atlas built from kde-breeze with `body` laid
+/// over the button's body.
+fn unmapped_paths(body: PartPatch) -> Result<Vec<&'static str>, Box<dyn std::error::Error>> {
+    let patch = ThemePatch::new().button(native_theme::next::ButtonRule::new().body(body));
+    let atlas = atlas_of(&Theme::preset(Preset::KdeBreeze).with_patch(patch))?;
+    Ok(atlas
+        .notes()
+        .iter()
+        .filter_map(|note| match note {
+            crate::Note::Unmapped { path } => Some(*path),
+            _ => None,
+        })
+        .collect())
+}
+
+/// Corners whose radii differ corner by corner are noted unmapped at their home, egui
+/// rounding a widget by one radius; equal ones, and the preset's own, are not.
+#[test]
+fn per_corner_radii_that_differ_are_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{CornerCurve, CornerRadius, Corners};
+
+    let per_corner = |top_left: f32, others: f32| Corners {
+        radius: CornerRadius::PerCorner {
+            top_left,
+            top_right: others,
+            bottom_right: others,
+            bottom_left: others,
+        },
+        curve: CornerCurve::Circular,
+    };
+    assert_eq!(unmapped_paths(PartPatch::new())?, Vec::<&str>::new());
+    assert_eq!(
+        unmapped_paths(PartPatch::new().corners(per_corner(2.0, 6.0)))?,
+        ["button.body(NONE).corners"]
+    );
+    assert_eq!(
+        unmapped_paths(PartPatch::new().corners(per_corner(4.0, 4.0)))?,
+        Vec::<&str>::new()
+    );
+    Ok(())
+}
+
+/// Concentric corners are noted unmapped at their home: egui knows no container radius to
+/// take the inset from.
+#[test]
+fn concentric_corners_are_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
+    use native_theme::next::{CornerCurve, CornerRadius, Corners};
+
+    let concentric = Corners {
+        radius: CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 1.0,
+        },
+        curve: CornerCurve::Circular,
+    };
+    assert_eq!(
+        unmapped_paths(PartPatch::new().corners(concentric))?,
+        ["button.body(NONE).corners"]
+    );
+    Ok(())
+}
+
+/// A stroke stated per side is noted unmapped at its width's home, egui outlining a widget by
+/// one stroke.
+#[test]
+fn a_per_side_stroke_is_noted_unmapped() -> Result<(), Box<dyn std::error::Error>> {
+    let side = || StrokeSide {
+        width: 1.0,
+        paint: Paint::Solid(STROKE),
+    };
+    let stroke = Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside);
+    assert_eq!(
+        unmapped_paths(PartPatch::new().stroke(stroke))?,
+        ["button.body(NONE).stroke.width"]
+    );
+    Ok(())
 }
 
 /// The primary button in a disabled scope takes the fill and the label a rule states for the
@@ -1180,7 +1262,7 @@ fn the_menu_item_takes_the_panels_corners_on_material_3_alone()
             continue;
         }
         unstated.push(preset);
-        let outline = &super::build::cell_source(&r).menu.outline;
+        let outline = &super::build::cell_source(&r, &mut Vec::new()).menu.outline;
         let want = (preset == Preset::Material3).then_some(7.0);
         assert_eq!(outline.edge.radius, want, "{key}");
     }
