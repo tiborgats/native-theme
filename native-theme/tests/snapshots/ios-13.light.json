@@ -2057,7 +2057,10 @@
         "width": 0.5,
         "color": "#c6c6c8"
       },
-      "corners": 13.0
+      "corners": {
+        "radius": 13.0,
+        "curve": "continuous"
+      }
     },
     "arrow": {},
     "text": {
@@ -2082,7 +2085,10 @@
         "width": 0.5,
         "color": "#c6c6c8"
       },
-      "corners": 13.0,
+      "corners": {
+        "radius": 13.0,
+        "curve": "continuous"
+      },
       "min_size": [
         270.0,
         140.0

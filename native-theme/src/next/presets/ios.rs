@@ -2359,7 +2359,8 @@ fn sidebar(
 /// The popover: its own background, or the popover's role where a palette
 /// states it, in the default border at the large radius (0.7.2:
 /// `popover.border.corner_radius` is `defaults.border.corner_radius_lg`
-/// where unstated; the default shadow); its text the window's.
+/// where unstated; the default shadow) on the continuous curve; its text the
+/// window's.
 fn popover(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -2367,10 +2368,16 @@ fn popover(
     layout: &LayoutMetrics,
 ) -> PopoverWidget {
     let mut panel = PartStyle::default();
+    // The large radius on the continuous curve: the popover's content view in `_UIPopoverView`
+    // reads 13.0 pt, continuous (measured, ios-host run 42269041636, iOS 18.6,
+    // `measure1/index.toml` scene `popover`, root `container`, view `0.1.1.1`, `corner_radius_pt`,
+    // `corner_curve`).
     for prop in [fill(roles.popover.background.unwrap_or(c.elevated))]
         .into_iter()
         .chain(border(roles, layout))
-        .chain([corners(layout.corner_radius_lg)])
+        .chain([PartProp::Corners(Corners::continuous(
+            layout.corner_radius_lg,
+        ))])
     {
         panel.apply(&prop);
     }
@@ -2490,7 +2497,8 @@ fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Swit
 /// The dialog: the window's background, or the dialog's role where a
 /// palette states it (0.7.2: `dialog.background_color` is
 /// `defaults.background_color` where unstated), in the default border at
-/// the large radius (the default shadow), of least and greatest sizes; its
+/// the large radius on the continuous curve (the default shadow), of least
+/// and greatest sizes; its
 /// title and body in the UI font; its icon, its buttons' gap and order. 0.7.2
 /// states no entrance.
 fn dialog(
@@ -2500,6 +2508,10 @@ fn dialog(
     motion: Motion,
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
+    // The large radius on the continuous curve: the alert's group view (`UIAlertController`
+    // `.alert`) reads 13.0 pt, continuous (measured, ios-host run 42269041636, iOS 18.6,
+    // `measure1/index.toml` scene `alert`, root `container`, views `0.3.0.0.0` and `0.3.0.0.1`,
+    // `corner_radius_pt`, `corner_curve`).
     for prop in roles
         .dialog
         .background
@@ -2508,7 +2520,7 @@ fn dialog(
         .into_iter()
         .chain(border(roles, layout))
         .chain([
-            corners(layout.corner_radius_lg),
+            PartProp::Corners(Corners::continuous(layout.corner_radius_lg)),
             PartProp::MinSize([Some(DIALOG_MIN_WIDTH), Some(DIALOG_MIN_HEIGHT)]),
             PartProp::MaxSize([Some(DIALOG_MAX_WIDTH), Some(DIALOG_MAX_HEIGHT)]),
         ])

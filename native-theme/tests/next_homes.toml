@@ -2406,10 +2406,10 @@ homes = ["popover.panel.stroke.color"]
 key = "popover.border.corner_radius"
 homes = ["popover.panel.corners"]
 note = "Corners::uniform(radius); full_lg"
-difference_presets = ["kde-breeze"]
-difference_reason = "0.7.2's 8 (defaults.border.corner_radius_lg) is uncited; qqc2-desktop-style's Popup and Menu round their background by Kirigami.Units.cornerRadius, 5, and Breeze rounds a QMenu's frame by Frame_FrameRadius, 5"
-difference_citation = "Popup.qml:46-47 and Menu.qml:128-129 at qqc2-desktop-style v6.31.0; Units.cornerRadius 5: docs/platform-facts.md §2.26 (border.corner_radius, units.cpp:46 at Kirigami 8319acc7); breezestyle.cpp:4695, :4721, breezehelper.cpp:568, :587, breezemetrics.h:42 at breeze f0b1d75"
-difference_values = { "kde-breeze" = 5.0 }
+difference_presets = ["kde-breeze", "ios-13"]
+difference_reason = "0.7.2's 8 (defaults.border.corner_radius_lg) is uncited; qqc2-desktop-style's Popup and Menu round their background by Kirigami.Units.cornerRadius, 5, and Breeze rounds a QMenu's frame by Frame_FrameRadius, 5; ios-13: 0.7.2's 13 on a circular curve; 0.8.0 states the 13 on the continuous curve the popover's content view in _UIPopoverView reads"
+difference_citation = "Popup.qml:46-47 and Menu.qml:128-129 at qqc2-desktop-style v6.31.0; Units.cornerRadius 5: docs/platform-facts.md §2.26 (border.corner_radius, units.cpp:46 at Kirigami 8319acc7); breezestyle.cpp:4695, :4721, breezehelper.cpp:568, :587, breezemetrics.h:42 at breeze f0b1d75; ios-13: ios-host run 42269041636 (iOS 18.6), `measure1/index.toml` scene `popover`, root `container`, view `0.1.1.1` `corner_radius_pt` 13, `corner_curve` continuous"
+difference_values = { "kde-breeze" = 5.0, "ios-13" = "continuous 13" }
 
 [[row]]
 key = "popover.border.line_width"
@@ -2691,6 +2691,10 @@ homes = ["dialog.panel.stroke.color"]
 key = "dialog.border.corner_radius"
 homes = ["dialog.panel.corners"]
 note = "Corners::uniform(radius); full_lg"
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's 13 on a circular curve; 0.8.0 states the 13 on the continuous curve the alert's group view (UIAlertController .alert) reads"
+difference_citation = "ios-host run 42269041636 (iOS 18.6), `measure1/index.toml` scene `alert`, root `container`, views `0.3.0.0.0` and `0.3.0.0.1` `corner_radius_pt` 13, `corner_curve` continuous"
+difference_values = { "ios-13" = "continuous 13" }
 
 [[row]]
 key = "dialog.border.line_width"

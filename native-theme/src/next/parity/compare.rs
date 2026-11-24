@@ -1535,16 +1535,21 @@ fn ruled_part(theme: &ResolvedTheme, widget: &str, rest: &str) -> Result<Option<
     })
 }
 
-/// The part style at `home`, a part's property (`tooltip.panel.<property>` or a ruled part's), `None`
+/// The part style at `home`, a part's property (`tooltip.panel.<property>`, `popover.panel.<property>`,
+/// `dialog.panel.<property>` or a ruled part's), `None`
 /// where the home is no part the comparator reads or a text or icon part.
 fn part_style_at(home: &str, theme: &ResolvedTheme) -> Result<Option<PartStyle>, String> {
     let Some((widget, rest)) = home.split_once('.') else {
         return Ok(None);
     };
-    if widget == "tooltip" {
-        return Ok(rest
-            .starts_with("panel.")
-            .then(|| theme.tooltip.panel.clone()));
+    let panel = match widget {
+        "tooltip" => Some(&theme.tooltip.panel),
+        "popover" => Some(&theme.popover.panel),
+        "dialog" => Some(&theme.dialog.panel),
+        _ => None,
+    };
+    if let Some(panel) = panel {
+        return Ok(rest.starts_with("panel.").then(|| panel.clone()));
     }
     if widget == "window" {
         let normal = WindowState::default();
