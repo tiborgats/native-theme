@@ -905,13 +905,15 @@ fn slider_across(
 }
 
 /// [`crate::styles::scrollable`]: the rail's fill, the scroller at rest (the
-/// handle of the view that has the focus, `thumb(NONE)`: spec §5, S3; iced
-/// knows no view focus, and a connector sets `UNFOCUSED_VIEW` only where the
-/// view lacks it, spec §3, `WidgetState`), under the pointer and
-/// dragged (`thumb(PRESSED)`, spec §5, `scrollbar.thumb_active_color`), with
-/// its outline and corners where the theme states them (Breeze's pen round
-/// a pill), each value the theme states nothing for iced's own, and whether
-/// the bar floats.
+/// handle of the view `view` says: `thumb(NONE)` in the view that has the
+/// focus, `thumb(UNFOCUSED_VIEW)` where `view` holds `UNFOCUSED_VIEW`, as a
+/// connector sets it only where the view lacks the focus, spec §5, S3;
+/// spec §3, `WidgetState`; iced's scrollable reports no view focus, so the
+/// caller passes it, `UNFOCUSED_VIEW` while the window is inactive; no other
+/// bit of `view` is read), under the pointer and dragged (`thumb(PRESSED)`,
+/// spec §5, `scrollbar.thumb_active_color`), with its outline and corners
+/// where the theme states them (Breeze's pen round a pill), each value the
+/// theme states nothing for iced's own, and whether the bar floats.
 ///
 /// # Errors
 ///
@@ -919,21 +921,38 @@ fn slider_across(
 /// stroke or corners iced cannot take.
 pub fn scrollable(
     r: &ResolvedTheme,
+    view: WidgetState,
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>,
 > {
     let s = &r.scrollbar;
-    let thumb = s.thumb(WidgetState::NONE);
+    let (rest, fill_home, stroke_home, corners_home) = if view.contains(WidgetState::UNFOCUSED_VIEW)
+    {
+        (
+            WidgetState::UNFOCUSED_VIEW,
+            "scrollbar.thumb(UNFOCUSED_VIEW).fill",
+            "scrollbar.thumb(UNFOCUSED_VIEW).stroke",
+            "scrollbar.thumb(UNFOCUSED_VIEW).corners",
+        )
+    } else {
+        (
+            WidgetState::NONE,
+            "scrollbar.thumb(NONE).fill",
+            "scrollbar.thumb(NONE).stroke",
+            "scrollbar.thumb(NONE).corners",
+        )
+    };
+    let thumb = s.thumb(rest);
     let hover = s.thumb(WidgetState::HOVER);
     let pressed = s.thumb(WidgetState::PRESSED);
     Ok(old::scrollable_from(&ScrollbarSource {
         track: fill(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
-        thumb: fill(&thumb, "scrollbar.thumb(NONE).fill")?,
+        thumb: fill(&thumb, fill_home)?,
         hovered_thumb: state_fill(&hover, "scrollbar.thumb(HOVER).fill")?,
         dragged_thumb: state_fill(&pressed, "scrollbar.thumb(PRESSED).fill")?,
         overlay_mode: s.overlay_mode,
-        thumb_edge: edge(&thumb, "scrollbar.thumb(NONE).stroke")?,
-        thumb_radius: radius_or_iced(&thumb, "scrollbar.thumb(NONE).corners")?.map(Radius::new),
+        thumb_edge: edge(&thumb, stroke_home)?,
+        thumb_radius: radius_or_iced(&thumb, corners_home)?.map(Radius::new),
         hovered_thumb_line: state_line(&hover, "scrollbar.thumb(HOVER).stroke.color")?,
         dragged_thumb_line: state_line(&pressed, "scrollbar.thumb(PRESSED).stroke.color")?,
     }))

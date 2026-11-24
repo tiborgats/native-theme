@@ -18,7 +18,7 @@ use super::*;
 use crate::next::Mapped;
 use crate::next::styles as next_styles;
 use crate::styles::SegmentPosition;
-use native_theme::next::{Stroke, TextStated, ThemeContext, ThemePatch};
+use native_theme::next::{Stroke, TextStated, ThemeContext, ThemePatch, WidgetState};
 
 /// The table of homes, whose rows name the homes of the 0.7.2 colour leaves.
 const HOMES_TABLE: &str = include_str!("../../../../native-theme/tests/next_homes.toml");
@@ -100,14 +100,6 @@ const UNREAD_HOMES: &[UnreadHome] = &[
         home: "radio.label(DISABLED).color",
         kind: "no receiver",
         why: NO_DISABLED_RADIO,
-    },
-    UnreadHome {
-        home: "scrollbar.thumb(UNFOCUSED_VIEW).fill",
-        kind: "no receiver",
-        why: "iced 0.14's scrollable reports no view focus (iced_widget 0.14.2 \
-             src/scrollable.rs, `Status`: Active, Hovered and Dragged), so \
-             `next::styles::scrollable` draws the handle at rest as the focused view's, \
-             `scrollbar.thumb(NONE)` (src/next/styles.rs, `scrollable`; spec §3, `WidgetState`)",
     },
     UnreadHome {
         home: "slider.thumb(HOVER|FOCUSED).stroke.color",
@@ -1003,7 +995,14 @@ impl NextReading {
         x.style(
             s,
             "styles::scrollable",
-            next_styles::scrollable(r),
+            next_styles::scrollable(r, WidgetState::NONE),
+            SCROLLABLE_STATUSES,
+            scrollable_texts,
+        );
+        x.style(
+            s,
+            "styles::scrollable(UNFOCUSED_VIEW)",
+            next_styles::scrollable(r, WidgetState::UNFOCUSED_VIEW),
             SCROLLABLE_STATUSES,
             scrollable_texts,
         );

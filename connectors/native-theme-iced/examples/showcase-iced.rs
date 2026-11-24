@@ -78,14 +78,14 @@ use native_theme::next::{
     PartStyle, Preset, Scheme, Stroke, StrokeAlign, StyleQuery, TextStated, TextStyle,
     ThemeContext, Typography, WidgetState,
 };
-use native_theme::theme::{
-    FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedTextScaleEntry, ResolvedTheme,
-};
+use native_theme::theme::{FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedTheme};
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::next as iced_next;
 use native_theme_iced::palette::to_color;
+#[cfg(test)]
+use native_theme_iced::scaled_text_size;
 use native_theme_iced::styles;
-use native_theme_iced::{AccessibilityPreferences, SystemThemeExt, at_least, scaled_text_size};
+use native_theme_iced::{AccessibilityPreferences, SystemThemeExt, at_least};
 // The colour-mode picker's rows: its `Display` is the Mode drop-down's and
 // the Theme menu's name of a mode, its `label` the command palette's.
 use native_theme_showcase_support::cli::ColorModeChoice as AppColorMode;
@@ -95,10 +95,11 @@ use native_theme_showcase_support::cli::{
 use native_theme_showcase_support::elements::{self, ShowcaseElement};
 use native_theme_showcase_support::info::ListedInfo;
 use native_theme_showcase_support::next::status as next_status;
+#[cfg(test)]
+use native_theme_showcase_support::status;
 use native_theme_showcase_support::status::DrawnFamily as FontDrawing;
 use native_theme_showcase_support::{
-    CAPTURE_WAIT, DIALOG_PADDING_PX, INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows,
-    status, values,
+    CAPTURE_WAIT, DIALOG_PADDING_PX, INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows, values,
 };
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -423,6 +424,7 @@ struct Gaps {
 }
 
 impl Gaps {
+    #[cfg(test)]
     fn from_layout(layout: &LayoutTheme) -> Self {
         Self::stated(
             layout.widget_gap,
@@ -3746,9 +3748,10 @@ fn content_panel(state: &State) -> Element<'_, Message> {
                 .direction(scrollable::Direction::Vertical(
                     iced_next::styles::scrollbar(r),
                 ))
-                .next_style(iced_next::styles::scrollable(r), |bar, style| {
-                    bar.style(style)
-                })
+                .next_style(
+                    iced_next::styles::scrollable(r, view_focus(state.window_active)),
+                    |bar, style| bar.style(style),
+                )
                 .height(Fill),
         )
         .into()
@@ -5972,7 +5975,8 @@ fn list_bar_corner(inner: f32, inset: f32, width: f32, own: f32) -> f32 {
     own.max(inner - inset).min(width / 2.0).max(0.0)
 }
 
-/// The Basic list's scrollbar's style: `iced_next::styles::scrollable`'s,
+/// The Basic list's scrollbar's style: `iced_next::styles::scrollable`'s in
+/// a window `window_active` or not ([`view_focus`]),
 /// iced's own (`scrollable::default`) where the theme lacks a value it
 /// needs, its vertical rail's and scroller's right-hand corners rounded by
 /// [`list_bar_corner`], so that both keep inside the frame's rounded inside;
@@ -5980,8 +5984,9 @@ fn list_bar_corner(inner: f32, inset: f32, width: f32, own: f32) -> f32 {
 /// (`src/scrollable.rs:1993-2010`).
 fn list_bar_style(
     r: &native_theme::next::ResolvedTheme,
+    window_active: bool,
 ) -> impl Fn(&Theme, scrollable::Status) -> scrollable::Style + use<> {
-    let mapped = iced_next::styles::scrollable(r).ok();
+    let mapped = iced_next::styles::scrollable(r, view_focus(window_active)).ok();
     let style = move |theme: &Theme, status| match &mapped {
         Some(style) => style(theme, status),
         None => scrollable::default(theme, status),
@@ -7431,9 +7436,10 @@ fn side_panel(state: &State) -> Element<'_, Message> {
                     .direction(scrollable::Direction::Vertical(
                         iced_next::styles::scrollbar(r),
                     ))
-                    .next_style(iced_next::styles::scrollable(r), |bar, style| {
-                        bar.style(style)
-                    })
+                    .next_style(
+                        iced_next::styles::scrollable(r, view_focus(state.window_active)),
+                        |bar, style| bar.style(style),
+                    )
                     .width(Fill)
                     .height(Fill)
             ),
@@ -7896,9 +7902,10 @@ fn tab_row<'a>(
                     .width(0.0)
                     .scroller_width(0.0),
             ))
-            .next_style(iced_next::styles::scrollable(r), |bar, style| {
-                bar.style(style)
-            })
+            .next_style(
+                iced_next::styles::scrollable(r, view_focus(state.window_active)),
+                |bar, style| bar.style(style),
+            )
             .width(whole_tabs_width(&widths, gap, room, size.width, start))
             .into()
     })
@@ -8602,7 +8609,6 @@ fn element_info_view<'a>(
     info: &'a ListedInfo,
     copied: &str,
 ) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
     let r = state.next_shown();
     let widget_gap = info_gap(r.layout.widget_gap);
     let section_gap = info_gap(r.layout.section_gap);
@@ -8610,12 +8616,8 @@ fn element_info_view<'a>(
     let label = r.sidebar.item_label(WidgetState::NONE);
     let regular = label.weight;
     let line = next_line_box(&r.typography, &label);
-    let b = &resolved.button;
-    let copy = button(text("Copy").themed(&resolved.sidebar.font, resolved, &state.accessibility))
-        .padding(native_theme_iced::padding_or(
-            &b.border.padding,
-            Padding::ZERO,
-        ))
+    let copy = button(text("Copy").next_text(&label, &r.typography))
+        .padding(ghost_padding(r))
         .style(copy_button(ghost_button(r, false), r))
         .on_press(Message::Copy(copied.to_owned()));
     let mut body = column![
@@ -10637,9 +10639,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("button", "border.line_width_px") => {
             format!("{class}: button::Style::border.width, painted over the padding").into()
         }
-        ("button", f) if side(f).is_some() && id == "chrome.info.copy" => {
-            "Button::padding, the side as stated (none where unstated)".into()
-        }
         ("button", f) if side(f).is_some() && tool => {
             "ghost_padding: Button::padding, the side of button.body(NONE;variant=Flat).padding as stated, \
              iced's own where unstated (the outline under the pointer is drawn over it)"
@@ -11930,7 +11929,6 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
         Some(ShownInfo::Unlisted(info)) => info.as_str(),
         None => "",
     };
-    let resolved = &state.current_resolved;
     let r = state.next_shown();
     let (text_color, muted) = info_inks(r);
     let Some(title) = info_title(info) else {
@@ -11946,11 +11944,13 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
         .into();
     };
     let pad = ghost_padding(state.next_shown());
-    let copy =
-        button(text("Copy").role(&resolved.text_scale.caption, resolved, &state.accessibility))
-            .padding(Padding::ZERO.left(pad.left).right(pad.right))
-            .style(ghost_button(r, false))
-            .on_press(Message::Copy(info.to_owned()));
+    let copy = button(text("Copy").next_text(
+        &native_theme_iced::next::text_scale(r).caption,
+        &r.typography,
+    ))
+    .padding(Padding::ZERO.left(pad.left).right(pad.right))
+    .style(ghost_button(r, false))
+    .on_press(Message::Copy(info.to_owned()));
     let mut body = column![
         row![
             inspector_heading(state, title.to_string()),
@@ -11985,11 +11985,17 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
 }
 
 /// The inspector's Theme tab: what the theme and the window set that no
-/// widget carries, as the gpui showcase's -- the theme's metrics, its fonts
-/// in the unit their source stated, and the window.
+/// widget carries, as the gpui showcase's -- the installed 0.8.0 theme's
+/// metrics (`layout.corner_radius`, `layout.corner_radius_lg`, the
+/// scrollbar's groove width, `scrollbar.track(NONE).min_size[0]`, or not
+/// stated, and `scrollbar.overlay_mode`; the push button's and the text
+/// field's padding as the showcase draws them, [`next_button_padding`] and
+/// [`next_input_padding`]; the four `layout` distances), its body and
+/// monospace styles' families as iced draws them ([`next_family_drawing`])
+/// and their sizes in the unit their source stated, and the window.
 fn inspector_theme(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let gap = Gaps::from_layout(&state.layout);
+    let r = state.next_shown();
+    let gap = Gaps::from_next(&r.layout);
     let px = |v: f32| format!("{v}px");
     let sides = |p: Padding| {
         format!(
@@ -11997,49 +12003,32 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
             p.top, p.right, p.bottom, p.left
         )
     };
-    let layout = &state.layout;
+    let layout = &r.layout;
     let config = [
-        (
-            "radius",
-            px(native_theme_iced::border_corner_radius(resolved)),
-        ),
-        (
-            "radius_lg",
-            px(native_theme_iced::border_corner_radius_lg(resolved)),
-        ),
+        ("radius", px(iced_next::border_corner_radius(r))),
+        ("radius_lg", px(iced_next::border_corner_radius_lg(r))),
         (
             "scrollbar",
-            px(native_theme_iced::scrollbar_groove_width(resolved)),
+            iced_next::scrollbar_groove_width(r)
+                .map_or_else(|_| values::NOT_STATED.to_string(), px),
         ),
-        (
-            "scrollbar overlay",
-            resolved.scrollbar.overlay_mode.to_string(),
-        ),
-        (
-            "button padding",
-            sides(native_theme_iced::button_padding(resolved)),
-        ),
-        (
-            "input padding",
-            sides(native_theme_iced::input_padding(resolved)),
-        ),
+        ("scrollbar overlay", r.scrollbar.overlay_mode.to_string()),
+        ("button padding", sides(next_button_padding(r))),
+        ("input padding", sides(next_input_padding(r))),
         ("widget_gap", layout_value(layout.widget_gap)),
         ("container_margin", layout_value(layout.container_margin)),
         ("window_margin", layout_value(layout.window_margin)),
         ("section_gap", layout_value(layout.section_gap)),
     ];
-    let d = &resolved.defaults;
+    let family = |style: &TextStyle, mono: bool| {
+        next_family_drawing(next_font_from_database(style, mono).as_ref()).label(&style.family)
+    };
+    let (body, mono) = (&r.typography.body, &r.typography.monospace);
     let fonts = [
-        (
-            "font_family",
-            family_label(&d.font.family, &font_drawn(&d.font)),
-        ),
-        ("font_size", status::defined_size(&d.font)),
-        (
-            "mono_font_family",
-            family_label(&d.mono_font.family, &mono_drawn(resolved)),
-        ),
-        ("mono_font_size", status::defined_size(&d.mono_font)),
+        ("font_family", family(body, false)),
+        ("font_size", next_status::defined_size(body)),
+        ("mono_font_family", family(mono, true)),
+        ("mono_font_size", next_status::defined_size(mono)),
     ];
     let window = [
         (
@@ -12306,9 +12295,10 @@ fn command_palette(state: &State) -> Element<'_, Message> {
             .direction(scrollable::Direction::Vertical(
                 iced_next::styles::scrollbar(r)
             ))
-            .next_style(iced_next::styles::scrollable(r), |bar, style| {
-                bar.style(style)
-            })
+            .next_style(
+                iced_next::styles::scrollable(r, view_focus(state.window_active)),
+                |bar, style| bar.style(style),
+            )
             .height(Length::Shrink),
     ]
     .spacing(gap.widget)
@@ -14828,7 +14818,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             container(Underlay::new(
                 scrollable(column(rows))
                     .direction(scrollable::Direction::Vertical(list_bar(next)))
-                    .style(list_bar_style(next))
+                    .style(list_bar_style(next, state.window_active))
                     .height(Length::Fixed(BASIC_LIST_VISIBLE * row_height)),
                 Box::new(
                     move |_: &mut iced::Renderer,
@@ -21506,9 +21496,8 @@ fn hoverable_ext_section<'a>(
     hoverable(UnlistedKey::ThemeMapPalette(section), content)
 }
 
-/// Sets text in a `text_scale` role, in a widget's font, or in the theme's
-/// body font: the size, scaled by the user's text-scaling factor, and the
-/// font that comes with it, [`theme_font`].
+/// Sets text in a text style of the installed 0.8.0 theme: its size, the
+/// context's text scale already applied, its line box and its font.
 ///
 /// Every text the showcase draws is sized here or through its widget's own
 /// `text_size`/`size` and `font`, and every size is scaled by the same
@@ -21517,21 +21506,7 @@ fn hoverable_ext_section<'a>(
 /// installed, and a factor applied to some text but not the rest would mix
 /// two scales on one screen.
 trait Typeset {
-    fn role(
-        self,
-        entry: &ResolvedTextScaleEntry,
-        resolved: &ResolvedTheme,
-        a11y: &AccessibilityPreferences,
-    ) -> Self;
-    fn typeset(self, font: &ResolvedFontSpec, a11y: &AccessibilityPreferences) -> Self;
-    /// `typeset`, on the theme's line height, `defaults.line_height`.
-    fn themed(
-        self,
-        font: &ResolvedFontSpec,
-        resolved: &ResolvedTheme,
-        a11y: &AccessibilityPreferences,
-    ) -> Self;
-    /// `themed` on the 0.8.0 model: `style`, one of the 0.8.0 theme's text
+    /// `style`, one of the 0.8.0 theme's text
     /// styles (a `typography` role's, [`next_section_title`],
     /// [`next_page_title`], or a widget's label), at its size as the theme
     /// resolved it, the context's text scale already applied, on its line
@@ -21550,35 +21525,6 @@ trait Typeset {
 }
 
 impl Typeset for iced::widget::Text<'_> {
-    fn role(
-        self,
-        entry: &ResolvedTextScaleEntry,
-        resolved: &ResolvedTheme,
-        a11y: &AccessibilityPreferences,
-    ) -> Self {
-        // The role's own line box, as the theme states it, scaled with its size.
-        self.size(scaled_text_size(entry.size, a11y))
-            .line_height(iced::Pixels(scaled_text_size(entry.line_height, a11y)))
-            .font(role_font(entry, resolved))
-    }
-
-    fn typeset(self, font: &ResolvedFontSpec, a11y: &AccessibilityPreferences) -> Self {
-        self.size(scaled_text_size(font.size, a11y))
-            .font(theme_font(font))
-    }
-
-    fn themed(
-        self,
-        font: &ResolvedFontSpec,
-        resolved: &ResolvedTheme,
-        a11y: &AccessibilityPreferences,
-    ) -> Self {
-        // The theme's line height, where iced's own is 1.3 times the size
-        // (`LineHeight::default`).
-        self.typeset(font, a11y)
-            .line_height(native_theme_iced::line_height(resolved))
-    }
-
     fn next_text(self, style: &TextStyle, typography: &Typography) -> Self {
         let text = self
             .size(style.size_px)
@@ -21721,36 +21667,16 @@ impl ShowDelay for iced::widget::Tooltip<'_, Message> {
     }
 }
 
-/// A theme font, its family, weight and style, as iced can draw it
-/// ([`font_from_database`]).
-fn theme_font(font: &ResolvedFontSpec) -> iced::Font {
-    font_drawn(font).font
-}
-
-/// A `text_scale` role's font: the role's weight in the body font's family
-/// and style, which a role does not state for itself.
-fn role_font(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> iced::Font {
-    role_drawn(entry, resolved).font
-}
-
 /// How a theme font is drawn.
+#[cfg(test)]
 fn font_drawn(font: &ResolvedFontSpec) -> Drawn {
     font_from_database(font, false)
 }
 
 /// How the theme's monospace font is drawn.
+#[cfg(test)]
 fn mono_drawn(resolved: &ResolvedTheme) -> Drawn {
     font_from_database(&resolved.defaults.mono_font, true)
-}
-
-/// How a `text_scale` role is drawn: its weight in the body font's family
-/// and style.
-fn role_drawn(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> Drawn {
-    let at_weight = ResolvedFontSpec {
-        weight: entry.weight,
-        ..resolved.defaults.font.clone()
-    };
-    font_from_database(&at_weight, false)
 }
 
 /// A Widget Info row for text in a 0.7.2 theme font, given how it is
@@ -28711,7 +28637,7 @@ mod tests {
         assert_eq!(next_bar_widths(&r), (6.0, 10.0), "the groove and the thumb");
         let margin = list_bar_margin(&r);
         assert_eq!(margin, 4.0, "the margin the thumb, the wider part, needs");
-        let style = list_bar_style(&r)(
+        let style = list_bar_style(&r, true)(
             &theme,
             scrollable::Status::Active {
                 is_horizontal_scrollbar_disabled: false,
@@ -40179,18 +40105,20 @@ mod tests {
     /// showcases' are: opened, the Theme menu's rows are each the widest
     /// row's label, and its shortcut the installed 0.8.0 theme's
     /// `layout.widget_gap` after it (right after it where unstated), inside
-    /// the row's padding, measured as iced shapes them; Preferences' shortcut
-    /// sits flush right in its row, inside the padding.
+    /// the row's padding (`menu.item(NONE).padding`, iced's own on a side it
+    /// leaves unstated), measured in `menu.item_label(NONE)` as iced shapes
+    /// them; Preferences' shortcut sits flush right in its row, inside the
+    /// padding.
     #[test]
     fn a_menu_is_as_wide_as_its_widest_row() {
         recording(|| {
             let state = State::default();
             let theme = theme(&state);
-            let resolved = &state.current_resolved;
-            let m = &resolved.menu;
-            let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-            let font = theme_font(&m.font);
-            let size = scaled_text_size(m.font.size, &state.accessibility);
+            let r = state.next_shown();
+            let label = r.menu.item_label(WidgetState::NONE);
+            let pad = stated_sides(&r.menu.item(WidgetState::NONE), button::DEFAULT_PADDING);
+            let font = next_measured_font(&label);
+            let size = label.size_px;
             let measured = |content: &str| {
                 MeasuredText::new(content.to_owned(), size, size, font)
                     .extent()
@@ -41698,9 +41626,6 @@ mod tests {
             .chain(std::iter::once(spliced));
         for (case, mut state) in cases {
             state.inspector_tab = InspectorTab::Theme;
-            // The side panel's padding is the 0.8.0 theme's, the page tabs'
-            // sides still the 0.7.2 layout's.
-            let margin = state.layout.container_margin;
             let next = state.next_shown();
             let next_margin = next.layout.container_margin;
             let [s_top, s_right, s_bottom, s_left] =
@@ -41779,7 +41704,7 @@ mod tests {
             );
             let strip = rect("chrome.page_tabs");
             let first = rect("chrome.page_tabs.basic");
-            let inset = margin.unwrap_or(0.0) + flares;
+            let inset = next_margin.unwrap_or_default() + flares;
             assert!(
                 near(first.x - strip.x, inset),
                 "{case}: the first page tab is {}px in, expected {inset}px",
@@ -43481,17 +43406,9 @@ mod tests {
         let mut scrolled = 0;
         for preset in ["macos-monterey", "kde-breeze"] {
             for width in [1024.0, 512.0] {
-                let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                    Ok(installed) => installed,
-                    Err(error) => panic!("{preset}: {error}"),
-                };
-                let state = State {
-                    current_theme: theme,
-                    current_resolved: resolved,
-                    active_tab: Tab::Buttons,
-                    side_panel_visible: false,
-                    ..State::default()
-                };
+                let mut state = loaded(preset, false);
+                state.active_tab = Tab::Buttons;
+                state.side_panel_visible = false;
                 let mut ui: Simulator<'_, Message> = Simulator::with_size(
                     Settings::default(),
                     Size::new(width, WINDOW_SIZE.1),
@@ -43536,7 +43453,7 @@ mod tests {
     fn the_side_panel_scrollbar_moves_nothing() {
         let mut state = installed("kde-breeze");
         assert!(
-            !state.current_resolved.scrollbar.overlay_mode,
+            !state.next_shown().scrollbar.overlay_mode,
             "kde-breeze's scrollbar no longer takes room of its own; pick a preset whose does"
         );
         let tallest = built_keys(&mut state)

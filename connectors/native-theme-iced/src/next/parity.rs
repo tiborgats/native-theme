@@ -3275,7 +3275,7 @@ fn compare_styles(
             themes,
             "scrollable",
             o::scrollable(old),
-            n::scrollable(new),
+            n::scrollable(new, WidgetState::NONE),
             |l: Listed| o::scrollable_from(&s.listed(l)),
             [
                 active,

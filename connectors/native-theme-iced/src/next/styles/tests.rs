@@ -834,7 +834,7 @@ fn a_scroller_no_state_rule_states_is_iceds_own() -> TestResult {
         .scrollbar(ScrollbarRule::new().thumb(PartPatch::new().fill(Paint::Solid(DISTINCT))));
     for (preset, r) in every_preset_with(&base) {
         let theme = to_theme(&r)?;
-        let style = super::scrollable(&r)?;
+        let style = super::scrollable(&r, WidgetState::NONE)?;
         for status in [hovered, dragged] {
             let own = iced_widget::scrollable::default(&theme, status);
             assert_eq!(
@@ -852,7 +852,7 @@ fn a_scroller_no_state_rule_states_is_iceds_own() -> TestResult {
     for (preset, r) in every_preset_with(&stated) {
         let theme = to_theme(&r)?;
         assert_eq!(
-            super::scrollable(&r)?(&theme, hovered)
+            super::scrollable(&r, WidgetState::NONE)?(&theme, hovered)
                 .vertical_rail
                 .scroller
                 .background,
@@ -883,7 +883,7 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
     for (preset, r) in every_preset() {
         let theme = to_theme(&r)?;
         let rest = r.scrollbar.thumb(WidgetState::NONE);
-        let border = super::scrollable(&r)?(&theme, active)
+        let border = super::scrollable(&r, WidgetState::NONE)?(&theme, active)
             .vertical_rail
             .scroller
             .border;
@@ -928,7 +928,7 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
     for (preset, mut r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
         r.scrollbar.overlay_mode = false;
-        let style = super::scrollable(&r)?;
+        let style = super::scrollable(&r, WidgetState::NONE)?;
         let at_rest = style(&theme, active).vertical_rail.scroller.border;
         assert_eq!(
             at_rest.color,
@@ -950,7 +950,7 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
         assert_eq!(under.horizontal_rail.scroller.border, at_rest, "{preset:?}");
 
         r.scrollbar.overlay_mode = true;
-        let hidden = super::scrollable(&r)?(&theme, active)
+        let hidden = super::scrollable(&r, WidgetState::NONE)?(&theme, active)
             .vertical_rail
             .scroller
             .border;
@@ -959,11 +959,12 @@ fn a_scroller_is_outlined_and_rounded_as_stated_else_iceds_own() -> TestResult {
     Ok(())
 }
 
-/// A scroller at rest is the handle of the view that has the focus,
-/// `thumb(NONE)`: a rule stated for `UNFOCUSED_VIEW` alone does not paint it
+/// A scroller at rest in the view that has the focus is that view's handle,
+/// `thumb(NONE)`: a rule stated for `UNFOCUSED_VIEW` alone does not paint it;
+/// in a view without the focus it is `thumb(UNFOCUSED_VIEW)`, that rule's
 /// (spec §3, `WidgetState`; spec §5, `S3`).
 #[test]
-fn a_scroller_at_rest_is_the_focused_views_handle() -> TestResult {
+fn a_scroller_at_rest_is_the_handle_of_its_views_focus() -> TestResult {
     use iced_widget::scrollable::Status;
     let active = Status::Active {
         is_horizontal_scrollbar_disabled: false,
@@ -980,12 +981,21 @@ fn a_scroller_at_rest_is_the_focused_views_handle() -> TestResult {
     for (preset, mut r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
         r.scrollbar.overlay_mode = false;
-        let scroller = super::scrollable(&r)?(&theme, active)
+        let scroller = super::scrollable(&r, WidgetState::NONE)?(&theme, active)
             .vertical_rail
             .scroller;
         assert_eq!(
             background_color(Some(scroller.background)),
             Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        let unfocused_scroller =
+            super::scrollable(&r, WidgetState::UNFOCUSED_VIEW)?(&theme, active)
+                .vertical_rail
+                .scroller;
+        assert_eq!(
+            background_color(Some(unfocused_scroller.background)),
+            Some(to_color(unfocused)),
             "{preset:?}"
         );
     }
