@@ -47,7 +47,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.buttons.dialog_default",
         &["button.body(DEFAULT).fill"],
-        "gpui: next::geometry::default_button_rest's bg at rest, after next::geometry::button, and next::variants::default_button's hover fill; where unstated the Button is .primary(), ThemeColor primary",
+        "gpui: next::geometry::default_button_rest's bg at rest, laid over the Button's own geometry refinement, and next::variants::default_button's hover fill; where unstated the Button is .primary(), ThemeColor primary",
     ),
     (
         "basic.buttons.dialog_default",
@@ -66,11 +66,13 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "basic.buttons.dialog_default",
-        &[
-            "button.body(HOVER).stroke.color",
-            "button.body(PRESSED).stroke.color",
-        ],
+        &["button.body(HOVER).stroke.color"],
         "gpui: next::variants::default_button's color, the border under the pointer and pressed, where the theme states button.body(DEFAULT).fill; elsewhere the Button is .primary(), whose hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary) and whose rest border is next::geometry::button's button.body(NONE).stroke.color (native-theme-gpui/geometry.rs:285, border_color)",
+    ),
+    (
+        "basic.buttons.dialog_default",
+        &["button.body(PRESSED).stroke.color"],
+        "not reachable: a custom variant has one border colour for hover and press, button.body(HOVER).stroke.color's, next::variants::default_button's color (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant); elsewhere the Button is .primary(), whose press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary)",
     ),
     (
         "basic.buttons.dialog_default",
@@ -85,27 +87,33 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     // --- button: the Basic page's buttons, next::variants::bordered_button -----------
     (
         "basic.buttons.default",
-        &[
-            "button.body(HOVER).stroke.color",
-            "button.body(PRESSED).stroke.color",
-        ],
+        &["button.body(HOVER).stroke.color"],
+        "gpui: next::variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is next::geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
+    ),
+    (
+        "basic.buttons.default",
+        &["button.body(PRESSED).stroke.color"],
+        "not reachable: a custom variant has one border colour for hover and press, button.body(HOVER).stroke.color's, next::variants::bordered_button's colour (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant)",
+    ),
+    (
+        "basic.buttons.tooltip",
+        &["button.body(HOVER).stroke.color"],
         "gpui: next::variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is next::geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
     ),
     (
         "basic.buttons.tooltip",
-        &[
-            "button.body(HOVER).stroke.color",
-            "button.body(PRESSED).stroke.color",
-        ],
+        &["button.body(PRESSED).stroke.color"],
+        "not reachable: a custom variant has one border colour for hover and press, button.body(HOVER).stroke.color's, next::variants::bordered_button's colour (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant)",
+    ),
+    (
+        "basic.buttons.toggle_off",
+        &["button.body(HOVER).stroke.color"],
         "gpui: next::variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is next::geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
     ),
     (
         "basic.buttons.toggle_off",
-        &[
-            "button.body(HOVER).stroke.color",
-            "button.body(PRESSED).stroke.color",
-        ],
-        "gpui: next::variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is next::geometry::button's button.body(NONE).stroke.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
+        &["button.body(PRESSED).stroke.color"],
+        "not reachable: a custom variant has one border colour for hover and press, button.body(HOVER).stroke.color's, next::variants::bordered_button's colour (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant)",
     ),
     (
         "basic.buttons.primary",
@@ -385,20 +393,28 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.toolbar.",
-        &[
-            "toolbar.button(HOVER).stroke.color",
-            "toolbar.button(PRESSED).stroke.color",
-        ],
+        &["toolbar.button(HOVER).stroke.color"],
+        "gpui: toolbar.button(HOVER).stroke.color, next::variants::toolbar_button's edge under the pointer",
+    ),
+    (
+        "chrome.toolbar.",
+        &["toolbar.button(PRESSED).stroke.color"],
+        "not reachable: a custom variant has one border colour for hover and press, toolbar.button(HOVER).stroke.color's, next::variants::toolbar_button's edge (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant)",
+    ),
+    (
+        "basic.icons.",
+        &["toolbar.button(HOVER).stroke.color"],
         "gpui: toolbar.button(HOVER).stroke.color, next::variants::toolbar_button's edge under the pointer",
     ),
     (
         "basic.icons.",
-        &[
-            "toolbar.button(HOVER).stroke.color",
-            "toolbar.button(PRESSED).stroke.color",
-            "toolbar.button(HOVER|CHECKED).stroke.color",
-        ],
-        "gpui: toolbar.button(HOVER).stroke.color, next::variants::toolbar_button's edge under the pointer",
+        &["toolbar.button(PRESSED).stroke.color"],
+        "not reachable: a custom variant has one border colour for hover and press, toolbar.button(HOVER).stroke.color's, next::variants::toolbar_button's edge (gpui-component 0.10.0 button/button.rs:1134, Custom: border_color's arm for a custom variant)",
+    ),
+    (
+        "basic.icons.",
+        &["toolbar.button(HOVER|CHECKED).stroke.color"],
+        "not reachable: a selected Button takes no hover or press style, so the checked tool button keeps toolbar.button(CHECKED).stroke.color under the pointer (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected)",
     ),
     (
         "chrome.status_bar.toggle",
@@ -1899,13 +1915,23 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.menu_bar.",
-        &["menu.item(NONE).corners", "menu.panel(NONE).corners"],
+        &["menu.item(NONE).corners"],
         "gpui: menu.item(NONE).corners rounds the title's fill where stated (MenuLook::title)",
     ),
     (
+        "chrome.menu_bar.",
+        &["menu.panel(NONE).corners"],
+        "gpui: menu.panel(NONE).corners rounds the frame of the popup the title opens, where stated, else popover.panel.corners; not the title's fill (MenuRowsFrame::next_of, MenuBar::popup)",
+    ),
+    (
         "chrome.menu.",
-        &["menu.item(NONE).corners", "menu.panel(NONE).corners"],
+        &["menu.item(NONE).corners"],
         "gpui: menu.item(NONE).corners rounds the highlighted row's fill and its outline where stated (MenuLook::next_of)",
+    ),
+    (
+        "chrome.menu.",
+        &["menu.panel(NONE).corners"],
+        "gpui: menu.panel(NONE).corners rounds the popup's frame where stated, else popover.panel.corners; not the row's fill (MenuRowsFrame::next_of, MenuBar::popup)",
     ),
     (
         "chrome.menu.",

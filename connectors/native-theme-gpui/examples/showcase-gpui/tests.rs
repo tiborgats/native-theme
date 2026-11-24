@@ -9276,6 +9276,25 @@ fn a_dialog_entrance_stated_without_motion_says_the_dialog_appears_at_once() {
     );
     let t = Theme::default();
     for reduce_motion in [false, true] {
+        let info = about_dialog(
+            &t,
+            false,
+            reduce_motion,
+            ThemedEntrance::Unmapped("dialog.entrance"),
+            true,
+        );
+        let animation = info
+            .not_themeable
+            .iter()
+            .find(|n| n.what == "animation")
+            .map(|n| n.text.clone())
+            .unwrap_or_default();
+        assert!(
+            animation.contains("a form gpui cannot take (dialog.entrance)"),
+            "an entrance gpui cannot take is said, reduced motion {reduce_motion}: {animation}"
+        );
+    }
+    for reduce_motion in [false, true] {
         let info = about_dialog(&t, false, reduce_motion, ThemedEntrance::NoneStated, true);
         let animation = info
             .not_themeable
@@ -16098,20 +16117,24 @@ fn timing_a_mode_switch_under_default(cx: &mut TestAppContext) {
 }
 
 /// The colour a system icon set's loaders are given: the installed native
-/// theme's font colour, and none where no native theme is installed, so a
-/// symbolic icon keeps its own colours. The placeholder font the showcase
-/// shows where the OS theme could not be read is transparent black, and
-/// the loaders keep only its red, green and blue: every recoloured icon
-/// drew black, on a dark window too.
+/// theme's font colour where it states one, and none where no native theme
+/// is installed or its font states no colour, so a symbolic icon keeps its
+/// own colours. The placeholder font the showcase shows where the OS theme
+/// could not be read is transparent black, and the loaders keep only its
+/// red, green and blue: every recoloured icon drew black, on a dark window
+/// too.
 #[test]
 fn icons_take_no_tint_without_a_native_theme() {
+    use native_theme::next::{Color, TextStated, TextStyle};
+    let unstated = TextStyle::default();
+    let mut stated = TextStyle::default();
+    stated.color = Color::from_srgb8(0x23, 0x26, 0x29, 0xff);
+    stated.stated |= TextStated::COLOR;
     let colour = native_theme::Rgba::rgb(0x23, 0x26, 0x29);
-    assert_eq!(
-        crate::app::icon_tint(false, native_theme::Rgba::TRANSPARENT),
-        None
-    );
-    assert_eq!(crate::app::icon_tint(false, colour), None);
-    assert_eq!(crate::app::icon_tint(true, colour), Some(colour));
+    assert_eq!(crate::app::icon_tint(false, &unstated), None);
+    assert_eq!(crate::app::icon_tint(true, &unstated), None);
+    assert_eq!(crate::app::icon_tint(false, &stated), None);
+    assert_eq!(crate::app::icon_tint(true, &stated), Some(colour));
 }
 
 /// A theme that fails to load leaves the installed one in charge of

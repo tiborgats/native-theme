@@ -5015,14 +5015,81 @@ fn impl_bodies(code: &str, name: &str) -> Vec<std::ops::Range<usize>> {
         .collect()
 }
 
+/// The connector's 0.8.0 module: its read helpers (`fill_of`, `padding_of`,
+/// `radius_of`), through which a builder reads a part's field.
+const NEXT_MOD: &str = include_str!("next/mod.rs");
+
+/// Every function with a body in `sources`, as (its name, its [`blanked`]
+/// body), in source order.
+fn fn_bodies(sources: &[&str]) -> Vec<(String, String)> {
+    sources
+        .iter()
+        .flat_map(|source| {
+            let code = blanked(source);
+            fn_items(source, &code)
+                .iter()
+                .filter_map(|f| Some((f.name.to_string(), code.get(f.body.clone())?.to_string())))
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+/// The names `code` calls: each identifier an opening parenthesis follows,
+/// a free function's, a path's last segment or a method's.
+fn called_names(code: &str) -> Vec<&str> {
+    code.match_indices('(')
+        .filter_map(|(ix, _)| {
+            let before = code.get(..ix)?;
+            let start = before
+                .trim_end_matches(|c: char| c.is_alphanumeric() || c == '_')
+                .len();
+            let name = before.get(start..)?;
+            name.starts_with(|c: char| c.is_alphabetic() || c == '_')
+                .then_some(name)
+        })
+        .collect()
+}
+
+/// `start` with the body of every function of `table` it calls, directly or
+/// through another, as one text: what a route runs, where it reads a field
+/// through a read helper (`next::fill_of`) or another builder rather than in
+/// its own body.
+fn reach(start: String, table: &[(String, String)]) -> String {
+    let mut seen: Vec<&str> = Vec::new();
+    let mut queue = vec![start];
+    let mut out = String::new();
+    while let Some(body) = queue.pop() {
+        for name in called_names(&body) {
+            for (callee, callee_body) in table.iter().filter(|(n, _)| n == name) {
+                if !seen.contains(&callee.as_str()) {
+                    queue.push(callee_body.clone());
+                }
+            }
+            if let Some((callee, _)) = table.iter().find(|(n, _)| n == name)
+                && !seen.contains(&callee.as_str())
+            {
+                seen.push(callee.as_str());
+            }
+        }
+        out.push_str(&body);
+        out.push('\n');
+    }
+    out
+}
+
 /// What a `HOW` line says applies its leaf: each showcase function it names
 /// (`demo::name`, or a `demo::Type`'s methods), each showcase file it names
 /// whole (`(inspector.rs)`), each 0.8.0 builder or variant of the connector
 /// (`next::geometry::name`, `next::variants::name`, read in `next/builders.rs`
 /// where its body is, else in its own module) and
 /// each connector control (`widgets::Name`, its file), as (the route, its
-/// code). A route this cannot find is listed with no code.
-fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<String>)> {
+/// code). A function's code is what it [`reach`]es in `table`. A route this
+/// cannot find is listed with no code.
+fn how_routes(
+    text: &str,
+    widgets: &[(String, String)],
+    table: &[(String, String)],
+) -> Vec<(String, Option<String>)> {
     let file = |path: &str| {
         SHOWCASE_FILES
             .iter()
@@ -5047,7 +5114,10 @@ fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<S
                 .iter()
                 .filter_map(|range| code.get(range.clone()))
                 .collect();
-            out.push((format!("demo::{name}"), (!body.is_empty()).then_some(body)));
+            out.push((
+                format!("demo::{name}"),
+                (!body.is_empty()).then(|| reach(body, table)),
+            ));
         }
     }
     for (path, raw) in SHOWCASE_FILES {
@@ -5068,7 +5138,10 @@ fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<S
                     .and_then(|f| code.get(f.body.clone()))
                     .map(str::to_string)
             });
-            out.push((format!("{module}::{name}"), body));
+            out.push((
+                format!("{module}::{name}"),
+                body.map(|body| reach(body, table)),
+            ));
         }
     }
     for name in paths_after(text, "widgets") {
@@ -5088,13 +5161,18 @@ fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<S
     out
 }
 
-/// Evidence for the reviewer, not a gate: for every `HOW` line that names
-/// what applies its leaf -- a showcase function, file, builder or control --
-/// whether that code reads the leaf's field. A route's text is prose and a
-/// read is a substring, so a line that reads it by coincidence passes and
-/// one that reaches it through a helper does not; the list says which is
-/// which for a human to judge. A line saying "not applied" or "not
-/// reachable" names no route that applies the leaf, and is listed apart.
+/// For every `HOW` line that names what applies its leaf -- a showcase
+/// function, file, builder or control -- whether that code, with what its
+/// functions call in demo.rs and the connector's `next` module ([`reach`]),
+/// reads the leaf's field. Every route is found, and every 0.8.0 builder or
+/// variant a line names (`next::geometry::`, `next::variants::`) reads the
+/// field of each of its homes: those fail the test. For the other routes it
+/// is evidence for the reviewer: a route's text is prose and a read is a
+/// substring, so a line that reads it by coincidence passes and one that
+/// reaches it through a helper of another file, or a function passed as a
+/// value, does not; the list says which is which for a human to judge. A
+/// line saying "not applied" or "not reachable" names no route that applies
+/// the leaf, and is listed apart.
 #[test]
 fn every_how_route_reads_its_leaf() {
     let lines = how_lines(how_source());
@@ -5117,8 +5195,14 @@ fn every_how_route_reads_its_leaf() {
         })
         .collect();
     widgets.sort();
+    let demo = SHOWCASE_FILES
+        .iter()
+        .find(|(path, _)| *path == "demo.rs")
+        .map_or("", |(_, raw)| *raw);
+    let table = fn_bodies(&[demo, NEXT_BUILDERS, NEXT_GEOMETRY, NEXT_VARIANTS, NEXT_MOD]);
     let mut read = Vec::new();
     let mut unread = Vec::new();
+    let mut failed = Vec::new();
     let mut exempt = Vec::new();
     for h in &lines {
         let at = format!("{HOW_FILE}:{} (\"{}\", {:?})", h.line, h.prefix, h.homes);
@@ -5126,15 +5210,18 @@ fn every_how_route_reads_its_leaf() {
             exempt.push(format!("{at}: {}", h.text));
             continue;
         }
-        let routes = how_routes(h.text, &widgets);
+        let routes = how_routes(h.text, &widgets, &table);
         for field in h.homes.iter().map(|home| home_field(home)) {
             for (route, code) in &routes {
                 match code {
                     Some(code) if mentions(code, field) => {
                         read.push(format!("{at}: {route} reads `{field}`"));
                     }
+                    Some(_) if route.starts_with("next::") => {
+                        failed.push(format!("{at}: {route} does not read `{field}`"));
+                    }
                     Some(_) => unread.push(format!("{at}: {route} does not read `{field}`")),
-                    None => unread.push(format!("{at}: {route} not found")),
+                    None => failed.push(format!("{at}: {route} not found")),
                 }
             }
         }
@@ -5142,6 +5229,12 @@ fn every_how_route_reads_its_leaf() {
     assert!(
         !read.is_empty() && !widgets.is_empty(),
         "no HOW route was found reading its leaf, so the list below says nothing"
+    );
+    assert!(
+        failed.is_empty(),
+        "HOW routes not found, or 0.8.0 builders and variants that do not read their \
+         leaf's field:\n{}",
+        failed.join("\n")
     );
     println!(
         "HOW routes: {} read their leaf's field, {} do not or were not found, {} lines \
@@ -5158,6 +5251,17 @@ fn every_how_route_reads_its_leaf() {
     for line in &exempt {
         println!("    {line}");
     }
+}
+
+/// [`reach`] takes in what a body calls, and what that calls, from the
+/// table, and nothing it does not call.
+#[test]
+fn reach_follows_the_calls_of_a_route() {
+    assert_eq!(called_names("x.y(z(1), w)"), ["y", "z"]);
+    let table = fn_bodies(&["fn a() { b(); }\nfn b() { c.fill }\nfn d() { e.corners }\n"]);
+    let reached = reach("{ a(); }".to_string(), &table);
+    assert!(mentions(&reached, "fill"), "{reached}");
+    assert!(!mentions(&reached, "corners"), "{reached}");
 }
 
 /// The `pub(crate)` constants of gpui-base the showcase names again, as

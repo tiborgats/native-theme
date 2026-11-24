@@ -417,9 +417,9 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// leaves its shadows unstated, as (y offset, blur radius, spread radius),
 /// drawn in `colors.shadow`, as the connector's tooltip builder draws an
 /// unstated shadow (native-theme-gpui next/builders.rs, `tooltip`): these
-/// are gpui-component's popup surface shadow's (gpui-component 0.9.1
-/// src/styled.rs:68-73, `popover_shadow`), without its ring (:65-67), whose
-/// place the frame takes.
+/// are gpui-component's popup surface shadow's (gpui-component 0.10.0
+/// src/styled.rs:59, `popover_shadow`, its layers at :68-73), without its
+/// ring (:65-67), whose place the frame takes.
 const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
 
@@ -3153,7 +3153,8 @@ pub(crate) fn next_entrance_of(
     match entrance {
         Some(Ok(Some(DialogEntrance::None))) => info::ThemedEntrance::NoneStated,
         Some(Ok(Some(_))) => info::ThemedEntrance::Stated,
-        Some(Ok(None) | Err(_)) | None => info::ThemedEntrance::Unstated,
+        Some(Err(unmapped)) => info::ThemedEntrance::Unmapped(unmapped.home()),
+        Some(Ok(None)) | None => info::ThemedEntrance::Unstated,
     }
 }
 

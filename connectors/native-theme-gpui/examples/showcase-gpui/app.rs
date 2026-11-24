@@ -704,15 +704,17 @@ const BASIC_LIST_SELECTED: usize = 1;
 
 /// The colour the system icon sets' loaders recolour a symbolic icon in
 /// (`load_all_icons`, `load_gpui_icons`): the installed native theme's
-/// `typography.body.color`, and none without a native theme, so an icon
+/// `typography.body.color` (`font`) where the theme states it, and none
+/// without a native theme or where `font` states no colour, so an icon
 /// keeps its own colours. The text style kept before a theme installs
 /// (`TextStyle::default()`) states no colour, and its black is not the
 /// theme's.
 pub(crate) fn icon_tint(
     native_installed: bool,
-    font_colour: native_theme::Rgba,
+    font: &native_theme::next::TextStyle,
 ) -> Option<native_theme::Rgba> {
-    native_installed.then_some(font_colour)
+    (native_installed && font.stated.contains(native_theme::next::TextStated::COLOR))
+        .then(|| loader_colour(font.color))
 }
 
 #[cfg(test)]
@@ -1218,10 +1220,7 @@ impl Showcase {
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
         let theme = self.freedesktop_theme().map(str::to_string);
-        let fg_color = icon_tint(
-            cx.native_theme().is_some(),
-            loader_colour(self.original_font.color),
-        );
+        let fg_color = icon_tint(cx.native_theme().is_some(), &self.original_font);
         let load = IconLoad {
             set: self.icon_set_enum,
             effective,

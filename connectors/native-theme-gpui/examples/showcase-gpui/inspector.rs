@@ -748,7 +748,8 @@ impl PanelLook {
             copy_radius: next::radius_of(&body)
                 .map_or(theme.radius, |radius| gpui::px(radius.max(0.))),
             copy_hover: (
-                next::fill_of(&r.button.body(WidgetState::HOVER)).unwrap_or(theme.button_hover),
+                next::state_fill_of(&r.button.body(WidgetState::HOVER))
+                    .unwrap_or(theme.button_hover),
                 colour(&r.button.label(WidgetState::HOVER)).unwrap_or(theme.button_foreground),
             ),
             copy_active: (

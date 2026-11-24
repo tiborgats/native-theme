@@ -1676,12 +1676,27 @@ pub enum ThemedEntrance {
     /// The theme states an entrance without motion, which the Dialog takes
     /// as `DialogEntrance::None`.
     NoneStated,
-    /// No 0.8.0 theme is installed, it states no `dialog.entrance`, or one
-    /// gpui cannot take: the Dialog keeps upstream's default entrance.
+    /// No 0.8.0 theme is installed, or it states no `dialog.entrance`: the
+    /// Dialog keeps upstream's default entrance.
     Unstated,
+    /// The theme states the entrance in a form gpui cannot take, at the
+    /// home named (spec §10, rule 4): the Dialog keeps upstream's default
+    /// entrance, and the note says why.
+    Unmapped(&'static str),
     /// The theme states an entrance with motion, which the Dialog takes as
     /// `DialogEntrance::Fade`.
     Stated,
+}
+
+/// The animation `note` of a Dialog entering as `entrance`, with the home
+/// gpui cannot take where the theme states the entrance in such a form.
+fn entrance_note(entrance: ThemedEntrance, note: &str) -> String {
+    match entrance {
+        ThemedEntrance::Unmapped(home) => format!(
+            "{note}; the theme states the entrance in a form gpui cannot take ({home}), so the showcase keeps that default entrance"
+        ),
+        _ => note.to_string(),
+    }
 }
 
 /// The Dialog's own colours, which every Dialog the showcase opens paints:
@@ -1748,13 +1763,13 @@ pub(super) fn dialog_surface(
     )
     .not_themeable(
         "animation",
-        match (entrance, reduce_motion) {
+        entrance_note(entrance, match (entrance, reduce_motion) {
             (ThemedEntrance::NoneStated, _) => "none: the theme states an entrance without motion (dialog.entrance), which geometry::dialog_entrance gives as DialogEntrance::None, so the Dialog appears at rest at once and leaves at once, reduced motion on or off (dialog/entrance.rs, DialogEntrance::None; dialog/dialog.rs, Dialog::exit_duration)",
-            (ThemedEntrance::Unstated, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would slide and fade in as it opens, and out as it closes, over 0.25s on a literal curve, the same both ways, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-            (ThemedEntrance::Unstated, false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens, in as the Dialog opens and out as it closes, on the same curve and duration both ways: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::Unstated | ThemedEntrance::Unmapped(_), true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would slide and fade in as it opens, and out as it closes, over 0.25s on a literal curve, the same both ways, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
+            (ThemedEntrance::Unstated | ThemedEntrance::Unmapped(_), false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens, in as the Dialog opens and out as it closes, on the same curve and duration both ways: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
             (ThemedEntrance::Stated, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would fade in place as it opens, and out as it closes, over the motion tokens' duration_normal on their easing_enter, the same both ways, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp) -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
             (ThemedEntrance::Stated, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, held within 0 to 1 since it drives the opacity (dialog/dialog.rs:581, clamp), not a literal, in as the Dialog opens and out as it closes, on the same curve and duration both ways: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",
-        },
+        }),
     )
     .instance(
         "unreported",
