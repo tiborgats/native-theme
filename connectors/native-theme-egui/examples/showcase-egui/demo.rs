@@ -325,6 +325,27 @@ pub(crate) fn flat(ui: &mut egui::Ui) -> Vec<native_theme_egui::Note> {
     }
 }
 
+/// The pen a rule of the installed 0.8.0 theme states for `part` in its state (its stroke, the
+/// `from_state` bit set), one stroke of one colour; none where its width is not positive;
+/// `None` where no rule states one, or in a form egui cannot draw (`next::stroke_width_of`,
+/// `next::state_stroke_color_of`).
+pub(crate) fn state_pen(part: &native_theme::next::PartStyle) -> Option<egui::Stroke> {
+    if !part
+        .from_state
+        .contains(native_theme::next::PartStated::STROKE)
+    {
+        return None;
+    }
+    match (
+        native_theme_egui::next::stroke_width_of(part),
+        native_theme_egui::next::state_stroke_color_of(part),
+    ) {
+        (Some(width), _) if width <= 0.0 => Some(egui::Stroke::NONE),
+        (Some(width), Some(colour)) => Some(egui::Stroke::new(width, colour)),
+        _ => None,
+    }
+}
+
 /// The sides of `padding`, top, right, bottom and left (`next::padding_of`'s order), the theme
 /// leaves unstated, joined by ", " in that order as a *Not themeable* line names them; `None`
 /// where it states all four.

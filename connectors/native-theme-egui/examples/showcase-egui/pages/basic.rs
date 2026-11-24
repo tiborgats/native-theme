@@ -1424,22 +1424,9 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &
 }
 
 /// The outline a rule of the installed 0.8.0 theme `r` states for a toolbar button in `state`
-/// (`toolbar.button(<state>).stroke`, its `from_state` bit set), one stroke of one colour; none
-/// where its width is not positive; `None` where no rule states one, or in a form egui cannot
-/// draw.
+/// (`toolbar.button(<state>).stroke`, [`demo::state_pen`]).
 fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
-    let part = r.toolbar.button(state);
-    if !part.from_state.contains(PartStated::STROKE) {
-        return None;
-    }
-    match (
-        next::stroke_width_of(&part),
-        next::state_stroke_color_of(&part),
-    ) {
-        (Some(width), _) if width <= 0.0 => Some(egui::Stroke::NONE),
-        (Some(width), Some(colour)) => Some(egui::Stroke::new(width, colour)),
-        _ => None,
-    }
+    demo::state_pen(&r.toolbar.button(state))
 }
 
 /// The Icons group's first row: four icon-only tool buttons, as the toolbar's
@@ -2094,18 +2081,7 @@ impl RowLook {
             };
         }
         let fill = next::state_fill_of(&part);
-        let stroke = if part.from_state.contains(PartStated::STROKE) {
-            match (
-                next::stroke_width_of(&part),
-                next::state_stroke_color_of(&part),
-            ) {
-                (Some(width), _) if width <= 0.0 => Some(egui::Stroke::NONE),
-                (Some(width), Some(colour)) => Some(egui::Stroke::new(width, colour)),
-                _ => None,
-            }
-        } else {
-            None
-        };
+        let stroke = demo::state_pen(&part);
         let text = next::state_text_color_of(&l.item_label(q));
         let mut taken = Vec::new();
         for (name, unstated, changed) in [

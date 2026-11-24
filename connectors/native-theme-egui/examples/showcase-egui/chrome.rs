@@ -1741,15 +1741,13 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let ([min_w, min_h], [max_w, max_h]) =
         demo::next_value(ui, |r| (r.dialog.panel.min_size, r.dialog.panel.max_size))
             .unwrap_or(([None; 2], [None; 2]));
-    // A hovered row's outline, `list.highlight(HOVER)`'s stroke where a rule states its colour,
-    // as wide as it states, else `layout.border_width`.
+    // A hovered row's outline, the pen a rule states for `list.highlight(HOVER)`
+    // (`demo::state_pen`).
     let hover_pen = demo::next_value(ui, |r| {
-        let part = r
-            .list
-            .highlight(native_theme::next::ListQuery::new(WidgetState::HOVER));
-        let colour = next::state_stroke_color_of(&part)?;
-        let width = next::stroke_width_of(&part).unwrap_or(r.layout.border_width);
-        (width.is_finite() && width > 0.0).then(|| egui::Stroke::new(width, colour))
+        demo::state_pen(
+            &r.list
+                .highlight(native_theme::next::ListQuery::new(WidgetState::HOVER)),
+        )
     })
     .flatten();
     let groups = palette_groups(app, ui.ctx());
