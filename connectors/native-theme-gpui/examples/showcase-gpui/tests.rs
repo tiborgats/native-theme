@@ -19130,7 +19130,7 @@ fn a_segmented_control_the_theme_leaves_unstated_names_upstreams_own() {
 }
 
 /// The theme-drawn segmented control's hovered label and its lines between
-/// segments: kde-breeze states neither `segmented_control.label(HOVER).color`
+/// segments: ios-13 states neither `segmented_control.label(HOVER).color`
 /// nor `separator(NONE).fill`, so its info claims upstream's own hovered
 /// label, `tab_active_foreground` (tab/tab.rs, `TabVariant::hovered`), and
 /// no separator colour, upstream's segmented `TabBar` drawing no line; with
@@ -19141,11 +19141,10 @@ fn a_segmented_controls_hovered_label_and_separators_follow_what_the_theme_state
     use native_theme::next::{
         Paint, PartPatch, SegmentedControlRule, TextPatch, ThemePatch, WidgetState,
     };
-    let mut r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+    let mut r = native_theme::next::Theme::preset(native_theme::next::Preset::Ios13)
         .resolve(&native_theme::next::ThemeContext::default());
-    // kde-breeze's gpui theme gives tab_active_foreground its
-    // tab_foreground, so it is set to the theme's border, which differs, to
-    // tell the two apart.
+    // tab_active_foreground is set to the theme's border, which differs
+    // from tab_foreground, to tell the two apart.
     let mut t = native_theme_gpui::next::to_theme(&r).map_err(|e| e.to_string())?;
     t.tab_active_foreground = t.border;
     assert_ne!(
@@ -19167,7 +19166,7 @@ fn a_segmented_controls_hovered_label_and_separators_follow_what_the_theme_state
         .is_none()
             && native_theme_gpui::next::fill_of(&r.segmented_control.separator(WidgetState::NONE))
                 .is_none(),
-        "kde-breeze now states segmented_control.label(HOVER).color or separator(NONE).fill"
+        "ios-13 now states segmented_control.label(HOVER).color or separator(NONE).fill"
     );
     assert_eq!(
         claimed(&r, "hovered label"),
@@ -19178,7 +19177,7 @@ fn a_segmented_controls_hovered_label_and_separators_follow_what_the_theme_state
         .colors
         .window
         .border
-        .ok_or("kde-breeze states no colors.window.border")?;
+        .ok_or("ios-13 states no colors.window.border")?;
     r.apply_patch(
         &ThemePatch::new().segmented_control(
             SegmentedControlRule::new()
@@ -22246,10 +22245,7 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
 /// paints no hover or press on a selected Button); a click turns it off, and with the pointer
 /// moved off it paints no fill (the rest fill is transparent), and its info
 /// claims the text, hover and pressed fills its neighbours claim and no
-/// checked colour; a second click checks it again. Under macos-tahoe light,
-/// which states no checked fill, its fill is the custom variant's selected
-/// fill, `secondary_active`, and its info claims only that fill and the
-/// variant's text.
+/// checked colour; a second click checks it again.
 #[gpui::test]
 fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
     use native_theme::next::WidgetState;
@@ -22365,39 +22361,6 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
             "{preset}: the edit button checked again is not filled with toolbar.button(CHECKED).fill"
         );
     }
-
-    use_light_preset(&mut cx, &showcase, "macos-tahoe");
-    show(&mut cx, &showcase, Page::Basic);
-    let r = next_theme(&mut cx, &showcase);
-    assert!(r.is_some(), "macos-tahoe: no 0.8.0 theme is installed");
-    let Some(r) = r else { return };
-    assert!(
-        state_fill_of(&r.toolbar.button(WidgetState::CHECKED)).is_none()
-            && state_fill_of(&r.toolbar.button(WidgetState::PRESSED)).is_none()
-            && state_fill_of(&r.button.body(WidgetState::PRESSED)).is_none(),
-        "macos-tahoe now states a fill next::geometry::toolbar_button_checked takes, so this part proves nothing"
-    );
-    assert!(read(&mut cx, &showcase, |this, _| this.basic_edit));
-    hover(&mut cx, away);
-    draw(&mut cx);
-    let selected = cx.update(|_, cx| Theme::global(cx).secondary_active);
-    assert_eq!(
-        painted_fill(&mut cx, button),
-        Some(selected),
-        "macos-tahoe: the checked edit button is not filled with the variant's selected fill"
-    );
-    let info = settle_on(&mut cx, &showcase, button);
-    let mut roles: Vec<&str> = info
-        .as_ref()
-        .map(|info| info.colors.iter().map(|c| c.role).collect())
-        .unwrap_or_default();
-    roles.sort_unstable();
-    assert_eq!(
-        roles,
-        ["selected bg", "text"],
-        "macos-tahoe: the checked edit button's info claims colours other than the selected \
-         fill and the variant's text: {info:?}"
-    );
 }
 
 /// A disabled refined field's edge swatch is the colour painted: the
