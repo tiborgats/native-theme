@@ -585,10 +585,10 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
             reg.tag("basic.buttons.tooltip.bubble", &bubble);
         }
     });
-    // A toggle button: `Off` a button at rest, `On` the same button held on, in the colours
-    // [`toggle_on`] picks, per call: egui's `selected` flag would take the suggested action's
-    // `selection` colours.
-    let on = toggle_on(r, &ui.visuals().widgets.active);
+    // A toggle button: `Off` a button at rest, `On` the same button held on: egui's own selected
+    // button (`Button::selected`), with the checked colours [`toggle_on`] reads laid over it per
+    // call where the theme states them (spec §10, rule 0).
+    let on = toggle_on(r);
     let (on_fill, on_text) = (on.fill, on.text);
     // A dialog's default button, the one Enter activates: where the theme gives it a look of its
     // own, per call, since `Button::fill` and `Button::stroke` override egui's on-hover effects,
@@ -607,7 +607,17 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
         let kind = ("basic.buttons.toggle_on", "toggle button (on)", normal);
-        let held = |text: egui::RichText| Button::new(text.color(on_text)).fill(on_fill);
+        let held = |text: egui::RichText| {
+            let text = match on_text {
+                Some(color) => text.color(color),
+                None => text,
+            };
+            let button = Button::new(text).selected(true);
+            match on_fill {
+                Some(fill) => button.fill(fill),
+                None => button,
+            }
+        };
         text_button(reg, ui, kind, ("On", min), held, true);
         let kind = (
             "basic.buttons.dialog_default",
@@ -645,84 +655,57 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         ui.ctx().data_mut(|d| d.insert_temp(state_key, now));
     });
     // Where the theme states no checked colour, what the toggle is drawn in instead.
-    if let Some(from) = on.fill_from {
+    if on.fill.is_none() {
         reg.note_element(
             "basic.buttons.toggle_on",
             "fill while on",
-            &format!("not stated by the theme (button.body(CHECKED).fill): {from}"),
+            &format!(
+                "not stated by the theme (button.body(CHECKED).fill): {}",
+                ToggleOn::OWN_FILL
+            ),
         );
     }
-    if let Some(from) = on.text_from {
+    if on.text.is_none() {
         reg.note_element(
             "basic.buttons.toggle_on",
             "text colour while on",
-            &format!("not stated by the theme (button.label(CHECKED).color): {from}"),
+            &format!(
+                "not stated by the theme (button.label(CHECKED).color): {}",
+                ToggleOn::OWN_TEXT
+            ),
         );
     }
 }
 
-/// The Basic page's toggle button while on, each colour with what it is read from where that is
-/// not the checked state's own home.
+/// The Basic page's toggle button while on: the colours a rule of the installed 0.8.0 theme
+/// states for the checked state, each `None` where none does, and so egui's own selected
+/// button's.
 #[derive(Debug, PartialEq)]
 pub(crate) struct ToggleOn {
-    pub(crate) fill: egui::Color32,
-    pub(crate) fill_from: Option<&'static str>,
-    pub(crate) text: egui::Color32,
-    pub(crate) text_from: Option<&'static str>,
+    pub(crate) fill: Option<egui::Color32>,
+    pub(crate) text: Option<egui::Color32>,
+}
+
+impl ToggleOn {
+    /// What an unstated checked fill is drawn in.
+    pub(crate) const OWN_FILL: &'static str =
+        "egui's own selected button fill (Button::selected: visuals.selection.bg_fill)";
+    /// What an unstated checked text colour is drawn in.
+    pub(crate) const OWN_TEXT: &'static str =
+        "egui's own selected button text (Button::selected: visuals.selection.stroke)";
 }
 
 /// The toggle button's colours while on, of the installed 0.8.0 theme `r`
-/// (docs/platform-facts.md §2.3), each asked with one state flag: the fill a rule states for
-/// `button.body(CHECKED)`, else the pressed one, `button.body(PRESSED)`, else the hovered one,
-/// `button.body(HOVER)`, as 0.7.2 fell back from `button.checked_background`; the text colour a
-/// rule states for `button.label(CHECKED)`, else `button.label(PRESSED)`'s. Each the theme leaves
-/// unstated, and both without an installed 0.8.0 theme, egui's own held-down button's, `own`
-/// (`widgets.active`): its `weak_bg_fill`, a `Button`'s fill, and its `fg_stroke` colour.
-pub(crate) fn toggle_on(
-    r: Option<&native_theme::next::ResolvedTheme>,
-    own: &egui::style::WidgetVisuals,
-) -> ToggleOn {
-    use NextState as S;
-    let first = |homes: &[(S, &'static str)], read: &dyn Fn(S) -> Option<egui::Color32>| {
-        homes
-            .iter()
-            .enumerate()
-            .find_map(|(i, (state, home))| read(*state).map(|c| (c, (i > 0).then_some(*home))))
-    };
-    let (fill, fill_from) = r
-        .and_then(|r| {
-            first(
-                &[
-                    (S::CHECKED, "button.body(CHECKED).fill"),
-                    (S::PRESSED, "button.body(PRESSED).fill"),
-                    (S::HOVER, "button.body(HOVER).fill"),
-                ],
-                &|state| next::state_fill_of(&r.button.body(state)),
-            )
-        })
-        .unwrap_or((
-            own.weak_bg_fill,
-            Some("egui's own held-down button fill (widgets.active.weak_bg_fill)"),
-        ));
-    let (text, text_from) = r
-        .and_then(|r| {
-            first(
-                &[
-                    (S::CHECKED, "button.label(CHECKED).color"),
-                    (S::PRESSED, "button.label(PRESSED).color"),
-                ],
-                &|state| next::state_text_color_of(&r.button.label(state)),
-            )
-        })
-        .unwrap_or((
-            own.fg_stroke.color,
-            Some("egui's own held-down button text (widgets.active.fg_stroke)"),
-        ));
+/// (docs/platform-facts.md §2.3), each asked with the checked flag alone: the fill a rule states
+/// for `button.body(CHECKED)`, the text colour a rule states for `button.label(CHECKED)`. Neither
+/// falls back to another state's: what the theme leaves unstated, and both without an installed
+/// 0.8.0 theme, is egui's own way of drawing a button that is on, its selected button
+/// (`Button::selected`, egui-0.37.0 `src/theme/default_style.rs`: `visuals.selection`'s fill
+/// and stroke), as the connector themes it (spec §10, rules 0 and 0a).
+pub(crate) fn toggle_on(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
     ToggleOn {
-        fill,
-        fill_from,
-        text,
-        text_from,
+        fill: r.and_then(|r| next::state_fill_of(&r.button.body(NextState::CHECKED))),
+        text: r.and_then(|r| next::state_text_color_of(&r.button.label(NextState::CHECKED))),
     }
 }
 

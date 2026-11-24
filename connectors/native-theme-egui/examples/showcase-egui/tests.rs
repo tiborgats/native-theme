@@ -2086,35 +2086,102 @@ fn the_context_menus_target_is_the_base_style_and_its_menu_the_menu_role() {
     );
 }
 
-/// Under a preset whose 0.8.0 theme states no `button.body(CHECKED).fill`, the Basic page's "On"
-/// toggle is filled from another home (`pages::basic::toggle_on`: `button.body(PRESSED).fill`,
-/// else `button.body(HOVER).fill`), and its Widget Info says which under *Not themeable*; its
-/// text colour likewise, where `button.label(CHECKED).color` is unstated (M9-111).
-#[test]
-fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() {
-    use crate::pages::basic::toggle_on;
+/// The fill and the label colour egui painted the Basic page's button of kind `kind`, lettered
+/// `text`, in this pass: the `Shape::Rect` at its record's place, and its label's galley.
+fn button_paint(
+    harness: &Harness<'_, App>,
+    kind: &str,
+    text: &str,
+    id: &str,
+) -> Result<(egui::Color32, egui::Color32), String> {
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == kind)
+        .map(|r| r.rect)
+        .ok_or_else(|| format!("no {kind} record"))?;
+    let fill = harness
+        .output()
+        .shapes
+        .iter()
+        .find_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(r) if r.rect == rect => Some(r.fill),
+            _ => None,
+        })
+        .ok_or_else(|| format!("no frame painted at the {kind}'s place {rect:?}"))?;
+    let label = painted_label_colour(harness, text, id)
+        .ok_or_else(|| format!("no label {text:?} painted in {id}"))?;
+    Ok((fill, label))
+}
+
+/// The first bundled preset whose 0.8.0 theme, light, states neither checked colour of the
+/// toggle (`pages::basic::toggle_on`), with that theme.
+fn unchecked_preset() -> Result<(&'static str, native_theme::next::ResolvedTheme), String> {
+    use crate::pages::basic::{ToggleOn, toggle_on};
     use native_theme::next::{Preset, Theme, ThemeContext};
-    let own = egui::Visuals::light().widgets.active;
-    let (key, on) = Preset::ALL
+    let none = ToggleOn {
+        fill: None,
+        text: None,
+    };
+    Preset::ALL
         .iter()
         .find_map(|preset| {
             let r = Theme::preset(*preset).resolve(&ThemeContext::light());
-            let on = toggle_on(Some(&r), &own);
-            on.fill_from.is_some().then_some((preset.as_str(), on))
+            (toggle_on(Some(&r)) == none).then_some((preset.as_str(), r))
         })
-        .expect("a preset offered here states no button.body(CHECKED).fill");
-    let fill = on.fill_from.unwrap_or_default();
+        .ok_or_else(|| "every preset offered here states a checked fill or label colour".to_owned())
+}
+
+/// Under a preset whose 0.8.0 theme states no checked colours (`button.body(CHECKED).fill`,
+/// `button.label(CHECKED).color`), the Basic page's "On" toggle is egui's own selected button
+/// (`pages::basic::toggle_on`, spec §10 rules 0 and 0a): painted in the fill and the label
+/// colour of the suggested-action button beside it, egui's selected one too, not in another
+/// state's colours, and its Widget Info names egui's own under *Not themeable* (M9-111).
+#[test]
+fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() -> Result<(), String> {
+    use crate::pages::basic::{ToggleOn, toggle_on};
+    use native_theme::next::WidgetState;
+    let (key, r) = unchecked_preset()?;
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, key);
     let installed = harness
         .state()
         .atlas
         .next_resolved(egui::Theme::Light)
-        .map(|r| toggle_on(Some(r), &own));
+        .map(|r| toggle_on(Some(r)));
     assert_eq!(
-        installed.as_ref().map(|on| on.fill_from),
-        Some(on.fill_from),
+        installed,
+        Some(ToggleOn {
+            fill: None,
+            text: None
+        }),
         "{key}: the installed theme's toggle"
     );
+    let on = button_paint(
+        &harness,
+        "toggle button (on)",
+        "On",
+        "basic.buttons.toggle_on",
+    )?;
+    let primary = button_paint(
+        &harness,
+        "button (suggested action)",
+        "Primary",
+        "basic.buttons.primary",
+    )?;
+    assert_eq!(
+        on, primary,
+        "{key}: the toggle while on is the selected button"
+    );
+    let pressed = native_theme_egui::next::state_fill_of(&r.button.body(WidgetState::PRESSED));
+    let hovered = native_theme_egui::next::state_fill_of(&r.button.body(WidgetState::HOVER));
+    assert!(
+        pressed != Some(on.0) && hovered != Some(on.0),
+        "{key}: the toggle while on takes another state's fill: {on:?}"
+    );
+    let fill = ToggleOn::OWN_FILL;
+    let text = ToggleOn::OWN_TEXT;
     let pos = centre_of(&harness, "toggle button (on)");
     hover_and_settle(&mut harness, pos);
     let shown = harness
@@ -2142,73 +2209,99 @@ fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() {
         names("button.body(CHECKED).fill", fill),
         "{key}: no Not themeable line says the fill is {fill}: {lines:?}"
     );
-    assert_eq!(
-        on.text_from
-            .is_some_and(|from| names("button.label(CHECKED).color", from)),
-        on.text_from.is_some(),
-        "{key}: the text colour's line: {lines:?}"
+    assert!(
+        names("button.label(CHECKED).color", text),
+        "{key}: no Not themeable line says the text colour is {text}: {lines:?}"
     );
+    Ok(())
 }
 
-/// `toggle_on` asks each home with one state flag and falls back in order: a stated
-/// `button.body(CHECKED).fill` and `button.label(CHECKED).color` are drawn and named nowhere; a
-/// theme stating neither takes the pressed fill and text; with no 0.8.0 theme, egui's own
-/// held-down button's, named so.
+/// `toggle_on` asks each home with the checked flag alone and takes no other state's colours:
+/// without a 0.8.0 theme, and under a theme stating no checked colour, nothing (egui's own
+/// selected button); under a patched `button.body(CHECKED).fill` and `button.label(CHECKED)
+/// .color`, which no 0.7.2 theme the page read states, the Basic page's "On" toggle is painted
+/// in them and its Widget Info names no fallback; with the fill alone patched, the fill is the
+/// patched one and the label egui's selected button's, the suggested-action button's beside it.
 #[test]
-fn the_toggle_takes_the_checked_then_the_pressed_colours() -> Result<(), String> {
-    use crate::pages::basic::toggle_on;
-    use native_theme::next::{
-        ButtonRule, Paint, PartPatch, Preset, TextPatch, Theme, ThemeContext, ThemePatch,
-        WidgetState,
-    };
-    let own = egui::Visuals::light().widgets.active;
-    let none = toggle_on(None, &own);
+fn the_toggle_takes_the_checked_colours_alone() -> Result<(), String> {
+    use crate::pages::basic::{ToggleOn, toggle_on};
+    use native_theme::next::{ButtonRule, Paint, PartPatch, TextPatch, ThemePatch, WidgetState};
     assert_eq!(
-        (none.fill, none.text),
-        (own.weak_bg_fill, own.fg_stroke.color)
-    );
-    assert!(none.fill_from.is_some() && none.text_from.is_some());
-    let magenta = native_theme::next::Color::from_hex("#ff00ff").map_err(|e| e.to_string())?;
-    let patch = ThemePatch::new().button(
-        ButtonRule::new()
-            .states(WidgetState::CHECKED)
-            .body(PartPatch::new().fill(Paint::Solid(magenta)))
-            .label(TextPatch::new().color(magenta)),
-    );
-    let mut checked = 0;
-    for preset in Preset::ALL {
-        let r = Theme::preset(*preset).resolve(&ThemeContext::light());
-        let stock = toggle_on(Some(&r), &own);
-        if stock.fill_from.is_some() {
-            let pressed =
-                native_theme_egui::next::state_fill_of(&r.button.body(WidgetState::PRESSED));
-            assert_eq!(
-                (pressed.is_some(), stock.fill_from),
-                (true, Some("button.body(PRESSED).fill")),
-                "{preset:?}: an unstated checked fill takes the pressed one"
-            );
-            assert_eq!(pressed, Some(stock.fill), "{preset:?}");
-        } else {
-            checked += 1;
+        toggle_on(None),
+        ToggleOn {
+            fill: None,
+            text: None
         }
-        let mut patched = r.clone();
-        patched.apply_patch(&patch);
-        let on = toggle_on(Some(&patched), &own);
-        let want = egui::Color32::from_rgb(255, 0, 255);
-        assert_eq!(
-            on,
-            crate::pages::basic::ToggleOn {
-                fill: want,
-                fill_from: None,
-                text: want,
-                text_from: None,
-            },
-            "{preset:?}: the stated checked colours"
-        );
-    }
+    );
+    let magenta = native_theme::next::Color::from_srgb8(255, 0, 255, 255);
+    let want = egui::Color32::from_rgb(255, 0, 255);
+    let both = |_: &native_theme::next::ResolvedTheme| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .states(WidgetState::CHECKED)
+                    .body(PartPatch::new().fill(Paint::Solid(magenta)))
+                    .label(TextPatch::new().color(magenta)),
+            ),
+        )
+    };
+    let (key, _) = unchecked_preset()?;
+    let (harness, r) = open_patched(Page::Basic, egui::Theme::Light, key, both)?;
+    assert_eq!(
+        toggle_on(Some(&r)),
+        ToggleOn {
+            fill: Some(want),
+            text: Some(want)
+        }
+    );
+    let on = button_paint(
+        &harness,
+        "toggle button (on)",
+        "On",
+        "basic.buttons.toggle_on",
+    )?;
+    assert_eq!(on, (want, want), "the patched checked fill and label");
+    let notes = element_notes(&harness, "basic.buttons.toggle_on");
     assert!(
-        checked < Preset::ALL.len(),
-        "every preset states a checked fill: the pressed fallback is not reached"
+        notes
+            .iter()
+            .flatten()
+            .all(|line| !line.contains("(CHECKED)")),
+        "a stated checked colour is named as unstated: {notes:?}"
+    );
+
+    let fill_only = |_: &native_theme::next::ResolvedTheme| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .states(WidgetState::CHECKED)
+                    .body(PartPatch::new().fill(Paint::Solid(magenta))),
+            ),
+        )
+    };
+    let (harness, r) = open_patched(Page::Basic, egui::Theme::Light, key, fill_only)?;
+    let stated = toggle_on(Some(&r));
+    assert_eq!(stated.fill, Some(want), "the patched checked fill");
+    let on = button_paint(
+        &harness,
+        "toggle button (on)",
+        "On",
+        "basic.buttons.toggle_on",
+    )?;
+    let primary = button_paint(
+        &harness,
+        "button (suggested action)",
+        "Primary",
+        "basic.buttons.primary",
+    )?;
+    assert_eq!(on.0, want, "the patched checked fill is painted");
+    assert_eq!(
+        stated.text, None,
+        "{key}: a checked label colour beside the patched fill"
+    );
+    assert_eq!(
+        on.1, primary.1,
+        "an unstated checked label is egui's selected button's"
     );
     Ok(())
 }
