@@ -3041,17 +3041,34 @@ pub(crate) fn windows_cases() -> Vec<(
     const WHITE: crate::Rgba = crate::Rgba::rgb(255, 255, 255);
     // M2.FS4: the hovered on switch's fill is a listed difference of the table (`next_homes.toml`),
     // whose value is the preset's accent fill at 0.9, which every case's accent (and high contrast's
-    // button face) replaces.
-    const ACCENT: &[&str] = &["switch.hover_checked_background"];
+    // button face) replaces; so are a checked box's and radio button's outline, the accent's fill
+    // (CheckBoxCheckBackgroundStrokeChecked, RadioButtonOuterEllipseCheckedStroke =
+    // AccentFillColorDefaultBrush), and a checked box's hovered one, that fill at 0.9
+    // (…StrokeCheckedPointerOver = AccentFillColorSecondaryBrush; CheckBox_themeresources.xaml:221,
+    // :222, RadioButton_themeresources.xaml:142 at microsoft-ui-xaml 8463f45).
+    const ACCENT: &[&str] = &[
+        "checkbox.hover_border_color",
+        "checkbox.border.color",
+        "switch.hover_checked_background",
+    ];
     // The hovered unchecked box and a disabled checked box under high contrast: the builder takes
     // WinUI's high-contrast brushes, `SystemColorHighlightTextColorBrush` and
     // `SystemColorGrayTextColorBrush` (CheckBox_themeresources.xaml:142, :148 at microsoft-ui-xaml
-    // 8463f45), where 0.7.2's `apply_sys_colors` keeps the preset's colours.
+    // 8463f45), where 0.7.2's `apply_sys_colors` keeps the preset's colours; so for the box at rest,
+    // `SystemColorButtonFaceColorBrush` in `SystemColorButtonTextColorBrush` (:141, :129), and a
+    // checked box's outline, `SystemColorHighlightColorBrush` (:133); a checked radio button's
+    // circle, `SystemColorHighlightTextColorBrush`, and its dot, `SystemColorHighlightColorBrush`
+    // (RadioButton_themeresources.xaml:88, :92).
     const HIGH_CONTRAST: &[&str] = &[
         "button.hover_border_color",
+        "checkbox.checked_background",
+        "checkbox.indicator_color",
         "checkbox.hover_background",
         "checkbox.hover_border_color",
         "checkbox.disabled_background",
+        "checkbox.unchecked_background",
+        "checkbox.unchecked_border_color",
+        "checkbox.border.color",
         "switch.hover_checked_background",
         "combo_box.hover_border_color",
         "expander.hover_background",

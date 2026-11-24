@@ -1144,15 +1144,27 @@ const CHECK_HOVER_STROKES: [Stated; 2] = [
 ];
 
 /// windows-11's check box under the pointer: the unchecked box's fill and
-/// stroke, the checked box's stroke.
+/// stroke, the checked box's fill and stroke (AccentFillColorSecondary,
+/// CheckBox_themeresources.xaml:234, :222 at microsoft-ui-xaml 8463f45);
+/// and the checked box's outline at rest, AccentFillColorDefault (:221).
 const W11_CHECK_HOVER: &[Stated] = &[
     set(
         at!(HOVER),
         Field::Background,
         home!(fill, checkbox.indicator(HOVER)),
     ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::Background,
+        home!(fill, checkbox.indicator(HOVER | CHECKED) by HOVER),
+    ),
     CHECK_HOVER_STROKES[0],
     CHECK_HOVER_STROKES[1],
+    set(
+        at!(CHECKED),
+        Field::BorderColor,
+        home!(stroke, checkbox.indicator(CHECKED)),
+    ),
 ];
 
 /// macos-tahoe's check box under the pointer: the unchecked box's fill, the
@@ -1191,7 +1203,9 @@ const EXPANDER_FILLS: [Stated; 2] = [
 /// windows-11's radio under the pointer: the unselected circle's fill, and
 /// its stroke at rest laid over it (no rule for HOVER states one, and iced's
 /// own radio keeps its border colour under the pointer, iced_widget 0.14.2
-/// `src/radio.rs`, fn default).
+/// `src/radio.rs`, fn default); the selected circle's outline at rest and
+/// under the pointer, AccentFillColorDefault (RadioButton_themeresources.xaml:142
+/// at microsoft-ui-xaml 8463f45).
 const W11_RADIO_HOVER: &[Stated] = &[
     set(
         at!(HOVER),
@@ -1202,6 +1216,16 @@ const W11_RADIO_HOVER: &[Stated] = &[
         at!(HOVER),
         Field::BorderColor,
         home!(stroke, radio.indicator(NONE)),
+    ),
+    set(
+        at!(CHECKED),
+        Field::BorderColor,
+        home!(stroke, radio.indicator(CHECKED)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::BorderColor,
+        home!(stroke, radio.indicator(CHECKED)),
     ),
 ];
 

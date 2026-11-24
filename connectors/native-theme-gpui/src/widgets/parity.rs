@@ -154,18 +154,6 @@ const DIFFERENCES: &[Difference] = &[
                  tab.hover_background, a listed difference)",
     },
     Difference {
-        leaf: "CheckboxLook::of hover_border",
-        presets: &["adwaita", "windows-11"],
-        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
-                 outline; 0.8.0 states the unchecked box's outline for HOVER \
-                 (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a \
-                 listed difference): adwaita's $trough_hover_color (_checks.scss:20-35 at \
-                 libadwaita 1.10.0), windows-11's rest ControlStrongStrokeColorDefault, which \
-                 WinUI keeps (CheckBox_themeresources.xaml:218, :42 at microsoft-ui-xaml \
-                 8463f45); so an enabled box hovers in the outline stated there, a checked one \
-                 in its checked outline",
-    },
-    Difference {
         leaf: "CheckboxLook::of hover_fill",
         presets: &["windows-11"],
         reason: "0.7.2's checkbox.hover_background, an uncited #0000000a / #ffffff0f, is a \
@@ -236,7 +224,8 @@ const DIFFERENCES: &[Difference] = &[
                  none round a checked one (RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, \
                  :1502 at WebKit 31adf9d; native-theme/tests/next_homes.toml, rows \
                  checkbox.unchecked_border_color, checkbox.border.color and \
-                 checkbox.border.line_width, listed differences)",
+                 checkbox.border.line_width, listed differences); the outline's colour is \
+                 compared apart (CheckboxLook::of border), its width here",
     },
     Difference {
         leaf: "CheckboxLook::radio",
@@ -263,21 +252,6 @@ const DIFFERENCES: &[Difference] = &[
                  is filled as the box (breezehelper.cpp:1012-1019; \
                  RadioButtonOuterEllipseCheckedFillDisabled, RadioButton_themeresources.xaml:149, \
                  :33)",
-    },
-    Difference {
-        leaf: "CheckboxLook::of",
-        presets: &["adwaita"],
-        reason: "0.7.2's adwaita outlines a checked box in the default border colour; 0.8.0 \
-                 states none, as libadwaita draws a checked or mixed check with `box-shadow: \
-                 none`, its only outline (_checks.scss:27, :52-56 at libadwaita 1.10.0; \
-                 native-theme/tests/next_homes.toml, row checkbox.border.color, a listed \
-                 difference), so the look's checked border is transparent",
-    },
-    Difference {
-        leaf: "CheckboxLook::radio",
-        presets: &["adwaita"],
-        reason: "as the check box's (CheckboxLook::of): libadwaita's rule covers the radio \
-                 (_checks.scss:52-56)",
     },
     Difference {
         leaf: "CheckboxLook::radio",
@@ -328,6 +302,47 @@ const DIFFERENCES: &[Difference] = &[
 /// calling that constructor ([`Report::home_leaf`]). The leaf must differ
 /// from 0.7.2's and equal that value; a home left unstated fails.
 const FROM_HOME: &[Difference] = &[
+    Difference {
+        leaf: "CheckboxLook::of hover_border",
+        presets: &["adwaita", "windows-11"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0 states the unchecked box's outline for HOVER \
+                 (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a \
+                 listed difference): adwaita's $trough_hover_color (_checks.scss:20-35 at \
+                 libadwaita 1.10.0), windows-11's rest ControlStrongStrokeColorDefault, which \
+                 WinUI keeps (CheckBox_themeresources.xaml:218, :42 at microsoft-ui-xaml \
+                 8463f45); so an enabled box hovers in the outline stated there, a checked one \
+                 in its checked hovered outline: on adwaita none, on windows-11 \
+                 AccentFillColorSecondary, the accent's fill at 0.9, #0067c0e6 / #4cc2ffe6 \
+                 (CheckBoxCheckBackgroundStrokeCheckedPointerOver, CheckBox_themeresources.xaml:222, \
+                 :46; Common_themeresources_any.xaml:330, :126); the look reads \
+                 checkbox.indicator(HOVER|CHECKED).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::of border",
+        presets: &["adwaita", "windows-11", "ios-13"],
+        reason: "0.7.2's adwaita and windows-11 outline a checked box in the default border \
+                 colour, ios-13 every box in its uncited default line (the separator); 0.8.0's \
+                 adwaita states none round a checked box, as libadwaita draws a checked or mixed \
+                 check with `box-shadow: none`, its only outline (_checks.scss:27, :52-56 at \
+                 libadwaita 1.10.0); windows-11 outlines it in AccentFillColorDefault, the \
+                 accent's fill, #0067c0 / #4cc2ff (CheckBoxCheckBackgroundStrokeChecked, \
+                 CheckBox_themeresources.xaml:221, :45 at microsoft-ui-xaml 8463f45); ios-13 \
+                 strokes an empty box in checkboxRadioBorderColor (secondaryLabel) and a checked \
+                 one in none (RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, :1502 at WebKit \
+                 31adf9d) (native-theme/tests/next_homes.toml, rows checkbox.border.color and \
+                 checkbox.unchecked_border_color, listed differences); the look reads \
+                 checkbox.indicator(CHECKED).stroke.color and checkbox.indicator(NONE).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio border",
+        presets: &["adwaita", "windows-11", "ios-13"],
+        reason: "as the check box's (CheckboxLook::of border): libadwaita's rule covers the \
+                 radio (_checks.scss:52-56), WinUI's RadioButtonOuterEllipseCheckedStroke is \
+                 AccentFillColorDefaultBrush (RadioButton_themeresources.xaml:142, :26), and \
+                 WebKit strokes the iOS radio as the box; the look reads \
+                 radio.indicator(CHECKED).stroke.color and radio.indicator(NONE).stroke.color",
+    },
     Difference {
         leaf: "CheckboxLook::of label disabled",
         presets: &["kde-breeze", "windows-11", "ios-13"],
@@ -581,6 +596,42 @@ fn disabled_text_of(
     Some((mark, label))
 }
 
+/// The outline of a check box (`radio` false) or radio button, from its homes as
+/// `CheckboxLook::next_of` converts them: at rest the stroke colour of `indicator(CHECKED)`
+/// where `checked`, else of `indicator(NONE)`; under the pointer, where a rule states a stroke
+/// for `HOVER` and the control is enabled, the stroke colour of `indicator(HOVER|CHECKED)` or
+/// `indicator(HOVER)`, else none. `None` where a home is unstated.
+fn outline_of(
+    new: &native_theme::next::ResolvedTheme,
+    radio: bool,
+    checked: bool,
+    disabled: bool,
+) -> Option<(gpui::Hsla, Option<gpui::Hsla>)> {
+    let indicator = |state: WidgetState| {
+        if radio {
+            new.radio.indicator(state)
+        } else {
+            new.checkbox.indicator(state)
+        }
+    };
+    let shown = if checked {
+        WidgetState::CHECKED
+    } else {
+        WidgetState::NONE
+    };
+    let color = |state: WidgetState| crate::next::stroke_color(&indicator(state), "").ok();
+    let hovers = !disabled
+        && indicator(WidgetState::HOVER)
+            .from_state
+            .contains(PartStated::STROKE);
+    let hover = if hovers {
+        Some(color(WidgetState::HOVER | shown)?)
+    } else {
+        None
+    };
+    Some((color(shown)?, hover))
+}
+
 /// The two resolved themes of `preset` for `is_dark`.
 fn resolve(
     key: &str,
@@ -761,12 +812,13 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_switch.map(|look| look.label),
                 new_switch.map(|look| look.label),
             );
-            // The hover outline and the hover fill apart, so a listed difference of either leaves
-            // the rest of the look compared.
+            // The outline, the hover outline and the hover fill apart, so a listed difference of
+            // any leaves the rest of the look compared.
             // The label apart too, so a listed difference of the disabled label leaves the rest
             // of the look compared; disabled with it the mark, which the look reads at its own
             // disabled home, else draws as gpui-component does (`CheckboxLook::next_of`).
             let unframed = |look: CheckboxLook| CheckboxLook {
+                border: gpui::transparent_black(),
                 hover_border: None,
                 hover_fill: None,
                 label: gpui::transparent_black(),
@@ -808,11 +860,20 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 new_box.map(text),
                 disabled_text_of(&new, false, disabled),
             );
-            r.leaf(
+            let outline = outline_of(&new, false, checked, disabled);
+            r.home_leaf(
+                "CheckboxLook::of border",
+                &state,
+                old_box.map(|look| look.border),
+                new_box.map(|look| look.border),
+                outline.map(|(border, _)| border),
+            );
+            r.home_leaf(
                 "CheckboxLook::of hover_border",
                 &state,
                 old_box.map(|look| look.hover_border),
                 new_box.map(|look| look.hover_border),
+                outline.map(|(_, hover)| hover),
             );
             // `CheckboxLook::next_of`: the hovered box's stated fill, whole,
             // where it is enabled and unchecked.
@@ -845,11 +906,20 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 new_radio.map(text),
                 disabled_text_of(&new, true, disabled),
             );
-            r.leaf(
+            let outline = outline_of(&new, true, checked, disabled);
+            r.home_leaf(
+                "CheckboxLook::radio border",
+                &state,
+                old_radio.map(|look| look.border),
+                new_radio.map(|look| look.border),
+                outline.map(|(border, _)| border),
+            );
+            r.home_leaf(
                 "CheckboxLook::radio hover_border",
                 &state,
                 old_radio.map(|look| look.hover_border),
                 new_radio.map(|look| look.hover_border),
+                outline.map(|(_, hover)| hover),
             );
             r.leaf(
                 "CheckboxLook::radio hover_fill",

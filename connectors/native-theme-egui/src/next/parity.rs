@@ -295,7 +295,7 @@ const DIFFERENCES: &[Difference] = &[
     ),
     d(
         "Checkbox/Selected",
-        &[W, M, T],
+        &[M, T],
         WIDGET_STROKES,
         Cause::OverFill,
         INSIDE,
@@ -1091,15 +1091,30 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     // for the state alone (`build::variant_source`)
     s(
         "Checkbox/Selected",
-        &[A, M, T, I],
+        &[A, W, M, T, I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(checkbox.indicator(HOVER | CHECKED).stroke.color),
     ),
     s(
         "Checkbox/Selected",
-        &[A, M, T, I],
+        &[A, W, M, T, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(checkbox.indicator(PRESSED | CHECKED).stroke.color),
+    ),
+    // windows-11's checked box hovered and pressed: AccentFillColorSecondary and
+    // AccentFillColorTertiary (CheckBox_themeresources.xaml:234, :235 at microsoft-ui-xaml
+    // 8463f45)
+    s(
+        "Checkbox/Selected",
+        &[W],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(checkbox.indicator(HOVER | CHECKED).fill),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[W],
+        ".visuals.widgets.active.bg_fill",
+        home!(checkbox.indicator(PRESSED | CHECKED).fill),
     ),
     s(
         "Checkbox/Selected",
@@ -1115,7 +1130,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Checkbox/Selected",
-        &[A, I],
+        &[A, W, I],
         ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),

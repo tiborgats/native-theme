@@ -724,7 +724,7 @@
             "fill": "#0067c0",
             "stroke": {
               "width": 1.0,
-              "color": "#0000000f"
+              "color": "#0067c0"
             }
           }
         },
@@ -782,6 +782,69 @@
         },
         {
           "states": [
+            "hover",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0, 0.40392157, 0.7529412, 0.9)",
+            "stroke": {
+              "width": 1.0,
+              "color": "srgb(0, 0.40392157, 0.7529412, 0.9)"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0067c0cc",
+            "stroke": {
+              "width": 1.0,
+              "color": "#0067c0cc"
+            }
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "srgb(0, 0.40392157, 0.7529412, 0.9)",
+            "stroke": {
+              "width": 1.0,
+              "color": "srgb(0, 0.40392157, 0.7529412, 0.9)"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "indeterminate"
+          ],
+          "indicator": {
+            "fill": "#0067c0cc",
+            "stroke": {
+              "width": 1.0,
+              "color": "#0067c0cc"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#00000037"
+            }
+          }
+        },
+        {
+          "states": [
             "disabled",
             "checked"
           ],
@@ -824,6 +887,42 @@
         {
           "states": [
             "pressed"
+          ],
+          "checkmark": {
+            "color": "#ffffffb3"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "checkmark": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "checkmark": {
+            "color": "#ffffffb3"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "indeterminate"
+          ],
+          "checkmark": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "indeterminate"
           ],
           "checkmark": {
             "color": "#ffffffb3"
@@ -900,7 +999,7 @@
             "fill": "#0067c0",
             "stroke": {
               "width": 1.0,
-              "color": "#0000000f"
+              "color": "#0067c0"
             }
           }
         },
@@ -910,6 +1009,14 @@
           ],
           "indicator": {
             "fill": "#f9f9f900"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0067c0"
           }
         },
         {
