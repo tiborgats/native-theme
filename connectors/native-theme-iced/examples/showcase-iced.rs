@@ -39439,61 +39439,117 @@ mod tests {
         assert_eq!(listed_value(&state, "theme_variant.icon_set").colour, None);
     }
 
-    /// The user's text-scaling factor reaches every text alike: at 1.5, the
-    /// Buttons page's label and description, which the installed 0.8.0 theme
-    /// sets (`button.label(NONE)`, `typography.body`), are both set at 1.5
-    /// times their size at 1, to the theme's whole-pixel rounding, each
-    /// drawn in its scaled style's line box ([`next_line_box`]), taller than
-    /// at 1.
+    /// Qt's rounding of a font's pixel size, which a theme stating
+    /// `typography.font_whole_pixels` applies to each scaled size: to
+    /// hundredths, then to a whole number, halves up (the KDE preset's
+    /// `qt_whole_px`; `QFontDatabasePrivate::load`, qtbase v6.12.0
+    /// qfontdatabase.cpp).
+    fn qt_whole_px(px: f32) -> f32 {
+        ((px * 100.0).round() / 100.0).round()
+    }
+
+    /// The size and the line box the resolution's rule (spec §6, resolution
+    /// step 2) gives `style` of `typography` at the text scale `scale`: its
+    /// unscaled size (`defined_size`) converted at `typography.font_dpi`,
+    /// times the scale, rounded by [`qt_whole_px`] where
+    /// `font_whole_pixels`; its line box,
+    /// for a `Typography` slot whose source states no line height,
+    /// `line_height_multiplier` times the size before the rounding (spec §4,
+    /// `Typography`), and for a widget's text part that states none, the
+    /// size by the multiplier (spec §5, "A text part's `line_height`").
+    fn scaled_by_rule(
+        typography: &Typography,
+        style: &TextStyle,
+        slot: bool,
+        scale: f32,
+    ) -> Result<(f32, f32), String> {
+        let defined = style
+            .defined_size
+            .ok_or_else(|| format!("{style:?} states no unscaled size"))?;
+        let unrounded = defined.to_logical_px(typography.font_dpi) * scale;
+        let size = if typography.font_whole_pixels == Some(true) {
+            qt_whole_px(unrounded)
+        } else {
+            unrounded
+        };
+        let multiplier = typography.line_height_multiplier;
+        let line = if slot {
+            multiplier * unrounded
+        } else {
+            size * multiplier
+        };
+        Ok((size, line))
+    }
+
+    /// The user's text-scaling factor reaches every text alike: at 1 and at
+    /// 1.5, the Buttons page's label and description, which the installed
+    /// 0.8.0 theme sets (`button.label(NONE)`, a widget's text part stating
+    /// no line height, and `typography.body`, a slot), are set at the size
+    /// spec §6's rule gives at that scale ([`scaled_by_rule`]: kde-breeze's
+    /// 10 pt at 96 dpi, 13.33 px, is 13 px at 1 and 20 at 1.5) and drawn in
+    /// the line box it gives, taller at 1.5 than at 1; to f32's rounding.
     #[test]
-    fn text_scales_by_the_text_scaling_factor() {
-        let factor = 1.5;
+    fn text_scales_by_the_text_scaling_factor() -> Result<(), String> {
         let description = "Interactive button styles from the resolved theme";
+        let near = |a: f32, b: f32| (a - b).abs() <= 1e-3;
         let mut state = page_state("kde-breeze", Tab::Buttons);
-        let sizes = |state: &State| {
+        let mut drawn_at_1 = None;
+        for factor in [1.0, 1.5] {
+            let _ = update(&mut state, Message::TextScaleSelected(TextScale(factor)));
             let next = state.next_shown();
-            (
-                next.button.label(WidgetState::NONE).size_px,
-                next.typography.body.size_px,
-            )
-        };
-        let heights = |state: &State| {
-            let mut ui = interface(state);
-            (
-                height_of(&mut ui, "Primary"),
-                height_of(&mut ui, description),
-            )
-        };
-        let (label_size_at_1, body_size_at_1) = sizes(&state);
-        let (label_at_1, body_at_1) = heights(&state);
-        let _ = update(&mut state, Message::TextScaleSelected(TextScale(factor)));
-        let (label_size, body_size) = sizes(&state);
-        // kde-breeze rounds each size to a whole pixel after scaling it
-        // (spec §6, the KDE preset's
-        // `at_text_scale_2_every_font_size_is_doubled_before_qt_s_rounding`):
-        // half a pixel at 1.5 and half a pixel at 1 times the factor apart
-        // from the size at 1 scaled at most.
-        let slack = 0.5 + 0.5 * factor;
-        assert!(
-            (label_size - factor * label_size_at_1).abs() <= slack
-                && (body_size - factor * body_size_at_1).abs() <= slack,
-            "at {factor}: the label is {label_size}px ({label_size_at_1}px at 1), the body \
-             {body_size}px ({body_size_at_1}px at 1)"
-        );
-        let next = state.next_shown();
-        let button_line = next_line_box(&next.typography, &next.button.label(WidgetState::NONE));
-        let body_line = next_line_box(&next.typography, &next.typography.body);
-        let (label, body) = heights(&state);
-        assert!(
-            (label - button_line).abs() < 0.01 && label > label_at_1,
-            "at {factor}: a button label is {label}px tall, {label_at_1}px at 1; its scaled line \
-             box is {button_line}px"
-        );
-        assert!(
-            (body - body_line).abs() < 0.01 && body > body_at_1,
-            "at {factor}: a page description is {body}px tall, {body_at_1}px at 1; its scaled \
-             line box is {body_line}px"
-        );
+            let typography = &next.typography;
+            let label_style = next.button.label(WidgetState::NONE);
+            if label_style.stated.contains(TextStated::LINE_HEIGHT)
+                || !typography.body.stated.contains(TextStated::LINE_HEIGHT)
+            {
+                return Err(format!(
+                    "at {factor}: the label states a line height or the body none: {label_style:?}, \
+                     {:?}",
+                    typography.body
+                ));
+            }
+            let (label_size, label_line) = scaled_by_rule(typography, &label_style, false, factor)?;
+            let (body_size, body_line) =
+                scaled_by_rule(typography, &typography.body, true, factor)?;
+            let sizes = (label_style.size_px, typography.body.size_px);
+            if !near(sizes.0, label_size) || !near(sizes.1, body_size) {
+                return Err(format!(
+                    "at {factor}: the label is {}px and the body {}px, the rule gives {label_size}px \
+                     and {body_size}px",
+                    sizes.0, sizes.1
+                ));
+            }
+            let lines = (
+                next_line_box(typography, &label_style),
+                next_line_box(typography, &typography.body),
+            );
+            if !near(lines.0, label_line) || !near(lines.1, body_line) {
+                return Err(format!(
+                    "at {factor}: the line boxes are {lines:?}, the rule gives {label_line}px and \
+                     {body_line}px"
+                ));
+            }
+            let mut ui = interface(&state);
+            let label = height_of(&mut ui, "Primary");
+            let body = height_of(&mut ui, description);
+            drop(ui);
+            if !near(label, label_line) || !near(body, body_line) {
+                return Err(format!(
+                    "at {factor}: a button label is {label}px tall and a page description \
+                     {body}px, their line boxes {label_line}px and {body_line}px"
+                ));
+            }
+            if let Some((label_at_1, body_at_1)) = drawn_at_1
+                && (label <= label_at_1 || body <= body_at_1)
+            {
+                return Err(format!(
+                    "at {factor}: the label is {label}px and the body {body}px tall, \
+                     {label_at_1}px and {body_at_1}px at 1"
+                ));
+            }
+            drawn_at_1 = Some((label, body));
+        }
+        Ok(())
     }
 
     /// A font database of upright faces, each a family at a CSS weight and
