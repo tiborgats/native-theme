@@ -14434,7 +14434,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             // taller; iced's own height (16) would leave a larger thumb
             // outside the control.
             slider(0.0..=100.0, state.basic_slider, Message::BasicSliderChanged)
-                .style(styles::slider(resolved))
+                .next_style(iced_next::styles::slider(next), |s, style| s.style(style))
                 .height(handle.max(rail))
                 .width(Length::Fixed(BASIC_WIDTH)),
         )
@@ -14466,7 +14466,9 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             progress_bar(0.0..=100.0, BASIC_PROGRESS)
                 .length(Length::Fixed(BASIC_WIDTH))
                 .girth(Length::Fixed(next_progress_girth(next)))
-                .style(styles::progress_bar(resolved)),
+                .next_style(iced_next::styles::progress_bar(next), |bar, style| {
+                    bar.style(style)
+                }),
         )
         .part("basic.progress_bar.bar.fill", |l| {
             let b = l.bounds();
@@ -15625,17 +15627,59 @@ fn next_switch<'a>(
 
 /// The Basic slider's rail height and handle diameter on the installed
 /// 0.8.0 theme, `slider.track(NONE; orientation=Horizontal).min_size[1]`
-/// and `slider.thumb(NONE).min_size[0]`; iced's own where unstated
-/// ([`ICED_SLIDER_RAIL`], [`ICED_SLIDER_HANDLE`]).
+/// and `slider.thumb(NONE).min_size[0]`, as `iced_next::styles::slider`
+/// sizes them; iced's own where unstated, or where that style is iced's own
+/// for a value the theme lacks ([`ICED_SLIDER_RAIL`], [`ICED_SLIDER_HANDLE`]).
 fn next_slider_sizes(r: &native_theme::next::ResolvedTheme) -> (f32, f32) {
-    let s = &r.slider;
-    let horizontal = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Horizontal);
-    let [_, rail] = s.track(horizontal).min_size;
-    let [handle, _] = s.thumb(WidgetState::NONE).min_size;
+    let (rail, handle) = next_stated_slider_sizes(r);
     (
         rail.unwrap_or(ICED_SLIDER_RAIL),
         handle.unwrap_or(ICED_SLIDER_HANDLE),
     )
+}
+
+/// The rail height and handle diameter `iced_next::styles::slider` gives
+/// iced on the installed 0.8.0 theme ([`next_slider_sizes`]); `None` for
+/// each it leaves to iced.
+fn next_stated_slider_sizes(r: &native_theme::next::ResolvedTheme) -> (Option<f32>, Option<f32>) {
+    if iced_next::styles::slider(r).is_err() {
+        return (None, None);
+    }
+    let s = &r.slider;
+    let horizontal = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Horizontal);
+    let [_, rail] = s.track(horizontal).min_size;
+    let [handle, _] = s.thumb(WidgetState::NONE).min_size;
+    (rail, handle)
+}
+
+/// The Widget Info rows of a slider's rail width and thumb diameter on the
+/// installed 0.8.0 theme, as [`next_slider_sizes`] gives them, each with
+/// its home, or iced's own where the theme leaves it to iced.
+fn next_slider_size_rows(r: &native_theme::next::ResolvedTheme) -> [String; 2] {
+    let (rail, handle) = next_stated_slider_sizes(r);
+    let unmapped = iced_next::styles::slider(r).is_err();
+    let row = |stated: Option<f32>, own: f32, home: &str, iced: &str| match stated {
+        Some(px) => format!("{px:.0}px, {home}"),
+        None if unmapped => format!(
+            "{own:.0}px, iced's own {iced}: iced's own slider style, the theme lacks a value \
+             iced_next::styles::slider needs"
+        ),
+        None => format!("{own:.0}px, iced's own {iced}: {home} unstated"),
+    };
+    [
+        row(
+            rail,
+            ICED_SLIDER_RAIL,
+            "slider.track(NONE; orientation=Horizontal).min_size[1]",
+            "rail.width",
+        ),
+        row(
+            handle,
+            ICED_SLIDER_HANDLE,
+            "slider.thumb(NONE).min_size[0]",
+            "HandleShape::Circle",
+        ),
+    ]
 }
 
 /// iced's own slider rail, 4 tall (iced_widget 0.14.2 `src/slider.rs`,
@@ -17265,9 +17309,7 @@ fn slider_paints(state: &State, hovered: bool) -> Vec<Paint> {
 
 /// The Widget Info of the Range page's horizontal slider.
 fn slider_info(state: &State) -> String {
-    let sl = &state.current_resolved.slider;
-    let rail_s = format!("{:.0}px", sl.track_height);
-    let thumb_s = format!("{:.0}px", sl.thumb_diameter);
+    let [rail_s, thumb_s] = next_slider_size_rows(state.next_shown());
     widget_tooltip(
         "Horizontal Slider",
         &slider_paints(state, true),
@@ -17327,9 +17369,7 @@ fn stepped_slider_info(state: &State) -> String {
 
 /// The Widget Info of the Range page's vertical slider.
 fn vertical_slider_info(state: &State) -> String {
-    let sl = &state.current_resolved.slider;
-    let rail_s = format!("{:.0}px", sl.track_height);
-    let thumb_s = format!("{:.0}px", sl.thumb_diameter);
+    let [rail_s, thumb_s] = next_slider_size_rows(state.next_shown());
     widget_tooltip(
         "Vertical Slider",
         &slider_paints(state, false),
@@ -17356,9 +17396,10 @@ fn view_range(state: &State) -> Element<'_, Message> {
         state,
     );
 
-    // The sliders' rails and handles are still `styles::slider`'s, the
-    // 0.7.2 theme's, which sizes them; their values in `typography.body`,
-    // `layout.widget_gap` from the slider, on the installed 0.8.0 theme.
+    // The sliders' rails and handles are `iced_next::styles::slider`'s,
+    // which sizes them (iced's own where the theme leaves them unstated);
+    // their values in `typography.body`, `layout.widget_gap` from the
+    // slider, on the installed 0.8.0 theme.
     let horiz_slider = hoverable(
         UnlistedKey::Slider,
         column![
@@ -17368,7 +17409,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                     probes::SLIDER,
                     Fill,
                     slider(0.0..=100.0, state.slider_value, Message::SliderChanged)
-                        .style(styles::slider(resolved))
+                        .next_style(iced_next::styles::slider(next), |s, style| s.style(style))
                         .width(Fill)
                 ),
                 text(format!("{:.1}", state.slider_value))
@@ -17390,7 +17431,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             row![
                 slider(0.0..=100.0, state.slider_step, Message::StepSliderChanged)
                     .step(5.0_f32)
-                    .style(styles::slider(resolved))
+                    .next_style(iced_next::styles::slider(next), |s, style| s.style(style))
                     .width(Fill),
                 text(format!("{:.0}", state.slider_step))
                     .next_body(next)
@@ -17413,7 +17454,9 @@ fn view_range(state: &State) -> Element<'_, Message> {
                     Length::Shrink,
                     container(
                         vertical_slider(0.0..=100.0, state.vslider_value, Message::VSliderChanged)
-                            .style(styles::slider(resolved))
+                            .next_style(iced_next::styles::slider(next), |s, style| {
+                                s.style(style)
+                            })
                             .height(Length::Fixed(200.0))
                     )
                     .center_x(Length::Fixed(60.0))
@@ -17431,7 +17474,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     );
 
     // The progress bars as the Basic page's: [`next_progress_girth`] across,
-    // their colours still `styles::progress_bar`'s.
+    // in `iced_next::styles::progress_bar`'s colours and outline.
     let girth = Length::Fixed(next_progress_girth(next));
     let progress = hoverable(
         UnlistedKey::ProgressBar,
@@ -17440,11 +17483,12 @@ fn view_range(state: &State) -> Element<'_, Message> {
             text("Driven by horizontal slider value:").next_body(next),
             progress_bar(0.0..=100.0, state.slider_value)
                 .girth(girth)
-                .style(styles::progress_bar(resolved)),
+                .next_style(iced_next::styles::progress_bar(next), |bar, style| bar
+                    .style(style)),
             text("Separate progress control:").next_body(next),
             row![
                 slider(0.0..=100.0, state.progress_value, Message::ProgressChanged)
-                    .style(styles::slider(resolved))
+                    .next_style(iced_next::styles::slider(next), |s, style| s.style(style))
                     .width(Fill),
                 text(format!("{:.0}%", state.progress_value))
                     .next_body(next)
@@ -17454,7 +17498,8 @@ fn view_range(state: &State) -> Element<'_, Message> {
             .align_y(iced::Center),
             progress_bar(0.0..=100.0, state.progress_value)
                 .girth(girth)
-                .style(styles::progress_bar(resolved)),
+                .next_style(iced_next::styles::progress_bar(next), |bar, style| bar
+                    .style(style)),
         ]
         .spacing(gap.widget)
         .into(),
@@ -36396,15 +36441,17 @@ mod tests {
     ];
 
     /// The style functions (`styles::<fn>`) `text`, code with its comments and
-    /// strings removed, calls, and those the widget functions
+    /// strings removed, calls, `iced_next::styles::<fn>`, the same function on
+    /// the 0.8.0 model, under the same name, and those the widget functions
     /// [`DRAWN_THROUGH`] lists that it calls draw with.
     fn styles_called(text: &str) -> BTreeSet<String> {
         let mut called = BTreeSet::new();
         for (at, _) in text.match_indices("styles::") {
-            let joined = text[..at]
-                .chars()
-                .next_back()
-                .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == ':');
+            let joined = !text[..at].ends_with("iced_next::")
+                && text[..at]
+                    .chars()
+                    .next_back()
+                    .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == ':');
             let name: String = text[at..]
                 .chars()
                 .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
@@ -36582,6 +36629,112 @@ mod tests {
             }
         }
         assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// The functions that build the Basic, Buttons, Inputs, Selection,
+    /// Range, Display and Layout pages, and the page helpers they draw
+    /// their widgets through.
+    const NEXT_PAGES: &[&str] = &[
+        "view_basic",
+        "basic_table",
+        "expander_header",
+        "view_buttons",
+        "view_inputs",
+        "view_selection",
+        "view_range",
+        "view_display",
+        "view_layout",
+    ];
+
+    /// The style functions those pages draw with on the installed 0.8.0
+    /// theme alone (`iced_next::styles::<fn>`), never the 0.7.2 namesake.
+    const NEXT_PAGE_STYLES: &[&str] = &["slider", "progress_bar"];
+
+    /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`] on the
+    /// 0.7.2 model (`styles::<fn>(` not under `iced_next::`).
+    #[test]
+    fn the_pages_draw_with_the_0_8_0_styles() -> Result<(), String> {
+        let source = strip_comments_and_strings(SHOWCASE);
+        let mut faults = Vec::new();
+        for page in NEXT_PAGES {
+            let start = source
+                .find(&format!("\nfn {page}"))
+                .ok_or(format!("no fn {page}"))?;
+            let open = source[start..]
+                .find('{')
+                .map(|offset| start + offset)
+                .ok_or(format!("fn {page} has no body"))?;
+            let close = close_of_block(&source, open).ok_or(format!("fn {page} is not closed"))?;
+            let body = &source[open..close];
+            for style in NEXT_PAGE_STYLES {
+                let call = format!("styles::{style}(");
+                for (at, _) in body.match_indices(&call) {
+                    let before = &body[..at];
+                    let joined = before
+                        .chars()
+                        .next_back()
+                        .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == ':');
+                    if !joined || !before.ends_with("iced_next::") {
+                        faults.push(format!("{page} calls the 0.7.2 {call}"));
+                    }
+                }
+            }
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(faults.join("\n"))
+        }
+    }
+
+    /// The slider's Widget Info sizes are what `iced_next::styles::slider`
+    /// gives iced on the installed 0.8.0 theme: a stated rail and handle,
+    /// with their homes.
+    #[test]
+    fn the_slider_info_sizes_are_the_0_8_0_slider_s() -> Result<(), String> {
+        let stated = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.slider.rules]]\norientation = \"horizontal\"\n\
+             track.min_size = [\"none\", 9.0]\n\
+             [[widgets.slider.rules]]\nthumb.min_size = [23.0, 23.0]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Range);
+        splice_next(&mut state, |r| r.apply_patch(&stated));
+        let next = state.next_shown();
+        let old = &state.current_resolved.slider;
+        if [old.track_height, old.thumb_diameter] == [9.0, 23.0] {
+            return Err("the splice states 0.7.2's sizes".into());
+        }
+        let theme = native_theme_iced::next::to_theme(next).map_err(|e| format!("{e:?}"))?;
+        let style = iced_next::styles::slider(next).map_err(|e| format!("{e:?}"))?(
+            &theme,
+            slider::Status::Active,
+        );
+        let radius = match style.handle.shape {
+            slider::HandleShape::Circle { radius } => radius,
+            slider::HandleShape::Rectangle { .. } => -1.0,
+        };
+        let mut faults = Vec::new();
+        if style.rail.width != 9.0 || radius != 11.5 {
+            faults.push(format!("the style draws {} and {radius}", style.rail.width));
+        }
+        let [rail, thumb] = next_slider_size_rows(next);
+        for (row, expected) in [
+            (
+                &rail,
+                "9px, slider.track(NONE; orientation=Horizontal).min_size[1]",
+            ),
+            (&thumb, "23px, slider.thumb(NONE).min_size[0]"),
+        ] {
+            if row != expected {
+                faults.push(format!("{row:?}, not {expected:?}"));
+            }
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(faults.join("\n"))
+        }
     }
 
     /// Rows an info must show, by its title: the states the ledger found
