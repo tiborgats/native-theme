@@ -822,6 +822,10 @@ homes = [
     "checkbox.indicator(NONE).fill",
     "radio.indicator(NONE).fill",
 ]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 states an uncited fill (#ffffff / #1c1c1e); 0.8.0 states the background WebKit fills an enabled empty iOS check box and radio with, -webkit-control-background, systemBackground"
+difference_citation = "ios-13: checkboxRadioBackgroundColor (RenderThemeIOS.mm:1391, :1395; CSSValueWebkitControlBackground = systemBackgroundColor, :1027 at WebKit 31adf9d); systemBackground #ffffff / #000000 (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:7, :9 at WebKit de320ba)"
+difference_values = { "ios-13" = { light = "#ffffff", dark = "#000000" } }
 
 [[row]]
 key = "checkbox.unchecked_border_color"

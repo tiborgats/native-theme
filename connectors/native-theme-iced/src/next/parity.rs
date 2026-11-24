@@ -1331,6 +1331,23 @@ macro_rules! indicator_outline {
 /// checked one, the hovered box as at rest ([`indicator_outline`]).
 const IOS_CHECK: [Stated; 8] = indicator_outline!(checkbox);
 
+/// ios-13's empty box at rest, WebKit's -webkit-control-background
+/// (`checkbox.indicator(NONE)` fill; RenderThemeIOS.mm:1391, :1395, :1027 at
+/// WebKit 31adf9d; native-theme/tests/next_homes.toml, row
+/// checkbox.unchecked_background, a listed difference).
+const IOS_CHECK_FILL: [Stated; 1] = [set(
+    at!(NONE),
+    Field::Background,
+    home!(fill, checkbox.indicator(NONE)),
+)];
+
+/// ios-13's empty circle at rest ([`IOS_CHECK_FILL`]).
+const IOS_RADIO_FILL: [Stated; 1] = [set(
+    at!(NONE),
+    Field::Background,
+    home!(fill, radio.indicator(NONE)),
+)];
+
 /// A disabled check box's outline, `checkbox.indicator(state)`'s stroke
 /// (`state` `NONE` or `CHECKED`, the box at rest), laid over the box's
 /// disabled fill (`indicator(DISABLED|state)` where a rule for DISABLED
@@ -1958,7 +1975,12 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["ios-13"],
         LineAlign::Outside,
-        &[&IOS_CHECK, &IOS_CHECK_DISABLED, &IOS_CHECK_DISABLED_COLORS],
+        &[
+            &IOS_CHECK_FILL,
+            &IOS_CHECK,
+            &IOS_CHECK_DISABLED,
+            &IOS_CHECK_DISABLED_COLORS,
+        ],
     ),
     stated_fields(
         "checkbox",
@@ -2025,7 +2047,12 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Inside,
         hovered(true, true, true),
     ),
-    stated_fields("radio", &["ios-13"], LineAlign::Outside, &[&IOS_RADIO]),
+    stated_fields(
+        "radio",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&IOS_RADIO_FILL, &IOS_RADIO],
+    ),
     // combo_box.field: the open stroke (`field(OPEN)`), which kde-breeze
     // alone states. The FS4 presets state the hovered stroke as the rest
     // one on adwaita, windows-11, the macOS presets and ios-13 (`field(HOVER)`),

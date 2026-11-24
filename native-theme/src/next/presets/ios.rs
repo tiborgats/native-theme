@@ -319,7 +319,7 @@ const LIGHT: SchemeColors = SchemeColors {
     surface: srgb8(0xf2f2_f7ff),
     // `sidebar.background_color`: 0.7.2 ios-13.toml (uncited)
     sidebar: srgb8(0xf2f2_f7ff),
-    // `popover.background_color`, `checkbox.unchecked_background`: 0.7.2 ios-13.toml (uncited)
+    // `popover.background_color`: 0.7.2 ios-13.toml (uncited)
     elevated: srgb8(0xffff_ffff),
     // `defaults.text_color`: label (ios-18 expected.txt:73)
     // `input.font.color`, `popover.font.color`, `sidebar.font.color`: label (ios-18
@@ -494,7 +494,7 @@ const DARK: SchemeColors = SchemeColors {
     surface: srgb8(0x1c1c_1eff),
     // `sidebar.background_color`: 0.7.2 ios-13.toml (uncited)
     sidebar: srgb8(0x1c1c_1eff),
-    // `popover.background_color`, `checkbox.unchecked_background`: 0.7.2 ios-13.toml (uncited)
+    // `popover.background_color`: 0.7.2 ios-13.toml (uncited)
     elevated: srgb8(0x1c1c_1eff),
     // `defaults.text_color`: label (ios-18 expected.txt:75)
     // `input.font.color`, `popover.font.color`, `sidebar.font.color`: label (ios-18
@@ -1551,9 +1551,12 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles) -> RuleBuilder<PartStyle, Par
         c.muted.mul_alpha(PRESSED_STATE_OPACITY),
     ));
     let no_edge = PartProp::Stroke(Stroke::None);
+    // (WebKit) checkboxRadioBackgroundColor: enabled and empty, -webkit-control-background
+    // (RenderThemeIOS.mm:1391, :1395), systemBackground (:1027), where 0.7.2 took its uncited
+    // `checkbox.unchecked_background`.
     RuleBuilder::new(PartStyle::default())
         .base([
-            fill(c.elevated),
+            fill(c.background),
             rest_edge.clone(),
             // `checkbox.border.shadow_enabled`: docs/inheritance-rules.toml ([wrong_safety_nets]):
             // the defaults' shadow is a wrong safety net for this control, and the preset must say

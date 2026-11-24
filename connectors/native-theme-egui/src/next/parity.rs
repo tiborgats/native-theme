@@ -1457,6 +1457,14 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".corner_radius.*",
         home!(card.container(NONE).corners),
     ),
+    // ios-13's empty box at rest: WebKit's -webkit-control-background, systemBackground
+    // (RenderThemeIOS.mm:1391, :1395, :1027 at WebKit 31adf9d).
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.{inactive,open}.bg_fill",
+        home!(checkbox.indicator(NONE).fill),
+    ),
 ];
 
 /// A pop-up button or a segmented control stroked as none at rest.

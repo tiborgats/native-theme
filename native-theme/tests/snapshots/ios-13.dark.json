@@ -653,7 +653,7 @@
     "disabled_opacity": 1.0,
     "indicator": {
       "base": {
-        "fill": "#1c1c1e",
+        "fill": "#000000",
         "stroke": {
           "width": 1.5,
           "color": "#ebebf599"
@@ -826,7 +826,7 @@
     "disabled_opacity": 1.0,
     "indicator": {
       "base": {
-        "fill": "#1c1c1e",
+        "fill": "#000000",
         "stroke": {
           "width": 1.5,
           "color": "#ebebf599"
