@@ -164,10 +164,11 @@ pub(crate) struct ColumnRule {
     /// egui's own `item_spacing.x`, which the connector then leaves (egui-0.37.0
     /// `src/style.rs:1565`).
     pub(crate) widget_gap: f32,
-    /// `scrollbar.overlay_mode`; egui's own `ScrollStyle::floating` without a 0.8.0 theme.
+    /// `scrollbar.overlay_mode` where the connector writes the scroll style ([`written_bar`]),
+    /// else egui's own `ScrollStyle::floating`, which the style then keeps.
     pub(crate) overlay: bool,
-    /// The scroll bar's groove width, `next::scrollbar_groove_width`, egui's own
-    /// `ScrollStyle::bar_width` where the theme states none.
+    /// The scroll bar's groove width, `next::scrollbar_groove_width`, where the connector writes
+    /// the scroll style ([`written_bar`]), else egui's own `ScrollStyle::bar_width`.
     pub(crate) groove: f32,
     /// The widest fixed-width control the theme states on the page: `combo_box.field(NONE)
     /// .min_size[0]`, the two tabs at `tab.tab(NONE).min_size[0]` `tab.item_gap` apart (where
@@ -196,14 +197,13 @@ impl ColumnRule {
         let item_gap = r.and_then(|r| r.tab.item_gap).unwrap_or(rows.x);
         let flare = r.and_then(demo::next_outward_radius).unwrap_or_default();
         let tabs = tab_min + tab_min + item_gap + flare + flare;
+        let bar = r.and_then(written_bar);
         Self {
             margin: metric(|l| l.window_margin, panel.leftf()),
             gap: metric(|l| l.section_gap, rows.x),
             widget_gap: metric(|l| l.widget_gap, rows.x),
-            overlay: r.map_or(scroll.floating, |r| r.scrollbar.overlay_mode),
-            groove: r
-                .and_then(|r| next::scrollbar_groove_width(r).ok())
-                .unwrap_or(scroll.bar_width),
+            overlay: bar.map_or(scroll.floating, |(overlay, _)| overlay),
+            groove: bar.map_or(scroll.bar_width, |(_, groove)| groove),
             widest: combo_min_width(r)
                 .unwrap_or_default()
                 .max(tabs)
@@ -211,6 +211,20 @@ impl ColumnRule {
                 .max(BASIC_WIDTH),
         }
     }
+}
+
+/// `scrollbar.overlay_mode` and the groove width (`next::scrollbar_groove_width`) where the
+/// connector writes them into the egui scroll style: only where the theme states both the
+/// groove's and the thumb's width, `scrollbar.track(NONE; orientation=Vertical).min_size[0]` and
+/// `scrollbar.thumb(NONE; orientation=Vertical).min_size[0]` (the connector's
+/// `style/derived.rs`, `apply_base`); else `None`, and the style keeps egui's own
+/// `ScrollStyle`, its floating and its width both (spec §10, rule 0).
+pub(crate) fn written_bar(r: &ResolvedTheme) -> Option<(bool, f32)> {
+    let vertical = native_theme::next::StyleQuery::<()>::new(NextState::NONE)
+        .orientation(native_theme::next::Orientation::Vertical);
+    let groove = next::scrollbar_groove_width(r).ok()?;
+    r.scrollbar.thumb(vertical).min_size[0]?;
+    Some((r.scrollbar.overlay_mode, groove))
 }
 
 /// How many columns the page lays its groups out in, from the theme alone (`rule`, each length
@@ -1862,8 +1876,8 @@ fn inner_corners(inner: f32, [nw, ne, sw, se]: [bool; 4]) -> egui::CornerRadius 
 /// font as drawn, in `list.item_label(NONE)` (`list.header_label(NONE)`), `demo::next_line_box`,
 /// and the part's padding above and below it, its text the part's left padding in. A side the
 /// theme leaves unstated is `own`'s: for the list what egui gives a selectable row there, the
-/// scope's `button_padding` (`egui/src/widgets/button.rs:333-337`); for the table nothing, as
-/// the three showcases lay their tables out. Without an installed 0.8.0 theme, egui's own line,
+/// scope's `button_padding` (`egui/src/widgets/button.rs:333-337`); for the table egui_extras'
+/// own cell inset ([`table_cell_inset`]). Without an installed 0.8.0 theme, egui's own line,
 /// the font's row height, padded by `own`.
 fn row_metrics(
     ui: &egui::Ui,
@@ -2379,6 +2393,17 @@ fn paint_cell_text(
     cell
 }
 
+/// egui_extras' own space between a table cell's painted background and its content, in `ui`,
+/// the table's scope (spec §10, rule 0, for a side of the cell padding the theme leaves
+/// unstated): half its `item_spacing` on each side, as egui_extras lays its cells
+/// `item_spacing.x` apart and its rows `item_spacing.y` apart (egui_extras-0.37.0
+/// `src/layout.rs:98-104`, `StripLayout::set_pos`; `src/table.rs:1033-1034`, `TableBody::rows`)
+/// and paints a cell's stripe and selection across the cell grown by half that spacing each
+/// way, so no gap shows between neighbouring cells (`src/layout.rs:125-127`, `gapless_rect`).
+pub(crate) fn table_cell_inset(ui: &egui::Ui) -> egui::Vec2 {
+    0.5 * ui.spacing().item_spacing
+}
+
 /// A table header section's fill, of the installed 0.8.0 theme `r`: pressed, which needs the
 /// pointer on it, `list.header(HOVER | PRESSED).fill`, hovered `list.header(HOVER).fill`, each
 /// where a rule states it for the state (spec §2, `from_state`), of the table
@@ -2436,17 +2461,12 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
             let grid_width = grid.map_or(egui::Stroke::NONE.width, |s| s.width);
             let header_fill = r.and_then(|r| next::fill_of(&r.list.header(rest)));
             let header_line_colour = r.and_then(|r| next::fill_of(&r.list.header_separator(rest)));
+            let own = table_cell_inset(ui);
             let (row_height, inset, line) =
-                row_metrics(ui, r, (table, false), &item_font, egui::Vec2::ZERO, 0.0);
+                row_metrics(ui, r, (table, false), &item_font, own, 0.0);
             // the grid's line under the header lies inside it
-            let (header_height, header_inset, header_line) = row_metrics(
-                ui,
-                r,
-                (table, true),
-                &head.font,
-                egui::Vec2::ZERO,
-                grid_width,
-            );
+            let (header_height, header_inset, header_line) =
+                row_metrics(ui, r, (table, true), &head.font, own, grid_width);
             let (frame, inner_radius) = list_frame(r, table);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             frame

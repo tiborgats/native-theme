@@ -5091,8 +5091,9 @@ fn the_text_role_labels_are_drawn_at_their_weight() -> Result<(), String> {
 /// The tables' header rows are `list_header_height` tall where the theme states one
 /// (material-3, macos-monterey), else a row's height where the theme states one, else a row
 /// ([`UNSTATED_PRESET`]): on the Basic page's painted table (its `basic.table.header` place) a row
-/// of the header font, `list.header(NONE)`'s padding above and below its line box
-/// (`pages/basic.rs`, `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s, all of
+/// of the header font, `list.header(NONE)`'s padding above and below its line box, a side the
+/// theme leaves unstated egui_extras' own, half the List scope's `item_spacing.y`
+/// (`pages/basic.rs`, `row_metrics`, `table_cell_inset`); on the Data and Theme Map pages' `TableBuilder`s, all of
 /// the installed 0.8.0 theme, its `list.header(NONE).min_size[1]`, else `list.row(NONE).min_size[1]`, else
 /// egui's own `interact_size.y`, or the header font's line box rounded up, where that is taller
 /// ([`next_table_row`]). There
@@ -5127,7 +5128,13 @@ fn the_tables_headers_take_the_themes_header_height() -> Result<(), String> {
         let none = native_theme::next::WidgetState::NONE;
         let header_label = rb.list.header_label(none);
         let [top, _, bottom, _] = native_theme_egui::next::padding_of(&rb.list.header(none));
-        let padding = top.unwrap_or_default() + bottom.unwrap_or_default();
+        // an unstated side egui_extras' own, half the List scope's item spacing
+        let own = 0.5
+            * scope_style(&basic, native_theme_egui::Role::List)?
+                .spacing
+                .item_spacing
+                .y;
+        let padding = top.unwrap_or(own) + bottom.unwrap_or(own);
         let size = native_theme_egui::next::list_header_font(&rb)
             .map_err(|e| e.to_string())?
             .size;
@@ -8860,6 +8867,72 @@ fn the_column_rule_takes_an_unstated_layout_length_as_egui_s_own() -> Result<(),
     Ok(())
 }
 
+/// Spec §10 rule 0 for the scroll bar (G2 review fix 3): the connector writes the egui scroll
+/// style only where the theme states both the groove's and the thumb's width (`style/derived.rs`,
+/// `apply_base`), else egui's own `ScrollStyle` stays, so the column rule takes the bar's
+/// floating and its width both from the theme only then, and else both from the page style:
+/// under every bundled preset in both schemes the rule's bar is the one the installed style
+/// lays out, floating where egui's style floats and as wide as it allocates (its `bar_width`
+/// where it floats, `allocated_width()` where it does not); and with a page style whose scroll
+/// style is set apart from egui's default, the rule takes the theme's bar exactly where both
+/// widths are stated, and the page style's where either is not (every bundled preset states
+/// both today, in both schemes, so only a theme of the future reaches the page style's bar).
+#[test]
+fn the_column_rule_takes_the_scroll_bar_the_connector_lays_out() -> Result<(), String> {
+    use crate::pages::basic::ColumnRule;
+    use native_theme::next::{Orientation, Preset, StyleQuery, WidgetState};
+    let vertical = || StyleQuery::<()>::new(WidgetState::NONE).orientation(Orientation::Vertical);
+    let mut own = egui::Style::default();
+    own.spacing.scroll.floating = !own.spacing.scroll.floating;
+    own.spacing.scroll.bar_width += 3.0;
+    for preset in Preset::ALL.iter().map(|p| p.as_str()) {
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            let harness = open_page_under(Page::Basic, theme, preset);
+            let r = harness
+                .state()
+                .atlas
+                .next_resolved(theme)
+                .ok_or_else(|| format!("{preset} {theme:?}: no 0.8.0 theme installed"))?;
+            let style = harness.ctx.style_of(theme);
+            let laid = &style.spacing.scroll;
+            let rule = column_rule(&harness, theme);
+            assert_eq!(
+                rule.overlay, laid.floating,
+                "{preset} {theme:?}: the rule's bar floats where the installed style's does not, \
+                 or the reverse"
+            );
+            let width = if laid.floating {
+                laid.bar_width
+            } else {
+                laid.allocated_width()
+            };
+            assert!(
+                (rule.groove - width).abs() < 1e-4,
+                "{preset} {theme:?}: the rule's groove {} against the installed style's {width}",
+                rule.groove
+            );
+            let groove = r.scrollbar.track(vertical()).min_size[0];
+            let thumb = r.scrollbar.thumb(vertical()).min_size[0];
+            let apart = ColumnRule::of(Some(r), &own);
+            match (groove, thumb) {
+                (Some(groove), Some(_)) => {
+                    assert_eq!(
+                        (apart.overlay, apart.groove),
+                        (r.scrollbar.overlay_mode, groove),
+                        "{preset} {theme:?}: both widths stated, the bar is not the theme's"
+                    );
+                }
+                _ => assert_eq!(
+                    (apart.overlay, apart.groove),
+                    (own.spacing.scroll.floating, own.spacing.scroll.bar_width),
+                    "{preset} {theme:?}: a width unstated, the bar is not the page style's"
+                ),
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Spec §10 rule 0 for `tab.item_gap` (ES-G2d question 3): the column rule counts the two tabs
 /// the gap the tab bar lays them out apart, `tab.item_gap` where stated and else the page
 /// style's `item_spacing.x`, which the tab scope keeps (`demo::TabLook::next`), never 0: under
@@ -11900,7 +11973,7 @@ fn a_capture_without_the_scale_factor_is_refused() {
 fn the_basic_edit_button_starts_checked_and_switches() -> Result<(), String> {
     use crate::pages::basic::{ToggleOn, edit_look};
     use native_theme::next::WidgetState;
-    use native_theme_egui::next::{state_fill_of, state_stroke_color_of, state_text_color_of};
+    use native_theme_egui::next::state_stroke_color_of;
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
     harness.run_steps(SETTLE);
     let r = harness
@@ -11909,15 +11982,13 @@ fn the_basic_edit_button_starts_checked_and_switches() -> Result<(), String> {
         .next_resolved(egui::Theme::Light)
         .cloned()
         .ok_or("kde-breeze's 0.8.0 theme is not installed")?;
-    let fill = state_fill_of(&r.toolbar.button(WidgetState::CHECKED));
-    let text = state_text_color_of(&r.button.label(WidgetState::CHECKED));
-    if fill.is_none() || text.is_none() {
-        return Err(
-            "kde-breeze no longer states the checked toolbar fill and text, so this test \
-             proves nothing"
-                .to_owned(),
-        );
-    }
+    // Each colour from its home in kde-breeze light's preset: `toolbar.button(CHECKED).fill`,
+    // [Colors:Button] ForegroundNormal 35,38,41 at 0.125 (platform-facts.md §2.13), and
+    // `button.label(CHECKED).color`, ButtonText 35,38,41 in every state (platform-facts.md §2.3).
+    let fill = Some(egui::Color32::from_rgba_unmultiplied(
+        0x23, 0x26, 0x29, 0x20,
+    ));
+    let text = Some(egui::Color32::from_rgb(0x23, 0x26, 0x29));
     assert_eq!(
         edit_look(Some(&r)),
         ToggleOn { fill, text },
@@ -12036,13 +12107,9 @@ fn the_basic_edit_button_starts_checked_and_switches() -> Result<(), String> {
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
     harness.state_mut().settings.icon = IconSetChoice::Freedesktop("no-such-icon-theme".into());
     harness.run_steps(SETTLE);
-    let r = harness
-        .state()
-        .atlas
-        .next_resolved(egui::Theme::Light)
-        .cloned()
-        .ok_or("windows-11's 0.8.0 theme is not installed")?;
-    let checked = edit_look(Some(&r)).text;
+    // windows-11 light's `button.label(CHECKED).color`: the accent's foreground, #ffffff (the
+    // preset's `accent_foreground`, from 0.7.2's windows-11.toml `button.checked_text_color`).
+    let checked = Some(egui::Color32::WHITE);
     assert!(
         harness.state().demo_state.basic_edit,
         "Edit is not on at start"
@@ -12199,22 +12266,31 @@ fn scope_widgets(
     harness: &Harness<'_, App>,
     role: native_theme_egui::Role,
 ) -> Result<egui::style::Widgets, String> {
+    scope_style(harness, role).map(|style| style.visuals.widgets)
+}
+
+/// The style of `role`'s scope as `demo::scoped` sets it, in light, under the atlas `harness`
+/// installed, in a context of its own (as [`scope_widgets`]).
+fn scope_style(
+    harness: &Harness<'_, App>,
+    role: native_theme_egui::Role,
+) -> Result<egui::Style, String> {
     let atlas =
         native_theme_egui::ThemeAtlas::from_ctx(&harness.ctx).ok_or("no atlas installed")?;
     let ctx = egui::Context::default();
     atlas.install(&ctx);
     ctx.set_theme(egui::Theme::Light);
     let mut reg = crate::demo::Registry::default();
-    let mut widgets = None;
+    let mut style = None;
     let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
         crate::demo::scoped(&mut reg, ui, role, RoleVariant::Normal, "scope", |ui| {
-            widgets = Some(ui.style().visuals.widgets.clone());
+            style = Some(ui.style().as_ref().clone());
             ui.label("")
         });
     });
     // The font atlas's upload, which no renderer takes here (`epaint/src/textures.rs:337`).
     out.textures_delta.clear();
-    widgets.ok_or_else(|| format!("the {role:?} scope ran no pass"))
+    style.ok_or_else(|| format!("the {role:?} scope ran no pass"))
 }
 
 /// The chrome toolbar's tool buttons are outlined hovered and pressed in the «toolbar» scope's
@@ -13145,6 +13221,69 @@ fn the_basic_tables_record_names_egui_own_row() -> Result<(), String> {
         "no preset leaves the selected table row's stroke unstated under a List scope line \
          egui draws ({own_stroke}) and one under a line it paints nothing of ({own_none}), so \
          the test proves nothing"
+    );
+    Ok(())
+}
+
+/// G2 review fix 7, spec §10 rule 0: the Basic table's cell text sits a side of the padding the
+/// theme states in from its row's and header's left edge, `list.row(NONE).padding` and
+/// `list.header(NONE).padding` of the table (`ListVariant::Table`), and where the theme leaves it
+/// unstated egui_extras' own inset, half the List scope's `item_spacing.x`
+/// (`pages::basic::table_cell_inset`), never 0, under every bundled preset in light; at least
+/// one preset leaves it unstated, so the test can see egui's own.
+#[test]
+fn the_basic_tables_unstated_cell_padding_is_egui_extras_own() -> Result<(), String> {
+    use native_theme::next::{ListKind, ListQuery, ListVariant, Preset, WidgetState};
+    let mut unstated = Vec::new();
+    for preset in Preset::ALL.iter().map(|p| p.as_str()) {
+        let harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+        let q = ListQuery::new(WidgetState::NONE).variant(ListKind {
+            variant: ListVariant::Table,
+            alternate: false,
+        });
+        let own = 0.5
+            * scope_style(&harness, native_theme_egui::Role::List)?
+                .spacing
+                .item_spacing
+                .x;
+        assert!(own > 0.0, "{preset}: the List scope's item spacing is 0");
+        for (part, place, text) in [
+            (r.list.row(q), "basic.table.row_1", "a.txt"),
+            (r.list.header(q), "basic.table.header.name", "Name"),
+        ] {
+            let [_, _, _, left] = native_theme_egui::next::padding_of(&part);
+            if left.is_none() {
+                unstated.push(format!("{preset} {place}"));
+            }
+            let expected = left.unwrap_or(own);
+            let cell = place_of(&harness, place);
+            let at = harness
+                .output()
+                .shapes
+                .iter()
+                .find_map(|clipped| match &clipped.shape {
+                    egui::Shape::Text(s) if s.galley.text() == text && cell.contains(s.pos) => {
+                        Some(s.pos.x)
+                    }
+                    _ => None,
+                })
+                .ok_or_else(|| format!("{preset}: {text:?} is not painted in {place}"))?;
+            assert!(
+                (at - cell.left() - expected).abs() < 1e-3,
+                "{preset}: {text:?} sits {} in from {place}'s left edge, not {expected} (stated \
+                 {left:?}, egui_extras' own {own})",
+                at - cell.left()
+            );
+        }
+    }
+    assert!(
+        !unstated.is_empty(),
+        "no preset leaves the table's left cell padding unstated, so the test proves nothing"
     );
     Ok(())
 }
