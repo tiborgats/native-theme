@@ -43,7 +43,7 @@ fn the_constant_colours_are_their_8_bit_channels() {
         TAHOE_DARK.slider_disabled_fill.to_srgb8(),
         [0xff, 0xff, 0xff, 0x1f]
     );
-    assert_eq!(TAHOE_LIGHT.combo_hover, None);
+    assert_eq!(TAHOE_LIGHT.combo_disabled, None);
 }
 
 #[test]

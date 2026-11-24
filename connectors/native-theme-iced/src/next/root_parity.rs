@@ -90,6 +90,61 @@ fn stated_content_min_size(new: &native_theme::next::ResolvedTheme) -> Option<St
     ))
 }
 
+/// `combo_box_padding` from `combo_box.field(NONE)`'s homes: each stated
+/// side plus the stated stroke's width, a stroke stated as none adding 0
+/// (spec §10, rule 2), an unstated side iced's own
+/// (`iced_widget::button::DEFAULT_PADDING`); `None` where the stroke is
+/// unstated or per side, or the right side is stated (an arrow column then
+/// widens it, which this does not reckon).
+#[cfg(feature = "widgets")]
+fn stated_combo_box_padding(new: &native_theme::next::ResolvedTheme) -> Option<String> {
+    use native_theme::next::{PartStated, Stroke, WidgetState};
+
+    let field = new.combo_box.field(WidgetState::NONE);
+    if !field.stated.contains(PartStated::STROKE)
+        || field.stated.contains(PartStated::PADDING_RIGHT)
+    {
+        return None;
+    }
+    let width = match field.stroke {
+        Stroke::None => 0.0,
+        Stroke::Uniform { width, .. } => width,
+        _ => return None,
+    };
+    let own = iced_widget::button::DEFAULT_PADDING;
+    let side = |bit: PartStated, v: f32, own: f32| {
+        if field.stated.contains(bit) {
+            v + width
+        } else {
+            own
+        }
+    };
+    let p = &field.padding;
+    Some(format!(
+        "{:?}",
+        ok(iced_core::Padding {
+            top: side(PartStated::PADDING_TOP, p.top, own.top),
+            right: own.right,
+            bottom: side(PartStated::PADDING_BOTTOM, p.bottom, own.bottom),
+            left: side(PartStated::PADDING_LEFT, p.left, own.left),
+        })
+    ))
+}
+
+/// `combo_box_padding` is compared with the `widgets` feature only, which
+/// builds it: no value to assert without it.
+#[cfg(not(feature = "widgets"))]
+fn stated_combo_box_padding(_: &native_theme::next::ResolvedTheme) -> Option<String> {
+    None
+}
+
+/// The reason of the macOS 26 pop-up button's padding.
+const NO_POPUP_LINE: &str = "macos-tahoe states its pop-up button's outline as none (M2.FS4, \
+     measured: os-probe run 45198750893, macOS 26, `*.normal.popup` `edge_*`; \
+     native-theme/tests/next_homes.toml, rows combo_box.border.color and \
+     combo_box.border.line_width, listed differences): the padding inside the border is the \
+     stated padding plus a width of 0 (spec §10, rule 2), where 0.7.2 added its 0.5 hairline";
+
 /// The reason of the macOS 26 push button's padding.
 const NO_BEZEL_LINE: &str = "macos-tahoe states its push button's bezel stroked as none (M2.FS4, \
      measured: `docs/facts/macos/button.toml` on `v0.8.0-rc1`, `button.body.stroke` absent): the \
@@ -148,6 +203,12 @@ const DIFFERENCES: &[Difference] = &[
         preset: "macos-tahoe",
         new: New::Computed(stated_content_min_size),
         reason: NO_BEZEL_LINE,
+    },
+    Difference {
+        name: "combo_box_padding",
+        preset: "macos-tahoe",
+        new: New::Computed(stated_combo_box_padding),
+        reason: NO_POPUP_LINE,
     },
 ];
 
@@ -553,9 +614,12 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
         }
     }
     for d in DIFFERENCES {
-        // The button's helpers are compared with the `widgets` feature only.
-        if matches!(d.name, "button_content_min_size" | "button_padding")
-            && !cfg!(feature = "widgets")
+        // The button's and the combo box's helpers are compared with the
+        // `widgets` feature only.
+        if matches!(
+            d.name,
+            "button_content_min_size" | "button_padding" | "combo_box_padding"
+        ) && !cfg!(feature = "widgets")
         {
             continue;
         }

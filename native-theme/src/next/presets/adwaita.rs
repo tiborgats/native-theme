@@ -228,6 +228,8 @@ struct SchemeColors {
     sidebar_hover: Color,
     slider_thumb: Color,
     slider_thumb_hover: Color,
+    /// The paned separator's line, in every state.
+    splitter_line: Color,
     switch_hover_off: Color,
     switch_hover_on: Color,
     switch_thumb: Color,
@@ -410,8 +412,16 @@ const LIGHT: SchemeColors = SchemeColors {
     // `slider.thumb_color`: platform-facts.md §2.9 thumb_color: $slider_color, white 80 % over the
     // view's #ffffff (libadwaita 1.10.0 _scale.scss:50, _colors.scss:288, :36)
     slider_thumb: srgb8(0xffff_ffff),
-    // `slider.thumb_hover_color`: 0.7.2 adwaita.toml (uncited)
-    slider_thumb_hover: srgb8(0xebeb_ebff),
+    // `slider.thumb_hover_color`, `slider.thumb(PRESSED).fill`: $slider_hover_color, white, under
+    // `&:hover, &:active` (libadwaita 1.10.0 _scale.scss:62-76, _colors.scss:289), where 0.7.2
+    // adwaita.toml states #ebebeb (uncited)
+    slider_thumb_hover: srgb8(0xffff_ffff),
+    // `splitter.handle` in every state: the separator's `box-shadow: inset 1px 0 $border_color`
+    // with no :hover or :active rule (libadwaita 1.10.0 _paned.scss:1-36); $border_color is
+    // currentColor at --border-opacity 15 % (_colors.scss:263, :257), currentColor rgb(0 0 6 / 80
+    // %) (_colors.scss:33), so rgb(0 0 6 / 12 %), 8-bit rounded; platform-facts.md (§2.17)
+    // `hover_color`
+    splitter_line: srgb8(0x0000_061f),
     // `switch.hover_unchecked_background`: 0.7.2 adwaita.toml (uncited)
     switch_hover_off: srgb8(0xc8c8_c8ff),
     // `switch.hover_checked_background`: 0.7.2 adwaita.toml (uncited)
@@ -581,8 +591,14 @@ const DARK: SchemeColors = SchemeColors {
     // `slider.thumb_color`: platform-facts.md §2.9 thumb_color: $slider_color, white 80 % over the
     // view's #1d1d20 (libadwaita 1.10.0 _scale.scss:50, _colors.scss:288, :99)
     slider_thumb: srgb8(0xd2d2_d2ff),
-    // `slider.thumb_hover_color`: 0.7.2 adwaita.toml (uncited)
-    slider_thumb_hover: srgb8(0x3a3a_3eff),
+    // `slider.thumb_hover_color`, `slider.thumb(PRESSED).fill`: $slider_hover_color, white, under
+    // `&:hover, &:active` (libadwaita 1.10.0 _scale.scss:62-76, _colors.scss:289), where 0.7.2
+    // adwaita.toml states #3a3a3e (uncited)
+    slider_thumb_hover: srgb8(0xffff_ffff),
+    // `splitter.handle` in every state: the separator's $border_color line, as the light scheme's
+    // (libadwaita 1.10.0 _paned.scss:1-36), currentColor #ffffff (_colors.scss:96) at 15 %
+    // (:263, :318); platform-facts.md (§2.17) `hover_color`
+    splitter_line: srgb8(0xffff_ff26),
     // `switch.hover_unchecked_background`: 0.7.2 adwaita.toml (uncited)
     switch_hover_off: srgb8(0x5656_5aff),
     // `switch.hover_checked_background`: 0.7.2 adwaita.toml (uncited)
@@ -1539,7 +1555,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         link: link(&colors, &typography),
         slider: slider(c, &colors),
         progress_bar: progress_bar(&colors, &layout),
-        splitter: splitter(c, &colors),
+        splitter: splitter(c),
         separator: separator(c, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &typography, &layout),
@@ -2359,6 +2375,18 @@ fn input(
             PartProp::Padding(padding),
         ])
         .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])))
+        // Hovered and pressed, the outline as at rest: an entry has no :hover or :active rule
+        // (_entries.scss:1-60 at libadwaita 1.10.0); the click focuses it, and its focus ring is
+        // FOCUSED's (:focus-within, _entries.scss:17; _drawing.scss:12-22).
+        .rules(
+            border(roles, INPUT_BORDER_WIDTH).into_iter().flat_map(|_| {
+                [
+                    RuleSelector::on(WidgetState::HOVER),
+                    RuleSelector::on(WidgetState::PRESSED),
+                ]
+            }),
+            border(roles, INPUT_BORDER_WIDTH),
+        )
         .rule(
             RuleSelector::on(WidgetState::FOCUSED),
             [stroke(INPUT_BORDER_WIDTH, roles.focus_ring)],
@@ -2444,8 +2472,11 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             PartProp::MinSize([Some(SLIDER_THUMB_DIAMETER); 2]),
             PartProp::MaxSize([Some(SLIDER_THUMB_DIAMETER); 2]),
         ])
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
             [fill(c.slider_thumb_hover)],
         )
         .build();
@@ -2501,13 +2532,21 @@ fn separator(c: &SchemeColors, layout: &LayoutMetrics) -> SeparatorWidget {
     )
 }
 
-/// The splitter: its handle in the default border colour (0.7.2:
-/// `splitter.divider_color` is `defaults.border.color` where unstated), its
-/// hover colour under the pointer.
-fn splitter(c: &SchemeColors, roles: &ColorRoles) -> SplitterWidget {
+/// The splitter: its handle in the separator's translucent line in every
+/// state, where 0.7.2 took the default border colour
+/// (`splitter.divider_color` is `defaults.border.color` where unstated) and
+/// an opaque hover colour.
+fn splitter(c: &SchemeColors) -> SplitterWidget {
+    let line = fill(c.splitter_line);
     let handle = RuleBuilder::new(PartStyle::default())
-        .base(roles.window.border.map(fill))
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.frame)])
+        .base([line.clone()])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [line],
+        )
         .build();
     SplitterWidget::new(WidgetOrigin::Native, handle, SPLITTER_DIVIDER_WIDTH)
 }
@@ -2624,12 +2663,22 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             // AdwTabBar draw no outline on a tab, line width 0
             PartProp::Stroke(Stroke::None),
         ])
+        // Hovered and pressed, no outline, as at rest: `&:hover, &:active` sets only the
+        // background (_notebook.scss:127-129 at libadwaita 1.10.0); the hovered tab's 4px
+        // $border_color line on its page side (:17) is the indicator's place, not an outline.
         .rules(
             [
                 RuleSelector::on(WidgetState::HOVER),
                 RuleSelector::on(WidgetState::PRESSED),
             ],
             [fill(c.hover_layer)],
+        )
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+                RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+            ],
+            [PartProp::Stroke(Stroke::None)],
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
@@ -3042,13 +3091,20 @@ fn combo_box(
             )),
             PartProp::MinSize([Some(COMBO_BOX_MIN_WIDTH), Some(COMBO_BOX_MIN_HEIGHT)]),
         ])
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
+        // Hovered and pressed, the outline as at rest: the trigger is a raised button, whose
+        // :hover and :active set only its background (_buttons.scss:35-42; _dropdowns.scss:1-12
+        // adds no outline, at libadwaita 1.10.0).
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            std::iter::once(fill(c.button_hover)).chain(border(roles, COMBO_BOX_BORDER_WIDTH)),
+        )
         // Pressed: the trigger is a raised button, `&:active { background-color:
         // $button_active_color }` (_buttons.scss:39-42; _dropdowns.scss:1-12 adds no fill, at
         // libadwaita 1.10.0).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.button_active_layer)],
+            std::iter::once(fill(c.button_active_layer))
+                .chain(border(roles, COMBO_BOX_BORDER_WIDTH)),
         )
         .build();
     // Hovered and pressed, the label as at rest: no button rule sets `color` under :hover or
@@ -3106,6 +3162,16 @@ fn segmented_control(
                 direction,
             )),
         ])
+        // Hovered and pressed, no outline: a toggle's :hover, :active and .keyboard-activating
+        // set only its background (_toggle-group.scss:65-71 at libadwaita 1.10.0), its inset
+        // line is drawn only under prefers-contrast: more (:73-77).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+                RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+            ],
+            [PartProp::Stroke(Stroke::None)],
+        )
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
         // Pressed: AdwToggleGroup's toggle :active, $active_color (_toggle-group.scss:69-70 at
         // libadwaita 1.10.0).

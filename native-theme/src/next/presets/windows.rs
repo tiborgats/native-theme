@@ -2785,14 +2785,21 @@ fn input(
     // `input.hover_border_color`: TextControlBorderBrushPointerOver is the rest brush,
     // TextControlElevationBorderBrush (TextBox_themeresources.xaml:135, :134 at microsoft-ui-xaml
     // 8463f45), the preset's border colour, which high contrast does not change; stated for
-    // `HOVER` (spec §2, `from_state`).
+    // `HOVER` (spec §2, `from_state`). Pressed, the same: the TextBox has no Pressed state
+    // (:255, :256, :275, :291), so under the pressing pointer it is PointerOver; the click
+    // focuses it (FOCUSED).
     let hover_border = match hc.window_text {
         Some(_) => Some(c.window_border),
         None => roles.window.border,
     };
     let field = field
         .rules(
-            hover_border.map(|_| RuleSelector::on(WidgetState::HOVER)),
+            hover_border.into_iter().flat_map(|_| {
+                [
+                    RuleSelector::on(WidgetState::HOVER),
+                    RuleSelector::on(WidgetState::PRESSED),
+                ]
+            }),
             hover_border.map(|color| outside_stroke(layout.border_width, color)),
         )
         .rule(
@@ -2992,12 +2999,16 @@ fn splitter(roles: &ColorRoles) -> SplitterWidget {
         .base(roles.window.border.map(fill))
         // `splitter.hover_color`: platform-facts.md (§2.17), Windows has no draggable divider
         // control and SplitView's pane edge no pointer-over resource: the divider as at rest,
-        // stated for `HOVER` (spec §2, `from_state`).
+        // stated for `HOVER` and `PRESSED` (spec §2, `from_state`): nothing is pressed either
+        // (SplitView_themeresources.xaml at microsoft-ui-xaml 8463f45 holds no PointerOver or
+        // Pressed key).
         .rules(
-            roles
-                .window
-                .border
-                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            roles.window.border.into_iter().flat_map(|_| {
+                [
+                    RuleSelector::on(WidgetState::HOVER),
+                    RuleSelector::on(WidgetState::PRESSED),
+                ]
+            }),
             roles.window.border.map(fill),
         )
         .build();
@@ -3130,10 +3141,16 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
                 TAB_PADDING_HORIZONTAL,
             )),
         ])
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.tab_hover)])
+        // Hovered and pressed, no outline, as at rest: PointerOver and Pressed set TabContainer's
+        // Background and the foregrounds only (TabView.xaml:315-334 at microsoft-ui-xaml 8463f45);
+        // the selected states set TabViewSelectedItemBorderBrush (:344, :363).
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.tab_hover), PartProp::Stroke(Stroke::None)],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.tab_pressed)],
+            [fill(c.tab_pressed), PartProp::Stroke(Stroke::None)],
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
@@ -3571,15 +3588,23 @@ fn combo_box(
             )),
             PartProp::MinSize([Some(COMBO_BOX_MIN_WIDTH), Some(COMBO_BOX_MIN_HEIGHT)]),
         ])
+        // Hovered, the edge as at rest: ComboBoxBorderBrushPointerOver = ControlElevationBorderBrush,
+        // the rest brush (ComboBox_themeresources.xaml:265 / :55, rest :264 / :54, PointerOver
+        // :416-417 at microsoft-ui-xaml 8463f45).
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(c.control_fill_hover)],
+            std::iter::once(fill(c.control_fill_hover)).chain(border(roles, layout.border_width)),
         )
         // ComboBoxBackgroundPressed = ControlFillColorTertiary (ComboBox_themeresources.xaml:244,
-        // Pressed state :433 at microsoft-ui-xaml 8463f45), flattened as `button.active_background`.
+        // Pressed state :433 at microsoft-ui-xaml 8463f45), flattened as `button.active_background`;
+        // ComboBoxBorderBrushPressed = ControlStrokeColorDefaultBrush, flat (:266 / :56, Pressed
+        // :435-436; Common_themeresources_any.xaml:333 / :129 → :243 / :39).
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.control_fill_pressed)],
+            [
+                fill(c.control_fill_pressed),
+                stroke(layout.border_width, c.control_stroke),
+            ],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -3651,6 +3676,18 @@ fn segmented_control(
                 SEGMENT_PADDING_HORIZONTAL,
             )),
         ])
+        // Hovered and pressed, no outline, as at rest: the item's BorderBrush is
+        // SegmentedItemBorderBrush = ControlFillColorTransparent (SegmentedItem.xaml:384,
+        // :138-139 / :21-22 at Windows Community Toolkit v8.2.251219; Common_themeresources_any.xaml
+        // :310 / :106 at microsoft-ui-xaml 8463f45); PointerOver and Pressed set PART_Hover's
+        // Background and the foregrounds only (SegmentedItem.xaml:427-476).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+                RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
+            ],
+            [PartProp::Stroke(Stroke::None)],
+        )
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
         // SegmentedItemBackgroundPressed = SubtleFillColorTertiary (SegmentedItem.xaml:132 at
         // Windows Community Toolkit v8.2.251219).

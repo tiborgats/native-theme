@@ -205,6 +205,52 @@ const DIFFERENCES: &[Difference] = &[
                  one in its checked outline",
     },
     Difference {
+        leaf: "CheckboxLook::of hover_border",
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0 states the box's rest outline for HOVER \
+                 (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a \
+                 listed difference): a hovered AppKit check box draws as at rest (os-probe run \
+                 45198750893, macOS 15 and 26, `*.hovered.checkbox_off` and `…checkbox_on` \
+                 differ from the normal capture in 0 pixels), and WebKit's iOS \
+                 checkboxRadioBorderColor reads no hover (RenderThemeIOS.mm:1357-1368 at \
+                 WebKit 31adf9d); so an enabled box hovers in its rest outline, a checked one \
+                 in its checked outline (on ios-13 none)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_border",
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        reason: "as the check box's (CheckboxLook::of hover_border): the radio button's \
+                 indicator is the same part on these presets",
+    },
+    Difference {
+        leaf: "CheckboxLook::of",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 outlines the box in its uncited default line, 0.5 px in the \
+                 separator, checked or not; 0.8.0's ios-13 states the outline WebKit strokes \
+                 round an empty iOS check box, checkboxRadioBorderColor (secondaryLabel), \
+                 1.5 px as it shows (checkboxRadioBorderWidth × 2 clipped to the edge), and \
+                 none round a checked one (RenderThemeIOS.mm:1354, :1357-1368, :1483-1491, \
+                 :1502 at WebKit 31adf9d; native-theme/tests/next_homes.toml, rows \
+                 checkbox.unchecked_border_color, checkbox.border.color and \
+                 checkbox.border.line_width, listed differences)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio",
+        presets: &["ios-13"],
+        reason: "as the check box's (CheckboxLook::of): the radio button's indicator is the \
+                 same part on ios-13",
+    },
+    Difference {
+        leaf: "SliderLook",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita states an uncited slider.thumb_hover_color (#ebebeb / \
+                 #3a3a3e); 0.8.0's adwaita states libadwaita's $slider_hover_color, white in \
+                 both schemes (_scale.scss:62-76, _colors.scss:289 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row slider.thumb_hover_color, a listed \
+                 difference), so the look's hovered thumb is white",
+    },
+    Difference {
         leaf: "SwitchLabelFont",
         presets: &["ios-13"],
         reason: "the 0.8.0 ios-13 states no font of switch.label (no source: iOS's switch \

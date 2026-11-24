@@ -141,16 +141,33 @@ enum Field {
     /// `border.color` (a radio's `border_color`): the stroke laid over the
     /// fill the style paints ([`crate::styles::Line::over`]).
     BorderColor,
+    /// A segment's rounded corners, those its style rounds at the
+    /// control's ends (`crate::styles::segment_from`): the track's corner
+    /// radius less its stroke width.
+    InnerRadius,
+    /// A segment separator's `background`: the track's stroke colour, none
+    /// where the track's stroke is stated as none (`segmented_source` of
+    /// [`super::styles`]); unfaded, so listed where the control is not
+    /// disabled or no line is drawn.
+    Separator,
+    /// A pane grid's `picked_split.color`.
+    PickedSplitColor,
+    /// A pane grid's `hovered_split.color`.
+    HoveredSplitColor,
 }
 
 impl Field {
-    const ALL: [Self; 6] = [
+    const ALL: [Self; 10] = [
         Self::Background,
         Self::HandleBackground,
         Self::TextColor,
         Self::IconColor,
         Self::BorderWidth,
         Self::BorderColor,
+        Self::InnerRadius,
+        Self::Separator,
+        Self::PickedSplitColor,
+        Self::HoveredSplitColor,
     ];
 }
 
@@ -658,21 +675,10 @@ const fn open(presets: &'static [&'static str], align: LineAlign, states: States
     }
 }
 
-/// The reason of a hovered text field whose stroke the 0.8.0 theme states
-/// nothing for.
-const FIELD_HOVER: &str = "the theme states no stroke for the hovered field: 0.7.2 leaves \
-     input.hover_border_color unset (docs/inheritance-rules.toml, [no_inheritance]), which its \
-     connector drew as the field's border at rest; the 0.8.0 theme has no rule for HOVER that \
-     states input.field's or text_area.field's stroke (the from_state bit clear when queried \
-     with HOVER alone), and iced's own text input and text editor recolour the hovered \
-     field's border (iced_widget 0.14.2 src/text_input.rs and src/text_editor.rs, fn \
-     default: background.base.text), so its colour is iced's own for the status, its width \
-     and corners the theme's at rest (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
-
 /// The reason of a focused text field whose stroke the 0.8.0 theme states
 /// nothing for.
-const FIELD_FOCUS: &str = "nor for the focused field: 0.7.2 leaves input.focus_border_color \
-     unset (docs/inheritance-rules.toml, [no_inheritance]), which its connector drew as the \
+const FIELD_FOCUS: &str = "the theme states no stroke for the focused field: 0.7.2 leaves \
+     input.focus_border_color unset (docs/inheritance-rules.toml, [no_inheritance]), which its connector drew as the \
      field's border at rest where the focus ring is no inset border (the macOS ring, 3 wide \
      at offset -1, straddles the edge and crate::focus_ring draws it); the 0.8.0 theme has no \
      rule for FOCUSED that states the field's stroke, and iced's own text input and text \
@@ -680,40 +686,32 @@ const FIELD_FOCUS: &str = "nor for the focused field: 0.7.2 leaves input.focus_b
      src/text_editor.rs, fn default: primary.strong), so its colour is iced's own for the \
      status";
 
-/// A text field whose hovered stroke, and with `focus` its focused one,
-/// the theme states nothing for on `presets`, its strokes laid at `align`.
+/// A text field whose focused stroke the theme states nothing for on
+/// `presets`, its strokes laid at `align`; its hovered stroke stated (the
+/// rest one, as 0.7.2 drew it).
 const fn field(
     leaf: &'static str,
     presets: &'static [&'static str],
     align: LineAlign,
-    focus: bool,
 ) -> Difference {
     Difference {
         leaf,
         presets,
         listed: Listed {
             states: States {
-                hover_stroke: true,
-                focus_stroke: focus,
+                focus_stroke: true,
                 ..States::STATED
             },
             ..Listed::aligned(align)
         },
         stated: &[],
-        reason: match (align, focus) {
-            (LineAlign::Outside, false) => &[FIELD_HOVER],
-            (LineAlign::Outside, true) => &[FIELD_HOVER, FIELD_FOCUS],
-            (LineAlign::Inside, false) => &[INSIDE, FIELD_HOVER],
-            (LineAlign::Inside, true) => &[INSIDE, FIELD_HOVER, FIELD_FOCUS],
-            (LineAlign::Center, false) => &[CENTER, FIELD_HOVER],
-            (LineAlign::Center, true) => &[CENTER, FIELD_HOVER, FIELD_FOCUS],
+        reason: match align {
+            LineAlign::Outside => &[FIELD_FOCUS],
+            LineAlign::Inside => &[INSIDE, FIELD_FOCUS],
+            LineAlign::Center => &[CENTER, FIELD_FOCUS],
         },
     }
 }
-
-/// The presets on which a drop-down field states a hover fill and no hover
-/// stroke, the stroke inside the box.
-const HOVER_FILL_ONLY_INSIDE: &[&str] = &["windows-11", "macos-monterey"];
 
 /// The reason of a pressed widget the 0.8.0 theme states no fill for.
 const PRESSED: &str = "the theme states no fill for the pressed widget: 0.7.2's connector \
@@ -1295,6 +1293,279 @@ const M3_CHECK: &[Stated] = &[
     ),
 ];
 
+/// An indicator's outline of a check box or a radio button
+/// (`$w.indicator`): its width and its stroke at rest, checked, and under
+/// the pointer (checked: where a rule for HOVER states it, as the builder
+/// reads it, `borders::flagged`).
+macro_rules! indicator_outline {
+    ($w:ident) => {
+        [
+            set(at!(NONE), Field::BorderWidth, home!(width, $w.indicator(NONE))),
+            set(at!(NONE), Field::BorderColor, home!(stroke, $w.indicator(NONE))),
+            set(at!(CHECKED), Field::BorderWidth, home!(width, $w.indicator(CHECKED))),
+            set(at!(CHECKED), Field::BorderColor, home!(stroke, $w.indicator(CHECKED))),
+            set(at!(HOVER), Field::BorderWidth, home!(width, $w.indicator(HOVER))),
+            set(at!(HOVER), Field::BorderColor, home!(stroke, $w.indicator(HOVER))),
+            set(
+                at!(HOVER | CHECKED),
+                Field::BorderWidth,
+                home!(width, $w.indicator(HOVER | CHECKED) by HOVER),
+            ),
+            set(
+                at!(HOVER | CHECKED),
+                Field::BorderColor,
+                home!(stroke, $w.indicator(HOVER | CHECKED) by HOVER),
+            ),
+        ]
+    };
+}
+
+/// ios-13's check box: WebKit's outline round an empty box and none round a
+/// checked one, the hovered box as at rest ([`indicator_outline`]).
+const IOS_CHECK: [Stated; 8] = indicator_outline!(checkbox);
+
+/// A disabled check box's outline, `checkbox.indicator(state)`'s stroke
+/// (`state` `NONE` or `CHECKED`, the box at rest), laid over the box's
+/// disabled fill (`indicator(DISABLED|state)` where a rule for DISABLED
+/// states one, else the fill at rest), the two faded as one widget over the
+/// window by `checkbox.disabled_opacity` (`crate::styles::checkbox_from`).
+#[cfg(feature = "widgets")]
+fn disabled_outline(t: &native_theme::next::ResolvedTheme, state: WidgetState) -> Option<Value> {
+    let c = &t.checkbox;
+    let line = super::borders::line_or_none(&c.indicator(state), "the stated stroke").ok()?;
+    let disabled = c
+        .indicator(WidgetState::DISABLED)
+        .from_state
+        .contains(native_theme::next::PartStated::FILL);
+    let fill = if disabled {
+        super::fill_of(&c.indicator(WidgetState::DISABLED.union(state)))?
+    } else {
+        super::fill_of(&c.indicator(state))?
+    };
+    Some(Value::Faded {
+        color: line.over(fill),
+        under: Some(fill),
+        ground: super::to_color(t.colors.window.background?),
+        opacity: c.disabled_opacity,
+    })
+}
+
+/// The style functions, which alone read [`disabled_outline`], are
+/// compared with the `widgets` feature only: no value without it.
+#[cfg(not(feature = "widgets"))]
+fn disabled_outline(_: &native_theme::next::ResolvedTheme, _: WidgetState) -> Option<Value> {
+    None
+}
+
+/// [`disabled_outline`] of the box not checked.
+const CHECK_DISABLED_OUTLINE: Home = Home {
+    path: "checkbox.indicator(NONE).stroke over checkbox.indicator(DISABLED).fill, faded as \
+           one over colors.window.background by checkbox.disabled_opacity",
+    value: |t| disabled_outline(t, WidgetState::NONE),
+};
+
+/// [`disabled_outline`] of the checked box.
+const CHECKED_DISABLED_OUTLINE: Home = Home {
+    path: "checkbox.indicator(CHECKED).stroke over checkbox.indicator(DISABLED|CHECKED).fill, \
+           faded as one over colors.window.background by checkbox.disabled_opacity",
+    value: |t| disabled_outline(t, WidgetState::CHECKED),
+};
+
+/// ios-13's disabled check box: the outline at rest, checked or not, faded
+/// with the box ([`disabled_outline`]).
+const IOS_CHECK_DISABLED: [Stated; 4] = [
+    set(
+        at!(DISABLED),
+        Field::BorderWidth,
+        home!(width, checkbox.indicator(NONE)),
+    ),
+    set(at!(DISABLED), Field::BorderColor, CHECK_DISABLED_OUTLINE),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::BorderWidth,
+        home!(width, checkbox.indicator(CHECKED)),
+    ),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::BorderColor,
+        CHECKED_DISABLED_OUTLINE,
+    ),
+];
+
+/// ios-13's radio button, as its check box ([`IOS_CHECK`]; iced has no
+/// disabled radio status).
+const IOS_RADIO: [Stated; 8] = indicator_outline!(radio);
+
+/// A drop-down field's outline at rest, under the pointer and open
+/// (`combo_box.field`): its stroke at rest and under the pointer, open the
+/// width at rest (iced's own colour, no rule for OPEN), and open under the
+/// pointer the hovered stroke (`field(OPEN|HOVER)`).
+const COMBO_OUTLINE: [Stated; 7] = [
+    set(
+        at!(NONE),
+        Field::BorderWidth,
+        home!(width, combo_box.field(NONE)),
+    ),
+    set(
+        at!(NONE),
+        Field::BorderColor,
+        home!(stroke, combo_box.field(NONE)),
+    ),
+    set(
+        at!(HOVER),
+        Field::BorderWidth,
+        home!(width, combo_box.field(HOVER)),
+    ),
+    set(
+        at!(HOVER),
+        Field::BorderColor,
+        home!(stroke, combo_box.field(HOVER)),
+    ),
+    set(
+        at!(OPEN),
+        Field::BorderWidth,
+        home!(width, combo_box.field(NONE)),
+    ),
+    set(
+        at!(OPEN | HOVER),
+        Field::BorderWidth,
+        home!(width, combo_box.field(OPEN | HOVER)),
+    ),
+    set(
+        at!(OPEN | HOVER),
+        Field::BorderColor,
+        home!(stroke, combo_box.field(OPEN | HOVER)),
+    ),
+];
+
+/// macos-monterey's drop-down under the pointer, closed and open: the
+/// hovered fill (`combo_box.field(HOVER)`, the rest fill, as a hovered
+/// pop-up button draws as at rest) and the hovered stroke laid over it.
+const COMBO_HOVER: [Stated; 4] = [
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, combo_box.field(HOVER)),
+    ),
+    set(
+        at!(HOVER),
+        Field::BorderColor,
+        home!(stroke, combo_box.field(HOVER)),
+    ),
+    set(
+        at!(OPEN | HOVER),
+        Field::Background,
+        home!(fill, combo_box.field(OPEN | HOVER)),
+    ),
+    set(
+        at!(OPEN | HOVER),
+        Field::BorderColor,
+        home!(stroke, combo_box.field(OPEN | HOVER)),
+    ),
+];
+
+/// macos-tahoe's segmented control stroked as none: the track's width and
+/// stroke, at rest and disabled (no line, which no fade shows).
+const TAHOE_TRACK: [Stated; 4] = [
+    set(
+        at!(NONE),
+        Field::BorderWidth,
+        home!(width, segmented_control.track(NONE)),
+    ),
+    set(
+        at!(NONE),
+        Field::BorderColor,
+        home!(stroke, segmented_control.track(NONE)),
+    ),
+    set(
+        at!(DISABLED),
+        Field::BorderWidth,
+        home!(width, segmented_control.track(NONE)),
+    ),
+    set(
+        at!(DISABLED),
+        Field::BorderColor,
+        home!(stroke, segmented_control.track(NONE)),
+    ),
+];
+
+/// macos-tahoe's segment separator: none, the track stroked as none.
+const TAHOE_SEPARATOR: [Stated; 2] = [
+    set(
+        at!(NONE),
+        Field::Separator,
+        home!(stroke, segmented_control.track(NONE)),
+    ),
+    set(
+        at!(DISABLED),
+        Field::Separator,
+        home!(stroke, segmented_control.track(NONE)),
+    ),
+];
+
+/// The track's corner radius less its stroke width, which a segment's
+/// rounded corners take (`crate::styles::segment_from`), where the theme
+/// states both.
+const TRACK_INNER_RADIUS: Home = Home {
+    path: "segmented_control.track(NONE).corners less its stroke.width",
+    value: track_inner_radius,
+};
+
+/// [`TRACK_INNER_RADIUS`]'s value.
+#[cfg(feature = "widgets")]
+fn track_inner_radius(t: &native_theme::next::ResolvedTheme) -> Option<Value> {
+    let track = t.segmented_control.track(WidgetState::NONE);
+    let inner = super::radius_of(&track)? - super::stroke_width_of(&track)?;
+    Some(Value::Width(inner.max(0.0)))
+}
+
+/// The style functions, which alone read [`TRACK_INNER_RADIUS`], are
+/// compared with the `widgets` feature only: no value without it.
+#[cfg(not(feature = "widgets"))]
+fn track_inner_radius(_: &native_theme::next::ResolvedTheme) -> Option<Value> {
+    None
+}
+
+/// A segment's rounded corners in every status, selected or not
+/// ([`TRACK_INNER_RADIUS`]).
+const SEGMENT_CORNERS: [Stated; 8] = [
+    set(at!(NONE), Field::InnerRadius, TRACK_INNER_RADIUS),
+    set(at!(HOVER), Field::InnerRadius, TRACK_INNER_RADIUS),
+    set(at!(PRESSED), Field::InnerRadius, TRACK_INNER_RADIUS),
+    set(at!(DISABLED), Field::InnerRadius, TRACK_INNER_RADIUS),
+    set(at!(SELECTED), Field::InnerRadius, TRACK_INNER_RADIUS),
+    set(
+        at!(HOVER | SELECTED),
+        Field::InnerRadius,
+        TRACK_INNER_RADIUS,
+    ),
+    set(
+        at!(PRESSED | SELECTED),
+        Field::InnerRadius,
+        TRACK_INNER_RADIUS,
+    ),
+    set(
+        at!(DISABLED | SELECTED),
+        Field::InnerRadius,
+        TRACK_INNER_RADIUS,
+    ),
+];
+
+/// A pane grid's split, picked and hovered, in the hovered handle's fill
+/// (`splitter.handle(HOVER)`, which the builder reads for both).
+const PANE_SPLITS: [Stated; 2] = [
+    set(
+        at!(NONE),
+        Field::PickedSplitColor,
+        home!(fill, splitter.handle(HOVER)),
+    ),
+    set(
+        at!(NONE),
+        Field::HoveredSplitColor,
+        home!(fill, splitter.handle(HOVER)),
+    ),
+];
+
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[
     // button.body(NONE), its states and its variants. macos-monterey states
@@ -1480,13 +1751,12 @@ const DIFFERENCES: &[Difference] = &[
         PRESSED_STROKE,
     ),
     // input.field(NONE) and text_area.field(NONE), the macOS presets'
-    // inside the box; input.field(HOVER), text_area.field(HOVER) and
-    // (FOCUSED): adwaita states no hovered stroke, the macOS presets
-    // neither a hovered nor a focused one.
-    field("text_input", &["adwaita"], LineAlign::Outside, false),
-    field("text_editor", &["adwaita"], LineAlign::Outside, false),
-    field("text_input", MACOS, LineAlign::Inside, true),
-    field("text_editor", MACOS, LineAlign::Inside, true),
+    // inside the box; input.field(FOCUSED): the macOS presets state no
+    // focused stroke. The FS4 presets state adwaita's and the macOS
+    // presets' hovered stroke as the rest one (`field(HOVER)`), as 0.7.2
+    // drew it.
+    field("text_input", MACOS, LineAlign::Inside),
+    field("text_editor", MACOS, LineAlign::Inside),
     // tooltip.panel, dialog.panel, progress_bar.track(NONE).
     inside("tooltip", MACOS_WINDOWS),
     inside("dialog", MACOS_WINDOWS),
@@ -1517,11 +1787,11 @@ const DIFFERENCES: &[Difference] = &[
     // The FS4 presets state kde-breeze's hovered box as 0.7.2 drew it,
     // adwaita's and material-3's hovered stroke, windows-11's hovered fill
     // and stroke, and material-3's disabled label (`label(DISABLED)`).
-    hover(
+    stated_fields(
         "checkbox",
         &["ios-13"],
         LineAlign::Outside,
-        hovered(false, false, true),
+        &[&IOS_CHECK, &IOS_CHECK_DISABLED],
     ),
     stated_fields(
         "checkbox",
@@ -1530,12 +1800,7 @@ const DIFFERENCES: &[Difference] = &[
         &[&CHECK_HOVER_STROKES],
     ),
     stated_fields("checkbox", &["material-3"], LineAlign::Outside, &[M3_CHECK]),
-    hover(
-        "checkbox",
-        &["macos-monterey"],
-        LineAlign::Inside,
-        hovered(false, false, true),
-    ),
+    inside("checkbox", &["macos-monterey"]),
     stated_fields(
         "checkbox",
         &["windows-11"],
@@ -1546,7 +1811,7 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["macos-tahoe"],
         LineAlign::Inside,
-        hovered(true, true, true),
+        hovered(true, true, false),
     ),
     hover(
         "radio",
@@ -1578,24 +1843,27 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Inside,
         hovered(true, true, true),
     ),
-    // combo_box.field: the hovered fill and stroke (`field(HOVER)`), and the
-    // open stroke (`field(OPEN)`), which kde-breeze alone states.
+    stated_fields("radio", &["ios-13"], LineAlign::Outside, &[&IOS_RADIO]),
+    // combo_box.field: the open stroke (`field(OPEN)`), which kde-breeze
+    // alone states. The FS4 presets state the hovered stroke as the rest
+    // one on adwaita, windows-11, the macOS presets and ios-13 (`field(HOVER)`),
+    // macos-monterey's hovered fill as the rest one, and macos-tahoe's and
+    // ios-13's outline at rest (`field(NONE)`: none, and WebKit's 1px
+    // systemBackground border).
     open(
-        &["adwaita", "ios-13"],
+        &["adwaita", "material-3"],
         LineAlign::Outside,
-        hovered(false, false, true),
+        States::STATED,
     ),
     open(
-        HOVER_FILL_ONLY_INSIDE,
-        LineAlign::Inside,
-        hovered(false, false, true),
-    ),
-    open(
-        &["macos-tahoe"],
-        LineAlign::Inside,
-        hovered(true, false, true),
-    ),
-    open(&["material-3"], LineAlign::Outside, States::STATED),
+        &["macos-tahoe", "ios-13"],
+        LineAlign::Outside,
+        States::STATED,
+    )
+    .stating(&[&COMBO_OUTLINE], &[OPEN, STATED]),
+    open(&["windows-11"], LineAlign::Inside, States::STATED),
+    open(&["macos-monterey"], LineAlign::Inside, States::STATED)
+        .stating(&[&COMBO_HOVER], &[INSIDE, OPEN, STATED]),
     // switch.thumb(HOVER): no preset states a hovered thumb; windows-11
     // states the checked track's hovered fill (`track(HOVER|CHECKED)`).
     Difference {
@@ -1642,8 +1910,9 @@ const DIFFERENCES: &[Difference] = &[
     ),
     // slider.active_track(HOVER) and (PRESSED): no preset states them;
     // slider.thumb(HOVER): no hovered thumb fill (macos-monterey: in its dark
-    // scheme); kde-breeze and windows-11 state the hovered and the pressed
-    // thumb's (`thumb(HOVER)`, `thumb(PRESSED)`).
+    // scheme); kde-breeze, windows-11 and adwaita state the hovered and the
+    // pressed thumb's (`thumb(HOVER)`, `thumb(PRESSED)`), material-3 the
+    // pressed one.
     Difference {
         leaf: "slider",
         presets: &["macos-monterey/dark", "macos-tahoe"],
@@ -1660,7 +1929,7 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "slider",
-        presets: &["adwaita", "macos-monterey/light", "material-3", "ios-13"],
+        presets: &["macos-monterey/light", "ios-13"],
         listed: Listed {
             states: States {
                 rail: true,
@@ -1673,7 +1942,7 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "slider",
-        presets: &["kde-breeze", "windows-11"],
+        presets: &["kde-breeze", "windows-11", "adwaita"],
         listed: Listed {
             states: States {
                 rail: true,
@@ -1693,6 +1962,23 @@ const DIFFERENCES: &[Difference] = &[
                 home!(fill, slider.thumb(PRESSED)),
             ),
         ]],
+        reason: &[SLIDER_RAIL, STATED],
+    },
+    Difference {
+        leaf: "slider",
+        presets: &["material-3"],
+        listed: Listed {
+            states: States {
+                rail: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        stated: &[&[set(
+            at!(PRESSED),
+            Field::HandleBackground,
+            home!(fill, slider.thumb(PRESSED)),
+        )]],
         reason: &[SLIDER_RAIL, STATED],
     },
     // Breeze's handle outline (scrollbar.thumb(UNFOCUSED_VIEW), (HOVER) and
@@ -1734,7 +2020,35 @@ const DIFFERENCES: &[Difference] = &[
         reason: &[PRESSED_THUMB, INHERITED_THUMB_HOVER],
     },
     // segmented_control.track(NONE).stroke over the group fill.
-    inside("segmented_control", MACOS_WINDOWS),
+    inside("segmented_control", &["windows-11", "macos-monterey"]),
+    // macos-tahoe states its track stroked as none (`track(NONE)`): no
+    // outline, no separator, and a segment's corners the track's whole
+    // radius.
+    stated_fields(
+        "segmented_control",
+        &["macos-tahoe"],
+        LineAlign::Outside,
+        &[&TAHOE_TRACK],
+    ),
+    stated_fields(
+        "segment_separator",
+        &["macos-tahoe"],
+        LineAlign::Outside,
+        &[&TAHOE_SEPARATOR],
+    ),
+    stated_fields(
+        "segment",
+        &["macos-tahoe"],
+        LineAlign::Outside,
+        &[&SEGMENT_CORNERS],
+    ),
+    // splitter.handle(HOVER), both splits' colour.
+    stated_fields(
+        "pane_grid",
+        &["kde-breeze", "adwaita"],
+        LineAlign::Outside,
+        &[&PANE_SPLITS],
+    ),
     // segmented_control.segment(PRESSED) and expander.header(PRESSED): the
     // macOS and iOS presets state none, the others' FS4 presets do,
     // kde-breeze's pressed segment as 0.7.2 drew it (and kde-breeze's,
@@ -2148,6 +2462,27 @@ macro_rules! stated_style {
     }};
 }
 
+/// [`stated_style`] of a style function of no status, its fields set at
+/// the state `$at`.
+#[cfg(feature = "widgets")]
+macro_rules! stated_surface {
+    ($report:expr, $themes:expr, $resolved:expr, $name:literal, $old:expr, $new:expr, $listed:expr, $at:expr) => {{
+        let (old_theme, new_theme): (&Theme, &Theme) = $themes;
+        let old = $old;
+        let listed = $listed;
+        if let Some(new) = $report.mapped($name, $new) {
+            $report.stated_leaf(
+                concat!($name, "(())"),
+                Some($at),
+                (old(old_theme), new(new_theme)),
+                |l: Listed| listed(l)(old_theme),
+                |style| style,
+                $resolved,
+            );
+        }
+    }};
+}
+
 /// A style function of no status as one of a single status.
 #[cfg(feature = "widgets")]
 fn surface<T>(f: impl Fn(&Theme) -> T + Clone) -> impl Fn(&Theme, ()) -> T + Clone {
@@ -2302,7 +2637,25 @@ impl Fields for iced_widget::button::Style {
                 let fill = crate::styles::painted(self.background);
                 self.border.color = line_over(field, &value, fill)?;
             }
-            Field::HandleBackground | Field::IconColor => return no_field(field, "button::Style"),
+            Field::InnerRadius => {
+                let inner = width_of(field, &value)?;
+                let r = &mut self.border.radius;
+                for corner in [
+                    &mut r.top_left,
+                    &mut r.top_right,
+                    &mut r.bottom_right,
+                    &mut r.bottom_left,
+                ] {
+                    if *corner > 0.0 {
+                        *corner = inner;
+                    }
+                }
+            }
+            Field::HandleBackground
+            | Field::IconColor
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor => return no_field(field, "button::Style"),
         }
         Ok(())
     }
@@ -2316,11 +2669,20 @@ impl Fields for iced_widget::checkbox::Style {
             Field::Background => self.background = Background::Color(color_of(field, &value)?),
             Field::TextColor => self.text_color = Some(color_of(field, &value)?),
             Field::IconColor => self.icon_color = color_of(field, &value)?,
+            Field::BorderWidth => self.border.width = width_of(field, &value)?,
+            // a disabled box's outline, faded with the box, as it is
+            Field::BorderColor if matches!(value, Value::Faded { .. }) => {
+                self.border.color = color_of(field, &value)?;
+            }
             Field::BorderColor => {
                 let fill = crate::styles::painted(Some(self.background));
                 self.border.color = line_over(field, &value, fill)?;
             }
-            Field::HandleBackground | Field::BorderWidth => {
+            Field::HandleBackground
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor => {
                 return no_field(field, "checkbox::Style");
             }
         }
@@ -2334,11 +2696,18 @@ impl Fields for iced_widget::radio::Style {
         use iced_core::Background;
         match field {
             Field::Background => self.background = Background::Color(color_of(field, &value)?),
+            Field::BorderWidth => self.border_width = width_of(field, &value)?,
             Field::BorderColor => {
                 let fill = crate::styles::painted(Some(self.background));
                 self.border_color = line_over(field, &value, fill)?;
             }
-            Field::HandleBackground | Field::TextColor | Field::IconColor | Field::BorderWidth => {
+            Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor => {
                 return no_field(field, "radio::Style");
             }
         }
@@ -2356,7 +2725,11 @@ impl Fields for iced_widget::toggler::Style {
             | Field::TextColor
             | Field::IconColor
             | Field::BorderWidth
-            | Field::BorderColor => return no_field(field, "toggler::Style"),
+            | Field::BorderColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor => return no_field(field, "toggler::Style"),
         }
         Ok(())
     }
@@ -2374,9 +2747,97 @@ impl Fields for iced_widget::slider::Style {
             | Field::TextColor
             | Field::IconColor
             | Field::BorderWidth
-            | Field::BorderColor => return no_field(field, "slider::Style"),
+            | Field::BorderColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor => return no_field(field, "slider::Style"),
         }
         Ok(())
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl Fields for iced_widget::pick_list::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::Background => self.background = Background::Color(color_of(field, &value)?),
+            Field::BorderWidth => self.border.width = width_of(field, &value)?,
+            Field::BorderColor => {
+                let fill = crate::styles::painted(Some(self.background));
+                self.border.color = line_over(field, &value, fill)?;
+            }
+            Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor => return no_field(field, "pick_list::Style"),
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl Fields for iced_widget::container::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::BorderWidth => self.border.width = width_of(field, &value)?,
+            Field::BorderColor => {
+                let fill = crate::styles::painted(self.background);
+                self.border.color = line_over(field, &value, fill)?;
+            }
+            Field::Separator => match value {
+                Value::Stroke { part, .. } => {
+                    let line = super::borders::line_or_none(&part, "the stated stroke")
+                        .map_err(|u| format!("{field:?}: {u:?}"))?;
+                    self.background = line.drawn.then_some(Background::Color(line.color));
+                }
+                _ => return Err(format!("{field:?} takes a stroke, not {value:?}")),
+            },
+            Field::Background
+            | Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::InnerRadius
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor => return no_field(field, "container::Style"),
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl Fields for iced_widget::pane_grid::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        match field {
+            Field::PickedSplitColor => self.picked_split.color = color_of(field, &value)?,
+            Field::HoveredSplitColor => self.hovered_split.color = color_of(field, &value)?,
+            Field::Background
+            | Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::BorderWidth
+            | Field::BorderColor
+            | Field::InnerRadius
+            | Field::Separator => return no_field(field, "pane_grid::Style"),
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl AtState for iced_widget::pick_list::Status {
+    fn at(&self) -> WidgetState {
+        let hovered = |on| flag_if(on, WidgetState::HOVER);
+        match *self {
+            Self::Active => WidgetState::NONE,
+            Self::Hovered => WidgetState::HOVER,
+            Self::Opened { is_hovered } => WidgetState::OPEN | hovered(is_hovered),
+        }
     }
 }
 
@@ -2392,7 +2853,11 @@ impl Fields for iced_aw::style::tab_bar::Style {
             | Field::TextColor
             | Field::IconColor
             | Field::BorderWidth
-            | Field::BorderColor => return no_field(field, "tab_bar::Style"),
+            | Field::BorderColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor => return no_field(field, "tab_bar::Style"),
         }
         Ok(())
     }
@@ -2705,14 +3170,16 @@ fn compare_styles(
             Status::Opened { is_hovered: true },
         ];
         let c = PickListSource::of(old);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "pick_list",
             o::pick_list(old),
             n::pick_list(new),
             |l: Listed| o::pick_list_from(&c.listed(l)),
-            fields
+            fields,
+            WidgetState::NONE
         );
     }
 
@@ -2788,25 +3255,29 @@ fn compare_styles(
     {
         let sc = SegmentedSource::of(old);
         for disabled in [false, true] {
-            style!(
+            let at = flag_if(disabled, WidgetState::DISABLED);
+            stated_surface!(
                 report,
                 themes,
+                new,
                 "segmented_control",
-                surface(o::segmented_control(old, disabled)),
-                n::segmented_control(new, disabled).map(surface),
-                |a| surface(o::segmented_control_from(
-                    &sc.listed(Listed::aligned(a)),
+                o::segmented_control(old, disabled),
+                n::segmented_control(new, disabled),
+                |l: Listed| o::segmented_control_from(
+                    &sc.listed(Listed::aligned(l.align)),
                     disabled
-                )),
-                [()]
+                ),
+                at
             );
-            plain!(
+            stated_surface!(
                 report,
                 themes,
+                new,
                 "segment_separator",
-                surface(o::segment_separator(old, disabled)),
-                n::segment_separator(new, disabled).map(surface),
-                [()]
+                o::segment_separator(old, disabled),
+                n::segment_separator(new, disabled),
+                |_: Listed| o::segment_separator(old, disabled),
+                at
             );
         }
         for selected in [false, true] {
@@ -2884,13 +3355,15 @@ fn compare_styles(
         n::toolbar_rule(new).map(surface),
         [()]
     );
-    plain!(
+    stated_surface!(
         report,
         themes,
+        new,
         "pane_grid",
-        surface(o::pane_grid(old)),
-        n::pane_grid(new).map(surface),
-        [()]
+        o::pane_grid(old),
+        n::pane_grid(new),
+        |_: Listed| o::pane_grid(old),
+        WidgetState::NONE
     );
     let panel = |fill, label: Option<_>, border| {
         move |a: LineAlign| {

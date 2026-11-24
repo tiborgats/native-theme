@@ -316,14 +316,14 @@ const DIFFERENCES: &[Difference] = &[
     ),
     d(
         "ComboBox",
-        &[W, M, T],
+        &[W, M],
         OUTLINE_AT_REST,
         Cause::OverFill,
         INSIDE,
     ),
     d(
         "SegmentedControl",
-        &[W, M, T],
+        &[W, M],
         OUTLINE_AT_REST,
         Cause::OverFill,
         INSIDE,
@@ -337,13 +337,9 @@ const DIFFERENCES: &[Difference] = &[
          it in the 0.8.0 theme, where 0.7.2 stated no alignment",
     ),
     d("Tab", &[W], OUTLINE_AT_REST, Cause::OverFill, INSIDE),
-    d(
-        "Tab",
-        &[A, M, M3, I],
-        WIDGET_STROKES,
-        Cause::Base,
-        TAB_OUTLINE,
-    ),
+    d("Tab", &[M, I], WIDGET_STROKES, Cause::Base, TAB_OUTLINE),
+    // hovered and pressed, the tab's outline on adwaita and material-3 is alike on both models
+    d("Tab", &[A, M3], OUTLINE_AT_REST, Cause::Base, TAB_OUTLINE),
     d(
         "Tab",
         &[T],
@@ -770,7 +766,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "base",
-        &[W, T, M3, I],
+        &[W, M, T, M3, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(button.body(PRESSED).stroke.color),
     ),
@@ -837,7 +833,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Button",
-        &[W, T, M3, I],
+        &[W, M, T, M3, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(button.body(PRESSED).stroke.color),
     ),
@@ -861,19 +857,19 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Checkbox",
-        &[A, M3],
+        &[A, M, T, M3, I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(checkbox.indicator(HOVER).stroke.color),
     ),
     s(
         "Checkbox",
-        &[A, W, M3],
+        &[A, W, M, T, M3, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(checkbox.indicator(PRESSED).stroke.color),
     ),
     s(
         "Checkbox",
-        &[A],
+        &[A, I],
         ".visuals.widgets.active.bg_stroke.width",
         home!(checkbox.indicator(PRESSED).stroke.width),
     ),
@@ -1058,7 +1054,223 @@ const STATED_ON_A_PRESET: &[Difference] = &[
          which macos-tahoe's push button stroked as none (M2.FS4, measured) now leaves at its \
          padding alone",
     ),
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(checkbox.indicator(HOVER).stroke.width),
+    ),
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(checkbox.indicator(NONE).stroke.width),
+    ),
+    s(
+        "Checkbox",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        home!(checkbox.indicator(NONE).stroke.color),
+    ),
+    // the checked box's hover and press outline, the combined state's where a rule states one
+    // for the state alone (`build::variant_source`)
+    s(
+        "Checkbox/Selected",
+        &[M, T, I],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(checkbox.indicator(HOVER | CHECKED).stroke.color),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[M, T, I],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(checkbox.indicator(PRESSED | CHECKED).stroke.color),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(checkbox.indicator(HOVER | CHECKED).stroke.width),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(checkbox.indicator(PRESSED | CHECKED).stroke.width),
+    ),
+    s(
+        "Checkbox/Selected",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        home!(checkbox.indicator(CHECKED).stroke.color),
+    ),
+    // the checked box's outline, which the disabled checked cell keeps
+    s(
+        "Checkbox/SelectedDisabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(checkbox.indicator(CHECKED).stroke.color),
+    ),
+    // the disabled cell keeps the outline at rest over its disabled fill
+    s(
+        "Checkbox/Disabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(checkbox.indicator(NONE).stroke.color),
+    ),
+    s(
+        "ComboBox",
+        &[M],
+        ".visuals.widgets.hovered.weak_bg_fill",
+        home!(combo_box.field(HOVER).fill),
+    ),
+    s(
+        "ComboBox",
+        &[W, M, T, I],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(combo_box.field(HOVER).stroke.color),
+    ),
+    s(
+        "ComboBox",
+        &[W, M, T, I],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(combo_box.field(PRESSED).stroke.color),
+    ),
+    s(
+        "ComboBox",
+        &[T, I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(combo_box.field(HOVER).stroke.width),
+    ),
+    s(
+        "ComboBox",
+        &[T, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(combo_box.field(PRESSED).stroke.width),
+    ),
+    s(
+        "ComboBox",
+        &[T, I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(combo_box.field(NONE).stroke.width),
+    ),
+    d(
+        "ComboBox",
+        &[T],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        Cause::Egui,
+        NO_OUTLINE_AT_REST,
+    ),
+    s(
+        "ComboBox",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        home!(combo_box.field(NONE).stroke.color),
+    ),
+    // the disabled cell keeps the outline at rest, as the Button's does
+    s(
+        "ComboBox/Disabled",
+        &[I],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(combo_box.field(NONE).stroke.color),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, M, T],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(segmented_control.segment(HOVER).stroke.color),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, T],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(segmented_control.segment(PRESSED).stroke.color),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, T],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(segmented_control.segment(HOVER).stroke.width),
+    ),
+    s(
+        "SegmentedControl",
+        &[A, W, T],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(segmented_control.segment(PRESSED).stroke.width),
+    ),
+    s(
+        "SegmentedControl",
+        &[T],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.width",
+        home!(segmented_control.track(NONE).stroke.width),
+    ),
+    d(
+        "SegmentedControl",
+        &[T],
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
+        Cause::Egui,
+        NO_OUTLINE_AT_REST,
+    ),
+    s(
+        "Slider",
+        &[A],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(slider.thumb(HOVER).fill),
+    ),
+    s(
+        "Slider",
+        &[A],
+        ".visuals.widgets.active.bg_fill",
+        home!(slider.thumb(PRESSED).fill),
+    ),
+    s(
+        "Splitter",
+        &[K, A],
+        ".visuals.widgets.noninteractive.bg_stroke.color",
+        home!(splitter.handle(NONE).fill),
+    ),
+    s(
+        "Splitter",
+        &[K, A],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(splitter.handle(HOVER).fill),
+    ),
+    s(
+        "Splitter",
+        &[K, A, M3],
+        ".visuals.widgets.active.fg_stroke.color",
+        home!(splitter.handle(PRESSED).fill),
+    ),
+    s(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(tab.tab(HOVER).stroke.color),
+    ),
+    s(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(tab.tab(PRESSED).stroke.color),
+    ),
+    s(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(tab.tab(HOVER).stroke.width),
+    ),
+    s(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(tab.tab(PRESSED).stroke.width),
+    ),
 ];
+
+/// A pop-up button or a segmented control stroked as none at rest.
+const NO_OUTLINE_AT_REST: &str = "macos-tahoe states the pop-up button's and the segmented \
+     control's outline as none (M2.FS4, measured): the width is 0 (spec §10, rule 2) and the \
+     colour under it egui's own, which draws nothing; 0.7.2 stated a translucent hairline";
 
 /// `button.body(NONE)`, whose padding and stroke width the base style's and the Button cell's
 /// `button_padding` sum.
@@ -1078,12 +1290,6 @@ const PADDING_NO_LINE: &str = "macos-tahoe states its push button's bezel stroke
      where 0.7.2 added its 0.5 hairline";
 
 const RULE_0_ON_A_PRESET: &[Gap] = &[
-    r0(
-        "base",
-        &[M],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(button.body(PRESSED).stroke.color),
-    ),
     // the base style's `bg_fill` is the scroll bar's thumb (`base_style_from`, §5.9), the
     // button's fill its `weak_bg_fill`
     r0(
@@ -1109,31 +1315,6 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         &[M, T],
         ".visuals.widgets.active.bg_fill",
         home!(checkbox.indicator(PRESSED).fill),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T, I],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(checkbox.indicator(HOVER).stroke.color),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T, I],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(checkbox.indicator(PRESSED).stroke.color),
-    ),
-    // the checked box's hover and press outline, the state asked alone (spec §2, `from_state`)
-    r0(
-        "Checkbox/Selected",
-        &[M, T, I],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(checkbox.indicator(HOVER).stroke.color),
-    ),
-    r0(
-        "Checkbox/Selected",
-        &[M, T, I],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(checkbox.indicator(PRESSED).stroke.color),
     ),
     // the checked box's hover and press fill, the state asked alone (spec §2, `from_state`)
     r0(
@@ -1162,27 +1343,9 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "ComboBox",
-        &[T],
-        ".visuals.widgets.hovered.weak_bg_fill",
-        home!(combo_box.field(HOVER).fill),
-    ),
-    r0(
-        "ComboBox",
         &[M, T],
         ".visuals.widgets.active.weak_bg_fill",
         home!(combo_box.field(PRESSED).fill),
-    ),
-    r0(
-        "ComboBox",
-        &[A, W, M, T, I],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(combo_box.field(PRESSED).stroke.color),
-    ),
-    r0(
-        "ComboBox",
-        &[M, T, I],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(combo_box.label(HOVER).color),
     ),
     r0(
         "ComboBox",
@@ -1216,7 +1379,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Input",
-        &[A, W, M, T],
+        &[M, T],
         ".visuals.widgets.active.bg_stroke.color",
         home!(input.field(PRESSED).stroke.color),
     ),
@@ -1252,7 +1415,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "SegmentedControl",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(segmented_control.label(HOVER).color),
     ),
@@ -1276,7 +1439,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Sidebar",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(sidebar.item_label(HOVER).color),
     ),
@@ -1294,7 +1457,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Slider",
-        &[A, M, T, M3, I],
+        &[M, T, I],
         ".visuals.widgets.active.bg_fill",
         home!(slider.thumb(PRESSED).fill),
     ),
@@ -1362,86 +1525,13 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     },
     r0(
         "Splitter",
-        ALL,
+        &[M, T, I],
         ".visuals.widgets.active.fg_stroke.color",
         home!(splitter.handle(PRESSED).fill),
     ),
     r0(
-        "base",
-        &[M],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(button.body(PRESSED).stroke.width),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T, I],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(checkbox.indicator(HOVER).stroke.width),
-    ),
-    r0(
-        "Checkbox",
-        &[M, T, I],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(checkbox.indicator(PRESSED).stroke.width),
-    ),
-    r0(
-        "Checkbox/Selected",
-        &[M, T, I],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(checkbox.indicator(HOVER).stroke.width),
-    ),
-    r0(
-        "Checkbox/Selected",
-        &[M, T, I],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(checkbox.indicator(PRESSED).stroke.width),
-    ),
-    // the Button cell writes the button's states as the base style does
-    r0(
-        "Button",
-        &[M],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(button.body(PRESSED).stroke.color),
-    ),
-    r0(
-        "Button",
-        &[M],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(button.body(PRESSED).stroke.width),
-    ),
-    r0(
-        "ComboBox",
-        &[A, W, M, T, I],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(combo_box.field(HOVER).stroke.color),
-    ),
-    r0(
-        "ComboBox",
-        &[A, M, T, I],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(combo_box.field(HOVER).stroke.width),
-    ),
-    r0(
-        "ComboBox",
-        &[A, M, T, I],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(combo_box.field(PRESSED).stroke.width),
-    ),
-    r0(
         "Input",
-        &[A, M, T],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(input.field(HOVER).stroke.color),
-    ),
-    r0(
-        "Input",
-        &[A, M, T],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(input.field(HOVER).stroke.width),
-    ),
-    r0(
-        "Input",
-        &[A, M, T],
+        &[M, T],
         ".visuals.widgets.active.bg_stroke.width",
         home!(input.field(PRESSED).stroke.width),
     ),
@@ -1460,57 +1550,27 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "SegmentedControl",
-        ALL,
+        &[I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(segmented_control.segment(HOVER).stroke.color),
     ),
     r0(
         "SegmentedControl",
-        ALL,
+        &[M, I],
         ".visuals.widgets.active.bg_stroke.color",
         home!(segmented_control.segment(PRESSED).stroke.color),
     ),
     r0(
         "SegmentedControl",
-        &[M, T, I],
+        &[I],
         ".visuals.widgets.hovered.bg_stroke.width",
         home!(segmented_control.segment(HOVER).stroke.width),
     ),
     r0(
         "SegmentedControl",
-        &[M, T, I],
+        &[M, I],
         ".visuals.widgets.active.bg_stroke.width",
         home!(segmented_control.segment(PRESSED).stroke.width),
-    ),
-    r0(
-        "Tab",
-        &[K, W],
-        ".visuals.widgets.hovered.bg_stroke.color",
-        home!(tab.tab(HOVER).stroke.color),
-    ),
-    r0(
-        "Tab",
-        &[K, W],
-        ".visuals.widgets.active.bg_stroke.color",
-        home!(tab.tab(PRESSED).stroke.color),
-    ),
-    r0(
-        "Tab",
-        &[A, M3],
-        ".visuals.widgets.hovered.bg_stroke.width",
-        home!(tab.tab(HOVER).stroke.width),
-    ),
-    r0(
-        "Tab",
-        &[A, M3],
-        ".visuals.widgets.active.bg_stroke.width",
-        home!(tab.tab(PRESSED).stroke.width),
-    ),
-    r0(
-        "Tab",
-        &[M, T],
-        ".visuals.widgets.hovered.fg_stroke.color",
-        home!(tab.label(HOVER).color),
     ),
 ];
 

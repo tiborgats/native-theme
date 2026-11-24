@@ -474,7 +474,20 @@
           "none",
           24.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "field": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#ffffff19"
+            }
+          }
+        }
+      ]
     },
     "text": {
       "base": {
@@ -519,7 +532,20 @@
         },
         "corners": 5.0,
         "shadows": "none"
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "field": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#ffffff19"
+            }
+          }
+        }
+      ]
     },
     "text": {
       "base": {
@@ -575,6 +601,28 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000000"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000000"
+            }
+          }
+        },
         {
           "states": [
             "checked"
@@ -639,6 +687,28 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000000"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000000"
+            }
+          }
+        },
         {
           "states": [
             "checked"
@@ -1004,7 +1074,17 @@
         "defined_size": {
           "pt": 13.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#ffffffd8"
+          }
+        }
+      ]
     },
     "indicator": {
       "base": {}
@@ -1235,6 +1315,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#ffffffd8"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "item_label": {
@@ -1315,10 +1403,7 @@
     "field": {
       "base": {
         "fill": "#ffffff14",
-        "stroke": {
-          "width": 0.5,
-          "color": "#ffffff19"
-        },
+        "stroke": "none",
         "corners": 6.0,
         "shadows": "none",
         "padding": {
@@ -1330,7 +1415,32 @@
           120.0,
           24.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "disabled"
+          ],
+          "field": {
+            "fill": "#ffffff14",
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "disabled"
+          ],
+          "field": {
+            "stroke": "none"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -1344,6 +1454,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#ffffffd8"
+          }
+        },
         {
           "states": [
             "disabled"
@@ -1367,10 +1485,7 @@
     "track": {
       "base": {
         "fill": "#1e1e1e",
-        "stroke": {
-          "width": 0.5,
-          "color": "#ffffff19"
-        },
+        "stroke": "none",
         "corners": 6.0,
         "shadows": "none"
       }
@@ -1383,6 +1498,28 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "selected"
+          ],
+          "segment": {
+            "stroke": "none"
+          }
+        },
         {
           "states": [
             "selected"
@@ -1405,6 +1542,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#ffffffd8"
+          }
+        },
         {
           "states": [
             "selected"
