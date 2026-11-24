@@ -20226,10 +20226,8 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_icons(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
     let loaded_count = state
         .loaded_icons
         .iter()
@@ -20243,19 +20241,19 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     let total_count = state.loaded_icons.len();
 
     let header = column![
-        text("Icons").role(page_title(ts), resolved, a11y),
+        text("Icons").next_text(next_page_title(next), &next.typography),
         text(format!(
             "All {total_count} IconRole variants — \
              {loaded_count} loaded, {system_count} system"
         ))
-        .body(resolved, a11y),
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        .next_body(next),
+        separator_line(next),
     ]
     .spacing(gap.widget);
 
     let icon_set_info = column![
-        text(format!("Active icon set: {}", state.icon_set_choice)).body(resolved, a11y),
-        text(state.system_icon_theme_label()).role(&ts.caption, resolved, a11y),
+        text(format!("Active icon set: {}", state.icon_set_choice)).next_body(next),
+        next_caption_text(state, state.system_icon_theme_label(), None),
     ]
     .spacing(gap.widget);
 
@@ -20263,7 +20261,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     // lines as the page's width needs, its cells and its lines a gallery's,
     // `ICON_GRID_GAP_REMS` of the gpui rem apart, as the gpui showcase's
     // `flex_wrap` of cells (`pages/icons.rs`).
-    let grid_gap = gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y);
+    let grid_gap = next_gpui_rems(ICON_GRID_GAP_REMS, next);
     let cells: Vec<Element<'_, Message>> = state
         .loaded_icons
         .iter()
@@ -20274,7 +20272,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
             } else {
                 probes::ICON_CELL
             };
-            build_icon_cell(loaded, id, resolved, &ts.caption, a11y)
+            build_icon_cell(loaded, id, next)
         })
         .collect();
     let grid = row(cells)
@@ -20286,9 +20284,9 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     column![
         header,
         icon_set_info,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         animated_section,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        separator_line(next),
         grid,
     ]
     // Header, icon-set summary, animated section and grid are the sections
@@ -20302,12 +20300,10 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 /// `icon_sizes.large`, in the frame its clock gives, still under reduced
 /// motion, drawn by the connector's `Spinner` (`Indicator`).
 fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
-    let title = text("Animated Icons").role(section_title(ts), resolved, a11y);
-    let divider = rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved));
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
+    let title = text("Animated Icons").next_text(next_section_title(next), &next.typography);
+    let divider = separator_line(next);
     let set_name = state
         .icon_set_choice
         .effective_icon_set(state.current_icon_set)
@@ -20324,7 +20320,7 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
                 }
                 Playback::Spin { period_ms } => format!("{set_name} - Spin ({period_ms}ms)"),
             };
-            let label = text(label).role(&ts.caption, resolved, a11y);
+            let label = next_caption_text(state, label, None);
             column![icon, label]
                 .spacing(gap.widget)
                 .align_x(iced::Center)
@@ -20333,29 +20329,27 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
     let mut content = column![title, divider].spacing(gap.widget);
 
     if reduced {
-        content = content.push(text("prefers-reduced-motion: showing static frames").role(
-            &ts.caption,
-            resolved,
-            a11y,
+        content = content.push(next_caption_text(
+            state,
+            "prefers-reduced-motion: showing static frames",
+            None,
         ));
     }
 
     content = match spinner {
         Some(spinner) => content.push(row![spinner].spacing(gap.widget)),
-        None => content.push(
-            text("No animated icons available for this configuration.").role(
-                &ts.caption,
-                resolved,
-                a11y,
-            ),
-        ),
+        None => content.push(next_caption_text(
+            state,
+            "No animated icons available for this configuration.",
+            None,
+        )),
     };
 
     content.into()
 }
 
 /// The space between two cells of the Icons page's grid, and between two of
-/// its rows, in gpui rems ([`gpui_rems`]) (spec §3.1): the gpui showcase's
+/// its rows, in gpui rems ([`next_gpui_rems`]) (spec §3.1): the gpui showcase's
 /// `ICON_GRID_GAP`, `rems(0.5)` (`showcase-gpui/pages/mod.rs`), as the theme
 /// states no icon grid and the cells are a gallery's, not a row of widgets
 /// (Addendum F row 1). The cell's Widget Info names it.
@@ -20371,37 +20365,47 @@ const ICON_CELL_GAP_REMS: f32 = 0.25;
 /// rems (spec §3.1): the gpui showcase's `ICON_CELL_PADDING`, `rems(0.5)`
 /// (`showcase-gpui/demo.rs`), which pads its gallery cells, as the theme
 /// states no icon grid and a cell is a gallery's, not a card's: the cell
-/// takes gpui's padding, not [`card_padding`], though it is drawn on a
+/// takes gpui's padding, not [`next_card_padding`], though it is drawn on a
 /// card's fill. The cell's Widget Info names it.
 const ICON_CELL_PADDING_REMS: f32 = 0.5;
 
 /// An Icons page cell: the icon loaded for its role, its role and its
 /// source, [`ICON_CELL_GAP_REMS`] apart and centred on one another, on a
-/// card's fill (`styles::container_card`), padded [`ICON_CELL_PADDING_REMS`]
-/// round them and as wide as the widest of them, as the gpui showcase's
-/// gallery cell is sized to its content (`demo::icon_cell`).
+/// card's fill (`iced_next::styles::container_card`), padded
+/// [`ICON_CELL_PADDING_REMS`] round them and as wide as the widest of them,
+/// as the gpui showcase's gallery cell is sized to its content
+/// (`demo::icon_cell`), on the installed 0.8.0 theme `r`: the icon
+/// `icons.sizes.toolbar` square in a box `icons.sizes.large` square, the
+/// role and source in the caption. A size the theme leaves unstated is
+/// iced's own: the svg or image at its own size, the box its content's.
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
     probe_id: &'static str,
-    resolved: &ResolvedTheme,
-    caption: &ResolvedTextScaleEntry,
-    a11y: &AccessibilityPreferences,
+    r: &native_theme::next::ResolvedTheme,
 ) -> Element<'a, Message> {
     let role_name = format!("{:?}", loaded.role);
     let source_label = loaded.source.label();
-    let icon_px = resolved.defaults.icon_sizes.toolbar;
-    let cell_px = resolved.defaults.icon_sizes.large;
+    let icon_px = r.icons.sizes.toolbar;
+    let caption = native_theme_iced::next::text_scale(r).caption;
 
-    let icon_element: Element<'a, Message> = match loaded.handle.clone() {
-        Some(IconHandle::Svg(handle)) => svg(handle)
-            .width(Length::Fixed(icon_px))
-            .height(Length::Fixed(icon_px))
+    let icon_element: Element<'a, Message> = match (loaded.handle.clone(), icon_px) {
+        (Some(IconHandle::Svg(handle)), Some(px)) => svg(handle)
+            .width(Length::Fixed(px))
+            .height(Length::Fixed(px))
             .into(),
-        Some(IconHandle::Image(handle)) => iced::widget::image(handle)
-            .width(Length::Fixed(icon_px))
-            .height(Length::Fixed(icon_px))
+        (Some(IconHandle::Svg(handle)), None) => svg(handle).into(),
+        (Some(IconHandle::Image(handle)), Some(px)) => iced::widget::image(handle)
+            .width(Length::Fixed(px))
+            .height(Length::Fixed(px))
             .into(),
-        None => placeholder_icon(icon_px),
+        (Some(IconHandle::Image(handle)), None) => iced::widget::image(handle).into(),
+        (None, px) => placeholder_icon(px, r),
+    };
+    let icon_box = match r.icons.sizes.large {
+        Some(cell_px) => container(icon_element)
+            .center_x(Length::Fixed(cell_px))
+            .center_y(Length::Fixed(cell_px)),
+        None => container(icon_element),
     };
 
     hoverable(
@@ -20411,61 +20415,83 @@ fn build_icon_cell<'a>(
             Length::Shrink,
             container(
                 column![
-                    container(icon_element)
-                        .center_x(Length::Fixed(cell_px))
-                        .center_y(Length::Fixed(cell_px)),
-                    text(role_name.clone()).role(caption, resolved, a11y),
-                    text(source_label).role(caption, resolved, a11y),
+                    icon_box,
+                    text(role_name.clone()).next_text(caption, &r.typography),
+                    text(source_label).next_text(caption, &r.typography),
                 ]
-                .spacing(gpui_rems(ICON_CELL_GAP_REMS, resolved, a11y))
+                .spacing(next_gpui_rems(ICON_CELL_GAP_REMS, r))
                 .align_x(iced::Center),
             )
-            .padding(gpui_rems(ICON_CELL_PADDING_REMS, resolved, a11y))
-            .style(styles::container_card(resolved)),
+            .padding(next_gpui_rems(ICON_CELL_PADDING_REMS, r))
+            .next_style(iced_next::styles::container_card(r), |cell, style| {
+                cell.style(style)
+            }),
         ),
     )
 }
 
 /// The Widget Info of the Icons page's cell for `role`: the icon loaded for
-/// it now, where it came from, and the padding the cell takes; empty where
-/// none is loaded for the role.
+/// it now, where it came from, its sizes, and the padding the cell takes;
+/// empty where none is loaded for the role.
 fn icon_info(state: &State, role: IconRole) -> String {
-    let (resolved, a11y) = (&state.current_resolved, &state.accessibility);
-    let pad = px_text(gpui_rems(ICON_CELL_PADDING_REMS, resolved, a11y));
-    let cell_gap = px_text(gpui_rems(ICON_CELL_GAP_REMS, resolved, a11y));
-    let grid_gap = px_text(gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y));
+    let r = state.next_shown();
+    let pad = px_text(next_gpui_rems(ICON_CELL_PADDING_REMS, r));
+    let cell_gap = px_text(next_gpui_rems(ICON_CELL_GAP_REMS, r));
+    let grid_gap = px_text(next_gpui_rems(ICON_GRID_GAP_REMS, r));
+    let size = |home: &str, size: Option<f32>, own: &str| match size {
+        Some(px) => format!("{}, {home}", px_text(px)),
+        None => format!("{home} unstated: {own}"),
+    };
+    let icon_size = size(
+        "icons.sizes.toolbar",
+        r.icons.sizes.toolbar,
+        "the icon's own size",
+    );
+    let box_size = size("icons.sizes.large", r.icons.sizes.large, "the icon's");
     state
         .loaded_icons
         .iter()
         .find(|loaded| loaded.role == role)
         .map(|loaded| {
             format!(
-                "{role:?}\nicon: {}\nsource: {}\npadding: {pad} round the icon, the role and \
-                 the source, ICON_CELL_PADDING_REMS (gpui's ICON_CELL_PADDING, a half of the \
-                 scaled defaults.font.size), as the gpui showcase's gallery cell: the theme \
+                "{role:?}\nicon: {}\nsource: {}\nicon size: {icon_size}\nicon box: \
+                 {box_size}\ncaption: {}\npadding: {pad} round the icon, the role and \
+                 the source, ICON_CELL_PADDING_REMS (gpui's ICON_CELL_PADDING, a half of \
+                 typography.body.size_px), as the gpui showcase's gallery cell: the theme \
                  states no icon grid\ngap: {cell_gap} between the icon, \
                  the role and the source, ICON_CELL_GAP_REMS (gpui's ICON_CELL_GAP, a quarter \
-                 of the scaled defaults.font.size)\ngrid gap: {grid_gap} between two cells and \
-                 two rows, ICON_GRID_GAP_REMS (gpui's ICON_GRID_GAP, a half of the scaled \
-                 defaults.font.size): the showcase's own, as the theme states no icon grid",
+                 of typography.body.size_px)\ngrid gap: {grid_gap} between two cells and \
+                 two rows, ICON_GRID_GAP_REMS (gpui's ICON_GRID_GAP, a half of \
+                 typography.body.size_px): the showcase's own, as the theme states no icon grid",
                 loaded.name.unwrap_or("(unmapped)"),
                 loaded.source.label(),
+                next_font_row(
+                    next_caption_home(r),
+                    native_theme_iced::next::text_scale(r).caption
+                ),
             )
         })
         .unwrap_or_default()
 }
 
 /// A "?" in the slot of an icon that did not load, drawn at the icon's own
-/// size: it stands in for an icon, not for text in any role.
-fn placeholder_icon<'a>(icon_px: f32) -> Element<'a, Message> {
-    container(
-        text("?")
-            .size(icon_px)
-            .line_height(text::LineHeight::Absolute(icon_px.into())),
-    )
-    .center_x(Length::Fixed(icon_px))
-    .center_y(Length::Fixed(icon_px))
-    .into()
+/// size, `icons.sizes.toolbar`: it stands in for an icon, not for text in
+/// any role; in `typography.body` where the theme states no icon size.
+fn placeholder_icon<'a>(
+    icon_px: Option<f32>,
+    r: &native_theme::next::ResolvedTheme,
+) -> Element<'a, Message> {
+    match icon_px {
+        Some(icon_px) => container(
+            text("?")
+                .size(icon_px)
+                .line_height(text::LineHeight::Absolute(icon_px.into())),
+        )
+        .center_x(Length::Fixed(icon_px))
+        .center_y(Length::Fixed(icon_px))
+        .into(),
+        None => text("?").next_body(r).into(),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -28930,7 +28956,7 @@ mod tests {
     /// the lines its grid wraps onto, are [`ICON_GRID_GAP_REMS`] of the gpui
     /// rem apart,
     /// the gpui showcase's `ICON_GRID_GAP` (`rems(0.5)`), a half of the
-    /// scaled `defaults.font.size`, as the cells are a gallery's, not a row
+    /// installed 0.8.0 theme's `typography.body.size_px`, as the cells are a gallery's, not a row
     /// of widgets: under every bundled preset in both modes, read from the
     /// theme at test time, and named in a cell's Widget Info.
     #[test]
@@ -28939,10 +28965,7 @@ mod tests {
             let mut state = loaded(preset, dark);
             state.reload_icons();
             state.active_tab = Tab::Icons;
-            let want = state
-                .accessibility
-                .scaled(state.current_resolved.defaults.font.size)
-                * 0.5;
+            let want = state.next_shown().typography.body.size_px * 0.5;
             let mut ui = interface(&state);
             let [first, second] =
                 [probes::ICON_CELL, probes::ICON_CELL_SECOND].map(|id| probe_bounds(&mut ui, id));
@@ -29165,14 +29188,16 @@ mod tests {
             let mut state = loaded(preset, dark);
             state.reload_icons();
             state.active_tab = Tab::Icons;
-            let r = &state.current_resolved;
-            let a11y = &state.accessibility;
-            let caption = &r.text_scale.caption;
-            let pad = gpui_rems(ICON_CELL_PADDING_REMS, r, a11y);
-            let (size, line) = (
-                scaled_text_size(caption.size, a11y),
-                scaled_text_size(caption.line_height, a11y),
-            );
+            let r = state.next_shown();
+            let caption = native_theme_iced::next::text_scale(r).caption;
+            let pad = next_gpui_rems(ICON_CELL_PADDING_REMS, r);
+            let (size, line) = (caption.size_px, next_line_box(&r.typography, caption));
+            // Where the caption gives no font iced can draw, `next_text`
+            // leaves the label in the renderer's default font, which the
+            // simulator makes the Fira Sans it bundles for `Font::DEFAULT`
+            // (`iced_test` 0.14 `src/simulator.rs`, `Simulator::with_size`).
+            let font = next_font_from_database(caption, false)
+                .map_or(iced::Font::with_name("Fira Sans"), |drawn| drawn.font);
             let mut ui = interface(&state);
             let cells: Vec<Rectangle> = [probes::ICON_CELL, probes::ICON_CELL_SECOND]
                 .into_iter()
@@ -29187,7 +29212,7 @@ mod tests {
             labels.sort();
             labels.dedup();
             for label in labels {
-                let width = MeasuredText::new(label.clone(), size, line, role_font(caption, r))
+                let width = MeasuredText::new(label.clone(), size, line, font)
                     .extent()
                     .width;
                 for (_, at) in found.iter().filter(|(content, _)| *content == label) {
@@ -29219,10 +29244,11 @@ mod tests {
     /// M9-154, as M9b Step 8 I1 rules it (theme-data): the Icons page's
     /// cells are padded as the gpui showcase's gallery cells are, by
     /// [`ICON_CELL_PADDING_REMS`] of the gpui rem (gpui's
-    /// `ICON_CELL_PADDING`, `rems(0.5)`), a half of the scaled
-    /// `defaults.font.size`, and their content is centred in them: under
-    /// every bundled preset in both modes, the first cell's role name lies
-    /// the padding, the icon's box and the cell's gap below the cell's top,
+    /// `ICON_CELL_PADDING`, `rems(0.5)`), a half of the installed 0.8.0
+    /// theme's `typography.body.size_px`, and their content is centred in
+    /// them: under every bundled preset in both modes, the first cell's role
+    /// name lies the padding, the icon's box (`icons.sizes.large`) and the
+    /// cell's gap below the cell's top,
     /// its source the padding above the cell's bottom, and the role name and
     /// the source are centred across the cell.
     #[test]
@@ -29231,13 +29257,18 @@ mod tests {
             let mut state = loaded(preset, dark);
             state.reload_icons();
             state.active_tab = Tab::Icons;
-            let r = &state.current_resolved;
-            let pad = gpui_rems(ICON_CELL_PADDING_REMS, r, &state.accessibility);
+            let r = state.next_shown();
+            let pad = next_gpui_rems(ICON_CELL_PADDING_REMS, r);
             let Some(first) = state.loaded_icons.first() else {
                 panic!("{preset} (dark: {dark}): no icon role is listed");
             };
             let (role, source) = (format!("{:?}", first.role), first.source.label());
-            let box_px = r.defaults.icon_sizes.large;
+            let box_px = r.icons.sizes.large;
+            assert!(
+                box_px.is_some(),
+                "{preset} (dark: {dark}): the theme states no icons.sizes.large"
+            );
+            let box_px = box_px.unwrap_or_default();
             let mut ui = interface(&state);
             let cell = probe_bounds(&mut ui, probes::ICON_CELL);
             let found = texts(&mut ui);
@@ -29249,10 +29280,7 @@ mod tests {
                 None => panic!("{preset} (dark: {dark}): {label:?} is not drawn in the cell"),
             };
             let (role_at, source_at) = (at(&role), at(source));
-            let top = role_at.y
-                - cell.y
-                - box_px
-                - gpui_rems(ICON_CELL_GAP_REMS, r, &state.accessibility);
+            let top = role_at.y - cell.y - box_px - next_gpui_rems(ICON_CELL_GAP_REMS, r);
             assert!(
                 near(top, pad),
                 "{preset} (dark: {dark}): the cell's content starts {top}px down, want {pad}px"
