@@ -32672,16 +32672,6 @@ mod tests {
             "checkbox.border.color",
             DISABLED_CHECKBOX_OUTLINE,
         ),
-        (
-            "basic.switches.off",
-            "switch.thumb_background",
-            OFF_SWITCH_THUMB,
-        ),
-        (
-            "basic.switches.off.thumb",
-            "switch.thumb_background",
-            OFF_SWITCH_THUMB,
-        ),
     ];
 
     /// Why the On toggle's pressed colours move no row it draws: its homes,
@@ -32714,11 +32704,6 @@ mod tests {
          the element's home of checkbox.border.color, checkbox.indicator(CHECKED).stroke.color, \
          moves the enabled checked statuses alone; the disabled box is drawn at \
          `Disabled { is_checked: true }`";
-
-    /// Why the off switch's listed thumb home moves no row it draws.
-    const OFF_SWITCH_THUMB: &str = "\
-         the element's home of switch.thumb_background, switch.thumb(CHECKED).fill, moves \
-         the on statuses alone, `is_toggled: true`; the off switch is drawn off";
 
     /// The contract's home export parses, and places every colour leaf the
     /// element list gives an element at one of the element's homes: a leaf

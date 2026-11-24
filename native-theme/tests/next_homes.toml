@@ -2343,8 +2343,12 @@ homes = ["switch.track(NONE).fill"]
 
 [[row]]
 key = "switch.thumb_background"
-homes = ["switch.thumb(CHECKED).fill"]
-note = "the on thumb; the off thumb is unchecked_thumb_background's row, whose if_null is this key"
+homes = [
+    "switch.thumb(CHECKED).fill",
+    "switch.thumb(NONE).fill",
+]
+homes_by_preset = { "adwaita" = ["switch.thumb(CHECKED).fill"], "material-3" = ["switch.thumb(CHECKED).fill"], "windows-11" = ["switch.thumb(CHECKED).fill"] }
+note = "the on thumb, and the off thumb where unchecked_thumb_background is null (0.7.2's iced styles: SwitchSource::of draws the off thumb in thumb_background there); adwaita (its dark scheme), material-3 and windows-11 state unchecked_thumb_background, so there the on thumb alone"
 
 [[row]]
 key = "switch.unchecked_thumb_background"

@@ -1549,7 +1549,7 @@ kind = "ruled"
 why = "read only where a rule for the first flag alone states the property (`flagged`, src/next/borders.rs; spec §2, `from_state`), which no platform preset does; a rule for both flags alone stays unseen by that query, the two-flag gap SQ1 settles"
 
 [homes."switch.thumb(NONE).fill"]
-leaves = ["switch.unchecked_thumb_background"]
+leaves = ["switch.thumb_background", "switch.unchecked_thumb_background"]
 moves = [
   { row = "styles::toggler.foreground", statuses = ["Active { is_toggled: false }"] },
   { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark"] },

@@ -1293,8 +1293,9 @@ id = "basic.switches.off"
 name = "Switch"
 parent = "basic.switches.heading"
 leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.unchecked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
-# homes: switch.thumb_border_color: NONE, not CHECKED: shown unchecked (Off).
-homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(NONE).fill", "switch.thumb(CHECKED).fill", "switch.thumb(NONE).fill", "switch.track(HOVER).fill", "typography.body", "typography.body.color", "typography.line_height_multiplier", "switch.track(NONE).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width"]
+# homes: switch.thumb_border_color, switch.thumb_background: NONE, not CHECKED: shown unchecked
+#          (Off).
+homes = ["switch.track(NONE).min_size[0]", "switch.track(NONE).max_size[0]", "switch.track(NONE).min_size[1]", "switch.track(NONE).max_size[1]", "switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.track(NONE).corners", "switch.track(NONE).fill", "switch.thumb(NONE).fill", "switch.track(HOVER).fill", "typography.body", "typography.body.color", "typography.line_height_multiplier", "switch.track(NONE).stroke.color", "switch.track(NONE).stroke.width", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width"]
 states = ["Off"]
 
 [[element]]
@@ -1312,8 +1313,9 @@ id = "basic.switches.off.thumb"
 name = "Switch thumb"
 parent = "basic.switches.off.track"
 leaves = ["switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
-# homes: switch.thumb_border_color: NONE, not CHECKED: shown unchecked (Off).
-homes = ["switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.thumb(CHECKED).fill", "switch.thumb(NONE).fill", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width"]
+# homes: switch.thumb_border_color, switch.thumb_background: NONE, not CHECKED: shown unchecked
+#          (Off).
+homes = ["switch.thumb(CHECKED).min_size[0]", "switch.thumb(CHECKED).max_size[0]", "switch.thumb(CHECKED).min_size[1]", "switch.thumb(CHECKED).max_size[1]", "switch.thumb(NONE).min_size[0]", "switch.thumb(NONE).max_size[0]", "switch.thumb(NONE).min_size[1]", "switch.thumb(NONE).max_size[1]", "switch.thumb(NONE).fill", "switch.thumb(NONE).stroke.color", "switch.thumb(NONE).stroke.width"]
 states = ["Off"]
 part = true
 sample = { fill = [0.5, 0.5] }
