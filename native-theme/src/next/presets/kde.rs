@@ -1792,6 +1792,16 @@ const POPOVER_PADDING_HORIZONTAL: f32 = 12.0;
 // `popover.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
 const POPOVER_PADDING_VERTICAL: f32 = 12.0;
 
+/// The radius of a popover's corners.
+// `popover.border.corner_radius`: qqc2-desktop-style's Popup rounds its background by
+// `Kirigami.Units.cornerRadius` (Popup.qml:46-47 at qqc2-desktop-style v6.31.0, Menu.qml:128-129
+// the same), 5 (platform-facts.md (§2.26) `border.corner_radius`, units.cpp:46 at Kirigami
+// 8319acc7); a Qt Widgets QMenu's frame, drawPanelMenuPrimitive's renderMenuFrame, is rounded by
+// Frame_FrameRadius, 5, where the window has an alpha channel (breezestyle.cpp:4695, :4721;
+// breezehelper.cpp:568, :587; breezemetrics.h:42 at breeze f0b1d75). 0.7.2 took the uncited 8 of
+// `defaults.border.corner_radius_lg`.
+const POPOVER_CORNER_RADIUS: f32 = 5.0;
+
 /// The length of a switch's track.
 // `switch.track_width`: 0.7.2 kde-breeze.toml (uncited)
 const SWITCH_TRACK_WIDTH: f32 = 36.0;
@@ -4610,9 +4620,10 @@ fn sidebar(
 /// The popover: the popover's background where a palette states it, else the
 /// window's (0.7.2: `popover.background_color` is
 /// `defaults.background_color` where unstated, `resolve_safety_nets`) in
-/// the Popup's line at the default width with the large radius (0.7.2:
-/// `popover.border`'s width and radius are `defaults.border`'s line width
-/// and `corner_radius_lg` where unstated) and the Popup's padding; the UI
+/// the Popup's line at the default width (0.7.2: `popover.border`'s width
+/// is `defaults.border`'s line width where unstated) with the Popup's own
+/// radius, [`POPOVER_CORNER_RADIUS`] (0.7.2's `corner_radius_lg`, 8, has no
+/// source), and the Popup's padding; the UI
 /// font (0.7.2: `popover.font` is `defaults.font` where unstated).
 fn popover(
     c: &SchemeColors,
@@ -4624,7 +4635,7 @@ fn popover(
     let background = roles.popover.background.or(roles.window.background);
     for prop in background.map(fill).into_iter().chain([
         outline(layout, c.popover_border),
-        PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
+        PartProp::Corners(Corners::uniform(POPOVER_CORNER_RADIUS)),
         PartProp::Padding(Edges::symmetric(
             POPOVER_PADDING_VERTICAL,
             POPOVER_PADDING_HORIZONTAL,

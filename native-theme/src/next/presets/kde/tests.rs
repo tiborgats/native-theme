@@ -279,6 +279,15 @@ fn both_schemes() -> [ResolvedTheme; 2] {
         .map(|ctx| Theme::preset(Preset::KdeBreeze).resolve(&ctx))
 }
 
+/// A popover is rounded as qqc2-desktop-style's Popup rounds it,
+/// `Kirigami.Units.cornerRadius` (5).
+#[test]
+fn a_popover_is_rounded_by_the_popup_s_radius() {
+    for theme in both_schemes() {
+        assert_eq!(theme.popover.panel.corners, Corners::uniform(5.0));
+    }
+}
+
 #[test]
 fn a_primary_button_keeps_the_accent_fill_when_pressed_checked_or_default() {
     for theme in both_schemes() {

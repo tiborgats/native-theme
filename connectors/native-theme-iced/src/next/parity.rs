@@ -1776,6 +1776,13 @@ const SEPARATOR_FILL: [Stated; 2] = [
     set(at!(DISABLED), Field::Separator, DISABLED_SEPARATOR),
 ];
 
+/// The popover panel's corners, `popover.panel.corners` (a part of no
+/// rules, read at rest), as the builder hands them to iced.
+const POPOVER_CORNERS: Home = Home {
+    path: "popover.panel.corners",
+    value: |t| read::corners(&t.popover.panel, &t.popover.panel, WidgetState::NONE),
+};
+
 /// A disabled control's separator, `segmented_control.separator(NONE)`'s
 /// fill laid on the group fill (`track(NONE)`), the two faded as one widget
 /// over the window by `segmented_control.disabled_opacity`
@@ -2559,6 +2566,16 @@ const DIFFERENCES: &[Difference] = &[
     inside(
         "aw::menu",
         &["adwaita", "windows-11", "macos-monterey", "macos-tahoe"],
+    ),
+    // iced_aw: kde-breeze's menu frame rounded by the popover's corners
+    // (menu.panel states none), qqc2-desktop-style's Popup radius,
+    // Kirigami.Units.cornerRadius 5, where 0.7.2's corner_radius_lg 8 is
+    // uncited.
+    stated_fields(
+        "aw::menu",
+        &["kde-breeze"],
+        LineAlign::Outside,
+        &[&[set(at!(NONE), Field::Radius, POPOVER_CORNERS)]],
     ),
     // iced_aw: tab.tab(SELECTED)'s and tab.tab(NONE)'s strokes and
     // tab.tab(HOVER)'s fill.
@@ -3473,6 +3490,28 @@ impl Fields for iced_aw::style::card::Style {
 }
 
 #[cfg(feature = "iced_aw")]
+impl Fields for iced_aw::style::menu_bar::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        match field {
+            // the menu's popup frame
+            Field::Radius => self.menu_border.radius = width_of(field, &value)?.into(),
+            Field::BorderWidth
+            | Field::BorderColor
+            | Field::Background
+            | Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::InnerRadius
+            | Field::Separator
+            | Field::PickedSplitColor
+            | Field::HoveredSplitColor
+            | Field::RailFill => return no_field(field, "menu_bar::Style"),
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "iced_aw")]
 impl Fields for iced_aw::style::sidebar::Style {
     fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
         use iced_core::Background;
@@ -4301,13 +4340,6 @@ fn compare_aw(
         Status::Focused,
         Status::Selected,
     ];
-    /// A style function's output in the compared form.
-    fn leaves<S, T>(
-        f: impl Fn(&Theme, Status) -> S + Clone,
-        form: fn(S) -> T,
-    ) -> impl Fn(&Theme, Status) -> T + Clone {
-        move |theme, status| form(f(theme, status))
-    }
 
     let card = CardSource::of(old);
     if let Some(new_card) = report.mapped("aw::card", n::card(new)) {
@@ -4328,15 +4360,23 @@ fn compare_aw(
         }
     }
     let menu = MenuSource::of(old);
-    listed_style!(
-        report,
-        themes,
-        "aw::menu",
-        leaves(o::menu(old), aw_leaves::menu),
-        n::menu(new).map(|f| leaves(f, aw_leaves::menu)),
-        |l: Listed| leaves(o::menu_from(&menu.listed(l)), aw_leaves::menu),
-        statuses
-    );
+    if let Some(new_menu) = report.mapped("aw::menu", n::menu(new)) {
+        let (old_theme, new_theme) = themes;
+        let old_menu = o::menu(old);
+        for status in statuses {
+            report.stated_leaf(
+                &format!("aw::menu({status:?})"),
+                Some(WidgetState::NONE),
+                (
+                    aw_leaves::menu(old_menu(old_theme, status)),
+                    aw_leaves::menu(new_menu(new_theme, status)),
+                ),
+                |l: Listed| o::menu_from(&menu.listed(l))(old_theme, status),
+                aw_leaves::menu,
+                new,
+            );
+        }
+    }
     let tab = TabBarSource::of(old);
     if let Some(tab_bar) = report.mapped("aw::tab_bar", n::tab_bar(new)) {
         let (old_theme, new_theme) = themes;

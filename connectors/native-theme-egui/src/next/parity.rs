@@ -1483,6 +1483,27 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".corner_radius.*",
         home!(card.container(NONE).corners),
     ),
+    // kde-breeze's popover rounded as qqc2-desktop-style's Popup rounds it,
+    // Kirigami.Units.cornerRadius 5 (Popup.qml:46-47 at qqc2-desktop-style v6.31.0), where
+    // 0.7.2's corner_radius_lg 8 is uncited (M2.FS4)
+    s(
+        "Popover",
+        &[K],
+        ".corner_radius.*",
+        Home {
+            path: "popover.panel.corners",
+            stated: |r: &ResolvedTheme| r.popover.panel.stated.contains(PartStated::CORNERS),
+            value: |r: &ResolvedTheme| {
+                let panel = &r.popover.panel;
+                panel
+                    .stated
+                    .contains(PartStated::CORNERS)
+                    .then(|| super::radius_of(panel))
+                    .flatten()
+                    .map(HomeValue::Radius)
+            },
+        },
+    ),
     // ios-13's text field: WebKit's `border: 1px solid -apple-system-secondary-label`
     // (html.css:457-466 at WebKit 31adf9d), its width in every state, its colour where no rule
     // for the state restates it.

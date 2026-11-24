@@ -2378,6 +2378,10 @@ homes = ["popover.panel.stroke.color"]
 key = "popover.border.corner_radius"
 homes = ["popover.panel.corners"]
 note = "Corners::uniform(radius); full_lg"
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2's 8 (defaults.border.corner_radius_lg) is uncited; qqc2-desktop-style's Popup and Menu round their background by Kirigami.Units.cornerRadius, 5, and Breeze rounds a QMenu's frame by Frame_FrameRadius, 5"
+difference_citation = "Popup.qml:46-47 and Menu.qml:128-129 at qqc2-desktop-style v6.31.0; Units.cornerRadius 5: docs/platform-facts.md §2.26 (border.corner_radius, units.cpp:46 at Kirigami 8319acc7); breezestyle.cpp:4695, :4721, breezehelper.cpp:568, :587, breezemetrics.h:42 at breeze f0b1d75"
+difference_values = { "kde-breeze" = 5.0 }
 
 [[row]]
 key = "popover.border.line_width"

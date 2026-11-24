@@ -339,6 +339,16 @@ const DIFFERENCES: &[Difference] = &[
                  equal",
     },
     Difference {
+        leaf: "geometry::popover",
+        presets: &["kde-breeze"],
+        reason: "0.7.2 rounds kde-breeze's popover by the uncited defaults.border.\
+                 corner_radius_lg, 8; the 0.8.0 kde-breeze states popover.panel.corners 5, \
+                 the radius qqc2-desktop-style's Popup rounds its background by \
+                 (Kirigami.Units.cornerRadius, Popup.qml:46-47 at qqc2-desktop-style \
+                 v6.31.0; docs/platform-facts.md §2.26), so the refinement's corner radii are \
+                 that radius; every other field of the refinement is equal",
+    },
+    Difference {
         leaf: "geometry::dialog_max_width",
         presets: &["kde-breeze"],
         reason: "0.7.2 states dialog.max_width, which has no source (issue #4 Z2, as \
@@ -967,6 +977,21 @@ fn card_edge_of(new: &native_theme::next::ResolvedTheme) -> Option<(f32, Option<
         _ => return None,
     };
     Some((radius, border))
+}
+
+/// The popover panel's radius, `popover.panel.corners`, where the theme
+/// states one circular radius for every corner: the form of
+/// `geometry::popover`'s entry in [`DIFFERENCES`]; `None` otherwise.
+fn popover_radius_of(new: &native_theme::next::ResolvedTheme) -> Option<f32> {
+    use native_theme::next::{CornerCurve, CornerRadius, PartStated};
+    let panel = &new.popover.panel;
+    if !panel.stated.contains(PartStated::CORNERS) {
+        return None;
+    }
+    match (panel.corners.radius, panel.corners.curve) {
+        (CornerRadius::Uniform(r), CornerCurve::Circular) => Some(r),
+        _ => None,
+    }
 }
 
 /// A hovered list row's fill where a rule states it for `HOVER`,
@@ -1804,7 +1829,30 @@ fn compare_builders(
     fill_builder!(report, old, new, input_fill);
     fill_builder!(report, old, new, combo_box_fill);
     builder!(report, old, new, menu_item);
-    builder!(report, old, new, popover);
+    let popover = "geometry::popover";
+    match report.listed(popover) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(popover, super::builders::popover(new)) {
+                report.count(popover);
+                let o = crate::geometry::popover(Native::unscaled(old));
+                let expected = popover_radius_of(new).map(|radius| {
+                    let mut e = o.clone();
+                    e.corner_radii =
+                        gpui::Styled::rounded(gpui::StyleRefinement::default(), px(radius))
+                            .corner_radii;
+                    e
+                });
+                if expected.as_ref() == Some(&o) || expected != Some(n.clone()) {
+                    report.failures.push(format!(
+                        "{}: {popover}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, popover),
+    }
     let dialog = "geometry::dialog";
     match report.listed(dialog) {
         Some(listed) => {

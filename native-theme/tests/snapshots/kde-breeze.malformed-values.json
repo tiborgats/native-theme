@@ -2745,7 +2745,7 @@
         "width": 1.0,
         "color": "#474c51"
       },
-      "corners": 8.0,
+      "corners": 5.0,
       "padding": {
         "top": 12.0,
         "right": 12.0,
