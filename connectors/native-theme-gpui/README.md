@@ -936,6 +936,18 @@ platform does; no border colour can take the fill away. A per-side stroke
 (different widths or colours per side) is not drawn: the builder reports the
 part's stroke as unmapped.
 
+**Corners are circular, one radius a part.** gpui rounds a quad with four
+circular radii (gpui-pre 0.3.12 `src/geometry.rs`, `Corners`), and
+gpui-component's theme and widgets take one radius each. A continuous corner
+(`CornerCurve::Continuous`, Apple's) is drawn as the circular corner of the
+stated radius (docs/v0.8.0-spec.md §10, rule 2), and Widget Info marks its
+value `(drawn circular)`. A pill is drawn as gpui-component's full radius,
+9999 px, which gpui clamps to half the shorter side (gpui-component 0.10.0
+`src/theme/mod.rs`, `RADIUS_FULL`). Per-corner radii that differ, and a
+concentric radius (`CornerRadius::Concentric`, the container's radius less an
+inset, which a builder does not know), are reported as unmapped; no preset
+states either.
+
 **An expander's edge keeps gpui-component's width.** `next::geometry::accordion`
 gives the edge's colour (and a width of 0 where the stroke is stated as none),
 but not a stated visible width: its one refinement lands on the `Accordion`,

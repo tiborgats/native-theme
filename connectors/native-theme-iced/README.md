@@ -764,6 +764,16 @@ rule 0).
   still exact over an opaque fill, and a translucent `Center` or `Outside`
   border shows the fill under it. Breeze's scroll bar handle, a pen 1.001
   wide centred on its edge, is drawn as that band's mean.
+- **Corners.** iced rounds a quad with four circular radii
+  (`iced_core` 0.14.0 `src/border.rs`, `Radius`). A continuous corner
+  (`CornerCurve::Continuous`, Apple's) is drawn as the circular corner of
+  the stated radius (spec §10, rule 2), and Widget Info marks its value
+  `(drawn circular)`. A concentric radius (`CornerRadius::Concentric`) is
+  the container's radius less an inset, which a style function does not
+  know: it is `Unmapped`. Where `next` takes one radius for a part (a
+  check box, a switch's track, the menu, a scroll bar's handle, the
+  selected tab's top corners), per-corner radii that differ are
+  `Unmapped`; no preset states them.
 - **Shadows.** iced's `Shadow` is one outset shadow: a colour, an offset and
   a blur (`iced_core` 0.14.0 `src/shadow.rs`). The menu, the segmented
   control's track and the expander's frame cast the first outset layer the
@@ -806,7 +816,8 @@ rule 0).
   is a ring round the part, a fill of it or a line under it (spec §2,
   `FocusKind`: `Ring`, `Fill`, `Underline`). `focus_ring` draws a ring,
   bordered quads round the field (the theme's `inner_stroke` as a second
-  ring inside the first, its `corners` as the ring's outer corners), so
+  ring inside the first, its `corners` as those of the line between the
+  two, the outer ring's edge grown by its width), so
   `next::focus_ring` returns `Unmapped("focus_ring.kind")` for `Fill` and
   `Underline`; no preset states either. A ring inset at the field's edge
   (`offset` minus its width, adwaita's) is drawn by `next::styles::text_input`
