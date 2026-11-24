@@ -56,9 +56,7 @@ pub(crate) fn show(
             },
         );
         reg.note_last("mixed state", MIXED_NOTE);
-        for note in notes {
-            reg.note_last("mixed state", &format!("{note:?}"));
-        }
+        reg.notes_last("mixed state", &notes);
         // Unchecked and disabled, the `Disabled` cell; the Basic page draws a checked one in
         // `SelectedDisabled`.
         let mut disabled = false;

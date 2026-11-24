@@ -977,20 +977,17 @@ fn homes_text(row: &Row, (shown, preset): (&InfoTheme, &str)) -> (String, Option
     (text, colour)
 }
 
-/// The first colour among a row's homes' values on `preset` in `shown`, as egui's colour, for
-/// the Theme Map's swatch; `None` where no home holds a colour.
-pub(crate) fn row_colour(row: &Row, shown: (&InfoTheme, &str)) -> Option<egui::Color32> {
-    homes_text(row, shown)
-        .1
-        .map(native_theme_egui::next::to_color32)
-}
-
 /// The Theme Map's four cells of one row (§10.4, the Theme Map row): the leaf, the values of
 /// its homes on the 0.8.0 model now (`homes_text`), the verdict, and the sinks with their scope
 /// or surface joined by "; " — for an `unmappable` row its `sub_tag` and `upstream` instead, for
-/// a `tested_by` row its route.
-pub(crate) fn row_cells(row: &Row, shown: (&InfoTheme, &str)) -> [String; 4] {
-    let (value, _) = homes_text(row, shown);
+/// a `tested_by` row its route; and beside them the first colour among the homes' values on
+/// `preset` in `shown`, as egui's colour, for the row's swatch, `None` where no home holds a
+/// colour.
+pub(crate) fn row_cells(
+    row: &Row,
+    shown: (&InfoTheme, &str),
+) -> ([String; 4], Option<egui::Color32>) {
+    let (value, colour) = homes_text(row, shown);
     let sinks = if row.verdict == Verdict::Unmappable {
         format!(
             "{}: {}",
@@ -1006,15 +1003,18 @@ pub(crate) fn row_cells(row: &Row, shown: (&InfoTheme, &str)) -> [String; 4] {
             .collect::<Vec<_>>()
             .join("; ")
     };
-    [
-        row.leaf.clone(),
-        value,
-        row.verdict.name().to_string(),
-        sinks,
-    ]
+    (
+        [
+            row.leaf.clone(),
+            value,
+            row.verdict.name().to_string(),
+            sinks,
+        ],
+        colour.map(native_theme_egui::next::to_color32),
+    )
 }
 
-/// Text in the side panel's font (`sidebar.font`: `Body` in the sidebar scope the inspector is
+/// Text in the side panel's font (`sidebar.item_label(NONE)`: `Body` in the sidebar scope the inspector is
 /// drawn in), wrapping at the width it is given.
 fn note(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Response {
     let mut text = egui::RichText::new(text);
@@ -1028,7 +1028,7 @@ fn note(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Respons
 /// (`showcase-gpui/inspector.rs:546-554`, `:930-931`): the name in the weak text colour
 /// (gpui's `muted_foreground` is `defaults.muted_color`, as egui's `weak_text_color` is, parity
 /// rule R3), the value and each line after it in the text colour, all in the side panel's font
-/// (`sidebar.font`, `Body` in the sidebar scope), wrapping.
+/// (`sidebar.item_label(NONE)`, `Body` in the sidebar scope), wrapping.
 pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui::Response {
     let font = egui::TextStyle::Body.resolve(ui.style());
     let (weak, strong) = (ui.visuals().weak_text_color(), ui.visuals().text_color());
@@ -1176,7 +1176,7 @@ impl InfoText {
 /// draws a galley on the pixel its corner rounds to (`round_text_to_pixels`, on by default,
 /// `epaint/src/tessellator.rs:2024-2025`) and lays each row out a whole number of pixels tall
 /// (`epaint/src/text/text_layout.rs:971`), so a line one line box tall where that box is a
-/// fraction of a pixel (`sidebar.font`'s size × `defaults.line_height`) paints the whole row
+/// fraction of a pixel (`sidebar.item_label(NONE)`'s size × `typography.line_height_multiplier`) paints the whole row
 /// from the rounded corner.
 fn painted(ui: &egui::Ui, rect: egui::Rect, galley: &egui::Galley) -> egui::Rect {
     use egui::emath::GuiRounding as _;
@@ -1413,9 +1413,11 @@ pub(crate) fn theme_tab(
         note(ui, "none", true);
     }
     for note in atlas.notes() {
-        let text = format!("{note:?}");
-        let kind: String = text.chars().take_while(|c| c.is_alphanumeric()).collect();
-        row(ui, &kind, text);
+        let kind: String = format!("{note:?}")
+            .chars()
+            .take_while(|c| c.is_alphanumeric())
+            .collect();
+        row(ui, &kind, crate::demo::note_text(note));
     }
     // The showcase's own faces at other weights that epaint cannot load (`Semibold::add_face`).
     for (family, weight) in semibold.invalid() {

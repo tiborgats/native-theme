@@ -349,15 +349,11 @@ pub(crate) fn read_next_system() -> NextSystem {
 /// Why an install did not build, as the 0.8.0 model's text to report (a failed desktop read, a
 /// preset or palette it has none of, a theme the connector cannot install).
 #[derive(Debug)]
-pub(crate) enum BuildError {
-    Next(String),
-}
+pub(crate) struct BuildError(pub(crate) String);
 
 impl std::fmt::Display for BuildError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            BuildError::Next(error) => f.write_str(error),
-        }
+        f.write_str(&self.0)
     }
 }
 
@@ -368,11 +364,9 @@ impl BuildError {
     /// The error the watcher's `rebuild` returns, which takes the 0.7.2 model's type: the
     /// 0.8.0 model's text as the error of the showcase's rebuild.
     fn into_native(self) -> native_theme::Error {
-        match self {
-            BuildError::Next(error) => native_theme::Error::ReaderFailed {
-                reader: "showcase-egui rebuild",
-                source: error.into(),
-            },
+        native_theme::Error::ReaderFailed {
+            reader: "showcase-egui rebuild",
+            source: self.0.into(),
         }
     }
 }
@@ -489,7 +483,7 @@ fn next_atlas(
     let builder =
         ThemeAtlas::next_builder(light, light_inactive, dark, dark_inactive).os_mode(os_mode);
     let unmapped = |e: native_theme_egui::next::Unmapped| {
-        BuildError::Next(format!("Theme '{}' cannot be installed: {e}", light.name))
+        BuildError(format!("Theme '{}' cannot be installed: {e}", light.name))
     };
     #[cfg(feature = "system-fonts")]
     let builder =
@@ -903,13 +897,13 @@ impl App {
     ) -> Result<(OldAtlas, Option<String>), BuildError> {
         let (alone, preset) = match &settings.theme {
             ThemeChoice::Default => {
-                let system = system.clone().map_err(BuildError::Next)?;
+                let system = system.clone().map_err(BuildError)?;
                 let preset = system.preset_id().as_str().to_owned();
                 (system, Some(preset))
             }
             ThemeChoice::Preset(name) => (
                 native_theme::next::Theme::preset(Preset::from_name(name).ok_or_else(|| {
-                    BuildError::Next(format!(
+                    BuildError(format!(
                         "Failed to load preset '{name}': the 0.8.0 model has no preset of that name"
                     ))
                 })?),
@@ -920,7 +914,7 @@ impl App {
             None => (alone, None),
             Some(name) => {
                 let palette = Palette::from_name(name).ok_or_else(|| {
-                    BuildError::Next(format!(
+                    BuildError(format!(
                         "Failed to load palette '{name}': no bundled palette"
                     ))
                 })?;

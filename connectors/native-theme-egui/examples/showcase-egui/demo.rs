@@ -247,6 +247,13 @@ impl Registry {
     pub(crate) fn note_last(&mut self, what: &'static str, note: &str) {
         self.amend_last(|i| i.not_themeable.push((what, note.to_string())));
     }
+    /// Add a *Not themeable* line `what` to the last record for each of the atlas's `notes`, in
+    /// prose ([`note_text`]).
+    pub(crate) fn notes_last(&mut self, what: &'static str, notes: &[native_theme_egui::Note]) {
+        for note in notes {
+            self.note_last(what, &note_text(note));
+        }
+    }
     /// Add a *Not themeable* line to every record this pass names the element `id`: a chrome
     /// element is its panel and the row inside it, and Widget Info shows either.
     pub(crate) fn note_element(&mut self, id: &str, what: &'static str, note: &str) {
@@ -261,9 +268,7 @@ impl Registry {
     /// Add each of `notes`, the notes [`flat`] returned, to the last record, and
     /// [`FLAT_FOCUS_NOTE`].
     pub(crate) fn flat_last(&mut self, notes: &[native_theme_egui::Note]) {
-        for note in notes {
-            self.note_last("flat button", &format!("{note:?}"));
-        }
+        self.notes_last("flat button", notes);
         self.note_last(FLAT_FOCUS_NOTE.0, FLAT_FOCUS_NOTE.1);
     }
     /// Note on the last record that it is a button drawn in a `ghost` scope.
@@ -272,6 +277,45 @@ impl Registry {
             i.not_themeable
                 .push((GHOST_NOTE.0, GHOST_NOTE.1.to_string()));
         });
+    }
+}
+
+/// `note`, a note of the atlas, as a line of prose naming the value's home or the family, as
+/// `Note`'s own documentation describes each kind; a kind newer than this showcase in its
+/// `Debug` form.
+pub(crate) fn note_text(note: &native_theme_egui::Note) -> String {
+    use native_theme_egui::Note;
+    match note {
+        Note::ValueSanitised { path, .. } => {
+            format!(
+                "{path}: not a finite value, or a text size not a positive one, replaced by the \
+                 documented fallback"
+            )
+        }
+        Note::ValueSaturated { path, .. } => {
+            format!("{path}: a length past epaint's i8 bound, saturated")
+        }
+        Note::FontFamilyUnavailable {
+            family, substitute, ..
+        } => match substitute {
+            Some(substitute) => {
+                format!("the font family {family} is not available, drawn in {substitute}")
+            }
+            None => format!("the font family {family} is not available, drawn in egui's own face"),
+        },
+        Note::FontWeightAxisUnsupported { family, .. } => {
+            format!("the face of {family} has no weight axis, drawn at its own weight")
+        }
+        Note::TransparentFill { path, .. } => {
+            format!("{path}: a fill of alpha 0, so no background is painted in that state")
+        }
+        Note::FontDataInvalid { family, .. } => format!(
+            "a face registered as {family} failed to load, the next face in its chain drawn"
+        ),
+        Note::Unmapped { path, .. } => {
+            format!("{path}: stated in a form egui cannot draw")
+        }
+        _ => format!("{note:?}"),
     }
 }
 
@@ -2111,18 +2155,18 @@ pub(crate) fn nested_scroll_in<T>(
 
 /// A row of tabs as the theme states them, in one `Role::Tab` scope (§10.4): each tab a
 /// `Button::new(label).selected(..)`, whose own flag picks the selected tab's colours (§6.2) —
-/// the cell's `tab.background_color`, `tab.active_background` and `tab.active_text_color`,
-/// `tab.hover_background` (in place of the idle fill, over the strip) and `tab.hover_text_color`,
-/// `tab.min_height`, the tab's padding and font (on the 0.8.0 model `tab.tab(<state>)`,
-/// `tab.label(<state>)`, `tab.bar(NONE)`) — at least `look`'s least width wide
+/// the cell's `tab.tab(NONE).fill`, `tab.tab(SELECTED).fill` and `tab.label(SELECTED).color`,
+/// `tab.tab(HOVER).fill` (in place of the idle fill, over the strip) and
+/// `tab.label(HOVER).color`, `tab.tab(NONE).min_size[1]`, the tab's padding and font
+/// (`tab.tab(<state>)`, `tab.label(<state>)`) — at least `look`'s least width wide
 /// ([`TabLook::min_width`]), which egui's `Button` never reads from the style (connector spec
-/// §5.3, T18(a)), on a strip in `tab.bar_background`, the tabs the scope's `item_spacing.x`
-/// apart (`tab.item_gap` where stated). `tab.border` is the selected tab's (docs/platform-facts.md §2.11: KDE
+/// §5.3, T18(a)), on a strip in `tab.bar(NONE).fill`, the tabs the scope's `item_spacing.x`
+/// apart (`tab.item_gap` where stated). `tab.tab(SELECTED).stroke` is the selected tab's (docs/platform-facts.md §2.11: KDE
 /// strokes the selected tab only, an unselected one with no pen; WinUI's selected tab alone has
 /// a border), so an unselected tab's stroke is set per call to the scope's width in no colour,
 /// which keeps every tab the size its padding gives; and a tab is rounded on its two top corners
 /// only, as both platforms that state a tab radius round it (Breeze `CornersTop`, WinUI
-/// `TopCornerRadiusFilterConverter`, §2.11), the model's one `tab.border.corner_radius` on
+/// `TopCornerRadiusFilterConverter`, §2.11), the model's one `tab.tab(SELECTED).corners` on
 /// each. The selected tab carries the line the theme states for it ([`tab_indicator`]); the
 /// theme states no line under the row, so none is drawn there. Where the theme states
 /// `tab.active_outward_corner_radius` ([`TabLook::flare`]), the selected tab's bottom corners
@@ -2153,7 +2197,7 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                 x: bar.margin.unwrap_or_default(),
                 ..egui::Vec2::ZERO
             };
-            // The strip in `tab.bar_background`, the tab scope's `panel_fill`.
+            // The strip in `tab.bar(NONE).fill`, the tab scope's `panel_fill`.
             let strip = egui::Frame::NONE
                 .fill(ui.visuals().panel_fill)
                 .inner_margin(padding);
@@ -2162,7 +2206,7 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     ui.set_min_width(ui.available_width());
                 }
                 let mut tabs = |ui: &mut egui::Ui, reg: &mut Registry| {
-                    // The scope's `tab.border` radius and width.
+                    // The scope's `tab.tab(SELECTED).stroke` width and corners.
                     let idle = ui.visuals().widgets.inactive;
                     let top = egui::CornerRadius {
                         sw: 0,

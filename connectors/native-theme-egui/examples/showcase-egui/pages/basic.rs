@@ -1094,9 +1094,7 @@ fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &m
         text = Some(field_text(ui, &field, &frame, AREA_TEXT, false));
         field
     });
-    for note in notes {
-        reg.note_last("frame", &format!("{note:?}"));
-    }
+    reg.notes_last("frame", &notes);
     reg.tag("basic.text_area.field", &area);
     if let Some(text) = text {
         reg.place(ui, "basic.text_area.field.text", text);
@@ -1849,8 +1847,9 @@ fn list_query(variant: ListVariant, state: NextState) -> ListQuery {
 /// egui's own, a frame with none (`Frame::NONE`), and all of them without an installed 0.8.0
 /// theme; no padding of its own (a row pads its text). With it, the radius of its inside, its
 /// corners' radius less its stroke's width (egui lays a frame's content inside its stroke, and
-/// the frame has no margin), none where that is not a positive length.
-fn list_frame(r: Option<&ResolvedTheme>, variant: ListVariant) -> (egui::Frame, f32) {
+/// the frame has no margin), none where that is not a positive length; a pill's inside is a
+/// pill, the same largest radius (`next::radius_of`), which epaint clamps to each fill.
+pub(crate) fn list_frame(r: Option<&ResolvedTheme>, variant: ListVariant) -> (egui::Frame, f32) {
     let mut frame = egui::Frame::NONE;
     let own = f32::from(frame.corner_radius.nw);
     let Some(r) = r else {
@@ -1866,6 +1865,11 @@ fn list_frame(r: Option<&ResolvedTheme>, variant: ListVariant) -> (egui::Frame, 
     }
     let radius = next::radius_of(&part).unwrap_or(own);
     frame = frame.corner_radius(to_corner_radius(frame.corner_radius, radius));
+    let pill = part.stated.contains(PartStated::CORNERS)
+        && matches!(part.corners.radius, native_theme::next::CornerRadius::Pill);
+    if pill {
+        return (frame, radius);
+    }
     (frame, (radius - frame.stroke.width).max(own))
 }
 

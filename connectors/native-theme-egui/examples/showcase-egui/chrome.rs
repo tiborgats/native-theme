@@ -108,7 +108,7 @@ const NO_MINIMUM: f32 = 0.0;
 pub(crate) const MENU_BAR_PADDING: f32 = 8.0;
 
 /// The toolbar's padding on a side the theme leaves unstated twice over, neither
-/// `toolbar.border.padding` nor `layout.container_margin` stating it (spec §3.1): the gpui
+/// `toolbar.bar(NONE).padding` nor `layout.container_margin` stating it (spec §3.1): the gpui
 /// showcase's `TOOLBAR_PADDING` (`showcase-gpui/demo.rs`), the showcases' own choice, which the
 /// toolbar's Widget Info names.
 pub(crate) const TOOLBAR_PADDING: f32 = 8.0;
@@ -213,9 +213,9 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
     // The panel's own height, `interact_size.y` of the `Ui` it is shown in plus its frame
     // (`egui/src/containers/panel.rs:1068-1073`).
     fit_row(ui, shrink);
-    // The line under the bar is the panel's own, in `toolbar.border`'s colour and width (the
-    // toolbar scope's `noninteractive.bg_stroke`, `egui/src/containers/panel.rs:909-911`), as
-    // the status bar's line above it is `status_bar.border`'s.
+    // The line under the bar is the panel's own, in `toolbar.bar(NONE).stroke`'s colour and
+    // width (the toolbar scope's `noninteractive.bg_stroke`, `egui/src/containers/panel.rs:909-911`),
+    // as the status bar's line above it is `status_bar.bar.stroke`'s.
     let out = egui::Panel::top("chrome-bar")
         .frame(seams.frame)
         .show(ui, |ui| {
@@ -1408,8 +1408,8 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                     }
                 }
             });
-            let r = app.atlas.next_shown(ui.ctx()).cloned();
-            crate::info::widget_tab(ui, r.as_ref(), view, &mut app.registry);
+            let r = app.atlas.next_shown(ui.ctx());
+            crate::info::widget_tab(ui, r, view, &mut app.registry);
         }
         InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.semibold, &app.manifest),
     }

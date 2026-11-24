@@ -49,9 +49,7 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
         )
         .accessible_name("TextEdit (multiline)")
     });
-    for note in notes {
-        reg.note_last("frame", &format!("{note:?}"));
-    }
+    reg.notes_last("frame", &notes);
     let id = ui.make_persistent_id("inputs/password");
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (password)", |ui| {
         let frame = field_frame(ui, id, r, next::input_frame);

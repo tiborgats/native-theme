@@ -131,13 +131,9 @@ pub(crate) fn show(
                                             // A colour value beside its swatch, as the gpui Theme
                                             // Map shows every colour
                                             // (`showcase-gpui/demo.rs:8987-9011`).
-                                            let colour =
-                                                crate::info::row_colour(entry, (json, preset));
-                                            for (ix, text) in
-                                                crate::info::row_cells(entry, (json, preset))
-                                                    .into_iter()
-                                                    .enumerate()
-                                            {
+                                            let (cells, colour) =
+                                                crate::info::row_cells(entry, (json, preset));
+                                            for (ix, text) in cells.into_iter().enumerate() {
                                                 let swatch = colour.filter(|_| ix == 1);
                                                 row.col(|ui| {
                                                     heights.body_cell(ui, |ui| {

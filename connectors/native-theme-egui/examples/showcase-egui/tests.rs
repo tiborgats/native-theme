@@ -2723,7 +2723,7 @@ fn the_watchers_rebuild_error_is_shown_until_a_later_install() {
             App::record_rebuild(
                 &app.rebuilt,
                 current,
-                Err(crate::app::BuildError::Next(watch_failure().to_string()))
+                Err(crate::app::BuildError(watch_failure().to_string()))
             )
             .is_err()
         );
@@ -4332,6 +4332,95 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() -> Result<(), String> {
     Ok(())
 }
 
+/// A note of the atlas a widget's record carries under *Not themeable* is a line of prose that
+/// names the value's home, not the note's `Debug` form: the Basic text area's frame of corners
+/// whose radii differ corner by corner.
+#[test]
+fn a_records_atlas_note_is_prose_naming_the_home() -> Result<(), String> {
+    use native_theme::next::{
+        CornerCurve, CornerRadius, Corners, InputRule, PartPatch, ThemePatch,
+    };
+    let corners = Corners {
+        radius: CornerRadius::PerCorner {
+            top_left: 2.0,
+            top_right: 6.0,
+            bottom_right: 6.0,
+            bottom_left: 6.0,
+        },
+        curve: CornerCurve::Circular,
+    };
+    let (harness, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |_| {
+        Some(ThemePatch::new().text_area(InputRule::new().field(PartPatch::new().corners(corners))))
+    })?;
+    let notes: Vec<String> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "TextEdit (multiline)")
+        .flat_map(|r| r.info.not_themeable.iter())
+        .filter(|(what, _)| *what == "frame")
+        .map(|(_, note)| note.clone())
+        .collect();
+    assert_eq!(
+        notes,
+        vec!["text_area.field(NONE).corners: stated in a form egui cannot draw".to_owned()],
+        "the text area's frame notes"
+    );
+    Ok(())
+}
+
+/// The inside of a list frame a pill rounds is a pill, the largest radius egui holds, not that
+/// radius less the frame's stroke; a frame of a length radius keeps the radius less its stroke.
+#[test]
+fn a_pill_list_frames_inside_is_a_pill() -> Result<(), String> {
+    use native_theme::next::{
+        Corners, ListRule, ListVariant, PartPatch, Preset, Stroke, Theme, ThemeContext, ThemePatch,
+    };
+    let theme = Theme::preset(Preset::KdeBreeze);
+    let r = theme.resolve(&ThemeContext::light());
+    let width = r.layout.border_width;
+    if width <= 0.0 {
+        return Err(format!(
+            "kde-breeze's layout.border_width is {width}, no stroke to subtract"
+        ));
+    }
+    let border = r
+        .colors
+        .window
+        .border
+        .ok_or("kde-breeze states no window border")?;
+    let frame_of = |corners: Corners| {
+        let patch = ThemePatch::new().list(
+            ListRule::new().variant(ListVariant::Plain).container(
+                PartPatch::new()
+                    .corners(corners)
+                    .stroke(Stroke::uniform(width, border)),
+            ),
+        );
+        let patched = theme
+            .clone()
+            .with_patch(patch)
+            .resolve(&ThemeContext::light());
+        crate::pages::basic::list_frame(Some(&patched), ListVariant::Plain)
+    };
+    let pill = f32::from(u8::MAX);
+    let (frame, inner) = frame_of(Corners::pill());
+    assert_eq!(
+        (frame.stroke.width, frame.corner_radius, inner),
+        (width, egui::CornerRadius::same(u8::MAX), pill),
+        "a pill frame's inside is not a pill"
+    );
+    let length = 4.0 * width;
+    let (frame, inner) = frame_of(Corners::uniform(length));
+    assert_eq!(
+        (frame.stroke.width, inner),
+        (width, length - width),
+        "a frame of radius {length} has not its radius less its stroke inside"
+    );
+    Ok(())
+}
+
 /// The Basic page applies the leaves egui never reads from the style, per call, as the connector
 /// spec asks of the application (§5.3, §5.4), of the installed 0.8.0 theme: each push button is
 /// at least `button.body(NONE).min_size` where stated, each text field
@@ -4343,6 +4432,9 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() -> Result<(), String> {
 fn the_basic_page_applies_the_per_call_leaves() -> Result<(), String> {
     use native_theme::next::{DecorationKind, TextStated, WidgetState};
     use native_theme_egui::next::{fill_of, state_fill_of};
+    // whether a preset states `button.body(NONE).min_size`'s width, its height and
+    // `input.field(NONE).min_size[1]`, so no check below passes on an unstated value alone
+    let mut stated = [false; 3];
     for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
@@ -4359,6 +4451,9 @@ fn the_basic_page_applies_the_per_call_leaves() -> Result<(), String> {
             .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
         let [min_width, min_height] = r.button.body(WidgetState::NONE).min_size;
         let field_height = r.input.field(WidgetState::NONE).min_size[1];
+        for (seen, value) in stated.iter_mut().zip([min_width, min_height, field_height]) {
+            *seen |= value.is_some();
+        }
         let rect_of = |kind: &str| {
             harness
                 .state()
@@ -4437,6 +4532,17 @@ fn the_basic_page_applies_the_per_call_leaves() -> Result<(), String> {
             vec![underline],
             "{preset}: the link's underline at rest is not link.label(NONE)'s decoration"
         );
+    }
+    for (seen, leaf) in stated.into_iter().zip([
+        "button.body(NONE).min_size[0]",
+        "button.body(NONE).min_size[1]",
+        "input.field(NONE).min_size[1]",
+    ]) {
+        if !seen {
+            return Err(format!(
+                "neither kde-breeze nor material-3 states {leaf}: its check checked nothing"
+            ));
+        }
     }
     Ok(())
 }
@@ -5460,7 +5566,7 @@ fn the_tables_centre_their_text_in_its_row() -> Result<(), String> {
                     "kde-breeze".to_string()
                 } else {
                     let row = manifest.rows.first().ok_or("mapping.toml has no row")?;
-                    let [leaf, ..] = crate::info::row_cells(row, (&json, preset));
+                    let ([leaf, ..], _) = crate::info::row_cells(row, (&json, preset));
                     leaf
                 };
                 let row_height = next_table_row(&page, &r, false, item.size_px)?;
@@ -9936,7 +10042,7 @@ fn the_theme_map_names_the_tests_that_check_a_per_call_route() {
     assert!(!tests.is_empty(), "no test function was read");
     let mut wrong = Vec::new();
     for row in &manifest.rows {
-        let cells = crate::info::row_cells(row, (&json, TEST_PRESET));
+        let (cells, _) = crate::info::row_cells(row, (&json, TEST_PRESET));
         if let Some(cell) = cells.iter().find(|cell| names_a_clause(cell)) {
             wrong.push(format!("{}: {cell:?} names a clause", row.leaf));
         }
@@ -14370,17 +14476,34 @@ fn the_tables_draw_a_stated_horizontal_cell_padding() -> Result<(), String> {
             true,
         ),
     ] {
-        let (harness, r) = open_patched(page, egui::Theme::Light, "kde-breeze", patch)?;
-        stated(&r)?;
-        let records = harness.state().registry.records();
-        let of = |kind: &str| -> Vec<egui::Rect> {
-            records
+        let rects = |harness: &Harness<'_, App>, kind: &str| -> Vec<egui::Rect> {
+            harness
+                .state()
+                .registry
+                .records()
                 .iter()
                 .filter(|r| r.info.kind == kind)
                 .map(|r| r.whole)
                 .collect()
         };
-        let (headers, cells) = (of(header_kind), of(cell_kind));
+        // the table's left, from the unpatched page: its header's first cell less the side it
+        // draws there, the stated one, else egui_extras' own half spacing
+        let unpatched = open_page_under(page, egui::Theme::Light, "kde-breeze");
+        let plain_left = unpatched
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or("kde-breeze: no 0.8.0 theme installed")
+            .map(|r| native_theme_egui::next::padding_of(&r.list.header(table_query()))[3])?
+            .unwrap_or(own);
+        let table_left = rects(&unpatched, header_kind)
+            .first()
+            .ok_or_else(|| format!("{page:?}: no header recorded unpatched"))?
+            .left()
+            - plain_left;
+        let (harness, r) = open_patched(page, egui::Theme::Light, "kde-breeze", patch)?;
+        stated(&r)?;
+        let (headers, cells) = (rects(&harness, header_kind), rects(&harness, cell_kind));
         if headers.len() != columns || cells.is_empty() || cells.len() % columns != 0 {
             return Err(format!(
                 "{page:?}: {} headers and {} cells recorded, not {columns} and whole rows",
@@ -14395,7 +14518,6 @@ fn the_tables_draw_a_stated_horizontal_cell_padding() -> Result<(), String> {
         let first = |row: &[egui::Rect]| row.first().copied().ok_or("an empty row");
         let second = |row: &[egui::Rect]| row.get(1).copied().ok_or("a row of one cell");
         let (top, top_sides) = rows.first().copied().ok_or("no rows")?;
-        let table_left = first(top)?.left() - top_sides[0];
         let mut column = 0.0_f32;
         for &(row, [left, right]) in &rows {
             let cell = first(row)?;

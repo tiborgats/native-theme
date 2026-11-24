@@ -725,8 +725,9 @@ listed here, and a value the theme leaves unstated is egui's own
   outside the part at the offset, so the ring lies outside at the offset
   whatever the alignment says. A `kind` of `Fill` or `Underline` is no
   ring: `next::to_theme` returns `Unmapped("focus_ring.kind")` for it; a
-  ring or second ring stated per side is `Unmapped`, and so are concentric
-  corners, which need the container's radius.
+  second ring stated per side is `Unmapped`, and so are concentric
+  corners, which need the container's radius. A ring stated per side is
+  no ring, with no error and no note.
 - **A part's own focus ring.** Where the part a role's cell reads its fill
   and stroke from states a ring of its own (`PartStyle.focus`, spec §2
   `FocusIndicator`), the plugin strokes that ring in place of
