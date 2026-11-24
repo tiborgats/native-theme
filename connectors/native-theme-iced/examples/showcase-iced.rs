@@ -5741,8 +5741,9 @@ fn list_lit(
 /// `UNFOCUSED_VIEW` too while the window is not active, `window_active`
 /// false ([`view_focus`]). Each property a status leaves unstated is iced's
 /// own flat button's, `button::text` ([`in_state`]). Square: the Basic list
-/// paints this fill and its outline itself, rounded where it meets the
-/// frame ([`list_row_fill`]).
+/// paints this fill and its outline itself, inset by the highlight's margin
+/// and rounded by its corners where stated, else where it meets the frame
+/// ([`list_row_fill`]).
 fn list_row(
     r: &native_theme::next::ResolvedTheme,
     selected: bool,
@@ -6043,19 +6044,27 @@ type UnderPaint<'a> = Box<
 
 /// A Basic list row's fill, painted under the row's button, which paints
 /// none ([`Underlay`]), with [`list_row`]'s border, the hovered row's
-/// outline where the theme states one, on the fill's shape, pushed past
-/// each side the view cuts ([`past_the_cut`]): [`list_row`]'s
-/// background for the row in the state
-/// the button takes from the cursor (Hovered and Pressed both need the
-/// cursor over the row, iced_widget 0.14.2 `src/button.rs:342-354`, and
-/// [`list_row`] fills them alike; the rows always take `on_press`, so the
-/// button is never `Disabled`, the one state the cursor does not decide and
-/// [`list_row`] fills none in), over the part of the row the list shows,
+/// outline where the theme states one, on the fill's shape:
+/// [`list_row`]'s background for the row in the state the button takes
+/// from the cursor (Hovered and Pressed both need the cursor over the row,
+/// iced_widget 0.14.2 `src/button.rs:342-354`, and [`list_row`] fills them
+/// alike; the rows always take `on_press`, so the button is never
+/// `Disabled`, the one state the cursor does not decide and [`list_row`]
+/// fills none in), over the row inset by the highlight's margin,
+/// `list.highlight(<state>).margin`, on each side the theme states it
+/// ([`highlight_box`]). Where the highlight's
+/// corners are stated, `list.highlight(<state>).corners`, the whole box is
+/// filled, rounded by them, and the scrollable's clip, the view (iced_widget
+/// 0.14.2 `src/scrollable.rs:1187`), cuts it, its outline with it, as Breeze
+/// clips a row to the view; elsewhere the part of the box the list shows,
 /// rounded by the frame's inner radius ([`next_inner_radius`]) where it
-/// meets the frame's inside ([`shown_fill`]), as egui's list rows are. The
+/// meets the frame's inside ([`shown_fill`]), as egui's list rows are, and
+/// pushed past each side the view cuts ([`past_the_cut`]). The
 /// rows draw in the scrollable's shown part moved by its scroll (iced_widget
 /// 0.14.2 `src/scrollable.rs:1152`, `:1198-1202`), so the frame's inside,
-/// the scrollable's bounds ([`ListView`]), moves with it.
+/// the scrollable's bounds ([`ListView`]), moves with it. Each state is the
+/// one [`list_row`] fills in: `SELECTED` for a selected row, `HOVER` too
+/// under the pointer, `UNFOCUSED_VIEW` too while the window is not active.
 fn list_row_fill(
     r: &native_theme::next::ResolvedTheme,
     selected: bool,
@@ -6063,13 +6072,27 @@ fn list_row_fill(
     view: ListView,
 ) -> UnderPaint<'static> {
     let style = list_row(r, selected, window_active);
-    let radius = next_inner_radius(r);
+    let inner = next_inner_radius(r);
+    let own_state = if selected {
+        WidgetState::SELECTED.union(view_focus(window_active))
+    } else {
+        view_focus(window_active)
+    };
+    let highlight = |state: WidgetState| {
+        let part = r.list.highlight(state);
+        let corners = iced_next::radius_of(&part);
+        (part, corners)
+    };
+    let (at_rest, hovered) = (
+        highlight(own_state),
+        highlight(own_state.union(WidgetState::HOVER)),
+    );
     Box::new(move |renderer, theme, bounds, cursor, viewport| {
         use iced::advanced::Renderer as _;
-        let status = if cursor.is_over(bounds) {
-            button::Status::Hovered
+        let (status, (part, corners)) = if cursor.is_over(bounds) {
+            (button::Status::Hovered, &hovered)
         } else {
-            button::Status::Active
+            (button::Status::Active, &at_rest)
         };
         let style = style(theme, status);
         let Some(background) = style.background else {
@@ -6083,14 +6106,25 @@ fn list_row_fill(
             y: inside.y + (viewport.y - shown.y),
             ..inside
         };
-        let Some((shown, radius)) = shown_fill(bounds, *viewport, edges, radius) else {
-            return;
+        let row = highlight_box(part, bounds);
+        let (rect, radius) = match corners {
+            Some(stated) => {
+                if row.intersection(viewport).is_none() {
+                    return;
+                }
+                (row, iced::border::Radius::from(*stated))
+            }
+            None => {
+                let Some((shown, radius)) = shown_fill(row, *viewport, edges, inner) else {
+                    return;
+                };
+                (past_the_cut(shown, row, style.border.width), radius)
+            }
         };
         let border = iced::Border {
             radius,
             ..style.border
         };
-        let rect = past_the_cut(shown, bounds, border.width);
         #[cfg(test)]
         {
             LIST_FILLS.with_borrow_mut(|fills| fills.push((bounds, rect, radius, background)));
@@ -6106,6 +6140,33 @@ fn list_row_fill(
             background,
         );
     })
+}
+
+/// `row`, a list row's bounds, inset by `part`'s margin, a list row's
+/// highlight's, on each side the theme states it; as wide and as tall as
+/// `row` on a side it leaves unstated, as iced's own button fills its whole
+/// bounds; no less than empty.
+fn highlight_box(part: &PartStyle, row: iced::Rectangle) -> iced::Rectangle {
+    let m = &part.margin;
+    let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
+    let mut inset = row;
+    if let Some(top) = side(PartStated::MARGIN_TOP, m.top) {
+        inset.y += top;
+        inset.height -= top;
+    }
+    if let Some(bottom) = side(PartStated::MARGIN_BOTTOM, m.bottom) {
+        inset.height -= bottom;
+    }
+    if let Some(left) = side(PartStated::MARGIN_LEFT, m.left) {
+        inset.x += left;
+        inset.width -= left;
+    }
+    if let Some(right) = side(PartStated::MARGIN_RIGHT, m.right) {
+        inset.width -= right;
+    }
+    inset.width = inset.width.max(0.0);
+    inset.height = inset.height.max(0.0);
+    inset
 }
 
 /// `shown`, the part of a list row, `row`, that the list's view shows
@@ -9643,6 +9704,61 @@ fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) ->
     Some(route.to_owned())
 }
 
+/// The route of a Basic list row's corner, line or padding leaf `leaf`
+/// under `r`, the installed 0.8.0 theme, the row's fill in the state it is
+/// filled in, `SELECTED` where `selected`, else `HOVER` ([`list_row_fill`]):
+/// the fill's corners, `list.highlight(<state>).corners` where stated, else
+/// the frame's inner radius, which the frame's line width rounds; the fill's
+/// inset, `list.highlight(<state>).margin` on the side where stated; the
+/// row's padding, which stays 0.7.2's until the Basic page moves.
+fn list_shape_route(r: &native_theme::next::ResolvedTheme, leaf: &str, selected: bool) -> String {
+    let (state, name) = if selected {
+        (WidgetState::SELECTED, "SELECTED")
+    } else {
+        (WidgetState::HOVER, "HOVER")
+    };
+    let part = r.list.highlight(state);
+    let rounded = iced_next::radius_of(&part).is_some();
+    let margin = [
+        ("top", PartStated::MARGIN_TOP),
+        ("right", PartStated::MARGIN_RIGHT),
+        ("bottom", PartStated::MARGIN_BOTTOM),
+        ("left", PartStated::MARGIN_LEFT),
+    ]
+    .into_iter()
+    .find(|(side, _)| leaf == format!("list.border.padding_{side}_px"));
+    match (leaf, margin) {
+        ("list.border.corner_radius_px", _) if rounded => format!(
+            "list_row_fill: the row's whole fill rounded by list.highlight({name}).corners, the \
+             view's clip cutting it"
+        ),
+        ("list.border.corner_radius_px", _) => format!(
+            "list_row_fill: the row's fill rounded where it meets the frame's inside, by the \
+             frame's inner radius, list.container(NONE).corners less its stroke's width \
+             (next_inner_radius), list.highlight({name}).corners being unstated"
+        ),
+        ("list.border.line_width_px", _) if rounded => format!(
+            "list_row_fill: not the fill's corners, which list.highlight({name}).corners round; \
+             the frame's line, list.container(NONE).stroke.width, pads the rows \
+             (list_frame_border)"
+        ),
+        ("list.border.line_width_px", _) => format!(
+            "list_row_fill: list.container(NONE).stroke.width, taken from the frame's corners \
+             for the fill's rounded corners (next_inner_radius), list.highlight({name}).corners \
+             being unstated"
+        ),
+        (_, Some((side, bit))) if part.stated.contains(bit) => format!(
+            "a row's padding; iced_aw's list's 5 px where unstated; list_row_fill: the fill \
+             inset by list.highlight({name}).margin.{side} (highlight_box)"
+        ),
+        (_, Some((side, _))) => format!(
+            "a row's padding; iced_aw's list's 5 px where unstated; list_row_fill: the fill \
+             spans the row's {side} side, list.highlight({name}).margin.{side} being unstated"
+        ),
+        _ => format!("list_row_fill: draws nothing of {leaf}"),
+    }
+}
+
 /// The route of a window menu's layout leaf `leaf` under `r`, the installed
 /// 0.8.0 theme, of a title of the menu bar where `title`
 /// ([`next_title_padding`]), else of a menu's row ([`next_menu_row_padding`],
@@ -10924,22 +11040,16 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              frame's inner radius, this less list.border.line_width (inner_radius)"
                 .into()
         }
-        ("list", "border.corner_radius_px") if under("basic.list.row_") => {
-            "list_row_fill: the row's fill rounded where it meets the frame's inside, by the \
-             frame's inner radius, list.container(NONE).corners less its stroke's width \
-             (next_inner_radius)"
-                .into()
+        ("list", "border.corner_radius_px" | "border.line_width_px")
+            if under("basic.list.row_") =>
+        {
+            list_shape_route(state.next_shown(), leaf, under("basic.list.row_2")).into()
         }
         ("list", "border.line_width_px")
             if under("basic.table.header") || under("basic.table.row_") =>
         {
             "table_row_style: taken from list.border.corner_radius for the fill's rounded \
              corners (inner_radius)"
-                .into()
-        }
-        ("list", "border.line_width_px") if under("basic.list.row_") => {
-            "list_row_fill: list.container(NONE).stroke.width, taken from the frame's corners \
-             for the fill's rounded corners (next_inner_radius)"
                 .into()
         }
         ("list", "border.corner_radius_px") if under("basic.list.") => {
@@ -10957,6 +11067,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("list", f) if side(f).is_some() && under("basic.table.") => {
             "a cell's padding; none where unstated".into()
+        }
+        ("list", f) if side(f).is_some() && under("basic.list.row_") => {
+            list_shape_route(state.next_shown(), leaf, under("basic.list.row_2")).into()
         }
         ("list", f) if side(f).is_some() => {
             "a row's padding; iced_aw's list's 5 px where unstated".into()
@@ -26266,7 +26379,11 @@ mod tests {
     ///   end, the last row at the bottom, where the scrollable's whole-pixel
     ///   translation leaves it within half a pixel of the frame. On the right
     ///   only where the bar floats over the rows (adwaita, macos-tahoe):
-    ///   kde-breeze's bar takes its groove beside them.
+    ///   kde-breeze's bar takes its groove beside them. Where the 0.8.0
+    ///   home `list.highlight(SELECTED)` states a margin and corners
+    ///   (kde-breeze's 1 / 2 px and 4.5 px, adwaita patched with 3 / 4 / 5 /
+    ///   6 px and 7 px), every fill is the whole row inset by the margin and
+    ///   rounded by the corners, which the view's clip cuts.
     #[test]
     fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
         let corners = |nw: f32, ne: f32, sw: f32, se: f32| iced::border::Radius {
@@ -26294,7 +26411,24 @@ mod tests {
         let mut bars = Vec::new();
         let (mut off_grid, mut half_line) = (false, false);
         let mut faults = Vec::new();
-        for preset in ["adwaita", "kde-breeze", "macos-tahoe"] {
+        // The selected row's highlight as each case states it, margin
+        // (top, right, bottom, left) and corners: kde-breeze's 1 and 2 px
+        // and 4.5 px (issue #4's L4), adwaita patched with a margin and
+        // corners of the test's own, the others none.
+        const PATCHED: &str = "[[widgets.list.rules]]\nstates = [\"selected\"]\n\
+             highlight.margin = { top = 3.0, right = 4.0, bottom = 5.0, left = 6.0 }\n\
+             highlight.corners = 7.0\n";
+        for (preset, patch, want_margin, want_corners) in [
+            ("adwaita", None, None, None),
+            ("kde-breeze", None, Some([1.0, 2.0, 1.0, 2.0]), Some(4.5)),
+            ("macos-tahoe", None, None, None),
+            (
+                "adwaita",
+                Some(PATCHED),
+                Some([3.0, 4.0, 5.0, 6.0]),
+                Some(7.0),
+            ),
+        ] {
             let mut state = State {
                 accessibility: native_theme_iced::AccessibilityPreferences::default(),
                 side_panel_visible: false,
@@ -26303,6 +26437,45 @@ mod tests {
             assert!(
                 state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light)
             );
+            if let Some(toml) = patch {
+                let patch = native_theme::next::ThemePatch::from_toml(toml);
+                assert!(patch.is_ok(), "the patch: {patch:?}");
+                if let Ok(patch) = patch {
+                    state.next_resolved.apply_patch(&patch);
+                }
+            }
+            let preset = if patch.is_some() {
+                format!("{preset}, patched")
+            } else {
+                preset.to_owned()
+            };
+            // The selected row's highlight on the 0.8.0 model, its margin
+            // on the sides it states and its corners.
+            let lit = state.next_shown().list.highlight(WidgetState::SELECTED);
+            let stated = |bit: PartStated, v: f32| lit.stated.contains(bit).then_some(v);
+            let m = &lit.margin;
+            let margin = [
+                stated(PartStated::MARGIN_TOP, m.top),
+                stated(PartStated::MARGIN_RIGHT, m.right),
+                stated(PartStated::MARGIN_BOTTOM, m.bottom),
+                stated(PartStated::MARGIN_LEFT, m.left),
+            ];
+            let lit_corners = iced_next::radius_of(&lit);
+            if want_margin.map_or(margin != [None; 4], |want| margin != want.map(Some))
+                || lit_corners != want_corners
+            {
+                faults.push(format!(
+                    "{preset}: list.highlight(SELECTED) states the margin {margin:?} and the \
+                     corners {lit_corners:?}, want {want_margin:?} and {want_corners:?}"
+                ));
+            }
+            let [m_top, m_right, m_bottom, m_left] = margin.map(|side| side.unwrap_or_default());
+            let boxed = |rect: iced::Rectangle| iced::Rectangle {
+                x: rect.x + m_left,
+                y: rect.y + m_top,
+                width: rect.width - m_left - m_right,
+                height: rect.height - m_top - m_bottom,
+            };
             let r = state.current_resolved.clone();
             let l = &r.list;
             let inner = l.border.corner_radius - l.border.line_width;
@@ -26447,15 +26620,29 @@ mod tests {
                 }
             };
 
+            // Where the highlight states its corners, the whole box, inset
+            // by its margin and rounded by them, which the view's clip cuts;
+            // elsewhere `want`, the part shown rounded where it meets the
+            // frame.
+            let shaped =
+                |i: usize, shown: iced::Rectangle, want: iced::border::Radius| match want_corners {
+                    Some(radius) => (boxed(row(i)), iced::border::Radius::from(radius)),
+                    None => (shown, want),
+                };
             let last = BASIC_LIST_VISIBLE as usize - 1;
             for i in 0..=last {
                 let (top, bottom) = (i == 0, i == last);
+                let (rect, radius) = shaped(
+                    i,
+                    row(i),
+                    corners(left(top), right(top), left(bottom), right(bottom)),
+                );
                 check(
                     format!("at rest, basic.list.row_{} selected", i + 1),
                     fills(&mut state, i, None),
                     row(i),
-                    row(i),
-                    corners(left(top), right(top), left(bottom), right(bottom)),
+                    rect,
+                    radius,
                 );
             }
 
@@ -26469,19 +26656,23 @@ mod tests {
                 ..inside
             };
             let shown = |i: usize, t: f32| row(i).intersection(&view_at(t)).unwrap_or(row(i));
+            let (rect, radius) =
+                shaped(0, shown(0, by), corners(left(true), right(true), 0.0, 0.0));
             check(
                 "half a row down, row 1 selected".to_owned(),
                 fills(&mut state, 0, Some((by, at))),
                 row(0),
-                shown(0, by),
-                corners(left(true), right(true), 0.0, 0.0),
+                rect,
+                radius,
             );
+            let (rect, radius) =
+                shaped(3, shown(3, by), corners(0.0, 0.0, left(true), right(true)));
             check(
                 "half a row down, row 4 selected".to_owned(),
                 fills(&mut state, 3, Some((by, at))),
                 row(3),
-                shown(3, by),
-                corners(0.0, 0.0, left(true), right(true)),
+                rect,
+                radius,
             );
 
             // To the end: the scrollable's translation is the end's offset,
@@ -26489,12 +26680,17 @@ mod tests {
             let end = BASIC_LIST_ITEMS - 1;
             let t = ((BASIC_LIST_ITEMS as f32 - BASIC_LIST_VISIBLE) * rh).round();
             off_grid |= (t - (BASIC_LIST_ITEMS as f32 - BASIC_LIST_VISIBLE) * rh).abs() > 0.01;
+            let (rect, radius) = shaped(
+                end,
+                shown(end, t),
+                corners(0.0, 0.0, left(true), right(true)),
+            );
             check(
                 format!("at the end, row {} selected", end + 1),
                 fills(&mut state, end, Some((BASIC_LIST_ITEMS as f32 * rh, at))),
                 row(end),
-                shown(end, t),
-                corners(0.0, 0.0, left(true), right(true)),
+                rect,
+                radius,
             );
         }
         assert!(
@@ -34583,37 +34779,72 @@ mod tests {
     }
 
     /// L1's review of E5: a hovered row of the Basic list that the view cuts,
-    /// the first scrolled half a row (a whole pixel) up under kde-breeze
-    /// light, is filled and outlined on the part the view shows, its cut top
-    /// side pushed out by the line's width ([`past_the_cut`]), so that the
-    /// scrollable's clip hides the outline there: the quad's top edge lies a
-    /// line width above the view's, its other sides on the shown part's.
+    /// the first scrolled half a row (a whole pixel) up, shows no outline
+    /// along the cut. Under kde-breeze light, whose `list.highlight(HOVER)`
+    /// states a margin and corners (issue #4's L4), the whole row inset by
+    /// the margin is filled and outlined, rounded by the corners, its top
+    /// edge, the line's width with it, above the view's, so that the
+    /// scrollable's clip cuts the outline with the fill, as Breeze clips a
+    /// row to the view. Under adwaita light patched with a hovered outline of
+    /// the test's own, `list.highlight(HOVER).stroke`, where no margin or
+    /// corners are stated, the part the view shows is filled and outlined,
+    /// its cut top side pushed out by the line's width ([`past_the_cut`]):
+    /// the quad's top edge lies a line width above the view's, its other
+    /// sides on the shown part's.
     #[test]
     fn a_hovered_list_row_cut_by_the_view_has_no_outline_along_the_cut() {
         let size = Size::new(WINDOW_SIZE.0, 2000.0);
+        let mut failures = Vec::new();
+        for (preset, patched) in [("kde-breeze", false), ("adwaita", true)] {
+            failures.extend(cut_row_faults(preset, patched, size));
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// The faults of the first Basic list row, hovered and cut by the view
+    /// half a row (a whole pixel) up, under `preset` light, its
+    /// `list.highlight(HOVER).stroke` patched with a 1 px line where
+    /// `patched` (`a_hovered_list_row_cut_by_the_view_has_no_outline_along_the_cut`).
+    fn cut_row_faults(preset: &str, patched: bool, size: Size) -> Vec<String> {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             side_panel_visible: false,
             ..State::default()
         };
-        assert!(state.install_in_mode(
-            ThemeChoice::Preset("kde-breeze".to_owned()),
-            AppColorMode::Light
-        ));
-        let r = state.current_resolved.clone();
-        let line = r.defaults.border.line_width;
-        assert!(
-            r.list.hover_border_color.is_some() && line > 0.0,
-            "kde-breeze outlines a hovered row"
-        );
+        assert!(state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light));
+        if patched {
+            match with_home(
+                &state.next_resolved,
+                "list.highlight(HOVER).stroke.color",
+                "#13579b",
+            ) {
+                Some(r) => state.next_resolved = r,
+                None => return vec![format!("{preset}: no patch reaches the hovered outline")],
+            }
+        }
+        let r = state.next_shown().clone();
+        let lit = r.list.highlight(WidgetState::HOVER);
+        let (Some(fill), Some(line)) = (
+            iced_next::state_fill_of(&lit),
+            iced_next::stroke_width_of(&lit).filter(|line| *line > 0.0),
+        ) else {
+            return vec![format!("{preset}: no hovered fill and outline: {lit:?}")];
+        };
+        let corners = iced_next::radius_of(&lit);
+        let mut failures = Vec::new();
+        if corners.is_some() != (preset == "kde-breeze") {
+            failures.push(format!(
+                "{preset}: list.highlight(HOVER).corners: {corners:?}"
+            ));
+        }
         let (_, rects, _) = frame_of(&state, view(&state), size);
         let (Some(frame), Some(row_1)) = (
             rects.get("basic.list.frame").copied(),
             rects.get("basic.list.row_1").copied(),
         ) else {
-            panic!("the Basic list is not drawn");
+            return vec![format!("{preset}: the Basic list is not drawn")];
         };
-        let w = r.list.border.line_width;
+        let w = list_frame_border(&r).width;
         let inside = iced::Rectangle {
             x: frame.x + w,
             y: frame.y + w,
@@ -34626,12 +34857,13 @@ mod tests {
             ..inside
         };
         let Some(shown) = row_1.intersection(&view_by) else {
-            panic!("the first row leaves the view at {by}");
+            return vec![format!("{preset}: the first row leaves the view at {by}")];
         };
-        assert!(
-            shown.y > row_1.y + 0.5,
-            "the view cuts the first row's top: {shown:?} of {row_1:?}"
-        );
+        if shown.y <= row_1.y + 0.5 {
+            return vec![format!(
+                "{preset}: the view does not cut the first row's top: {shown:?} of {row_1:?}"
+            )];
+        }
         let at = iced::Point::new(inside.x + inside.width / 4.0, shown.center_y() - by);
         LIST_FILLS.with_borrow_mut(Vec::clear);
         LIST_EDGES.with_borrow_mut(Vec::clear);
@@ -34655,29 +34887,66 @@ mod tests {
             .into_iter()
             .filter(|(bounds, _)| ours(bounds))
             .collect();
-        let hover = iced::Background::Color(to_color(r.list.hover_background));
+        let hover = iced::Background::Color(fill);
         let near = |a: f32, b: f32| (a - b).abs() < 0.01;
-        let mut failures = Vec::new();
         if fills.is_empty() || edges.len() != fills.len() {
-            failures.push(format!("the first row's fills {fills:?}, edges {edges:?}"));
+            failures.push(format!(
+                "{preset}: the first row's fills {fills:?}, edges {edges:?}"
+            ));
         }
-        for ((_, rect, _, colour), (_, border)) in fills.iter().zip(&edges) {
+        // kde-breeze's whole box, inset by the margin it states on every
+        // side; adwaita's shown part, its top a line width above the view's.
+        let m = &lit.margin;
+        let margins = [
+            PartStated::MARGIN_TOP,
+            PartStated::MARGIN_RIGHT,
+            PartStated::MARGIN_BOTTOM,
+            PartStated::MARGIN_LEFT,
+        ];
+        let want = match corners {
+            Some(_) if margins.iter().all(|bit| lit.stated.contains(*bit)) => iced::Rectangle {
+                x: row_1.x + m.left,
+                y: row_1.y + m.top,
+                width: row_1.width - m.left - m.right,
+                height: row_1.height - m.top - m.bottom,
+            },
+            Some(_) => {
+                failures.push(format!("{preset}: the hovered highlight's margin: {m:?}"));
+                return failures;
+            }
+            None => iced::Rectangle {
+                y: shown.y - line,
+                height: shown.height + line,
+                ..shown
+            },
+        };
+        if want.y + line > shown.y + 0.01 {
+            failures.push(format!(
+                "{preset}: the quad {want:?} keeps its top line in the view from {shown:?}"
+            ));
+        }
+        for ((_, rect, radius, colour), (_, border)) in fills.iter().zip(&edges) {
             if *colour != hover || border.width != line {
                 failures.push(format!(
-                    "the first row is filled {colour:?}, outlined {border:?}"
+                    "{preset}: the first row is filled {colour:?}, outlined {border:?}"
                 ));
             }
-            let pushed = near(rect.y, shown.y - line)
-                && near(rect.y + rect.height, shown.y + shown.height)
-                && near(rect.x, shown.x)
-                && near(rect.width, shown.width);
-            if !pushed {
+            if corners.is_some_and(|c| *radius != iced::border::Radius::from(c)) {
                 failures.push(format!(
-                    "the first row's quad is {rect:?}, want {shown:?} with its top {line} higher"
+                    "{preset}: the first row is rounded {radius:?}, want {corners:?}"
+                ));
+            }
+            let drawn = near(rect.y, want.y)
+                && near(rect.height, want.height)
+                && near(rect.x, want.x)
+                && near(rect.width, want.width);
+            if !drawn {
+                failures.push(format!(
+                    "{preset}: the first row's quad is {rect:?}, want {want:?}"
                 ));
             }
         }
-        assert!(failures.is_empty(), "{failures:#?}");
+        failures
     }
 
     /// L2's review of E5: a side the view cuts by less than the line's width
