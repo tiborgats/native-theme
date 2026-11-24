@@ -205,6 +205,21 @@ fn a_selected_item_wins_over_the_pointer() {
     }
 }
 
+/// The line between toggles is GtkSeparator's `$border_color`, the
+/// splitter's line, 1 px wide (_misc.scss:21-24 at libadwaita 1.10.0).
+#[test]
+fn the_segments_are_parted_by_the_separator_s_line() {
+    for theme in both_schemes() {
+        let line = theme.splitter.handle(WidgetState::NONE).fill;
+        assert_ne!(line, Paint::None);
+        assert_eq!(
+            theme.segmented_control.separator(WidgetState::NONE).fill,
+            line
+        );
+        assert_eq!(theme.segmented_control.separator_width, 1.0);
+    }
+}
+
 #[test]
 fn a_checked_toolbar_button_keeps_its_fill() {
     for theme in both_schemes() {

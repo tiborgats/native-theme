@@ -1055,14 +1055,17 @@ fn a_segment_separator_is_the_separator_parts_fill_where_stated() -> TestResult 
     for (preset, r) in every_preset() {
         let style = super::segment_separator(&r, false)?(&to_theme(&r)?);
         let track = r.segmented_control.track(WidgetState::NONE);
+        let separator = r.segmented_control.separator(WidgetState::NONE);
         // a track stated with no stroke gives no line (the test below)
-        let outline =
-            if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None) {
-                None
-            } else {
-                Some(line(&track, "stroke")?.color)
-            };
-        assert_eq!(background_color(style.background), outline, "{preset:?}");
+        let expected = if separator.stated.contains(PartStated::FILL) {
+            Some(fill(&separator, "separator(NONE).fill")?)
+        } else if track.stated.contains(PartStated::STROKE) && matches!(track.stroke, Stroke::None)
+        {
+            None
+        } else {
+            Some(line(&track, "stroke")?.color)
+        };
+        assert_eq!(background_color(style.background), expected, "{preset:?}");
     }
     let patch = ThemePatch::new().segmented_control(
         SegmentedControlRule::new().separator(PartPatch::new().fill(Paint::Solid(DISTINCT))),
@@ -1086,15 +1089,18 @@ fn a_track_with_no_stroke_and_no_separator_fill_has_no_separator_line() -> TestR
     let patch = ThemePatch::new().segmented_control(
         SegmentedControlRule::new().track(PartPatch::new().stroke(Stroke::None)),
     );
+    let mut tested = 0;
     for (preset, r) in every_preset_with(&patch) {
         let theme = to_theme(&r)?;
-        assert!(
-            !r.segmented_control
-                .separator(WidgetState::NONE)
-                .stated
-                .contains(PartStated::FILL),
-            "{preset:?}: no separator fill stated"
-        );
+        // a preset that states the separator's fill draws that line (the test above)
+        if r.segmented_control
+            .separator(WidgetState::NONE)
+            .stated
+            .contains(PartStated::FILL)
+        {
+            continue;
+        }
+        tested += 1;
         let separator = super::segment_separator(&r, false)?(&theme);
         assert_eq!(separator.background, None, "{preset:?}");
         assert_eq!(
@@ -1112,6 +1118,7 @@ fn a_track_with_no_stroke_and_no_separator_fill_has_no_separator_line() -> TestR
             "{preset:?}"
         );
     }
+    assert!(tested > 0, "no preset leaves the separator's fill unstated");
     Ok(())
 }
 

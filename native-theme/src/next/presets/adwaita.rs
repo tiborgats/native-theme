@@ -1256,7 +1256,8 @@ const COMBO_BOX_PADDING_VERTICAL: f32 = 5.0;
 const SEGMENT_HEIGHT: f32 = 28.0;
 
 /// The separator between segments.
-// `segmented_control.separator_width`: 0.7.2 adwaita.toml (uncited)
+// `segmented_control.separator_width`: AdwToggleGroup's `> separator` (_toggle-group.scss:141-159
+// at libadwaita 1.10.0) is a GtkSeparator, `min-width: 1px; min-height: 1px` (_misc.scss:21-24)
 const SEGMENT_SEPARATOR_WIDTH: f32 = 1.0;
 
 /// A segment's padding left and right.
@@ -3273,12 +3274,19 @@ fn segmented_control(
             [TextProp::Color(c.segment_selected_foreground)],
         )
         .build();
+    // The line between toggles: AdwToggleGroup's `> separator` (_toggle-group.scss:141-159 at
+    // libadwaita 1.10.0) draws GtkSeparator's `background: $border_color` (_misc.scss:21-22), the
+    // splitter's line (currentColor at --border-opacity, `splitter_line`); a separator the group
+    // marks `.hidden` draws nothing (_toggle-group.scss:152-154), which the model has no state for.
+    let separator = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.splitter_line)])
+        .build();
     SegmentedControlWidget::new(
         WidgetOrigin::Native,
         track,
         segment,
         label,
-        RuleBuilder::new(PartStyle::default()).build(),
+        separator,
         SEGMENT_SEPARATOR_WIDTH,
         // 0.7.2: `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
         // unstated.

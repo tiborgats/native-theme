@@ -1081,7 +1081,8 @@ const COMBO_BOX_PADDING_LEFT: f32 = 15.0;
 
 // `segmented_control.segment_height`: 0.7.2 material-3.toml (uncited)
 const SEGMENT_HEIGHT: f32 = 40.0;
-// `segmented_control.separator_width`: 0.7.2 material-3.toml (uncited)
+// `segmented_control.separator_width`: platform-facts.md (§2.25): outline-width 1, the segments'
+// shared outline (v0_192/_md-comp-outlined-segmented-button.scss:66)
 const SEGMENT_SEPARATOR_WIDTH: f32 = 1.0;
 // `segmented_control.border.corner_radius`: platform-facts.md (§2.25): shape corner-full, a pill:
 // half the 40 container-height (_md-comp-outlined-segmented-button.scss:34, :93)
@@ -3057,12 +3058,18 @@ fn segmented_control(
             [TextProp::Color(c.on_secondary_container)],
         )
         .build();
+    // The line between segments, their shared outline: outline-color = outline, the track's own
+    // (platform-facts.md (§2.25) `separator_width` and `border.color`;
+    // v0_192/_md-comp-outlined-segmented-button.scss:65-66 at material-web cbd34a8).
+    let separator = RuleBuilder::new(PartStyle::default())
+        .base(roles.window.border.map(fill))
+        .build();
     SegmentedControlWidget::new(
         WidgetOrigin::Native,
         track,
         segment,
         label,
-        RuleBuilder::new(PartStyle::default()).build(),
+        separator,
         SEGMENT_SEPARATOR_WIDTH,
         // 0.7.2: `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
         // unstated.

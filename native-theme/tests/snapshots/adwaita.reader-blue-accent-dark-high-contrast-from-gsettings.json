@@ -2063,7 +2063,9 @@
       ]
     },
     "separator": {
-      "base": {}
+      "base": {
+        "fill": "#ffffff26"
+      }
     }
   },
   "expander": {

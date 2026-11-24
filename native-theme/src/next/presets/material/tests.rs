@@ -83,6 +83,23 @@ fn the_switch_s_thumb_grows_when_on() {
     }
 }
 
+/// The line between segments is their shared outline, outline-color =
+/// outline at outline-width 1 (v0_192/_md-comp-outlined-segmented-button.scss:65-66).
+#[test]
+fn the_segments_are_parted_by_their_outline() {
+    for theme in both_schemes() {
+        let outline = match theme.context.scheme {
+            Scheme::Dark => DARK.outline,
+            _ => LIGHT.outline,
+        };
+        assert_eq!(
+            theme.segmented_control.separator(WidgetState::NONE).fill,
+            Paint::Solid(outline)
+        );
+        assert_eq!(theme.segmented_control.separator_width, 1.0);
+    }
+}
+
 /// Right to left mirrors the per-side values the preset states unequal on
 /// the left and the right, the combo box's padding, and nothing else.
 #[test]

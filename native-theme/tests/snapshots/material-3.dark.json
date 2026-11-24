@@ -2016,7 +2016,9 @@
       ]
     },
     "separator": {
-      "base": {}
+      "base": {
+        "fill": "#938f99"
+      }
     }
   },
   "expander": {

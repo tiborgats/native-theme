@@ -1763,6 +1763,48 @@ const TAHOE_SEPARATOR: [Stated; 2] = [
     ),
 ];
 
+/// The line between two segments where the preset states it: the
+/// separator part's fill, which 0.7.2 drew in the outline's colour; when
+/// disabled, laid on the group and faded with the control
+/// ([`DISABLED_SEPARATOR`]).
+const SEPARATOR_FILL: [Stated; 2] = [
+    set(
+        at!(NONE),
+        Field::Separator,
+        home!(fill, segmented_control.separator(NONE)),
+    ),
+    set(at!(DISABLED), Field::Separator, DISABLED_SEPARATOR),
+];
+
+/// A disabled control's separator, `segmented_control.separator(NONE)`'s
+/// fill laid on the group fill (`track(NONE)`), the two faded as one widget
+/// over the window by `segmented_control.disabled_opacity`
+/// (`crate::styles::segment_separator_from`).
+#[cfg(feature = "widgets")]
+fn disabled_separator(t: &native_theme::next::ResolvedTheme) -> Option<Value> {
+    let s = &t.segmented_control;
+    Some(Value::Faded {
+        color: super::fill_of(&s.separator(WidgetState::NONE))?,
+        under: Some(super::fill_of(&s.track(WidgetState::NONE))?),
+        ground: super::to_color(t.colors.window.background?),
+        opacity: s.disabled_opacity,
+    })
+}
+
+/// The style functions, which alone read [`disabled_separator`], are
+/// compared with the `widgets` feature only: no value without it.
+#[cfg(not(feature = "widgets"))]
+fn disabled_separator(_: &native_theme::next::ResolvedTheme) -> Option<Value> {
+    None
+}
+
+/// [`disabled_separator`]'s home.
+const DISABLED_SEPARATOR: Home = Home {
+    path: "segmented_control.separator(NONE).fill over segmented_control.track(NONE).fill, \
+           faded as one over colors.window.background by segmented_control.disabled_opacity",
+    value: disabled_separator,
+};
+
 /// The track's corner radius less its stroke width, which a segment's
 /// rounded corners take (`crate::styles::segment_from`), where the theme
 /// states both.
@@ -2390,6 +2432,15 @@ const DIFFERENCES: &[Difference] = &[
         &["macos-tahoe"],
         LineAlign::Outside,
         &[&TAHOE_SEPARATOR],
+    ),
+    // adwaita states the line between toggles, GtkSeparator's $border_color
+    // (segmented_control.separator(NONE).fill), where 0.7.2 drew the
+    // outline's colour.
+    stated_fields(
+        "segment_separator",
+        &["adwaita"],
+        LineAlign::Outside,
+        &[&SEPARATOR_FILL],
     ),
     stated_fields(
         "segment",
@@ -3250,7 +3301,15 @@ impl Fields for iced_widget::container::Style {
                         .map_err(|u| format!("{field:?}: {u:?}"))?;
                     self.background = line.drawn.then_some(Background::Color(line.color));
                 }
-                _ => return Err(format!("{field:?} takes a stroke, not {value:?}")),
+                // the separator part's own fill
+                Value::Color(_) | Value::Faded { .. } => {
+                    self.background = Some(Background::Color(color_of(field, &value)?));
+                }
+                Value::Width(_) => {
+                    return Err(format!(
+                        "{field:?} takes a stroke or a colour, not {value:?}"
+                    ));
+                }
             },
             Field::Background
             | Field::HandleBackground
