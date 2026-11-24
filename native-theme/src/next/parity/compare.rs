@@ -24,8 +24,9 @@
 //! is the width 0.0 and no colour) and a corner radius out of `CornerRadius::Uniform` with circular corners
 //! (`CornerRadius::None` is 0.0), and a text's `decoration` against 0.7.2's `underline_enabled` (a plain
 //! underline is `true`, no line `false`); any other form there (a gradient fill, a per-side or centred
-//! stroke, a pill, continuous corners, a coloured underline) is a value no 0.7.2 field holds, so a mismatch. A colour is compared by its 8-bit
-//! channels only where every channel is finite and in 0..=1; any other colour is a mismatch.
+//! stroke, a pill, continuous corners, a coloured underline) is a value no 0.7.2 field holds, so a mismatch
+//! (continuous corners match only a listed difference's value for them, below). A colour is compared by its
+//! 8-bit channels only where every channel is finite and in 0..=1; any other colour is a mismatch.
 //!
 //! The table's keys that change how a row is read: `if_null` is followed along the chain of the rows of
 //! the keys it names while their values are null; `unstated_if_unset` compares the row as if its key were
@@ -36,7 +37,13 @@
 //! getter at `WindowState::default()`. A listed difference (`difference_presets`) compares, on each of its
 //! presets, the value `difference_values` gives in place of the old one: one value for every home, or one
 //! per home where the row's homes differ; "none" at a part's stroke requires `Stroke::None` with the
-//! `STROKE` bit set there, as `null_means = "none"` does.
+//! `STROKE` bit set there, as `null_means = "none"` does; "continuous <radius>" at a part's corners requires
+//! `Corners { radius: CornerRadius::Uniform(<radius>), curve: CornerCurve::Continuous }` with the `CORNERS`
+//! bit set, the radius equal by the `f32` rule above. "unstated" at a ruled part's property under a state
+//! (neither `NONE` nor the row's `null_reference`) is no rule for that state: the value there is then the
+//! reference state's by the cascade, which that state's own home checks, so only the property's
+//! `from_state` bit is checked, clear, and no value is compared; at any other home "unstated" is read as an
+//! old `null` against an unstated home.
 //!
 //! A row written by hand names a field that does not serialise; it is read from `old` at its key where the
 //! caller has added it there, in the form `serde_json` gives the field's type (`Resolved.mode`, whose
@@ -53,7 +60,7 @@ use serde_json::Value;
 use super::{HOMES, NullMeans, Row, RowContext, Table};
 use crate::IconSet;
 use crate::next::color::Color;
-use crate::next::geometry::{CornerCurve, CornerRadius, Stroke};
+use crate::next::geometry::{CornerCurve, CornerRadius, Corners, Stroke};
 use crate::next::layout::{ArrowSide, DialogButtonOrder, TabIndicatorSide};
 use crate::next::motion::DialogEntranceStyle;
 use crate::next::paint::Paint;
@@ -471,6 +478,31 @@ fn compare_row(
             )?);
             continue;
         }
+        if listed.is_some()
+            && let Some(radius) = continuous_radius(value)?
+        {
+            if !home.ends_with(".corners") {
+                return Err(format!(
+                    "the difference value {value} at `{home}`, which is no part's corners"
+                ));
+            }
+            mismatches.extend(continuous_mismatch(row, home, new, radius)?);
+            continue;
+        }
+        if listed.is_some()
+            && value.is_null()
+            && under_a_state(home, row.null_reference.as_deref())?
+        {
+            if from_state_at(home, new)? == Some(true) {
+                mismatches.push(Mismatch {
+                    key: row.key.clone(),
+                    home: home.clone(),
+                    old: "listed: unstated, no rule for the state, `from_state` clear".to_owned(),
+                    new: format!("{}, `from_state` set", read(home, new, snapshot_context)?),
+                });
+            }
+            continue;
+        }
         if old_null && let Some(reference) = reference_home(home, row.null_reference.as_deref())? {
             let got = read(home, new, snapshot_context)?;
             let at_reference = read(&reference, new, snapshot_context)?;
@@ -516,9 +548,7 @@ fn compare_row(
                 new: got.to_string(),
             });
         }
-        // A difference listed as "unstated" is no rule for the state: its bit stays clear.
         if let Some(unresolved) = extra.unresolved
-            && !(listed.is_some() && value.is_null())
             && unresolved_states(unresolved, &row.key)
             && under_a_state(home, row.null_reference.as_deref())?
             && from_state_at(home, new)? == Some(false)
@@ -700,6 +730,54 @@ const NO_OUTLINE: &str = "none";
 /// Whether `value` of a listed difference at a home is [`NO_OUTLINE`].
 fn is_no_outline(value: &Value) -> bool {
     value.as_str() == Some(NO_OUTLINE)
+}
+
+/// The word that opens a listed difference's value for continuous corners: `"continuous <radius>"`.
+const CONTINUOUS: &str = "continuous ";
+
+/// The radius of a listed difference's value `"continuous <radius>"`, as the `f32` it reads as; `None` for
+/// any other value, an error where the radius is no number.
+fn continuous_radius(value: &Value) -> Result<Option<f32>, String> {
+    let Some(radius) = value.as_str().and_then(|s| s.strip_prefix(CONTINUOUS)) else {
+        return Ok(None);
+    };
+    f64::from_str(radius)
+        .map(|x| Some(narrow(x)))
+        .map_err(|_| format!("the difference value {value} has no radius"))
+}
+
+/// The mismatch at `home`, a part's corners, of `row` listed as continuous corners of `radius`, where it is
+/// not `Corners { radius: CornerRadius::Uniform(radius), curve: CornerCurve::Continuous }` (the radius
+/// bit-equal) with the `CORNERS` bit set; `None` where it is.
+fn continuous_mismatch(
+    row: &Row,
+    home: &str,
+    new: &ResolvedTheme,
+    radius: f32,
+) -> Result<Option<Mismatch>, String> {
+    let style = part_style_at(home, new)?
+        .ok_or_else(|| format!("continuous corners: `{home}` is no part's corners"))?;
+    let stated = style.stated.contains(PartStated::CORNERS);
+    let same = matches!(
+        style.corners,
+        Corners {
+            radius: CornerRadius::Uniform(r),
+            curve: CornerCurve::Continuous,
+        } if r.to_bits() == radius.to_bits()
+    );
+    if stated && same {
+        return Ok(None);
+    }
+    let bit = if stated { "stated" } else { "unstated" };
+    Ok(Some(Mismatch {
+        key: row.key.clone(),
+        home: home.to_owned(),
+        old: format!(
+            "listed: continuous corners of {}, CORNERS stated",
+            show_f32(radius)
+        ),
+        new: format!("{:?}, CORNERS {bit}", style.corners),
+    }))
 }
 
 /// Whether `home` is a part's stroke colour or width, where a listed difference may name [`NO_OUTLINE`].
