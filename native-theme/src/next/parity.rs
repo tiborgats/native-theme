@@ -3073,10 +3073,15 @@ pub(crate) fn windows_cases() -> Vec<(
     // `SystemColorButtonFaceColorBrush` in `SystemColorButtonTextColorBrush` (:141, :129), and a
     // checked box's outline, `SystemColorHighlightColorBrush` (:133); a checked radio button's
     // circle, `SystemColorHighlightTextColorBrush`, and its dot, `SystemColorHighlightColorBrush`
-    // (RadioButton_themeresources.xaml:88, :92); a disabled button's label,
-    // `SystemControlDisabledBaseMediumLowBrush`, the grey text (Button_themeresources.xaml:85;
-    // generic.xaml:2026).
+    // (RadioButton_themeresources.xaml:88, :92); a hovered and a pressed button's label,
+    // `SystemControlHighlightBaseHighBrush`, the highlight (Button_themeresources.xaml:83-84;
+    // generic.xaml:2069), and a disabled one's, `SystemControlDisabledBaseMediumLowBrush`, the grey
+    // text (Button_themeresources.xaml:85; generic.xaml:2026); a hovered and a pressed toolbar
+    // button, `SystemControlHighlightListLowBrush` / `…ListMediumBrush`, the highlight
+    // (AppBarButton_themeresources.xaml:41-42; generic.xaml:2079-2080).
     const HIGH_CONTRAST: &[&str] = &[
+        "button.hover_text_color",
+        "button.active_text_color",
         "button.disabled_text_color",
         "button.hover_border_color",
         "checkbox.checked_background",
@@ -3087,6 +3092,8 @@ pub(crate) fn windows_cases() -> Vec<(
         "checkbox.unchecked_background",
         "checkbox.unchecked_border_color",
         "checkbox.border.color",
+        "toolbar.button_hover_background",
+        "toolbar.button_active_background",
         "switch.hover_checked_background",
         "combo_box.hover_border_color",
         "expander.hover_background",

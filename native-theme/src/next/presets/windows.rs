@@ -2445,15 +2445,17 @@ fn button(
         )
         .build();
     // `button.hover_text_color`: ButtonForegroundPointerOver = TextFillColorPrimary
-    // (Button_themeresources.xaml:133 at microsoft-ui-xaml 8463f45), the window's text, which high
-    // contrast does not change; stated for `HOVER` (spec §2, `from_state`).
+    // (Button_themeresources.xaml:133 at microsoft-ui-xaml 8463f45), the window's text, stated for
+    // `HOVER` (spec §2, `from_state`); pressed, ButtonForegroundPressed = TextFillColorSecondary
+    // (:134). Under high contrast both are SystemControlHighlightBaseHighBrush (:83-84),
+    // SystemColorHighlightColor (generic.xaml:2069 at microsoft-ui-xaml 8463f45).
     let label = RuleBuilder::new(label(
         &typography.body,
         Some(hc.button_text.unwrap_or(c.window_foreground)),
     ))
     .rule(
         RuleSelector::on(WidgetState::HOVER),
-        [TextProp::Color(c.window_foreground)],
+        [TextProp::Color(hc.highlight.unwrap_or(c.window_foreground))],
     )
     .rule(
         RuleSelector::on(WidgetState::CHECKED),
@@ -2461,7 +2463,9 @@ fn button(
     )
     .rule(
         RuleSelector::on(WidgetState::PRESSED),
-        [TextProp::Color(c.window_foreground_muted)],
+        [TextProp::Color(
+            hc.highlight.unwrap_or(c.window_foreground_muted),
+        )],
     )
     .rule(primary(), [TextProp::Color(roles.accent.foreground)])
     // Disabled, ButtonForegroundDisabled = TextFillColorDisabled (Button_themeresources.xaml:135 at
@@ -3625,9 +3629,10 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 /// The toolbar: the window's background (0.7.2: `toolbar.background_color`
 /// is `defaults.background_color` where unstated) with no outline, in the
 /// default border colour, its own corners, no shadow, padded, of a least
-/// height; its buttons' hovered and pressed layers and checked fill, their
-/// labels' pressed and disabled colours (the disabled one under high
-/// contrast `hc`'s grey text); icons at
+/// height; its buttons' hovered and pressed layers (under high contrast
+/// `hc`'s highlight) and checked fill, their labels' hovered (under high
+/// contrast alone), pressed and disabled colours (under high contrast `hc`'s
+/// highlight text, and its grey text for the disabled one); icons at
 /// the toolbar's size (0.7.2: `toolbar.icon_size` is
 /// `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(
@@ -3657,11 +3662,18 @@ fn toolbar(
             PartProp::MinSize([None, Some(TOOLBAR_BAR_HEIGHT)]),
         ])
         .build();
+    // Hovered and pressed, AppBarButtonBackgroundPointerOver / …Pressed = SubtleFillColorSecondary /
+    // …Tertiary (AppBarButton_themeresources.xaml:6-7 at microsoft-ui-xaml 8463f45); under high
+    // contrast SystemControlHighlightListLowBrush / …ListMediumBrush (:41-42), both
+    // SystemColorHighlightColor (generic.xaml:2079-2080), behind the highlight-text label.
     let button = RuleBuilder::new(PartStyle::default())
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(hc.highlight.unwrap_or(c.subtle_fill))],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.subtle_fill_pressed)],
+            [fill(hc.highlight.unwrap_or(c.subtle_fill_pressed))],
         )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
@@ -3672,7 +3684,8 @@ fn toolbar(
         .base([IconProp::Size(ICON_TOOLBAR)])
         .build();
     // Hovered, the label as at rest: AppBarButtonForegroundPointerOver = TextFillColorPrimary
-    // (AppBarButton_themeresources.xaml:80, :79 at microsoft-ui-xaml 8463f45); pressed,
+    // (AppBarButton_themeresources.xaml:80, :79 at microsoft-ui-xaml 8463f45), under high contrast
+    // SystemControlHighlightAltBaseHighBrush (:45), SystemColorHighlightTextColor; pressed,
     // AppBarButtonForegroundPressed = TextFillColorSecondary (:81, set :257-259), under high
     // contrast SystemControlHighlightAltBaseHighBrush (:46), SystemColorHighlightTextColor
     // (generic.xaml:2058 at microsoft-ui-xaml 8463f45); disabled,
@@ -3684,6 +3697,11 @@ fn toolbar(
     let (selectors, color) = rest_color_rules(&button_label, [WidgetState::HOVER]);
     let button_label = RuleBuilder::new(button_label)
         .rules(selectors, color)
+        .rules(
+            hc.highlight_text
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            hc.highlight_text.map(TextProp::Color),
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(

@@ -470,7 +470,7 @@
             "hover"
           ],
           "label": {
-            "color": "#ffffff"
+            "color": "#050505"
           }
         },
         {
@@ -486,7 +486,7 @@
             "pressed"
           ],
           "label": {
-            "color": "#ffffffc5"
+            "color": "#050505"
           }
         },
         {
@@ -2084,7 +2084,7 @@
             "hover"
           ],
           "button": {
-            "fill": "#ffffff0f"
+            "fill": "#050505"
           }
         },
         {
@@ -2092,7 +2092,7 @@
             "pressed"
           ],
           "button": {
-            "fill": "#ffffff0a"
+            "fill": "#050505"
           }
         },
         {
@@ -2123,6 +2123,14 @@
           ],
           "button_label": {
             "color": "#020202"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "button_label": {
+            "color": "#060606"
           }
         },
         {
