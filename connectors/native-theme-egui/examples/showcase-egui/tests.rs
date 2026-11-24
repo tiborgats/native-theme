@@ -1695,110 +1695,237 @@ const WIDGET_ROLES: &[Role] = &[
     Role::DisclosureTriangle,
 ];
 
-#[test]
-fn every_widget_reports_itself() {
-    for theme in [egui::Theme::Light, egui::Theme::Dark] {
-        for page in Page::ALL {
-            let mut harness = open_page_under(page, theme, TEST_PRESET);
-            let hold = harness
-                .state()
-                .hold_zone
-                .expect("the inspector reports its content rect");
-            // egui's own node id (`Id::accesskit_id`, `egui/src/id.rs:103`): accesskit_consumer's
-            // `Node::id` is a type of its own, `locate().0` the id egui gave the node.
-            let ids: Vec<egui::accesskit::NodeId> = harness
-                .query_all(By::new().predicate(|n| WIDGET_ROLES.contains(&n.role())))
-                .filter(|n| !hold.intersects(n.rect()))
-                .map(|n| n.accesskit_node().locate().0)
-                .collect();
-            assert!(!ids.is_empty(), "{page:?} has no widget node");
-            for id in ids {
-                let Some(node) = harness
-                    .query_all(By::new().predicate(move |n| n.locate().0 == id))
-                    .next()
-                else {
-                    continue;
-                };
-                node.scroll_to_me();
-                // The scroll lands on the third pass after the request (measured on the Text page).
-                harness.run_steps(3);
-                // A node egui creates itself, whose id no helper sees (§13.2): a scroll bar
-                // (`egui-0.37.0/src/containers/scroll_area.rs:1473`), a window's resize handle or a
-                // panel's (`Role::Splitter`: `egui-0.37.0/src/containers/window.rs:1087`,
-                // `containers/panel.rs:1202`), or a node inside a `Window`'s AccessKit node — its
-                // title bar's collapse and close buttons (`window.rs:1396-1410`, `:1488-1491`).
-                let Some((rect, egui_own)) = harness
-                    .query_all(By::new().predicate(move |n| n.locate().0 == id))
-                    .next()
-                    .map(|n| {
-                        let node = n.accesskit_node();
-                        let mut in_window = false;
-                        let mut parent = node.parent();
-                        while let Some(p) = parent {
-                            // The tree's root is the viewport's own `Window` node: not an egui
-                            // `Window`.
-                            in_window |= p.role() == Role::Window && p.parent().is_some();
-                            parent = p.parent();
-                        }
-                        let own =
-                            matches!(node.role(), Role::ScrollBar | Role::Splitter) || in_window;
-                        (n.rect(), own)
-                    })
-                else {
-                    continue;
-                };
-                // `Node::rect` is the untransformed rect (`egui/src/response.rs:912-917`): a node
-                // in a transformed layer — the `Scene`'s — is hovered through its layer's
-                // transform, as `centre_of` does, where a record gives the layer.
-                let layer = harness
-                    .state()
-                    .registry
-                    .records()
-                    .iter()
-                    .find(|r| r.id.accesskit_id() == id)
-                    .map(|r| r.layer);
-                let global = layer
-                    .and_then(|l| harness.ctx.layer_transform_to_global(l))
-                    .map_or(rect, |t| t.mul_rect(rect));
-                hover_and_settle(&mut harness, global.center());
-                let app = harness.state();
-                let records = app.registry.records();
-                // A node only a layout box holds — the page's own scroll bar in the central
-                // panel — is no Widget Info target (R11): hovering it keeps what is shown.
-                if !records
-                    .iter()
-                    .any(|r| r.target && r.contains_pointer && r.rect.contains(global.center()))
-                {
-                    continue;
-                }
-                let shown = app
-                    .registry
-                    .shown()
-                    .unwrap_or_else(|| panic!("{page:?} {theme:?}: nothing shown for node {id:?}"));
-                let node_recorded = records.iter().any(|r| r.id.accesskit_id() == id);
-                let own = shown.id.accesskit_id() == id;
-                // Else the info of a non-container widget whose rect contains the node's; for a
-                // node egui creates itself (and no helper records), the innermost record's,
-                // container or not (§13.2), which holds the node's centre where the node reaches
-                // past it, as a panel's resize handle (`Role::Splitter`) straddles its panel's
-                // edge. A record is clipped to what is shown and the node is
-                // not: the last node of a page scrolled to its end may reach a fraction of a
-                // pixel past the page's clip, so the rects compare within half a pixel.
-                let by_record = records.iter().any(|r| {
-                    r.id == shown.id
-                        && (r.rect.expand(0.5).contains_rect(rect)
-                            || (egui_own && !node_recorded && r.rect.contains(global.center())))
-                        && (!r.container || (egui_own && !node_recorded))
-                });
-                assert!(
-                    own || by_record,
-                    "{page:?} {theme:?}: node {id:?} at {rect:?} shows {} ({:?})",
-                    shown.info.kind,
-                    shown.id
-                );
-            }
+/// A test per page of [`Page::ALL`], named after the page, each `$run(page, $arg...)`, so that
+/// nextest runs the pages in parallel. The `match` names every page: a page added to [`Page`]
+/// and not here fails to compile.
+macro_rules! per_page {
+    ($run:ident $(, $arg:expr)*) => {
+        const _: fn(Page) = |page| match page {
+            Page::Basic
+            | Page::Buttons
+            | Page::Inputs
+            | Page::Selection
+            | Page::Range
+            | Page::Data
+            | Page::Text
+            | Page::Containers
+            | Page::Overlays
+            | Page::Colour
+            | Page::Icons
+            | Page::ThemeMap => {}
+        };
+        #[test]
+        fn basic() -> Result<(), String> {
+            $run(Page::Basic $(, $arg)*)
         }
+        #[test]
+        fn buttons() -> Result<(), String> {
+            $run(Page::Buttons $(, $arg)*)
+        }
+        #[test]
+        fn inputs() -> Result<(), String> {
+            $run(Page::Inputs $(, $arg)*)
+        }
+        #[test]
+        fn selection() -> Result<(), String> {
+            $run(Page::Selection $(, $arg)*)
+        }
+        #[test]
+        fn range() -> Result<(), String> {
+            $run(Page::Range $(, $arg)*)
+        }
+        #[test]
+        fn data() -> Result<(), String> {
+            $run(Page::Data $(, $arg)*)
+        }
+        #[test]
+        fn text() -> Result<(), String> {
+            $run(Page::Text $(, $arg)*)
+        }
+        #[test]
+        fn containers() -> Result<(), String> {
+            $run(Page::Containers $(, $arg)*)
+        }
+        #[test]
+        fn overlays() -> Result<(), String> {
+            $run(Page::Overlays $(, $arg)*)
+        }
+        #[test]
+        fn colour() -> Result<(), String> {
+            $run(Page::Colour $(, $arg)*)
+        }
+        #[test]
+        fn icons() -> Result<(), String> {
+            $run(Page::Icons $(, $arg)*)
+        }
+        #[test]
+        fn theme_map() -> Result<(), String> {
+            $run(Page::ThemeMap $(, $arg)*)
+        }
+    };
+}
+
+/// A test per preset of the 0.8.0 model ([`native_theme::next::Preset::ALL`]), named after the
+/// preset, each `$run(preset)`, so that nextest runs the presets in parallel, and a test that
+/// the tests name every preset.
+macro_rules! per_preset {
+    ($run:ident) => {
+        const PRESETS: &[native_theme::next::Preset] = &[
+            native_theme::next::Preset::Adwaita,
+            native_theme::next::Preset::KdeBreeze,
+            native_theme::next::Preset::MacosMonterey,
+            native_theme::next::Preset::MacosTahoe,
+            native_theme::next::Preset::Windows11,
+            native_theme::next::Preset::Material3,
+            native_theme::next::Preset::Ios13,
+        ];
+        #[test]
+        fn every_preset_has_its_test() {
+            assert_eq!(PRESETS, native_theme::next::Preset::ALL);
+        }
+        #[test]
+        fn adwaita() -> Result<(), String> {
+            $run(native_theme::next::Preset::Adwaita)
+        }
+        #[test]
+        fn kde_breeze() -> Result<(), String> {
+            $run(native_theme::next::Preset::KdeBreeze)
+        }
+        #[test]
+        fn macos_monterey() -> Result<(), String> {
+            $run(native_theme::next::Preset::MacosMonterey)
+        }
+        #[test]
+        fn macos_tahoe() -> Result<(), String> {
+            $run(native_theme::next::Preset::MacosTahoe)
+        }
+        #[test]
+        fn windows_11() -> Result<(), String> {
+            $run(native_theme::next::Preset::Windows11)
+        }
+        #[test]
+        fn material_3() -> Result<(), String> {
+            $run(native_theme::next::Preset::Material3)
+        }
+        #[test]
+        fn ios_13() -> Result<(), String> {
+            $run(native_theme::next::Preset::Ios13)
+        }
+    };
+}
+
+/// [`every_widget_reports_itself_on`] each page under the test preset in light and in dark: one
+/// test per mode and page.
+mod every_widget_reports_itself {
+    mod light {
+        use super::super::*;
+        per_page!(every_widget_reports_itself_on, egui::Theme::Light);
     }
+    mod dark {
+        use super::super::*;
+        per_page!(every_widget_reports_itself_on, egui::Theme::Dark);
+    }
+}
+
+fn every_widget_reports_itself_on(page: Page, theme: egui::Theme) -> Result<(), String> {
+    let mut harness = open_page_under(page, theme, TEST_PRESET);
+    let hold = harness
+        .state()
+        .hold_zone
+        .ok_or("the inspector reports its content rect")?;
+    // egui's own node id (`Id::accesskit_id`, `egui/src/id.rs:103`): accesskit_consumer's
+    // `Node::id` is a type of its own, `locate().0` the id egui gave the node.
+    let ids: Vec<egui::accesskit::NodeId> = harness
+        .query_all(By::new().predicate(|n| WIDGET_ROLES.contains(&n.role())))
+        .filter(|n| !hold.intersects(n.rect()))
+        .map(|n| n.accesskit_node().locate().0)
+        .collect();
+    assert!(!ids.is_empty(), "{page:?} has no widget node");
+    for id in ids {
+        let Some(node) = harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == id))
+            .next()
+        else {
+            continue;
+        };
+        node.scroll_to_me();
+        // The scroll lands on the third pass after the request (measured on the Text page).
+        harness.run_steps(3);
+        // A node egui creates itself, whose id no helper sees (§13.2): a scroll bar
+        // (`egui-0.37.0/src/containers/scroll_area.rs:1473`), a window's resize handle or a
+        // panel's (`Role::Splitter`: `egui-0.37.0/src/containers/window.rs:1087`,
+        // `containers/panel.rs:1202`), or a node inside a `Window`'s AccessKit node — its
+        // title bar's collapse and close buttons (`window.rs:1396-1410`, `:1488-1491`).
+        let Some((rect, egui_own)) = harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == id))
+            .next()
+            .map(|n| {
+                let node = n.accesskit_node();
+                let mut in_window = false;
+                let mut parent = node.parent();
+                while let Some(p) = parent {
+                    // The tree's root is the viewport's own `Window` node: not an egui
+                    // `Window`.
+                    in_window |= p.role() == Role::Window && p.parent().is_some();
+                    parent = p.parent();
+                }
+                let own = matches!(node.role(), Role::ScrollBar | Role::Splitter) || in_window;
+                (n.rect(), own)
+            })
+        else {
+            continue;
+        };
+        // `Node::rect` is the untransformed rect (`egui/src/response.rs:912-917`): a node
+        // in a transformed layer — the `Scene`'s — is hovered through its layer's
+        // transform, as `centre_of` does, where a record gives the layer.
+        let layer = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.id.accesskit_id() == id)
+            .map(|r| r.layer);
+        let global = layer
+            .and_then(|l| harness.ctx.layer_transform_to_global(l))
+            .map_or(rect, |t| t.mul_rect(rect));
+        hover_and_settle(&mut harness, global.center());
+        let app = harness.state();
+        let records = app.registry.records();
+        // A node only a layout box holds — the page's own scroll bar in the central
+        // panel — is no Widget Info target (R11): hovering it keeps what is shown.
+        if !records
+            .iter()
+            .any(|r| r.target && r.contains_pointer && r.rect.contains(global.center()))
+        {
+            continue;
+        }
+        let shown = app
+            .registry
+            .shown()
+            .ok_or_else(|| format!("{page:?} {theme:?}: nothing shown for node {id:?}"))?;
+        let node_recorded = records.iter().any(|r| r.id.accesskit_id() == id);
+        let own = shown.id.accesskit_id() == id;
+        // Else the info of a non-container widget whose rect contains the node's; for a
+        // node egui creates itself (and no helper records), the innermost record's,
+        // container or not (§13.2), which holds the node's centre where the node reaches
+        // past it, as a panel's resize handle (`Role::Splitter`) straddles its panel's
+        // edge. A record is clipped to what is shown and the node is
+        // not: the last node of a page scrolled to its end may reach a fraction of a
+        // pixel past the page's clip, so the rects compare within half a pixel.
+        let by_record = records.iter().any(|r| {
+            r.id == shown.id
+                && (r.rect.expand(0.5).contains_rect(rect)
+                    || (egui_own && !node_recorded && r.rect.contains(global.center())))
+                && (!r.container || (egui_own && !node_recorded))
+        });
+        assert!(
+            own || by_record,
+            "{page:?} {theme:?}: node {id:?} at {rect:?} shows {} ({:?})",
+            shown.info.kind,
+            shown.id
+        );
+    }
+    Ok(())
 }
 
 /// Every input on every page has an accessible name (`Harness::unnamed_widgets`,
@@ -5469,21 +5596,23 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
 /// right end, or, a cell wider than the view, spans it there. Cells are read by their whole
 /// rectangles (`Record::whole`), not the parts the view's clip leaves, within half a pixel. The
 /// Data table at these scales is held by
-/// [`the_data_and_theme_map_tables_lie_inside_the_central_panel`].
-#[test]
-fn the_tables_keep_their_columns_at_the_largest_text_scale() {
-    let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
+/// [`the_data_and_theme_map_tables_lie_inside_the_central_panel`]. One test per preset of the
+/// 0.8.0 model, which the Theme Map reads.
+mod the_tables_keep_their_columns_at_the_largest_text_scale {
+    use super::*;
+    per_preset!(the_tables_keep_their_columns_under);
+}
+
+fn the_tables_keep_their_columns_under(preset: native_theme::next::Preset) -> Result<(), String> {
+    let manifest = Manifest::parse(MANIFEST).map_err(|e| format!("the manifest parses: {e}"))?;
     let longest = manifest
         .rows
         .iter()
         .max_by_key(|r| r.leaf.chars().count())
-        .expect("the manifest has rows");
+        .ok_or("the manifest has rows")?;
     let mut wrong = Vec::new();
-    // The presets of the 0.8.0 model, which the Theme Map reads, installed as the picker
-    // installs them.
-    let runs = native_theme::next::Preset::ALL.iter().flat_map(|preset| {
-        [1.5, crate::chrome::TEXT_SCALE_MAX].map(|factor| (preset.as_str(), factor))
-    });
+    // The preset installed as the picker installs it.
+    let runs = [1.5, crate::chrome::TEXT_SCALE_MAX].map(|factor| (preset.as_str(), factor));
     for (preset, factor) in runs {
         let key = preset;
         let mut map = open_page_scaled(Page::ThemeMap, preset, factor);
@@ -5649,6 +5778,7 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         }
     }
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    Ok(())
 }
 
 /// A Theme Map colour value too long for its Value column is cut short on its one line, beside
@@ -7401,126 +7531,140 @@ const GROWS_WHEN_HOVERED: &[&str] = &[
 
 /// No other widget changes size when hovered, as no native control does: on every page, under
 /// a preset whose buttons have a resting border (kde-breeze), each recorded widget keeps its
-/// rect with the pointer on it, but egui's own selectables (`GROWS_WHEN_HOVERED`).
-#[test]
-fn no_widget_changes_size_when_hovered() {
+/// rect with the pointer on it, but egui's own selectables (`GROWS_WHEN_HOVERED`). One test per
+/// page.
+mod no_widget_changes_size_when_hovered {
+    use super::*;
+    per_page!(no_widget_changes_size_when_hovered_on);
+}
+
+fn no_widget_changes_size_when_hovered_on(page: Page) -> Result<(), String> {
     let mut grew = Vec::new();
     let mut compared = 0usize;
-    for page in Page::ALL {
-        let mut harness = open(
-            egui::Theme::Light,
-            cli(&[("--theme", "kde-breeze"), ("--tab", page.key())]),
-        );
-        harness.run_steps(4);
-        harness.remove_cursor();
-        harness.run_steps(2);
-        let rest: Vec<(egui::Id, &'static str, egui::Rect)> = harness
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "kde-breeze"), ("--tab", page.key())]),
+    );
+    harness.run_steps(4);
+    harness.remove_cursor();
+    harness.run_steps(2);
+    let rest: Vec<(egui::Id, &'static str, egui::Rect)> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| !r.container && !GROWS_WHEN_HOVERED.contains(&r.info.kind))
+        .map(|r| (r.id, r.info.kind, r.rect))
+        .collect();
+    for (id, kind, rect) in rest {
+        if !rect.is_positive() {
+            continue;
+        }
+        harness.hover_at(rect.center());
+        harness.run_steps(3);
+        let now = harness
             .state()
             .registry
             .records()
             .iter()
-            .filter(|r| !r.container && !GROWS_WHEN_HOVERED.contains(&r.info.kind))
-            .map(|r| (r.id, r.info.kind, r.rect))
-            .collect();
-        for (id, kind, rect) in rest {
-            if !rect.is_positive() {
-                continue;
+            .find(|r| r.id == id)
+            .map(|r| r.rect);
+        if let Some(now) = now {
+            compared += 1;
+            if now.size() != rect.size() {
+                grew.push(format!("{page:?}: {kind}: {rect:?} -> {now:?}"));
             }
-            harness.hover_at(rect.center());
-            harness.run_steps(3);
-            let now = harness
-                .state()
-                .registry
-                .records()
-                .iter()
-                .find(|r| r.id == id)
-                .map(|r| r.rect);
-            if let Some(now) = now {
-                compared += 1;
-                if now.size() != rect.size() {
-                    grew.push(format!("{page:?}: {kind}: {rect:?} -> {now:?}"));
-                }
-            }
-            harness.remove_cursor();
-            harness.run_steps(2);
         }
+        harness.remove_cursor();
+        harness.run_steps(2);
     }
-    assert!(compared > 0, "no widget was compared");
+    assert!(compared > 0, "{page:?}: no widget was compared");
     assert!(
         grew.is_empty(),
         "sized differently when hovered:\n  {}",
         grew.join("\n  ")
     );
+    Ok(())
 }
 
 /// The side panel keeps `LEFT_PANEL_WIDTH` whatever Widget Info shows: hovering each widget of
 /// the Basic page in turn shows infos short enough to fit and long enough to scroll, and the
 /// panel is as wide after each as it opened. Stepped at 60 passes a second, as a display
 /// draws the scroll bar's show animation over several passes (`ScrollArea`'s
-/// `animate_bool_responsive`, `egui/src/containers/scroll_area.rs:751-761`).
-#[test]
-fn the_side_panel_keeps_its_width_when_widget_info_scrolls() {
+/// `animate_bool_responsive`, `egui/src/containers/scroll_area.rs:751-761`). One test per preset
+/// and mode.
+mod the_side_panel_keeps_its_width_when_widget_info_scrolls {
+    use super::*;
+
+    #[test]
+    fn kde_breeze_light() -> Result<(), String> {
+        the_side_panel_keeps_its_width_under("kde-breeze", egui::Theme::Light)
+    }
+
+    #[test]
+    fn test_preset_dark() -> Result<(), String> {
+        the_side_panel_keeps_its_width_under(TEST_PRESET, egui::Theme::Dark)
+    }
+}
+
+fn the_side_panel_keeps_its_width_under(preset: &str, theme: egui::Theme) -> Result<(), String> {
     const STEP: f32 = 1.0 / 60.0;
-    for (preset, theme) in [
-        ("kde-breeze", egui::Theme::Light),
-        (TEST_PRESET, egui::Theme::Dark),
-    ] {
-        let cli = cli(&[("--theme", preset), ("--tab", "basic")]);
-        let mut harness = Harness::builder()
-            .with_context_setup(emoji_fallbacks)
-            .with_theme(theme)
-            .with_size(crate::WINDOW_SIZE)
-            .with_step_dt(STEP)
-            .build_eframe(move |cc| {
-                App::new(cc, &cli).expect("the showcase starts under a bundled preset")
-            });
-        // The harness turns animations off (`egui_kittest/src/lib.rs:144-150`); a display runs
-        // them for egui's own `animation_time`.
-        let animation_time = egui::Style::default().animation_time;
-        harness
-            .ctx
-            .all_styles_mut(|style| style.animation_time = animation_time);
-        harness.run_steps(4);
-        let width_of = |h: &Harness<'_, App>| {
-            h.state()
-                .registry
-                .records()
-                .iter()
-                .find(|r| r.info.kind == "Side panel")
-                .map(|r| r.rect.width())
-                .expect("the side panel is shown")
-        };
-        // The panel's record holds its splitter's line, in room its frame reserves after it.
-        let opened = crate::LEFT_PANEL_WIDTH
-            + harness
-                .state()
-                .atlas
-                .old_resolved(theme)
-                .splitter
-                .divider_width;
-        assert_eq!(width_of(&harness), opened);
-        let centres: Vec<(&'static str, egui::Pos2)> = harness
-            .state()
+    let cli = cli(&[("--theme", preset), ("--tab", "basic")]);
+    let mut harness = Harness::builder()
+        .with_context_setup(emoji_fallbacks)
+        .with_theme(theme)
+        .with_size(crate::WINDOW_SIZE)
+        .with_step_dt(STEP)
+        .build_eframe(move |cc| {
+            App::new(cc, &cli).expect("the showcase starts under a bundled preset")
+        });
+    // The harness turns animations off (`egui_kittest/src/lib.rs:144-150`); a display runs
+    // them for egui's own `animation_time`.
+    let animation_time = egui::Style::default().animation_time;
+    harness
+        .ctx
+        .all_styles_mut(|style| style.animation_time = animation_time);
+    harness.run_steps(4);
+    let width_of = |h: &Harness<'_, App>| {
+        h.state()
             .registry
             .records()
             .iter()
-            .filter(|r| !r.container && r.rect.is_positive())
-            .map(|r| (r.info.kind, r.rect.center()))
-            .collect();
-        let mut scrolled = false;
-        for (kind, centre) in centres {
-            harness.hover_at(centre);
-            // Past `INFO_SETTLE` and the scroll bar's animation.
-            harness.run_steps(40);
-            scrolled |= harness.state().inspector_scrolls;
-            assert_eq!(
-                width_of(&harness),
-                opened,
-                "{preset} {theme:?}: the side panel changed width after {kind} was hovered"
-            );
-        }
-        assert!(scrolled, "{preset} {theme:?}: no Widget Info scrolled");
+            .find(|r| r.info.kind == "Side panel")
+            .map(|r| r.rect.width())
+            .ok_or("the side panel is shown")
+    };
+    // The panel's record holds its splitter's line, in room its frame reserves after it.
+    let opened = crate::LEFT_PANEL_WIDTH
+        + harness
+            .state()
+            .atlas
+            .old_resolved(theme)
+            .splitter
+            .divider_width;
+    assert_eq!(width_of(&harness)?, opened);
+    let centres: Vec<(&'static str, egui::Pos2)> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| !r.container && r.rect.is_positive())
+        .map(|r| (r.info.kind, r.rect.center()))
+        .collect();
+    let mut scrolled = false;
+    for (kind, centre) in centres {
+        harness.hover_at(centre);
+        // Past `INFO_SETTLE` and the scroll bar's animation.
+        harness.run_steps(40);
+        scrolled |= harness.state().inspector_scrolls;
+        assert_eq!(
+            width_of(&harness)?,
+            opened,
+            "{preset} {theme:?}: the side panel changed width after {kind} was hovered"
+        );
     }
+    assert!(scrolled, "{preset} {theme:?}: no Widget Info scrolled");
+    Ok(())
 }
 
 /// The side panel keeps `LEFT_PANEL_WIDTH` whatever a theme setting's drop-down shows: a
