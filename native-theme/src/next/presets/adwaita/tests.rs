@@ -176,6 +176,32 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
     }
 }
 
+/// A mixed box under the pointer or pressed is drawn as a checked one: the
+/// accent with no outline, not the unchecked box's hover outline or pressed
+/// trough. No exclusive group clears `HOVER` or `PRESSED` from a mixed box's
+/// state; the mixed rule, last, wins, as libadwaita 1.10.0 keeps
+/// `:indeterminate` out of the unchecked hover and active rules
+/// (`&:not(:checked):not(:indeterminate)`, _checks.scss:33-50) and draws it
+/// with `:checked` (`&:checked, &:indeterminate`, :52-60).
+#[test]
+fn a_mixed_box_under_the_pointer_or_pressed_is_drawn_as_a_checked_one() {
+    for theme in both_schemes() {
+        let accent = Paint::Solid(theme.colors.accent.fill);
+        for state in [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::HOVER | WidgetState::PRESSED,
+        ] {
+            let mixed = theme.checkbox.indicator(WidgetState::INDETERMINATE | state);
+            let checked = theme.checkbox.indicator(WidgetState::CHECKED | state);
+            assert_eq!(mixed.fill, accent, "{state:?}");
+            assert_eq!(mixed.stroke, Stroke::None, "{state:?}");
+            assert_eq!(mixed.fill, checked.fill, "{state:?}");
+            assert_eq!(mixed.stroke, checked.stroke, "{state:?}");
+        }
+    }
+}
+
 #[test]
 fn a_hovered_switch_that_is_on_has_its_own_colour() {
     for theme in both_schemes() {
