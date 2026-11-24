@@ -515,40 +515,27 @@ fn pressed_edge_drawn(
 }
 
 /// The installed 0.8.0 theme's menu, as the showcase draws a menu title and
-/// a menu row:`menu.item_label(NONE)`'s font and a row's size as
-/// `next::geometry::menu_item` refines a menu item, a hovered row's
-/// `menu.item(HOVER).fill` and `menu.item_label(HOVER).color` and the
-/// outline a rule states for `menu.item(HOVER)`, a pressed row's fill,
-/// text and outline a rule states for `menu.item(PRESSED)`, a title's `menu_bar.item`
-/// fills, text and padding, `menu.item(NONE)`'s padding sides and corners
-/// (platform-facts §2.6: the items are rectangular), and the popup
-/// `menu.panel(NONE).fill` framed by the menu's panel or the popover's
-/// ([`MenuRowsFrame`]; §2.6: the popup border is §2.16's), its rows inset
-/// by `menu.panel(NONE)`'s padding sides where stated.
+/// a menu row, property by property (spec §10, rule 0): the rows' look the
+/// Overlays page's menu rows take too ([`MenuRowsLook`], over
+/// [`MenuRowsParts`]), `menu.item_label(NONE)`'s font and a row's size as
+/// `next::geometry::menu_item` refines a menu item, a title's `menu_bar.item`
+/// fills, text and padding, `menu.item(NONE)`'s padding sides
+/// (platform-facts §2.6: the items are rectangular), and the popup's
+/// separator, row inset and shadow; each property the theme leaves without
+/// a value gpui can take is upstream's own for that property alone.
 #[derive(Clone)]
 pub(crate) struct MenuLook {
     /// `next::geometry::menu_item`: a row's font, stated padding sides and
-    /// height.
-    item: StyleRefinement,
-    /// `menu.item_label(NONE).color`, a row's text and a title's.
-    text: Hsla,
-    /// A lit row's fill and text ([`menu_hover_of`]): `menu.item(HOVER).fill`
-    /// and `menu.item_label(HOVER).color` where a rule states each for the
-    /// hover state, else gpui-component's own.
-    hover: Hsla,
-    hover_text: Hsla,
-    /// A lit row's outline, the stroke a rule states for `menu.item(HOVER)`,
-    /// at its width: `None` where no rule states one, or it is 0 wide.
-    edge: Option<(Hsla, Pixels)>,
-    /// A pressed row's fill and text, `menu.item(PRESSED).fill` and
-    /// `menu.item_label(PRESSED).color` where a rule states each for the
-    /// pressed state, asked of that state alone (spec §2, `from_state`): the
-    /// row then keeps its hover fill or its hover text.
-    active: Option<Hsla>,
-    active_text: Option<Hsla>,
-    /// A pressed row's outline ([`menu_pressed_edge`]), `None` where it
-    /// keeps the hover one.
-    pressed_edge: Option<(Hsla, Pixels)>,
+    /// height; `None` where `menu.item_label(NONE)`'s font has no value gpui
+    /// can take, the rows and titles then in upstream's `text_sm`
+    /// (menu/popup_menu.rs, `PopupMenu::render_item`).
+    item: Option<StyleRefinement>,
+    /// `menu.item_label(NONE).color`, a title's text; `None` where unstated:
+    /// the title keeps the text it sits in.
+    title_text: Option<Hsla>,
+    /// The rows' look: their text, hover, press, outlines and corners, the
+    /// popup's fill and frame.
+    rows: MenuRowsLook,
     /// A title's fill under the pointer and while its menu is open, and its
     /// text in each: the fill and the colour a rule states for
     /// `menu_bar.item(HOVER)` and `menu_bar.item_label(HOVER)`, else the
@@ -558,8 +545,6 @@ pub(crate) struct MenuLook {
     bar_open: Hsla,
     bar_hover_text: Hsla,
     bar_open_text: Hsla,
-    /// `menu.item(NONE).corners`, `None` where unstated: square rows.
-    radius: Option<Pixels>,
     /// `menu.item(NONE)`'s padding sides.
     padding: [Option<f32>; 4],
     /// A title's padding: `menu_bar.item(NONE)`'s sides over `padding`.
@@ -571,11 +556,9 @@ pub(crate) struct MenuLook {
     /// Whether the theme's text scale is above 1, where a fixed height
     /// becomes a minimum (geometry.rs, `height_rule`).
     text_scaled_up: bool,
-    /// `menu.panel(NONE).fill`.
-    background: Hsla,
-    /// `menu.separator(NONE).fill`.
+    /// `menu.separator(NONE).fill`, else the `border` token the popup's
+    /// separator takes before a theme is installed.
     separator: Hsla,
-    frame: MenuRowsFrame,
     /// `menu.panel(NONE)`'s padding sides over `popover.panel`'s: round the
     /// popup's rows.
     popup_padding: [Option<f32>; 4],
@@ -583,70 +566,80 @@ pub(crate) struct MenuLook {
     /// states a top or bottom padding (Breeze's rows touch), else
     /// upstream's [`MENU_POPUP_ROW_GAP`].
     popup_row_gap: Option<Rems>,
-    /// The popup's drop shadow ([`menu_popup_shadow`]).
-    popup_shadow: Vec<gpui::BoxShadow>,
+    /// The popup's drop shadow ([`menu_popup_shadow`]); `None` where
+    /// `popover.panel` states layers gpui cannot take: `popover_style`'s own
+    /// stays.
+    popup_shadow: Option<Vec<gpui::BoxShadow>>,
 }
 
 impl MenuLook {
-    /// The menu's look under `r`, the hovered row's fill and text as
-    /// [`menu_hover_of`] gives them over `t`, the installed gpui theme; or
-    /// the home `r` leaves without a value gpui can take that the look
-    /// needs, where the menus keep upstream's look (spec §10, rule 0).
+    /// The menu's look under `r`, property by property over `t`, the
+    /// installed gpui theme: the rows' as [`MenuRowsLook::of`] gives it, the
+    /// popup's frame where neither panel states one `popover_style`'s own
+    /// (gpui-component 0.10.0 src/styled.rs:186-194: no border, its ring
+    /// and shadow, rounded `radius`).
     pub(crate) fn next_of(
         r: &native_theme::next::ResolvedTheme,
         t: &gpui_component::theme::Theme,
-    ) -> Result<Self, &'static str> {
+    ) -> Self {
+        Self::of(r, &MenuRowsParts::of(r), t)
+    }
+
+    /// [`next_of`](Self::next_of) with the rows' and the popup's parts
+    /// `parts`, `MenuRowsParts::of(r)` there.
+    pub(crate) fn of(
+        r: &native_theme::next::ResolvedTheme,
+        parts: &MenuRowsParts,
+        t: &gpui_component::theme::Theme,
+    ) -> Self {
         let (m, bar) = (&r.menu, &r.menu_bar);
-        let hovered = m.item(WidgetState::HOVER);
-        let rest = m.item(WidgetState::NONE);
-        let panel = m.panel(WidgetState::NONE);
-        let edge_width = next::stroke_width_of(&hovered).filter(|width| *width > 0.0);
-        let (hover, hover_text) = menu_hover_of(
-            &hovered,
-            &m.item_label(WidgetState::HOVER),
-            &m.item_label(WidgetState::NONE),
-            t,
-        );
-        let bar_hover = next::state_fill_of(&bar.item(WidgetState::HOVER)).unwrap_or(hover);
-        let bar_hover_text =
-            next::state_text_color_of(&bar.item_label(WidgetState::HOVER)).unwrap_or(hover_text);
-        let padding = next::padding_of(&rest);
-        let [panel_top, _, panel_bottom, _] = next::padding_of(&panel);
-        Ok(Self {
-            item: next::geometry::menu_item(r).map_err(|unmapped| unmapped.home())?,
-            text: next::text_color_of(&m.item_label(WidgetState::NONE))
-                .ok_or("menu.item_label(NONE).color")?,
-            hover,
-            hover_text,
-            edge: next::state_stroke_color_of(&hovered)
-                .zip(edge_width)
-                .map(|(colour, width)| (colour, px(width))),
-            active: next::state_fill_of(&m.item(WidgetState::PRESSED)),
-            active_text: next::state_text_color_of(&m.item_label(WidgetState::PRESSED)),
-            pressed_edge: menu_pressed_edge(&m.item(WidgetState::PRESSED)),
+        let rows = MenuRowsLook::of(parts, t, px(0.));
+        let bar_hover = next::state_fill_of(&bar.item(WidgetState::HOVER)).unwrap_or(rows.hover);
+        let bar_hover_text = next::state_text_color_of(&bar.item_label(WidgetState::HOVER))
+            .unwrap_or(rows.hover_text);
+        let padding = next::padding_of(&parts.rest);
+        let [panel_top, _, panel_bottom, _] = next::padding_of(&parts.panel);
+        Self {
+            item: next::geometry::menu_item(r).ok(),
+            title_text: next::text_color_of(&parts.label),
             bar_hover,
             bar_open: next::state_fill_of(&bar.item(WidgetState::OPEN)).unwrap_or(bar_hover),
             bar_hover_text,
             bar_open_text: next::state_text_color_of(&bar.item_label(WidgetState::OPEN))
                 .unwrap_or(bar_hover_text),
-            radius: next::radius_of(&rest).map(px),
             padding,
             title_padding: padding_over(next::padding_of(&bar.item(WidgetState::NONE)), padding),
-            row_height: rest.max_size[1].map(px),
-            min_row_height: rest.min_size[1].map(px),
+            row_height: parts.rest.max_size[1].map(px),
+            min_row_height: parts.rest.min_size[1].map(px),
             text_scaled_up: r.context.text_scale > 1.0,
-            background: next::fill_of(&panel).ok_or("menu.panel(NONE).fill")?,
-            separator: next::fill_of(&m.separator(WidgetState::NONE))
-                .ok_or("menu.separator(NONE).fill")?,
-            frame: MenuRowsFrame::next_of(r)?,
+            separator: next::fill_of(&m.separator(WidgetState::NONE)).unwrap_or(t.border),
             popup_padding: padding_over(
-                next::padding_of(&panel),
-                next::padding_of(&r.popover.panel),
+                next::padding_of(&parts.panel),
+                next::padding_of(&parts.popover),
             ),
             popup_row_gap: (panel_top.is_none() && panel_bottom.is_none())
                 .then_some(MENU_POPUP_ROW_GAP),
-            popup_shadow: menu_popup_shadow(&r.popover.panel, info::next_stated(r.colors.shadow))?,
-        })
+            popup_shadow: menu_popup_shadow(&parts.popover, info::next_stated(r.colors.shadow))
+                .ok(),
+            rows,
+        }
+    }
+
+    /// The rows' look.
+    pub(crate) fn rows(&self) -> &MenuRowsLook {
+        &self.rows
+    }
+
+    /// `el` in the font `next::geometry::menu_item` sets, else upstream's
+    /// `text_sm`.
+    fn font<E: Styled>(&self, mut el: E) -> E {
+        match &self.item {
+            Some(item) => {
+                el.text_style().refine(&item.text);
+                el
+            }
+            None => el.text_sm(),
+        }
     }
 
     /// `title` as a menu title, in the font `next::geometry::menu_item`
@@ -654,22 +647,21 @@ impl MenuLook {
     /// `bar_open_text` where `selected` (its menu is open, under the pointer
     /// too), filled `bar_hover` and lettered `bar_hover_text` under the
     /// pointer.
-    pub(crate) fn title(&self, mut title: Stateful<Div>, selected: bool) -> Stateful<Div> {
+    pub(crate) fn title(&self, title: Stateful<Div>, selected: bool) -> Stateful<Div> {
         let (hover, hover_text) = (self.bar_hover, self.bar_hover_text);
-        title.text_style().refine(&self.item.text);
         next_padded(
-            title,
+            self.font(title),
             self.title_padding,
             Some(MENU_TITLE_PADDING_X),
             Some(MENU_TITLE_PADDING_Y),
         )
-        .when_some(self.radius, |title, radius| title.rounded(radius))
+        .when_some(self.rows.radius, |title, radius| title.rounded(radius))
         .map(|title| {
             if selected {
                 title.bg(self.bar_open).text_color(self.bar_open_text)
             } else {
                 title
-                    .text_color(self.text)
+                    .when_some(self.title_text, |title, text| title.text_color(text))
                     .hover(move |style| style.bg(hover).text_color(hover_text))
             }
         })
@@ -680,20 +672,22 @@ impl MenuLook {
     /// icon gap), with the fallbacks on what the theme leaves unstated: an
     /// unstated left or right is padded by `MENU_ROW_PADDING_X`
     /// ([`next_padded`], over the stated sides the builder set already), an
-    /// unstated top or bottom by nothing.
+    /// unstated top or bottom by nothing. Where the builder has no font gpui
+    /// can take, the row is upstream's `text_sm` and, unless a top or bottom
+    /// padding is stated, `MENU_ROW_HEIGHT` tall.
     pub(crate) fn row(&self, lit: bool) -> Div {
         // The shortcut is the plain text of a Kbd without its appearance
         // (kbd.rs:236-238), which takes the row's font and line box.
-        let row = next_padded(
-            h_flex().refine_style(&self.item),
-            self.padding,
-            Some(MENU_ROW_PADDING_X),
-            None,
-        )
-        .when_some(self.radius, |row, radius| row.rounded(radius))
-        .relative()
-        .group(MENU_ROW_GROUP);
-        let no_height = self.row_height.is_none() && self.min_row_height.is_none();
+        let row = match &self.item {
+            Some(item) => h_flex().refine_style(item),
+            None => h_flex().text_sm(),
+        };
+        let row = next_padded(row, self.padding, Some(MENU_ROW_PADDING_X), None)
+            .when_some(self.rows.radius, |row, radius| row.rounded(radius))
+            .relative()
+            .group(MENU_ROW_GROUP);
+        let no_height =
+            self.item.is_none() || (self.row_height.is_none() && self.min_row_height.is_none());
         let [top, _, bottom, _] = self.padding;
         let row = match (no_height, top, bottom) {
             (true, None, None) if self.text_scaled_up => row.min_h(MENU_ROW_HEIGHT).h_auto(),
@@ -701,76 +695,10 @@ impl MenuLook {
             _ => row,
         };
         if lit {
-            row.bg(self.hover).text_color(self.hover_text)
+            row.bg(self.rows.hover).text_color(self.rows.hover_text)
         } else {
-            row.text_color(self.text)
+            row.text_color(self.rows.text)
         }
-    }
-
-    /// The outline of a row in `MENU_ROW_GROUP`, for the row's last child:
-    /// a box laid over the whole row, its padding included, so nothing
-    /// moves, rounded as the row's fill, in `edge` at its width. Lit by
-    /// the row's state where `lit` is `Some` (`MenuBar::popup`'s highlighted
-    /// row), by the pointer on the row where it is `None` (`menu_rows`);
-    /// `None` where the theme draws no outline. `none` is upstream's own
-    /// `transparent` token, the box's colour where it is not lit.
-    ///
-    /// Its group-hover style, a no-op where `lit` is `Some`, gives the box a
-    /// `Normal` hitbox, which leaves the row's own mouse handling alone, as
-    /// `combo_surface`'s hover edge does (gpui-pre 0.3.12
-    /// `elements/div.rs:2460-2486`, `should_insert_hitbox`); its id gives it
-    /// the state a group-active style needs (`:3570-3579`): while the row is
-    /// pressed the box is `pressed_edge` where a rule states one
-    /// ([`menu_pressed_edge`]), else the hover outline stays.
-    pub(crate) fn edge(&self, lit: Option<bool>, none: Hsla) -> Option<Stateful<Div>> {
-        let pressed = pressed_edge_drawn(self.edge, self.pressed_edge);
-        if self.edge.is_none() && pressed.is_none() {
-            return None;
-        }
-        let edge = div()
-            .id("menu-row-edge")
-            .absolute()
-            .inset_0()
-            .when_some(self.radius, |edge, radius| edge.rounded(radius));
-        let edge = match self.edge {
-            Some((edge_colour, width)) => {
-                let rest = if lit == Some(true) { edge_colour } else { none };
-                let hovered = if lit.is_none() { edge_colour } else { rest };
-                edge.border(width)
-                    .border_color(rest)
-                    .group_hover(MENU_ROW_GROUP, move |style| style.border_color(hovered))
-            }
-            None => edge,
-        };
-        Some(match pressed {
-            Some((colour, width)) => edge.group_active(MENU_ROW_GROUP, move |style| {
-                style.border(width).border_color(colour)
-            }),
-            None => edge,
-        })
-    }
-
-    /// `row` while the mouse button is held on it: filled `active` and
-    /// lettered `active_text` where each is stated, over its hover look; a
-    /// row of `MENU_ROW_GROUP` whose [`edge`](Self::edge) hides while it is
-    /// pressed where `active` is stated. One `active` style, as gpui keeps
-    /// one (gpui-pre 0.3.12 `elements/div.rs`, `active`): where neither is
-    /// stated the row is left as it is.
-    pub(crate) fn pressed(&self, row: Stateful<Div>) -> Stateful<Div> {
-        let (fill, text) = (self.active, self.active_text);
-        if fill.is_none() && text.is_none() {
-            return row;
-        }
-        row.active(move |style| {
-            let style = match fill {
-                Some(fill) => style.bg(fill),
-                None => style,
-            };
-            match text {
-                Some(text) => style.text_color(text),
-                None => style,
-            }
-        })
     }
 }
 
@@ -1118,7 +1046,7 @@ impl MenuBar {
                         };
                         let row = row.id(("menu-row", ix));
                         let row = match look {
-                            Some(look) => look.pressed(row),
+                            Some(look) => look.rows.pressed(row),
                             None => row,
                         };
                         let label = div()
@@ -1141,31 +1069,31 @@ impl MenuBar {
                                 format!("menu-row-shortcut-{name}"),
                             ))
                         });
-                        let row = row
-                            .w_full()
-                            .gap(MENU_SHORTCUT_GAP)
-                            .justify_between()
-                            .items_center()
-                            .cursor_default()
-                            .debug_selector({
-                                let name = name.clone();
-                                move || format!("menu-row-{name}")
-                            })
-                            .child(label)
-                            .children(shortcut)
-                            .children(listed(ix).map(|id| elements::record(ui, id)))
-                            .children(
-                                look.and_then(|look| look.edge(Some(lit), cx.theme().transparent)),
-                            )
-                            .on_hover(cx.listener(move |this, hovered: &bool, _, cx| {
-                                if *hovered && this.highlighted != Some(ix) {
-                                    this.highlighted = Some(ix);
-                                    cx.notify();
-                                }
-                            }))
-                            .on_click(cx.listener(move |this, _, window, cx| {
-                                this.run(dispatched.as_ref(), window, cx);
-                            }));
+                        let row =
+                            row.w_full()
+                                .gap(MENU_SHORTCUT_GAP)
+                                .justify_between()
+                                .items_center()
+                                .cursor_default()
+                                .debug_selector({
+                                    let name = name.clone();
+                                    move || format!("menu-row-{name}")
+                                })
+                                .child(label)
+                                .children(shortcut)
+                                .children(listed(ix).map(|id| elements::record(ui, id)))
+                                .children(look.and_then(|look| {
+                                    look.rows.edge(Some(lit), cx.theme().transparent)
+                                }))
+                                .on_hover(cx.listener(move |this, hovered: &bool, _, cx| {
+                                    if *hovered && this.highlighted != Some(ix) {
+                                        this.highlighted = Some(ix);
+                                        cx.notify();
+                                    }
+                                }))
+                                .on_click(cx.listener(move |this, _, window, cx| {
+                                    this.run(dispatched.as_ref(), window, cx);
+                                }));
                         row.into_any_element()
                     }
                 }
@@ -1176,13 +1104,20 @@ impl MenuBar {
             .p_0()
             .on_mouse_down_out(cx.listener(|this, _, window, cx| this.close(window, cx)))
             .child(body);
+        // Where neither panel states the frame's stroke, popover_style's
+        // ring, inside its shadow, is the popup's edge, and its shadow stays.
         let frame = match look {
-            Some(look) => frame
-                .bg(look.background)
-                .border(px(look.frame.width.0))
-                .border_color(look.frame.colour.unwrap_or(cx.theme().transparent))
-                .rounded(px(look.frame.radius.0))
-                .shadow(look.popup_shadow.clone()),
+            Some(look) => {
+                let rows = &look.rows;
+                let frame = frame.bg(rows.background).rounded(rows.frame_radius.0);
+                match (rows.frame_width.1, &look.popup_shadow) {
+                    (None, _) => frame,
+                    (Some(_), shadow) => frame
+                        .border(rows.frame_width.0)
+                        .border_color(rows.frame_colour)
+                        .when_some(shadow.clone(), |frame, shadow| frame.shadow(shadow)),
+                }
+            }
             None => frame,
         };
         match self.open {
@@ -1222,7 +1157,7 @@ const MENU_TITLES: [&str; 4] = [
 
 impl Render for MenuBar {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let look = next_resolved(cx).and_then(|r| MenuLook::next_of(r, cx.theme()).ok());
+        let look = next_resolved(cx).map(|r| MenuLook::next_of(r, cx.theme()));
         let open = self.open;
         let menus = app_menu_rows();
         let mut popup = open.and_then(|ix| menus.get(ix)).map(|(_, rows)| {
@@ -5805,7 +5740,7 @@ fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
 const COMBO_HOVER_GROUP: &str = "showcase-combo-hover";
 
 /// The group a menu row names itself by, whose hover and press its outline
-/// ([`MenuLook::edge`]) follows.
+/// ([`MenuRowsLook::edge`]) follows.
 const MENU_ROW_GROUP: &str = "showcase-menu-row";
 
 /// A `ColorPicker` over `state`, reading `label`.
@@ -9934,38 +9869,6 @@ pub(crate) fn menu_frame_value<T>(
         .or_else(|| read(popover).map(|value| (value, FrameFrom::Popover)))
 }
 
-/// The popup frame of the Overlays page's menu rows: its edge's width and
-/// colour, from one panel ([`menu_frame_value`] on the stroke's width),
-/// the colour `None` where that panel states its stroke as none, and its
-/// corner radius, each with the panel it is from.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct MenuRowsFrame {
-    pub(crate) width: (f32, FrameFrom),
-    pub(crate) colour: Option<Hsla>,
-    pub(crate) radius: (f32, FrameFrom),
-}
-
-impl MenuRowsFrame {
-    /// The frame `r` states, or the home it leaves without a value gpui can
-    /// take: `popover.panel`'s, where the menu's panel states none either.
-    pub(crate) fn next_of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
-        let (menu, popover) = (&r.menu.panel(WidgetState::NONE), &r.popover.panel);
-        let width = menu_frame_value(menu, popover, next::stroke_width_of)
-            .ok_or("popover.panel.stroke.width")?;
-        let colour = match width.1 {
-            FrameFrom::Menu => next::stroke_color_of(menu),
-            FrameFrom::Popover => next::stroke_color_of(popover),
-        };
-        let radius =
-            menu_frame_value(menu, popover, next::radius_of).ok_or("popover.panel.corners")?;
-        Ok(Self {
-            width,
-            colour,
-            radius,
-        })
-    }
-}
-
 /// The parts of the installed 0.8.0 theme the Overlays page's menu rows
 /// ([`menu_rows`]) are painted from, each evaluated once; `Default` where
 /// no 0.8.0 theme is installed, every part stating nothing.
@@ -10009,6 +9912,7 @@ impl MenuRowsParts {
 /// the showcase's menus' look, property by property (spec §10, rule 0):
 /// what the parts state, and where they leave a property without a value
 /// gpui can take, the showcase's own for that property alone.
+#[derive(Clone)]
 pub(crate) struct MenuRowsLook {
     /// `menu.panel(NONE).fill`, else the popover's `popover` token.
     pub(crate) background: Hsla,
@@ -10098,12 +10002,22 @@ impl MenuRowsLook {
         }
     }
 
-    /// A row's outline, laid over the whole row, its padding included, so
-    /// nothing moves, rounded as the row, lit while the pointer is on the
-    /// row and `none` otherwise; while the row is pressed `pressed_edge`
-    /// where a rule states one, else the hover outline, as [`MenuLook::edge`]
-    /// draws it.
-    fn edge(&self, none: Hsla) -> Option<Stateful<Div>> {
+    /// The outline of a row in `MENU_ROW_GROUP`, for the row's last child:
+    /// a box laid over the whole row, its padding included, so nothing
+    /// moves, rounded as the row's fill, in `edge` at its width. Lit by
+    /// the row's state where `lit` is `Some` (`MenuBar::popup`'s highlighted
+    /// row), by the pointer on the row where it is `None` (`menu_rows`);
+    /// `None` where the theme draws no outline. `none` is upstream's own
+    /// `transparent` token, the box's colour where it is not lit.
+    ///
+    /// Its group-hover style, a no-op where `lit` is `Some`, gives the box a
+    /// `Normal` hitbox, which leaves the row's own mouse handling alone, as
+    /// `combo_surface`'s hover edge does (gpui-pre 0.3.12
+    /// `elements/div.rs:2460-2486`, `should_insert_hitbox`); its id gives it
+    /// the state a group-active style needs (`:3570-3579`): while the row is
+    /// pressed the box is `pressed_edge` where a rule states one
+    /// ([`menu_pressed_edge`]), else the hover outline stays.
+    pub(crate) fn edge(&self, lit: Option<bool>, none: Hsla) -> Option<Stateful<Div>> {
         let pressed = pressed_edge_drawn(self.edge, self.pressed_edge);
         if self.edge.is_none() && pressed.is_none() {
             return None;
@@ -10114,10 +10028,13 @@ impl MenuRowsLook {
             .inset_0()
             .when_some(self.radius, |edge, radius| edge.rounded(radius));
         let edge = match self.edge {
-            Some((colour, width)) => edge
-                .border(width)
-                .border_color(none)
-                .group_hover(MENU_ROW_GROUP, move |style| style.border_color(colour)),
+            Some((edge_colour, width)) => {
+                let rest = if lit == Some(true) { edge_colour } else { none };
+                let hovered = if lit.is_none() { edge_colour } else { rest };
+                edge.border(width)
+                    .border_color(rest)
+                    .group_hover(MENU_ROW_GROUP, move |style| style.border_color(hovered))
+            }
             None => edge,
         };
         Some(match pressed {
@@ -10128,9 +10045,14 @@ impl MenuRowsLook {
         })
     }
 
-    /// `row` while the mouse button is held on it, as [`MenuLook::pressed`]
-    /// draws it.
-    fn pressed(&self, row: Stateful<Div>) -> Stateful<Div> {
+    /// `row` while the mouse button is held on it: filled `active` and
+    /// lettered `active_text` where a rule states each, the hover fill or
+    /// the hover text staying where it states only the other; its outline
+    /// is the row's [`edge`](Self::edge)'s, which keeps showing while the
+    /// row is pressed. One `active` style, as gpui keeps one (gpui-pre
+    /// 0.3.12 `elements/div.rs`, `active`): where neither is stated the row
+    /// is left as it is.
+    pub(crate) fn pressed(&self, row: Stateful<Div>) -> Stateful<Div> {
         let (fill, text) = (self.active, self.active_text);
         if fill.is_none() && text.is_none() {
             return row;
@@ -10212,7 +10134,7 @@ pub(crate) fn menu_rows(
                 .hover(move |this| this.bg(hover_bg).text_color(hover_text))
                 .children(icon.next_glyph_sized(cx, next::geometry::icon_size_small))
                 .child(label)
-                .children(look.edge(t.transparent));
+                .children(look.edge(None, t.transparent));
             #[cfg(test)]
             let row = row.child(crate::elements::label_probe(ui, format!("{id}-label")));
             // Pressed before `info`, which wraps the row in an element of

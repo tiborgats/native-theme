@@ -11996,7 +11996,7 @@ fn the_theme_menu_has_breezes_geometry(cx: &mut TestAppContext) {
         "kde-breeze light's menu geometry (menu.panel(NONE)'s top padding, menu.item(NONE)'s min_size[1], side padding and max_size[1]) and body size, which this test reads"
     );
     // The popup's frame: the menu panel's stroke, else the popover's
-    // (`MenuRowsFrame::next_of`).
+    // (`demo::menu_frame_value`).
     let frame_width = stroke_width_of(&panel).or_else(|| stroke_width_of(&r.popover.panel));
     assert!(
         frame_width.is_some(),
@@ -13348,14 +13348,14 @@ fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext
 /// `colors.window.border` and `menu.item(HOVER).fill` to
 /// `colors.window.foreground`, colours of the same theme that differ from
 /// the menu's own, the frame is filled with the one and a hovered row with
-/// the other, and the frame is edged as `demo::MenuRowsFrame` reads it. A
-/// reader of the 0.7.2 theme, or of the popover and accent tokens, would
-/// paint the unpatched colours.
+/// the other, and the frame is edged in the stroke of the panel its width
+/// is from (`demo::menu_frame_value`). A reader of the 0.7.2 theme, or of
+/// the popover and accent tokens, would paint the unpatched colours.
 #[gpui::test]
 fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) {
-    use crate::demo::{MENU_ROWS_FRAME, MenuRowsFrame};
+    use crate::demo::{FrameFrom, MENU_ROWS_FRAME, menu_frame_value};
     use native_theme::next::{MenuRule, Paint, PartPatch, ThemePatch, WidgetState};
-    use native_theme_gpui::next::fill_of;
+    use native_theme_gpui::next::{fill_of, stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let mut before = None;
     let r = install_patched_breeze(&mut cx, &showcase, Page::Overlays, |r| {
@@ -13387,12 +13387,14 @@ fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) 
         before.is_some_and(|(rest, hover)| rest != fill && hover != hovered_fill),
         "kde-breeze light's menu is filled in the patched colours, so the test could not tell them apart"
     );
-    let frame = MenuRowsFrame::next_of(&r);
-    assert!(
-        frame.is_ok(),
-        "kde-breeze light states no menu frame: {frame:?}"
-    );
-    let Ok(frame) = frame else { return };
+    let (panel, popover) = (r.menu.panel(WidgetState::NONE), &r.popover.panel);
+    let frame = menu_frame_value(&panel, popover, stroke_width_of);
+    assert!(frame.is_some(), "kde-breeze light states no menu frame");
+    let Some((width, from)) = frame else { return };
+    let colour = match from {
+        FrameFrom::Menu => stroke_color_of(&panel),
+        FrameFrom::Popover => stroke_color_of(popover),
+    };
     hover(&mut cx, point(px(4.), px(4.)));
     draw(&mut cx);
     assert_eq!(
@@ -13402,7 +13404,7 @@ fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) 
     );
     assert_eq!(
         painted_edge(&mut cx, MENU_ROWS_FRAME),
-        frame.colour.filter(|_| frame.width.0 > 0.0),
+        colour.filter(|_| width > 0.0),
         "the menu rows' frame is not edged as the theme strokes the menu's popup frame"
     );
     let row = "overlays-menu-row-copy";
@@ -22307,24 +22309,26 @@ fn a_theme_drawn_sliders_info_prints_its_look() {
 
 /// The application's menus claim a `menu edge` only where the popup draws
 /// one (M9-034): the stroke colour of the panel the frame is from
-/// (`demo::MenuRowsFrame`, the menu's panel or the popover's) where that
+/// (`demo::MenuLook`'s rows, the menu's panel or the popover's) where that
 /// stroke is above 0 wide, and none where it is 0, its config line then
 /// saying so -- over every bundled preset in both modes.
 #[test]
 fn the_app_menus_claim_a_menu_edge_only_where_one_is_drawn() {
-    use crate::demo::{FrameFrom, MenuRowsFrame};
+    use crate::demo::{FrameFrom, MenuLook};
     use crate::info::MenuHost;
     use native_theme::next::WidgetState;
     use native_theme_gpui::next::stroke_color_of;
     let mut branches = (false, false);
     for (name, r, t) in every_next_variant() {
-        let frame = MenuRowsFrame::next_of(&r);
+        let look = MenuLook::next_of(&r, &t);
+        let (width, from) = look.rows().frame_width;
         assert!(
-            frame.is_ok(),
-            "{name}: the menu's popup has no frame: {frame:?}"
+            from.is_some(),
+            "{name}: neither the menu's panel nor the popover's states a stroke width"
         );
-        let Ok(frame) = frame else { continue };
-        let (field, home, colour) = match frame.width.1 {
+        let Some(from) = from else { continue };
+        let width = width.as_f32();
+        let (field, home, colour) = match from {
             FrameFrom::Menu => (
                 "menu.panel(NONE).stroke.color",
                 "menu.panel(NONE)",
@@ -22338,7 +22342,7 @@ fn the_app_menus_claim_a_menu_edge_only_where_one_is_drawn() {
         };
         let info = crate::info::app_menus(&t, MenuHost::Row, Some(&r));
         let line = note_of(&info.config, "menu edge");
-        if frame.width.0 > 0.0 {
+        if width > 0.0 {
             branches.0 = true;
             assert_eq!(
                 claim_as(&info, "menu edge"),
@@ -26729,12 +26733,83 @@ fn a_disabled_checkboxs_info_claims_the_border_it_draws() {
 
 /// The menus' look under `r` over the gpui theme the connector builds from
 /// it (`next::to_theme`), as the showcase draws them with that theme
-/// installed; the home either leaves without a value gpui can take.
+/// installed; the home `to_theme` leaves without a value gpui can take.
 fn menu_look_of(
     r: &native_theme::next::ResolvedTheme,
 ) -> Result<crate::demo::MenuLook, &'static str> {
     let t = native_theme_gpui::next::to_theme(r).map_err(|unmapped| unmapped.home())?;
-    crate::demo::MenuLook::next_of(r, &t)
+    Ok(crate::demo::MenuLook::next_of(r, &t))
+}
+
+/// The menus' look (`demo::MenuLook::of`) takes, property by property, what
+/// the theme states, and where it leaves one property without a value gpui
+/// can take, upstream's own for that property alone (spec §10, rule 0), the
+/// rows' look being the Overlays rows' (`demo::MenuRowsLook`): kde-breeze
+/// light's menu parts with `menu.item_label(NONE).color` and
+/// `menu.panel(NONE).fill` cleared draw a resting row in
+/// `popover_foreground` and the popup in `popover`, `popover_style`'s
+/// (gpui-component 0.10.0 src/styled.rs:190-191), and leave a title's text
+/// to what it sits in, while a hovered row keeps the fill and text
+/// kde-breeze light states for the hover state, and its resting row the
+/// text it states when nothing is cleared. The gpui theme is adwaita
+/// dark's, so its tokens differ from what kde-breeze light states.
+#[test]
+fn a_menu_property_the_theme_leaves_unstated_alone_takes_upstreams_own() -> Result<(), String> {
+    use crate::demo::{MenuLook, MenuRowsParts};
+    use native_theme::next::{
+        PartStated, Preset, TextStated, Theme as NextTheme, ThemeContext, WidgetState,
+    };
+    use native_theme_gpui::next::{state_fill_of, state_text_color_of, text_color_of};
+    let r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let own = NextTheme::preset(Preset::Adwaita).resolve(&ThemeContext::dark());
+    let t = native_theme_gpui::next::to_theme(&own).map_err(|u| u.home().to_string())?;
+    let (Some(fill), Some(text), Some(rest_text)) = (
+        state_fill_of(&r.menu.item(WidgetState::HOVER)),
+        state_text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+        text_color_of(&r.menu.item_label(WidgetState::NONE)),
+    ) else {
+        return Err("kde-breeze light no longer states a menu row's text and hover look".into());
+    };
+    assert_ne!(
+        rest_text, t.popover_foreground,
+        "the tokens are not adwaita dark's"
+    );
+    let full = MenuLook::next_of(&r, &t);
+    assert_eq!(
+        full.row(false).style().text.color,
+        Some(rest_text),
+        "stated: the resting row"
+    );
+    let mut parts = MenuRowsParts::of(&r);
+    parts.label.stated = parts.label.stated.difference(TextStated::COLOR);
+    parts.panel.stated = parts.panel.stated.difference(PartStated::FILL);
+    let look = MenuLook::of(&r, &parts, &t);
+    assert_eq!(
+        look.row(false).style().text.color,
+        Some(t.popover_foreground),
+        "an unstated row text is not the popup's own"
+    );
+    assert_eq!(
+        look.rows().background,
+        t.popover,
+        "an unstated popup fill is not the popup's own"
+    );
+    let mut lit = look.row(true);
+    let style = lit.style();
+    assert_eq!(
+        (style.background.clone(), style.text.color),
+        (Some(fill.into()), Some(text)),
+        "the stated hover look does not stay"
+    );
+    assert_eq!(
+        look.title(gpui::div().id("title"), false)
+            .style()
+            .text
+            .color,
+        None,
+        "a title takes a colour no rule states"
+    );
+    Ok(())
 }
 
 /// A hovered menu row, in the menus (`demo::MenuLook`) and the Overlays

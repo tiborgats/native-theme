@@ -299,38 +299,25 @@ pub fn menu_bar(
 /// where a native theme is installed (`demo::app_menus`).
 pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&NextTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Menus").variant("drawn by the showcase");
-    let (info, unstated) = match native.map(|r| (r, crate::demo::MenuLook::next_of(r, t))) {
-        Some((r, Ok(_))) => (menu_look(info, t, r), None),
-        Some((_, Err(home))) => (info, Some(home)),
-        None => (info, None),
-    };
-    let info = match (native, unstated) {
-        (Some(_), None) => info,
-        (_, unstated) => {
-            let info = info
-                .color(claim(
-                    "menu bg",
-                    "popover",
-                    t.popover,
-                    "gpui-component/styled.rs:190",
-                ))
-                .color(claim("hovered item", "accent", t.accent, "showcase"))
-                .color(claim("menu separator", "border", t.border, "showcase"))
-                .not_themeable(
-                    "menu shadow",
-                    "popover_style's ring and shadow, the popover's own (styled.rs, popover_style)",
-                );
-            let unthemed = match unstated {
-                Some(home) => format!(
-                    "the theme states no value gpui can take at {home}, which the menu's look needs"
-                ),
-                None => "no native theme is installed".to_string(),
-            };
-            info.not_themeable(
-                "font",
-                format!("text_sm, a rem step, and upstream's look: {unthemed}"),
+    let info = match native {
+        Some(r) => menu_look(info, t, r),
+        None => info
+            .color(claim(
+                "menu bg",
+                "popover",
+                t.popover,
+                "gpui-component/styled.rs:190",
+            ))
+            .color(claim("hovered item", "accent", t.accent, "showcase"))
+            .color(claim("menu separator", "border", t.border, "showcase"))
+            .not_themeable(
+                "menu shadow",
+                "popover_style's ring and shadow, the popover's own (styled.rs, popover_style)",
             )
-        }
+            .not_themeable(
+                "font",
+                "text_sm, a rem step, and upstream's look: no native theme is installed",
+            ),
     };
     info.not_themeable(
         "widget",
@@ -396,15 +383,30 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
     let edge_width = stroke_width_of(&hovered).filter(|width| *width > 0.0);
     let active = next::state_fill_of(&m.item(WidgetState::PRESSED));
     let active_text = next::state_text_color_of(&m.item_label(WidgetState::PRESSED));
+    let look = crate::demo::MenuLook::next_of(r, t);
+    let rows = look.rows();
     // Which titles the item's hover colours still reach: a title takes the
     // bar's hover colours under the pointer and its open ones, else those,
     // while open (demo::MenuLook).
-    let info = info.colors(stated_claim(
-        "title and item text",
-        "menu.item_label(NONE).color",
-        text_color_of(&r.menu.item_label(WidgetState::NONE)),
-        "showcase",
-    ));
+    let info = match text_color_of(&r.menu.item_label(WidgetState::NONE)) {
+        Some(_) => info.colors(stated_claim(
+            "title and item text",
+            "menu.item_label(NONE).color",
+            text_color_of(&r.menu.item_label(WidgetState::NONE)),
+            "showcase",
+        )),
+        None => info
+            .color(claim(
+                "item text, none stated: the popup's own",
+                "popover_foreground",
+                t.popover_foreground,
+                "gpui-component/styled.rs:191",
+            ))
+            .not_themeable(
+                "title text",
+                "the menu bar's own: the theme states no menu.item_label(NONE).color",
+            ),
+    };
     // A hovered item's fill and text where a rule states them for the hover
     // state, else what gpui-component paints, the accent the connector
     // writes (demo::menu_hover_of).
@@ -600,10 +602,15 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
         ),
         None => info,
     };
-    let info = match crate::demo::MenuRowsFrame::next_of(r) {
-        Ok(frame) => {
-            let (width, radius) = (frame.width.0, frame.radius.0);
-            let (home, edge) = match frame.width.1 {
+    let radius = rows.frame_radius.0.as_f32();
+    let info = match rows.frame_width {
+        (_, None) => info.not_themeable(
+            "menu edge",
+            format!("popover_style's ring, foreground at 10% inside its shadow (styled.rs, popover_ring), rounded {}px: neither menu.panel(NONE) nor popover.panel states a stroke width", px_text(radius)),
+        ),
+        (width, Some(from)) => {
+            let width = width.as_f32();
+            let (home, edge) = match from {
                 crate::demo::FrameFrom::Menu => (
                     "menu.panel(NONE)",
                     edge_claim(
@@ -632,13 +639,57 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
                     format!("none: {home}'s stroke is 0 wide; the popup is still rounded {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(radius))
                 })
         }
-        Err(_) => info,
     };
     let [top, _, bottom, _] = next::padding_of(&rest);
     let [panel_top, _, panel_bottom, _] = next::padding_of(&panel);
-    info.colors(stated_claim("menu bg", "menu.panel(NONE).fill", fill_of(&r.menu.panel(WidgetState::NONE)), "showcase"))
-        .colors(stated_claim("menu separator", "menu.separator(NONE).fill", fill_of(&r.menu.separator(WidgetState::NONE)), "showcase"))
-        .config("font", format!("menu.item_label(NONE): {}, on the titles and the items, as next::geometry::menu_item sets it", super::next_drawn_font(&m.item_label(WidgetState::NONE), super::LINE_AT_THE_MULTIPLIER)))
+    let info = match fill_of(&panel) {
+        Some(_) => info.colors(stated_claim(
+            "menu bg",
+            "menu.panel(NONE).fill",
+            fill_of(&r.menu.panel(WidgetState::NONE)),
+            "showcase",
+        )),
+        None => info.color(claim(
+            "menu bg, none stated: the popup's own",
+            "popover",
+            t.popover,
+            "gpui-component/styled.rs:190",
+        )),
+    };
+    let info = match fill_of(&m.separator(WidgetState::NONE)) {
+        Some(_) => info.colors(stated_claim(
+            "menu separator",
+            "menu.separator(NONE).fill",
+            fill_of(&r.menu.separator(WidgetState::NONE)),
+            "showcase",
+        )),
+        None => info.color(claim(
+            "menu separator, none stated",
+            "border",
+            t.border,
+            "showcase",
+        )),
+    };
+    let font = match next::geometry::menu_item(r) {
+        Ok(_) => format!(
+            "menu.item_label(NONE): {}, on the titles and the items, as next::geometry::menu_item sets it",
+            super::next_drawn_font(
+                &m.item_label(WidgetState::NONE),
+                super::LINE_AT_THE_MULTIPLIER
+            )
+        ),
+        Err(unmapped) => format!(
+            "text_sm, a rem step, upstream's (menu/popup_menu.rs, PopupMenu::render_item), on the titles and the items, which are MENU_ROW_HEIGHT tall where no top or bottom padding is stated: the theme states no value gpui can take at {}",
+            unmapped.home()
+        ),
+    };
+    let shadow = match (rows.frame_width.1, r.popover.panel.stated.contains(native_theme::next::PartStated::SHADOWS), crate::demo::menu_popup_shadow(&r.popover.panel, super::next_stated(r.colors.shadow))) {
+        (None, _, _) => "popover_style's ring and shadow, the popover's own (styled.rs, popover_style): the ring is the popup's edge where neither panel states a stroke width".to_string(),
+        (Some(_), _, Err(home)) => format!("popover_style's ring and shadow, the popover's own (styled.rs, popover_style): the theme states shadow layers at {home}, which gpui cannot take"),
+        (Some(_), true, Ok(_)) => "none: popover.panel states no shadows".to_string(),
+        (Some(_), false, Ok(_)) => "upstream's popover_shadow, two layers (gpui-component/styled.rs, popover_shadow), in colors.shadow: the theme states no popover.panel.shadows (spec §10, rule 0), and popover_style's ring gives way to the frame".to_string(),
+    };
+    info.config("font", font)
         .config("highlight", match radius_of(&rest) {
             Some(radius) => format!("rounded by menu.item(NONE).corners, {}px (platform-facts §2.6: the items are rectangular where it is 0)", px_text(radius)),
             None => "square: the theme states no menu.item(NONE).corners gpui can take (platform-facts §2.6: the items are rectangular)".to_string(),
@@ -661,11 +712,7 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
                 Some(sides) => format!("{sides} inside the frame's line, over popover.panel's padding sides; {rows}"),
             }
         })
-        .config("menu shadow", if r.popover.panel.stated.contains(native_theme::next::PartStated::SHADOWS) {
-            "none: popover.panel states no shadows".to_string()
-        } else {
-            "upstream's popover_shadow, two layers (gpui-component/styled.rs, popover_shadow), in colors.shadow: the theme states no popover.panel.shadows (spec §10, rule 0), and popover_style's ring gives way to the frame".to_string()
-        })
+        .config("menu shadow", shadow)
         .config("menu separator", format!("separator.thickness, {}px, one device pixel at least (widgets::Separator)", px_text(r.separator.thickness)))
 }
 

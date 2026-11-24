@@ -1921,7 +1921,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.menu_bar.",
         &["menu.panel(NONE).corners"],
-        "gpui: menu.panel(NONE).corners rounds the frame of the popup the title opens, where stated, else popover.panel.corners; not the title's fill (MenuRowsFrame::next_of, MenuBar::popup)",
+        "gpui: menu.panel(NONE).corners rounds the frame of the popup the title opens, where stated, else popover.panel.corners, else popover_style's radius; not the title's fill (MenuRowsLook::of, MenuBar::popup)",
     ),
     (
         "chrome.menu.",
@@ -1931,7 +1931,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "chrome.menu.",
         &["menu.panel(NONE).corners"],
-        "gpui: menu.panel(NONE).corners rounds the popup's frame where stated, else popover.panel.corners; not the row's fill (MenuRowsFrame::next_of, MenuBar::popup)",
+        "gpui: menu.panel(NONE).corners rounds the popup's frame where stated, else popover.panel.corners, else popover_style's radius; not the row's fill (MenuRowsLook::of, MenuBar::popup)",
     ),
     (
         "chrome.menu.",
