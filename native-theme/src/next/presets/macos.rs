@@ -4351,6 +4351,12 @@ fn card(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> CardWidget {
 /// header of a least height with no fill; its title in the UI font
 /// (`expander.font`: `defaults.font` where unstated); the arrow's size,
 /// `macos-monterey`'s colour, and its side.
+///
+/// The control the model's expander stands for is SwiftUI's
+/// `DisclosureGroup`, a chevron and a title over collapsible content, not
+/// AppKit's push disclosure button (`NSBezelStylePushDisclosure`): that one
+/// draws no title, only its chevron on a bezel, so its measured pressed
+/// fills are not the header's.
 fn expander(
     c: &SchemeColors,
     g: &Generation,
