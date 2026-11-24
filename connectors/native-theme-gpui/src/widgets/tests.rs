@@ -6136,6 +6136,43 @@ fn a_switch_lays_its_label_on_the_side_the_theme_states(cx: &mut TestAppContext)
     }
 }
 
+/// Right to left, `switch.label_side`'s leading and trailing are the reading
+/// direction's, as gpui-component's switch flips its label side
+/// (gpui-component 0.10.0 switch.rs:254): a leading label lies right of the
+/// track, a trailing one, and one where the theme states none, left of it,
+/// `switch.label_gap` apart.
+#[gpui::test]
+fn right_to_left_a_switch_lays_its_label_on_the_reading_sides(cx: &mut TestAppContext) {
+    use native_theme::next::{LabelSide, Preset, ThemeContext};
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    for side in [Some(LabelSide::Leading), Some(LabelSide::Trailing), None] {
+        let mut r =
+            native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.switch.label_side = side;
+        let gap = px(r.switch.label_gap.unwrap_or_default());
+        let cx = window_with_next_resolved(
+            cx,
+            &r,
+            Box::new(|_, _| Switch::new("s").label("On").into_any_element()),
+        );
+        let track = bounds(cx, "native-switch-track");
+        let label = bounds(cx, "native-switch-label");
+        if side == Some(LabelSide::Leading) {
+            assert_eq!(
+                label.left() - track.right(),
+                gap,
+                "{side:?}: right of the track"
+            );
+        } else {
+            assert_eq!(
+                track.left() - label.right(),
+                gap,
+                "{side:?}: left of the track"
+            );
+        }
+    }
+}
+
 /// A switch laid out wider than its content puts the width left over between
 /// its label and its track where `switch.label_gap_stretches` is true, the
 /// two at the row's ends; where it is false or unstated, the two stay
