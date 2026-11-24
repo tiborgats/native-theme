@@ -352,7 +352,7 @@
             "hover"
           ],
           "body": {
-            "fill": "#323232"
+            "fill": "#060606"
           }
         },
         {
@@ -360,7 +360,7 @@
             "pressed"
           ],
           "body": {
-            "fill": "#272727",
+            "fill": "#060606",
             "stroke": {
               "width": 1.0,
               "color": "#050505",
@@ -2102,6 +2102,33 @@
           "button": {
             "fill": "#050505"
           }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "button": {
+            "fill": "#060606"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button": {
+            "fill": "#060606"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "button": {
+            "fill": "#070707"
+          }
         }
       ]
     },
@@ -2147,6 +2174,41 @@
           ],
           "button_label": {
             "color": "#070707"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "button_label": {
+            "color": "#060606"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#050505"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#050505"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "button_label": {
+            "color": "#010101"
           }
         }
       ]
