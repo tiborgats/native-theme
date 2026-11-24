@@ -5,7 +5,7 @@
 //! rule 0); a place a note names is the home's.
 
 use native_theme::next::{
-    ButtonQuery, CheckboxWidget, Color, CornerRadius, FocusKind, FocusTrigger, IconStated,
+    ButtonQuery, CheckboxWidget, Color, CornerRadius, Corners, FocusKind, FocusTrigger, IconStated,
     IconStyle, ListQuery, Orientation, PartStated, PartStyle, Preset, ResolvedTheme, Stroke,
     StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
@@ -392,6 +392,24 @@ fn thumb(r: &ResolvedTheme) -> [Read<Rgba>; 3] {
     ]
 }
 
+/// A part's corners as one radius egui rounds by: [`radius_of`]'s, and for a pill the largest
+/// radius egui's `CornerRadius` holds, which epaint clamps to half the shape's shorter side
+/// (`epaint-0.37.0` `src/rounded_rect.rs`, `RoundedRect::new`), as the focus ring's pill is.
+pub(crate) fn pill_radius(part: &PartStyle) -> Option<f32> {
+    if part.stated.contains(PartStated::CORNERS) && part.corners == Corners::pill() {
+        return Some(f32::from(u8::MAX));
+    }
+    radius_of(part)
+}
+
+/// The scroll bar thumb's corners (`scrollbar.thumb(NONE).corners`) as the one radius egui
+/// rounds the thumb and its trough by ([`pill_radius`]), noted where egui cannot draw them
+/// ([`meet_corners`]).
+fn thumb_radius(thumb: &PartStyle, notes: &mut Vec<Note>) -> Option<f32> {
+    meet_corners(thumb, "scrollbar.thumb(NONE).corners", notes);
+    pill_radius(thumb)
+}
+
 /// A part's outline with the homes of its corners and stroke width ([`edge_at`]).
 fn outline(part: &PartStyle, paths: [&'static str; 2], notes: &mut Vec<Note>) -> Outline {
     let (edge, align) = edge_at(part, paths, notes);
@@ -680,7 +698,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
             track: fill(&sb.track(S::NONE)),
             thumb: thumb(r),
             min_thumb: Some((sb.min_thumb_length, "scrollbar.min_thumb_length")),
-            radius: Some(r.layout.corner_radius),
+            radius: thumb_radius(&sb.thumb(S::NONE), notes),
         },
         slider: SliderCell {
             fill: fill(&sl.active_track(S::NONE)),

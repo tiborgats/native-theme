@@ -470,6 +470,13 @@ const DIFFERENCES: &[Difference] = &[
         Cause::Base,
         CARD_OUTLINE,
     ),
+    d(
+        "Scrollbar",
+        &[M3],
+        ".visuals.widgets.{inactive,hovered,active}.corner_radius.*",
+        Cause::Base,
+        THUMB_UNSTATED,
+    ),
 ];
 
 /// A model gap: a native preset that leaves a state's value unstated where the platform draws
@@ -518,12 +525,14 @@ struct Home {
 }
 
 /// A home's value as the builder reads it: a fill or a text colour, written as given; a stroke
-/// colour, which the builder lays over the fill its entry paints; a stroke width.
+/// colour, which the builder lays over the fill its entry paints; a stroke width; a corner
+/// radius, which the builder rounds to egui's whole points (`convert::to_corner_radius`).
 #[derive(Clone, Copy, Debug)]
 enum HomeValue {
     Color(Rgba),
     Line(Rgba),
     Width(f32),
+    Radius(f32),
 }
 
 /// Whether `bit` of a part is stated for `state`: by a rule for the state (`from_state`), or,
@@ -594,7 +603,7 @@ impl ColorAt for IconStyle {
 }
 
 /// The [`Home`] `<widget>.<part>(<STATE>).<property>`, `property` a part's `fill`,
-/// `stroke.color` or `stroke.width`, a text style's or an icon's `color`, or an icon's
+/// `stroke.color`, `stroke.width` or `corners`, a text style's or an icon's `color`, or an icon's
 /// `stroke_width`; `<STATE>` one
 /// state or several joined by `|`.
 macro_rules! home {
@@ -652,6 +661,23 @@ macro_rules! home {
                     .then(|| super::stroke_width_of(&part))
                     .flatten()
                     .map(HomeValue::Width)
+            }
+        )
+    };
+    ($w:ident . $p:ident ($($s:ident)|+) . corners) => {
+        home!(
+            @at $w.$p($($s)|+).corners,
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                part_stated(&r.$w.$p(s), PartStated::CORNERS, s)
+            },
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                let part = r.$w.$p(s);
+                part_stated(&part, PartStated::CORNERS, s)
+                    .then(|| build::pill_radius(&part))
+                    .flatten()
+                    .map(HomeValue::Radius)
             }
         )
     };
@@ -728,6 +754,14 @@ const STATED: &str = "the 0.8.0 preset states the value at the home, from the so
      comment there cites (M2.FS4); 0.7.2's resolver gave the resting value, another state's, or \
      a layer laid over the resting fill";
 
+const THUMB_CORNERS: &str = "the scroll bar's thumb and trough are rounded by the corners the \
+     0.8.0 preset states for the thumb, a pill, egui's largest radius, which epaint clamps to \
+     half the thumb's shorter side; 0.7.2 rounded them by defaults.border.corner_radius";
+
+const THUMB_UNSTATED: &str = "the 0.8.0 theme states no corners for the scroll bar's thumb \
+     (scrollbar.thumb(NONE).corners) where 0.7.2 rounded the thumb and trough by \
+     defaults.border.corner_radius: the cell keeps the base's";
+
 /// A button stroked as none at rest.
 const NO_LINE_AT_REST: &str = "macos-tahoe states its push button's bezel stroked as none \
      (M2.FS4, measured): the width is 0 (spec §10, rule 2) and the colour under it egui's own, \
@@ -745,6 +779,13 @@ const fn s(
 
 /// The values the FS4 presets state at a home where 0.7.2's resolver gave another (M2.FS4b).
 const STATED_ON_A_PRESET: &[Difference] = &[
+    d(
+        "Scrollbar",
+        &[K],
+        ".visuals.widgets.{inactive,hovered,active}.corner_radius.*",
+        Cause::Stated(home!(scrollbar.thumb(NONE).corners)),
+        THUMB_CORNERS,
+    ),
     s(
         "base",
         &[M, T],
@@ -1877,6 +1918,7 @@ fn stated_leaf(
         HomeValue::Color(c) => Some(format!("{:?}", to_color32(c))),
         HomeValue::Line(c) => over(to_color32(c)),
         HomeValue::Width(w) => Some(format!("{w:?}")),
+        HomeValue::Radius(v) => Some(format!("{:?}", crate::convert::u8_from_f32_saturating(v))),
     }
 }
 
