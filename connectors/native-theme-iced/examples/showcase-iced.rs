@@ -17113,7 +17113,6 @@ fn combo_box_info(state: &State) -> String {
 }
 
 fn view_selection(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     let typography = &next.typography;
@@ -17129,7 +17128,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     // The check boxes as the Basic page's are, on the installed 0.8.0
     // theme: the box [`next_check_box_size`] across, `checkbox.label_gap`
     // from the label in `checkbox.label(NONE)`; their colours and iced's
-    // own check glyph still `styles::checkbox`'s.
+    // own check glyph `iced_next::styles::checkbox`'s, iced's own box where
+    // the theme lacks a value the style needs.
     let check_label = next.checkbox.label(WidgetState::NONE);
     let check_line = iced::Pixels(next_line_box(typography, &check_label));
     let box_width = next_check_box_size(next);
@@ -17141,7 +17141,9 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             .text_size(check_label.size_px)
             .text_line_height(check_line)
             .next_font(&check_label, |boxed, font| boxed.font(font))
-            .style(styles::checkbox(resolved))
+            .next_style(iced_next::styles::checkbox(next), |boxed, style| {
+                boxed.style(style)
+            })
             .on_toggle(toggled)
     };
     let checkboxes = hoverable(
@@ -17306,8 +17308,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     // ([`next_drop_down_padding`], [`next_combo_field_padding`]), at least
     // `combo_box.field(NONE).min_size[1]` tall ([`next_control_line`]), the
     // drop-down's arrow [`next_arrow_handle`]; the showcase's own 250 px
-    // wide; their colours still `styles::pick_list`'s, `styles::text_input`'s
-    // and `styles::menu`'s.
+    // wide; their colours `iced_next::styles::pick_list`'s, `::text_input`'s
+    // and `::menu`'s, iced's own where the theme lacks a value one needs.
     let combo_label = next.combo_box.label(WidgetState::NONE);
     let combo_min = next.combo_box.field(WidgetState::NONE).min_size[1];
     let list_pad = next_drop_down_padding(next);
@@ -17329,8 +17331,12 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 .text_line_height(next_control_line(next, &combo_label, combo_min, list_pad))
                 .text_size(combo_label.size_px)
                 .next_font(&combo_label, |list, font| list.font(font))
-                .style(styles::pick_list(resolved))
-                .menu_style(styles::menu(resolved))
+                .next_style(iced_next::styles::pick_list(next), |list, style| {
+                    list.style(style)
+                })
+                .next_style(iced_next::styles::menu(next), |list, style| {
+                    list.menu_style(style)
+                })
                 .width(Length::Fixed(250.0))
             ),
             caption(format!(
@@ -17359,8 +17365,12 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 .line_height(next_control_line(next, &combo_label, combo_min, field_pad))
                 .size(combo_label.size_px)
                 .next_font(&combo_label, |field, font| field.font(font))
-                .input_style(styles::text_input(resolved))
-                .menu_style(styles::menu(resolved))
+                .next_style(iced_next::styles::text_input(next), |field, style| {
+                    field.input_style(style)
+                })
+                .next_style(iced_next::styles::menu(next), |field, style| {
+                    field.menu_style(style)
+                })
                 .width(Length::Fixed(250.0))
             ),
             caption(format!(
@@ -36862,6 +36872,10 @@ mod tests {
             ],
         ),
         ("view_inputs", &["text_input", "text_editor"]),
+        (
+            "view_selection",
+            &["checkbox", "pick_list", "text_input", "menu"],
+        ),
     ];
 
     /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`], nor of its
