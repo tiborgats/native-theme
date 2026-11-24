@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use gpui::Pixels;
+use gpui::{Hsla, Pixels};
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 use native_theme_gpui::next::{self, fill_of, state_fill_of, state_text_color_of, text_color_of};
@@ -497,9 +497,18 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
         ));
     let info = match (active, active_text) {
         (None, None) => info,
-        (Some(_), _) => info.config("pressed item", "the fill a rule states for menu.item(PRESSED), asked of the pressed state alone (spec §2, from_state), while the mouse button is held on an item, with no outline, and the colour one states for menu.item_label(PRESSED), else the hover text"),
-        (None, Some(_)) => info.config("pressed item", "the hover look, its outline included, lettered in the colour a rule states for menu.item_label(PRESSED) while the mouse button is held on an item: no rule states a fill for menu.item(PRESSED)"),
+        (Some(_), _) => info.config("pressed item", "the fill a rule states for menu.item(PRESSED), asked of the pressed state alone (spec §2, from_state), while the mouse button is held on an item, and the colour one states for menu.item_label(PRESSED), else the hover text"),
+        (None, Some(_)) => info.config("pressed item", "the hover fill, lettered in the colour a rule states for menu.item_label(PRESSED) while the mouse button is held on an item: no rule states a fill for menu.item(PRESSED)"),
     };
+    let pressed_edge = crate::demo::menu_pressed_edge(&m.item(WidgetState::PRESSED));
+    let info = info.colors(edge_claim(
+        "pressed item edge",
+        "menu.item(PRESSED).stroke.color",
+        state_stroke_color_of(&r.menu.item(WidgetState::PRESSED)),
+        pressed_edge.map(|(_, width)| width.as_f32()),
+        "showcase",
+    ));
+    let info = pressed_menu_edge(info, pressed_edge, edge.is_some() && edge_width.is_some());
     let info = match (edge, edge_width) {
         (Some(_), Some(width)) => info.config("hovered item edge", format!("the stroke a rule states for menu.item(HOVER), {}px, a box over the highlighted item, its padding included, so nothing moves, rounded as the highlight", px_text(width))),
         (Some(_), None) => info.config("hovered item edge", "none: the stroke a rule states for menu.item(HOVER) is 0 wide"),
@@ -1627,6 +1636,35 @@ pub fn resize_handle(
             "drag",
             "moves the boundary to the pointer until a panel reaches PANEL_MIN_SIZE, 100px, the least a panel takes unless it sets a size range of its own (gpui-base/resizable/mod.rs, PANEL_MIN_SIZE; gpui-base/resizable/panel.rs, size_range); the body's panels set none. The side panel keeps the width it leaves when it hides and comes back",
         )
+}
+
+/// What a menu row's outline is while the mouse button is held on it, where
+/// `edge` is `demo::menu_pressed_edge`'s: the stroke a rule states for
+/// `menu.item(PRESSED)`, or where none does, the hover outline, which
+/// `hovered` says the row has.
+pub(super) fn pressed_menu_edge(
+    info: WidgetInfo,
+    edge: Option<(Hsla, Pixels)>,
+    hovered: bool,
+) -> WidgetInfo {
+    match edge {
+        Some((_, width)) if width.as_f32() > 0.0 => info.config(
+            "pressed item edge",
+            format!(
+                "the stroke a rule states for menu.item(PRESSED), asked of the pressed state alone (spec §2, from_state), {}px, in place of the hover outline while the mouse button is held on an item",
+                px_text(width.as_f32())
+            ),
+        ),
+        Some(_) => info.config(
+            "pressed item edge",
+            "none while the mouse button is held on an item: the stroke a rule states for menu.item(PRESSED) is none or 0 wide (spec §10, rule 2)",
+        ),
+        None if hovered => info.config(
+            "pressed item edge",
+            "the hover outline, while the mouse button is held on an item too: no rule states a stroke for menu.item(PRESSED), and gpui-component draws a pressed item as a hovered one, with a hover style and no pressed one (menu/menu_item.rs, MenuItemElement::render)",
+        ),
+        None => info,
+    }
 }
 
 /// How a Dialog enters, as `geometry::dialog_entrance` gives the installed

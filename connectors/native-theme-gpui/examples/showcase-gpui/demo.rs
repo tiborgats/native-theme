@@ -465,12 +465,36 @@ fn padding_over(over: [Option<f32>; 4], under: [Option<f32>; 4]) -> [Option<f32>
     ]
 }
 
+/// The outline a pressed menu row takes in place of the hover one, from
+/// `pressed`, `menu.item(PRESSED)` asked of the pressed state alone (spec
+/// §2, `from_state`): the stroke a rule states for it, at its width, a
+/// stroke stated as none transparent and 0 wide (spec §10, rule 2). `None`
+/// where no rule states one: the row keeps its hover outline, gpui's own
+/// treatment of a pressed item, which gpui-component draws as a hovered one
+/// (menu/menu_item.rs, `MenuItemElement::render`: a hover style and no
+/// pressed one).
+pub(crate) fn menu_pressed_edge(pressed: &native_theme::next::PartStyle) -> Option<(Hsla, Pixels)> {
+    next::state_stroke_color_of(pressed)
+        .zip(next::stroke_width_of(pressed))
+        .map(|(colour, width)| (colour, px(width)))
+}
+
+/// The pressed outline a row's edge box draws: `pressed` where the row
+/// has a hover outline it replaces, or is itself a line; `None` where
+/// there is neither, so a pressed outline of no width adds no box.
+fn pressed_edge_drawn(
+    hover: Option<(Hsla, Pixels)>,
+    pressed: Option<(Hsla, Pixels)>,
+) -> Option<(Hsla, Pixels)> {
+    pressed.filter(|(_, width)| hover.is_some() || width.as_f32() > 0.0)
+}
+
 /// The installed 0.8.0 theme's menu, as the showcase draws a menu title and
-/// a menu row: `menu.item_label(NONE)`'s font and a row's size as
+/// a menu row:`menu.item_label(NONE)`'s font and a row's size as
 /// `next::geometry::menu_item` refines a menu item, a hovered row's
 /// `menu.item(HOVER).fill` and `menu.item_label(HOVER).color` and the
-/// outline a rule states for `menu.item(HOVER)`, a pressed row's fill and
-/// text a rule states for `menu.item(PRESSED)`, a title's `menu_bar.item`
+/// outline a rule states for `menu.item(HOVER)`, a pressed row's fill,
+/// text and outline a rule states for `menu.item(PRESSED)`, a title's `menu_bar.item`
 /// fills, text and padding, `menu.item(NONE)`'s padding sides and corners
 /// (platform-facts §2.6: the items are rectangular), and the popup
 /// `menu.panel(NONE).fill` framed by the menu's panel or the popover's
@@ -492,10 +516,12 @@ pub(crate) struct MenuLook {
     /// A pressed row's fill and text, `menu.item(PRESSED).fill` and
     /// `menu.item_label(PRESSED).color` where a rule states each for the
     /// pressed state, asked of that state alone (spec §2, `from_state`): the
-    /// row then keeps its hover look (the outline included) or its hover
-    /// text.
+    /// row then keeps its hover fill or its hover text.
     active: Option<Hsla>,
     active_text: Option<Hsla>,
+    /// A pressed row's outline ([`menu_pressed_edge`]), `None` where it
+    /// keeps the hover one.
+    pressed_edge: Option<(Hsla, Pixels)>,
     /// A title's fill under the pointer and while its menu is open, and its
     /// text in each: the fill and the colour a rule states for
     /// `menu_bar.item(HOVER)` and `menu_bar.item_label(HOVER)`, else the
@@ -563,6 +589,7 @@ impl MenuLook {
                 .map(|(colour, width)| (colour, px(width))),
             active: next::state_fill_of(&m.item(WidgetState::PRESSED)),
             active_text: next::state_text_color_of(&m.item_label(WidgetState::PRESSED)),
+            pressed_edge: menu_pressed_edge(&m.item(WidgetState::PRESSED)),
             bar_hover,
             bar_open: next::state_fill_of(&bar.item(WidgetState::OPEN)).unwrap_or(bar_hover),
             bar_hover_text,
@@ -658,26 +685,35 @@ impl MenuLook {
     /// `Normal` hitbox, which leaves the row's own mouse handling alone, as
     /// `combo_surface`'s hover edge does (gpui-pre 0.3.12
     /// `elements/div.rs:2460-2486`, `should_insert_hitbox`); its id gives it
-    /// the state a group-active style needs (`:3570-3579`): where `active`
-    /// is stated the box is `none` while the row is pressed, as Breeze draws
-    /// the pressed fill with no outline of another colour.
+    /// the state a group-active style needs (`:3570-3579`): while the row is
+    /// pressed the box is `pressed_edge` where a rule states one
+    /// ([`menu_pressed_edge`]), else the hover outline stays.
     pub(crate) fn edge(&self, lit: Option<bool>, none: Hsla) -> Option<Stateful<Div>> {
-        let (edge, width) = self.edge?;
-        let rest = if lit == Some(true) { edge } else { none };
-        let hovered = if lit.is_none() { edge } else { rest };
-        Some(
-            div()
-                .id("menu-row-edge")
-                .absolute()
-                .inset_0()
-                .when_some(self.radius, |edge, radius| edge.rounded(radius))
-                .border(width)
-                .border_color(rest)
-                .group_hover(MENU_ROW_GROUP, move |style| style.border_color(hovered))
-                .when(self.active.is_some(), |edge| {
-                    edge.group_active(MENU_ROW_GROUP, move |style| style.border_color(none))
-                }),
-        )
+        let pressed = pressed_edge_drawn(self.edge, self.pressed_edge);
+        if self.edge.is_none() && pressed.is_none() {
+            return None;
+        }
+        let edge = div()
+            .id("menu-row-edge")
+            .absolute()
+            .inset_0()
+            .when_some(self.radius, |edge, radius| edge.rounded(radius));
+        let edge = match self.edge {
+            Some((edge_colour, width)) => {
+                let rest = if lit == Some(true) { edge_colour } else { none };
+                let hovered = if lit.is_none() { edge_colour } else { rest };
+                edge.border(width)
+                    .border_color(rest)
+                    .group_hover(MENU_ROW_GROUP, move |style| style.border_color(hovered))
+            }
+            None => edge,
+        };
+        Some(match pressed {
+            Some((colour, width)) => edge.group_active(MENU_ROW_GROUP, move |style| {
+                style.border(width).border_color(colour)
+            }),
+            None => edge,
+        })
     }
 
     /// `row` while the mouse button is held on it: filled `active` and
@@ -9954,6 +9990,9 @@ pub(crate) struct MenuRowsLook {
     /// pressed state, the row keeping its hover look otherwise.
     pub(crate) active: Option<Hsla>,
     pub(crate) active_text: Option<Hsla>,
+    /// A pressed row's outline ([`menu_pressed_edge`]), `None` where it
+    /// keeps the hover one.
+    pub(crate) pressed_edge: Option<(Hsla, Pixels)>,
     /// `menu.item(NONE).corners`, `None` where unstated: square rows.
     pub(crate) radius: Option<Pixels>,
     /// The frame's edge width and the panel it is from ([`menu_frame_value`]
@@ -10003,6 +10042,7 @@ impl MenuRowsLook {
                 .map(|(colour, width)| (colour, px(width))),
             active: next::state_fill_of(&p.pressed),
             active_text: next::state_text_color_of(&p.pressed_label),
+            pressed_edge: menu_pressed_edge(&p.pressed),
             radius: next::radius_of(&p.rest).map(px),
             frame_width: match width {
                 Some((width, from)) => (px(width), Some(from)),
@@ -10019,23 +10059,32 @@ impl MenuRowsLook {
 
     /// A row's outline, laid over the whole row, its padding included, so
     /// nothing moves, rounded as the row, lit while the pointer is on the
-    /// row and `none` otherwise; hidden while the row is pressed where a
-    /// pressed fill is stated, as [`MenuLook::edge`] draws it.
+    /// row and `none` otherwise; while the row is pressed `pressed_edge`
+    /// where a rule states one, else the hover outline, as [`MenuLook::edge`]
+    /// draws it.
     fn edge(&self, none: Hsla) -> Option<Stateful<Div>> {
-        let (edge, width) = self.edge?;
-        Some(
-            div()
-                .id("menu-row-edge")
-                .absolute()
-                .inset_0()
-                .when_some(self.radius, |edge, radius| edge.rounded(radius))
+        let pressed = pressed_edge_drawn(self.edge, self.pressed_edge);
+        if self.edge.is_none() && pressed.is_none() {
+            return None;
+        }
+        let edge = div()
+            .id("menu-row-edge")
+            .absolute()
+            .inset_0()
+            .when_some(self.radius, |edge, radius| edge.rounded(radius));
+        let edge = match self.edge {
+            Some((colour, width)) => edge
                 .border(width)
                 .border_color(none)
-                .group_hover(MENU_ROW_GROUP, move |style| style.border_color(edge))
-                .when(self.active.is_some(), |edge| {
-                    edge.group_active(MENU_ROW_GROUP, move |style| style.border_color(none))
-                }),
-        )
+                .group_hover(MENU_ROW_GROUP, move |style| style.border_color(colour)),
+            None => edge,
+        };
+        Some(match pressed {
+            Some((colour, width)) => edge.group_active(MENU_ROW_GROUP, move |style| {
+                style.border(width).border_color(colour)
+            }),
+            None => edge,
+        })
     }
 
     /// `row` while the mouse button is held on it, as [`MenuLook::pressed`]

@@ -6,7 +6,7 @@ use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_
 
 use super::{
     WidgetInfo, buttons,
-    chrome::{ThemedEntrance, dialog_surface, popup_menu, sheet_surface},
+    chrome::{ThemedEntrance, dialog_surface, popup_menu, pressed_menu_edge, sheet_surface},
     claim, edge_claim, px_text, state_stroke_color_of, stated_claim, stroke_color_of,
     stroke_width_of,
 };
@@ -643,6 +643,16 @@ fn menu_row_look(
         ),
         None => info,
     };
+    let info = info.colors(r.and_then(|r| {
+        edge_claim(
+            "pressed item edge",
+            "menu.item(PRESSED).stroke.color",
+            state_stroke_color_of(&r.menu.item(WidgetState::PRESSED)),
+            look.pressed_edge.map(|(_, width)| width.as_f32()),
+            "showcase",
+        )
+    }));
+    let info = pressed_menu_edge(info, look.pressed_edge, look.edge.is_some());
     let corners = match look.frame_radius.1 {
         Some(FrameFrom::Menu) => "menu.panel(NONE).corners",
         Some(FrameFrom::Popover) => "popover.panel.corners",

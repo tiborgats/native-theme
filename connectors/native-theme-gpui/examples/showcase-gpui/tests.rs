@@ -11614,26 +11614,50 @@ fn no_row_is_outlined_where_the_hover_stroke_is_0_wide_or_none(cx: &mut TestAppC
 /// E2: a menu row the mouse button is held on is filled with the installed
 /// 0.8.0 theme's `menu.item(PRESSED).fill` (0.7.2's `menu.active_background`),
 /// lettered `menu.item_label(PRESSED).color` (#ffffff under kde-breeze light,
-/// against the hover text `menu.item_label(HOVER).color`, #232629) and draws no
-/// outline (`MenuLook::pressed`, the edge hidden under group active), under
+/// against the hover text `menu.item_label(HOVER).color`, #232629) and
+/// outlined in the stroke a rule states for `menu.item(PRESSED)`, else the
+/// hover outline (`demo::menu_pressed_edge`), under
 /// kde-breeze light: the Theme menu's System row, its Preferences row with
 /// the shortcut, and the Overlays page's first application-drawn row. Each
 /// text colour is the one the frame laid the text out in
 /// (`elements::label_probe`). The press only: a release on the row runs its
 /// action, which closes the menu and switches the theme, so the button is
 /// let go off the row (trial T-L1 case 2 checked the released frame). With
-/// `menu.item(PRESSED).fill` patched to `colors.window.border` and
-/// `menu.item_label(PRESSED).color` to `colors.window.foreground`, the
-/// Overlays page's pressed row follows the patch.
+/// `menu.item(PRESSED).fill` patched to `colors.window.border`,
+/// `menu.item_label(PRESSED).color` to `colors.window.foreground` and
+/// `menu.item(PRESSED).stroke` to `colors.window.foreground` at the hover
+/// outline's width, the Overlays page's pressed row and the Theme menu's
+/// System row follow the patch, and the row's info claims the pressed
+/// outline; with the pressed stroke patched to none,
+/// they draw no outline while pressed.
 #[gpui::test]
 fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
-    use native_theme::next::{MenuRule, Paint, PartPatch, TextPatch, ThemePatch, WidgetState};
-    use native_theme_gpui::next::{fill_of, state_fill_of, state_text_color_of, text_color_of};
+    use native_theme::next::{
+        MenuRule, Paint, PartPatch, Stroke, TextPatch, ThemePatch, WidgetState,
+    };
+    use native_theme_gpui::next::{
+        fill_of, state_fill_of, state_stroke_color_of, state_text_color_of, stroke_width_of,
+        text_color_of,
+    };
+    // The outline a pressed row draws, as `last_edge_inside` reads one: the
+    // pressed stroke where a rule states it, none where that is 0 wide or
+    // none, else the hover outline.
+    let pressed_edge = |r: &native_theme::next::ResolvedTheme| {
+        let hovered = r.menu.item(WidgetState::HOVER);
+        let hover = state_stroke_color_of(&hovered)
+            .zip(stroke_width_of(&hovered))
+            .filter(|(_, width)| *width > 0.0);
+        match crate::demo::menu_pressed_edge(&r.menu.item(WidgetState::PRESSED)) {
+            Some((colour, width)) => (width.as_f32() > 0.0).then_some((colour, width.as_f32())),
+            None => hover,
+        }
+    };
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     let r = next_theme(&mut cx, &showcase);
     assert!(r.is_some(), "no 0.8.0 theme is installed");
     let Some(r) = r else { return };
+    let edge = pressed_edge(&r);
     let fill = state_fill_of(&r.menu.item(WidgetState::PRESSED));
     assert!(
         fill.is_some() && fill != fill_of(&r.menu.item(WidgetState::HOVER)),
@@ -11689,8 +11713,8 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
             "menu-row-System",
             &["menu-row-label-System".to_owned()]
         ),
-        (fill, None, vec![text]),
-        "the pressed System row is not filled with menu.active_background, lettered menu.active_text_color, outlined in nothing"
+        (fill, edge, vec![text]),
+        "the pressed System row is not filled with menu.active_background, lettered menu.active_text_color, outlined in the pressed stroke or the hover outline"
     );
     assert_eq!(
         pressed(
@@ -11701,8 +11725,8 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
                 "menu-row-shortcut-Preferences…".to_owned(),
             ],
         ),
-        (fill, None, vec![text, text]),
-        "the pressed Preferences row is not filled with menu.active_background, its label and shortcut lettered menu.active_text_color, outlined in nothing"
+        (fill, edge, vec![text, text]),
+        "the pressed Preferences row is not filled with menu.active_background, its label and shortcut lettered menu.active_text_color, outlined in the pressed stroke or the hover outline"
     );
     cx.simulate_keystrokes("escape");
     cx.run_until_parked();
@@ -11713,8 +11737,8 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
             "overlays-menu-row-undo",
             &["overlays-menu-row-undo-label".to_owned()],
         ),
-        (fill, None, vec![text]),
-        "the Overlays page's pressed first menu row is not filled with menu.active_background, lettered menu.active_text_color, outlined in nothing"
+        (fill, edge, vec![text]),
+        "the Overlays page's pressed first menu row is not filled with menu.active_background, lettered menu.active_text_color, outlined in the pressed stroke or the hover outline"
     );
     let colours = r.colors.window.border.zip(r.colors.window.foreground);
     assert!(
@@ -11724,12 +11748,24 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
     let Some((border, foreground)) = colours else {
         return;
     };
+    let hover_width = stroke_width_of(&r.menu.item(WidgetState::HOVER)).filter(|w| *w > 0.0);
+    assert!(
+        hover_width.is_some(),
+        "kde-breeze light states no hover outline width, which the pressed stroke's patch is made of"
+    );
+    let Some(hover_width) = hover_width else {
+        return;
+    };
     let mut patched = r.clone();
     patched.apply_patch(
         &ThemePatch::new().menu(
             MenuRule::new()
                 .states(WidgetState::PRESSED)
-                .item(PartPatch::new().fill(Paint::Solid(border)))
+                .item(
+                    PartPatch::new()
+                        .fill(Paint::Solid(border))
+                        .stroke(Stroke::uniform(hover_width, foreground)),
+                )
                 .item_label(TextPatch::new().color(foreground)),
         ),
     );
@@ -11737,9 +11773,14 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
     show(&mut cx, &showcase, Page::Overlays);
     let patched_fill = state_fill_of(&patched.menu.item(WidgetState::PRESSED));
     let patched_text = state_text_color_of(&patched.menu.item_label(WidgetState::PRESSED));
+    let patched_edge = pressed_edge(&patched);
     assert!(
-        patched_fill.is_some() && patched_fill != fill && patched_text != text,
-        "the patch does not change kde-breeze light's pressed menu fill and text, so the drawing cannot show it is read"
+        patched_fill.is_some()
+            && patched_fill != fill
+            && patched_text != text
+            && patched_edge.is_some()
+            && patched_edge != edge,
+        "the patch does not change kde-breeze light's pressed menu fill, text and outline, so the drawing cannot show it is read"
     );
     assert_eq!(
         pressed(
@@ -11747,8 +11788,51 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
             "overlays-menu-row-undo",
             &["overlays-menu-row-undo-label".to_owned()],
         ),
+        (patched_fill, patched_edge, vec![patched_text]),
+        "the Overlays page's pressed first menu row does not follow the patched menu.item(PRESSED).fill, .stroke and menu.item_label(PRESSED).color"
+    );
+    let info = settle_on(&mut cx, &showcase, "overlays-menu-row-copy");
+    let claimed = info.as_ref().and_then(|info| {
+        info.colors
+            .iter()
+            .find(|c| c.role == "pressed item edge")
+            .map(|c| (c.field, c.value))
+    });
+    assert_eq!(
+        claimed,
+        patched_edge.map(|(colour, _)| ("menu.item(PRESSED).stroke.color", colour)),
+        "the Overlays menu row's info does not claim the patched pressed outline: {info:?}"
+    );
+    open_menu(&mut cx, &showcase, "theme");
+    assert_eq!(
+        pressed(
+            &mut cx,
+            "menu-row-System",
+            &["menu-row-label-System".to_owned()]
+        ),
+        (patched_fill, patched_edge, vec![patched_text]),
+        "the pressed System row does not follow the patched menu.item(PRESSED).fill, .stroke and menu.item_label(PRESSED).color"
+    );
+    cx.simulate_keystrokes("escape");
+    cx.run_until_parked();
+    let mut unlined = patched.clone();
+    unlined.apply_patch(
+        &ThemePatch::new().menu(
+            MenuRule::new()
+                .states(WidgetState::PRESSED)
+                .item(PartPatch::new().stroke(Stroke::None)),
+        ),
+    );
+    install_next(&mut cx, &unlined);
+    show(&mut cx, &showcase, Page::Overlays);
+    assert_eq!(
+        pressed(
+            &mut cx,
+            "overlays-menu-row-undo",
+            &["overlays-menu-row-undo-label".to_owned()],
+        ),
         (patched_fill, None, vec![patched_text]),
-        "the Overlays page's pressed first menu row does not follow the patched menu.item(PRESSED).fill and menu.item_label(PRESSED).color"
+        "the Overlays page's pressed first menu row is outlined where menu.item(PRESSED).stroke is stated as none"
     );
 }
 
