@@ -11924,6 +11924,14 @@ fn slider_rest_outline(r: &ResolvedTheme) -> bool {
             .is_some_and(|w| w.is_finite() && w > 0.0)
 }
 
+/// Whether the open menu casts `iced_aw`'s own shadow under `r`, as
+/// [`menu_bar_style`] draws it: neither `menu.panel(NONE)` nor
+/// `popover.panel` states shadows ([`next_shadow`]).
+fn menu_keeps_iced_aws_shadow(r: &native_theme::next::ResolvedTheme) -> bool {
+    next_shadow(&r.menu.panel(WidgetState::NONE)).is_none()
+        && next_shadow(&r.popover.panel).is_none()
+}
+
 /// What iced draws for `element` as `state` shows it that the theme states
 /// nothing for: the "Not themeable" lines of its Widget Info.
 fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'static, str>> {
@@ -11954,11 +11962,13 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
              the ground's colour does not show"
                 .into(),
         ],
-        "Menu" if state.current_resolved.popover.border.shadow_enabled => vec![
+        "Menu" if menu_keeps_iced_aws_shadow(state.next_shown()) => vec![
             "menu width: its widest row, the label and the shortcut \
              layout.widget_gap apart (none where unstated) inside the row's padding"
                 .into(),
-            "shadow geometry: iced_aw's menu_shadow".into(),
+            "shadow: iced_aw's menu_shadow, its geometry and colour, where neither \
+             menu.panel(NONE) nor popover.panel states shadows"
+                .into(),
         ],
         "Menu" => vec![
             "menu width: its widest row, the label and the shortcut \
@@ -35004,7 +35014,9 @@ mod tests {
     /// panel, which the leaf's 0.8.0 home restated on the theme moves (the
     /// menu panel's or the popover's padding grown 3 a side, the popover's
     /// shadows none), and the "Not themeable" shadow line shows only where
-    /// `popover.border.shadow_enabled` keeps iced_aw's shadow. Issue #4's
+    /// the menu keeps iced_aw's shadow, neither `menu.panel(NONE)` nor
+    /// `popover.panel` stating shadows: on every preset of the 0.8.0 model,
+    /// and on each with the popover's shadows stated none. Issue #4's
     /// leftovers, E4: kde-breeze states the menu's panel padding, so the
     /// popover's padding lines say they are not drawn, and growing the
     /// popover's padding moves no padding of the panel.
@@ -35096,12 +35108,38 @@ mod tests {
                 "{overridden} of the panel's lines are not drawn, want the popover's four sides"
             ));
         }
-        for shadow in [true, false] {
-            state.current_resolved.popover.border.shadow_enabled = shadow;
-            let lines = iced_not_themeable(&state, element);
-            if lines.iter().any(|l| l.contains("shadow")) != shadow {
-                failures.push(format!("shadow_enabled {shadow}: {lines:?}"));
+        let shadows_none = native_theme::next::ThemePatch::from_toml(
+            "[widgets.popover]\npanel.shadows = \"none\"\n",
+        );
+        let mut kept = [false, false];
+        for (label, r) in next_combinations() {
+            let mut patched = r.clone();
+            match &shadows_none {
+                Ok(patch) => patched.apply_patch(patch),
+                Err(error) => failures.push(format!("the shadows patch: {error:?}")),
             }
+            for (name, r) in [
+                (label.clone(), r),
+                (format!("{label}, popover shadows none"), patched),
+            ] {
+                let own = !r
+                    .menu
+                    .panel(WidgetState::NONE)
+                    .stated
+                    .contains(PartStated::SHADOWS)
+                    && !r.popover.panel.stated.contains(PartStated::SHADOWS);
+                state.next_resolved = r;
+                let lines = iced_not_themeable(&state, element);
+                if lines.iter().any(|l| l.contains("shadow")) != own {
+                    failures.push(format!("{name}: iced_aw's shadow {own}, {lines:?}"));
+                }
+                if let Some(seen) = kept.get_mut(usize::from(own)) {
+                    *seen = true;
+                }
+            }
+        }
+        if kept != [true, true] {
+            failures.push(format!("shown with iced_aw's shadow and without: {kept:?}"));
         }
         assert!(failures.is_empty(), "{failures:#?}");
     }
