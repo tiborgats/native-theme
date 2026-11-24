@@ -1012,7 +1012,7 @@ sinks   = [
   { path = "visuals.widgets.open.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
   { path = "visuals.widgets.active.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
 ]
-note    = "at defaults.border.line_width, inside the item's padding (egui-0.37.0/src/theme/default_style.rs:68-71); open is an item whose submenu is shown, and active, which is also egui's keyboard-focused item, stays the hover look"
+note    = "at defaults.border.line_width (0.7.2), at the width a rule states for menu.item(HOVER) on the 0.8.0 model (menu.item(HOVER).stroke.width), inside the item's padding (egui-0.37.0/src/theme/default_style.rs:68-71); open is an item whose submenu is shown, and active, which is also egui's keyboard-focused item, stays the hover look"
 
 ["menu.bar_hover_background"]
 verdict   = "derived"
@@ -2397,7 +2397,7 @@ note    = "a state layer over combo_box.background_color; egui draws an open com
 verdict = "scoped"
 homes = ["combo_box.field(OPEN).stroke.color", "combo_box.field(OPEN|HOVER).stroke.color"]
 sinks   = [{ path = "visuals.widgets.open.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4" }]
-note    = "at combo_box.border.line_width, whatever the pointer does, as combo_box.open_background"
+note    = "at combo_box.border.line_width (combo_box.field(NONE).stroke.width on the 0.8.0 model), whatever the pointer does, as combo_box.open_background"
 
 ["combo_box.font.family"]
 verdict  = "unmappable"
@@ -2578,7 +2578,7 @@ tested_by = "T18(a)"
 verdict   = "derived"
 homes = ["list.highlight(HOVER).stroke.color"]
 tested_by = "T18(a)"
-note      = "per call: the showcase outlines a hovered, unselected list row and command-palette row at defaults.border.line_width, inside the row's fill (StrokeKind::Inside); egui_extras' TableBuilder fills a hovered row per cell with no stroke (egui_extras-0.37.0/src/layout.rs:145-151)"
+note      = "per call: the showcase outlines a hovered, unselected list row and command-palette row in the pen a rule states for list.highlight(HOVER), at the width it states (list.highlight(HOVER).stroke.width), inside the row's fill (StrokeKind::Inside); egui_extras' TableBuilder fills a hovered row per cell with no stroke (egui_extras-0.37.0/src/layout.rs:145-151)"
 
 ["list.disabled_text_color"]
 verdict = "scoped"
