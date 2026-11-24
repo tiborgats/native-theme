@@ -2372,22 +2372,29 @@ fn list_row(
             );
         }
     }
-    let label = paint_cell_text(ui, text, font, look.text, (rect, inset, line));
+    let label = paint_cell_text(ui, text, font, look.text, (rect, inset, line), None);
     (response, label, look.own_note())
 }
 
 /// `text` painted in `font` and `colour`, one `line` tall, `inset` in from `rect`'s left and
-/// centred on its height; its rectangle.
+/// centred on its height; where `room` is given, a text wider than it cut short with egui's
+/// ellipsis, as egui lays a label under `TextWrapMode::Truncate` (egui-0.37.0
+/// `src/widget_text.rs`, `WidgetText::into_galley`; epaint-0.37.0
+/// `src/text/text_layout_types.rs`, `TextWrapping::truncate_at_width`); its rectangle.
 fn paint_cell_text(
     ui: &egui::Ui,
     text: &str,
     font: &egui::FontId,
     colour: egui::Color32,
     (rect, inset, line): (egui::Rect, f32, f32),
+    room: Option<f32>,
 ) -> egui::Rect {
     let mut job = egui::text::LayoutJob::simple_singleline(text.to_string(), font.clone(), colour);
     if let Some(section) = job.sections.first_mut() {
         section.format.line_height = Some(line);
+    }
+    if let Some(room) = room {
+        job.wrap = egui::text::TextWrapping::truncate_at_width(room.max(0.0));
     }
     let galley = ui.fonts_mut(|f| f.layout_job(job));
     let at = egui::pos2(rect.left() + inset, rect.center().y - 0.5 * line);
@@ -2405,6 +2412,117 @@ fn paint_cell_text(
 /// way, so no gap shows between neighbouring cells (`src/layout.rs:125-127`, `gapless_rect`).
 pub(crate) fn table_cell_inset(ui: &egui::Ui) -> egui::Vec2 {
     0.5 * ui.spacing().item_spacing
+}
+
+/// A table cell's sides across, the Basic, Data and Theme Map tables' alike, of the installed
+/// 0.8.0 theme `r`, in `ui`, the table's scope: the header's and a body row's left and right
+/// padding, `list.header(NONE)` and `list.row(NONE)` of the table (`ListVariant::Table`), each
+/// side where the theme states it (spec §10, rule 0), else egui_extras' own, half the scope's
+/// `item_spacing.x` ([`table_cell_inset`]). egui_extras pads both sides of every cell by that
+/// half alike, as it lays its cells `item_spacing.x` apart (egui_extras-0.37.0
+/// `src/layout.rs:98-104`, `StripLayout::set_pos`; `src/table.rs:806-807`, a column's line half
+/// of it past its cells), so where the theme states a side of either part an egui_extras
+/// table is laid out with the scope's `item_spacing.x` 0 ([`Self::lay_out`]) and each cell's
+/// content between its own two sides, a cell's inner margin ([`Self::cell`]); where it states
+/// none, and without an installed 0.8.0 theme, egui_extras' own spacing stays and a cell's
+/// content is laid out as egui_extras lays it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct CellSides {
+    /// The header's left and right side.
+    header: [f32; 2],
+    /// A body row's left and right side.
+    body: [f32; 2],
+    /// The scope's `item_spacing.x`, egui's own between the widgets of one cell, kept inside it.
+    spacing: f32,
+    /// Whether the theme states a side of either part.
+    stated: bool,
+}
+
+impl CellSides {
+    pub(crate) fn of(ui: &egui::Ui, r: Option<&ResolvedTheme>) -> Self {
+        let own = table_cell_inset(ui).x;
+        let spacing = ui.spacing().item_spacing.x;
+        let Some(r) = r else {
+            return Self {
+                header: [own, own],
+                body: [own, own],
+                spacing,
+                stated: false,
+            };
+        };
+        let q = list_query(ListVariant::Table, NextState::NONE);
+        let across = |part: &native_theme::next::PartStyle| {
+            let [_, right, _, left] = next::padding_of(part);
+            (left, right)
+        };
+        let (header, body) = (across(&r.list.header(q)), across(&r.list.row(q)));
+        let stated = [header.0, header.1, body.0, body.1]
+            .iter()
+            .any(Option::is_some);
+        let sides =
+            |(left, right): (Option<f32>, Option<f32>)| [left.unwrap_or(own), right.unwrap_or(own)];
+        Self {
+            header: sides(header),
+            body: sides(body),
+            spacing,
+            stated,
+        }
+    }
+
+    /// The left and right side of the header (`header`) or a body row.
+    pub(crate) fn sides(&self, header: bool) -> [f32; 2] {
+        if header { self.header } else { self.body }
+    }
+
+    /// The width the sides of a header (`header`) or body cell take inside an egui_extras
+    /// column: both where the theme states a side ([`Self::cell`]); else none, egui_extras'
+    /// own half spacing lying outside the column's width.
+    pub(crate) fn inside(&self, header: bool) -> f32 {
+        if self.stated {
+            self.sides(header).iter().sum()
+        } else {
+            0.0
+        }
+    }
+
+    /// `ui`, the scope an egui_extras table is about to be laid out in, with its cells
+    /// `item_spacing.x` 0 apart where the theme states a side; else left as it is.
+    pub(crate) fn lay_out(&self, ui: &mut egui::Ui) {
+        if self.stated {
+            ui.spacing_mut().item_spacing.x = 0.0;
+        }
+    }
+
+    /// An egui_extras cell's content, `add`, in `ui`, the cell of the header (`header`) or a
+    /// body row: where the theme states a side, the left side, then the content in the room
+    /// the cell has less the right side, at the scope's own `item_spacing.x`, then the right
+    /// side, so an auto-sized column takes both sides with its widest content (egui_extras
+    /// `table.rs:836-846`) and a clipped one cuts its text short the right side in; else the
+    /// content as egui_extras lays it.
+    pub(crate) fn cell<R>(
+        &self,
+        ui: &mut egui::Ui,
+        header: bool,
+        add: impl FnOnce(&mut egui::Ui) -> R,
+    ) -> R {
+        if !self.stated {
+            return add(ui);
+        }
+        let [left, right] = self.sides(header);
+        ui.add_space(left);
+        let mut room = ui.available_rect_before_wrap();
+        room.max.x = (room.max.x - right).max(room.min.x);
+        let spacing = self.spacing;
+        let inner = ui.scope_builder(
+            egui::UiBuilder::new().max_rect(room).layout(*ui.layout()),
+            |ui| {
+                ui.spacing_mut().item_spacing.x = spacing;
+                add(ui)
+            },
+        );
+        ui.add_space(right);
+        inner.inner
+    }
 }
 
 /// A table header section's fill, of the installed 0.8.0 theme `r`: pressed, which needs the
@@ -2432,8 +2550,10 @@ pub(crate) fn header_section_fill(
 /// scope, of the installed 0.8.0 theme, a table's (`ListVariant::Table`). egui has no table the
 /// theme reaches (egui_extras' `TableBuilder` paints only its stripes), so it is painted here as
 /// the list's rows are: the header in `list.header(NONE).fill` where stated, its titles in
-/// `list.header_label(NONE)` (the Data page's `TableHeader`), `row_metrics` tall and inset, the
-/// rows `row_metrics` tall, each in its `RowLook` (the row's own fill where stated, then over it
+/// `list.header_label(NONE)` (the Data page's `TableHeader`), `row_metrics` tall, the rows
+/// `row_metrics` tall, each cell's text between its sides ([`CellSides`]: in by its left, cut
+/// short its right in from the column's edge), each row in its `RowLook` (the row's own fill
+/// where stated, then over it
 /// the selected one's highlight inset by its margin and, where stated, rounded by its corners),
 /// the header's fill rounded at the top and
 /// the last row's highlight at the bottom where they meet the frame and the highlight states no
@@ -2465,11 +2585,16 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
             let header_fill = r.and_then(|r| next::fill_of(&r.list.header(rest)));
             let header_line_colour = r.and_then(|r| next::fill_of(&r.list.header_separator(rest)));
             let own = table_cell_inset(ui);
-            let (row_height, inset, line) =
-                row_metrics(ui, r, (table, false), &item_font, own, 0.0);
+            let sides = CellSides::of(ui, r);
+            let (row_height, _, line) = row_metrics(ui, r, (table, false), &item_font, own, 0.0);
             // the grid's line under the header lies inside it
-            let (header_height, header_inset, header_line) =
+            let (header_height, _, header_line) =
                 row_metrics(ui, r, (table, true), &head.font, own, grid_width);
+            // a cell's text between its two sides
+            let between = |cell: egui::Rect, header: bool| {
+                let [left, right] = sides.sides(header);
+                (left, cell.width() - left - right)
+            };
             let (frame, inner_radius) = list_frame(r, table);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             frame
@@ -2521,12 +2646,14 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                                 fill,
                             );
                         }
+                        let (inset, room) = between(cell, true);
                         paint_cell_text(
                             ui,
                             text,
                             &head.font,
                             head.color,
-                            (cell, header_inset, header_line),
+                            (cell, inset, header_line),
+                            Some(room),
                         );
                         places.push((id.to_string(), cell));
                     }
@@ -2573,7 +2700,15 @@ fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
                             } else {
                                 egui::Rect::from_x_y_ranges(mid..=row.right(), row.y_range())
                             };
-                            paint_cell_text(ui, text, &item_font, look.text, (cell, inset, line));
+                            let (inset, room) = between(cell, false);
+                            paint_cell_text(
+                                ui,
+                                text,
+                                &item_font,
+                                look.text,
+                                (cell, inset, line),
+                                Some(room),
+                            );
                         }
                         places.push((format!("basic.table.row_{}", i.saturating_add(1)), row));
                     }

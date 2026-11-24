@@ -69,7 +69,8 @@ pub(crate) fn show(
         |ui, list, reg| {
             let heights = super::data::TableRows::of(ui, r, &header_font);
             const TITLES: [&str; 4] = ["Leaf", "Value", "Verdict", "Sinks / upstream"];
-            // A header's text as drawn, its width rounded up to a whole point.
+            // A header's text as drawn, its width rounded up to a whole point, and the sides a
+            // header cell takes inside its column (`CellSides::inside`).
             let title_width = |ui: &egui::Ui, title: &str| {
                 ui.fonts_mut(|f| {
                     f.layout_no_wrap(title.to_string(), header_font.clone(), header_color)
@@ -77,6 +78,7 @@ pub(crate) fn show(
                 .size()
                 .x
                 .ceil()
+                    + heights.sides.inside(true)
             };
             let (value_floor, sinks_floor) =
                 (title_width(ui, TITLES[1]), title_width(ui, TITLES[3]));
@@ -97,7 +99,7 @@ pub(crate) fn show(
                     egui::ScrollArea::horizontal()
                         .id_salt("theme map/across")
                         .show(ui, |ui| {
-                            super::data::one_line_cells(ui);
+                            heights.lay_out(ui);
                             egui_extras::TableBuilder::new(ui)
                                 .striped(true)
                                 .cell_layout(super::data::centred_cells())
@@ -116,8 +118,10 @@ pub(crate) fn show(
                                 .header(heights.header, |mut header| {
                                     for title in TITLES {
                                         header.col(|ui| {
-                                            list.add(reg, ui, "theme map header", |ui| {
-                                                ui.label(heights.title(&head, title))
+                                            heights.header_cell(ui, |ui| {
+                                                list.add(reg, ui, "theme map header", |ui| {
+                                                    ui.label(heights.title(&head, title))
+                                                })
                                             });
                                         });
                                     }
@@ -137,18 +141,22 @@ pub(crate) fn show(
                                             {
                                                 let swatch = colour.filter(|_| ix == 1);
                                                 row.col(|ui| {
-                                                    list.add(reg, ui, "theme map cell", |ui| {
-                                                        match swatch {
-                                                            Some(colour) => {
-                                                                crate::info::swatch_cell(
-                                                                    ui,
-                                                                    r,
-                                                                    colour,
-                                                                    heights.cell(text),
-                                                                )
+                                                    heights.body_cell(ui, |ui| {
+                                                        list.add(reg, ui, "theme map cell", |ui| {
+                                                            match swatch {
+                                                                Some(colour) => {
+                                                                    crate::info::swatch_cell(
+                                                                        ui,
+                                                                        r,
+                                                                        colour,
+                                                                        heights.cell(text),
+                                                                    )
+                                                                }
+                                                                None => {
+                                                                    ui.label(heights.cell(text))
+                                                                }
                                                             }
-                                                            None => ui.label(heights.cell(text)),
-                                                        }
+                                                        })
                                                     });
                                                 });
                                             }

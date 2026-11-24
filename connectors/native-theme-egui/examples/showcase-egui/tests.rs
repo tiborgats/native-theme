@@ -13625,3 +13625,166 @@ fn the_basic_tables_unstated_cell_padding_is_egui_extras_own() -> Result<(), Str
     );
     Ok(())
 }
+
+/// Spec §10 rule 0: a stated horizontal cell padding is drawn, in all three tables alike
+/// (`pages::basic::CellSides`). Under kde-breeze with the table's `list.header(NONE)` and
+/// `list.row(NONE)` padding patched to unequal sides, the header's unlike the row's, each a
+/// multiple of egui_extras' own half `item_spacing.x`: in the Data and Theme Map pages'
+/// `TableBuilder`s each first-column cell's content lies its part's left side in from the
+/// table's left, and each second-column cell's its part's left side past the first column,
+/// which is as wide as its widest cell's content with that cell's two sides, the cells laid out
+/// `item_spacing.x` 0 apart (egui_extras-0.37.0 `src/layout.rs:98-104`); in the Basic page's
+/// painted table each first-column text lies its part's left side in from its cell and is cut
+/// short at the cell's width less both sides (`TextWrapping::truncate_at_width`).
+#[test]
+fn the_tables_draw_a_stated_horizontal_cell_padding() -> Result<(), String> {
+    use native_theme::next::{Edges, ListRule, ListVariant, PartPatch, PartStyle, ThemePatch};
+    const SLACK: f32 = 0.05;
+    let plain = open_page_under(Page::Data, egui::Theme::Light, "kde-breeze");
+    let own = 0.5
+        * scope_style(&plain, native_theme_egui::Role::List)?
+            .spacing
+            .item_spacing
+            .x;
+    assert!(own > 0.0, "the List scope's item spacing is 0");
+    let (header_sides, body_sides) = ([4.0 * own, 3.0 * own], [2.0 * own, 5.0 * own]);
+    let patch = |r: &native_theme::next::ResolvedTheme| {
+        let q = table_query();
+        let across = |part: PartStyle, [left, right]: [f32; 2]| {
+            let p = part.padding;
+            PartPatch::new().padding(Edges::new(p.top, right, p.bottom, left))
+        };
+        Some(
+            ThemePatch::new().list(
+                ListRule::new()
+                    .variant(ListVariant::Table)
+                    .header(across(r.list.header(q), header_sides))
+                    .row(across(r.list.row(q), body_sides)),
+            ),
+        )
+    };
+    let stated = |r: &native_theme::next::ResolvedTheme| -> Result<(), String> {
+        let q = table_query();
+        let sides = |part: &PartStyle| {
+            let [_, right, _, left] = native_theme_egui::next::padding_of(part);
+            [left, right]
+        };
+        let got = (sides(&r.list.header(q)), sides(&r.list.row(q)));
+        let want = (header_sides.map(Some), body_sides.map(Some));
+        if got == want {
+            Ok(())
+        } else {
+            Err(format!(
+                "the patched header and row sides are {got:?}, not {want:?}"
+            ))
+        }
+    };
+
+    // The Data table's first column is resizable, so egui_extras never narrows it below a
+    // width it once had (egui_extras-0.37.0 `src/table.rs:835-838`); the Theme Map's is as wide
+    // as its widest content each frame (`:844-846`).
+    for (page, header_kind, cell_kind, columns, exact) in [
+        (Page::Data, "table header", "table cell", 2_usize, false),
+        (
+            Page::ThemeMap,
+            "theme map header",
+            "theme map cell",
+            4,
+            true,
+        ),
+    ] {
+        let (harness, r) = open_patched(page, egui::Theme::Light, "kde-breeze", patch)?;
+        stated(&r)?;
+        let records = harness.state().registry.records();
+        let of = |kind: &str| -> Vec<egui::Rect> {
+            records
+                .iter()
+                .filter(|r| r.info.kind == kind)
+                .map(|r| r.whole)
+                .collect()
+        };
+        let (headers, cells) = (of(header_kind), of(cell_kind));
+        if headers.len() != columns || cells.is_empty() || cells.len() % columns != 0 {
+            return Err(format!(
+                "{page:?}: {} headers and {} cells recorded, not {columns} and whole rows",
+                headers.len(),
+                cells.len()
+            ));
+        }
+        let rows: Vec<(&[egui::Rect], [f32; 2])> =
+            std::iter::once((headers.as_slice(), header_sides))
+                .chain(cells.chunks(columns).map(|row| (row, body_sides)))
+                .collect();
+        let first = |row: &[egui::Rect]| row.first().copied().ok_or("an empty row");
+        let second = |row: &[egui::Rect]| row.get(1).copied().ok_or("a row of one cell");
+        let (top, top_sides) = rows.first().copied().ok_or("no rows")?;
+        let table_left = first(top)?.left() - top_sides[0];
+        let mut column = 0.0_f32;
+        for &(row, [left, right]) in &rows {
+            let cell = first(row)?;
+            assert!(
+                (cell.left() - left - table_left).abs() <= SLACK,
+                "{page:?}: a first-column cell's content begins {} past the table's left, not \
+                 its left side {left}",
+                cell.left() - table_left
+            );
+            column = column.max(left + cell.width() + right);
+        }
+        let start = second(top)?.left() - table_left - top_sides[0];
+        if exact {
+            assert!(
+                (start - column).abs() <= SLACK,
+                "{page:?}: the second column begins {start} past the table's left, not at the \
+                 first column's width {column}"
+            );
+        } else {
+            assert!(
+                start >= column - SLACK,
+                "{page:?}: the second column begins {start} past the table's left, inside the \
+                 first column's {column}"
+            );
+        }
+        for &(row, [left, _]) in &rows {
+            let at = second(row)?.left() - table_left;
+            assert!(
+                (at - start - left).abs() <= SLACK,
+                "{page:?}: a second-column cell's content begins {at} past the table's left, not \
+                 the column's start {start} and its left side {left}"
+            );
+        }
+    }
+
+    let (basic, r) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", patch)?;
+    stated(&r)?;
+    let name = place_of(&basic, "basic.table.header.name");
+    let row = place_of(&basic, "basic.table.row_1");
+    let row_cell = egui::Rect::from_x_y_ranges(row.left()..=name.right(), row.y_range());
+    for (text, cell, [left, right]) in [
+        ("Name", name, header_sides),
+        ("a.txt", row_cell, body_sides),
+    ] {
+        let (x, room) = basic
+            .output()
+            .shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Text(s) if s.galley.text() == text && cell.contains(s.pos) => {
+                    Some((s.pos.x, s.galley.job.wrap.max_width))
+                }
+                _ => None,
+            })
+            .ok_or_else(|| format!("{text:?} is not painted in its cell {cell:?}"))?;
+        assert!(
+            (x - cell.left() - left).abs() < 1e-3,
+            "the Basic table's {text:?} sits {} in from its cell, not its left side {left}",
+            x - cell.left()
+        );
+        let want = cell.width() - left - right;
+        assert!(
+            (room - want).abs() < 1e-3,
+            "the Basic table's {text:?} is cut short at {room}, not its cell's width less its \
+             sides, {want}"
+        );
+    }
+    Ok(())
+}
