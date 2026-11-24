@@ -1940,12 +1940,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "chrome.menu.",
-        &["menu.item(HOVER|PRESSED).fill"],
+        &["menu.item(PRESSED).fill"],
         "gpui: menu.item(PRESSED).fill where a rule states it for the pressed state, the row's fill while the mouse button is held on it (MenuLook::next_of, MenuLook::pressed)",
     ),
     (
         "chrome.menu.",
-        &["menu.item_label(HOVER|PRESSED).color"],
+        &["menu.item_label(PRESSED).color"],
         "gpui: menu.item_label(PRESSED).color where a rule states it for the pressed state, the row's text while the mouse button is held on it, its shortcut's too (MenuLook::next_of, MenuLook::pressed)",
     ),
     (
