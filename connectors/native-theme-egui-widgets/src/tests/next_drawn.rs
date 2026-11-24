@@ -24,8 +24,6 @@ enum Differs {
     Label,
     /// The label's gap alone: each text lies the row's width change farther along.
     Gap,
-    /// The label's gap ([`Differs::Gap`]) and its colour ([`labels_masked`]).
-    GapAndLabel,
     /// The label's colour ([`labels_masked`]) and a dot's fill ([`dots_masked`]).
     LabelAndDot,
     /// A circle's outline, its outer edge kept ([`rings_masked`]).
@@ -40,6 +38,14 @@ enum Differs {
     /// one either square or the frame's, and a rect filled in an outline's colour
     /// ([`outlines_masked`]).
     Frame,
+    /// The label's side alone: the label before the track, where the track began, and every
+    /// other shape the label's width and the gap farther along ([`sides_swapped`]).
+    Side,
+    /// The label's side ([`Differs::Side`]) and its colour ([`labels_masked`]).
+    SideAndLabel,
+    /// The label's side ([`Differs::Side`]), the gap the row's width change wider, and the
+    /// label's colour ([`labels_masked`]).
+    SideGapAndLabel,
 }
 
 /// A listed difference: the widget's case, the presets on which it draws differently, what may
@@ -199,38 +205,74 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         case: "switch off disabled",
-        presets: &["kde-breeze", "material-3"],
+        presets: &["kde-breeze"],
         differs: Differs::Label,
         reason: SWITCH_DISABLED_LABEL,
     },
     Difference {
         case: "switch on disabled",
-        presets: &["kde-breeze", "material-3"],
+        presets: &["kde-breeze"],
         differs: Differs::Label,
         reason: SWITCH_DISABLED_LABEL,
     },
     Difference {
         case: "switch off",
+        presets: &["macos-monterey", "macos-tahoe", "material-3", "ios-13"],
+        differs: Differs::Side,
+        reason: SWITCH_LEADING,
+    },
+    Difference {
+        case: "switch on",
+        presets: &["macos-monterey", "macos-tahoe", "material-3", "ios-13"],
+        differs: Differs::Side,
+        reason: SWITCH_LEADING,
+    },
+    Difference {
+        case: "switch off disabled",
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        differs: Differs::Side,
+        reason: SWITCH_LEADING,
+    },
+    Difference {
+        case: "switch on disabled",
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        differs: Differs::Side,
+        reason: SWITCH_LEADING,
+    },
+    Difference {
+        case: "switch off disabled",
+        presets: &["material-3"],
+        differs: Differs::SideAndLabel,
+        reason: M3_SWITCH_DISABLED,
+    },
+    Difference {
+        case: "switch on disabled",
+        presets: &["material-3"],
+        differs: Differs::SideAndLabel,
+        reason: M3_SWITCH_DISABLED,
+    },
+    Difference {
+        case: "switch off",
         presets: &["adwaita"],
-        differs: Differs::GapAndLabel,
+        differs: Differs::SideGapAndLabel,
         reason: ADWAITA_SWITCH,
     },
     Difference {
         case: "switch on",
         presets: &["adwaita"],
-        differs: Differs::GapAndLabel,
+        differs: Differs::SideGapAndLabel,
         reason: ADWAITA_SWITCH,
     },
     Difference {
         case: "switch off disabled",
         presets: &["adwaita"],
-        differs: Differs::GapAndLabel,
+        differs: Differs::SideGapAndLabel,
         reason: ADWAITA_SWITCH,
     },
     Difference {
         case: "switch on disabled",
         presets: &["adwaita"],
-        differs: Differs::GapAndLabel,
+        differs: Differs::SideGapAndLabel,
         reason: ADWAITA_SWITCH,
     },
     Difference {
@@ -259,20 +301,41 @@ const DIFFERENCES: &[Difference] = &[
     },
 ];
 
-/// kde-breeze's and material-3's disabled switch label.
+/// kde-breeze's disabled switch label.
 const SWITCH_DISABLED_LABEL: &str = "the label's colour alone differs: 0.7.2 has no switch \
-     label and takes defaults.disabled_text_color; the 0.8.0 presets state the platform's \
-     disabled switch label: kde-breeze qqc2-desktop-style's, the Disabled [Colors:Window] text \
-     at its opacity 0.6 (#a0a1a399 / #686a6c99: Switch.qml:72, :75 at qqc2-desktop-style \
-     v6.31.0; plasmadesktoptheme.cpp:273-274 at Kirigami 8319acc7), material-3 Android's \
-     MaterialSwitch text, on-background at material_emphasis_medium 0.6 (#1d1b2099 / #e6e0e999: \
-     android:Widget.CompoundButton's textColor ?attr/textColorPrimaryDisableOnly, AOSP \
-     core/res/res/values/styles.xml:386 at android-15.0.0_r1; m3_primary_text_disable_only.xml:19, \
-     dimens.xml:21, materialswitch/res/values/styles.xml:17-29 at material-components-android \
-     66c334b); crate::next::parity, switch::Look.disabled_text";
+     label and takes defaults.disabled_text_color; the 0.8.0 kde-breeze states the platform's \
+     disabled switch label, qqc2-desktop-style's, the Disabled [Colors:Window] text at its \
+     opacity 0.6 (#a0a1a399 / #686a6c99: Switch.qml:72, :75 at qqc2-desktop-style v6.31.0; \
+     plasmadesktoptheme.cpp:273-274 at Kirigami 8319acc7); crate::next::parity, \
+     switch::Look.disabled_text";
+
+/// The switch label's side on the presets that lead with it.
+const SWITCH_LEADING: &str = "the label's side alone differs: 0.7.2's SwitchTheme states no \
+     label side, so the label lies after the track, as egui's own Checkbox lays its text; the \
+     0.8.0 preset states switch.label_side Leading, the platform's label before its switch \
+     (macOS and iOS SwiftUI's ToggleStyle.switch, \"a leading label and a trailing switch\", \
+     developer.apple.com, read 2026-11-23; material-3 Android's MaterialSwitch text at the \
+     start, materialswitch/res/values/styles.xml:26 at material-components-android 66c334b), \
+     so the label lies where the track began and the track and its thumb the label's width and \
+     the gap farther along; crate::next::parity, switch::Geometry.leading";
+
+/// material-3's disabled switch label.
+const M3_SWITCH_DISABLED: &str = "the label's side and colour: the 0.8.0 material-3 states \
+     switch.label_side Leading, Android's MaterialSwitch text at the start \
+     (materialswitch/res/values/styles.xml:26 at material-components-android 66c334b), where \
+     0.7.2 states no side and the label lies after the track; and the label in Android's \
+     disabled MaterialSwitch text, on-background at material_emphasis_medium 0.6 (#1d1b2099 / \
+     #e6e0e999: android:Widget.CompoundButton's textColor ?attr/textColorPrimaryDisableOnly, \
+     AOSP core/res/res/values/styles.xml:386 at android-15.0.0_r1; \
+     m3_primary_text_disable_only.xml:19, dimens.xml:21, materialswitch/res/values/styles.xml:17-29 \
+     at material-components-android 66c334b), where 0.7.2 takes defaults.disabled_text_color; \
+     crate::next::parity, switch::Geometry.leading, switch::Look.disabled_text";
 
 /// adwaita's switch label.
-const ADWAITA_SWITCH: &str = "the label's gap and colour: the 0.8.0 adwaita states \
+const ADWAITA_SWITCH: &str = "the label's side, gap and colour: the 0.8.0 adwaita states \
+     switch.label_side Leading, AdwSwitchRow's title first and the switch a suffix at the row's \
+     end (adw-action-row.ui:40-43, :91-94, adw-switch-row.c:161 at libadwaita 1.10.0), where \
+     0.7.2 states no side and the label lies after the track; \
      switch.label_gap 6, the least gap of AdwSwitchRow's header box (_lists.scss:132 at \
      libadwaita 1.10.0), where 0.7.2 has none and the label lies at the scope's own \
      icon_spacing, 2 pt farther; and the label in AdwSwitchRow's title colour, the row's text, \
@@ -280,7 +343,7 @@ const ADWAITA_SWITCH: &str = "the label's gap and colour: the 0.8.0 adwaita stat
      libadwaita 1.10.0), at --disabled-opacity 50 % when disabled (#00000666 / #ffffff80: \
      _labels.scss:8-10, _colors.scss:37, :100, :320 at libadwaita 1.10.0), where 0.7.2 took the \
      window's text and defaults.disabled_text_color; crate::next::parity, switch::Look.text and \
-     .disabled_text, switch::Geometry.label_gap";
+     .disabled_text, switch::Geometry.leading and .label_gap";
 
 /// windows-11's switch label.
 const WINDOWS_SWITCH_GAP: &str = "the label's gap: the 0.8.0 windows-11 states \
@@ -594,7 +657,7 @@ fn alike_but(
     match differs {
         Differs::Outline => ra == rb && outlines_masked(a) == outlines_masked(b),
         Differs::Label => ra == rb && labels_alike(a, b),
-        Differs::Gap | Differs::GapAndLabel => {
+        Differs::Gap => {
             // the row's background spans the row, which the gap's change widens
             let along = egui::vec2(rb.width() - ra.width(), 0.0);
             let b: Vec<Shape> = a
@@ -610,7 +673,17 @@ fn alike_but(
                     _ => y.clone(),
                 })
                 .collect();
-            let alike = if differs == Differs::Gap {
+            ra.min == rb.min && ra.height() == rb.height() && a == b.as_slice()
+        }
+        Differs::Side | Differs::SideAndLabel | Differs::SideGapAndLabel => {
+            let grown = rb.width() - ra.width();
+            if differs != Differs::SideGapAndLabel && grown != 0.0 {
+                return false;
+            }
+            let Some(b) = sides_swapped(a, (b, rb), ra, grown) else {
+                return false;
+            };
+            let alike = if differs == Differs::Side {
                 a == b.as_slice()
             } else {
                 labels_alike(a, &b)
@@ -706,6 +779,46 @@ fn alike_but(
             a == b
         }
     }
+}
+
+/// `b`, drawn in `rb` with its label before the track, with its shapes put back where `a`,
+/// drawn in `ra` with the label after it, has them, where each lies where the swap moves it:
+/// the label to where `a`'s track began, and every other shape `a`'s label's width and gap,
+/// the gap `grown` wider, farther along; the row's background, which spans the row, taken as
+/// `a`'s. `None` where `a` draws no label or no track.
+fn sides_swapped(
+    a: &[egui::Shape],
+    (b, rb): (&[egui::Shape], egui::Rect),
+    ra: egui::Rect,
+    grown: f32,
+) -> Option<Vec<egui::Shape>> {
+    use egui::Shape;
+    let label = a.iter().find_map(|s| match s {
+        Shape::Text(t) => Some(t),
+        _ => None,
+    })?;
+    let track = a.iter().find_map(|s| match s {
+        Shape::Rect(r) if r.rect != ra => Some(r.rect),
+        _ => None,
+    })?;
+    // 0.7.2's gap, between the track's end and the label after it
+    let gap = label.pos.x - track.max.x;
+    let to_start = egui::vec2(track.min.x - label.pos.x, 0.0);
+    let along = egui::vec2(label.galley.size().x + gap + grown, 0.0);
+    Some(
+        a.iter()
+            .zip(b)
+            .map(|(x, y)| match (x, y) {
+                (Shape::Text(_), _) => snapped(x, y, to_start),
+                (Shape::Rect(x), Shape::Rect(y)) if x.rect == ra && y.rect == rb => {
+                    let mut y = y.clone();
+                    y.rect = x.rect;
+                    Shape::Rect(y)
+                }
+                _ => snapped(x, y, along),
+            })
+            .collect(),
+    )
 }
 
 /// `shapes` with each circle that lies inside an earlier one round the same centre (a radio's
@@ -1086,6 +1199,195 @@ fn a_switch_label_is_at_the_stated_gap_in_the_stated_colour() -> TestResult {
         })
         .ok_or("no label drawn")?;
     assert_eq!(text, egui::Color32::from_rgb(255, 0, 255));
+    Ok(())
+}
+
+/// The first text drawn: its position and the colour it is lettered in.
+fn drawn_text(shapes: &[egui::Shape]) -> Option<(egui::Pos2, egui::Color32)> {
+    shapes.iter().find_map(|s| match s {
+        egui::Shape::Text(t) => Some((t.pos, t.fallback_color)),
+        _ => None,
+    })
+}
+
+/// `switch.label_side` stated `Leading`, here on kde-breeze, which states `Trailing`, puts the
+/// label before the track, `switch.label_gap` before it, and the label is drawn where its part
+/// is recorded.
+#[test]
+fn a_leading_switch_label_lies_before_the_track() -> TestResult {
+    use crate::switch::Geometry;
+    let stock = Geometry::next_of(&patched(Preset::KdeBreeze, "")?).ok_or("no geometry")?;
+    assert!(!stock.leading, "kde-breeze leads: the test proves nothing");
+    let gap = stock.label_gap.ok_or("kde-breeze states no label gap")?;
+    let patch = "[widgets.switch]\nlabel_side = \"leading\"\n";
+    let g = Geometry::next_of(&patched(Preset::KdeBreeze, patch)?).ok_or("no geometry")?;
+    assert!(g.leading, "{g:?}");
+    let (parts, shapes) = drawn_switch(&patched_installed(Preset::KdeBreeze, patch)?);
+    let (label, track) = (
+        parts.get("label").ok_or("no label")?,
+        parts.get("track").ok_or("no track")?,
+    );
+    assert!(
+        (track.left() - label.right() - gap).abs() < 1e-3,
+        "{label:?} {track:?}"
+    );
+    let (pos, _) = drawn_text(&shapes).ok_or("no label drawn")?;
+    assert!((pos - label.min).length() < 1e-3, "{pos:?} {label:?}");
+    Ok(())
+}
+
+/// The switch's parts, shapes and rect, drawn off, enabled, filling `width` (a
+/// `centered_and_justified` layout), in the second of two passes.
+fn drawn_switch_in(ctx: &egui::Context, width: f32) -> (Parts, Vec<egui::Shape>, egui::Rect) {
+    let add = |ui: &mut egui::Ui| {
+        let size = egui::vec2(width, ui.spacing().interact_size.y);
+        let layout = egui::Layout::centered_and_justified(egui::Direction::TopDown);
+        ui.allocate_ui_with_layout(size, layout, |ui| {
+            ui.add(Switch::new(&mut false).label("Wi-Fi"))
+        })
+        .inner
+    };
+    let _ = response(ctx, at(1.0), add);
+    let (out, r) = response(ctx, at(1.0), add);
+    (Parts::of(&r).unwrap_or_default(), flat(&out.shapes), r.rect)
+}
+
+/// `switch.label_gap_stretches` stated `true`, here on kde-breeze, which states `false`, puts
+/// the width a switch laid out wider than its content has left over between the label and the
+/// track, the two at the ends of the row (egui grows the gap by whole points, so the far one
+/// within a point of the end); laid out no wider, the two keep the stated gap. With the label
+/// leading the label lies at the row's start and the track at its end.
+#[test]
+fn a_stretching_switch_gap_puts_the_label_and_the_track_at_the_ends() -> TestResult {
+    use crate::switch::Geometry;
+    let stock = Geometry::next_of(&patched(Preset::KdeBreeze, "")?).ok_or("no geometry")?;
+    assert!(
+        !stock.stretches,
+        "kde-breeze stretches: the test proves nothing"
+    );
+    let gap = stock.label_gap.ok_or("kde-breeze states no label gap")?;
+    let width = 400.0;
+    let (parts, _, rect) = drawn_switch_in(&patched_installed(Preset::KdeBreeze, "")?, width);
+    assert_eq!(rect.width(), width, "the switch is not laid out wider");
+    let label = parts.get("label").ok_or("no label")?;
+    assert!(
+        rect.right() - label.right() >= 1.0,
+        "the label lies at the end unstretched: the test proves nothing"
+    );
+    let patch = "[widgets.switch]\nlabel_gap_stretches = true\n";
+    let g = Geometry::next_of(&patched(Preset::KdeBreeze, patch)?).ok_or("no geometry")?;
+    assert!(g.stretches, "{g:?}");
+    let ctx = patched_installed(Preset::KdeBreeze, patch)?;
+    let (parts, shapes, rect) = drawn_switch_in(&ctx, width);
+    let (label, track) = (
+        parts.get("label").ok_or("no label")?,
+        parts.get("track").ok_or("no track")?,
+    );
+    assert!(
+        (track.left() - rect.left()).abs() < 1e-3,
+        "{track:?} {rect:?}"
+    );
+    let short = rect.right() - label.right();
+    assert!((-1e-3..1.0).contains(&short), "{label:?} {rect:?}");
+    let (pos, _) = drawn_text(&shapes).ok_or("no label drawn")?;
+    assert!((pos - label.min).length() < 1e-3, "{pos:?} {label:?}");
+    let (parts, _) = drawn_switch(&ctx);
+    let (label, track) = (
+        parts.get("label").ok_or("no label")?,
+        parts.get("track").ok_or("no track")?,
+    );
+    assert!(
+        (label.left() - track.right() - gap).abs() < 1e-3,
+        "{label:?} {track:?}"
+    );
+    let both = "[widgets.switch]\nlabel_gap_stretches = true\nlabel_side = \"leading\"\n";
+    let (parts, shapes, rect) =
+        drawn_switch_in(&patched_installed(Preset::KdeBreeze, both)?, width);
+    let (label, track) = (
+        parts.get("label").ok_or("no label")?,
+        parts.get("track").ok_or("no track")?,
+    );
+    assert!(
+        (label.left() - rect.left()).abs() < 1e-3,
+        "{label:?} {rect:?}"
+    );
+    let short = rect.right() - track.right();
+    assert!((-1e-3..1.0).contains(&short), "{track:?} {rect:?}");
+    let (pos, _) = drawn_text(&shapes).ok_or("no label drawn")?;
+    assert!((pos - label.min).length() < 1e-3, "{pos:?} {label:?}");
+    Ok(())
+}
+
+/// `switch.show_state_glyphs` stated `true` is reported at its home and draws nothing: no
+/// bundled preset states it, and the model states no glyph to draw.
+#[test]
+fn a_switch_stating_state_glyphs_reports_them_unmapped() -> TestResult {
+    assert_eq!(
+        Switch::next_glyphs_unmapped(&patched(Preset::KdeBreeze, "")?),
+        None
+    );
+    let patch = "[widgets.switch]\nshow_state_glyphs = true\n";
+    assert_eq!(
+        Switch::next_glyphs_unmapped(&patched(Preset::KdeBreeze, patch)?),
+        Some("switch.show_state_glyphs")
+    );
+    let off = "[widgets.switch]\nshow_state_glyphs = false\n";
+    assert_eq!(
+        Switch::next_glyphs_unmapped(&patched(Preset::KdeBreeze, off)?),
+        None
+    );
+    let (_, stock) = drawn_switch(&patched_installed(Preset::KdeBreeze, "")?);
+    let (_, glyphs) = drawn_switch(&patched_installed(Preset::KdeBreeze, patch)?);
+    assert_eq!(stock, glyphs);
+    Ok(())
+}
+
+/// A hovered and a pressed switch letter the label in `switch.label(HOVER)`'s and
+/// `switch.label(PRESSED)`'s colour where a rule for the state states one, here colours
+/// kde-breeze does not state; at rest it keeps its own.
+#[test]
+fn a_hovered_and_a_pressed_switch_label_take_their_state_colours() -> TestResult {
+    use crate::switch::Look;
+    let (red, blue) = (
+        egui::Color32::from_rgb(255, 0, 0),
+        egui::Color32::from_rgb(0, 0, 255),
+    );
+    let stock = Look::next_of(&patched(Preset::KdeBreeze, "")?).ok_or("no look")?;
+    for stated in [stock.hover_text, stock.pressed_text] {
+        assert!(
+            stated.is_none_or(|c| c != red && c != blue),
+            "kde-breeze states the patched colours: the test proves nothing"
+        );
+    }
+    let patch = "[[widgets.switch.rules]]\nstates = [\"hover\"]\nlabel.color = \"#ff0000\"\n\n\
+                 [[widgets.switch.rules]]\nstates = [\"pressed\"]\nlabel.color = \"#0000ff\"\n";
+    let look = Look::next_of(&patched(Preset::KdeBreeze, patch)?).ok_or("no look")?;
+    assert_eq!(
+        (look.hover_text, look.pressed_text),
+        (Some(red), Some(blue))
+    );
+    let ctx = patched_installed(Preset::KdeBreeze, patch)?;
+    let add = |ui: &mut egui::Ui| ui.add(Switch::new(&mut false).label("Wi-Fi"));
+    let (parts, shapes) = drawn_switch(&ctx);
+    let (_, rest) = drawn_text(&shapes).ok_or("no label drawn")?;
+    assert!(rest != red && rest != blue, "{rest:?}");
+    let centre = parts.get("track").ok_or("no track")?.center();
+    let hover = egui::RawInput {
+        events: vec![egui::Event::PointerMoved(centre)],
+        ..at(1.0)
+    };
+    let _ = response(&ctx, hover, add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    assert!(r.hovered(), "the switch is not hovered");
+    assert_eq!(drawn_text(&flat(&out.shapes)).map(|(_, c)| c), Some(red));
+    let press = egui::RawInput {
+        time: Some(1.0),
+        ..pointer(centre, true)
+    };
+    let _ = response(&ctx, press, add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    assert!(r.is_pointer_button_down_on(), "the switch is not pressed");
+    assert_eq!(drawn_text(&flat(&out.shapes)).map(|(_, c)| c), Some(blue));
     Ok(())
 }
 

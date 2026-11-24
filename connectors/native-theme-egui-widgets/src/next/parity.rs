@@ -147,6 +147,36 @@ const DIFFERENCES: &[Difference] = &[
                  own is: drawn alike, next_drawn::the_switch_draws_alike_from_both_models",
     },
     Difference {
+        leaf: "switch::Geometry.leading",
+        presets: &[
+            "adwaita",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ],
+        reason: "0.7.2's SwitchTheme states no label side, so the label lies after the track, \
+                 as egui's own Checkbox lays its text; the 0.8.0 presets state \
+                 switch.label_side Leading, the platform's label before its switch: adwaita \
+                 AdwSwitchRow's title first, the switch a suffix at the row's end \
+                 (adw-action-row.ui:40-43, :91-94, adw-switch-row.c:161 at libadwaita 1.10.0), \
+                 macOS and iOS SwiftUI's ToggleStyle.switch, \"a leading label and a trailing \
+                 switch\" (developer.apple.com, read 2026-11-23), material-3 Android's \
+                 MaterialSwitch text at the start and the switch at the view's end \
+                 (materialswitch/res/values/styles.xml:26 at material-components-android \
+                 66c334b; androidx SwitchCompat.java:1217-1219, :1392-1400); next_drawn lists \
+                 the drawn switch",
+    },
+    Difference {
+        leaf: "switch::Geometry.stretches",
+        presets: &["adwaita", "material-3", "ios-13"],
+        reason: "0.7.2's SwitchTheme states no stretching gap, so the label keeps to the \
+                 track; the 0.8.0 presets state switch.label_gap_stretches true, the label and \
+                 the switch at the ends of a row wider than they are, as the sources of \
+                 switch::Geometry.leading give it; a switch no wider than its content, as \
+                 next_drawn draws it, lies alike",
+    },
+    Difference {
         leaf: "switch::Look.hover_checked_background",
         presets: &["windows-11"],
         reason: "0.7.2's switch.hover_checked_background is the window colour at alpha 0.1, \
@@ -280,6 +310,8 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
             thumb_border_color,
             checked_thumb_border_color,
             text,
+            hover_text,
+            pressed_text,
             disabled_text,
             background,
         ]
@@ -300,6 +332,8 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
             checked_thumb_border,
             label_gap,
             label_size,
+            leading,
+            stretches,
         ]
     );
     compare!(

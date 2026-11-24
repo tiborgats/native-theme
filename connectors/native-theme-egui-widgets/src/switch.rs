@@ -1,9 +1,9 @@
 //! [`Switch`]: a two-state switch, a thumb on a track.
 
 use native_theme_egui::convert::{to_color32, to_corner_radius};
-use native_theme_egui::egui::{self, accesskit};
+use native_theme_egui::egui::{self, AtomExt as _, accesskit};
 use native_theme_egui::native_theme::next::{
-    ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
+    LabelSide, ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
 };
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
 use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
@@ -11,7 +11,8 @@ use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
 use crate::parts::Parts;
 use crate::{next, scope};
 
-/// A two-state switch: `switch.*`'s track and thumb, the label after it.
+/// A two-state switch: `switch.*`'s track and thumb, the label after it (or before it, on a
+/// 0.8.0 theme that says so).
 ///
 /// **Tier P.** `egui/src/widgets/` has no switch or toggle module (`button`, `checkbox`,
 /// `color_picker`, `drag_value`, `hyperlink`, `image`, `label`, `progress_bar`,
@@ -55,11 +56,16 @@ use crate::{next, scope};
 ///
 /// Under an atlas of the 0.8.0 model each of these is read at its home: `switch.track` and
 /// `switch.thumb` at the switch's state, the label in `switch.label`'s colour where stated, else
-/// the body text's, at `switch.label(NONE)`'s size where stated, else egui's own, in egui's
-/// `Proportional` family as the connector's role fonts are (a family, weight or slant the
-/// label states is not drawn: the crate's README, *Limits under the 0.8.0 model*),
-/// `switch.label_gap` after the track where stated, else egui's own `icon_spacing`; a track or
-/// thumb stroke stated as none is no outline.
+/// the body text's, hovered and pressed in `switch.label(HOVER)`'s and `switch.label(PRESSED)`'s
+/// where a rule for the state states it, at `switch.label(NONE)`'s size where stated, else
+/// egui's own, in egui's `Proportional` family as the connector's role fonts are (a family,
+/// weight or slant the label states is not drawn: the crate's README, *Limits under the 0.8.0
+/// model*), `switch.label_gap` from the track where stated, else egui's own `icon_spacing`,
+/// before the track where `switch.label_side` states `Leading`, else after it, and at the far
+/// end of a switch laid out wider than its content where `switch.label_gap_stretches` states
+/// `true`, the gap the least space between them, else together at the gap; a track or thumb
+/// stroke stated as none is no outline. The on and off glyphs `switch.show_state_glyphs` asks
+/// for are not drawn ([`Switch::next_glyphs_unmapped`]).
 ///
 /// With no atlas installed, a switch size that is not finite, or a 0.8.0 theme that states no
 /// track size, checked thumb size, track or checked thumb fill, or corners egui can draw, or
@@ -84,7 +90,8 @@ impl<'a> Switch<'a> {
         }
     }
 
-    /// The text after the track, which also names the switch for assistive technology.
+    /// The text beside the track, after it or where a 0.8.0 theme says so before it, which also
+    /// names the switch for assistive technology.
     pub fn label(mut self, text: impl Into<egui::WidgetText>) -> Self {
         self.label = Some(text.into());
         self
@@ -104,6 +111,16 @@ impl<'a> Switch<'a> {
     pub fn backdrop(mut self, backdrop: egui::Color32) -> Self {
         self.backdrop = Some(backdrop);
         self
+    }
+
+    /// Where the 0.8.0 theme `r` states that the track shows on and off glyphs
+    /// (`switch.show_state_glyphs`, spec §5), that home, `"switch.show_state_glyphs"`, which
+    /// the switch does not draw (spec §10, rule 2): the model states no glyph, nor its size,
+    /// colour or place on the track, and egui's own `Checkbox` draws none. `None` where the
+    /// theme states none or states that the track shows none.
+    #[must_use]
+    pub fn next_glyphs_unmapped(r: &NextResolvedTheme) -> Option<&'static str> {
+        (r.switch.show_state_glyphs == Some(true)).then_some("switch.show_state_glyphs")
     }
 }
 
@@ -126,6 +143,14 @@ pub(crate) struct Geometry {
     pub(crate) label_gap: Option<f32>,
     /// The label's size, the 0.8.0 theme's `switch.label(NONE).size_px`; `None`, egui's own.
     pub(crate) label_size: Option<f32>,
+    /// The label before the track: the 0.8.0 theme's `switch.label_side` stated `Leading`;
+    /// `false`, after it, the side egui's own `Checkbox` lays its text on.
+    pub(crate) leading: bool,
+    /// The width a switch laid out wider than its content has left over put between the label
+    /// and the track, the two at the ends of the row with the gap the least space between them:
+    /// the 0.8.0 theme's `switch.label_gap_stretches` stated `true`; `false`, the two kept
+    /// together at the gap, as egui's own `Checkbox` keeps them.
+    pub(crate) stretches: bool,
 }
 
 impl Geometry {
@@ -170,6 +195,8 @@ impl Geometry {
             checked_thumb_border: border(next::stroke_width_of(&checked_thumb))?,
             label_gap: border(sw.label_gap)?,
             label_size,
+            leading: sw.label_side == Some(LabelSide::Leading),
+            stretches: sw.label_gap_stretches == Some(true),
         })
     }
 
@@ -210,6 +237,8 @@ impl Geometry {
             checked_thumb_border: border(sw.thumb_border_line_width)?,
             label_gap: None,
             label_size: None,
+            leading: false,
+            stretches: false,
         })
     }
 }
@@ -244,6 +273,12 @@ pub(crate) struct Look {
     pub(crate) checked_thumb_border_color: Option<egui::Color32>,
     /// `defaults.font.color`: the label; `None`, egui's own.
     pub(crate) text: Option<egui::Color32>,
+    /// A hovered switch's label: the 0.8.0 theme's `switch.label(HOVER)` colour where a rule
+    /// for `HOVER` states it; `None`, [`Self::text`].
+    pub(crate) hover_text: Option<egui::Color32>,
+    /// A pressed switch's label: the 0.8.0 theme's `switch.label(PRESSED)` colour where a rule
+    /// for `PRESSED` states it; `None`, [`Self::text`].
+    pub(crate) pressed_text: Option<egui::Color32>,
     /// `defaults.disabled_text_color`: a disabled switch's label; `None`, egui's own.
     pub(crate) disabled_text: Option<egui::Color32>,
     /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
@@ -259,8 +294,10 @@ impl Look {
     /// not apply); a hovered track's fill where a rule for `HOVER` states it (read at
     /// `HOVER|CHECKED` on a checked switch, as the query with that flag alone says, spec §2,
     /// `from_state`); the label's colour at `switch.label`, else the body text's
-    /// (`typography.body.color`), a disabled one's at `switch.label(DISABLED)` where a rule
-    /// states it, else `colors.disabled_text`; the window's background as the ground. `None`
+    /// (`typography.body.color`), a hovered and a pressed one's at `switch.label(HOVER)` and
+    /// `switch.label(PRESSED)` where a rule for that state states it, else the rest one's, a
+    /// disabled one's at `switch.label(DISABLED)` where a rule states it, else
+    /// `colors.disabled_text`; the window's background as the ground. `None`
     /// where the theme states no track fill or checked thumb fill, which sends the switch to
     /// egui's own counterpart.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
@@ -294,6 +331,8 @@ impl Look {
             thumb_border_color: next::stroke_color_of(&thumb(WidgetState::NONE)),
             checked_thumb_border_color: next::stroke_color_of(&thumb(on)),
             text: next::text_color_of(&sw.label(WidgetState::NONE)).or_else(|| next::body_text(r)),
+            hover_text: next::state_text_color_of(&sw.label(WidgetState::HOVER)),
+            pressed_text: next::state_text_color_of(&sw.label(WidgetState::PRESSED)),
             disabled_text: Some(
                 next::state_text_color_of(&sw.label(off))
                     .unwrap_or_else(|| next::disabled_text_color(r)),
@@ -305,7 +344,8 @@ impl Look {
     /// The colours as the switch paints them, so two looks that paint alike compare equal: the
     /// thumb at rest, which `None` gives as the checked one, given as that one; a disabled
     /// colour, which `None` gives as the one it stands for, given as that one; and a hover
-    /// fill that is the track's rest fill none.
+    /// fill that is the track's rest fill, and a hovered or pressed label colour that is the
+    /// rest one, none.
     #[cfg(test)]
     pub(crate) fn painted(self) -> Self {
         let layer = |hover: Option<egui::Color32>, base: egui::Color32| {
@@ -314,7 +354,11 @@ impl Look {
         let unchecked_thumb = self
             .unchecked_thumb_background
             .unwrap_or(self.thumb_background);
+        let in_state =
+            |state: Option<egui::Color32>| state.filter(|&colour| Some(colour) != self.text);
         Self {
+            hover_text: in_state(self.hover_text),
+            pressed_text: in_state(self.pressed_text),
             hover_checked_background: layer(self.hover_checked_background, self.checked_background),
             hover_unchecked_background: layer(
                 self.hover_unchecked_background,
@@ -369,6 +413,8 @@ impl Look {
             thumb_border_color: sw.thumb_border_color.map(c),
             checked_thumb_border_color: sw.thumb_border_color.map(c),
             text: Some(c(t.defaults.font.color)),
+            hover_text: None,
+            pressed_text: None,
             disabled_text: Some(c(t.defaults.disabled_text_color)),
             background: Some(c(t.defaults.background_color)),
         }
@@ -476,16 +522,40 @@ fn switch_ui(
             )
             .size()
     });
+    let gap = g.label_gap.unwrap_or(ui.spacing().icon_spacing);
+    // A stretching gap is an atom of the gap's width between the label and the track that grows
+    // into the width left over (`egui-0.37.0/src/atomics/container_atom.rs`,
+    // `SizedContainerAtom::paint_at`), the atoms laid without a gap of their own: egui lays its
+    // gap between every two atoms, so `Atom::grow` beside a gap would keep twice the gap.
+    let stretched = g.stretches && label.is_some();
     let mut atoms = match label {
         Some(label) => egui::Atoms::new(label),
         None => egui::Atoms::new(()),
     };
     let rect_id = egui::IdSalt::new("native-theme-egui-widgets::switch");
-    atoms.push_left(egui::Atom::custom(rect_id, atom));
+    let gap_id = egui::IdSalt::new("native-theme-egui-widgets::switch::gap");
+    // The gap atom lies against the label in its grown cell, so its rect ends where the label
+    // begins (or begins where it ends).
+    let gap_atom = |align| {
+        egui::Atom::custom(gap_id, egui::vec2(gap, 0.0))
+            .atom_grow(true)
+            .atom_align(align)
+    };
+    let track_atom = egui::Atom::custom(rect_id, atom);
+    if g.leading {
+        if stretched {
+            atoms.push_right(gap_atom(egui::Align2::LEFT_CENTER));
+        }
+        atoms.push_right(track_atom);
+    } else {
+        if stretched {
+            atoms.push_left(gap_atom(egui::Align2::RIGHT_CENTER));
+        }
+        atoms.push_left(track_atom);
+    }
 
-    let gap = g.label_gap.unwrap_or(ui.spacing().icon_spacing);
     let mut prepared = egui::WidgetAtom::new(atoms)
-        .gap(gap)
+        .gap(if stretched { 0.0 } else { gap })
         .sense(egui::Sense::click())
         .min_size(min_size)
         .allocate(ui);
@@ -514,11 +584,20 @@ fn switch_ui(
         });
 
     let hovered = enabled && prepared.response.hovered();
+    let pressed = enabled && prepared.response.is_pointer_button_down_on();
     let time = ui.style().animation_time;
     let position = ui
         .ctx()
         .animate_bool_with_time(prepared.response.id, checked, time);
-    let text = if enabled { sw.text } else { sw.disabled_text };
+    let text = if !enabled {
+        sw.disabled_text
+    } else if pressed {
+        sw.pressed_text.or(sw.text)
+    } else if hovered {
+        sw.hover_text.or(sw.text)
+    } else {
+        sw.text
+    };
     let text = text.unwrap_or(prepared.container.fallback_text_color);
     prepared.container.fallback_text_color = ground.map_or(text, |ground| as_one(ground, text));
     let laid = prepared.paint(ui);
@@ -625,7 +704,15 @@ fn switch_ui(
         egui::Rect::from_center_size(centre, egui::Vec2::splat(diameter)),
     );
     if let Some(size) = label_size {
-        parts.push("label", crate::parts::text_after(atom_rect, gap, size));
+        // Against the stretching gap's atom where it lies between them, else the gap from the
+        // track.
+        let label = match (laid.rect(gap_id).filter(|_| stretched), g.leading) {
+            (Some(gap_rect), true) => crate::parts::text_before(gap_rect, 0.0, size),
+            (Some(gap_rect), false) => crate::parts::text_after(gap_rect, 0.0, size),
+            (None, true) => crate::parts::text_before(atom_rect, gap, size),
+            (None, false) => crate::parts::text_after(atom_rect, gap, size),
+        };
+        parts.push("label", label);
     }
     parts.store(ui.ctx(), laid.response.id);
     laid.response

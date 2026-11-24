@@ -171,9 +171,11 @@ pub(crate) fn show(
         demo::widget(reg, ui, Role::Switch, normal, "switch (off)", |ui| {
             ui.add(Switch::new(&mut false).label("Off"))
         });
+        super::basic::note_switch(reg, r);
         demo::widget(reg, ui, Role::Switch, normal, "switch", |ui| {
             ui.add(Switch::new(&mut state.switch).label("Switch"))
         });
+        super::basic::note_switch(reg, r);
         demo::widget(
             reg,
             ui,
@@ -182,5 +184,6 @@ pub(crate) fn show(
             "switch (disabled)",
             |ui| ui.add(Switch::new(&mut true).label("Disabled").enabled(false)),
         );
+        super::basic::note_switch(reg, r);
     });
 }

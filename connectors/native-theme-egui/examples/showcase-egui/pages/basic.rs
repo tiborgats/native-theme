@@ -290,7 +290,7 @@ fn group(
         5 => text_area(reg, state, atlas, ui),
         // The companion crate's slider (docs/archive/todo_egui-widgets-spec.md §4.2).
         6 => slider(reg, state, ui),
-        7 => switches(reg, ui),
+        7 => switches(reg, atlas, ui),
         8 => number_input(reg, state, atlas, ui),
         9 => spinner(reg, ui),
         10 => segmented(reg, state, ui),
@@ -863,11 +863,29 @@ fn radios(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     }
 }
 
+/// What a switch drawn under the 0.8.0 theme `r` notes under *Not themeable*: the state glyphs
+/// `switch.show_state_glyphs` asks for, which the companion crate's switch does not draw
+/// (`Switch::next_glyphs_unmapped`).
+pub(crate) fn note_switch(reg: &mut Registry, r: Option<&ResolvedTheme>) {
+    if let Some(home) = r.and_then(Switch::next_glyphs_unmapped) {
+        reg.note_last(
+            "state glyphs",
+            &format!(
+                "not mapped: the theme states {home} true, the track's on and off glyphs, \
+                 which the switch does not draw: the model states no glyph, nor its size, colour \
+                 or place on the track, and egui's own Checkbox draws none \
+                 (native-theme-egui-widgets, switch::Switch::next_glyphs_unmapped)"
+            ),
+        );
+    }
+}
+
 /// The Switches group: the companion crate's switch (docs/archive/todo_egui-widgets-spec.md §4.1),
-/// `switch.*`'s track and thumb, which no egui widget draws, the label after it;
-/// `.enabled(false)` is the platform's disabled switch. Each is held in its state, as the check
-/// boxes are.
-fn switches(reg: &mut Registry, ui: &mut egui::Ui) {
+/// `switch.*`'s track and thumb, which no egui widget draws, the label beside it on
+/// `switch.label_side`'s side; `.enabled(false)` is the platform's disabled switch. Each is held
+/// in its state, as the check boxes are.
+fn switches(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let theme = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.switches.heading", "Switches");
     for (label, on, enabled, kind, id) in [
@@ -891,6 +909,7 @@ fn switches(reg: &mut Registry, ui: &mut egui::Ui) {
             let text = demo::next_lined(ui, label, egui::TextStyle::Body);
             ui.add(Switch::new(&mut value).label(text).enabled(enabled))
         });
+        note_switch(reg, theme);
         reg.tag(id, &r);
         let names = [("track", "track"), ("thumb", "thumb"), ("label", "label")];
         place_parts(reg, ui, id, &r, &names);

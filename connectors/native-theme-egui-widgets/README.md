@@ -36,7 +36,7 @@ transparent and a stroke stated as none is no outline (rule 2).
 
 | widget | what it reads | where the theme states none |
 |---|---|---|
-| `switch::Switch` | `switch.track` and `switch.thumb`: fills, outlines, sizes and the track's corners, at rest, checked, hovered and disabled; the label's colour (`switch.label`, else `typography.body.color`), its size (`switch.label(NONE).size_px`) and `switch.label_gap` | no track or checked thumb size or fill, or track corners egui cannot draw as one radius: egui's `Checkbox` |
+| `switch::Switch` | `switch.track` and `switch.thumb`: fills, outlines, sizes and the track's corners, at rest, checked, hovered and disabled; the label's colour (`switch.label`, else `typography.body.color`; hovered and pressed where a rule for the state states one), its size (`switch.label(NONE).size_px`), `switch.label_gap`, its side (`switch.label_side`: before the track where `Leading`) and the gap's stretch (`switch.label_gap_stretches`: the label and the track at the ends of a switch laid out wider than its content) | no track or checked thumb size or fill, or track corners egui cannot draw as one radius: egui's `Checkbox` |
 | `radio_button::RadioButton` | `radio.dot` and `radio.indicator` widths, `radio.label_gap`; `radio.indicator`'s fill and stroke at rest, hovered and pressed, `radio.dot`'s fill, `radio.label`'s colour and `radio.disabled_opacity`, laid over its `Role::Checkbox` cell | its `Role::Checkbox` cell's circle, dot, label colour and `icon_spacing` |
 | `progress_bar::ProgressBar` | `progress_bar.track`: its least width, corners and outline | each its own: egui's floor, egui's radius (half the bar's height), no outline |
 | `spinner::Spinner` | `spinner.color`, `diameter`, `stroke_width`; `colors.window.foreground` for a freedesktop indicator's `currentColor` | egui's own text colour for the indicator |
@@ -48,9 +48,10 @@ transparent and a stroke stated as none is no outline (rule 2).
 
 Limits under the 0.8.0 model:
 
-* The switch's label lies after its track, at `switch.label_gap`, and does
-  not stretch: the model this version builds on states no label side and no
-  stretching gap.
+* The switch's track draws no on and off glyphs where `switch.show_state_glyphs`
+  asks for them: the model states no glyph, nor its size, colour or place on
+  the track, and egui's own `Checkbox` draws none
+  (`Switch::next_glyphs_unmapped` names the home).
 * The switch's label is lettered at `switch.label(NONE)`'s size in egui's
   `Proportional` family, as the connector's role fonts are
   (`native_theme_egui::next::text_role_font`): that family holds the face the
