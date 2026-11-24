@@ -141,7 +141,12 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 t.selection,
                 "native-theme-gpui/colors.rs:467",
             ),
-            |i| i.config("model", "colors.text_selection.background"),
+            |i| {
+                i.config("model", "colors.text_selection.background").not_themeable(
+                    "unfocused",
+                    "not mapped: colors.text_selection.unfocused_background and unfocused_foreground, a text selection's colours while its window is not active: an Input hands its editor this one global selection at every render, whatever the window's state, and no text colour for the selected text (gpui-component/input/input.rs, Input::render, set_editor_style), so a selection in an inactive window cannot take others",
+                )
+            },
         ),
         ThemeToken::Caret => (
             claim("value", "caret", t.caret, "native-theme-gpui/colors.rs:775"),
