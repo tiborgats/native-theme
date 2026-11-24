@@ -842,9 +842,44 @@ pub fn slider(
 ) -> Mapped<
     impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<>,
 > {
+    slider_across(r, Orientation::Horizontal)
+}
+
+/// [`slider`] for `vertical_slider(..).style(..)`, which takes the same
+/// `slider::Style` (iced_widget 0.14.2 `src/vertical_slider.rs`): the rail
+/// as wide as the vertical track (`slider.track(NONE; orientation=Vertical)
+/// .min_size[0]`), where the theme states the track's thickness per
+/// orientation.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no rail or thumb fill, or a
+/// stroke iced cannot take.
+pub fn vertical_slider(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<>,
+> {
+    slider_across(r, Orientation::Vertical)
+}
+
+/// [`slider`] of a slider laid out along `orientation`: the rail across it
+/// the track's thickness that orientation's own query gives (its height
+/// horizontal, its width vertical; iced's own where unstated).
+fn slider_across(
+    r: &ResolvedTheme,
+    orientation: Orientation,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<>,
+> {
     let s = &r.slider;
-    let horizontal = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Horizontal);
-    let [_, track_height] = s.track(horizontal).min_size;
+    let [width, height] = s
+        .track(StyleQuery::new(WidgetState::NONE).orientation(orientation))
+        .min_size;
+    let track_height = match orientation {
+        Orientation::Vertical => width,
+        Orientation::Horizontal => height,
+    };
     let thumb = s.thumb(WidgetState::NONE);
     let [thumb_diameter, _] = thumb.min_size;
     let thumb_color = fill(&thumb, "slider.thumb(NONE).fill")?;

@@ -563,6 +563,35 @@ fn a_disabled_check_box_is_stroked_as_stated_else_iceds_own() -> TestResult {
     Ok(())
 }
 
+/// A vertical slider's rail is as wide as the vertical track
+/// (`slider.track(NONE; orientation=Vertical).min_size[0]`), a horizontal
+/// one's as tall as the horizontal track (`min_size[1]`), each from its own
+/// orientation's query.
+#[test]
+fn a_vertical_sliders_rail_is_the_vertical_tracks_width() -> TestResult {
+    use iced_widget::slider::Status;
+    use native_theme::next::Orientation;
+    let patch = ThemePatch::new()
+        .slider(
+            SliderRule::new()
+                .orientation(Orientation::Vertical)
+                .track(PartPatch::new().min_size([Some(9.0), Some(31.0)])),
+        )
+        .slider(
+            SliderRule::new()
+                .orientation(Orientation::Horizontal)
+                .track(PartPatch::new().min_size([Some(37.0), Some(5.0)])),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        let vertical = super::vertical_slider(&r)?(&theme, Status::Active);
+        assert_eq!(vertical.rail.width, 9.0, "{preset:?}");
+        let horizontal = super::slider(&r)?(&theme, Status::Active);
+        assert_eq!(horizontal.rail.width, 5.0, "{preset:?}");
+    }
+    Ok(())
+}
+
 /// The disabled fill and label a button with no disabled opacity shows:
 /// the disabled fill the theme states, with its disabled label or the label
 /// at rest faded as iced fades it; or, where it states no disabled fill,

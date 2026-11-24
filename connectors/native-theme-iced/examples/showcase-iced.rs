@@ -15737,48 +15737,77 @@ fn next_switch<'a>(
 /// sizes them; iced's own where unstated, or where that style is iced's own
 /// for a value the theme lacks ([`ICED_SLIDER_RAIL`], [`ICED_SLIDER_HANDLE`]).
 fn next_slider_sizes(r: &native_theme::next::ResolvedTheme) -> (f32, f32) {
-    let (rail, handle) = next_stated_slider_sizes(r);
+    let (rail, handle) = next_stated_slider_sizes(r, Orientation::Horizontal);
     (
         rail.unwrap_or(ICED_SLIDER_RAIL),
         handle.unwrap_or(ICED_SLIDER_HANDLE),
     )
 }
 
-/// The rail height and handle diameter `iced_next::styles::slider` gives
-/// iced on the installed 0.8.0 theme ([`next_slider_sizes`]); `None` for
-/// each it leaves to iced.
-fn next_stated_slider_sizes(r: &native_theme::next::ResolvedTheme) -> (Option<f32>, Option<f32>) {
-    if iced_next::styles::slider(r).is_err() {
+/// The rail's thickness and the handle's diameter the 0.8.0 style of a
+/// slider along `orientation` gives iced on the installed 0.8.0 theme
+/// (`iced_next::styles::slider` horizontal, `::vertical_slider` vertical):
+/// the track's height horizontal, its width vertical, each from that
+/// orientation's own query ([`next_slider_sizes`]); `None` for each it
+/// leaves to iced.
+fn next_stated_slider_sizes(
+    r: &native_theme::next::ResolvedTheme,
+    orientation: Orientation,
+) -> (Option<f32>, Option<f32>) {
+    if next_slider_unmapped(r, orientation) {
         return (None, None);
     }
     let s = &r.slider;
-    let horizontal = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Horizontal);
-    let [_, rail] = s.track(horizontal).min_size;
+    let [width, height] = s
+        .track(StyleQuery::new(WidgetState::NONE).orientation(orientation))
+        .min_size;
+    let rail = match orientation {
+        Orientation::Vertical => width,
+        Orientation::Horizontal => height,
+    };
     let [handle, _] = s.thumb(WidgetState::NONE).min_size;
     (rail, handle)
 }
 
-/// The Widget Info rows of a slider's rail width and thumb diameter on the
-/// installed 0.8.0 theme, as [`next_slider_sizes`] gives them, each with
-/// its home, or iced's own where the theme leaves it to iced.
-fn next_slider_size_rows(r: &native_theme::next::ResolvedTheme) -> [String; 2] {
-    let (rail, handle) = next_stated_slider_sizes(r);
-    let unmapped = iced_next::styles::slider(r).is_err();
+/// Whether the 0.8.0 style of a slider along `orientation` is iced's own
+/// for a value the theme lacks.
+fn next_slider_unmapped(r: &native_theme::next::ResolvedTheme, orientation: Orientation) -> bool {
+    match orientation {
+        Orientation::Vertical => iced_next::styles::vertical_slider(r).is_err(),
+        Orientation::Horizontal => iced_next::styles::slider(r).is_err(),
+    }
+}
+
+/// The Widget Info rows of the rail width and thumb diameter of a slider
+/// along `orientation` on the installed 0.8.0 theme, as
+/// [`next_stated_slider_sizes`] gives them, each with its home, or iced's
+/// own where the theme leaves it to iced.
+fn next_slider_size_rows(
+    r: &native_theme::next::ResolvedTheme,
+    orientation: Orientation,
+) -> [String; 2] {
+    let (rail, handle) = next_stated_slider_sizes(r, orientation);
+    let unmapped = next_slider_unmapped(r, orientation);
+    let (style, rail_home) = match orientation {
+        Orientation::Vertical => (
+            "iced_next::styles::vertical_slider",
+            "slider.track(NONE; orientation=Vertical).min_size[0]",
+        ),
+        Orientation::Horizontal => (
+            "iced_next::styles::slider",
+            "slider.track(NONE; orientation=Horizontal).min_size[1]",
+        ),
+    };
     let row = |stated: Option<f32>, own: f32, home: &str, iced: &str| match stated {
         Some(px) => format!("{px:.0}px, {home}"),
         None if unmapped => format!(
             "{own:.0}px, iced's own {iced}: iced's own slider style, the theme lacks a value \
-             iced_next::styles::slider needs"
+             {style} needs"
         ),
         None => format!("{own:.0}px, iced's own {iced}: {home} unstated"),
     };
     [
-        row(
-            rail,
-            ICED_SLIDER_RAIL,
-            "slider.track(NONE; orientation=Horizontal).min_size[1]",
-            "rail.width",
-        ),
+        row(rail, ICED_SLIDER_RAIL, rail_home, "rail.width"),
         row(
             handle,
             ICED_SLIDER_HANDLE,
@@ -17460,7 +17489,7 @@ fn slider_paints(state: &State, hovered: bool) -> Vec<Paint> {
 
 /// The Widget Info of the Range page's horizontal slider.
 fn slider_info(state: &State) -> String {
-    let [rail_s, thumb_s] = next_slider_size_rows(state.next_shown());
+    let [rail_s, thumb_s] = next_slider_size_rows(state.next_shown(), Orientation::Horizontal);
     widget_tooltip(
         "Horizontal Slider",
         &slider_paints(state, true),
@@ -17520,7 +17549,7 @@ fn stepped_slider_info(state: &State) -> String {
 
 /// The Widget Info of the Range page's vertical slider.
 fn vertical_slider_info(state: &State) -> String {
-    let [rail_s, thumb_s] = next_slider_size_rows(state.next_shown());
+    let [rail_s, thumb_s] = next_slider_size_rows(state.next_shown(), Orientation::Vertical);
     widget_tooltip(
         "Vertical Slider",
         &slider_paints(state, false),
@@ -17604,7 +17633,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                     Length::Shrink,
                     container(
                         vertical_slider(0.0..=100.0, state.vslider_value, Message::VSliderChanged)
-                            .next_style(iced_next::styles::slider(next), |s, style| {
+                            .next_style(iced_next::styles::vertical_slider(next), |s, style| {
                                 s.style(style)
                             })
                             .height(Length::Fixed(200.0))
@@ -25699,7 +25728,7 @@ mod tests {
         },
         Dressed {
             ctor: "vertical_slider",
-            styles: &[&["styles::slider"]],
+            styles: &[&["styles::slider", "styles::vertical_slider"]],
         },
         Dressed {
             ctor: "progress_bar",
@@ -36652,7 +36681,10 @@ mod tests {
         ),
         ("Horizontal Slider", &["styles::slider"]),
         ("Slider (stepped)", &["styles::slider"]),
-        ("Vertical Slider", &["styles::slider"]),
+        (
+            "Vertical Slider",
+            &["styles::vertical_slider", "styles::slider"],
+        ),
         ("Progress Bar", &["styles::progress_bar"]),
         ("Styled Containers (card)", &["styles::container_card"]),
         ("Tooltip", &["styles::tooltip"]),
@@ -36687,10 +36719,17 @@ mod tests {
         ("showcase_tooltip", "styles::tooltip"),
     ];
 
+    /// The 0.8.0 style functions that paint another's colours, each with
+    /// it: `iced_next::styles::vertical_slider` is `styles::slider` with the
+    /// rail as wide as the vertical track (`next/styles.rs`,
+    /// `slider_across`).
+    const DRAWN_AS: &[(&str, &str)] = &[("styles::vertical_slider", "styles::slider")];
+
     /// The style functions (`styles::<fn>`) `text`, code with its comments and
     /// strings removed, calls, `iced_next::styles::<fn>`, the same function on
-    /// the 0.8.0 model, under the same name, and those the widget functions
-    /// [`DRAWN_THROUGH`] lists that it calls draw with.
+    /// the 0.8.0 model, under the same name, those the widget functions
+    /// [`DRAWN_THROUGH`] lists that it calls draw with, and those whose
+    /// colours a called one paints ([`DRAWN_AS`]).
     fn styles_called(text: &str) -> BTreeSet<String> {
         let mut called = BTreeSet::new();
         for (at, _) in text.match_indices("styles::") {
@@ -36710,6 +36749,11 @@ mod tests {
         for (function, style) in DRAWN_THROUGH {
             if !call_sites(text, function).is_empty() {
                 called.insert((*style).to_owned());
+            }
+        }
+        for (style, colours) in DRAWN_AS {
+            if called.contains(*style) {
+                called.insert((*colours).to_owned());
             }
         }
         called
@@ -37004,12 +37048,16 @@ mod tests {
 
     /// The slider's Widget Info sizes are what `iced_next::styles::slider`
     /// gives iced on the installed 0.8.0 theme: a stated rail and handle,
-    /// with their homes.
+    /// with their homes; the vertical slider's rail is the vertical track's
+    /// width, `iced_next::styles::vertical_slider`'s, not the horizontal
+    /// track's height.
     #[test]
     fn the_slider_info_sizes_are_the_0_8_0_slider_s() -> Result<(), String> {
         let stated = native_theme::next::ThemePatch::from_toml(
             "[[widgets.slider.rules]]\norientation = \"horizontal\"\n\
              track.min_size = [\"none\", 9.0]\n\
+             [[widgets.slider.rules]]\norientation = \"vertical\"\n\
+             track.min_size = [13.0, \"none\"]\n\
              [[widgets.slider.rules]]\nthumb.min_size = [23.0, 23.0]\n",
         )
         .map_err(|error| format!("the patch: {error:?}"))?;
@@ -37033,13 +37081,26 @@ mod tests {
         if style.rail.width != 9.0 || radius != 11.5 {
             faults.push(format!("the style draws {} and {radius}", style.rail.width));
         }
-        let [rail, thumb] = next_slider_size_rows(next);
+        let vertical = iced_next::styles::vertical_slider(next).map_err(|e| format!("{e:?}"))?(
+            &theme,
+            slider::Status::Active,
+        );
+        if vertical.rail.width != 13.0 {
+            faults.push(format!("the vertical style draws {}", vertical.rail.width));
+        }
+        let [rail, thumb] = next_slider_size_rows(next, Orientation::Horizontal);
+        let [vertical_rail, vertical_thumb] = next_slider_size_rows(next, Orientation::Vertical);
         for (row, expected) in [
             (
                 &rail,
                 "9px, slider.track(NONE; orientation=Horizontal).min_size[1]",
             ),
             (&thumb, "23px, slider.thumb(NONE).min_size[0]"),
+            (
+                &vertical_rail,
+                "13px, slider.track(NONE; orientation=Vertical).min_size[0]",
+            ),
+            (&vertical_thumb, "23px, slider.thumb(NONE).min_size[0]"),
         ] {
             if row != expected {
                 faults.push(format!("{row:?}, not {expected:?}"));
