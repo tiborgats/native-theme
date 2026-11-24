@@ -3672,7 +3672,7 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
     let r = state.next_shown();
     let window = Padding::from(Gaps::from_layout(&state.layout).window);
     let tab_content: Element<'_, Message> = match state.active_tab {
-        Tab::Basic => view_basic(state, btn_pad, inp_pad),
+        Tab::Basic => view_basic(state, inp_pad),
         Tab::Buttons => view_buttons(state, btn_pad),
         Tab::Inputs => view_inputs(state, inp_pad),
         Tab::Selection => view_selection(state),
@@ -7612,6 +7612,21 @@ fn next_tab_floor(r: &native_theme::next::ResolvedTheme, pad: Padding) -> iced::
     )
 }
 
+/// The floor under a Basic push button's label on the installed 0.8.0
+/// theme, for [`at_least`]: `button.body(NONE).min_size` less the padding
+/// (`iced_next::button_content_min_size`) on each axis it states a least
+/// size for; none on an axis it leaves unstated, or where the body's stroke
+/// is one iced cannot take, and the button is its padded label.
+fn next_button_floor(r: &native_theme::next::ResolvedTheme) -> iced::Size {
+    let none = iced::Size::ZERO;
+    match iced_next::button_content_min_size(r) {
+        Ok([width, height]) => {
+            iced::Size::new(width.unwrap_or(none.width), height.unwrap_or(none.height))
+        }
+        Err(_) => none,
+    }
+}
+
 /// [`flare_room`] on the installed 0.8.0 theme:
 /// `tab.active_outward_corner_radius` where it is a positive, finite
 /// length, the one `iced_next::tab_flares` draws; none otherwise.
@@ -10390,7 +10405,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     } else {
         "not drawn: the checked button is lettered button.active_text_color"
     };
-    let mark = resolved.checkbox.check_mark_stroke_width.is_some();
+    // Whether the showcase paints the check mark: on the Basic page, where
+    // the installed 0.8.0 theme states its line,
+    // `checkbox.checkmark(NONE).stroke_width`.
+    let mark = if under("basic.") {
+        next_check_stroke(state.next_shown()).is_some()
+    } else {
+        resolved.checkbox.check_mark_stroke_width.is_some()
+    };
     let class = if tool {
         "styles::toolbar_button"
     } else if ghost {
@@ -10478,6 +10500,19 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         iced_next::padding_of(&state.next_shown().menu.panel(WidgetState::NONE));
     let line: Cow<'static, str> = match (table, field) {
         // ---- button ----
+        ("button", "font") if under("basic.buttons.") => {
+            "next_text: the label's size, line box and font, button.label(NONE)".into()
+        }
+        ("button", "min_width_px" | "min_height_px") if under("basic.buttons.") => {
+            "next_button_floor: at_least(label, ..), button.body(NONE).min_size less \
+             iced_next::button_padding; no floor on an axis it leaves unstated"
+                .into()
+        }
+        ("button", f) if side(f).is_some() && under("basic.buttons.") => {
+            "iced_next::button_padding: Button::padding, the side of button.body(NONE).padding \
+             plus its stroke width, iced's own (button::DEFAULT_PADDING) where unstated"
+                .into()
+        }
         ("button", "font") => "the label's Text::size and theme_font (family, weight)".into(),
         ("button", "font.color") if tool => match (icon.is_some(), selected) {
             (_, true) => checked_lettering.into(),
@@ -10607,6 +10642,54 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
         }
         // ---- checkbox and radio ----
+        ("checkbox", "font") if under("basic.checkboxes.") => {
+            "Checkbox text_size, text_line_height and font: checkbox.label(NONE)'s size, line \
+             box (next_line_box) and font"
+                .into()
+        }
+        ("checkbox", "font") if under("basic.radios.") => {
+            "Radio text_size, text_line_height and font: radio.label(NONE)'s size, line box \
+             (next_line_box) and font"
+                .into()
+        }
+        ("checkbox", "indicator_width_px") if under("basic.checkboxes.") && mark => {
+            "Checkbox::size, checkbox.indicator(NONE).min_size[0], iced's own 16 px where \
+             unstated (ICED_CHECKBOX_SIZE); CheckMark: the mark's canvas"
+                .into()
+        }
+        ("checkbox", "indicator_width_px") if under("basic.checkboxes.") => {
+            "Checkbox::size, checkbox.indicator(NONE).min_size[0], iced's own 16 px where \
+             unstated (ICED_CHECKBOX_SIZE)"
+                .into()
+        }
+        ("checkbox", "radio_indicator_width_px" | "indicator_width_px")
+            if under("basic.radios.") =>
+        {
+            "next_radio: iced_next::radio's Radio::size, radio.indicator(NONE).min_size[0], \
+             iced's own (Radio::DEFAULT_SIZE) where unstated"
+                .into()
+        }
+        ("checkbox", "radio_dot_diameter_px") if under("basic.radios.") => {
+            "next_radio: iced_next::radio's dot, radio.dot(NONE).min_size[0], over iced's own \
+             dot, which is drawn where unstated"
+                .into()
+        }
+        ("checkbox", "label_gap_px") if under("basic.checkboxes.") => {
+            "Checkbox::spacing, checkbox.label_gap".into()
+        }
+        ("checkbox", "label_gap_px") if under("basic.radios.") => {
+            "next_radio: iced_next::radio's Radio::spacing, radio.label_gap".into()
+        }
+        ("checkbox", "check_mark_stroke_width_px") if mark && under("basic.checkboxes.") => {
+            "CheckMark: the mark's stroke width, checkbox.checkmark(NONE).stroke_width, over \
+             iced's glyph made transparent"
+                .into()
+        }
+        ("checkbox", f) if side(f).is_some() && mark && under("basic.checkboxes.") => {
+            "CheckMark: the mark's box, inside the box by checkbox.indicator(NONE).padding on \
+             this side, egui's share of the box where unstated"
+                .into()
+        }
         ("checkbox", "font") => "Checkbox/Radio text_size and font (theme_font)".into(),
         ("checkbox", "indicator_color") => {
             "CheckMark: the mark's stroke colour, styles::checkbox's icon_color over its fill"
@@ -11342,6 +11425,17 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "status_line_box: the text's LineHeight, status_bar.label's line box \
              (next_line_box) rounded to a whole pixel, as gpui rounds a line of text \
              (gpui-pre style.rs:553-556)"
+                .into()
+        }
+        ("defaults", "line_height") if under("basic.buttons.") && !under("basic.buttons.tooltip.bubble") => {
+            "next_text: the label's line box, button.label(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+                .into()
+        }
+        ("defaults", "line_height") if under("basic.checkboxes.") || under("basic.radios.") => {
+            "text_line_height: the label's line box, checkbox.label(NONE)'s or radio.label(NONE)'s \
+             size by typography.line_height_multiplier where it states no line height \
+             (next_line_box)"
                 .into()
         }
         ("defaults", "line_height") if under("basic.list.") => {
@@ -13330,21 +13424,25 @@ fn expander_header_padding(x: &native_theme::theme::ResolvedExpanderTheme) -> Pa
 /// spinner an arc on a canvas, each drawn from its `list.*` and `spinner.*`
 /// leaves. The tab bar is `iced_aw`'s; without the `iced_aw` feature it is
 /// the page tab strip's tabs ([`tab_button`]).
-fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Element<'a, Message> {
+fn view_basic<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
+    let next = state.next_shown();
     let ts = &resolved.text_scale;
-    let c = &resolved.checkbox;
     // A group: its heading, tagged `<group>.heading`, over its controls,
     // each of which carries its own tags.
     let group = |id: &'static str, label: &'a str, controls: Element<'a, Message>| {
         let heading = text(label).role(section_title(ts), resolved, a11y);
         Element::from(column![tagged(id, heading), controls].spacing(gap.widget))
     };
-    let font = &resolved.button.font;
-    // `button.min_width` and `button.min_height`, as a floor under the label.
-    let btn_min = native_theme_iced::button_content_min_size(resolved);
+    // The push buttons' label, `button.label(NONE)`, the floor under it and
+    // the padding round it, on the installed 0.8.0 theme.
+    let button_label = next.button.label(WidgetState::NONE);
+    let btn_min = next_button_floor(next);
+    // iced's own padding, `button::DEFAULT_PADDING`, where the body's
+    // stroke is one iced cannot take.
+    let btn_pad = iced_next::button_padding(next).unwrap_or(button::DEFAULT_PADDING);
     // A push button of the page: the label tagged `<id>.label`, the button
     // `id`.
     let push = |id: &'static str,
@@ -13352,27 +13450,28 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 label: &'a str,
                 kind: Push,
                 on_press: Option<Message>| {
+        let typography = &next.typography;
         let pushed = match kind {
             Push::Plain => button(at_least(
-                tagged(label_id, text(label).themed(font, resolved, a11y)),
+                tagged(label_id, text(label).next_text(&button_label, typography)),
                 btn_min,
             ))
             .style(styles::button(resolved))
             .padding(btn_pad),
             Push::Primary => button(at_least(
-                tagged(label_id, text(label).themed(font, resolved, a11y)),
+                tagged(label_id, text(label).next_text(&button_label, typography)),
                 btn_min,
             ))
             .style(styles::button_primary(resolved))
             .padding(btn_pad),
             Push::On => button(at_least(
-                tagged(label_id, text(label).themed(font, resolved, a11y)),
+                tagged(label_id, text(label).next_text(&button_label, typography)),
                 btn_min,
             ))
             .style(styles::button_toggle(resolved, true))
             .padding(btn_pad),
             Push::DialogDefault => button(at_least(
-                tagged(label_id, text(label).themed(font, resolved, a11y)),
+                tagged(label_id, text(label).next_text(&button_label, typography)),
                 btn_min,
             ))
             .style(styles::button_default(resolved))
@@ -13474,16 +13573,24 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
+    // The check boxes' box, mark and label on the installed 0.8.0 theme:
+    // `checkbox.indicator(NONE)`, `checkbox.checkmark(NONE)`,
+    // `checkbox.label(NONE)`.
+    let c = &next.checkbox;
+    let check_box = c.indicator(WidgetState::NONE);
+    let check_label = c.label(WidgetState::NONE);
+    let stated = next_check_stroke(next);
+    let box_width = check_box.min_size[0].unwrap_or(ICED_CHECKBOX_SIZE);
+    let [box_top, _, _, box_left] = iced_next::padding_of(&check_box);
     let check =
         |ids: CheckIds, checked: bool, label: &'a str, enabled: bool| -> Element<'a, Message> {
-            let stated = c.check_mark_stroke_width;
             let boxed = checkbox(checked)
                 .label(label)
                 .spacing(c.label_gap)
-                .size(c.indicator_width)
-                .text_size(scaled_text_size(c.font.size, a11y))
-                .text_line_height(native_theme_iced::line_height(resolved))
-                .font(theme_font(&c.font))
+                .size(box_width)
+                .text_size(check_label.size_px)
+                .text_line_height(iced::Pixels(next_line_box(&next.typography, &check_label)))
+                .next_font(&check_label, |boxed, font| boxed.font(font))
                 // Drawn on the page, the window's background, which a
                 // disabled box is faded over as one widget.
                 .style(glyphless_when_stated(
@@ -13503,9 +13610,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             // the box, centred, where it does not.
             let inset = |side: Option<f32>| match side {
                 Some(pad) => pad.max(0.0),
-                None => c.indicator_width * (1.0 - EGUI_ICON_WIDTH_INNER / EGUI_ICON_WIDTH) / 2.0,
+                None => box_width * (1.0 - EGUI_ICON_WIDTH_INNER / EGUI_ICON_WIDTH) / 2.0,
             };
-            let (inset_x, inset_y) = (inset(c.border.padding.left), inset(c.border.padding.top));
+            let (inset_x, inset_y) = (inset(box_left), inset(box_top));
             // The mark as the list records it: that box where the showcase
             // paints the mark, and the whole box where the theme states no
             // line and iced draws its own glyph, centred in the box
@@ -13542,8 +13649,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 stroke,
                 inset: (inset_x, inset_y),
             })
-            .width(Length::Fixed(c.indicator_width))
-            .height(Length::Fixed(c.indicator_width));
+            .width(Length::Fixed(box_width))
+            .height(Length::Fixed(box_width));
             let seat = container(mark)
                 .height(Length::Fill)
                 .align_y(iced::alignment::Vertical::Center);
@@ -13601,31 +13708,36 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // where it does not (src/lib.rs, `radio`): the radio's circle and label
     // are its two layout nodes (`layout::next_to_each_other`, iced_widget
     // 0.14.2 `src/radio.rs`), under the stack's first layer.
-    let dot = c.radio_dot_diameter.filter(|d| d.is_finite() && *d >= 0.0);
-    let radio_nodes: (&'static [usize], &'static [usize]) = match dot {
-        Some(_) => (&[0, 0], &[0, 1]),
-        None => (&[0], &[1]),
-    };
+    // On the installed 0.8.0 theme: the dot `radio.dot(NONE).min_size[0]`,
+    // the label `radio.label(NONE)`.
+    let dot = next.radio.dot(WidgetState::NONE).min_size[0].filter(|d| d.is_finite() && *d >= 0.0);
+    let radio_label = next.radio.label(WidgetState::NONE);
     let option = |ids: CheckIds, label: &'a str, value: usize| {
-        let (circle, text_node) = radio_nodes;
-        let option = tagged(
-            ids.id,
-            native_theme_iced::radio(
-                resolved,
+        let (dressed, dressed_by_connector) = next_radio(
+            next,
+            || {
                 radio(
                     label,
                     value,
                     Some(state.basic_radio),
                     Message::BasicRadioSelected,
                 )
-                .text_size(scaled_text_size(c.font.size, a11y))
-                .text_line_height(native_theme_iced::line_height(resolved))
-                .font(theme_font(&c.font)),
-                state.basic_radio == value,
-            ),
-        )
-        .node(ids.indicator, circle)
-        .node(ids.label, text_node);
+                .text_size(radio_label.size_px)
+                .text_line_height(iced::Pixels(next_line_box(&next.typography, &radio_label)))
+                .next_font(&radio_label, |radio, font| radio.font(font))
+            },
+            state.basic_radio == value,
+        );
+        // The dot the connector lays over the radio where it dresses it and
+        // the theme states the dot's size.
+        let dot = dot.filter(|_| dressed_by_connector);
+        let (circle, text_node): (&'static [usize], &'static [usize]) = match dot {
+            Some(_) => (&[0, 0], &[0, 1]),
+            None => (&[0], &[1]),
+        };
+        let option = tagged(ids.id, dressed)
+            .node(ids.indicator, circle)
+            .node(ids.label, text_node);
         match ids.mark {
             // The dot, centred in the circle: the theme's diameter, or iced's
             // own, half the circle (iced_widget 0.14.2 `src/radio.rs:409-433`).
@@ -14978,6 +15090,33 @@ fn glyphless_when_stated(
 /// the theme states no padding round the mark it takes egui's share of the box.
 const EGUI_ICON_WIDTH: f32 = 14.0;
 const EGUI_ICON_WIDTH_INNER: f32 = 8.0;
+
+/// The radio `build` builds, dressed by `iced_next::radio` on `r`, the
+/// installed 0.8.0 theme, at the platform's size with its dot, and `true`;
+/// iced's own radio and `false` where the theme lacks a value the connector
+/// needs (spec §10, rule 0).
+fn next_radio<'a>(
+    r: &native_theme::next::ResolvedTheme,
+    build: impl Fn() -> iced::widget::Radio<'a, Message>,
+    is_selected: bool,
+) -> (Element<'a, Message>, bool) {
+    match iced_next::radio(r, build(), is_selected) {
+        Ok(dressed) => (dressed, true),
+        Err(_) => (build().into(), false),
+    }
+}
+
+/// The check mark's line on the installed 0.8.0 theme,
+/// `checkbox.checkmark(NONE).stroke_width`, which the showcase paints
+/// ([`CheckMark`]); `None` where unstated, and iced draws its own glyph.
+fn next_check_stroke(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
+    r.checkbox.checkmark(WidgetState::NONE).stroke_width
+}
+
+/// iced's own check box size, where the theme states none:
+/// `Checkbox::DEFAULT_SIZE`, 16, private to iced (iced_widget 0.14.2
+/// `src/checkbox.rs:113`).
+const ICED_CHECKBOX_SIZE: f32 = 16.0;
 
 /// A checked box's mark where the theme states `checkbox.check_mark_stroke_width`:
 /// iced draws its check as a glyph of its icon font (`checkbox.rs`, `Icon`), whose
@@ -21340,19 +21479,23 @@ mod tests {
     // -----------------------------------------------------------------------
 
     /// The Basic page's selected radio, Option A, is drawn by
-    /// `native_theme_iced::radio`: under kde-breeze its dot is
-    /// `checkbox.radio_dot_diameter`, 6px (platform-facts.md:1241), centred
-    /// in the circle, in the column of Option B's circle and above it.
+    /// `iced_next::radio` ([`next_radio`]): under kde-breeze its dot is the
+    /// installed 0.8.0 theme's `radio.dot(NONE).min_size[0]`, 6px
+    /// (platform-facts.md:1241), centred in the circle,
+    /// `radio.indicator(NONE).min_size[0]` wide, in the column of Option B's
+    /// circle and above it.
     #[test]
-    fn the_basic_radio_draws_the_themes_dot() {
+    fn the_basic_radio_draws_the_themes_dot() -> Result<(), String> {
         let mut state = State::default();
         let _ = update(
             &mut state,
             Message::ThemeSelected(ThemeChoice::Preset("kde-breeze".to_string())),
         );
         assert_eq!(state.basic_radio, 0, "Option A is the selected one");
-        let c = state.current_resolved.checkbox.clone();
-        assert_eq!(c.radio_dot_diameter, Some(6.0));
+        let radio = &state.next_shown().radio;
+        assert_eq!(radio.dot(WidgetState::NONE).min_size[0], Some(6.0));
+        let circle = radio.indicator(WidgetState::NONE).min_size[0]
+            .ok_or("kde-breeze states no radio circle")?;
         let mut ui = interface(&state);
         let option_b = probe_bounds(&mut ui, probes::BASIC_RADIO_B);
         let found = ui.find(|candidate: Candidate<'_>| -> Option<Rectangle> {
@@ -21368,13 +21511,90 @@ mod tests {
             Ok(bounds) => bounds,
             Err(error) => panic!("no 6px dot: {error}"),
         };
-        let column = option_b.x + c.indicator_width / 2.0;
+        let column = option_b.x + circle / 2.0;
         assert_eq!(
             dot.center().x,
             column,
             "the dot is not in the circles' column"
         );
         assert!(dot.y < option_b.y, "the dot is not Option A's");
+        Ok(())
+    }
+
+    /// The Basic page's check boxes and radios on the installed 0.8.0
+    /// theme, under presets of different sizes: each box
+    /// `checkbox.indicator(NONE).min_size[0]` square (iced's own 16 px where
+    /// unstated), each circle `radio.indicator(NONE).min_size[0]`, its label
+    /// `checkbox.label_gap` / `radio.label_gap` past it and as tall as the
+    /// line box of `checkbox.label(NONE)` / `radio.label(NONE)`
+    /// ([`next_line_box`]).
+    #[test]
+    fn the_basic_checks_and_radios_take_the_0_8_0_geometry() {
+        recording(|| {
+            let mut faults = Vec::new();
+            for preset in ["kde-breeze", "adwaita", "macos-tahoe", "windows-11"] {
+                let mut state = State {
+                    accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                    ..State::default()
+                };
+                assert!(
+                    state.install_in_mode(
+                        ThemeChoice::Preset(preset.to_owned()),
+                        AppColorMode::Light
+                    ),
+                    "{preset} does not install"
+                );
+                let next = state.next_shown().clone();
+                let laid = {
+                    let mut ui = interface(&state);
+                    let _ = texts(&mut ui);
+                    surveyed_layout()
+                };
+                let check = &next.checkbox;
+                let radio = &next.radio;
+                let rows = [
+                    (
+                        "basic.checkboxes.unchecked",
+                        check.indicator(WidgetState::NONE).min_size[0]
+                            .unwrap_or(ICED_CHECKBOX_SIZE),
+                        check.label_gap,
+                        next_line_box(&next.typography, &check.label(WidgetState::NONE)),
+                    ),
+                    (
+                        "basic.radios.option_b",
+                        radio.indicator(WidgetState::NONE).min_size[0]
+                            .unwrap_or(iced::widget::Radio::<'_, Message>::DEFAULT_SIZE),
+                        radio.label_gap,
+                        next_line_box(&next.typography, &radio.label(WidgetState::NONE)),
+                    ),
+                ];
+                for (id, width, gap, line) in rows {
+                    let (Some(indicator), Some(label)) = (
+                        laid.get(format!("{id}.indicator").as_str()),
+                        laid.get(format!("{id}.label").as_str()),
+                    ) else {
+                        faults.push(format!("{preset}: {id} is not laid out"));
+                        continue;
+                    };
+                    let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+                    if !near(indicator.width, width) || !near(indicator.height, width) {
+                        faults.push(format!(
+                            "{preset}: {id}'s indicator {indicator:?}, not {width}"
+                        ));
+                    }
+                    if !near(label.x, indicator.x + indicator.width + gap) {
+                        faults.push(format!("{preset}: {id}'s label at {}, gap {gap}", label.x));
+                    }
+                    if !near(label.height, line) {
+                        faults.push(format!(
+                            "{preset}: {id}'s label {}px tall, its line box {line}px",
+                            label.height
+                        ));
+                    }
+                }
+            }
+            assert!(faults.is_empty(), "{faults:#?}");
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -24442,9 +24662,13 @@ mod tests {
     /// Constructors a connector function dresses itself, as
     /// `(constructor, the style it applies, the function)`:
     /// `native_theme_iced::radio(resolved, radio(..), ..)` applies
-    /// `styles::radio` with the platform's geometry and dot (`src/lib.rs`).
+    /// `styles::radio` with the platform's geometry and dot (`src/lib.rs`);
+    /// [`next_radio`]`(next, || radio(..), ..)` hands the radio its closure
+    /// builds to `iced_next::radio`, which applies the 0.8.0
+    /// `styles::radio`.
     const CONNECTOR_DRESSED: &[(&str, &str, &str)] = &[
         ("radio", "styles::radio", "native_theme_iced::radio"),
+        ("radio", "styles::radio", "next_radio"),
         (
             "toggler",
             "styles::toggler_over",
@@ -24453,17 +24677,28 @@ mod tests {
     ];
 
     /// Is the constructor at `site` the widget argument of the connector
-    /// function that dresses it -- `<function>(resolved, <site>..`?
+    /// function that dresses it -- `<function>(resolved, <site>..`, or, on
+    /// the 0.8.0 model, `<function>(next, || { <site>..`?
     fn dressed_by_connector(source: &str, site: usize, ctor: &str) -> bool {
         CONNECTOR_DRESSED
             .iter()
             .filter(|(c, _, _)| *c == ctor)
             .any(|(_, _, wrapper)| {
-                source[..site]
-                    .trim_end()
+                let before = source[..site].trim_end();
+                let built = before
+                    .strip_suffix('{')
+                    .map(str::trim_end)
+                    .and_then(|s| s.strip_suffix("||"))
+                    .map(str::trim_end)
+                    .and_then(|s| s.strip_suffix(','))
+                    .map(str::trim_end)
+                    .and_then(|s| s.strip_suffix("next"));
+                let handed = before
                     .strip_suffix(',')
                     .map(str::trim_end)
-                    .and_then(|s| s.strip_suffix("resolved"))
+                    .and_then(|s| s.strip_suffix("resolved"));
+                built
+                    .or(handed)
                     .map(str::trim_end)
                     .and_then(|s| s.strip_suffix('('))
                     .is_some_and(|s| s.ends_with(wrapper))
@@ -28585,38 +28820,40 @@ mod tests {
     }
 
     /// The Basic tab's push button, text field and drop-down are laid out at
-    /// the minimum sizes the theme states (`button.min_width` and
-    /// `.min_height`, `input.min_height`, `combo_box.min_height`), or at their
-    /// own size where their content, padded, is larger — as gpui-component's
-    /// are through `native_theme_gpui::geometry` and the platform's own are.
+    /// the minimum sizes the theme states (the installed 0.8.0 theme's
+    /// `button.body(NONE).min_size`; `input.min_height`,
+    /// `combo_box.min_height`), or at their own size where their content,
+    /// padded, is larger — as gpui-component's are through
+    /// `native_theme_gpui::geometry` and the platform's own are. The button's
+    /// padding is `iced_next::button_padding`'s.
     #[test]
-    fn basic_controls_take_the_stated_minimum_sizes() {
-        for preset in ["kde-breeze", "adwaita", "material-3"] {
-            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            let r = resolved.clone();
-            let own = |size: f32, pad: Padding| size * r.defaults.line_height + pad.y();
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
+    fn basic_controls_take_the_stated_minimum_sizes() -> Result<(), String> {
+        for preset in ["kde-breeze", "adwaita", "material-3", "macos-tahoe"] {
+            let mut state = State {
                 accessibility: native_theme_iced::AccessibilityPreferences::default(),
                 active_tab: Tab::Basic,
                 ..State::default()
             };
+            if !state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light) {
+                return Err(format!("{preset} does not install"));
+            }
+            let r = state.current_resolved.clone();
+            let own = |size: f32, pad: Padding| size * r.defaults.line_height + pad.y();
+            let next = state.next_shown().clone();
+            let [min_width, min_height] = next.button.body(WidgetState::NONE).min_size;
             let mut ui = interface(&state);
 
             let button = probe_bounds(&mut ui, probes::BASIC_BUTTON);
             let label = height_of(&mut ui, "Button");
-            let pad = native_theme_iced::button_padding(&r);
+            let pad = iced_next::button_padding(&next).map_err(|e| format!("{preset}: {e}"))?;
+            let min_width = min_width.ok_or(format!("{preset} states no button width"))?;
             assert!(
-                button.width >= r.button.min_width - 0.01,
-                "{preset}: the button is {}px wide, button.min_width is {}px",
+                button.width >= min_width - 0.01,
+                "{preset}: the button is {}px wide, button.body(NONE).min_size[0] is {}px",
                 button.width,
-                r.button.min_width
+                min_width
             );
-            let expected = r.button.min_height.max(label + pad.y());
+            let expected = min_height.map_or(label + pad.y(), |h| h.max(label + pad.y()));
             assert!(
                 (button.height - expected).abs() < 0.01,
                 "{preset}: the button is {}px tall, expected {expected}px",
@@ -28645,6 +28882,7 @@ mod tests {
                 pick.height
             );
         }
+        Ok(())
     }
 
     /// Every text the Basic page lays out, with its bounds.
@@ -30726,7 +30964,7 @@ mod tests {
         let r = &state.current_resolved;
         let not_drawn = route.starts_with("not drawn");
         if id.starts_with("basic.checkboxes.") {
-            match r.checkbox.check_mark_stroke_width {
+            match next_check_stroke(state.next_shown()) {
                 None if route.contains("CheckMark") => fault("no CheckMark is drawn"),
                 Some(_)
                     if id.ends_with(".mark")
@@ -30897,7 +31135,7 @@ mod tests {
                         state.error_message
                     );
                     let r = &state.current_resolved;
-                    seen.insert(("stroke", r.checkbox.check_mark_stroke_width.is_some()));
+                    seen.insert(("stroke", next_check_stroke(state.next_shown()).is_some()));
                     seen.insert(("pressed fill", r.button.active_background.is_some()));
                     seen.insert(("tab hover fill", r.tab.hover_background.is_some()));
                     seen.insert(("indicator", state.basic_spinner.is_indicator()));
@@ -31575,11 +31813,7 @@ mod tests {
                     )
                 );
                 assert_eq!(
-                    state
-                        .current_resolved
-                        .checkbox
-                        .check_mark_stroke_width
-                        .is_some(),
+                    next_check_stroke(state.next_shown()).is_some(),
                     stated,
                     "{preset} states a check-mark line"
                 );
