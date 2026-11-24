@@ -1488,9 +1488,10 @@ fn the_palette_highlight_wraps_resets_and_needs_a_row() {
 
 /// A changed query highlights the first row it keeps and scrolls the list to it, as
 /// gpui-component 0.9.1's `reset_selection` scrolls to it (`src/command/state.rs:441-450`, its
-/// `pending_scroll`). At a text-scaling factor of 2.25 the rows a space keeps (each preset's,
-/// "Theme Map", "System (…)") are more than the list shows, so the list stays scrolled where the
-/// query changes.
+/// `pending_scroll`). At a text-scaling factor of 2.25 the rows an "a" keeps (six pages, the modes
+/// that name "Dark", and the presets of this platform whose name or key holds one) are more than the list shows,
+/// so the list stays scrolled where the query changes; a space keeps this platform's presets,
+/// "Theme Map" and "System (…)" alone, which CI's runner, with fewer presets, fits in the list.
 #[test]
 fn a_changed_query_scrolls_the_palette_to_its_first_row() {
     let mut harness = open_scaled(TEST_PRESET, "basic", 2.25);
@@ -1505,12 +1506,12 @@ fn a_changed_query_scrolls_the_palette_to_its_first_row() {
         .query_all_by_role(Role::TextInput)
         .find(|n| n.is_focused())
         .expect("the palette's field keeps the focus")
-        .type_text(" ");
+        .type_text("a");
     harness.run_steps(SETTLE);
     let last = palette_rows(&harness).len().checked_sub(1).expect("rows");
     assert!(
         (0..=last).any(|i| !palette_row_in_view(&harness, i)),
-        "the rows a space keeps fit the list, so this test shows nothing"
+        "the rows an \"a\" keeps fit the list, so this test shows nothing"
     );
     assert_eq!(palette_selected(&harness), [0]);
     assert!(
@@ -7594,9 +7595,9 @@ const GROWS_WHEN_HOVERED: &[&str] = &[
 ];
 
 /// No other widget changes size when hovered, as no native control does: on every page, under
-/// a preset whose buttons have a resting border (kde-breeze), each recorded widget keeps its
-/// rect with the pointer on it, but egui's own selectables (`GROWS_WHEN_HOVERED`). One test per
-/// page.
+/// a preset whose buttons have a resting border (kde-breeze, installed on any platform,
+/// [`open_page_under`]), each recorded widget keeps its rect with the pointer on it, but egui's
+/// own selectables (`GROWS_WHEN_HOVERED`). One test per page.
 mod no_widget_changes_size_when_hovered {
     use super::*;
     per_page!(no_widget_changes_size_when_hovered_on);
@@ -7605,11 +7606,7 @@ mod no_widget_changes_size_when_hovered {
 fn no_widget_changes_size_when_hovered_on(page: Page) -> Result<(), String> {
     let mut grew = Vec::new();
     let mut compared = 0usize;
-    let mut harness = open(
-        egui::Theme::Light,
-        cli(&[("--theme", "kde-breeze"), ("--tab", page.key())]),
-    );
-    harness.run_steps(4);
+    let mut harness = open_page_under(page, egui::Theme::Light, "kde-breeze");
     harness.remove_cursor();
     harness.run_steps(2);
     let rest: Vec<(egui::Id, &'static str, egui::Rect)> = harness
