@@ -2178,40 +2178,43 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut eg
                     let room = ui.max_rect();
                     // The frame's inside: the scroll area fills it, `visible` tall.
                     let edges = egui::Rect::from_min_size(room.min, egui::vec2(inner, visible));
-                    let area = egui::ScrollArea::vertical()
-                        .id_salt("basic/list")
-                        .auto_shrink([false, false])
-                        .min_scrolled_height(visible)
-                        .max_height(visible)
-                        .show(ui, |ui| {
-                            ui.spacing_mut().item_spacing.y = 0.0;
-                            for i in 0..LIST_ROWS {
-                                let text = format!("Item {}", i.saturating_add(1));
-                                let selected = state.basic_list == i;
-                                let mut note = None;
-                                let row = rows.add(reg, ui, "List row", |ui| {
-                                    let (row, label, own) = list_row(
-                                        ui,
-                                        r,
-                                        (edges, inner_radius),
-                                        &text,
-                                        selected,
-                                        (row_height, inset, line),
-                                        &font,
-                                    );
-                                    labels_drawn.push(label);
-                                    note = own;
-                                    row
-                                });
-                                if let Some(note) = note {
-                                    reg.note_last(OWN_ROW, &note);
+                    // nested in the page's, which a row scrolled to brings the list into view of
+                    let area = demo::nested_scroll(ui, |ui| {
+                        egui::ScrollArea::vertical()
+                            .id_salt("basic/list")
+                            .auto_shrink([false, false])
+                            .min_scrolled_height(visible)
+                            .max_height(visible)
+                            .show(ui, |ui| {
+                                ui.spacing_mut().item_spacing.y = 0.0;
+                                for i in 0..LIST_ROWS {
+                                    let text = format!("Item {}", i.saturating_add(1));
+                                    let selected = state.basic_list == i;
+                                    let mut note = None;
+                                    let row = rows.add(reg, ui, "List row", |ui| {
+                                        let (row, label, own) = list_row(
+                                            ui,
+                                            r,
+                                            (edges, inner_radius),
+                                            &text,
+                                            selected,
+                                            (row_height, inset, line),
+                                            &font,
+                                        );
+                                        labels_drawn.push(label);
+                                        note = own;
+                                        row
+                                    });
+                                    if let Some(note) = note {
+                                        reg.note_last(OWN_ROW, &note);
+                                    }
+                                    if row.clicked() {
+                                        state.basic_list = i;
+                                    }
+                                    rows_drawn.push(row);
                                 }
-                                if row.clicked() {
-                                    state.basic_list = i;
-                                }
-                                rows_drawn.push(row);
-                            }
-                        });
+                            })
+                    });
                     bar = scroll_bar(ui, &area, room);
                 })
                 .response

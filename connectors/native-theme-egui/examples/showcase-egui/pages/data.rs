@@ -32,45 +32,48 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
         // A table's row and header heights are call arguments no `Style` field reaches (§5.4
         // `list.row_height`); a header the theme gives no height is a row.
         let heights = TableRows::of(ui, r, &head.font);
-        ui.scope(|ui| {
-            one_line_cells(ui);
-            TableBuilder::new(ui)
-                .id_salt("data/table")
-                .striped(true)
-                .resizable(true)
-                .vscroll(false)
-                .sense(egui::Sense::click())
-                .cell_layout(centred_cells())
-                .column(Column::auto().resizable(true))
-                .column(Column::remainder().clip(true))
-                .header(heights.header, |mut header| {
-                    for title in ["Theme", "Platform"] {
-                        header.col(|ui| {
-                            list.add(reg, ui, "table header", |ui| {
-                                ui.label(heights.title(&head, title))
-                            });
-                        });
-                    }
-                })
-                .body(|mut body| {
-                    for (i, (theme, platform)) in ROWS.into_iter().enumerate() {
-                        body.row(heights.body, |mut row| {
-                            row.set_selected(state.table_selected == Some(i));
-                            for text in [theme, platform] {
-                                row.col(|ui| {
-                                    list.add(reg, ui, "table cell", |ui| {
-                                        ui.label(heights.cell(text))
-                                    });
+        // the table's body a scroll area nested in the page's (`demo::nested_scroll_in`)
+        let table = |ui: &mut egui::Ui| {
+            ui.scope(|ui| {
+                one_line_cells(ui);
+                TableBuilder::new(ui)
+                    .id_salt("data/table")
+                    .striped(true)
+                    .resizable(true)
+                    .vscroll(false)
+                    .sense(egui::Sense::click())
+                    .cell_layout(centred_cells())
+                    .column(Column::auto().resizable(true))
+                    .column(Column::remainder().clip(true))
+                    .header(heights.header, |mut header| {
+                        for title in ["Theme", "Platform"] {
+                            header.col(|ui| {
+                                list.add(reg, ui, "table header", |ui| {
+                                    ui.label(heights.title(&head, title))
                                 });
-                            }
-                            if row.response().clicked() {
-                                state.table_selected = Some(i);
-                            }
-                        });
-                    }
-                });
-        })
-        .response
+                            });
+                        }
+                    })
+                    .body(|mut body| {
+                        for (i, (theme, platform)) in ROWS.into_iter().enumerate() {
+                            body.row(heights.body, |mut row| {
+                                row.set_selected(state.table_selected == Some(i));
+                                for text in [theme, platform] {
+                                    row.col(|ui| {
+                                        list.add(reg, ui, "table cell", |ui| {
+                                            ui.label(heights.cell(text))
+                                        });
+                                    });
+                                }
+                                if row.response().clicked() {
+                                    state.table_selected = Some(i);
+                                }
+                            });
+                        }
+                    });
+            })
+        };
+        demo::nested_scroll_in(ui, table, |inner| inner.response.rect).response
     });
 
     caption(

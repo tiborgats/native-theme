@@ -1948,6 +1948,19 @@ pub(crate) fn nested_scroll<R>(
     ui: &mut egui::Ui,
     show: impl FnOnce(&mut egui::Ui) -> egui::scroll_area::ScrollAreaOutput<R>,
 ) -> egui::scroll_area::ScrollAreaOutput<R> {
+    nested_scroll_in(ui, show, |out| out.inner_rect)
+}
+
+/// [`nested_scroll`] for a scroll area laid out inside what `show` returns, `rect` its rect: an
+/// egui_extras table's body, which egui_extras always lays out in a `ScrollArea` of its own, one
+/// that takes both scroll targets even where it scrolls neither way (egui_extras-0.37.0
+/// `src/table.rs`, `Table::body`; `ScrollArea::show`, "We always take both scroll targets
+/// regardless of which scroll axes are enabled").
+pub(crate) fn nested_scroll_in<T>(
+    ui: &mut egui::Ui,
+    show: impl FnOnce(&mut egui::Ui) -> T,
+    rect: impl FnOnce(&T) -> egui::Rect,
+) -> T {
     let requests = |ui: &egui::Ui| {
         ui.input(|i| {
             i.events
@@ -1962,7 +1975,7 @@ pub(crate) fn nested_scroll<R>(
     let before = requests(ui);
     let out = show(ui);
     if requests(ui) < before {
-        ui.scroll_to_rect(out.inner_rect, None);
+        ui.scroll_to_rect(rect(&out), None);
     }
     out
 }

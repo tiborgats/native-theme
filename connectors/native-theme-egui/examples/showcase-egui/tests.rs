@@ -13053,47 +13053,133 @@ fn the_next_helpers_read_the_installed_08_theme() -> Result<(), String> {
 /// 677). The status bar's own widgets are not the page's and are left out.
 #[test]
 fn a_containers_widget_scrolled_to_ends_above_the_status_bar() -> Result<(), String> {
-    let mut harness = open_page_under(Page::Containers, egui::Theme::Light, TEST_PRESET);
-    let status = place_of(&harness, "chrome.status_bar");
-    let ids: Vec<egui::accesskit::NodeId> = harness
-        .query_all(By::new().predicate(|n| WIDGET_ROLES.contains(&n.role())))
-        .filter(|n| !status.contains_rect(n.rect()))
-        .map(|n| n.accesskit_node().locate().0)
-        .collect();
-    let mut nested = 0;
-    for id in ids {
-        let Some(node) = harness
-            .query_all(By::new().predicate(move |n| n.locate().0 == id))
-            .next()
-        else {
-            continue;
-        };
-        node.scroll_to_me();
-        // The scroll lands on the third pass after the request (as the page scroll tests).
-        harness.run_steps(3);
-        let rect = harness
-            .query_all(By::new().predicate(move |n| n.locate().0 == id))
-            .next()
-            .map(|n| n.rect())
-            .ok_or_else(|| format!("node {id:?} is gone after its scroll"))?;
-        let inner = harness
-            .state()
-            .registry
-            .records()
-            .iter()
-            .any(|r| r.id.accesskit_id() == id && r.info.kind == "scrolled label");
-        nested += usize::from(inner);
-        assert!(
-            rect.bottom() <= status.top() + 0.5,
-            "node {id:?} at {rect:?} after its scroll, the status bar's top {}",
-            status.top()
-        );
-    }
+    let harness = open_page_under(Page::Containers, egui::Theme::Light, TEST_PRESET);
+    let (nested, _) = scrolled_to_above_the_status_bar(harness, &["scrolled label"], false)?;
     assert!(
         nested > 0,
         "no widget of a nested scroll area was scrolled to, so the test proves nothing"
     );
     Ok(())
+}
+
+/// The same for the other pages with a scroll area nested in the page's (ES-G3b item 2): the
+/// Basic page's list, the Data page's table, whose egui_extras body is a scroll area of its own
+/// though it scrolls neither way, and the Theme Map's table across its horizontal area
+/// (`demo::nested_scroll`, `demo::nested_scroll_in`). Under [`TEST_PRESET`] light, at a
+/// text-scaling factor of 2, each page's nested widgets are scrolled to from the page's far end;
+/// on the Basic and Data pages at least one lay out of the page's view before its scroll, so the
+/// page's own scroll is seen to follow the inner one. The Theme Map's table lays out only the
+/// rows in its own view (`TableBody::rows`), so every nested widget its tree holds is in the
+/// page's view already (measured: 24, none out of it): there the test sees only that none is
+/// scrolled out of it.
+#[test]
+fn a_nested_scroll_areas_widget_scrolled_to_ends_above_the_status_bar() -> Result<(), String> {
+    for (page, kinds, out_of_view) in [
+        (Page::Basic, &["List row"][..], true),
+        (Page::Data, &["table cell", "table header"][..], true),
+        (
+            Page::ThemeMap,
+            &["theme map cell", "theme map header"][..],
+            false,
+        ),
+    ] {
+        let harness = open_page_scaled(page, TEST_PRESET, 2.0);
+        let (nested, hidden) = scrolled_to_above_the_status_bar(harness, kinds, true)?;
+        assert!(
+            nested > 0 && (hidden > 0 || !out_of_view),
+            "{page:?}: {nested} widgets of a nested scroll area scrolled to, {hidden} of them out \
+             of the page's view before, so the test proves nothing"
+        );
+    }
+    Ok(())
+}
+
+/// Each widget of `harness`'s page, scrolled to through AccessKit's `ScrollIntoView`
+/// (`Node::scroll_to_me`), ends above the status bar and, where `far`, in the page's whole view,
+/// below the page tabs too; a widget recorded as one of `nested_kinds`, a nested scroll area's,
+/// where `far` first after the page is scrolled to the end farther from it, its first or its
+/// last widget, so the page itself has to scroll back to it. How many nested widgets were scrolled to, and how many
+/// of those lay out of the page's view before their scroll. The chrome's widgets, those above the
+/// page tabs' foot at start (where the page, scrolled to its top, shows none), the status bar's
+/// and the side panel's, are not the page's and are left out.
+fn scrolled_to_above_the_status_bar(
+    mut harness: Harness<'static, App>,
+    nested_kinds: &[&str],
+    far: bool,
+) -> Result<(usize, usize), String> {
+    let status = place_of(&harness, "chrome.status_bar");
+    let side = place_of(&harness, "chrome.side_panel");
+    let top = place_of(&harness, "chrome.page_tabs").bottom();
+    let ids: Vec<(egui::accesskit::NodeId, f32)> = harness
+        .query_all(By::new().predicate(|n| WIDGET_ROLES.contains(&n.role())))
+        .filter(|n| {
+            let r = n.rect();
+            r.top() >= top - 0.5 && !status.contains_rect(r) && !side.intersects(r)
+        })
+        .map(|n| (n.accesskit_node().locate().0, n.rect().center().y))
+        .collect();
+    // In the tree's order; the page's ends its topmost and its lowest widget.
+    let first = ids.iter().min_by(|a, b| a.1.total_cmp(&b.1));
+    let last = ids.iter().max_by(|a, b| a.1.total_cmp(&b.1));
+    let ends = first.zip(last).map(|(a, b)| (*a, *b));
+    let scroll_to = |harness: &mut Harness<'static, App>, id: egui::accesskit::NodeId| {
+        let node = harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == id))
+            .next()?;
+        let before = node.rect();
+        node.scroll_to_me();
+        // A nested area's scroll and then the page's, each animated: 12 passes (measured: after
+        // the page scroll tests' 3, a Basic list row at text scale 2 lay 3 pt under the status
+        // bar, the page's scroll still under way).
+        harness.run_steps(12);
+        let after = harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == id))
+            .next()
+            .map(|n| n.rect());
+        Some((before, after))
+    };
+    let (mut nested, mut hidden) = (0, 0);
+    for (id, y) in ids.iter().copied() {
+        let kind = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.id.accesskit_id() == id)
+            .map(|r| r.info.kind);
+        let inner = kind.is_some_and(|k| nested_kinds.contains(&k));
+        if far
+            && inner
+            && let Some(((first, first_y), (last, last_y))) = ends
+        {
+            let end = if (y - first_y).abs() > (last_y - y).abs() {
+                first
+            } else {
+                last
+            };
+            scroll_to(&mut harness, end);
+        }
+        let Some((before, after)) = scroll_to(&mut harness, id) else {
+            continue;
+        };
+        let rect = after.ok_or_else(|| format!("node {id:?} is gone after its scroll"))?;
+        nested += usize::from(inner);
+        let out = |r: egui::Rect| r.top() < top - 0.5 || r.bottom() > status.top() + 0.5;
+        hidden += usize::from(inner && out(before));
+        // Without `far`, only the foot: the Containers page's claim, the status bar's top.
+        let missed = if far {
+            out(rect)
+        } else {
+            rect.bottom() > status.top() + 0.5
+        };
+        assert!(
+            !missed,
+            "node {id:?} ({kind:?}) at {rect:?} after its scroll (before {before:?}), the page's \
+             view {top}..{}",
+            status.top()
+        );
+    }
+    Ok((nested, hidden))
 }
 
 /// The page tabs hide no tab behind the Pages menu button: under [`TEST_PRESET`] light, whose

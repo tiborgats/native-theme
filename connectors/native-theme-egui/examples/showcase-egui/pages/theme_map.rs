@@ -93,66 +93,72 @@ pub(crate) fn show(
             // columns are wider than the page, the rest is reached by scrolling across: the page
             // itself scrolls only down, and the content of a horizontal `ScrollArea` is first
             // given its width (`egui/src/containers/scroll_area.rs:784-798`).
+            // nested in the page's scroll area (`demo::nested_scroll`), the table's own body in it
             let out = ui.scope(|ui| {
-                egui::ScrollArea::horizontal()
-                    .id_salt("theme map/across")
-                    .show(ui, |ui| {
-                        super::data::one_line_cells(ui);
-                        egui_extras::TableBuilder::new(ui)
-                            .striped(true)
-                            .cell_layout(super::data::centred_cells())
-                            .column(egui_extras::Column::auto())
-                            .column(
-                                egui_extras::Column::remainder()
-                                    .clip(true)
-                                    .at_least(value_floor),
-                            )
-                            .column(egui_extras::Column::auto())
-                            .column(
-                                egui_extras::Column::remainder()
-                                    .clip(true)
-                                    .at_least(sinks_floor),
-                            )
-                            .header(heights.header, |mut header| {
-                                for title in TITLES {
-                                    header.col(|ui| {
-                                        list.add(reg, ui, "theme map header", |ui| {
-                                            ui.label(heights.title(&head, title))
-                                        });
-                                    });
-                                }
-                            })
-                            .body(|body| {
-                                body.rows(heights.body, rows.len(), |mut row| {
-                                    if let Some(r) = rows.get(row.index()) {
-                                        // A colour value beside its swatch, as the gpui Theme
-                                        // Map shows every colour
-                                        // (`showcase-gpui/demo.rs:8987-9011`).
-                                        let colour = crate::info::value_at(json, &r.leaf)
-                                            .as_ref()
-                                            .and_then(crate::info::swatch_colour);
-                                        for (ix, text) in
-                                            crate::info::row_cells(r, json).into_iter().enumerate()
-                                        {
-                                            let swatch = colour.filter(|_| ix == 1);
-                                            row.col(|ui| {
-                                                list.add(reg, ui, "theme map cell", |ui| {
-                                                    match swatch {
-                                                        Some(colour) => crate::info::swatch_cell(
-                                                            ui,
-                                                            t,
-                                                            colour,
-                                                            heights.cell(text),
-                                                        ),
-                                                        None => ui.label(heights.cell(text)),
-                                                    }
-                                                });
+                demo::nested_scroll(ui, |ui| {
+                    egui::ScrollArea::horizontal()
+                        .id_salt("theme map/across")
+                        .show(ui, |ui| {
+                            super::data::one_line_cells(ui);
+                            egui_extras::TableBuilder::new(ui)
+                                .striped(true)
+                                .cell_layout(super::data::centred_cells())
+                                .column(egui_extras::Column::auto())
+                                .column(
+                                    egui_extras::Column::remainder()
+                                        .clip(true)
+                                        .at_least(value_floor),
+                                )
+                                .column(egui_extras::Column::auto())
+                                .column(
+                                    egui_extras::Column::remainder()
+                                        .clip(true)
+                                        .at_least(sinks_floor),
+                                )
+                                .header(heights.header, |mut header| {
+                                    for title in TITLES {
+                                        header.col(|ui| {
+                                            list.add(reg, ui, "theme map header", |ui| {
+                                                ui.label(heights.title(&head, title))
                                             });
-                                        }
+                                        });
                                     }
+                                })
+                                .body(|body| {
+                                    body.rows(heights.body, rows.len(), |mut row| {
+                                        if let Some(r) = rows.get(row.index()) {
+                                            // A colour value beside its swatch, as the gpui Theme
+                                            // Map shows every colour
+                                            // (`showcase-gpui/demo.rs:8987-9011`).
+                                            let colour = crate::info::value_at(json, &r.leaf)
+                                                .as_ref()
+                                                .and_then(crate::info::swatch_colour);
+                                            for (ix, text) in crate::info::row_cells(r, json)
+                                                .into_iter()
+                                                .enumerate()
+                                            {
+                                                let swatch = colour.filter(|_| ix == 1);
+                                                row.col(|ui| {
+                                                    list.add(reg, ui, "theme map cell", |ui| {
+                                                        match swatch {
+                                                            Some(colour) => {
+                                                                crate::info::swatch_cell(
+                                                                    ui,
+                                                                    t,
+                                                                    colour,
+                                                                    heights.cell(text),
+                                                                )
+                                                            }
+                                                            None => ui.label(heights.cell(text)),
+                                                        }
+                                                    });
+                                                });
+                                            }
+                                        }
+                                    });
                                 });
-                            });
-                    })
+                        })
+                })
             });
             out.response
         },
