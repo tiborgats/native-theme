@@ -1449,7 +1449,8 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// and no padding. The checked colours are the measured ones under UIKit's
 /// default tint, the one tint the measurement drew (`docs/facts/ios/button.toml`
 /// on `v0.8.0-rc1` at `78ee0efd`): they do not follow the accent, and under
-/// another accent a checked button keeps the default tint's blue.
+/// another accent a checked button keeps the default tint's blue. The flat
+/// variant is UIKit's plain button, with no outline in any state.
 fn button(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -1459,6 +1460,12 @@ fn button(
     let primary = || {
         RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {
             variant: Some(ButtonVariant::Primary),
+            shape: None,
+        })
+    };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
             shape: None,
         })
     };
@@ -1494,6 +1501,19 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_fill)],
+        )
+        // The flat variant, UIKit's plain button, draws no outline, after the push button's rules
+        // so that its own win (measured, iOS host run 41020880059, analysis.toml
+        // `cells.<scheme>.plain.<size>.normal.stroke` absent; `docs/facts/ios/button.toml` on
+        // `v0.8.0-rc1` at `78ee0efd`, `button.body.stroke` preset:ios-13, every variant and
+        // state): stated for each state the push button states one for (spec §2, `from_state`).
+        .rules(
+            [
+                flat(WidgetState::NONE),
+                flat(WidgetState::HOVER),
+                flat(WidgetState::PRESSED),
+            ],
+            [PartProp::Stroke(Stroke::None)],
         )
         .build();
     // `button.active_text_color`: (WebKit) systemBlue, a pressed iOS button keeps its blue text

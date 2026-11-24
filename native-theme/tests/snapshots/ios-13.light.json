@@ -383,6 +383,30 @@
           "body": {
             "fill": "#e5e5ea80"
           }
+        },
+        {
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
+          }
         }
       ]
     },

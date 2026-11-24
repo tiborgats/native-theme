@@ -384,6 +384,30 @@
           "body": {
             "fill": "srgb(0.04752941, 0.8004706, 0.055058822, 0.44)"
           }
+        },
+        {
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "body": {
+            "stroke": "none"
+          }
         }
       ]
     },

@@ -2967,7 +2967,8 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// `defaults.accent_color` and `accent_text_color` where unstated). Its text
 /// keeps its colour hovered, takes
 /// [`SchemeColors::button_pressed_foreground`] pressed where stated, and is
-/// the disabled text when disabled (`defaults.disabled_text_color`).
+/// the disabled text when disabled (`defaults.disabled_text_color`). The flat
+/// variant is AppKit's borderless button, with no outline in any state.
 fn button(
     c: &SchemeColors,
     g: &Generation,
@@ -2978,6 +2979,12 @@ fn button(
     let primary = || {
         RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {
             variant: Some(ButtonVariant::Primary),
+            shape: None,
+        })
+    };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
             shape: None,
         })
     };
@@ -3051,6 +3058,23 @@ fn button(
                         .with_alpha(BUTTON_CHECKED_DISABLED_ALPHA),
                 )
             }),
+        )
+        // The borderless button (`bordered` NO) draws no outline, after the push button's rules
+        // so that its own win: on macOS 15 at rest, pressed and disabled (measured, os-probe run
+        // 41006842699, layers-key-styles_b.toml `key.styles_b.<appearance>.<state>.*-flat.stroke`
+        // absent; `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`,
+        // `button.body.stroke` preset:macos-monterey variants [flat]); on macOS 26 no button draws
+        // one (the same run, `os-probe-macos-26/layers-key-push.toml`
+        // `key.push.<appearance>.<state>.*-plain.stroke` absent; those facts' `button.body.stroke`
+        // preset:macos-tahoe); hovered as at rest (hover not an axis, as above). Stated for each
+        // state the push button states one for (spec §2, `from_state`).
+        .rules(
+            [
+                flat(WidgetState::NONE),
+                flat(WidgetState::HOVER),
+                flat(WidgetState::PRESSED),
+            ],
+            [PartProp::Stroke(Stroke::None)],
         )
         .build();
     // Hovered, the label as at rest (the measurement above); pressed, the measured label where
