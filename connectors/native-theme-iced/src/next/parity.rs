@@ -2144,12 +2144,18 @@ const DIFFERENCES: &[Difference] = &[
     inside("progress_bar", MACOS_WINDOWS),
     // card.container(NONE).
     inside("container_card", &["windows-11"]),
-    // card.container(NONE): NSBox's and the .insetGrouped cell's measured edge.
+    // card.container(NONE): NSBox's and the .insetGrouped cell's measured edge,
+    // and NSBox's measured fill.
     stated_fields(
         "container_card",
         &["macos-monterey"],
         LineAlign::Outside,
         &[&[
+            set(
+                at!(NONE),
+                Field::Background,
+                home!(fill, card.container(NONE)),
+            ),
             set(
                 at!(NONE),
                 Field::BorderWidth,
@@ -2169,7 +2175,24 @@ const DIFFERENCES: &[Difference] = &[
     ),
     stated_fields(
         "container_card",
-        &["macos-tahoe", "ios-13"],
+        &["macos-tahoe"],
+        LineAlign::Outside,
+        &[&[
+            set(
+                at!(NONE),
+                Field::Background,
+                home!(fill, card.container(NONE)),
+            ),
+            set(
+                at!(NONE),
+                Field::Radius,
+                home!(corners, card.container(NONE)),
+            ),
+        ]],
+    ),
+    stated_fields(
+        "container_card",
+        &["ios-13"],
         LineAlign::Outside,
         &[&[set(
             at!(NONE),
@@ -2562,11 +2585,11 @@ const DIFFERENCES: &[Difference] = &[
         ],
     ),
     // ios-13 states the toolbar's button label, toolbar.button_label(NONE),
-    // in the tint, a bar button item's colour, where 0.7.2 drew the body
-    // text.
+    // in the tint, a bar button item's colour, and the macOS presets the real
+    // toolbar's measured label, where 0.7.2 drew the body text.
     stated_fields(
         "toolbar",
-        &["ios-13"],
+        &["ios-13", "macos-monterey", "macos-tahoe"],
         LineAlign::Outside,
         &[&[set(
             at!(NONE),
@@ -2640,12 +2663,17 @@ const DIFFERENCES: &[Difference] = &[
     // iced_aw: card.container(NONE).
     inside("aw::card", &["windows-11"]),
     // NSBox's and the .insetGrouped cell's measured edge: macos-monterey's line and corners,
-    // macos-tahoe's and ios-13's corners over no line.
+    // macos-tahoe's and ios-13's corners over no line; NSBox's measured fill.
     stated_fields(
         "aw::card",
         &["macos-monterey"],
         LineAlign::Outside,
         &[&[
+            set(
+                at!(NONE),
+                Field::Background,
+                home!(fill, card.container(NONE)),
+            ),
             set(
                 at!(NONE),
                 Field::BorderWidth,
@@ -2665,7 +2693,24 @@ const DIFFERENCES: &[Difference] = &[
     ),
     stated_fields(
         "aw::card",
-        &["macos-tahoe", "ios-13"],
+        &["macos-tahoe"],
+        LineAlign::Outside,
+        &[&[
+            set(
+                at!(NONE),
+                Field::Background,
+                home!(fill, card.container(NONE)),
+            ),
+            set(
+                at!(NONE),
+                Field::Radius,
+                home!(corners, card.container(NONE)),
+            ),
+        ]],
+    ),
+    stated_fields(
+        "aw::card",
+        &["ios-13"],
         LineAlign::Outside,
         &[&[set(
             at!(NONE),
@@ -2710,7 +2755,8 @@ const DIFFERENCES: &[Difference] = &[
         (true, false),
         &[TAB_STROKE, TAB_IDLE_STROKE],
     ),
-    // the macOS presets state a hovered tab's fill as its rest one (`tab.tab(HOVER)`).
+    // the macOS presets state an unselected tab's measured fill (`tab.tab(NONE)`) and a hovered
+    // tab's as its rest one (`tab.tab(HOVER)`).
     aw(
         "aw::tab_bar",
         MACOS,
@@ -2720,11 +2766,10 @@ const DIFFERENCES: &[Difference] = &[
         &[TAB_STROKE, TAB_IDLE_STROKE],
     )
     .stating(
-        &[&[set(
-            at!(HOVER),
-            Field::Background,
-            home!(fill, tab.tab(HOVER)),
-        )]],
+        &[&[
+            set(at!(NONE), Field::Background, home!(fill, tab.tab(NONE))),
+            set(at!(HOVER), Field::Background, home!(fill, tab.tab(HOVER))),
+        ]],
         &[TAB_STROKE, TAB_IDLE_STROKE, STATED],
     ),
     // iced_aw: sidebar.container(NONE)'s stroke and sidebar.item(HOVER).
@@ -3441,8 +3486,10 @@ impl Fields for iced_widget::container::Style {
                     ));
                 }
             },
-            Field::Background
-            | Field::HandleBackground
+            Field::Background => {
+                self.background = Some(Background::Color(color_of(field, &value)?));
+            }
+            Field::HandleBackground
             | Field::IconColor
             | Field::InnerRadius
             | Field::PickedSplitColor
@@ -3587,8 +3634,10 @@ impl Fields for iced_aw::style::card::Style {
                 self.border_color = line_over(field, &value, fill)?;
             }
             Field::Radius => self.border_radius = width_of(field, &value)?,
-            Field::Background
-            | Field::HandleBackground
+            Field::Background => {
+                self.background = iced_core::Background::Color(color_of(field, &value)?);
+            }
+            Field::HandleBackground
             | Field::TextColor
             | Field::IconColor
             | Field::InnerRadius

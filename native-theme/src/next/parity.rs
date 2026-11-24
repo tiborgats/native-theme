@@ -3803,8 +3803,8 @@ const MONTEREY_HOVER_BORDER: &[&str] = &[
 
 /// M2.FS4: the rows of a macOS reader case whose listed difference is a colour role of the preset
 /// that the case's reader replaces (the roles of the preset alone against the preset under the
-/// case's settings): a hovered tab's fill, its rest one, the window's background; a hovered slider
-/// knob's, its rest one, which in the light scheme of both presets is the view's background.
+/// case's settings): a hovered slider knob's, its rest one, which in the light scheme of both
+/// presets is the view's background.
 fn macos_surface_rows(snapshot: &crate::next::reader::SystemSnapshot) -> Vec<&'static str> {
     use crate::next::preset::Theme as NextTheme;
     use crate::next::query::Scheme;
@@ -3815,16 +3815,10 @@ fn macos_surface_rows(snapshot: &crate::next::reader::SystemSnapshot) -> Vec<&'s
         .with_system_overrides(snapshot.overrides.clone())
         .resolve(&snapshot.context)
         .colors;
-    [
-        (
-            own.window.background != read.window.background,
-            "tab.hover_background",
-        ),
-        (
-            snapshot.context.scheme == Scheme::Light && own.view.background != read.view.background,
-            "slider.thumb_hover_color",
-        ),
-    ]
+    [(
+        snapshot.context.scheme == Scheme::Light && own.view.background != read.view.background,
+        "slider.thumb_hover_color",
+    )]
     .into_iter()
     .filter_map(|(replaced, row)| replaced.then_some(row))
     .collect()

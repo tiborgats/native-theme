@@ -1230,7 +1230,7 @@
     },
     "tab": {
       "base": {
-        "fill": "#1e1e1e",
+        "fill": "#ffffff0d",
         "padding": {
           "top": 4.0,
           "right": 12.0,
@@ -1248,7 +1248,7 @@
             "hover"
           ],
           "tab": {
-            "fill": "#1e1e1e"
+            "fill": "#ffffff0d"
           }
         },
         {
@@ -1662,7 +1662,7 @@
     "button_label": {
       "base": {
         "family": "SF Pro",
-        "color": "#ffffff",
+        "color": "#b4b4b4",
         "size_px": 13.0,
         "weight": 400,
         "style": "normal",
@@ -1676,7 +1676,7 @@
             "hover"
           ],
           "button_label": {
-            "color": "#ffffff"
+            "color": "#b4b4b4"
           }
         },
         {
@@ -1684,7 +1684,7 @@
             "pressed"
           ],
           "button_label": {
-            "color": "#ececec"
+            "color": "#eeeeee"
           }
         }
       ]
@@ -2025,7 +2025,7 @@
     "origin": "native",
     "container": {
       "base": {
-        "fill": "#2c2c2e",
+        "fill": "#ffffff08",
         "stroke": {
           "width": 1.0,
           "color": "#ffffff26"

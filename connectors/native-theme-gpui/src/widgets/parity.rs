@@ -412,14 +412,26 @@ const FROM_HOME: &[Difference] = &[
     },
     Difference {
         leaf: "TabLook::hover",
-        presets: &["macos-monterey"],
+        presets: &["macos-monterey", "macos-tahoe"],
         reason: "0.7.2's macos-monterey states tab.hover_background #e8e8ed / #3a3a3c, \
-                 uncited; the 0.8.0 preset states tab.tab(HOVER).fill, the tab's rest fill, \
-                 the window's background, as AppKit draws a hovered tab as at rest (os-probe \
-                 run 45198750893, macOS 15, `*.hovered.tab` differs from the normal capture in \
-                 0 pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
+                 uncited, macos-tahoe leaves it unset; the 0.8.0 presets state \
+                 tab.tab(HOVER).fill, the tab's measured rest fill, as AppKit draws a hovered \
+                 tab as at rest (os-probe run 45198750893, macOS 15 and 26, `*.hovered.tab` \
+                 differs from the normal capture in 0 pixels, \
+                 docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
                  native-theme/tests/next_homes.toml, row tab.hover_background, a listed \
                  difference), drawn over the bar",
+    },
+    Difference {
+        leaf: "TabLook::idle",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macOS presets give an unselected tab the window's background \
+                 (uncited); the 0.8.0 presets state tab.tab(NONE).fill, NSTabView's measured \
+                 unselected tab, #0000000d / #ffffff0d on macos-monterey, #00000013 / \
+                 #ffffff13 on macos-tahoe (os-probe run 45252258079, Reduce Transparency off, \
+                 `*.normal.tab` `fill`, docs/evidence/os-probe/2026-11-23-run-45252258079/ on \
+                 m2-fs4c; native-theme/tests/next_homes.toml, row tab.background_color, a \
+                 listed difference)",
     },
     Difference {
         leaf: "CheckboxLook::of hover_fill",
@@ -782,10 +794,11 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         SpinnerLook::next_of(&new),
     );
     let (old_tab, new_tab) = (TabLook::of(&old), TabLook::next_of(&new));
-    // The hover fill apart, so a listed difference of it leaves the rest of
-    // the look compared.
+    // The hover and rest fills apart, so a listed difference of either
+    // leaves the rest of the look compared.
     let unhovered = |look: TabLook| TabLook {
         hover: gpui::transparent_black(),
+        idle: gpui::transparent_black(),
         ..look
     };
     r.leaf(
@@ -793,6 +806,13 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         "",
         old_tab.map(unhovered),
         new_tab.map(unhovered),
+    );
+    r.home_leaf(
+        "TabLook::idle",
+        "",
+        old_tab.map(|look| look.idle),
+        new_tab.map(|look| look.idle),
+        crate::next::fill_of(&new.tab.tab(WidgetState::NONE)),
     );
     // `TabLook::next_of`: the hovered tab's stated fill over the bar.
     let tab_hover = crate::next::state_fill_of(&new.tab.tab(WidgetState::HOVER))

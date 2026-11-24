@@ -1961,6 +1961,10 @@ note = "0.7.2 doc: insets an item's contents from its highlight's edges"
 [[row]]
 key = "tab.background_color"
 homes = ["tab.tab(NONE).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS tab is the window's background (uncited); 0.8.0 states NSTabView's measured unselected tab, black / white at a low alpha"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.tab` `fill`"
+difference_values = { "macos-monterey" = { light = "#0000000d", dark = "#ffffff0d" }, "macos-tahoe" = { light = "#00000013", dark = "#ffffff13" } }
 
 [[row]]
 key = "tab.active_background"
@@ -2015,9 +2019,9 @@ note = "0.7.2 R-W: unset = tab.font.color, never null"
 key = "tab.hover_background"
 homes = ["tab.tab(HOVER).fill"]
 difference_presets = ["adwaita", "macos-monterey", "macos-tahoe"]
-difference_reason = "0.7.2's #e8e8e8 / #3a3a3e is its uncited menu hover; 0.8.0 states libadwaita's notebook tab hover, $hover_color, the window text at 7 %, a layer (the same fill a pressed tab takes); macos-monterey: 0.7.2's uncited #e8e8ed / #3a3a3c; macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states the tab's rest fill (the window's background) for HOVER, as AppKit draws a hovered tab as at rest"
-difference_citation = "_notebook.scss:127-129 (`&:hover, &:active { background-color: $hover_color }`), _colors.scss:268, :33, :96 at libadwaita 1.10.0; os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.tab` differs from the normal capture in 0 pixels"
-difference_values = { "adwaita" = { light = "#0000060e", dark = "#ffffff12" }, "macos-monterey" = { light = "#ececec", dark = "#323232" }, "macos-tahoe" = { light = "#ffffff", dark = "#1e1e1e" } }
+difference_reason = "0.7.2's #e8e8e8 / #3a3a3e is its uncited menu hover; 0.8.0 states libadwaita's notebook tab hover, $hover_color, the window text at 7 %, a layer (the same fill a pressed tab takes); macos-monterey: 0.7.2's uncited #e8e8ed / #3a3a3c; macos-tahoe: 0.7.2 leaves it unset; 0.8.0 states the tab's measured rest fill for HOVER, as AppKit draws a hovered tab as at rest"
+difference_citation = "_notebook.scss:127-129 (`&:hover, &:active { background-color: $hover_color }`), _colors.scss:268, :33, :96 at libadwaita 1.10.0; os-probe run 45198750893 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c), `*.hovered.tab` differs from the normal capture in 0 pixels; the rest fill: os-probe run 45252258079 (Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.tab` `fill`"
+difference_values = { "adwaita" = { light = "#0000060e", dark = "#ffffff12" }, "macos-monterey" = { light = "#0000000d", dark = "#ffffff0d" }, "macos-tahoe" = { light = "#00000013", dark = "#ffffff13" } }
 
 [[row]]
 key = "tab.font.family"
@@ -2240,10 +2244,10 @@ homes = ["toolbar.button_label(NONE).style"]
 [[row]]
 key = "toolbar.font.color"
 homes = ["toolbar.button_label(NONE).color"]
-difference_presets = ["ios-13"]
-difference_reason = "0.7.2's black / white is the body text (uncited); a plain bar button item is drawn in the tint, the accent (UIKit's tintColor), which 0.8.0 states for the toolbar's button label"
-difference_citation = "docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, rows B-1, TB-4 (iOS host runs 41020880059 and 42276668803, `forms.<scheme>.bar_plain.normal.label_fill`, #007aff / #0a84ff with no tint set)"
-difference_values = { "ios-13" = { light = "#007aff", dark = "#0a84ff" } }
+difference_presets = ["ios-13", "macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's black / white is the body text (uncited); a plain bar button item is drawn in the tint, the accent (UIKit's tintColor), which 0.8.0 states for the toolbar's button label; macos-monterey, macos-tahoe: 0.8.0 states the real toolbar's measured label, opaque over the opaque title bar"
+difference_citation = "docs/facts/ios/button.toml on v0.8.0-rc1 at 78ee0efd, rows B-1, TB-4 (iOS host runs 41020880059 and 42276668803, `forms.<scheme>.bar_plain.normal.label_fill`, #007aff / #0a84ff with no tint set); os-probe run 45252258079 (macOS 15, macOS 26, Reduce Transparency off; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.toolbar_button` `label`"
+difference_values = { "ios-13" = { light = "#007aff", dark = "#0a84ff" }, "macos-monterey" = { light = "#606060", dark = "#b4b4b4" }, "macos-tahoe" = { light = "#4d4d4d", dark = "#e9e9e9" } }
 
 [[row]]
 key = "toolbar.border.color"
@@ -2941,6 +2945,10 @@ homes = ["segmented_control.segment(NONE).padding.left"]
 [[row]]
 key = "card.background_color"
 homes = ["card.container(NONE).fill"]
+difference_presets = ["macos-monterey", "macos-tahoe"]
+difference_reason = "0.7.2's macOS card is the surface colour (uncited); 0.8.0 states NSBox's measured fill, black / white at a low alpha"
+difference_citation = "os-probe run 45252258079 (macOS 15, macOS 26; docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c), `*.normal.box` `fill`"
+difference_values = { "macos-monterey" = { light = "#00000008", dark = "#ffffff08" }, "macos-tahoe" = { light = "#00000008", dark = "#ffffff08" } }
 
 [[row]]
 key = "card.border.color"

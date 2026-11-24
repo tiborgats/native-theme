@@ -383,10 +383,13 @@ const DIFFERENCES: &[Difference] = &[
                  docs/evidence/os-probe/ on m2-fs4c; native-theme/tests/next_homes.toml, rows \
                  card.border.color, card.border.line_width and card.border.corner_radius, \
                  listed differences): on macos-monterey a 1 px line, #00000013 / #ffffff26, and \
-                 corners of 5, on macos-tahoe no line and corners of 12; so the refinement's \
-                 corner radius is card.container(NONE)'s, and its border width and colour the \
-                 stroke's where one is drawn (card_edge_of); every other field of the \
-                 refinement is equal",
+                 corners of 5, on macos-tahoe no line and corners of 12; and NSBox's measured \
+                 fill, #00000008 / #ffffff08 on both, where 0.7.2 gives the surface colour \
+                 (os-probe run 45252258079, `*.normal.box` `fill`; next_homes.toml, row \
+                 card.background_color, a listed difference); so the refinement's corner radius \
+                 is card.container(NONE)'s, its border width and colour the stroke's where one \
+                 is drawn (card_edge_of), and its background the container's fill; every other \
+                 field of the refinement is equal",
     },
     Difference {
         leaf: "geometry::group_box_content",
@@ -738,6 +741,17 @@ const DIFFERENCES: &[Difference] = &[
                  field of the refinement is equal",
     },
     Difference {
+        leaf: "geometry::toolbar",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "the 0.8.0 preset states the real toolbar's measured button label, \
+                 toolbar.button_label(NONE).color, #606060 / #b4b4b4 on macos-monterey, \
+                 #4d4d4d / #e9e9e9 on macos-tahoe (os-probe run 45252258079, Reduce Transparency \
+                 off, `*.normal.toolbar_button` `label`; native-theme/tests/next_homes.toml, row \
+                 toolbar.font.color, a listed difference), where 0.7.2 gives the body text; so \
+                 the refinement's text colour is the label's; every other field of the \
+                 refinement is equal",
+    },
+    Difference {
         leaf: "geometry::button",
         presets: &["macos-tahoe"],
         reason: "0.7.2's macos-tahoe outlines the push button in the default line (0.5 px, \
@@ -865,7 +879,24 @@ const DIFFERENCES: &[Difference] = &[
                  are slider.thumb(NONE)'s fill (slider_thumb_of); every other leaf of the theme \
                  is equal",
     },
+    Difference {
+        leaf: TAB_FILL,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macOS presets give an unselected tab the window's background \
+                 (uncited); the 0.8.0 presets state NSTabView's measured unselected tab, \
+                 #0000000d / #ffffff0d on macos-monterey, #00000013 / #ffffff13 on macos-tahoe \
+                 (os-probe run 45252258079, Reduce Transparency off, `*.normal.tab` `fill`, \
+                 docs/evidence/os-probe/2026-11-23-run-45252258079/ on m2-fs4c; \
+                 native-theme/tests/next_homes.toml, row tab.background_color, a listed \
+                 difference), so the tab slot, its token and its stored config string are \
+                 tab.tab(NONE)'s fill; every other leaf of the theme is equal",
+    },
 ];
+
+/// The leaf of [`DIFFERENCES`]' entry for an unselected tab's fill: the
+/// `ThemeColor` slot `tab`, its token and its stored config string, compared
+/// by [`slot_as_old`] ([`STATED_SLOTS`]).
+const TAB_FILL: &str = "to_theme: tab";
 
 /// The leaf of [`DIFFERENCES`]' entry for the text field's outline: the
 /// `ThemeColor` slot `input`, its token and its stored config string,
@@ -996,6 +1027,19 @@ const STATED_SLOTS: &[StatedSlot] = &[
         },
         copy_config: |config, from| config.secondary_active = from.secondary_active.clone(),
     },
+    StatedSlot {
+        leaf: TAB_FILL,
+        what: "the unselected tab's stated fill",
+        of: |new| super::fill_of(&new.tab.tab(native_theme::next::WidgetState::NONE)),
+        color: |c| c.tab,
+        token: |t| t.tab,
+        config: |c| c.tab.clone(),
+        copy: |theme, from| {
+            theme.colors.tab = from.colors.tab;
+            theme.tokens.tab = from.tokens.tab;
+        },
+        copy_config: |config, from| config.tab = from.tab.clone(),
+    },
 ];
 
 /// `theme` with its `slot` as `from`'s, where `theme` holds the colour the
@@ -1084,6 +1128,10 @@ const UNSTROKED_HOVER: &[&str] = &["material-3"];
 /// The presets of [`DIFFERENCES`]' `geometry::accordion_hover` entries on
 /// which 0.7.2 states an expander hover fill the 0.8.0 preset replaces.
 const RESTATED_ACCORDION_HOVER: &[&str] = &["material-3", "macos-monterey"];
+
+/// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
+/// whose card fill is the measured box's, `card.container(NONE).fill`.
+const MEASURED_CARD_FILL: &[&str] = &["macos-monterey", "macos-tahoe"];
 
 /// The leaf of [`DIFFERENCES`]' entry for the push button's and the flat
 /// button's hovered and pressed fills: the `ThemeColor` slots of
@@ -2192,6 +2240,11 @@ fn compare_builders(
                             .border_color(color);
                         e.border_widths = s.border_widths;
                         e.border_color = s.border_color;
+                    }
+                    if MEASURED_CARD_FILL.contains(&report.preset) {
+                        use native_theme::next::WidgetState;
+                        e.background = super::fill_of(&new.card.container(WidgetState::NONE))
+                            .and_then(|fill| gpui::StyleRefinement::default().bg(fill).background);
                     }
                     e
                 });

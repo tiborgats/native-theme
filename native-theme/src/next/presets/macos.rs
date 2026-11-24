@@ -316,6 +316,8 @@ struct SchemeColors {
     spinner: Color,
     splitter_hover: Option<Color>,
     menu_hover_foreground: Color,
+    /// An unselected tab at rest.
+    tab_fill: Color,
     /// An unselected tab pressed.
     tab_pressed: Color,
     sidebar_background: Color,
@@ -340,8 +342,14 @@ struct SchemeColors {
     /// An unselected segment pressed.
     segment_pressed: Color,
     expander_arrow: Option<Color>,
+    /// A toolbar button's label at rest.
+    toolbar_label: Color,
+    /// A toolbar button's label hovered; `None` where it is the rest one.
+    toolbar_label_hover: Option<Color>,
     /// A toolbar button's label pressed.
     toolbar_label_pressed: Color,
+    /// The box's fill.
+    card_fill: Color,
     /// The box's outline; `None` where it draws none.
     card_border: Option<Color>,
 }
@@ -535,6 +543,9 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     splitter_hover: Some(srgb8(0xd5d5_d5ff)),
     // `menu.hover_text_color`: platform-facts.md: selectedMenuItemTextColor, probe
     menu_hover_foreground: srgb8(0xffff_ffff),
+    // `tab.tab.fill`: an unselected tab at rest, black at alpha 13/255 (measured, os-probe run
+    // 45252258079, macOS 15, Reduce Transparency off, `*.normal.tab` `fill`)
+    tab_fill: srgb8(0x0000_000d),
     // `tab.tab(PRESSED).fill`: an unselected tab pressed, #f0f0f0 (measured, os-probe run
     // 45198750893, macOS 15, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xf0f0_f0ff),
@@ -544,9 +555,9 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     sidebar_background: srgb8(0xf6f6_f6ff),
     // `sidebar.font.color`: platform-facts.md (§2.12): ← defaults.font.color, labelColor (probe)
     sidebar_foreground: Some(srgb8(0x0000_00d8)),
-    // `sidebar.item(PRESSED).fill`: the selection's, #0064e1 (measured, os-probe run 45198750893,
-    // macOS 15, `*.pressed.source_list_row` `fill`)
-    sidebar_pressed: None,
+    // `sidebar.item(PRESSED).fill`: #2d92fb, on the default accent (measured, os-probe run
+    // 45252258079, macOS 15, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
+    sidebar_pressed: Some(srgb8(0x2d92_fbff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 26/255 (measured,
     // renders/aqua/switch-regular-off@2x.png); over background_color #d4d4d4
     switch_unchecked: srgb8(0x0000_001a),
@@ -587,10 +598,15 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // `expander.arrow_color`: NSDisclosureButton triangle color -- no source: the former muted
     // colour #86868b, not secondaryLabelColor (defaults.muted_color)
     expander_arrow: Some(srgb8(0x8686_8bff)),
-    // `toolbar.button_label(PRESSED).color`: #474747, at rest #737373, opaque over the opaque
-    // title bar (measured, os-probe run 45208260830's read of run 45198750893, macOS 15,
-    // `*.pressed.toolbar_button` `label`)
-    toolbar_label_pressed: srgb8(0x4747_47ff),
+    // `toolbar.button_label.color`: #606060, hovered alike; pressed #343434; opaque over the
+    // opaque title bar (measured, os-probe run 45252258079, macOS 15, Reduce Transparency off,
+    // `*.normal.toolbar_button`, `*.hovered.toolbar_button`, `*.pressed.toolbar_button` `label`)
+    toolbar_label: srgb8(0x6060_60ff),
+    toolbar_label_hover: None,
+    toolbar_label_pressed: srgb8(0x3434_34ff),
+    // `card.container.fill`: NSBox (primary, untitled), black at alpha 8/255 (measured, os-probe
+    // run 45252258079, macOS 15, `*.normal.box` `fill`)
+    card_fill: srgb8(0x0000_0008),
     // `card.container.stroke`: NSBox (primary, untitled), black at alpha 19/255, 1 px (measured,
     // os-probe run 45198750893, macOS 15, `*.normal.box` `edge_*`)
     card_border: Some(srgb8(0x0000_0013)),
@@ -786,6 +802,9 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     splitter_hover: Some(srgb8(0x3d3d_3dff)),
     // `menu.hover_text_color`: platform-facts.md: selectedMenuItemTextColor, probe
     menu_hover_foreground: srgb8(0xffff_ffff),
+    // `tab.tab.fill`: an unselected tab at rest, white at alpha 13/255 (measured, os-probe run
+    // 45252258079, macOS 15, Reduce Transparency off, `*.normal.tab` `fill`)
+    tab_fill: srgb8(0xffff_ff0d),
     // `tab.tab(PRESSED).fill`: an unselected tab pressed, white at alpha 100/255 (measured,
     // os-probe run 45198750893, macOS 15, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xffff_ff64),
@@ -795,9 +814,9 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     sidebar_background: srgb8(0x3838_38ff),
     // `sidebar.font.color`: platform-facts.md (§2.12): ← defaults.font.color, labelColor (probe)
     sidebar_foreground: Some(srgb8(0xffff_ffd8)),
-    // `sidebar.item(PRESSED).fill`: the selection's, #0059d1 (measured, os-probe run 45198750893,
-    // macOS 15, `*.pressed.source_list_row` `fill`)
-    sidebar_pressed: None,
+    // `sidebar.item(PRESSED).fill`: #378ce5, on the default accent (measured, os-probe run
+    // 45252258079, macOS 15, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
+    sidebar_pressed: Some(srgb8(0x378c_e5ff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 26/255 (measured,
     // renders/darkAqua/switch-regular-off@2x.png); over background_color #474747
     switch_unchecked: srgb8(0xffff_ff1a),
@@ -839,10 +858,15 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `expander.arrow_color`: NSDisclosureButton triangle color -- no source: the former muted
     // colour #98989d, not secondaryLabelColor (defaults.muted_color)
     expander_arrow: Some(srgb8(0x9898_9dff)),
-    // `toolbar.button_label(PRESSED).color`: #ececec, at rest #a6a6a6, opaque over the opaque
-    // title bar (measured, os-probe run 45208260830's read of run 45198750893, macOS 15,
-    // `*.pressed.toolbar_button` `label`)
-    toolbar_label_pressed: srgb8(0xecec_ecff),
+    // `toolbar.button_label.color`: #b4b4b4, hovered alike; pressed #eeeeee; opaque over the
+    // opaque title bar (measured, os-probe run 45252258079, macOS 15, Reduce Transparency off,
+    // `*.normal.toolbar_button`, `*.hovered.toolbar_button`, `*.pressed.toolbar_button` `label`)
+    toolbar_label: srgb8(0xb4b4_b4ff),
+    toolbar_label_hover: None,
+    toolbar_label_pressed: srgb8(0xeeee_eeff),
+    // `card.container.fill`: NSBox (primary, untitled), white at alpha 8/255 (measured, os-probe
+    // run 45252258079, macOS 15, `*.normal.box` `fill`)
+    card_fill: srgb8(0xffff_ff08),
     // `card.container.stroke`: NSBox (primary, untitled), white at alpha 38/255, 1 px (measured,
     // os-probe run 45198750893, macOS 15, `*.normal.box` `edge_*`)
     card_border: Some(srgb8(0xffff_ff26)),
@@ -1038,6 +1062,9 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     splitter_hover: None,
     // `menu.hover_text_color`: platform-facts.md: selectedMenuItemTextColor, probe
     menu_hover_foreground: srgb8(0xffff_ffff),
+    // `tab.tab.fill`: an unselected tab at rest, black at alpha 19/255 (measured, os-probe run
+    // 45252258079, macOS 26, Reduce Transparency off, `*.normal.tab` `fill`)
+    tab_fill: srgb8(0x0000_0013),
     // `tab.tab(PRESSED).fill`: an unselected tab pressed, black at alpha 63/255 (measured, os-probe
     // run 45198750893, macOS 26, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0x0000_003f),
@@ -1047,9 +1074,9 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // os-probe-macos-26/probe.toml)
     sidebar_background: srgb8(0xf6f6_f6ff),
     sidebar_foreground: None,
-    // `sidebar.item(PRESSED).fill`: #0076fb, on the default accent (measured, os-probe run
-    // 45198750893, macOS 26, `*.pressed.source_list_row` `fill`)
-    sidebar_pressed: Some(srgb8(0x0076_fbff)),
+    // `sidebar.item(PRESSED).fill`: #0069ee, on the default accent (measured, os-probe run
+    // 45252258079, macOS 26, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
+    sidebar_pressed: Some(srgb8(0x0069_eeff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 25/255 (measured),
     // systemFillColor's value (probe); over background_color #e6e6e6
     switch_unchecked: srgb8(0x0000_0019),
@@ -1081,10 +1108,16 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // 63/255 (measured, os-probe run 45198750893, macOS 26, `*.pressed.segment` `fill`)
     segment_pressed: srgb8(0x0000_003f),
     expander_arrow: None,
-    // `toolbar.button_label(PRESSED).color`: #414141, at rest #494949, opaque over the opaque
-    // title bar (measured, os-probe run 45208260830's read of run 45198750893, macOS 26,
+    // `toolbar.button_label.color`: #4d4d4d, hovered #494949, pressed #454545, opaque over the
+    // opaque title bar of the real toolbar (measured, os-probe run 45252258079, macOS 26, Reduce
+    // Transparency off, `*.normal.toolbar_button`, `*.hovered.toolbar_button`,
     // `*.pressed.toolbar_button` `label`)
-    toolbar_label_pressed: srgb8(0x4141_41ff),
+    toolbar_label: srgb8(0x4d4d_4dff),
+    toolbar_label_hover: Some(srgb8(0x4949_49ff)),
+    toolbar_label_pressed: srgb8(0x4545_45ff),
+    // `card.container.fill`: NSBox (primary, untitled), black at alpha 8/255 (measured, os-probe
+    // run 45252258079, macOS 26, `*.normal.box` `fill`)
+    card_fill: srgb8(0x0000_0008),
     // `card.container.stroke`: none: NSBox's edge pixels are its fill (measured, os-probe run
     // 45198750893, macOS 26, `*.normal.box` `edge_*`)
     card_border: None,
@@ -1283,6 +1316,9 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     splitter_hover: None,
     // `menu.hover_text_color`: platform-facts.md: selectedMenuItemTextColor, probe
     menu_hover_foreground: srgb8(0xffff_ffff),
+    // `tab.tab.fill`: an unselected tab at rest, white at alpha 19/255 (measured, os-probe run
+    // 45252258079, macOS 26, Reduce Transparency off, `*.normal.tab` `fill`)
+    tab_fill: srgb8(0xffff_ff13),
     // `tab.tab(PRESSED).fill`: an unselected tab pressed, white at alpha 63/255 (measured, os-probe
     // run 45198750893, macOS 26, `*.pressed.tab` `fill`)
     tab_pressed: srgb8(0xffff_ff3f),
@@ -1292,9 +1328,9 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // os-probe-macos-26/probe.toml)
     sidebar_background: srgb8(0x3838_38ff),
     sidebar_foreground: None,
-    // `sidebar.item(PRESSED).fill`: #1c96ff, on the default accent (measured, os-probe run
-    // 45198750893, macOS 26, `*.pressed.source_list_row` `fill`)
-    sidebar_pressed: Some(srgb8(0x1c96_ffff)),
+    // `sidebar.item(PRESSED).fill`: #219bff, on the default accent (measured, os-probe run
+    // 45252258079, macOS 26, Reduce Transparency off, `*.pressed.source_list_row` `fill`)
+    sidebar_pressed: Some(srgb8(0x219b_ffff)),
     // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 25/255 (measured),
     // systemFillColor's value (probe); over background_color #343434
     switch_unchecked: srgb8(0xffff_ff19),
@@ -1328,10 +1364,16 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // 63/255 (measured, os-probe run 45198750893, macOS 26, `*.pressed.segment` `fill`)
     segment_pressed: srgb8(0xffff_ff3f),
     expander_arrow: None,
-    // `toolbar.button_label(PRESSED).color`: #ebebeb, at rest #e7e7e7, opaque over the opaque
-    // title bar (measured, os-probe run 45208260830's read of run 45198750893, macOS 26,
+    // `toolbar.button_label.color`: #e9e9e9, hovered #ebebeb, pressed #ececec, opaque over the
+    // opaque title bar of the real toolbar (measured, os-probe run 45252258079, macOS 26, Reduce
+    // Transparency off, `*.normal.toolbar_button`, `*.hovered.toolbar_button`,
     // `*.pressed.toolbar_button` `label`)
-    toolbar_label_pressed: srgb8(0xebeb_ebff),
+    toolbar_label: srgb8(0xe9e9_e9ff),
+    toolbar_label_hover: Some(srgb8(0xebeb_ebff)),
+    toolbar_label_pressed: srgb8(0xecec_ecff),
+    // `card.container.fill`: NSBox (primary, untitled), white at alpha 8/255 (measured, os-probe
+    // run 45252258079, macOS 26, `*.normal.box` `fill`)
+    card_fill: srgb8(0xffff_ff08),
     // `card.container.stroke`: none: NSBox's edge pixels are its fill (measured, os-probe run
     // 45198750893, macOS 26, `*.normal.box` `edge_*`)
     card_border: None,
@@ -1698,10 +1740,10 @@ const MONTEREY: Generation = Generation {
     toolbar_bar_height: Some(38.0),
     // `toolbar.item_gap`: platform-facts.md (§2.13): AppKit 8
     toolbar_item_gap: Some(8.0),
-    // `toolbar.button_label(HOVER)`: as at rest, #737373 / #a6a6a6 in the toolbar, and translucent
-    // and unchanged over the probe's backdrops (measured, os-probe run 45208260830's read of run
-    // 45198750893, macOS 15, `*.hovered.toolbar_button` `label`; run 45231684209's toolbar sheet,
-    // `*.normal.toolbar_button`, `*.hovered.toolbar_button` `label`)
+    // `toolbar.button_label(HOVER)`: as at rest, #606060 / #b4b4b4 in the toolbar (measured,
+    // os-probe run 45252258079, macOS 15, Reduce Transparency off, `*.hovered.toolbar_button`
+    // `label`), and translucent and unchanged over the probe's backdrops (run 45231684209's
+    // toolbar sheet, `*.normal.toolbar_button`, `*.hovered.toolbar_button` `label`)
     toolbar_label_hover_as_rest: true,
     // `toolbar.border.padding.top`, `toolbar.border.padding.bottom`: 0.7.2 macos-monterey.toml
     // (uncited)
@@ -2015,9 +2057,10 @@ const TAHOE: Generation = Generation {
     tab_padding_horizontal: None,
     toolbar_bar_height: None,
     toolbar_item_gap: None,
-    // `toolbar.button_label(HOVER)`: not settled: over the probe's backdrops macOS 26 draws an
-    // opaque capsule that hides them, and one translucent label fits every read (os-probe run
-    // 45231684209, toolbar sheet, `*.toolbar_button` `label`, `fill`)
+    // `toolbar.button_label(HOVER)`: not the rest one: in the real toolbar the scheme's own
+    // (`toolbar_label_hover`); over the probe's backdrops not settled, a material that adapts to
+    // what lies behind it (os-probe run 45242497701, toolbar sheet, `*.toolbar_button` `label`,
+    // `fill`)
     toolbar_label_hover_as_rest: false,
     toolbar_padding_vertical: None,
     toolbar_padding_horizontal: None,
@@ -2568,8 +2611,8 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 /// checked box's, the slider's filled track's, the source-list row's): under
 /// the default accent the first two equal, within one level, the pressed
 /// checked button's mix of the accent by [`BUTTON_CHECKED_PRESSED_MIX`]
-/// (#006be1 light; #1f8aff and #1e8aff dark), the row's does not (#0076fb /
-/// #1c96ff); whether any of them follows that mix, or another function of
+/// (#006be1 light; #1f8aff and #1e8aff dark), the row's does not (#0069ee /
+/// #219bff); whether any of them follows that mix, or another function of
 /// the accent, under another accent is not measured, so they are dropped,
 /// not derived: the checked box and the slider keep their rest fill pressed
 /// and the row takes the selection's. Once dropped, they stay dropped: a
@@ -3778,7 +3821,7 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
         .build();
     let tab = RuleBuilder::new(PartStyle::default())
         .base([
-            fill(c.background),
+            fill(c.tab_fill),
             PartProp::MinSize([Some(g.tab_min_width), Some(g.tab_min_height)]),
         ])
         .base(symmetric_padding(
@@ -3788,7 +3831,7 @@ fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typogr
         // Hovered, the fill as at rest (the label's measurement below), where 0.7.2
         // macos-monterey.toml states an uncited hover fill (#e8e8ed / #3a3a3c); an unselected tab
         // pressed, the measured fill.
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.background)])
+        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.tab_fill)])
         .rule(
             RuleSelector::on(WidgetState::PRESSED).except(WidgetState::SELECTED),
             [fill(c.tab_pressed)],
@@ -3898,7 +3941,8 @@ fn sidebar(
 /// is `defaults.background_color` where unstated) in the default line and
 /// radius (0.7.2: `toolbar.border` is `defaults.border` where unstated) with
 /// `macos-monterey`'s padding, least height and item gap; its buttons'
-/// labels in the UI font (`toolbar.font`: `defaults.font` where unstated),
+/// labels in the UI font (`toolbar.font`: `defaults.font` where unstated)
+/// and their measured colours,
 /// their icons at the toolbar's size (`toolbar.icon_size`:
 /// `defaults.icon_sizes.toolbar` where unstated). 0.7.2 states no button
 /// fill.
@@ -3926,14 +3970,20 @@ fn toolbar(
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(g.icon_toolbar)])
         .build();
-    // Hovered, the label as at rest where the generation measured it so; pressed, the measured
-    // label.
-    let rest_label = label(&typography.body, None);
+    // At rest, the measured label; hovered, as at rest where the generation measured it so, else
+    // the scheme's hovered label where it states one; pressed, the measured label.
+    let rest_label = label(&typography.body, Some(c.toolbar_label));
     let (hover, hover_color) = rest_color_rules(&rest_label, [WidgetState::HOVER]);
     let button_label = RuleBuilder::new(rest_label)
         .rules(
             hover.into_iter().filter(|_| g.toolbar_label_hover_as_rest),
             hover_color,
+        )
+        .rules(
+            c.toolbar_label_hover
+                .filter(|_| !g.toolbar_label_hover_as_rest)
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            c.toolbar_label_hover.map(TextProp::Color),
         )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
@@ -4349,7 +4399,7 @@ fn segmented_control(
     )
 }
 
-/// The box: the view's background where a palette states no card's (0.7.2:
+/// The box: its measured fill where a palette states no card's (0.7.2:
 /// `card.background_color` is `defaults.surface_color` where unstated),
 /// padded, in its measured outline and corners (0.7.2 states no outline,
 /// corners or shadow of it).
@@ -4359,7 +4409,7 @@ fn card(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> CardWidget {
         _ => Stroke::None,
     };
     let container = RuleBuilder::new(PartStyle::default())
-        .base(roles.card.background.or(roles.view.background).map(fill))
+        .base([fill(roles.card.background.unwrap_or(c.card_fill))])
         .base([
             PartProp::Padding(Edges::symmetric(
                 g.card_padding_vertical,

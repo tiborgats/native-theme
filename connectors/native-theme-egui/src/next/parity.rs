@@ -1052,7 +1052,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Toolbar",
-        &[I],
+        &[M, T, I],
         ".visuals.widgets.{noninteractive,inactive,open}.fg_stroke.color",
         home!(toolbar.button_label(NONE).color),
     ),
@@ -1483,9 +1483,15 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Tab",
-        &[M],
+        &[M, T],
         ".visuals.widgets.hovered.weak_bg_fill",
         home!(tab.tab(HOVER).fill),
+    ),
+    s(
+        "Tab",
+        &[M, T],
+        ".visuals.widgets.{inactive,open}.weak_bg_fill",
+        home!(tab.tab(NONE).fill),
     ),
     s(
         "Toolbar",
@@ -1493,6 +1499,13 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.active.fg_stroke.color",
         home!(toolbar.button_label(PRESSED).color),
     ),
+    s(
+        "Toolbar",
+        &[M, T],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(toolbar.button_label(HOVER).color),
+    ),
+    s("Card", &[M, T], ".fill", home!(card.container(NONE).fill)),
     s(
         "Card",
         &[M],
@@ -1642,7 +1655,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Toolbar",
-        &[T, I],
+        &[I],
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(toolbar.button_label(HOVER).color),
     ),

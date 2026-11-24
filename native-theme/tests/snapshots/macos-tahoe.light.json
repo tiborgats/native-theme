@@ -1226,7 +1226,7 @@
     },
     "tab": {
       "base": {
-        "fill": "#ffffff",
+        "fill": "#00000013",
         "min_size": [
           64.0,
           24.0
@@ -1238,7 +1238,7 @@
             "hover"
           ],
           "tab": {
-            "fill": "#ffffff"
+            "fill": "#00000013"
           }
         },
         {
@@ -1544,7 +1544,7 @@
             "pressed"
           ],
           "item": {
-            "fill": "#0076fb"
+            "fill": "#0069ee"
           }
         },
         {
@@ -1621,7 +1621,7 @@
     "button_label": {
       "base": {
         "family": "SF Pro",
-        "color": "#000000d8",
+        "color": "#4d4d4d",
         "size_px": 13.0,
         "weight": 400,
         "style": "normal",
@@ -1632,10 +1632,18 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "button_label": {
+            "color": "#494949"
+          }
+        },
+        {
+          "states": [
             "pressed"
           ],
           "button_label": {
-            "color": "#414141"
+            "color": "#454545"
           }
         }
       ]
@@ -1949,7 +1957,7 @@
     "origin": "native",
     "container": {
       "base": {
-        "fill": "#ffffff",
+        "fill": "#00000008",
         "stroke": "none",
         "corners": 12.0,
         "padding": {
