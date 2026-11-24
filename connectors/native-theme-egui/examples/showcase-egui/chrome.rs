@@ -1396,13 +1396,8 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                     }
                 }
             });
-            crate::info::widget_tab(
-                ui,
-                app.atlas.old_resolved(theme),
-                app.atlas.layout(),
-                view,
-                &mut app.registry,
-            );
+            let r = app.atlas.next_shown(ui.ctx()).cloned();
+            crate::info::widget_tab(ui, r.as_ref(), view, &mut app.registry);
         }
         InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.semibold, &app.manifest),
     }

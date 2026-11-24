@@ -294,6 +294,7 @@ pub(crate) fn show_fixed(app: &mut App, ui: &mut egui::Ui) {
 
 pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
     let chosen = app.chosen_icons();
+    let preset = app.preset_key().to_string();
     // Disjoint borrows: the registry, the demo state and the atlas are separate fields (§10.4's fourth rule).
     let App {
         registry,
@@ -326,6 +327,8 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
             &chosen,
             *detect_icon_theme,
         ),
-        Page::ThemeMap => theme_map::show(registry, demo_state, atlas, manifest, json, ui),
+        Page::ThemeMap => {
+            theme_map::show(registry, demo_state, atlas, manifest, (json, &preset), ui)
+        }
     }
 }

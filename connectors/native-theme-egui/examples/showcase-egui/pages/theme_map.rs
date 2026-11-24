@@ -14,7 +14,7 @@ pub(crate) fn show(
     state: &mut DemoState,
     atlas: &OldAtlas,
     manifest: &Result<Manifest, String>,
-    json: &crate::info::JsonCache,
+    (json, preset): (&crate::info::JsonCache, &str),
     ui: &mut egui::Ui,
 ) {
     let theme = ui.ctx().theme();
@@ -56,8 +56,6 @@ pub(crate) fn show(
         .iter()
         .filter(|r| state.theme_map_filter.is_none_or(|v| r.verdict == v))
         .collect();
-    // The 0.7.2 theme for the swatches alone (`info::swatch_cell`, which moves with Widget Info).
-    let t = atlas.old_resolved(theme);
     let r = atlas.next_shown(ui.ctx());
     // The header as the Data page's table has it (`TableHeader`).
     let head = super::data::TableHeader::of(ui, r);
@@ -126,16 +124,16 @@ pub(crate) fn show(
                                 })
                                 .body(|body| {
                                     body.rows(heights.body, rows.len(), |mut row| {
-                                        if let Some(r) = rows.get(row.index()) {
+                                        if let Some(entry) = rows.get(row.index()) {
                                             // A colour value beside its swatch, as the gpui Theme
                                             // Map shows every colour
                                             // (`showcase-gpui/demo.rs:8987-9011`).
-                                            let colour = crate::info::value_at(json, &r.leaf)
-                                                .as_ref()
-                                                .and_then(crate::info::swatch_colour);
-                                            for (ix, text) in crate::info::row_cells(r, json)
-                                                .into_iter()
-                                                .enumerate()
+                                            let colour =
+                                                crate::info::row_colour(entry, (json, preset));
+                                            for (ix, text) in
+                                                crate::info::row_cells(entry, (json, preset))
+                                                    .into_iter()
+                                                    .enumerate()
                                             {
                                                 let swatch = colour.filter(|_| ix == 1);
                                                 row.col(|ui| {
@@ -144,7 +142,7 @@ pub(crate) fn show(
                                                             Some(colour) => {
                                                                 crate::info::swatch_cell(
                                                                     ui,
-                                                                    t,
+                                                                    r,
                                                                     colour,
                                                                     heights.cell(text),
                                                                 )

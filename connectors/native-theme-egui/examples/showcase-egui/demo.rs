@@ -4,12 +4,12 @@ use std::borrow::Cow;
 
 use native_theme::Rgba;
 use native_theme::icons::{AnimatedIcon, FreedesktopLoader, IconProvider, IconRole, IconSet};
-use native_theme::theme::ResolvedFontSpec;
 use native_theme_egui::{
     NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, icons, menu_bar_modifier,
     role_modifier,
 };
 use native_theme_showcase_support::DIALOG_PADDING_PX;
+use native_theme_showcase_support::next::values::StatedFont;
 use native_theme_showcase_support::status::DrawnFamily;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1215,8 +1215,8 @@ pub(crate) fn planned_drawing<'a>(
 
 /// What egui draws the theme's families in, as the status bar, the Theme tab and Widget Info
 /// name them (the shared crate's `status::DrawnFamily`): the two families the connector's font
-/// plan loads, the light variant's `defaults.font.family` and `defaults.mono_font.family`
-/// (`FontPlan::from_system(&light)`), the atlas's notes on them ([`unavailable_families`],
+/// plan loads, the installed 0.8.0 light theme's `typography.body.family` and
+/// `typography.monospace.family` (`next::font_plan_from_system(light)`), the atlas's notes on them ([`unavailable_families`],
 /// [`invalid_families`]), and
 /// egui's own first face of its proportional and monospace families in the fonts the pass draws
 /// with, which stays where the plan registers no face. egui draws every font in one of those
@@ -1246,14 +1246,29 @@ impl<'a> DrawnFamilies<'a> {
                     .and_then(|faces| faces.first().cloned())
             })
         };
-        let light = &atlas.old_resolved(egui::Theme::Light).defaults;
+        // The families the plan loads: the installed 0.8.0 light theme's
+        // (`next::font_plan_from_system(light)`, `app::next_atlas`); an atlas of the 0.7.2 model
+        // alone, which only a test installs, plans its own light variant's.
+        let (body, mono) = match atlas.next_resolved(egui::Theme::Light) {
+            Some(light) => (
+                light.typography.body.family.to_string(),
+                light.typography.monospace.family.to_string(),
+            ),
+            None => {
+                let light = &atlas.old_resolved(egui::Theme::Light).defaults;
+                (
+                    light.font.family.to_string(),
+                    light.mono_font.family.to_string(),
+                )
+            }
+        };
         let mut families = Self {
             unavailable: unavailable_families(atlas.notes()),
             invalid: invalid_families(atlas.notes()),
             proportional: first(egui::FontFamily::Proportional),
             monospace: first(egui::FontFamily::Monospace),
-            body: (light.font.family.to_string(), String::new()),
-            mono: (light.mono_font.family.to_string(), String::new()),
+            body: (body, String::new()),
+            mono: (mono, String::new()),
         };
         families.body.1 = families
             .drawn(&families.body.0, false)
@@ -1290,9 +1305,9 @@ impl<'a> DrawnFamilies<'a> {
     /// in that family's face otherwise, which the label names with its own label.
     pub(crate) fn drawn_at(&self, stated: &str, mono: bool) -> DrawnFamily<'_> {
         let ((planned, label), font) = if mono {
-            (&self.mono, "the light variant's defaults.mono_font")
+            (&self.mono, "the light variant's typography.monospace")
         } else {
-            (&self.body, "the light variant's defaults.font")
+            (&self.body, "the light variant's typography.body")
         };
         if stated.eq_ignore_ascii_case(planned) {
             self.drawn(planned, mono)
@@ -1311,12 +1326,12 @@ impl<'a> DrawnFamilies<'a> {
         self.drawn_at(stated, mono).label(stated)
     }
 
-    /// The family of `font`, the theme font at the registry path `path`, as Widget Info's rows
-    /// show it (`values::leaf_value`'s lookup): [`Self::label`], the monospace font's for
-    /// `defaults.mono_font`, the one font the connector draws in egui's monospace family
-    /// (`fonts.rs`'s module doc).
-    pub(crate) fn font_label(&self, path: &str, font: &ResolvedFontSpec) -> String {
-        self.label(&font.family, path == "defaults.mono_font")
+    /// The family of `font`, the text style at the home `path`, as Widget Info's rows show it
+    /// (`next::values::home_value`'s lookup): [`Self::label`], the monospace font's for
+    /// `typography.monospace`, the one text style the connector draws in egui's monospace family
+    /// (`next::font_plan_from_system`, the connector's `fonts.rs` module doc).
+    pub(crate) fn home_label(&self, path: &str, font: &StatedFont) -> String {
+        self.label(&font.family, path == "typography.monospace")
     }
 }
 

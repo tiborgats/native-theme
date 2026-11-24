@@ -1825,7 +1825,7 @@ fn every_page_names_its_inputs() {
 /// their row's note after the route: under [`UNSTATED_PRESET`], which states no
 /// `button.border.padding`, and whose check box radius is its `defaults.border.corner_radius`.
 #[test]
-fn widget_info_carries_the_mapping_notes() {
+fn widget_info_carries_the_mapping_notes() -> Result<(), String> {
     let note = |manifest: &Manifest, leaf: &str| {
         manifest
             .rows
@@ -1852,10 +1852,15 @@ fn widget_info_carries_the_mapping_notes() {
         hover_and_settle(&mut harness, pos);
         let shown = harness.state().registry.shown().cloned().expect("shown");
         assert_eq!(shown.info.kind, kind);
-        let (manifest, json) = manifest_and_json(&harness);
-        let t = harness.state().atlas.old_resolved(egui::Theme::Light);
+        let (manifest, json) = manifest_and_json(&harness)?;
+        let [_, right, _, left] = native_theme_egui::next::padding_of(
+            &json
+                .theme
+                .button
+                .body(native_theme::next::WidgetState::NONE),
+        );
         assert!(
-            t.button.border.padding.left.is_none() && t.button.border.padding.right.is_none(),
+            left.is_none() && right.is_none(),
             "{UNSTATED_PRESET} states a button padding across, so the padding note shows no \
              default"
         );
@@ -1867,19 +1872,27 @@ fn widget_info_carries_the_mapping_notes() {
             (&harness.state().atlas, &harness.ctx),
         );
         for leaf in leaves {
-            let row = view
+            // The leaf's row by its home, the first its mapping.toml row holds.
+            let home = manifest
                 .rows
                 .iter()
                 .find(|r| r.leaf == *leaf)
-                .unwrap_or_else(|| panic!("{kind}: no {leaf} row"));
+                .and_then(|r| r.homes.first())
+                .ok_or(format!("mapping.toml's {leaf} row has no home"))?;
+            let row = view
+                .rows
+                .iter()
+                .find(|r| r.leaf == *home)
+                .ok_or(format!("{kind}: no {home} row"))?;
             let note = note(&manifest, leaf);
             assert!(
                 row.how.ends_with(&format!("; {note}")),
-                "{kind}: {leaf}'s route {:?} does not end in its note {note:?}",
+                "{kind}: {home}'s route {:?} does not end in its note {note:?}",
                 row.how
             );
         }
     }
+    Ok(())
 }
 
 /// E10: the Inputs page's `CompletionPopup` offers the bundled presets whose key begins with the
@@ -1975,7 +1988,9 @@ fn instances_are_distinct() {
         native_theme_egui::Role::Checkbox,
         RoleVariant::Selected
     )));
-    let (manifest, json) = manifest_and_json(&harness);
+    let read = manifest_and_json(&harness);
+    assert!(read.is_ok(), "{read:?}");
+    let Ok((manifest, json)) = read else { return };
     let elements = crate::elements::showcase_elements().unwrap_or_default();
     assert!(!elements.is_empty(), "the element list parses");
     let scheme = (&harness.state().atlas, &harness.ctx);
@@ -2027,17 +2042,20 @@ fn the_context_menus_target_is_the_base_style_and_its_menu_the_menu_role() {
         "{}: the target is drawn in the base style",
         shown.info.kind
     );
-    let (manifest, json) = manifest_and_json(&harness);
+    let read = manifest_and_json(&harness);
+    assert!(read.is_ok(), "{read:?}");
+    let Ok((manifest, json)) = read else { return };
+    // By home, as Widget Info lists an unlisted instance's rows.
     let base: BTreeSet<&str> = manifest
         .rows_for(&Seam::Base)
         .into_iter()
-        .map(|r| r.leaf.as_str())
+        .flat_map(|r| r.homes_on(TEST_PRESET).iter().map(String::as_str))
         .collect();
     let menu_only: BTreeSet<&str> = manifest
         .rows_for(&menu)
         .into_iter()
-        .map(|r| r.leaf.as_str())
-        .filter(|leaf| !base.contains(leaf))
+        .flat_map(|r| r.homes_on(TEST_PRESET).iter().map(String::as_str))
+        .filter(|home| !base.contains(home))
         .collect();
     assert!(!menu_only.is_empty(), "Role::Menu adds no row to the base");
     let elements = listed_elements();
@@ -5291,11 +5309,12 @@ fn the_tables_centre_their_text_in_its_row() -> Result<(), String> {
             let galley = galley_rect(&page, title, &rects(header_kind));
             check(format!("{preset} {tab} header"), galley, header);
             if body {
-                let (manifest, json) = manifest_and_json(&page);
+                let (manifest, json) = manifest_and_json(&page)?;
                 let first = if tab == "data" {
                     "kde-breeze".to_string()
                 } else {
-                    let [leaf, ..] = crate::info::row_cells(&manifest.rows[0], &json);
+                    let row = manifest.rows.first().ok_or("mapping.toml has no row")?;
+                    let [leaf, ..] = crate::info::row_cells(row, (&json, preset));
                     leaf
                 };
                 let row_height = next_table_row(&r, stated_row, &item, item.size_px);
@@ -5336,7 +5355,9 @@ const CENTRE_SLACK: f32 = egui::emath::GUI_ROUNDING;
 #[test]
 fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
     let mut wrong = Vec::new();
-    for info in Theme::list_presets() {
+    // The presets of the 0.8.0 model, which the Theme Map reads, installed as the picker
+    // installs them.
+    for key in native_theme::next::Preset::ALL.iter().map(|p| p.as_str()) {
         for (tab, kinds, factors) in [
             (
                 "data",
@@ -5346,7 +5367,11 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
             ("theme-map", ["theme map header", "theme map cell"], &[1.0]),
         ] {
             for &factor in factors {
-                let page = open_scaled(info.key, tab, factor);
+                let Ok(kind) = Page::from_key(tab) else {
+                    wrong.push(format!("{tab}: no such page"));
+                    continue;
+                };
+                let page = open_page_scaled(kind, key, factor);
                 let records = page.state().registry.records();
                 let panel = records
                     .iter()
@@ -5358,16 +5383,15 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
                     .filter(|r| kinds.contains(&r.info.kind))
                     .map(|r| r.whole)
                     .collect();
-                assert!(!cells.is_empty(), "{} {tab}: no cells", info.key);
+                assert!(!cells.is_empty(), "{key} {tab}: no cells");
                 let outside: Vec<&egui::Rect> = cells
                     .iter()
                     .filter(|r| r.left() < panel.left() || r.right() > panel.right())
                     .collect();
                 if let Some(first) = outside.first() {
                     wrong.push(format!(
-                        "{} at {factor} {tab}: {} cells outside the panel's x {} to {}, \
+                        "{key} at {factor} {tab}: {} cells outside the panel's x {} to {}, \
                          e.g. {first:?}",
-                        info.key,
                         outside.len(),
                         panel.left(),
                         panel.right()
@@ -5397,12 +5421,14 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         .max_by_key(|r| r.leaf.chars().count())
         .expect("the manifest has rows");
     let mut wrong = Vec::new();
-    let presets = Theme::list_presets();
-    let runs = presets
-        .iter()
-        .flat_map(|info| [1.5, crate::chrome::TEXT_SCALE_MAX].map(|factor| (info, factor)));
-    for (info, factor) in runs {
-        let mut map = open_scaled(info.key, "theme-map", factor);
+    // The presets of the 0.8.0 model, which the Theme Map reads, installed as the picker
+    // installs them.
+    let runs = native_theme::next::Preset::ALL.iter().flat_map(|preset| {
+        [1.5, crate::chrome::TEXT_SCALE_MAX].map(|factor| (preset.as_str(), factor))
+    });
+    for (preset, factor) in runs {
+        let key = preset;
+        let mut map = open_page_scaled(Page::ThemeMap, preset, factor);
         map.state_mut().demo_state.theme_map_filter = Some(longest.verdict);
         map.run_steps(2);
         map.hover_at(centre_of(&map, "theme map"));
@@ -5431,8 +5457,8 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         }
         if painted(&map, &longest.leaf).is_empty() {
             wrong.push(format!(
-                "{} at {factor}: {} not scrolled into view",
-                info.key, longest.leaf
+                "{key} at {factor}: {} not scrolled into view",
+                longest.leaf
             ));
             continue;
         }
@@ -5535,7 +5561,7 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
             wrong.push(format!(
                 "{} at {factor}: the Theme Map does not fit its view, yet the view across did \
                  not move: its first header's left edge {left_at_start:?}, then {left:?}",
-                info.key
+                preset
             ));
         }
         for (ix, title) in ["Value", "Sinks / upstream"].into_iter().enumerate() {
@@ -5543,7 +5569,7 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
                 wrong.push(format!(
                     "{} at {factor}: the {title:?} header is never drawn whole across the table, \
                      at the start elided {:?}",
-                    info.key,
+                    preset,
                     first_titles.get(ix)
                 ));
             }
@@ -5557,7 +5583,7 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
             wrong.push(format!(
                 "{} at {factor}: {} of {} Theme Map cells never wholly in view across the \
                  table, e.g. {:?}",
-                info.key,
+                preset,
                 unreached.len(),
                 reached.len(),
                 unreached.first()
@@ -5580,7 +5606,7 @@ fn a_narrow_colour_cell_is_cut_short_and_whole_on_hover() {
         .iter()
         .max_by_key(|r| r.leaf.chars().count())
         .expect("the manifest has rows");
-    let mut map = open_scaled(TEST_PRESET, "theme-map", crate::chrome::TEXT_SCALE_MAX);
+    let mut map = open_page_scaled(Page::ThemeMap, TEST_PRESET, crate::chrome::TEXT_SCALE_MAX);
     map.state_mut().demo_state.theme_map_filter = Some(longest.verdict);
     map.run_steps(2);
     // Down to the longest leaf, as `the_tables_keep_their_columns_at_the_largest_text_scale`
@@ -5795,7 +5821,7 @@ fn the_data_and_theme_map_rows_are_the_themes_row_height() -> Result<(), String>
 /// in the tooltip, beside the cut one in the cell.
 #[test]
 fn a_theme_map_cell_cut_short_shows_its_whole_text_on_hover() {
-    let mut page = open_scaled("windows-11", "theme-map", 1.0);
+    let mut page = open_page_under(Page::ThemeMap, egui::Theme::Light, "windows-11");
     let cells: Vec<egui::Rect> = page
         .state()
         .registry
@@ -9648,11 +9674,12 @@ fn the_icons_page_image_is_icon_sized() -> Result<(), String> {
     Ok(())
 }
 
-fn manifest_and_json(harness: &Harness<'_, App>) -> (Manifest, serde_json::Value) {
-    let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
-    let json =
-        crate::info::theme_json(&harness.state().atlas, harness.ctx.theme()).expect("serialises");
-    (manifest, json)
+fn manifest_and_json(
+    harness: &Harness<'_, App>,
+) -> Result<(Manifest, crate::info::InfoTheme), String> {
+    let manifest = Manifest::parse(MANIFEST)?;
+    let json = crate::info::info_theme(&harness.state().atlas, harness.ctx.theme())?;
+    Ok((manifest, json))
 }
 
 /// Whether `text` holds a clause label of the archived egui connector spec's §13 test table,
@@ -9694,12 +9721,14 @@ fn test_functions(source: &str) -> BTreeSet<String> {
 #[test]
 fn the_theme_map_names_the_tests_that_check_a_per_call_route() {
     let harness = open_page(Page::ThemeMap, egui::Theme::Light);
-    let (manifest, json) = manifest_and_json(&harness);
+    let read = manifest_and_json(&harness);
+    assert!(read.is_ok(), "{read:?}");
+    let Ok((manifest, json)) = read else { return };
     let tests = test_functions(include_str!("../../src/install_tests.rs"));
     assert!(!tests.is_empty(), "no test function was read");
     let mut wrong = Vec::new();
     for row in &manifest.rows {
-        let cells = crate::info::row_cells(row, &json);
+        let cells = crate::info::row_cells(row, (&json, TEST_PRESET));
         if let Some(cell) = cells.iter().find(|cell| names_a_clause(cell)) {
             wrong.push(format!("{}: {cell:?} names a clause", row.leaf));
         }
@@ -9916,25 +9945,6 @@ fn expected_leaves(manifest: &Manifest, seam: &Seam) -> BTreeSet<String> {
     }
 }
 
-/// The value line a row prints, as R11 §B states it: the leaf, then its value — a colour as its
-/// hex text, an unsigned integer as itself and any other number as the `f32` it is prints, `None`
-/// as "not stated".
-fn value_line(leaf: &str, value: &serde_json::Value) -> String {
-    let text = match value {
-        serde_json::Value::Null => "not stated".to_string(),
-        serde_json::Value::String(s) => s.clone(),
-        serde_json::Value::Number(n) => n.as_u64().map_or_else(
-            || {
-                n.as_f64()
-                    .map_or_else(|| n.to_string(), |n| format!("{}", n as f32))
-            },
-            |n| n.to_string(),
-        ),
-        other => other.to_string(),
-    };
-    format!("{leaf} {text}")
-}
-
 /// The value at a dotted leaf, through a JSON pointer rather than the info module's walk.
 fn leaf_value(json: &serde_json::Value, leaf: &str) -> Option<serde_json::Value> {
     json.pointer(&format!("/{}", leaf.replace('.', "/")))
@@ -9944,7 +9954,6 @@ fn leaf_value(json: &serde_json::Value, leaf: &str) -> Option<serde_json::Value>
 #[test]
 fn the_info_is_the_manifest() {
     let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
-    let prefs = AccessibilityPreferences::default();
     let mut seams = vec![Seam::Base];
     for role in native_theme_egui::Role::all() {
         for variant in RoleVariant::all() {
@@ -9952,53 +9961,60 @@ fn the_info_is_the_manifest() {
         }
     }
     seams.extend(Surface::all().iter().map(|s| Seam::Surface(*s)));
-    for info in Theme::list_presets() {
-        for is_dark in [false, true] {
-            let (atlas, _) =
-                from_preset(info.key, is_dark, &prefs).expect("a bundled preset builds");
-            let atlas = crate::app::OldAtlas::of(atlas);
-            assert!(
-                atlas.is_some(),
-                "{}'s atlas holds its 0.7.2 themes",
-                info.key
-            );
-            let Some(atlas) = atlas else { continue };
-            let theme = if is_dark {
-                egui::Theme::Dark
-            } else {
-                egui::Theme::Light
-            };
-            let json = crate::info::theme_json(&atlas, theme).expect("serialises");
-            // The values the info must print, read here and not through the info module; a
-            // family as the theme states it (`every_font_label_names_the_drawn_family` reads
-            // the drawn one).
-            let expected = resolved_json(&atlas, theme);
-            let stated =
-                |_: &str, font: &native_theme::theme::ResolvedFontSpec| font.family.to_string();
+    for preset in native_theme::next::Preset::ALL {
+        let key = preset.as_str();
+        for context in [
+            native_theme::next::ThemeContext::light(),
+            native_theme::next::ThemeContext::dark(),
+        ] {
+            let resolved = native_theme::next::Theme::preset(*preset).resolve(&context);
+            // The values the info must print, read here and not through the info module: a
+            // global home's colour or name, through a JSON pointer into the serialised form.
+            let expected = serde_json::to_value(&resolved).unwrap_or_default();
+            let json = crate::info::InfoTheme::new(resolved);
+            assert!(json.is_ok(), "{key}: {json:?}");
+            let Ok(json) = json else { continue };
             for seam in &seams {
                 let rows = manifest.rows_for(seam);
                 let listed: BTreeSet<String> = rows.iter().map(|r| r.leaf.clone()).collect();
                 assert_eq!(
                     listed,
                     expected_leaves(&manifest, seam),
-                    "{} {is_dark} {seam:?}",
-                    info.key
+                    "{key} {:?} {seam:?}",
+                    context.scheme
                 );
                 assert!(!rows.is_empty(), "{seam:?} lists no row");
                 for row in rows {
-                    let printed =
-                        crate::info::manifest_row(row, &json, &stated, std::slice::from_ref(seam))
-                            .lines();
-                    let lines = printed.join("\n");
-                    // The first line, whole: a substring would let `12` pass for `1`.
-                    if let Some(value) = leaf_value(&expected, &row.leaf) {
-                        assert_eq!(
-                            printed.first(),
-                            Some(&value_line(&row.leaf, &value)),
-                            "{} {seam:?} {}",
-                            info.key,
-                            row.leaf
+                    let printed = crate::info::manifest_rows(
+                        row,
+                        (&json, key),
+                        &crate::info::as_stated,
+                        std::slice::from_ref(seam),
+                    );
+                    let homes: Vec<&str> = printed.iter().map(|r| r.leaf.as_str()).collect();
+                    assert_eq!(homes, row.homes_on(key), "{key} {}", row.leaf);
+                    let lines = printed
+                        .iter()
+                        .flat_map(|r| r.lines())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    for shown in &printed {
+                        assert!(
+                            !shown.value.starts_with("error: "),
+                            "{key} {}: {}",
+                            row.leaf,
+                            shown.value
                         );
+                        // The first line, whole: a substring would let `#12` pass for `#1`.
+                        let at = leaf_value(&expected, &shown.leaf);
+                        if let Some(serde_json::Value::String(value)) = at {
+                            assert_eq!(
+                                shown.lines().first(),
+                                Some(&format!("{} {value}", shown.leaf)),
+                                "{key} {seam:?} {}",
+                                row.leaf
+                            );
+                        }
                     }
                     // An unmappable row's route names why: its upstream line, after the name
                     // of what lacks the route and before any note after a `;`.
@@ -10046,22 +10062,45 @@ fn the_info_is_the_manifest() {
     let shown = harness.state().registry.shown().cloned().expect("shown");
     // What the inspector prints from: the app's JSON, which it keeps between installs.
     let app = harness.state();
-    let json = app
-        .json
-        .get(&app.atlas, harness.ctx.theme())
-        .clone()
-        .unwrap_or_default();
+    let json = app.json.get(&app.atlas, harness.ctx.theme()).clone();
+    assert!(json.is_ok(), "{json:?}");
+    let Ok(json) = json else { return };
     let elements = crate::elements::showcase_elements().unwrap_or_default();
     let scheme = (&app.atlas, &harness.ctx);
-    let text =
-        crate::info::InfoView::of(&shown, &elements, &manifest, (&json, other), scheme).text();
-    let expected = resolved_json(&harness.state().atlas, harness.ctx.theme());
-    let line = leaf_value(&expected, "button.background_color")
-        .map(|value| value_line("button.background_color", &value));
+    let view = crate::info::InfoView::of(&shown, &elements, &manifest, (&json, other), scheme);
+    // Each row of a global home that is a colour or a name prints the new preset's value, read
+    // through a JSON pointer, and at least one of them differs from the previous preset's.
+    let scheme_of = |key: &str| {
+        let context = match harness.ctx.theme() {
+            egui::Theme::Light => native_theme::next::ThemeContext::light(),
+            egui::Theme::Dark => native_theme::next::ThemeContext::dark(),
+        };
+        native_theme::next::Preset::ALL
+            .iter()
+            .find(|p| p.as_str() == key)
+            .map(|p| native_theme::next::Theme::preset(*p).resolve(&context))
+            .and_then(|r| serde_json::to_value(&r).ok())
+            .unwrap_or_default()
+    };
+    let (now, before) = (scheme_of(other), scheme_of(TEST_PRESET));
+    let mut changed = 0usize;
+    let mut compared = 0usize;
+    for row in &view.rows {
+        // A family's row names what egui draws (`every_font_label_names_the_drawn_family`).
+        if row.leaf.ends_with(".family") {
+            continue;
+        }
+        if let Some(serde_json::Value::String(value)) = leaf_value(&now, &row.leaf) {
+            compared += 1;
+            assert_eq!(row.value, value, "{other}: {}", row.leaf);
+            if leaf_value(&before, &row.leaf) != Some(serde_json::Value::String(value)) {
+                changed += 1;
+            }
+        }
+    }
     assert!(
-        line.as_ref()
-            .is_some_and(|line| text.lines().any(|l| l == line)),
-        "the info shows the previous preset's values, not {line:?}"
+        compared > 0 && changed > 0,
+        "the info shows the previous preset's values: {compared} compared, {changed} changed"
     );
 
     // What the spec names outright, kept by hand: `panel_left` lists every `sidebar` row
@@ -10104,27 +10143,6 @@ fn the_info_is_the_manifest() {
             .all(|r| base.contains(&r.leaf)),
         "the base style does not list every sinkless defaults row"
     );
-}
-
-/// `serde_json::to_value` of the resolved theme the atlas installs for `theme`, with the four
-/// `layout.` leaves under the manifest's names (§13.1), computed here, not by `info::theme_json`.
-#[cfg(test)]
-fn resolved_json(atlas: &crate::app::OldAtlas, theme: egui::Theme) -> serde_json::Value {
-    let mut json =
-        serde_json::to_value(atlas.old_resolved(theme)).expect("ResolvedTheme serialises");
-    let layout = atlas.layout();
-    if let Some(object) = json.as_object_mut() {
-        object.insert(
-            "layout".to_string(),
-            serde_json::json!({
-                "widget_gap": layout.widget_gap,
-                "container_margin": layout.container_margin,
-                "window_margin": layout.window_margin,
-                "section_gap": layout.section_gap,
-            }),
-        );
-    }
-    json
 }
 
 /// Every file of the showcase, as it is written.
@@ -10865,32 +10883,30 @@ fn style_literals(source: &str) -> Vec<String> {
     out
 }
 
-/// A `_ms` leaf of the list reads as a `_px` one does: `tooltip.show_delay_ms` shows the
-/// resolved theme's `tooltip.show_delay` with " ms" and finds its `mapping.toml` row,
-/// `tooltip.show_delay`.
+/// A duration home reads as a length does, with its unit: `timings.tooltip_show_ms` shows the
+/// 0.8.0 theme's tooltip delay with " ms", and its route is that of the `mapping.toml` row that
+/// holds it, `tooltip.show_delay`'s.
 #[test]
-fn a_ms_leaf_reads_its_value() {
-    let prefs = AccessibilityPreferences::default();
-    let (atlas, _) = from_preset("kde-breeze", false, &prefs).expect("a bundled preset builds");
-    let atlas = crate::app::OldAtlas::of(atlas);
-    assert!(atlas.is_some(), "kde-breeze's atlas holds its 0.7.2 themes");
-    let Some(atlas) = atlas else { return };
-    let delay = atlas.old_resolved(egui::Theme::Light).tooltip.show_delay;
+fn a_ms_home_reads_its_value() -> Result<(), String> {
+    use native_theme::next::{Preset, Theme, ThemeContext};
+    let r = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let delay = r.timings.tooltip_show_ms;
     assert!(delay.is_some(), "kde-breeze states a tooltip delay");
-    let json = crate::info::theme_json(&atlas, egui::Theme::Light).expect("serialises");
-    let shown = native_theme_showcase_support::values::leaf_value(
-        "tooltip.show_delay_ms",
-        &json,
-        atlas.layout(),
-        Some(atlas.icon_set()),
-        atlas.icon_theme(egui::Theme::Light),
-        &|_, font| font.family.to_string(),
+    let shown = crate::info::InfoTheme::new(r)?;
+    let (text, _) = shown.value("timings.tooltip_show_ms", &crate::info::as_stated);
+    assert_eq!(Some(text), delay.map(|ms| format!("{ms} ms")));
+    let manifest = Manifest::parse(MANIFEST)?;
+    let row = manifest
+        .rows
+        .iter()
+        .find(|r| r.leaf == "tooltip.show_delay")
+        .ok_or("mapping.toml has no tooltip.show_delay row")?;
+    let how = crate::info::how_line(&manifest, "timings.tooltip_show_ms", &[Seam::Base]);
+    assert!(
+        row.sinks.iter().any(|s| how.contains(&s.path)),
+        "the route {how:?} is not the tooltip.show_delay row's"
     );
-    assert_eq!(Some(shown.text), delay.map(|ms| format!("{ms} ms")));
-    assert_eq!(
-        crate::info::mapping_key("tooltip.show_delay_ms"),
-        "tooltip.show_delay"
-    );
+    Ok(())
 }
 
 /// `docs/showcase-elements.toml`, as the showcase reads it.
@@ -11019,14 +11035,16 @@ fn widget_info_shows_the_listed_elements_rows() {
         Some("basic.buttons.default")
     );
     let listed = elements.iter().find(|e| e.id == "basic.buttons.default");
-    let (manifest, json) = manifest_and_json(&harness);
+    let read = manifest_and_json(&harness);
+    assert!(read.is_ok(), "{read:?}");
+    let Ok((manifest, json)) = read else { return };
     if let (Some(shown), Some(listed)) = (shown, listed) {
         let scheme = (&harness.state().atlas, &harness.ctx);
         let view =
             crate::info::InfoView::of(&shown, &elements, &manifest, (&json, TEST_PRESET), scheme);
         assert_eq!(view.title, "Button · Normal");
         let leaves: Vec<&str> = view.rows.iter().map(|r| r.leaf.as_str()).collect();
-        let want: Vec<&str> = listed.leaves.iter().map(String::as_str).collect();
+        let want: Vec<&str> = listed.homes.iter().map(String::as_str).collect();
         assert_eq!(leaves, want);
         assert!(
             view.rows
@@ -11037,7 +11055,7 @@ fn widget_info_shows_the_listed_elements_rows() {
         );
         assert!(
             harness
-                .query_all_by_label_contains("button.background_color")
+                .query_all_by_label_contains(want.first().copied().unwrap_or("(no home)"))
                 .next()
                 .is_some(),
             "the Widget tab does not show the button's first row"
@@ -11092,8 +11110,11 @@ fn the_list_and_table_frame_routes_name_the_call_that_paints_them() {
         if !painted {
             continue;
         }
-        for leaf in ["list.border.corner_radius_px", "list.border.line_width_px"] {
-            if !element.leaves.iter().any(|l| l == leaf) {
+        for leaf in [
+            "list.container(NONE).corners",
+            "list.container(NONE).stroke.width",
+        ] {
+            if !element.homes.iter().any(|l| l == leaf) {
                 continue;
             }
             checked += 1;
@@ -11120,7 +11141,7 @@ fn the_list_and_table_frame_routes_name_the_call_that_paints_them() {
         ("basic.table.header.name", "inner_corners"),
         ("basic.list.frame.edge", "list_frame"),
     ] {
-        let how = crate::info::listed_how(&manifest, id, "list.border.corner_radius_px", &seams);
+        let how = crate::info::listed_how(&manifest, id, "list.container(NONE).corners", &seams);
         assert!(
             !how.contains(call),
             "{id} takes another element's route: {how:?}"
@@ -11128,11 +11149,11 @@ fn the_list_and_table_frame_routes_name_the_call_that_paints_them() {
     }
 }
 
-/// A selected list or table row takes the defaults' unfocused pair per call
-/// (`pages::basic::selection_pair`), so the routes of its and its label's
-/// `defaults.selection_inactive_*` leaves name that call and when it takes them.
+/// A selected list or table row takes its unfocused look per call (`pages::basic::RowLook::of`,
+/// the highlight and the label queried with `UNFOCUSED_VIEW`), so the routes of its and its
+/// label's `colors.selection.unfocused_*` homes name that call and when it takes them.
 #[test]
-fn the_selected_rows_unfocused_pair_routes_name_selection_pair() {
+fn the_selected_rows_unfocused_pair_routes_name_row_look() {
     let manifest =
         Manifest::parse(MANIFEST).unwrap_or_else(|error| panic!("the manifest parses: {error}"));
     let seams = [crate::demo::Seam::Role(
@@ -11147,15 +11168,15 @@ fn the_selected_rows_unfocused_pair_routes_name_selection_pair() {
             continue;
         }
         for leaf in [
-            "defaults.selection_inactive_background",
-            "defaults.selection_inactive_text_color",
+            "colors.selection.unfocused_background",
+            "colors.selection.unfocused_foreground",
         ] {
-            if !element.leaves.iter().any(|l| l == leaf) {
+            if !element.homes.iter().any(|l| l == leaf) {
                 continue;
             }
             checked += 1;
             let how = crate::info::listed_how(&manifest, id, leaf, &seams);
-            if !how.contains("selection_pair") || !how.contains("not focused") {
+            if !how.contains("RowLook::of") || !how.contains("not focused") {
                 wrong.push(format!("{id} {leaf}: {how:?}"));
             }
         }
@@ -11469,24 +11490,29 @@ fn info_row_value(harness: &Harness<'_, App>, leaf: &str) -> String {
 /// Linux); where it has it, the stated name alone; and without feature `system-fonts`,
 /// egui's own face. The expected texts are read from the installed atlas ([`drawn_label`]).
 #[test]
-fn every_font_label_names_the_drawn_family() {
-    let mut harness = open_scaled("windows-11", "basic", 1.0);
+fn every_font_label_names_the_drawn_family() -> Result<(), String> {
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "windows-11");
+    // The status bar still reads the 0.7.2 theme of the choice; the Theme tab and Widget Info
+    // the 0.8.0 one.
     let t = harness
         .state()
         .atlas
         .old_resolved(egui::Theme::Light)
         .clone();
-    let body = drawn_label(&harness, &t.defaults.font.family, false);
-    println!(
-        "windows-11's {:?} is shown as {body:?}",
-        t.defaults.font.family
-    );
-    let mono = drawn_label(&harness, &t.defaults.mono_font.family, true);
-    println!(
-        "windows-11's {:?} is shown as {mono:?}",
-        t.defaults.mono_font.family
-    );
-    let button = drawn_label(&harness, &t.button.font.family, false);
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .cloned()
+        .ok_or("windows-11: no 0.8.0 theme installed")?;
+    let (body_family, mono_family) = (&r.typography.body.family, &r.typography.monospace.family);
+    let body = drawn_label(&harness, body_family, false);
+    println!("windows-11's {body_family:?} is shown as {body:?}");
+    let mono = drawn_label(&harness, mono_family, true);
+    println!("windows-11's {mono_family:?} is shown as {mono:?}");
+    let button_family = r.button.label(native_theme::next::WidgetState::NONE).family;
+    let button = drawn_label(&harness, &button_family, false);
+    let status = drawn_label(&harness, &t.defaults.font.family, false);
     // A `Label`'s text is its AccessKit value (`egui/src/response.rs:962-964`).
     let values = |harness: &Harness<'_, App>| -> Vec<String> {
         harness
@@ -11495,14 +11521,14 @@ fn every_font_label_names_the_drawn_family() {
             .collect()
     };
     let font_item = format!(
-        "{body} {}",
+        "{status} {}",
         native_theme_showcase_support::status::defined_size(&t.defaults.font)
     );
     let environment = values(&harness)
         .into_iter()
-        // The preset item names the selection, which `open_scaled` leaves at `TEST_PRESET`.
-        .find(|v| v.contains(" · ") && v.contains(TEST_PRESET))
-        .expect("one environment line");
+        // The preset item names the selection, windows-11.
+        .find(|v| v.contains(" · ") && v.contains("windows-11"))
+        .ok_or("no environment line")?;
     assert!(
         environment.split(" · ").any(|item| item == font_item),
         "the status bar does not name the drawn family as {font_item:?}: {environment}"
@@ -11528,11 +11554,11 @@ fn every_font_label_names_the_drawn_family() {
         hover_and_settle(&mut harness, pos);
         info_row_value(&harness, leaf)
     };
-    assert_eq!(row("heading", "defaults.font.family"), body);
+    assert_eq!(row("heading", "typography.body.family"), body);
     for (kind, leaf, label) in [
-        ("switch (off)", "defaults.font", &body),
-        ("Label (monospace)", "defaults.mono_font", &mono),
-        ("button (enabled)", "button.font", &button),
+        ("switch (off)", "typography.body", &body),
+        ("Label (monospace)", "typography.monospace", &mono),
+        ("button (enabled)", "button.label(NONE)", &button),
     ] {
         let font = row(kind, leaf);
         assert!(
@@ -11540,6 +11566,7 @@ fn every_font_label_names_the_drawn_family() {
             "the {leaf} row does not name the drawn family {label:?}: {font}"
         );
     }
+    Ok(())
 }
 
 /// `preset`'s atlas, built as `from_preset` builds it, from its two resolved variants with
@@ -11580,19 +11607,28 @@ fn edited_atlas(
 /// (connector `fonts.rs`: the plan registers the light variant's two default families, and
 /// every `FontId` the connector hands out names `Proportional` or `Monospace`).
 fn other_font_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
-    let light = harness.state().atlas.old_resolved(egui::Theme::Light);
-    let (font, planned) = if mono {
-        (
-            "the light variant's defaults.mono_font",
-            &light.defaults.mono_font.family,
-        )
-    } else {
-        (
-            "the light variant's defaults.font",
-            &light.defaults.font.family,
-        )
+    // The plan loads the installed 0.8.0 light theme's families; an atlas of the 0.7.2 model
+    // alone, its light variant's.
+    let atlas = &harness.state().atlas;
+    let old = &atlas.old_resolved(egui::Theme::Light).defaults;
+    let (font, planned) = match (atlas.next_resolved(egui::Theme::Light), mono) {
+        (Some(light), true) => (
+            "the light variant's typography.monospace",
+            light.typography.monospace.family.to_string(),
+        ),
+        (Some(light), false) => (
+            "the light variant's typography.body",
+            light.typography.body.family.to_string(),
+        ),
+        (None, true) => (
+            "the light variant's typography.monospace",
+            old.mono_font.family.to_string(),
+        ),
+        (None, false) => (
+            "the light variant's typography.body",
+            old.font.family.to_string(),
+        ),
     };
-    let planned = planned.to_string();
     let family = drawn_label(harness, &planned, mono);
     native_theme_showcase_support::status::DrawnFamily::OtherFont {
         toolkit: "egui",
@@ -11608,26 +11644,23 @@ fn other_font_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> Str
 /// on kde-breeze, as a reader's own widget font would state it (KDE's `menuFont`, Windows'
 /// menu font), hover the Basic "Button".
 #[test]
-fn a_widget_font_of_another_family_is_named_by_the_face_egui_draws() {
-    let mut harness = open(
-        egui::Theme::Light,
-        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
-    );
-    harness.run_steps(4);
-    let atlas = edited_atlas("kde-breeze", |_, t| {
-        t.button.font.family = "Noto Serif".into();
-    });
-    let ctx = harness.ctx.clone();
-    harness.state_mut().adopt(&ctx, atlas);
-    harness.run_steps(4);
+fn a_widget_font_of_another_family_is_named_by_the_face_egui_draws() -> Result<(), String> {
+    use native_theme::next::{ButtonRule, TextPatch, ThemePatch};
+    let (mut harness, _) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |_| {
+        Some(
+            ThemePatch::new()
+                .button(ButtonRule::new().label(TextPatch::new().family("Noto Serif".into()))),
+        )
+    })?;
     let label = other_font_label(&harness, "Noto Serif", false);
     let pos = centre_of(&harness, "button (enabled)");
     hover_and_settle(&mut harness, pos);
-    let font = info_row_value(&harness, "button.font");
+    let font = info_row_value(&harness, "button.label(NONE)");
     assert!(
         font.starts_with(&format!("{label} ")),
-        "the button.font row does not name the face egui draws, {label:?}: {font}"
+        "the button.label(NONE) row does not name the face egui draws, {label:?}: {font}"
     );
+    Ok(())
 }
 
 /// Under a dark variant whose `defaults.font.family` is not the light one's, the status bar and
@@ -11674,6 +11707,21 @@ fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() {
         environment.split(" · ").any(|item| item == font_item),
         "the status bar does not name the face egui draws as {font_item:?}: {environment}"
     );
+    // The Theme tab reads the installed 0.8.0 theme: its dark slot given a body family of its
+    // own.
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Dark, "kde-breeze");
+    let edited = harness.state().atlas.edited(|r| {
+        if r.context.scheme == native_theme::next::Scheme::Dark {
+            r.typography.body.family = "Noto Serif".into();
+        }
+    });
+    assert!(edited.is_ok(), "{edited:?}");
+    let Ok(edited) = edited else { return };
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt_pair(&ctx, edited);
+    harness.run_steps(4);
+    assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
+    let label = other_font_label(&harness, "Noto Serif", false);
     harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
     harness.run_steps(2);
     let row = format!("font_family\n{label}");
