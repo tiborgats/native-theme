@@ -4153,7 +4153,8 @@ fn spinner(roles: &ColorRoles) -> SpinnerWidget {
 /// margins and the highlight's radius, hovered in DecorationFocus at the
 /// blend alpha and outlined at the default border width, as 0.7.2's
 /// connectors draw `menu.hover_border_color` (gpui: at
-/// `defaults.border.line_width`), pressed in the opaque DecorationFocus;
+/// `defaults.border.line_width`), pressed in the opaque DecorationFocus
+/// outlined in itself;
 /// the menu font `font` in the window text (0.7.2: `menu.font` is
 /// `defaults.font` where unstated), the accent's text on the pressed
 /// DecorationFocus (spec §8, *Text on a fill*), the disabled window text
@@ -4193,7 +4194,14 @@ fn menu(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.menu_hover), outline(layout, c.menu_hover_frame)],
         )
-        .rule(RuleSelector::on(WidgetState::PRESSED), [fill(c.accent)])
+        // Pressed, the opaque focusColor() outlined in itself at the hover outline's width: Breeze
+        // keeps the item's frame and draws its edge in the fill's colour (breezestyle.cpp:6021-6029
+        // at breeze f0b1d75; measured 2026-11-20, `Sunken|Selected`: the fill and its edge
+        // #3daee9, docs/issues/0004_kde-leftovers-rationale.md, E2).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.accent), outline(layout, c.accent)],
+        )
         .build();
     // `menu.hover_text_color`: platform-facts.md (§2.6), `[Colors:Window]` ForegroundNormal, "a
     // hovered item keeps the window text; only a pressed one is HighlightedText", stated for

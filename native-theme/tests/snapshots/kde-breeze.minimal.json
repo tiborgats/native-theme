@@ -1673,7 +1673,11 @@
             "pressed"
           ],
           "item": {
-            "fill": "#3daee9"
+            "fill": "#3daee9",
+            "stroke": {
+              "width": 1.0,
+              "color": "#3daee9"
+            }
           }
         }
       ]

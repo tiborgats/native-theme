@@ -923,18 +923,41 @@ fn an_open_menu_bar_title_is_filled_over_a_hovered_one() {
     );
 }
 
-/// A pressed menu item is filled in the opaque focus colour and keeps the
-/// hover outline; a hovered selected tab keeps the selected tab's fill.
+/// A pressed menu item, asked with `PRESSED` alone (spec §2, `from_state`),
+/// is filled in the opaque focus colour and outlined in it at the hover
+/// outline's width, by a rule for `PRESSED`, and so under the pointer too;
+/// a hovered selected tab keeps the selected tab's fill.
 #[test]
 fn pressed_and_selected_fills_win_over_hover() {
     for theme in both_schemes() {
         let scheme = theme.context.scheme;
-        let pressed = theme
-            .menu
-            .item(WidgetState::HOVER.union(WidgetState::PRESSED));
+        let pressed = theme.menu.item(WidgetState::PRESSED);
         let hovered = theme.menu.item(WidgetState::HOVER);
         assert_ne!(pressed.fill, hovered.fill, "{scheme:?}");
-        assert_eq!(pressed.stroke, hovered.stroke, "{scheme:?}");
+        let hover_width = match hovered.stroke {
+            Stroke::Uniform { width, .. } => Some(width),
+            _ => None,
+        };
+        assert_eq!(
+            Some(pressed.stroke.clone()),
+            hover_width
+                .zip(solid(&pressed.fill))
+                .map(|(width, focus)| Stroke::uniform(width, focus)),
+            "{scheme:?}"
+        );
+        assert!(
+            pressed
+                .from_state
+                .contains(PartStated::FILL | PartStated::STROKE),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .menu
+                .item(WidgetState::HOVER.union(WidgetState::PRESSED)),
+            pressed,
+            "{scheme:?}"
+        );
         let selected = WidgetState::SELECTED;
         assert_eq!(
             theme.tab.tab(selected.union(WidgetState::HOVER)).fill,
