@@ -22,9 +22,24 @@ enum Differs {
     Outline,
     /// The label's colour alone ([`labels_masked`]).
     Label,
-    /// The values the 0.8.0 theme states where 0.7.2 states others, which the reason names:
-    /// any value of the case's shapes.
-    Stated,
+    /// The label's gap alone: each text lies the row's width change farther along.
+    Gap,
+    /// The label's gap ([`Differs::Gap`]) and its colour ([`labels_masked`]).
+    GapAndLabel,
+    /// The label's colour ([`labels_masked`]) and a dot's fill ([`dots_masked`]).
+    LabelAndDot,
+    /// A circle's outline, its outer edge kept ([`rings_masked`]).
+    Ring,
+    /// The field's outline (the first shape's stroke), and every other shape lying the
+    /// outline's width change farther in from the side it is nearer.
+    Inset,
+    /// The header's side padding: the texts and the paths lie one offset farther along.
+    Padding,
+    /// The control's frame (the first shape's stroke): the frame the frame's width change
+    /// larger on each side, every other shape that change farther along and down, a corner of
+    /// one either square or the frame's, and a rect filled in an outline's colour
+    /// ([`outlines_masked`]).
+    Frame,
 }
 
 /// A listed difference: the widget's case, the presets on which it draws differently, what may
@@ -65,37 +80,37 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "radio off",
         presets: &["ios-13"],
-        differs: Differs::Stated,
+        differs: Differs::Ring,
         reason: IOS_RADIO,
     },
     Difference {
         case: "radio on",
         presets: &["ios-13"],
-        differs: Differs::Stated,
+        differs: Differs::Ring,
         reason: IOS_RADIO,
     },
     Difference {
         case: "radio off disabled",
         presets: &["material-3"],
-        differs: Differs::Stated,
+        differs: Differs::LabelAndDot,
         reason: M3_RADIO_DISABLED,
     },
     Difference {
         case: "radio on disabled",
         presets: &["material-3"],
-        differs: Differs::Stated,
+        differs: Differs::LabelAndDot,
         reason: M3_RADIO_DISABLED,
     },
     Difference {
         case: "radio off disabled",
         presets: &["ios-13"],
-        differs: Differs::Stated,
+        differs: Differs::Ring,
         reason: IOS_RADIO,
     },
     Difference {
         case: "radio on disabled",
         presets: &["ios-13"],
-        differs: Differs::Stated,
+        differs: Differs::Ring,
         reason: IOS_RADIO,
     },
     Difference {
@@ -113,25 +128,25 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "combo box",
         presets: &["macos-tahoe"],
-        differs: Differs::Stated,
+        differs: Differs::Inset,
         reason: TAHOE_COMBO,
     },
     Difference {
         case: "combo box disabled",
         presets: &["macos-tahoe"],
-        differs: Differs::Stated,
+        differs: Differs::Inset,
         reason: TAHOE_COMBO,
     },
     Difference {
         case: "combo box",
         presets: &["ios-13"],
-        differs: Differs::Stated,
+        differs: Differs::Inset,
         reason: IOS_COMBO,
     },
     Difference {
         case: "combo box disabled",
         presets: &["ios-13"],
-        differs: Differs::Stated,
+        differs: Differs::Inset,
         reason: IOS_COMBO,
     },
     Difference {
@@ -149,37 +164,37 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "segmented control",
         presets: &["macos-tahoe"],
-        differs: Differs::Stated,
+        differs: Differs::Frame,
         reason: TAHOE_SEGMENTED,
     },
     Difference {
         case: "segmented control disabled",
         presets: &["macos-tahoe"],
-        differs: Differs::Stated,
+        differs: Differs::Frame,
         reason: TAHOE_SEGMENTED,
     },
     Difference {
         case: "expander closed",
         presets: &["macos-tahoe"],
-        differs: Differs::Stated,
+        differs: Differs::Padding,
         reason: TAHOE_EXPANDER,
     },
     Difference {
         case: "expander open",
         presets: &["macos-tahoe"],
-        differs: Differs::Stated,
+        differs: Differs::Padding,
         reason: TAHOE_EXPANDER,
     },
     Difference {
         case: "expander closed disabled",
         presets: &["macos-tahoe"],
-        differs: Differs::Stated,
+        differs: Differs::Padding,
         reason: TAHOE_EXPANDER,
     },
     Difference {
         case: "expander open disabled",
         presets: &["macos-tahoe"],
-        differs: Differs::Stated,
+        differs: Differs::Padding,
         reason: TAHOE_EXPANDER,
     },
     Difference {
@@ -197,49 +212,49 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         case: "switch off",
         presets: &["adwaita"],
-        differs: Differs::Stated,
+        differs: Differs::GapAndLabel,
         reason: ADWAITA_SWITCH,
     },
     Difference {
         case: "switch on",
         presets: &["adwaita"],
-        differs: Differs::Stated,
+        differs: Differs::GapAndLabel,
         reason: ADWAITA_SWITCH,
     },
     Difference {
         case: "switch off disabled",
         presets: &["adwaita"],
-        differs: Differs::Stated,
+        differs: Differs::GapAndLabel,
         reason: ADWAITA_SWITCH,
     },
     Difference {
         case: "switch on disabled",
         presets: &["adwaita"],
-        differs: Differs::Stated,
+        differs: Differs::GapAndLabel,
         reason: ADWAITA_SWITCH,
     },
     Difference {
         case: "switch off",
         presets: &["windows-11"],
-        differs: Differs::Stated,
+        differs: Differs::Gap,
         reason: WINDOWS_SWITCH_GAP,
     },
     Difference {
         case: "switch on",
         presets: &["windows-11"],
-        differs: Differs::Stated,
+        differs: Differs::Gap,
         reason: WINDOWS_SWITCH_GAP,
     },
     Difference {
         case: "switch off disabled",
         presets: &["windows-11"],
-        differs: Differs::Stated,
+        differs: Differs::Gap,
         reason: WINDOWS_SWITCH_GAP,
     },
     Difference {
         case: "switch on disabled",
         presets: &["windows-11"],
-        differs: Differs::Stated,
+        differs: Differs::Gap,
         reason: WINDOWS_SWITCH_GAP,
     },
 ];
@@ -424,12 +439,7 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
                 // of every shape is equal.
                 if let Some(entry) = entry {
                     listed.push((key, case));
-                    let alike = match entry.differs {
-                        Differs::Outline => outlines_masked(&a) == outlines_masked(&b),
-                        Differs::Label => labels_masked(&a) == labels_masked(&b),
-                        Differs::Stated => true,
-                    };
-                    if alike && (entry.differs == Differs::Stated || ra.rect == rb.rect) {
+                    if alike_but(entry.differs, (&a, ra.rect), (&b, rb.rect)) {
                         continue;
                     }
                 }
@@ -467,6 +477,275 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
         }
     }
     Ok((failures, listed))
+}
+
+/// Within this, a place is the one a listed difference moves it to (the layout's `f32` sums).
+const NEAR: f32 = 1e-3;
+
+fn near(p: egui::Pos2, q: egui::Pos2) -> bool {
+    (p - q).length() < NEAR
+}
+
+/// Where a shape lies: a text's position, a rect's least corner, a circle's centre, a path's
+/// first point.
+fn anchor(shape: &egui::Shape) -> Option<egui::Pos2> {
+    match shape {
+        egui::Shape::Text(t) => Some(t.pos),
+        egui::Shape::Rect(r) => Some(r.rect.min),
+        egui::Shape::Circle(c) => Some(c.center),
+        egui::Shape::Path(p) => p.points.first().copied(),
+        _ => None,
+    }
+}
+
+/// `b` with its place taken as `a`'s where it lies within [`NEAR`] of `a`'s moved by `by`:
+/// equal to `a` where `b` is `a` moved by `by` and alike in every other value. A text's galley
+/// is laid out relative to its position, so only the position moves, and a galley laid out
+/// alike ([`laid_out_alike`]) from a job that wraps it at another width is taken as `a`'s.
+fn snapped(a: &egui::Shape, b: &egui::Shape, by: egui::Vec2) -> egui::Shape {
+    let at = |p: egui::Pos2, q: egui::Pos2| near(p + by, q);
+    let mut b = b.clone();
+    match (a, &mut b) {
+        (egui::Shape::Text(a), egui::Shape::Text(b)) if at(a.pos, b.pos) => {
+            b.pos = a.pos;
+            if laid_out_alike(&a.galley, &b.galley, true) {
+                b.galley = a.galley.clone();
+            }
+        }
+        (egui::Shape::Rect(a), egui::Shape::Rect(b))
+            if at(a.rect.min, b.rect.min) && at(a.rect.max, b.rect.max) =>
+        {
+            b.rect = a.rect;
+        }
+        (egui::Shape::Circle(a), egui::Shape::Circle(b)) if at(a.center, b.center) => {
+            b.center = a.center;
+        }
+        (egui::Shape::Path(a), egui::Shape::Path(b))
+            if a.points.len() == b.points.len()
+                && a.points.iter().zip(&b.points).all(|(p, q)| at(*p, *q)) =>
+        {
+            b.points.clone_from(&a.points);
+        }
+        _ => {}
+    }
+    b
+}
+
+/// Whether `b` is `a` but for its labels' colours: the colour a text without one of its own is
+/// lettered in, an override ([`labels_masked`]), and the colour its galley's sections are laid
+/// out in ([`laid_out_alike`]).
+fn labels_alike(a: &[egui::Shape], b: &[egui::Shape]) -> bool {
+    let b: Vec<egui::Shape> = a
+        .iter()
+        .zip(b)
+        .map(|(x, y)| match (x, y) {
+            (egui::Shape::Text(x), egui::Shape::Text(y))
+                if laid_out_alike(&x.galley, &y.galley, false) =>
+            {
+                let mut y = y.clone();
+                y.galley = x.galley.clone();
+                egui::Shape::Text(y)
+            }
+            _ => y.clone(),
+        })
+        .collect();
+    labels_masked(a) == labels_masked(&b)
+}
+
+/// Whether the galley `b` is laid out as `a`: the same text in the same sections and fonts, in
+/// the same rect and mesh bounds with as many vertices, and in the same colours where `colour`
+/// says so.
+fn laid_out_alike(a: &egui::Galley, b: &egui::Galley, colour: bool) -> bool {
+    let formats = |g: &egui::Galley| {
+        g.job
+            .sections
+            .iter()
+            .map(|s| {
+                let mut format = s.format.clone();
+                if !colour {
+                    format.color = egui::Color32::TRANSPARENT;
+                }
+                (s.leading_space, s.byte_range.clone(), format)
+            })
+            .collect::<Vec<_>>()
+    };
+    a.job.text == b.job.text
+        && a.rect == b.rect
+        && a.mesh_bounds == b.mesh_bounds
+        && a.num_vertices == b.num_vertices
+        && formats(a) == formats(b)
+}
+
+/// Whether `b`, drawn in the rect `rb`, is `a`, drawn in `ra`, in every value but what
+/// `differs` lets differ.
+fn alike_but(
+    differs: Differs,
+    (a, ra): (&[egui::Shape], egui::Rect),
+    (b, rb): (&[egui::Shape], egui::Rect),
+) -> bool {
+    use egui::Shape;
+    if a.len() != b.len() {
+        return false;
+    }
+    let frames = match (a.first(), b.first()) {
+        (Some(Shape::Rect(fa)), Some(Shape::Rect(fb))) => Some((fa.clone(), fb.clone())),
+        _ => None,
+    };
+    match differs {
+        Differs::Outline => ra == rb && outlines_masked(a) == outlines_masked(b),
+        Differs::Label => ra == rb && labels_alike(a, b),
+        Differs::Gap | Differs::GapAndLabel => {
+            // the row's background spans the row, which the gap's change widens
+            let along = egui::vec2(rb.width() - ra.width(), 0.0);
+            let b: Vec<Shape> = a
+                .iter()
+                .zip(b)
+                .map(|(x, y)| match (x, y) {
+                    (Shape::Text(_), _) => snapped(x, y, along),
+                    (Shape::Rect(x), Shape::Rect(y)) if x.rect == ra && y.rect == rb => {
+                        let mut y = y.clone();
+                        y.rect = x.rect;
+                        Shape::Rect(y)
+                    }
+                    _ => y.clone(),
+                })
+                .collect();
+            let alike = if differs == Differs::Gap {
+                a == b.as_slice()
+            } else {
+                labels_alike(a, &b)
+            };
+            ra.min == rb.min && ra.height() == rb.height() && alike
+        }
+        Differs::LabelAndDot => ra == rb && labels_alike(&dots_masked(a), &dots_masked(b)),
+        Differs::Ring => ra == rb && rings_masked(a) == rings_masked(b),
+        Differs::Inset => {
+            let Some((fa, mut fb)) = frames else {
+                return false;
+            };
+            let inward = fb.stroke.width - fa.stroke.width;
+            let centre = fa.rect.center().x;
+            fb.stroke = fa.stroke;
+            let b: Vec<Shape> = std::iter::once(Shape::Rect(fb))
+                .chain(a.iter().zip(b).skip(1).map(|(x, y)| {
+                    let by = match anchor(x) {
+                        Some(p) if p.x > centre => -inward,
+                        _ => inward,
+                    };
+                    snapped(x, y, egui::vec2(by, 0.0))
+                }))
+                .collect();
+            ra == rb && a == b.as_slice()
+        }
+        Differs::Padding => {
+            let along = a.iter().zip(b).find_map(|pair| match pair {
+                (Shape::Text(x), Shape::Text(y)) => Some(egui::vec2(y.pos.x - x.pos.x, 0.0)),
+                _ => None,
+            });
+            let Some(along) = along else {
+                return false;
+            };
+            let b: Vec<Shape> = a
+                .iter()
+                .zip(b)
+                .map(|(x, y)| match x {
+                    Shape::Text(_) | Shape::Path(_) => snapped(x, y, along),
+                    _ => y.clone(),
+                })
+                .collect();
+            ra == rb && a == b.as_slice()
+        }
+        Differs::Frame => {
+            let Some((fa, mut fb)) = frames else {
+                return false;
+            };
+            let grown = egui::Vec2::splat(fb.stroke.width - fa.stroke.width);
+            let fits = |x: egui::Rect, y: egui::Rect| {
+                near(x.min, y.min) && near(x.max + 2.0 * grown, y.max)
+            };
+            if !(fits(ra, rb) && fits(fa.rect, fb.rect)) {
+                return false;
+            }
+            let corner = fb.corner_radius;
+            fb.rect = fa.rect;
+            fb.stroke.width = fa.stroke.width;
+            let (a, b) = (
+                outlines_masked(a),
+                outlines_masked(
+                    &std::iter::once(Shape::Rect(fb))
+                        .chain(b.iter().skip(1).cloned())
+                        .collect::<Vec<_>>(),
+                ),
+            );
+            let b: Vec<Shape> = a
+                .iter()
+                .zip(&b)
+                .enumerate()
+                .map(|(i, (x, y))| {
+                    if i == 0 {
+                        return y.clone();
+                    }
+                    let mut y = snapped(x, y, grown);
+                    if let (Shape::Rect(x), Shape::Rect(y)) = (x, &mut y) {
+                        let c = y.corner_radius;
+                        let square_or_frame = [
+                            (c.nw, corner.nw),
+                            (c.ne, corner.ne),
+                            (c.sw, corner.sw),
+                            (c.se, corner.se),
+                        ]
+                        .iter()
+                        .all(|(v, f)| *v == 0 || v == f);
+                        if square_or_frame {
+                            y.corner_radius = x.corner_radius;
+                        }
+                    }
+                    y
+                })
+                .collect();
+            a == b
+        }
+    }
+}
+
+/// `shapes` with each circle that lies inside an earlier one round the same centre (a radio's
+/// dot) filled transparent, every other value kept: what a listed difference, a dot's fill,
+/// leaves to compare.
+fn dots_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
+    let mut circles: Vec<(egui::Pos2, f32)> = Vec::new();
+    let mut masked = Vec::with_capacity(shapes.len());
+    for shape in shapes {
+        let mut shape = shape.clone();
+        if let egui::Shape::Circle(c) = &mut shape {
+            if circles
+                .iter()
+                .any(|(centre, radius)| *centre == c.center && c.radius < *radius)
+            {
+                c.fill = egui::Color32::TRANSPARENT;
+            }
+            circles.push((c.center, c.radius));
+        }
+        masked.push(shape);
+    }
+    masked
+}
+
+/// `shapes` with each circle's outline taken off and its width laid back into the radius, every
+/// other value kept: the outer edge the radio keeps, its circle's radius inset by the outline's
+/// width (`radio_button.rs`, each state's `expansion` less its stroke's width), what a listed
+/// difference, a circle's outline, leaves to compare.
+fn rings_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
+    shapes
+        .iter()
+        .cloned()
+        .map(|mut shape| {
+            if let egui::Shape::Circle(c) = &mut shape {
+                c.radius += c.stroke.width;
+                c.stroke = egui::Stroke::NONE;
+            }
+            shape
+        })
+        .collect()
 }
 
 /// `shapes` with each outline's colour made transparent, and a rect filled in an outline's
