@@ -16603,12 +16603,10 @@ fn text_editor_info(state: &State) -> String {
 }
 
 fn view_inputs(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
     let next = state.next_shown();
     let gap = Gaps::from_next(&next.layout);
     let typography = &next.typography;
     let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
-    let radius = resolved.input.border.corner_radius;
 
     let header = next_section_header(
         "Inputs",
@@ -16620,20 +16618,28 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
     // theme: their text `input.text(NONE)`, their padding
     // [`next_input_padding`], at least `input.field(NONE).min_size[1]` tall
     // ([`next_control_line`]), the focus ring round each following the
-    // field's corners ([`next_field_radius`]); their colours and corners
-    // still `styles::text_input`'s.
+    // field's corners ([`next_field_radius`], [`next_focus_ring`]); their
+    // colours and corners `iced_next::styles::text_input`'s.
     let input_field = next.input.field(WidgetState::NONE);
     let input_label = next.input.text(WidgetState::NONE);
     let inp_pad = next_input_padding(next);
     let input_line = next_control_line(next, &input_label, input_field.min_size[1], inp_pad);
     let input_radius = next_field_radius(&input_field);
+    // The corners the caption names: the field's own where the theme
+    // states them, iced's own field's where not.
+    let radius = match iced_next::radius_of(&input_field) {
+        Some(radius) => format!("input.field(NONE).corners: {radius:.0}px"),
+        None => format!("corners: iced's own {ICED_FIELD_RADIUS:.0}px"),
+    };
     let field = |placeholder: &'static str| {
         text_input(placeholder, &state.text_input_value)
             .on_input(Message::TextInputChanged)
             .size(input_label.size_px)
             .line_height(input_line)
             .next_font(&input_label, |field, font| field.font(font))
-            .style(styles::text_input(resolved))
+            .next_style(iced_next::styles::text_input(next), |field, style| {
+                field.style(style)
+            })
             .padding(inp_pad)
     };
 
@@ -16641,17 +16647,14 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
         UnlistedKey::TextInput,
         column![
             title("TextInput (single line)"),
-            native_theme_iced::focus_ring(
-                resolved,
+            next_focus_ring(
+                next,
                 input_radius,
                 field("Type something here...").id(TEXT_INPUT_ID)
             ),
             next_caption_text(
                 state,
-                format!(
-                    "Characters: {}  |  input.border.corner_radius: {radius:.0}px",
-                    state.text_input_value.len()
-                ),
+                format!("Characters: {}  |  {radius}", state.text_input_value.len()),
                 None
             ),
         ]
@@ -16663,11 +16666,7 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
         UnlistedKey::SecureTextInput,
         column![
             title("TextInput (secure / password)"),
-            native_theme_iced::focus_ring(
-                resolved,
-                input_radius,
-                field("Password field...").secure(true)
-            ),
+            next_focus_ring(next, input_radius, field("Password field...").secure(true)),
         ]
         .spacing(gap.widget)
         .into(),
@@ -16686,15 +16685,17 @@ fn view_inputs(state: &State) -> Element<'_, Message> {
             probe(
                 probes::TEXT_EDITOR,
                 Fill,
-                native_theme_iced::focus_ring(
-                    resolved,
+                next_focus_ring(
+                    next,
                     next_field_radius(&area_field),
                     text_editor(&state.text_editor_content)
                         .on_action(Message::EditorAction)
                         .size(area_label.size_px)
                         .line_height(iced::Pixels(next_line_box(typography, &area_label)))
                         .next_font(&area_label, |area, font| area.font(font))
-                        .style(styles::text_editor(resolved))
+                        .next_style(iced_next::styles::text_editor(next), |area, style| {
+                            area.style(style)
+                        })
                         .padding(next_text_area_padding(next))
                         .height(Length::Fixed(180.0)),
                 ),
@@ -36860,6 +36861,7 @@ mod tests {
                 "button_link",
             ],
         ),
+        ("view_inputs", &["text_input", "text_editor"]),
     ];
 
     /// Each of [`NEXT_PAGES`] calls none of [`NEXT_PAGE_STYLES`], nor of its
