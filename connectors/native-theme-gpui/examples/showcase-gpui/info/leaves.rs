@@ -953,27 +953,27 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["focus_ring.stroke.color"],
-        "gpui: the ring the theme-drawn Checkbox, Radio, Slider and Switch draw over the control, as stated (widgets/mod.rs, FocusRing::next_of); and ThemeColor ring (colors.rs, ring_colour: opaque where the band is off): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style). gpui-component's widgets draw that ring 3px wide with its alpha set to 0.5, whatever the colour's own (gpui-component/styled.rs:12, FOCUS_RING_OPACITY; :250-298, focus_style), and the Tab draws another, 2px inset at the full colour, on keyboard focus only (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)",
+        "gpui: the ring the theme-drawn Checkbox, Radio, Slider and Switch draw over the control, as stated, and the TabBar inside its focused tab (widgets/mod.rs, FocusRing::next_of, FocusRing::next_indicator), each in place of a part's own ring where the theme states one, PartStyle.focus of checkbox.indicator, radio.indicator, switch.track, slider.thumb or tab.tab (widgets/mod.rs, part_focus); and ThemeColor ring (colors.rs, ring_colour: opaque where the band is off): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style). gpui-component's widgets draw that ring 3px wide with its alpha set to 0.5, whatever the colour's own (gpui-component/styled.rs:12, FOCUS_RING_OPACITY; :250-298, focus_style), and the Tab draws another, 2px inset at the full colour, on keyboard focus only (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)",
     ),
     (
         "",
         &["focus_ring.offset"],
-        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, a band of its width outward from the control's edge moved out by the offset, drawn over the control, inside its edge too where the offset is negative (widgets/mod.rs, FocusRing::draw); upstream's own widgets' ring lies against the border, no offset (styled.rs, focus_ring)",
+        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, a band of its width outward from the control's edge moved out by the offset, drawn over the control, inside its edge too where the offset is negative (widgets/mod.rs, FocusRing::next_indicator, FocusRing::draw), a part's own ring's by its own offset (widgets/mod.rs, part_focus); the TabBar's inset ring lies against the tab's edge whatever the offset, which it reports not mapped (widgets/tab_bar.rs, TabLook::next_ring_unmapped); upstream's own widgets' ring lies against the border, no offset (styled.rs, focus_ring)",
     ),
     (
         "",
         &["focus_ring.trigger"],
-        "gpui: when gpui-component's band is drawn (Theme::focus_ring off where true, native-theme-gpui/colors.rs, focus_band_on; on there for a focus that followed a key press in a window under Root, native-theme-gpui/lib.rs, FocusBand), and whether the theme-drawn Checkbox, Radio, Slider and Switch (widgets/mod.rs, ring_shows) and the TabBar's focused tab (widgets/mod.rs, focus_followed_key) ring a focus that did not follow a key",
+        "gpui: when gpui-component's band is drawn (Theme::focus_ring off where true, native-theme-gpui/colors.rs, focus_band_on; on there for a focus that followed a key press in a window under Root, native-theme-gpui/lib.rs, FocusBand), and whether the theme-drawn Checkbox, Radio, Slider and Switch (widgets/mod.rs, focus_seen, ThemeSource::ring) and the TabBar's focused tab (widgets/mod.rs, focus_followed_key, ThemeSource::ring) ring a focus that did not follow a key; a part's own ring by its own trigger (widgets/mod.rs, part_focus)",
     ),
     (
         "",
         &["focus_ring.stroke.width"],
-        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, this wide, none where it is not positive (widgets/mod.rs, FocusRing::next_of); upstream's own widgets' ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11, FOCUS_RING_WIDTH), and a width > 0 turns it on where the theme does not say keyboard only (native-theme-gpui/colors.rs, focus_band_on)",
+        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring and the TabBar's inset ring, this wide, none where it is not positive (widgets/mod.rs, FocusRing::next_of, FocusRing::next_indicator), a part's own ring by its own width (widgets/mod.rs, part_focus); upstream's own widgets' ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11, FOCUS_RING_WIDTH), and a width > 0 turns it on where the theme does not say keyboard only (native-theme-gpui/colors.rs, focus_band_on)",
     ),
     (
         "basic.typography.body",
         &["typography.body"],
-        "gpui: size, weight and family on the Label (demo::type_line)",
+        "gpui: family, size, line box, weight and slant on the Label, each where stated (demo::type_line)",
     ),
     (
         "basic.switches",
@@ -1183,7 +1183,7 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["typography.monospace"],
-        "gpui: family, size and weight on the Label (demo::type_line)",
+        "gpui: family, size, line box, weight and slant on the Label, each where stated (demo::type_line)",
     ),
     (
         "",
@@ -2770,22 +2770,22 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "",
         &["typography.caption"],
-        "gpui: size, weight and line height on the Label (demo::type_line)",
+        "gpui: family, size, line box, weight, slant and colour on the Label, each where stated, typography.caption laid over typography.body, each property it leaves unstated the body's (Typography::over_body; demo::type_line)",
     ),
     (
         "",
         &["typography.title1"],
-        "gpui: size, weight and line height on the Label (demo::type_line)",
+        "gpui: family, size, line box, weight, slant and colour on the Label, each where stated, typography.title1 laid over typography.body, each property it leaves unstated the body's (Typography::over_body; demo::type_line)",
     ),
     (
         "basic.typography.section_heading",
         &["typography.headline"],
-        "gpui: size, weight and line height on the Label (demo::type_line)",
+        "gpui: family, size, line box, weight, slant and colour on the Label, each where stated, typography.headline laid over typography.body, each property it leaves unstated the body's (Typography::over_body; demo::type_line)",
     ),
     (
         "",
         &["typography.headline"],
-        "gpui: size, weight and line height on the heading Label (demo::heading)",
+        "gpui: size, line box and weight on the heading Label, each where stated, typography.headline laid over typography.body (Typography::over_body); its family and colour are the Label's own, not read (demo::heading)",
     ),
     // --- theme_variant ---------------------------------------------------------------
     (
