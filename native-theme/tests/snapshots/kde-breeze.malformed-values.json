@@ -2522,7 +2522,7 @@
   },
   "segmented_control": {
     "origin": "native",
-    "separator_width": 1.0,
+    "separator_width": 0.0,
     "disabled_opacity": 1.0,
     "track": {
       "base": {

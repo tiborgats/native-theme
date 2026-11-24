@@ -533,6 +533,8 @@ enum HomeValue {
     Width(f32),
     /// A uniform circular corner radius, which the builder gives egui as a whole `u8`.
     Radius(f32),
+    /// An `item_spacing`, horizontal then vertical, as egui prints its `Vec2`.
+    Spacing([f32; 2]),
 }
 
 /// Whether `bit` of a part is stated for `state`: by a rule for the state (`from_state`), or,
@@ -1169,6 +1171,23 @@ const STATED_ON_A_PRESET: &[Difference] = &[
             path: "checkbox.disabled_opacity",
             stated: |r: &ResolvedTheme| r.checkbox.disabled_opacity.is_some(),
             value: |r: &ResolvedTheme| r.checkbox.disabled_opacity.map(HomeValue::Width),
+        },
+    ),
+    // kde-breeze's segments drawn with no line between them (platform-facts.md §2.25
+    // `separator_width`): the cell's horizontal item spacing is the stated width, the vertical
+    // the base style's, `layout.widget_gap` (`style::base`, both components the gap)
+    s(
+        "SegmentedControl",
+        &[K],
+        ".spacing.item_spacing",
+        Home {
+            path: "segmented_control.separator_width",
+            stated: |_: &ResolvedTheme| true,
+            value: |r: &ResolvedTheme| {
+                r.layout
+                    .widget_gap
+                    .map(|gap| HomeValue::Spacing([r.segmented_control.separator_width, gap]))
+            },
         },
     ),
     // the disabled cell keeps the outline at rest over its disabled fill
@@ -1933,6 +1952,7 @@ fn stated_leaf(
         HomeValue::Line(c) => over(to_color32(c)),
         HomeValue::Width(w) => Some(format!("{w:?}")),
         HomeValue::Radius(r) => Some(format!("{:?}", crate::convert::u8_from_f32_saturating(r))),
+        HomeValue::Spacing([x, y]) => Some(format!("{:?}", egui::vec2(x, y))),
     }
 }
 

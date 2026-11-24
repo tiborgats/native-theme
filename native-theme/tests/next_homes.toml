@@ -2849,6 +2849,10 @@ note = "a height, min alone as list.row_height (M0)"
 [[row]]
 key = "segmented_control.separator_width"
 homes = ["segmented_control.separator_width"]
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2's uncited 1; 0.8.0 states none, 0: the tab bar, KDE's segmented control in docs/platform-facts.md §2.25, fills an unselected tab with no pen and widens it by TabBar_TabOverlap into the next, an overlap of the fills, not a line"
+difference_citation = "renderTabBarTab: `painter->setPen(Qt::NoPen)` for an unselected tab, the frame pen for the selected one alone (breezehelper.cpp:1456-1506), TabBar_TabOverlap = 1 (breezemetrics.h:135) widening an unselected tab (breezestyle.cpp:7238, :7259-7260 at breeze f0b1d75); docs/platform-facts.md §2.25 (separator_width)"
+difference_values = { "kde-breeze" = 0.0 }
 
 [[row]]
 key = "segmented_control.disabled_opacity"

@@ -1903,9 +1903,12 @@ const COMBO_BOX_PADDING_LEFT: f32 = 6.0;
 // `segmented_control.segment_height`: 0.7.2 kde-breeze.toml (uncited)
 const SEGMENT_MIN_HEIGHT: f32 = 30.0;
 
-/// The width of the line between two segments.
-// `segmented_control.separator_width`: 0.7.2 kde-breeze.toml (uncited)
-const SEGMENT_SEPARATOR_WIDTH: f32 = 1.0;
+/// The width of the line between two segments: none is drawn.
+// `segmented_control.separator_width`: platform-facts.md (§2.25): the tab bar, KDE's segmented
+// control there, fills an unselected tab with no pen and widens it by TabBar_TabOverlap into the
+// next, an overlap of the fills, not a line (breezehelper.cpp:1488-1506, breezestyle.cpp:7238 at
+// breeze f0b1d75), where 0.7.2 took an uncited 1
+const SEGMENT_SEPARATOR_WIDTH: f32 = 0.0;
 
 /// The radius of a card's corners.
 // `card.border.corner_radius`: platform-facts.md §2.26 border.corner_radius: Units.cornerRadius,
@@ -4929,7 +4932,7 @@ fn combo_box(
 /// `active_text_color` is `defaults.accent_text_color` where unstated, the
 /// same colour without a palette); the UI font (0.7.2:
 /// `segmented_control.font` is `defaults.font` where unstated); the line
-/// between segments of the preset's width (0.7.2:
+/// between segments none, as the tab bar draws none (0.7.2:
 /// `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
 /// unstated).
 fn segmented_control(

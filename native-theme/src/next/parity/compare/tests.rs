@@ -1167,7 +1167,9 @@ fn an_unreadable_home_or_old_value_is_an_error_naming_the_row() -> TestResult {
 
 /// The rows of 0.7.2's `kde-breeze` (light) whose value is stated and equals the theme with nothing stated:
 /// a part's `border.shadow_enabled = true`, which is `SHADOWS` unstated (spec §5, notes to the table), and
-/// `scrollbar.overlay_mode = false`, a `bool` without `Option` holding its type's default.
+/// `scrollbar.overlay_mode = false`, a `bool` without `Option` holding its type's default, and
+/// `segmented_control.separator_width`, whose listed difference on `kde-breeze` (`next_homes.toml`)
+/// states 0, the `f32` without `Option` of the theme with nothing stated.
 const EQUAL_THOUGH_STATED: &[&str] = &[
     "button.border.shadow_enabled",
     "list.border.shadow_enabled",
@@ -1176,6 +1178,7 @@ const EQUAL_THOUGH_STATED: &[&str] = &[
     "window.border.shadow_enabled",
     "popover.border.shadow_enabled",
     "dialog.border.shadow_enabled",
+    "segmented_control.separator_width",
     "card.border.shadow_enabled",
 ];
 
