@@ -871,9 +871,11 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(button.body(NONE).stroke.color),
     ),
+    // adwaita's unchecked box hovered: the rest fill, as libadwaita changes only its outline
+    // (_checks.scss:33-40 at libadwaita 1.10.0; next_homes.toml, row checkbox.hover_background)
     s(
         "Checkbox",
-        &[W],
+        &[A, W],
         ".visuals.widgets.hovered.bg_fill",
         home!(checkbox.indicator(HOVER).fill),
     ),

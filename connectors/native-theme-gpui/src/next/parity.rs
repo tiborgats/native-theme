@@ -592,6 +592,40 @@ const DIFFERENCES: &[Difference] = &[
     },
     Difference {
         leaf: "variants::ghost_button",
+        presets: &["adwaita"],
+        reason: "the ghost variant reads secondary_hover and secondary_active beside \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the 0.8.0 adwaita \
+                 states as libadwaita's .flat button draws it, $hover_color and $active_color, \
+                 the window text at 7 % and 16 % (_buttons.scss:250-256, _colors.scss:268-269 \
+                 at libadwaita 1.10.0; docs/facts/gnome/button.toml on v0.8.0-rc1 at \
+                 78ee0efd), where 0.7.2 gives the push button's hovered and pressed fills to \
+                 every variant; secondary_foreground is equal",
+    },
+    Difference {
+        leaf: FLAT_HOVER,
+        presets: &["adwaita"],
+        reason: "0.7.2 has no flat button, so secondary_hover is the push button's hovered \
+                 fill, button.hover_background; the 0.8.0 adwaita states the flat button's \
+                 own, $hover_color, the window text at 7 % (_buttons.scss:250-251, \
+                 _colors.scss:268 at libadwaita 1.10.0; docs/facts/gnome/button.toml on \
+                 v0.8.0-rc1 at 78ee0efd), so the secondary_hover slot, its token and its \
+                 stored config string are button.body(HOVER; variant=Flat)'s fill \
+                 (flat_fill_of); every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: FLAT_PRESSED,
+        presets: &["adwaita"],
+        reason: "0.7.2 has no flat button, so secondary_active is the push button's pressed \
+                 fill, button.active_background; the 0.8.0 adwaita states the flat button's \
+                 own, $active_color, the window text at 16 % (_buttons.scss:255-256, \
+                 _colors.scss:269 at libadwaita 1.10.0; docs/facts/gnome/button.toml on \
+                 v0.8.0-rc1 at 78ee0efd), so the secondary_active slot, its token and its \
+                 stored config string are button.body(PRESSED; variant=Flat)'s fill \
+                 (flat_fill_of); every other leaf of the theme is equal",
+    },
+    Difference {
+        leaf: "variants::ghost_button",
         presets: &["windows-11"],
         reason: "the ghost variant reads secondary_hover and secondary_active beside \
                  secondary_foreground, the flat button's home (button.body(HOVER; \

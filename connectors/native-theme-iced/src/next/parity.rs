@@ -1545,6 +1545,25 @@ const ADWAITA_CHECK: [Stated; 10] = {
 /// disabled radio status).
 const ADWAITA_RADIO: [Stated; 8] = indicator_outline!(radio);
 
+/// adwaita's unchecked box under the pointer: the rest fill, stated for
+/// HOVER, as libadwaita changes only the outline of an unchecked check or
+/// radio under the pointer (`&:not(:checked):not(:indeterminate) { &:hover {
+/// box-shadow: … } }`, _checks.scss:33-40 at libadwaita 1.10.0;
+/// native-theme/tests/next_homes.toml, row checkbox.hover_background).
+const ADWAITA_UNCHECKED_HOVER: [Stated; 1] = [set(
+    at!(HOVER),
+    Field::Background,
+    home!(fill, checkbox.indicator(HOVER)),
+)];
+
+/// adwaita's unselected radio button under the pointer, as its check box's
+/// ([`ADWAITA_UNCHECKED_HOVER`]; `check, radio`, _checks.scss:20-40).
+const ADWAITA_UNCHECKED_RADIO_HOVER: [Stated; 1] = [set(
+    at!(HOVER),
+    Field::Background,
+    home!(fill, radio.indicator(HOVER)),
+)];
+
 /// adwaita's checked box under the pointer: libadwaita's hover layer,
 /// currentColor at 10 %, over the accent, the whole hovered fill
 /// (`&:checked, &:indeterminate { &:hover { background-image: … } }`,
@@ -2201,7 +2220,11 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["adwaita"],
         LineAlign::Outside,
-        &[&ADWAITA_CHECKED_HOVER, &ADWAITA_CHECK],
+        &[
+            &ADWAITA_UNCHECKED_HOVER,
+            &ADWAITA_CHECKED_HOVER,
+            &ADWAITA_CHECK,
+        ],
     ),
     stated_fields(
         "checkbox",
@@ -2259,7 +2282,11 @@ const DIFFERENCES: &[Difference] = &[
         "radio",
         &["adwaita"],
         LineAlign::Outside,
-        &[&ADWAITA_CHECKED_RADIO_HOVER, &ADWAITA_RADIO],
+        &[
+            &ADWAITA_UNCHECKED_RADIO_HOVER,
+            &ADWAITA_CHECKED_RADIO_HOVER,
+            &ADWAITA_RADIO,
+        ],
     ),
     stated_fields("radio", &["material-3"], LineAlign::Outside, &[&M3_RADIO]),
     hover(

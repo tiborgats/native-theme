@@ -749,6 +749,20 @@ const PRIMARY_BUTTON_FOCUS_RING_OFFSET: f32 = 1.0;
 /// transparent)` (_checks.scss:58, _switch.scss:45 at libadwaita 1.10.0).
 const CHECKED_HOVER_LAYER_ALPHA: f32 = 0.1;
 
+/// The alpha of the window text a hovered checked flat button is filled
+/// with: `background: $selected_hover_color` (_buttons.scss:262-263 at
+/// libadwaita 1.10.0), `color-mix(in srgb, currentColor 13%, transparent)`
+/// (_colors.scss:271;
+/// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`).
+const FLAT_CHECKED_HOVER_ALPHA: f32 = 0.13;
+
+/// The alpha of the window text a pressed checked flat button is filled
+/// with: `background: $selected_active_color` (_buttons.scss:267-268 at
+/// libadwaita 1.10.0), `color-mix(in srgb, currentColor 19%, transparent)`
+/// (_colors.scss:272;
+/// `docs/facts/gnome/button.toml` on `v0.8.0-rc1` at `78ee0efd`).
+const FLAT_CHECKED_PRESSED_ALPHA: f32 = 0.19;
+
 /// The layer over a pressed checked or mixed check, radio or switch:
 /// `RGB(0 0 6 / 20%)` (_checks.scss:59, _switch.scss:46 at libadwaita
 /// 1.10.0), 20 % of 255 being 51 exactly.
@@ -1990,6 +2004,12 @@ fn button(
             shape: None,
         })
     };
+    let flat = |state: WidgetState| {
+        RuleSelector::on(state).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Flat),
+            shape: None,
+        })
+    };
     let body = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(c.button_background)])
         .base(border(roles, BUTTON_BORDER_WIDTH))
@@ -2031,6 +2051,28 @@ fn button(
                 focus_ring(roles, PRIMARY_BUTTON_FOCUS_RING_OFFSET),
             ],
         )
+        // The flat button (`.flat`, `%button_basic_flat`), after the push button's rules so that
+        // its own win (_buttons.scss:234-273 at libadwaita 1.10.0; `docs/facts/gnome/button.toml`
+        // on `v0.8.0-rc1` at `78ee0efd`): at rest `background: transparent` and `box-shadow:
+        // none` (:236, :239); hovered, pressed and checked the toolbar button's layers of the
+        // window text, $hover_color, $active_color and $selected_color (:250-260); checked and
+        // hovered or pressed the window text at FLAT_CHECKED_HOVER_ALPHA and
+        // FLAT_CHECKED_PRESSED_ALPHA (:262-268).
+        .rule(
+            flat(WidgetState::NONE),
+            [PartProp::Fill(Paint::None), PartProp::Shadows(None)],
+        )
+        .rule(flat(WidgetState::HOVER), [fill(c.toolbar_button_hover)])
+        .rule(flat(WidgetState::PRESSED), [fill(c.toolbar_button_pressed)])
+        .rule(flat(WidgetState::CHECKED), [fill(c.toolbar_button_checked)])
+        .rule(
+            flat(WidgetState::CHECKED | WidgetState::HOVER),
+            [fill(c.row_foreground.mul_alpha(FLAT_CHECKED_HOVER_ALPHA))],
+        )
+        .rule(
+            flat(WidgetState::CHECKED | WidgetState::PRESSED),
+            [fill(c.row_foreground.mul_alpha(FLAT_CHECKED_PRESSED_ALPHA))],
+        )
         .build();
     // `button.hover_text_color`, `active_text_color`: 0.7.2 adwaita.toml (uncited);
     // `checked_text_color`: platform-facts.md (§2.3), "no :checked rule sets a label colour"; each
@@ -2064,8 +2106,8 @@ fn button(
 /// The box of a check box or the circle of a radio button, which 0.7.2's
 /// `checkbox.*` serves both: its unchecked fill in its outline at the default
 /// border width (0.7.2: `checkbox.border.line_width` is
-/// `defaults.border.line_width` where unstated), no shadow, padded; under the
-/// pointer the hover fill and, unchecked, the hover outline; checked, the accent (0.7.2:
+/// `defaults.border.line_width` where unstated), no shadow, padded; unchecked
+/// under the pointer, the hover outline alone; checked, the accent (0.7.2:
 /// `checkbox.checked_background` is `defaults.accent_color` where unstated)
 /// with no outline (`box-shadow: none`, _checks.scss:52-56 at libadwaita
 /// 1.10.0; the outline is the inset box-shadow, :27), hovered and pressed
@@ -2093,9 +2135,15 @@ fn indicator(
             PartProp::MinSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
             PartProp::MaxSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
         ])
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
-        // An unchecked check or radio under the pointer: its outline $trough_hover_color
-        // (_checks.scss:20-35 at libadwaita 1.10.0); a checked one keeps its checked look.
+        // An unchecked check or radio under the pointer: its outline $trough_hover_color, its fill
+        // as at rest, `&:not(:checked):not(:indeterminate) { &:hover { box-shadow: inset 0 0 0
+        // 2px $trough_hover_color; } }` (_checks.scss:33-40 at libadwaita 1.10.0), where 0.7.2
+        // filled it with an uncited `button_hover`; the rest fill stated for HOVER (spec §2,
+        // `from_state`); a checked one keeps its checked look.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.checkbox_background)],
+        )
         .rule(
             RuleSelector::on(WidgetState::HOVER).except(WidgetState::CHECKED),
             [stroke(layout.border_width, c.trough_hover)],

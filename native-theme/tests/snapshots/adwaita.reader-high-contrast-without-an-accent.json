@@ -397,6 +397,60 @@
               "trigger": null
             }
           }
+        },
+        {
+          "variant": "flat",
+          "body": {
+            "fill": "none",
+            "shadows": "none"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "#0000060e"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "#00000621"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "#00000614"
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "srgb(0, 0, 0.023529412, 0.103999995)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "variant": "flat",
+          "body": {
+            "fill": "srgb(0, 0, 0.023529412, 0.152)"
+          }
         }
       ]
     },
@@ -698,7 +752,7 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#d5d5d5"
+            "fill": "#ffffff"
           }
         },
         {
@@ -871,7 +925,7 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#d5d5d5"
+            "fill": "#ffffff"
           }
         },
         {

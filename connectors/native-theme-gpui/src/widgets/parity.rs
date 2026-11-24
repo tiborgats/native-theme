@@ -463,6 +463,23 @@ const FROM_HOME: &[Difference] = &[
                  hovered fill is the rest fill radio.indicator(NONE).fill",
     },
     Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["adwaita"],
+        reason: "0.7.2's adwaita states checkbox.hover_background #d5d5d5 / #464649, \
+                 uncited; the 0.8.0 preset states checkbox.indicator(HOVER).fill, the rest \
+                 fill #ffffff / #303034, as libadwaita changes only the outline of an unchecked \
+                 check under the pointer (`&:not(:checked):not(:indeterminate) { &:hover { \
+                 box-shadow: inset 0 0 0 2px $trough_hover_color; } }`, _checks.scss:33-40 at \
+                 libadwaita 1.10.0; native-theme/tests/next_homes.toml, row \
+                 checkbox.hover_background, a listed difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_fill",
+        presets: &["adwaita"],
+        reason: "as the check box's (CheckboxLook::of hover_fill): libadwaita's rule is the \
+                 same for `check, radio`, so radio.indicator(HOVER).fill is the rest fill",
+    },
+    Difference {
         leaf: "SliderLook::thumb_color",
         presets: &["ios-13"],
         reason: "0.7.2's ios-13 leaves slider.thumb_color unset, so it is \
