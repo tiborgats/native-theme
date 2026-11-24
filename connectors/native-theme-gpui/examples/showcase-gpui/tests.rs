@@ -1664,8 +1664,8 @@ fn the_toolbar_holds_the_actions(cx: &mut TestAppContext) {
 }
 
 /// The toolbar row is padded where the theme states no padding for it (spec
-/// §3.1). ios-13, here under the nord palette, states no `toolbar.border`
-/// side, so each side is `layout.container_margin`; with that unstated too,
+/// §3.1). ios-13, here under the nord palette, states no `toolbar.bar(NONE)`
+/// padding side in its 0.8.0 theme, so each side is `layout.container_margin`; with that unstated too,
 /// the showcase's own `TOOLBAR_PADDING`, which the row's info names. Under
 /// kde-breeze and windows-11, which state their sides, the stated left side
 /// stands. ios-13 states no `toolbar.bar_height` (windows-11 does, 48px), so
@@ -1683,12 +1683,16 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
     };
     let toolbar_padding = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |_this, cx| {
-            crate::support::old_native(cx).map(|n| n.resolved.toolbar.border.padding)
+            crate::support::next_resolved(cx).map(|r| {
+                native_theme_gpui::next::padding_of(
+                    &r.toolbar.bar(native_theme::next::WidgetState::NONE),
+                )
+            })
         })
     };
     for preset in ["kde-breeze", "windows-11"] {
         use_preset(&mut cx, &showcase, preset);
-        let left = toolbar_padding(&mut cx).and_then(|p| p.left);
+        let left = toolbar_padding(&mut cx).and_then(|[_, _, _, left]| left);
         assert!(
             left.is_some(),
             "{preset} states no left toolbar padding, so its stated side is not measured"
@@ -1703,7 +1707,7 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
     use_preset_with_palette(&mut cx, &showcase, "ios-13", "nord");
     assert_eq!(
         toolbar_padding(&mut cx),
-        Some(native_theme::theme::ResolvedPadding::default()),
+        Some([None; 4]),
         "ios-13 states a toolbar padding side, so the fallback is not what is measured"
     );
     let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
@@ -2217,22 +2221,26 @@ fn the_side_panel_and_its_separator_report_themselves(cx: &mut TestAppContext) {
 /// chooses among -- the preset's own theme, the system's, the installed
 /// freedesktop themes, gpui-component's built-in icons, Lucide and Material
 /// -- are icon themes. The frame's text is not readable from the test, so
-/// the label's width shows it: the side panel's label is set in
-/// `sidebar.font`, and `self_start` keeps it as wide as its text, and "Icon
+/// the label's width shows it: the side panel's label is set in the
+/// installed 0.8.0 theme's `sidebar.item_label(NONE)`, and `self_start` keeps it as wide as its text, and "Icon
 /// theme" and "Icon set" differ in width.
 #[gpui::test]
 fn the_third_row_reads_icon_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let label = bounds_of(&mut cx, CHROME_LABEL_ICON_THEME);
     let size = read(&mut cx, &showcase, |_this, cx| {
-        native_value(cx, |n| {
-            px(native_theme_gpui::scaled_text_size(
-                n.resolved.sidebar.font.size,
-                n.accessibility,
-            ))
+        crate::support::next_resolved(cx).and_then(|r| {
+            let label = r.sidebar.item_label(native_theme::next::WidgetState::NONE);
+            label
+                .stated
+                .contains(native_theme::next::TextStated::SIZE_PX)
+                .then(|| px(label.size_px))
         })
     });
-    assert!(size.is_some(), "no native theme is installed");
+    assert!(
+        size.is_some(),
+        "no 0.8.0 theme is installed, or it states no sidebar.item_label(NONE) size"
+    );
     let size = size.unwrap_or_default();
     let width = |cx: &mut VisualTestContext, text: &'static str| {
         cx.update(|window, _| {
@@ -4001,9 +4009,10 @@ fn an_expander_the_theme_leaves_unstated_names_upstreams_own() {
 }
 
 /// The tab rows draw exactly what `tab.*` states (ISSUES D7), through the
-/// connector's `widgets::TabBar`: the selected page tab is filled with
-/// `tab.active_background` and outlined in `tab.border`, an unselected one
-/// filled with `tab.background_color` and outlined in nothing, and nothing
+/// connector's `widgets::TabBar`, read from the installed 0.8.0 theme: the
+/// selected page tab is filled with `tab.tab(SELECTED).fill` and outlined in
+/// its stroke, an unselected one filled with `tab.tab(NONE).fill` and
+/// outlined in nothing, and nothing
 /// in the row is painted in the accent that upstream's Underline bar marks
 /// it with, under a preset whose unselected tab differs from its bar
 /// (kde-breeze) and one whose does not (material-3).
@@ -4014,32 +4023,43 @@ fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let (active, idle, edge) = read(&mut cx, &showcase, |_, cx| {
-            (
-                native_color(cx, |n| n.resolved.tab.active_background),
-                native_color(cx, |n| n.resolved.tab.background_color),
-                // An outline shows where it has a width and a colour.
-                native_color(cx, |n| n.resolved.tab.border.color).filter(|c| {
-                    !c.is_transparent()
-                        && native_value(cx, |n| n.resolved.tab.border.line_width)
-                            .is_some_and(|w| w > 0.)
-                }),
-            )
+        let looks = read(&mut cx, &showcase, |_, cx| {
+            use native_theme::next::WidgetState;
+            use native_theme_gpui::next::{fill_of, stroke_color_of, stroke_width_of};
+            crate::support::next_resolved(cx).map(|r| {
+                let selected = r.tab.tab(WidgetState::SELECTED);
+                (
+                    fill_of(&selected),
+                    fill_of(&r.tab.tab(WidgetState::NONE)),
+                    // An outline shows where it has a width and a colour.
+                    stroke_color_of(&selected).filter(|c| {
+                        !c.is_transparent() && stroke_width_of(&selected).is_some_and(|w| w > 0.)
+                    }),
+                    r.tab.indicator(WidgetState::SELECTED).min_size[1],
+                )
+            })
         });
+        assert!(
+            looks.is_some_and(|(active, idle, _, _)| active.is_some() && idle.is_some()),
+            "{preset}: no 0.8.0 theme is installed, or it states no tab.tab(SELECTED) or tab.tab(NONE) fill"
+        );
+        let Some((active, idle, edge, line_width)) = looks else {
+            return;
+        };
         assert_eq!(
             painted_fill(&mut cx, Page::Basic.tab()),
             active,
-            "{preset}: the selected page tab is not filled with tab.active_background"
+            "{preset}: the selected page tab is not filled with tab.tab(SELECTED).fill"
         );
         assert_eq!(
             painted_fill(&mut cx, Page::Buttons.tab()),
             idle,
-            "{preset}: an unselected page tab is not filled with tab.background_color"
+            "{preset}: an unselected page tab is not filled with tab.tab(NONE).fill"
         );
         assert_eq!(
             painted_edge(&mut cx, Page::Basic.tab()).filter(|c| !c.is_transparent()),
             edge,
-            "{preset}: the selected page tab is not outlined in tab.border.color"
+            "{preset}: the selected page tab is not outlined in tab.tab(SELECTED).stroke.color"
         );
         if preset == "kde-breeze" {
             assert!(
@@ -4058,9 +4078,7 @@ fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
             let row = row.scale(scale);
             // The selected tab's line, where tab.* states one, may be the
             // accent's colour: Breeze's is the selection colour.
-            let line = native_value(cx, |n| n.resolved.tab.active_indicator_width)
-                .flatten()
-                .map(|w| px(w).scale(scale));
+            let line = line_width.map(|w| px(w).scale(scale));
             scene_quads(window).into_iter().any(|q| {
                 q.background.as_solid() == Some(primary)
                     && q.bounds.top() >= row.top()
@@ -5814,10 +5832,12 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
 
 /// The boxes painted in the tooltip's fill in the last frame: upstream fills
 /// a tooltip with `popover` (tooltip.rs:118-119), and the connector's
-/// `geometry::tooltip` refinement repaints it in `tooltip.background_color`.
+/// `next::geometry::tooltip` refinement repaints it in the installed 0.8.0
+/// theme's `tooltip.panel.fill`.
 fn tooltip_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> {
     cx.update(|window, cx| {
-        let fill = native_color(cx, |n| n.resolved.tooltip.background_color);
+        let fill = crate::support::next_resolved(cx)
+            .and_then(|r| native_theme_gpui::next::fill_of(&r.tooltip.panel));
         scene_quads(window)
             .into_iter()
             .filter(|q| fill.is_some() && q.background.as_solid() == fill)
@@ -5829,7 +5849,7 @@ fn tooltip_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> 
 /// The width of the tooltip that shows once the pointer rests on the
 /// element tagged `selector` past gpui's tooltip delay (gpui-pre
 /// elements/div.rs:53, 500ms): the widest box painted in the tooltip's
-/// `tooltip.background_color` fill that was not painted before. `None`
+/// `tooltip.panel.fill` that was not painted before. `None`
 /// where no such box is painted.
 fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<Pixels> {
     // Off any widget first, so a tooltip shown before is gone.
@@ -10051,16 +10071,15 @@ fn a_trailing_expander_arrow_comes_from_the_chosen_set(cx: &mut TestAppContext) 
 /// out of its gallery.
 #[cfg(feature = "material-icons")]
 fn own_chevrons_come_from_the_chosen_set(cx: &mut TestAppContext, preset: &str, leading: bool) {
-    use native_theme::theme::ArrowSide;
+    use native_theme::next::ArrowSide;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     without_motion(&mut cx);
     use_preset(&mut cx, &showcase, preset);
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
     show(&mut cx, &showcase, Page::Basic);
     let side = read(&mut cx, &showcase, |_, cx| {
-        native_value(cx, |n| n.resolved.expander.arrow_side)
-    })
-    .flatten();
+        crate::support::next_resolved(cx).and_then(|r| r.expander.arrow_side)
+    });
     assert_eq!(
         side == Some(ArrowSide::Leading),
         leading,
@@ -17034,7 +17053,7 @@ fn the_about_dialog_links_to_the_compatibility_table(cx: &mut TestAppContext) {
 }
 
 /// The About dialog's Link is refined as every Link is (T15 fix round 1):
-/// under a theme that states `link.underline_enabled = false` (ios-13,
+/// under a theme whose 0.8.0 `link.label(NONE)` is not underlined (ios-13,
 /// material-3) it paints no underline at rest and its info claims none and
 /// says `geometry::link` removes it, under kde-breeze it paints one, and
 /// its info names `geometry::link`.
@@ -17045,7 +17064,15 @@ fn the_about_dialogs_link_takes_the_themes_underline(cx: &mut TestAppContext) {
     let mut reached = (false, false);
     for preset in ["ios-13", "kde-breeze"] {
         use_preset(&mut cx, &showcase, preset);
-        let underlined = resolved_theme(&mut cx, &showcase).link.underline_enabled;
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let underlined = r.is_some_and(|r| {
+            r.link
+                .label(native_theme::next::WidgetState::NONE)
+                .decoration
+                .kind
+                == native_theme::next::DecorationKind::Underline
+        });
         if underlined {
             reached.0 = true;
         } else {
@@ -17173,9 +17200,13 @@ fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     without_motion(&mut cx);
     let padding = read(&mut cx, &showcase, |_this, cx| {
-        crate::support::old_native(cx).map(|n| n.resolved.dialog.border.padding)
+        crate::support::next_resolved(cx)
+            .map(|r| native_theme_gpui::next::padding_of(&r.dialog.panel))
     });
-    let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
+    let (left, right) = (
+        padding.and_then(|[_, _, _, left]| left),
+        padding.and_then(|[_, right, _, _]| right),
+    );
     assert_eq!(
         (left, right),
         (Some(10.0), Some(10.0)),
@@ -24039,7 +24070,7 @@ fn the_icon_theme_select_says_what_a_raster_set_shows(cx: &mut TestAppContext) {
 
 /// A set that gives its chevrons as pixels draws them as the Expander's
 /// arrows and the Number input's steppers (M9-163): each title row holds an
-/// arrow at `expander.arrow_icon_size`, a closed item's the set's
+/// arrow at the 0.8.0 theme's `expander.arrow(NONE).size`, a closed item's the set's
 /// ChevronRight under a leading arrow side, and the increment step holds
 /// the set's ChevronUp image; their info says they are the set's pixels.
 #[cfg(feature = "material-icons")] // the bundled set the pixels stand in for
@@ -24050,21 +24081,22 @@ fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut Tes
     use_preset(&mut cx, &showcase, "macos-tahoe");
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
     let (leading, side, open) = read(&mut cx, &showcase, |this, cx| {
-        let e = native_value(cx, |n| {
-            (
-                n.resolved.expander.arrow_side,
-                n.resolved.expander.arrow_icon_size,
-            )
-        });
+        let r = crate::support::next_resolved(cx);
+        let arrow = r.map(|r| r.expander.arrow(native_theme::next::WidgetState::NONE));
         (
-            e.map(|(s, _)| s),
-            e.map(|(_, size)| size),
+            r.and_then(|r| r.expander.arrow_side),
+            arrow.and_then(|arrow| {
+                arrow
+                    .stated
+                    .contains(native_theme::next::IconStated::SIZE)
+                    .then_some(arrow.size)
+            }),
             this.basic_expanded,
         )
     });
     assert_eq!(
         leading,
-        Some(Some(native_theme::theme::ArrowSide::Leading)),
+        Some(native_theme::next::ArrowSide::Leading),
         "macos-tahoe no longer states a leading arrow, so this case tests another one"
     );
     assert_eq!(
@@ -24072,7 +24104,11 @@ fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut Tes
         [true, false],
         "the Basic expander no longer opens on its first item"
     );
-    let side = px(side.expect("a native theme is installed"));
+    assert!(
+        side.is_some(),
+        "no 0.8.0 theme is installed, or macos-tahoe states no expander.arrow(NONE).size"
+    );
+    let Some(side) = side.map(px) else { return };
     rasterize_icons(
         &mut cx,
         &showcase,
@@ -24084,7 +24120,7 @@ fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut Tes
         assert_eq!(
             at.map(|b| (b.size.width, b.size.height)),
             Some((side, side)),
-            "{arrow}: the set's pixels are not drawn as the arrow at expander.arrow_icon_size"
+            "{arrow}: the set's pixels are not drawn as the arrow at expander.arrow(NONE).size"
         );
     }
     let closed = bounds_of(&mut cx, "basic-expander-arrow-1");
