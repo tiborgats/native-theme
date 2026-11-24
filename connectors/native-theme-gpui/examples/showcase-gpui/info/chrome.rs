@@ -1302,8 +1302,8 @@ pub fn palette_select(t: &Theme, native: Option<&native_theme::next::ResolvedThe
             "none, the theme's own colours, then the palettes native_theme::next::Palette::BUNDLED_NAMES names; choosing one installs the chosen theme again with it laid over (next::Theme::with_palette), which locks the scheme to the palette's, so the colour mode chosen does not change it while the palette is chosen (Showcase::choose_palette)",
         )
         .instance(
-            "old model",
-            "under a palette, gpui-component's theme colours, the connector's widgets::* and the showcase's own refinements are drawn from the 0.8.0 theme with the palette. Still read from the 0.7.2 theme of the same choice, which has no palettes, so they show the preset alone, in the palette's scheme: the colour the icons of the chosen icon theme are tinted with (Showcase::original_font) and the fonts the status bar and the inspector name; the tooltip says so",
+            "under a palette",
+            "gpui-component's theme colours, the connector's widgets::* and the showcase's own refinements are drawn from the 0.8.0 theme with the palette, and so is the colour the icons of the chosen icon theme are tinted with (Showcase::original_font, typography.body.color); the tooltip says so",
         )
         .instance(
             "width",
@@ -1536,7 +1536,7 @@ pub fn status_bar(t: &Theme, styled: bool, edge: bool, environment: &str) -> Wid
     info.instance(
         "left",
         if cfg!(target_os = "linux") {
-            "the side-panel toggle at the bar's left end, then the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- SystemTheme::from_system then asks the portal, then kdeglobals, and the preset names what it settled on; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+            "the side-panel toggle at the bar's left end, then the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- next::Theme::from_system reads the desktop with the reader of the platform's preset (Preset::detect), and the preset names the one it read; the installed preset and colour mode; the font the installed theme states as typography.body, in the unit its source stated, or (family not stated); the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         } else {
             "the side-panel toggle at the bar's left end, then the operating system; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         },

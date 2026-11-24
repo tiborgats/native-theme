@@ -18,8 +18,9 @@ use gpui_component::{
 };
 use native_theme_gpui::{ActiveNativeTheme as _, next, variants};
 use native_theme_showcase_support::info::ListedInfo;
+use native_theme_showcase_support::next::status::defined_size;
 use native_theme_showcase_support::next::{info as next_info, values as next_values};
-use native_theme_showcase_support::status::{DrawnFamily, defined_size};
+use native_theme_showcase_support::status::DrawnFamily;
 use std::borrow::Cow;
 use std::sync::Arc;
 
@@ -243,29 +244,34 @@ impl Inspector {
     }
 }
 
-/// The Theme tab's Fonts section: the installed theme's `defaults.font` and
-/// `defaults.mono_font` of `app`, each family by the family gpui draws
+/// The Theme tab's Fonts section: the installed theme's `typography.body`
+/// and `typography.monospace` of `app`, each family by the family gpui draws
 /// ([`DrawnFamilies::label`] of the stated family and `Theme::font_family`
 /// or `mono_font_family`, the connector's `font_family` of it, once a native
-/// theme is installed; the placeholder alone before that), each size in the
+/// theme is installed; the stated family alone before that, and
+/// `(family not stated)` where the style states none), each size in the
 /// unit the platform stated, like the Widget Info: these rows report the
 /// theme's own definition, not the pixel value gpui lays out with.
 pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, String)> {
     let (font, mono) = (&app.original_font, &app.original_mono_font);
     let theme = cx.theme();
     let families = DrawnFamilies::installed(app, cx);
-    let label = |stated: &str, asked: &SharedString| {
-        families
-            .as_deref()
-            .map_or_else(|| stated.to_string(), |f| f.label(stated, asked))
+    let label = |style: &native_theme::next::TextStyle, asked: &SharedString| {
+        if !style
+            .stated
+            .contains(native_theme::next::TextStated::FAMILY)
+        {
+            return "(family not stated)".to_string();
+        }
+        families.as_deref().map_or_else(
+            || style.family.to_string(),
+            |f| f.label(&style.family, asked),
+        )
     };
     vec![
-        ("font_family", label(&font.family, &theme.font_family)),
+        ("font_family", label(font, &theme.font_family)),
         ("font_size", defined_size(font)),
-        (
-            "mono_font_family",
-            label(&mono.family, &theme.mono_font_family),
-        ),
+        ("mono_font_family", label(mono, &theme.mono_font_family)),
         ("mono_font_size", defined_size(mono)),
     ]
 }

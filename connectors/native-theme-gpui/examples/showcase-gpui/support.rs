@@ -24,7 +24,7 @@ use native_theme::icons::{
     FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
     SegoeFluentLoader, SfSymbolsLoader,
 };
-use native_theme::next::{Contrast, Palette, Preset};
+use native_theme::next::{Contrast, Palette, Preset, ThemeContext};
 use native_theme_gpui::icons::{IconUse, load_gpui_icon, mask_drawable};
 use native_theme_gpui::next::Mapped;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme};
@@ -242,7 +242,8 @@ pub(crate) struct NextInactive(pub(crate) native_theme::next::ResolvedTheme);
 impl gpui::Global for NextInactive {}
 
 /// What the installed 0.8.0 theme was asked for (`Showcase::try_install`):
-/// the preferences it was installed with -- the OS's with the user's over
+/// the context it was resolved in (`Showcase::next_context`) and the
+/// preferences that context was made with -- the OS's with the user's over
 /// them (`demo::PreferenceOverrides`) -- which the Preferences sheet and the
 /// status bar show, why the theme's contrast is lower than they ask, where
 /// it is, and the palette chosen that High contrast set aside, where it set
@@ -250,6 +251,7 @@ impl gpui::Global for NextInactive {}
 /// to (`NativeTheme::accessibility`), whose contrast level the theme may have
 /// lowered (docs/v0.8.0-spec.md §6, resolution step 1).
 pub(crate) struct Requested {
+    pub(crate) context: ThemeContext,
     pub(crate) preferences: AccessibilityPreferences,
     pub(crate) contrast_held: Option<ContrastHeld>,
     pub(crate) palette_set_aside: Option<&'static str>,
@@ -298,6 +300,14 @@ pub(crate) fn requested_preferences(cx: &App) -> Option<AccessibilityPreferences
     cx.native_theme()?.next_resolved(cx)?;
     cx.try_global::<Requested>()
         .map(|requested| requested.preferences.clone())
+}
+
+/// The context the installed 0.8.0 theme was asked to be resolved in
+/// ([`Requested`]); `None` before a theme was installed.
+pub(crate) fn requested_context(cx: &App) -> Option<&ThemeContext> {
+    cx.native_theme()?.next_resolved(cx)?;
+    cx.try_global::<Requested>()
+        .map(|requested| &requested.context)
 }
 
 /// Why the installed 0.8.0 theme's contrast is lower than its preferences
@@ -652,12 +662,12 @@ pub(crate) fn is_system_set(set: IconSet) -> bool {
     )
 }
 
-/// The desktop's own theme, read: `SystemTheme::from_system`, which
+/// The desktop's settings, read: `next::Theme::from_system`, which
 /// `default` installs. Counted in the self-tests (`SYSTEM_READS`).
-pub(crate) fn read_system_theme() -> native_theme::Result<native_theme::SystemTheme> {
+pub(crate) fn read_system_theme() -> native_theme::next::Result<native_theme::next::Theme> {
     #[cfg(test)]
     SYSTEM_READS.with(|reads| reads.set(reads.get().saturating_add(1)));
-    native_theme::SystemTheme::from_system()
+    native_theme::next::Theme::from_system()
 }
 
 #[cfg(test)]

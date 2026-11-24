@@ -1574,16 +1574,15 @@ fn settings_tooltip(cx: &App, control: Stateful<Div>, text: SharedString) -> Sta
 /// under a palette, which has no 0.7.2 equivalent.
 pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): \
      gpui-component's theme colours, the connector's own widgets and the showcase's own \
-     refinements are drawn from the 0.8.0 theme with the palette. Still read from the 0.7.2 \
-     preset, which has no palettes: the colour the icons of the chosen icon theme are tinted \
-     with, and the fonts the status bar and the inspector name.";
+     refinements are drawn from the 0.8.0 theme with the palette, and so is the colour the \
+     icons of the chosen icon theme are tinted with.";
 
 /// The palette Select over `state`, refined by `next::geometry::select`, as wide
 /// as the theme settings it is in: `none`, the theme's own colours, and the
 /// bundled palettes (`support::palette_rows`); the choice installs the theme
 /// again with the palette laid over it (`Showcase::choose_palette`). Its
-/// tooltip says what the pages still on the 0.7.2 model show under a
-/// palette ([`PALETTE_TOOLTIP`]); its info says where High contrast set the
+/// tooltip says what a palette recolours ([`PALETTE_TOOLTIP`]); its info
+/// says where High contrast set the
 /// palette chosen aside (`support::palette_set_aside`).
 pub(crate) fn palette_select(
     ui: &Entity<InfoRegistry>,

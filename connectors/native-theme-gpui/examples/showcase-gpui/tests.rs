@@ -76,17 +76,44 @@ use scene_read::{scene_quads, scene_underlines};
 /// `WINDOW_SIZE` instead, which is what puts the scroll container to work.
 const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 
-/// The desktop's own theme, for a test that installs it. On Linux it is
-/// never an error: a desktop with no reader falls back to the platform
-/// preset (native-theme `pipeline.rs`, `linux_fallback`), so an error there
-/// fails the test rather than skip its check. Off Linux a build without a
-/// reader feature has no OS theme, and the error says so.
-fn system_theme() -> native_theme::Result<native_theme::SystemTheme> {
-    let system = native_theme::SystemTheme::from_system();
-    if cfg!(target_os = "linux") {
-        return Ok(system.expect("Linux falls back to the platform preset"));
-    }
+/// The desktop's settings, as `default` installs them
+/// (`support::read_system_theme`), for a test that installs them. On Linux
+/// it is never an error: a desktop with no reader is the `adwaita` preset
+/// alone (`next::Theme::from_system`), so an error there fails the test
+/// rather than skip its check. Off Linux a build without a reader feature
+/// has no OS theme, and the error says so.
+fn system_theme() -> native_theme::next::Result<native_theme::next::Theme> {
+    let system = crate::support::read_system_theme();
+    assert!(
+        !cfg!(target_os = "linux") || system.is_ok(),
+        "Linux falls back to the adwaita preset, so its read never fails: {:?}",
+        system.as_ref().err().map(ToString::to_string)
+    );
     system
+}
+
+/// `system` with `os` as the OS's accessibility preferences in its context,
+/// as the showcase reads them back (`app::preferences_of`): a motion
+/// `Reduced` or `Full`, a contrast `High` or `Normal`.
+fn with_os_preferences(
+    system: native_theme::next::Theme,
+    os: &native_theme_gpui::AccessibilityPreferences,
+) -> native_theme::next::Theme {
+    use native_theme::next::{Contrast, MotionPreference};
+    let mut ctx = system.context().clone();
+    ctx.text_scale = os.text_scaling_factor;
+    ctx.motion = if os.reduce_motion {
+        MotionPreference::Reduced
+    } else {
+        MotionPreference::Full
+    };
+    ctx.contrast = if os.high_contrast {
+        Contrast::High
+    } else {
+        Contrast::Normal
+    };
+    ctx.reduced_transparency = os.reduce_transparency;
+    system.with_context(ctx)
 }
 
 /// Build the showcase the way `main` does — `gpui_kit::init`, the showcase's
@@ -1828,33 +1855,10 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
     );
 }
 
-/// The context the self-tests that measure sizes resolve a preset's 0.7.2
-/// theme in, the same on every host (`Showcase::resolution_context_for_test`):
-/// a preset of an Apple platform at 72 DPI, where a point is a pixel, every
-/// other at 96, the font DPI `ResolutionContext::from_system` gives on its
-/// own platform (native-theme src/resolve/context.rs,
-/// `ResolutionContext::font_dpi`), as the seams test resolves the native
-/// presets (tests/seams.rs, `NATIVE`). A preset of an Apple platform is one
-/// whose `platforms` name `macos` or `ios` (`Theme::list_presets`). It also
-/// pins the dialog button order (`PrimaryRight`) and the icon theme (none
-/// detected), as `ResolutionContext::for_tests()` gives them, where the
-/// host's would differ from one machine to the next.
-fn preset_resolution_context(preset: &str) -> native_theme::ResolutionContext {
-    let apple = native_theme::theme::Theme::list_presets()
-        .iter()
-        .filter(|info| info.key == preset)
-        .any(|info| info.platforms.iter().any(|p| *p == "macos" || *p == "ios"));
-    native_theme::ResolutionContext {
-        font_dpi: if apple { 72.0 } else { 96.0 },
-        ..native_theme::ResolutionContext::for_tests()
-    }
-}
-
 /// Install `preset` as `use_preset` does, with the OS's accessibility
 /// preferences the defaults, not the host's (`os_preferences_for_test`):
 /// the host's would scale the text by whatever the desktop the test runs on
-/// is set to; and its 0.7.2 theme resolved at its own platform's font DPI,
-/// not the host's ([`preset_resolution_context`]). Then scale the text by
+/// is set to. Then scale the text by
 /// `text_scale` as the Preferences sheet scales it ([`scale_text`]), so the
 /// showcase resolves the 0.8.0 theme again for that context and installs it
 /// (`Showcase::install`).
@@ -1867,7 +1871,6 @@ fn use_preset_scaled(
     cx.update(|_window, cx| {
         showcase.update(cx, |this, _| {
             this.os_preferences_for_test = Some(native_theme::AccessibilityPreferences::default());
-            this.resolution_context_for_test = Some(preset_resolution_context(preset));
         })
     });
     use_preset(cx, showcase, preset);
@@ -13370,15 +13373,6 @@ fn text_ins_style_is_the_connectors_on_every_font_style() -> Result<(), String> 
 /// apart are then one.
 #[test]
 fn a_substituted_family_is_named_in_every_own_font_line() {
-    let resolved = native_theme::theme::Theme::preset("kde-breeze")
-        .ok()
-        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
-        .and_then(|v| {
-            v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                .ok()
-        });
-    assert!(resolved.is_some(), "kde-breeze light does not resolve");
-    let Some(resolved) = resolved else { return };
     let absent: std::sync::Arc<str> = "Native Theme Absent Sans".into();
     #[cfg(feature = "system-fonts")]
     let installed =
@@ -13414,8 +13408,13 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
         );
         next
     };
-    let prefs = native_theme_gpui::AccessibilityPreferences::default();
-    let theme = native_theme_gpui::to_theme(&resolved, "kde-breeze", false, &prefs);
+    let theme = native_theme_gpui::next::to_theme(&next);
+    assert!(
+        theme.is_ok(),
+        "gpui cannot take kde-breeze light: {:?}",
+        theme.as_ref().err().map(ToString::to_string)
+    );
+    let Ok(theme) = theme else { return };
     let line = |info: WidgetInfo, what: &str| {
         info.config
             .iter()
@@ -13675,7 +13674,7 @@ fn font_labels(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [(Str
                 .map(|(_, value)| value.clone())
                 .unwrap_or_default()
         };
-        let size = native_theme_showcase_support::status::defined_size(&this.original_font);
+        let size = native_theme_showcase_support::next::status::defined_size(&this.original_font);
         let listed = |id: &str, home: &str| {
             PanelLook::of(cx)
                 .and_then(|look| {
@@ -13728,6 +13727,15 @@ fn font_labels(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [(Str
     })
 }
 
+/// kde-breeze's text styles, resolved light in the default context, as
+/// `use_light_preset` installs the preset.
+fn kde_breeze_light_typography() -> native_theme::next::Typography {
+    use native_theme::next::{Preset, Scheme, Theme, ThemeContext};
+    Theme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::default().with_scheme(Scheme::Light))
+        .typography
+}
+
 /// The family gpui is asked for in a theme's `stated` one (the connector's `font_family`).
 fn asked_family(stated: &str) -> String {
     native_theme_gpui::font_family(&std::sync::Arc::from(stated)).to_string()
@@ -13751,17 +13759,11 @@ fn held_fallback(asked: &[String]) -> &'static str {
 /// host, the platform's substitute, which the text system does not hold either).
 #[test]
 fn a_family_gpui_finds_no_face_of_is_named_by_its_fallback() {
-    let light = |preset: &str| {
-        native_theme::theme::Theme::preset(preset)
-            .and_then(|t| t.resolve(native_theme::theme::ColorMode::Light))
-            .map(|r| r.variant.defaults)
-            .expect("the preset resolves")
-    };
-    let breeze = light("kde-breeze");
+    let breeze = kde_breeze_light_typography();
     let (absent, absent_mono) = ("NoSuchFamily-T10b", "NoSuchFamily-T10b Mono");
     let asked: Vec<String> = [
-        &*breeze.font.family,
-        &*breeze.mono_font.family,
+        &*breeze.body.family,
+        &*breeze.monospace.family,
         absent,
         absent_mono,
     ]
@@ -13795,21 +13797,14 @@ fn a_family_gpui_finds_no_face_of_is_named_by_its_fallback() {
         check(
             &mut cx,
             "kde-breeze",
-            &breeze.font.family,
-            &breeze.mono_font.family,
+            &breeze.body.family,
+            &breeze.monospace.family,
         );
         let Ok(system) = system_theme() else {
             return;
         };
-        let overlay = native_theme::theme::Theme::from_toml(&format!(
-            "[light.defaults.font]\nfamily = \"{absent}\"\n[light.defaults.mono_font]\nfamily = \
-             \"{absent_mono}\"\n[dark.defaults.font]\nfamily = \"{absent}\"\n\
-             [dark.defaults.mono_font]\nfamily = \"{absent_mono}\"\n"
-        ))
-        .and_then(|overlay| system.with_overlay(&overlay))
-        .expect("the overlay applies");
-        // The same families as the 0.8.0 model's reading of the system
-        // states them, which the showcase installs `default` from.
+        // The families the system's settings state, which the showcase
+        // installs `default` from.
         let next_overlay = |system: native_theme::next::Theme| {
             let mut overrides = system.system_overrides().cloned().unwrap_or_default();
             for (font, family) in [
@@ -13823,13 +13818,7 @@ fn a_family_gpui_finds_no_face_of_is_named_by_its_fallback() {
         };
         let installed = cx.update(|window, cx| {
             showcase.update(cx, |this, cx| {
-                let next = this
-                    .next_system
-                    .take()
-                    .and_then(Result::ok)
-                    .unwrap_or_else(native_theme::next::Theme::from_system_or_default);
-                this.next_system = Some(Ok(next_overlay(next)));
-                this.install_system(overlay, window, cx)
+                this.install_system(next_overlay(system), window, cx)
             })
         });
         assert!(
@@ -13846,13 +13835,10 @@ fn a_family_gpui_finds_no_face_of_is_named_by_its_fallback() {
 /// alone where the platform names no substitute, as on a host that has "Noto Sans" and "Hack".
 #[test]
 fn a_family_gpui_finds_is_named_as_stated() {
-    let breeze = native_theme::theme::Theme::preset("kde-breeze")
-        .and_then(|t| t.resolve(native_theme::theme::ColorMode::Light))
-        .map(|r| r.variant.defaults)
-        .expect("the preset resolves");
+    let breeze = kde_breeze_light_typography();
     let (body, mono) = (
-        asked_family(&breeze.font.family),
-        asked_family(&breeze.mono_font.family),
+        asked_family(&breeze.body.family),
+        asked_family(&breeze.monospace.family),
     );
     let fallback = held_fallback(&[body.clone(), mono.clone()]);
     let held = [body.as_str(), mono.as_str(), fallback];
@@ -13861,9 +13847,9 @@ fn a_family_gpui_finds_is_named_as_stated() {
         use_light_preset(&mut cx, &showcase, "kde-breeze");
         for (ix, (site, label)) in font_labels(&mut cx, &showcase).iter().enumerate() {
             let (stated, asked) = if ix == 2 || ix == 4 {
-                (&breeze.mono_font.family, &mono)
+                (&breeze.monospace.family, &mono)
             } else {
-                (&breeze.font.family, &body)
+                (&breeze.body.family, &body)
             };
             println!("kde-breeze: {site}: {label}");
             assert_eq!(
@@ -14844,8 +14830,8 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
     );
     // The desktop's own theme, where this host has one to read (always on
     // Linux), with the OS's preferences it carries made the test's.
-    if let Ok(mut system) = system_theme() {
-        system.accessibility = os.clone();
+    if let Ok(system) = system_theme() {
+        let system = with_os_preferences(system, &os);
         cx.update(|window, cx| {
             showcase.update(cx, |this, cx| this.install_system(system, window, cx))
         });
@@ -15150,24 +15136,22 @@ fn the_icon_theme_select_says_on_hover_why_the_system_theme_is_unavailable(
 }
 
 /// The preset switch's `default` row and the status bar name the same
-/// preset: the one the pipeline settled on (`SystemTheme::preset`), which
-/// on a desktop `native_theme::detect` does not recognise can differ from
-/// `platform_preset_name`'s guess (native-theme pipeline.rs, `select_reader`).
+/// preset: the one of the desktop's settings as read
+/// (`next::Theme::preset_id`), which on Linux can differ from the
+/// platform's (`Preset::detect`): a desktop with no reader is `adwaita`.
 #[gpui::test]
 fn the_default_row_and_the_status_bar_name_one_preset(cx: &mut TestAppContext) {
+    use native_theme::next::Preset;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let Ok(mut system) = system_theme() else {
+    // A platform preset other than the one Preset::detect gives.
+    let (settled, preset) = if Preset::detect() == Preset::Adwaita {
+        ("kde-breeze", Preset::KdeBreeze)
+    } else {
+        ("adwaita", Preset::Adwaita)
+    };
+    let Ok(system) = native_theme::next::Theme::from_system_with_preset(preset) else {
         return;
     };
-    // A platform preset other than the one platform_preset_name gives, as
-    // the pipeline settles on where the desktop is not recognised.
-    let guessed = native_theme::pipeline::platform_preset_name().name;
-    let settled = if guessed == "adwaita" {
-        "kde-breeze"
-    } else {
-        "adwaita"
-    };
-    system.preset = settled.to_string();
     set_preset(&mut cx, &showcase, "default");
     cx.update(|window, cx| showcase.update(cx, |this, cx| this.install_system(system, window, cx)));
     cx.run_until_parked();
@@ -15227,18 +15211,33 @@ fn reads_and_loads() -> (usize, usize) {
 fn kept_system(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
-) -> Option<native_theme::SystemTheme> {
-    let system = read(cx, showcase, |this, _| this.system.clone());
+) -> Option<native_theme::next::Theme> {
+    let system = read(cx, showcase, |this, _| {
+        this.next_system.clone().and_then(Result::ok)
+    });
     assert!(system.is_some(), "`default` kept no desktop theme");
     system
 }
 
-/// A colour-mode switch under `default` installs the other variant of the
-/// desktop's theme it installed, without reading the OS again: three
+/// The icon theme of `system` resolved in the scheme of `dark`.
+fn icon_theme_in(system: &native_theme::next::Theme, dark: bool) -> Option<String> {
+    use native_theme::next::Scheme;
+    let mut ctx = system.context().clone();
+    ctx.scheme = if dark { Scheme::Dark } else { Scheme::Light };
+    system
+        .resolve(&ctx)
+        .icons
+        .theme
+        .as_deref()
+        .map(str::to_owned)
+}
+
+/// A colour-mode switch under `default` resolves the desktop's settings it
+/// installed in the other scheme, without reading the OS again: three
 /// switches read it no more, and Reload System Theme reads it once.
 ///
-/// Each switch shows its mode with that mode's own variant's icon theme
-/// (`SystemTheme::icon_theme_for`), not the one of the mode the OS is in:
+/// Each switch shows its mode with the icon theme of the settings resolved
+/// in that mode's scheme, not the one of the mode the OS is in:
 /// on KDE with the OS light and the showcase dark, `breeze-dark`, where
 /// `breeze` was loaded. A test cannot choose the OS's mode, so it shows the
 /// showcase both and compares each with what a read of its own states.
@@ -15257,9 +15256,9 @@ fn a_mode_switch_under_default_reads_the_os_only_on_reload(cx: &mut TestAppConte
         });
         assert_eq!(is_dark, mode.is_dark(), "{mode:?} was not the mode shown");
         assert_eq!(
-            icon_theme.as_deref(),
-            system.icon_theme_for(crate::app::color_mode_of(is_dark)),
-            "{mode:?} under `default` took another variant's icon theme"
+            icon_theme,
+            icon_theme_in(&system, is_dark),
+            "{mode:?} under `default` took another scheme's icon theme"
         );
     }
     assert_eq!(
@@ -15295,13 +15294,14 @@ fn an_os_theme_change_is_read_in_every_colour_mode(cx: &mut TestAppContext) {
         let stale = "the read before the OS theme changed";
         cx.update(|_window, cx| {
             showcase.update(cx, |this, _| {
-                if let Some(system) = this.system.as_mut() {
-                    system.name = stale.into();
+                if let Some(Ok(system)) = this.next_system.take() {
+                    this.next_system = Some(Ok(system.with_name(stale)));
                 }
             })
         });
+        let name = |system: native_theme::next::Theme| system.resolve_current().name.to_string();
         assert_eq!(
-            kept_system(&mut cx, &showcase).map(|s| s.name.to_string()),
+            kept_system(&mut cx, &showcase).map(name),
             Some(stale.to_string()),
             "the kept read was not marked, so its replacement proves nothing"
         );
@@ -15326,7 +15326,7 @@ fn an_os_theme_change_is_read_in_every_colour_mode(cx: &mut TestAppContext) {
             "switching from {mode:?} to System read the OS theme again"
         );
         assert_ne!(
-            kept_system(&mut cx, &showcase).map(|s| s.name.to_string()),
+            kept_system(&mut cx, &showcase).map(name),
             Some(stale.to_string()),
             "switching from {mode:?} to System showed the read from before the OS theme changed"
         );
@@ -15370,11 +15370,11 @@ fn a_bundled_preset_stays_installed_through_an_os_theme_change(cx: &mut TestAppC
 /// The icons load where what they are loaded as changed -- the set, its
 /// icon theme, or, for a system set (freedesktop, SF Symbols, Segoe
 /// Fluent), whose loaders colour a symbolic icon once, the colour they
-/// colour it in, `defaults.font.color` -- and are recoloured otherwise. So
-/// under `default` with Material chosen three colour-mode switches load
+/// colour it in, `typography.body.color` -- and are recoloured otherwise.
+/// So under `default` with Material chosen three colour-mode switches load
 /// nothing; with the theme's own set each loads once where that set is a
-/// system set and the two variants differ in icon theme or font colour
-/// (computed from the desktop's theme kept, so it holds on every host),
+/// system set and the two schemes differ in icon theme or body colour
+/// (computed from the desktop's settings kept, so it holds on every host),
 /// else not at all; and a preset switch from a bundled set to a system one
 /// loads once.
 #[gpui::test]
@@ -15429,10 +15429,16 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
             ..Default::default()
         },
     );
-    let [light, dark] = [
-        native_theme::theme::ColorMode::Light,
-        native_theme::theme::ColorMode::Dark,
-    ];
+    let in_scheme = |system: &native_theme::next::Theme, dark: bool| {
+        let mut ctx = system.context().clone();
+        ctx.scheme = if dark {
+            native_theme::next::Scheme::Dark
+        } else {
+            native_theme::next::Scheme::Light
+        };
+        let resolved = system.resolve(&ctx);
+        (resolved.icons.theme, resolved.typography.body.color)
+    };
     for mode in three_switches(&mut cx, &showcase) {
         let (_, loads) = reads_and_loads();
         switch_mode(&mut cx, mode);
@@ -15440,10 +15446,8 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
             this.icon_set_enum
                 .is_some_and(crate::support::is_system_set)
         });
-        let variants_differ = kept_system(&mut cx, &showcase).is_some_and(|s| {
-            s.icon_theme_for(light) != s.icon_theme_for(dark)
-                || s.pick(light).defaults.font.color != s.pick(dark).defaults.font.color
-        });
+        let variants_differ = kept_system(&mut cx, &showcase)
+            .is_some_and(|s| in_scheme(&s, false) != in_scheme(&s, true));
         assert_eq!(
             reads_and_loads().1 - loads,
             usize::from(system_set && variants_differ),
@@ -16496,7 +16500,7 @@ fn the_status_bar_and_the_theme_tab_name_the_drawn_family(cx: &mut TestAppContex
         let family = label(&font.family, &drawn.0);
         let mono_family = label(&mono.family, &drawn.1);
         println!("{preset}: {family}; {mono_family}");
-        let size = native_theme_showcase_support::status::defined_size(&font);
+        let size = native_theme_showcase_support::next::status::defined_size(&font);
         assert_eq!(
             status.get(2),
             Some(&format!("{family} {size}")),
@@ -17040,13 +17044,8 @@ fn the_high_contrast_switch_shows_what_was_asked_and_says_why_it_is_not_used(
     // The palette holds High back where the theme has it for the palette's
     // scheme alone: the desktop's settings as the 0.8.0 model reads them,
     // here kde-breeze with the system's High colours for the dark scheme
-    // only, in the light mode, under dracula, a dark palette. The 0.7.2
-    // theme of `default` is this host's, where it has one to read (always
-    // on Linux).
-    let Ok(mut system) = system_theme() else {
-        return;
-    };
-    system.accessibility = native_theme_gpui::AccessibilityPreferences::DEFAULT.clone();
+    // only, in the light mode, under dracula, a dark palette, its context
+    // the default one, so the OS's preferences are the defaults.
     let mut colors = native_theme::next::OsColors::default();
     colors.accent = Some(native_theme::next::Color::WHITE);
     let mut overrides = native_theme::next::SystemOverrides::default();
@@ -17061,7 +17060,6 @@ fn the_high_contrast_switch_shows_what_was_asked_and_says_why_it_is_not_used(
         .with_system_overrides(overrides);
     cx.update(|_window, cx| {
         showcase.update(cx, |this, _| {
-            this.system = Some(system);
             this.next_system = Some(Ok(next));
         })
     });
