@@ -1021,6 +1021,73 @@
         },
         {
           "states": [
+            "hover"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#00000072"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#00000018",
+            "stroke": {
+              "width": 1.0,
+              "color": "#00000037"
+            }
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0, 0.40392157, 0.7529412, 0.9)",
+            "stroke": {
+              "width": 1.0,
+              "color": "srgb(0, 0.40392157, 0.7529412, 0.9)"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0067c0cc",
+            "stroke": {
+              "width": 1.0,
+              "color": "#0067c0cc"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#00000037"
+            }
+          }
+        },
+        {
+          "states": [
             "disabled",
             "checked"
           ],
@@ -1047,6 +1114,24 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "dot": {
+            "fill": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "dot": {
+            "fill": "#ffffff"
+          }
+        },
         {
           "states": [
             "disabled"

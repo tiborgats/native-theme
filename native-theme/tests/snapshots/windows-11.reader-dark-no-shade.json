@@ -1021,6 +1021,73 @@
         },
         {
           "states": [
+            "hover"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff8b"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff12",
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff28"
+            }
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "srgb(0, 0.47058824, 0.84313726, 0.9)",
+            "stroke": {
+              "width": 1.0,
+              "color": "srgb(0, 0.47058824, 0.84313726, 0.9)"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0078d7cc",
+            "stroke": {
+              "width": 1.0,
+              "color": "#0078d7cc"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#ffffff28"
+            }
+          }
+        },
+        {
+          "states": [
             "disabled",
             "checked"
           ],
@@ -1047,6 +1114,24 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "dot": {
+            "fill": "#000000"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "dot": {
+            "fill": "#000000"
+          }
+        },
         {
           "states": [
             "disabled"

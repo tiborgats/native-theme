@@ -225,7 +225,13 @@ const DIFFERENCES: &[Difference] = &[
                  :1502 at WebKit 31adf9d; native-theme/tests/next_homes.toml, rows \
                  checkbox.unchecked_border_color, checkbox.border.color and \
                  checkbox.border.line_width, listed differences); the outline's colour is \
-                 compared apart (CheckboxLook::of border), its width here",
+                 compared apart (CheckboxLook::of border), its width here; and an empty box \
+                 at rest in WebKit's -webkit-control-background, systemBackground #ffffff / \
+                 #000000, in place of 0.7.2's uncited #ffffff / #1c1c1e \
+                 (checkboxRadioBackgroundColor, RenderThemeIOS.mm:1391, :1395, :1027 at WebKit \
+                 31adf9d; system-color-for-css-value-expected.txt:7, :9 at WebKit de320ba; \
+                 native-theme/tests/next_homes.toml, row \
+                 checkbox.unchecked_background, a listed difference)",
     },
     Difference {
         leaf: "CheckboxLook::radio",
@@ -342,6 +348,20 @@ const FROM_HOME: &[Difference] = &[
                  AccentFillColorDefaultBrush (RadioButton_themeresources.xaml:142, :26), and \
                  WebKit strokes the iOS radio as the box; the look reads \
                  radio.indicator(CHECKED).stroke.color and radio.indicator(NONE).stroke.color",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_border",
+        presets: &["windows-11"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0's windows-11 states an unselected circle's outline for HOVER, \
+                 the rest ControlStrongStrokeColorDefault, which WinUI keeps \
+                 (RadioButtonOuterEllipseStrokePointerOver, RadioButton_themeresources.xaml:135, \
+                 :19 at microsoft-ui-xaml 8463f45), and a selected one's, \
+                 AccentFillColorSecondary, the accent's fill at 0.9, #0067c0e6 / #4cc2ffe6 \
+                 (…CheckedStrokePointerOver, :143, :27; Common_themeresources_any.xaml:330, \
+                 :126) (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, \
+                 a listed difference); the look reads radio.indicator(HOVER).stroke.color and \
+                 radio.indicator(HOVER|CHECKED).stroke.color",
     },
     Difference {
         leaf: "CheckboxLook::of label disabled",

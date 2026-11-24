@@ -2408,8 +2408,8 @@ fn button(
 /// `defaults.border.line_width` where unstated), no shadow, under high
 /// contrast `COLOR_BTNFACE` in `COLOR_BTNTEXT`; under the pointer the hover
 /// fill; checked, filled and outlined in the accent's fill; disabled, the
-/// disabled fill, which a checked check box and radio ([`checkbox`],
-/// [`radio`]) replace with their own.
+/// disabled fill, under high contrast `COLOR_WINDOW`, which a checked check
+/// box and radio ([`checkbox`], [`radio`]) replace with their own.
 fn indicator(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -2448,9 +2448,12 @@ fn indicator(
                 stroke(layout.border_width, c.accent_fill),
             ],
         )
+        // Disabled, under high contrast CheckBoxCheckBackgroundFillUncheckedDisabled =
+        // SystemColorWindowColorBrush (CheckBox_themeresources.xaml:144 at microsoft-ui-xaml
+        // 8463f45); RadioButtonOuterEllipseFillDisabled the same (RadioButton_themeresources.xaml:83).
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(c.control_fill_disabled)],
+            [fill(hc.window.unwrap_or(c.control_fill_disabled))],
         )
 }
 
@@ -2648,8 +2651,11 @@ fn checkbox(
 
 /// The radio button: [`indicator`] (0.7.2 states no corners for it), a dot
 /// in the accent's text colour (`checkbox.indicator_color`), [`check_label`].
-/// Under high contrast a checked circle is `COLOR_HIGHLIGHTTEXT` in the
-/// highlight's outline, its dot `COLOR_HIGHLIGHT`.
+/// Unselected, pressed and disabled, the circle as the check box's; selected,
+/// hovered and pressed, the accent's secondary and tertiary fills. Under high
+/// contrast a checked circle is `COLOR_HIGHLIGHTTEXT` in the highlight's
+/// outline, its dot `COLOR_HIGHLIGHT`, and the hovered, pressed and disabled
+/// circles and dots take WinUI's high-contrast brushes.
 fn radio(
     c: &SchemeColors,
     hc: &HighContrast,
@@ -2663,27 +2669,92 @@ fn radio(
     // The disabled key names the `Color` resource where the property is a `Brush`; what the
     // runtime draws from it is not measured. Under high contrast SystemColorGrayTextColor (:95);
     // enabled, RadioButtonCheckGlyphFill = SystemColorHighlightColorBrush (:92).
+    // Hovered and pressed, checked: RadioButtonCheckGlyphFillPointerOver and …Pressed =
+    // TextOnAccentFillColorPrimaryBrush, the rest's (:151, :152; :35, :36), under high contrast
+    // SystemColorButtonTextColorBrush (:93, :94).
     let dot = RuleBuilder::new(PartStyle::default())
         .base([
             fill(hc.highlight.unwrap_or(roles.accent.foreground)),
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+                RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            ],
+            [fill(hc.button_text.unwrap_or(roles.accent.foreground))],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(hc.gray_text.unwrap_or(roles.accent.foreground))],
         )
         .build();
+    // An unselected circle hovered keeps its outline, RadioButtonOuterEllipseStrokePointerOver =
+    // ControlStrongStrokeColorDefaultBrush, the rest's (RadioButton_themeresources.xaml:135, :19;
+    // rest :134, :18), under high contrast SystemColorHighlightColorBrush (:77); pressed, filled in
+    // RadioButtonOuterEllipseFillPressed = ControlAltFillColorQuarternaryBrush (:140, :24) inside
+    // …StrokePressed = ControlStrongStrokeColorDisabledBrush (:136, :20), under high contrast both
+    // SystemColorHighlightTextColorBrush (:82, :78); disabled, outlined in …StrokeDisabled =
+    // ControlStrongStrokeColorDisabledBrush (:137, :21), under high contrast SystemColorGrayTextColor
+    // (:79). A selected circle hovered and pressed, filled and outlined in
+    // …CheckedFillPointerOver, …CheckedStrokePointerOver = AccentFillColorSecondaryBrush (:147,
+    // :143; :31, :27) and the …Pressed ones = AccentFillColorTertiaryBrush (:148, :144; :32, :28);
+    // under high contrast hovered SystemColorButtonFaceColorBrush in SystemColorButtonTextColorBrush
+    // (:89, :85), pressed SystemColorButtonFaceColorBrush in the same (:90, :86).
     // Disabled and checked, the circle filled and stroked in AccentFillColorDisabled
     // (RadioButtonOuterEllipseCheckedFillDisabled, …CheckedStrokeDisabled, set at
     // RadioButton_themeresources.xaml:326-330); under high contrast filled in
     // SystemColorWindowColor and stroked in SystemColorGrayTextColor (:91, :87). Checked under high
     // contrast, the circle is filled in RadioButtonOuterEllipseCheckedFill =
     // SystemColorHighlightTextColorBrush (:88) inside the highlight's outline (:84).
+    let secondary = c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY);
+    let tertiary = c.accent_fill.mul_alpha(ACCENT_FILL_TERTIARY_OPACITY);
+    let unchecked_pressed = hc.highlight_text.unwrap_or(c.alt_fill_quarternary);
+    let checked_pressed = hc.button_face.unwrap_or(tertiary);
     let indicator = indicator(c, hc, layout)
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(hc.highlight_text.unwrap_or(c.accent_fill))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER).except(WidgetState::CHECKED),
+            [stroke(
+                layout.border_width,
+                hc.highlight.unwrap_or(c.strong_stroke),
+            )],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED)
+                .except(WidgetState::CHECKED | WidgetState::DISABLED),
+            [
+                fill(unchecked_pressed),
+                stroke(
+                    layout.border_width,
+                    hc.highlight_text.unwrap_or(c.strong_stroke_disabled),
+                ),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+            [
+                fill(hc.button_face.unwrap_or(secondary)),
+                stroke(layout.border_width, hc.button_text.unwrap_or(secondary)),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            [
+                fill(checked_pressed),
+                stroke(layout.border_width, checked_pressed),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [stroke(
+                layout.border_width,
+                hc.gray_text.unwrap_or(c.strong_stroke_disabled),
+            )],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),

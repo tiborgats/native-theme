@@ -1203,9 +1203,10 @@ const EXPANDER_FILLS: [Stated; 2] = [
 /// windows-11's radio under the pointer: the unselected circle's fill, and
 /// its stroke at rest laid over it (no rule for HOVER states one, and iced's
 /// own radio keeps its border colour under the pointer, iced_widget 0.14.2
-/// `src/radio.rs`, fn default); the selected circle's outline at rest and
-/// under the pointer, AccentFillColorDefault (RadioButton_themeresources.xaml:142
-/// at microsoft-ui-xaml 8463f45).
+/// `src/radio.rs`, fn default); the selected circle's outline at rest,
+/// AccentFillColorDefault (RadioButton_themeresources.xaml:142 at
+/// microsoft-ui-xaml 8463f45), and its fill and outline under the pointer,
+/// AccentFillColorSecondary (:147, :143).
 const W11_RADIO_HOVER: &[Stated] = &[
     set(
         at!(HOVER),
@@ -1224,8 +1225,13 @@ const W11_RADIO_HOVER: &[Stated] = &[
     ),
     set(
         at!(HOVER | CHECKED),
+        Field::Background,
+        home!(fill, radio.indicator(HOVER | CHECKED)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
         Field::BorderColor,
-        home!(stroke, radio.indicator(CHECKED)),
+        home!(stroke, radio.indicator(HOVER | CHECKED)),
     ),
 ];
 

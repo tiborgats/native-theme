@@ -98,14 +98,14 @@ fn a_primary_button_keeps_the_accent_fill_until_disabled() {
     }
 }
 
-/// A checked radio button keeps its fill under the pointer, a checked box
-/// changes it ([`a_checked_or_mixed_box_hovered_and_pressed_takes_the_accent_s_secondary_and_tertiary_fills`]);
+/// A checked box and a checked radio button change their fill under the
+/// pointer ([`a_checked_or_mixed_box_hovered_and_pressed_takes_the_accent_s_secondary_and_tertiary_fills`]);
 /// disabled, a checked or mixed box and a checked radio button take `AccentFillColorDisabled`
 /// (#37000000 / #28FFFFFF), filled and stroked, where an unchecked one keeps
-/// the disabled fill, a box outlined in `ControlStrongStrokeColorDisabled`
-/// (CheckBox_themeresources.xaml:220, :44); the mark takes
-/// `TextOnAccentFillColorDisabled` (#FFFFFF / #87FFFFFF), the dot the rest's
-/// colour.
+/// the disabled fill, outlined in `ControlStrongStrokeColorDisabled`
+/// (CheckBox_themeresources.xaml:220, :44; RadioButton_themeresources.xaml:137,
+/// :21); the mark takes `TextOnAccentFillColorDisabled` (#FFFFFF / #87FFFFFF),
+/// the dot the rest's colour.
 #[test]
 fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_its_own_when_disabled() {
     let [light, dark] = both_schemes();
@@ -129,7 +129,7 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_its_own_when_disable
             theme.checkbox.indicator(hovered),
             theme.checkbox.indicator(checked)
         );
-        assert_eq!(
+        assert_ne!(
             theme.radio.indicator(hovered),
             theme.radio.indicator(checked)
         );
@@ -163,10 +163,17 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer_and_its_own_when_disable
             theme.radio.dot(checked | disabled).fill,
             theme.radio.dot(checked).fill
         );
-        for state in [disabled, disabled | WidgetState::HOVER] {
+        for state in [
+            disabled,
+            disabled | WidgetState::HOVER,
+            disabled | WidgetState::PRESSED,
+        ] {
+            let edge = Stroke::uniform(theme.layout.border_width, colors.strong_stroke_disabled);
+            assert_eq!(theme.checkbox.indicator(state).stroke, edge, "{state:?}");
+            assert_eq!(theme.radio.indicator(state).stroke, edge, "{state:?}");
             assert_eq!(
-                theme.checkbox.indicator(state).stroke,
-                Stroke::uniform(theme.layout.border_width, colors.strong_stroke_disabled),
+                theme.radio.indicator(state).fill,
+                theme.radio.indicator(disabled).fill,
                 "{state:?}"
             );
         }
@@ -476,10 +483,12 @@ fn the_system_s_high_contrast_colours_make_high_available() {
 
 /// Under high contrast the hovered unchecked box and circle are the
 /// selection's text colour, a disabled checked or mixed box the disabled text
-/// with its mark in the window colour, and a disabled checked radio's circle
-/// the window colour in the disabled text with its dot in the disabled text
-/// (WinUI's high-contrast dictionaries, CheckBox_themeresources.xaml:142,
-/// :148, :136, :160; RadioButton_themeresources.xaml:81, :91, :87, :95).
+/// with its mark in the window colour, a disabled checked radio's circle
+/// the window colour in the disabled text with its dot in the disabled text,
+/// and a disabled unchecked box and circle the window colour in the disabled
+/// text (WinUI's high-contrast dictionaries, CheckBox_themeresources.xaml:142,
+/// :148, :136, :160, :144, :132; RadioButton_themeresources.xaml:81, :91, :87,
+/// :95, :83, :79).
 #[test]
 fn a_high_contrast_check_box_takes_the_system_colours() {
     use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
@@ -531,10 +540,13 @@ fn a_high_contrast_check_box_takes_the_system_colours() {
     assert_eq!(circle.fill, solid(window));
     assert_eq!(circle.stroke, Stroke::uniform(width, gray));
     assert_eq!(high.radio.dot(state).fill, solid(gray));
-    assert_eq!(
-        high.checkbox.indicator(WidgetState::DISABLED).stroke,
-        Stroke::uniform(width, gray)
-    );
+    for part in [
+        high.checkbox.indicator(WidgetState::DISABLED),
+        high.radio.indicator(WidgetState::DISABLED),
+    ] {
+        assert_eq!(part.fill, solid(window));
+        assert_eq!(part.stroke, Stroke::uniform(width, gray));
+    }
     let circle = high.radio.indicator(WidgetState::CHECKED);
     assert_eq!(circle.fill, solid(highlight_text));
     assert_eq!(circle.stroke, Stroke::uniform(width, highlight));
@@ -572,6 +584,8 @@ fn a_mixed_box_is_the_accent_fill() -> TestResult {
 /// the accent's fill at 0.9 and 0.8 (CheckBox_themeresources.xaml:234, :222,
 /// :238, :226, :235, :223, :239, :227; Common_themeresources_any.xaml:330,
 /// :331); the mark hovered as at rest, pressed `TextOnAccentFillColorSecondary`.
+/// A checked radio button's circle the same (RadioButton_themeresources.xaml:147,
+/// :143, :148, :144), its dot as at rest (:151, :152).
 #[test]
 fn a_checked_or_mixed_box_hovered_and_pressed_takes_the_accent_s_secondary_and_tertiary_fills()
 -> TestResult {
@@ -602,6 +616,22 @@ fn a_checked_or_mixed_box_hovered_and_pressed_takes_the_accent_s_secondary_and_t
                 theme.checkbox.checkmark(state | WidgetState::PRESSED).color,
                 rest_mark
             );
+        }
+        let rest_dot = theme.radio.dot(WidgetState::CHECKED).fill;
+        for (extra, opacity) in [
+            (WidgetState::HOVER, ACCENT_FILL_SECONDARY_OPACITY),
+            (WidgetState::PRESSED, ACCENT_FILL_TERTIARY_OPACITY),
+        ] {
+            let expected = accent.mul_alpha(opacity);
+            let state = WidgetState::CHECKED | extra;
+            let circle = theme.radio.indicator(state);
+            assert_eq!(circle.fill, Paint::Solid(expected), "{extra:?}");
+            assert_eq!(
+                circle.stroke,
+                Stroke::uniform(theme.layout.border_width, expected),
+                "{extra:?}"
+            );
+            assert_eq!(theme.radio.dot(state).fill, rest_dot, "{extra:?}");
         }
     }
     Ok(())
@@ -655,7 +685,11 @@ fn a_high_contrast_hovered_on_switch_is_the_button_face() {
 /// highlight with its bar in the highlight and pressed the highlight with its
 /// bar in the highlight's text, an unchecked box hovered outlined and pressed
 /// filled and outlined in the highlight (CheckBox_themeresources.xaml:129-163
-/// at microsoft-ui-xaml 8463f45).
+/// at microsoft-ui-xaml 8463f45); an unchecked circle hovered outlined in the
+/// highlight and pressed filled and outlined in the highlight's text, a
+/// checked one hovered the button face in the button text and pressed the
+/// button face in it, its dot the button text in both
+/// (RadioButton_themeresources.xaml:77-94).
 #[test]
 fn a_high_contrast_box_hovered_and_pressed_takes_the_system_colours() {
     use crate::next::reader::{OsColors, OsSelectionColors, OsSurfaceOverrides};
@@ -711,6 +745,17 @@ fn a_high_contrast_box_hovered_and_pressed_takes_the_system_colours() {
     assert_eq!(mark(mixed | hover), highlight);
     assert_eq!(of(mixed | pressed), look(highlight, highlight));
     assert_eq!(mark(mixed | pressed), highlight_text);
+    let circle = |state: WidgetState| {
+        let part = high.radio.indicator(state);
+        (part.fill, part.stroke)
+    };
+    let dot = |state: WidgetState| high.radio.dot(state).fill;
+    assert_eq!(circle(hover).1, Stroke::uniform(width, highlight));
+    assert_eq!(circle(pressed), look(highlight_text, highlight_text));
+    assert_eq!(circle(checked | hover), look(face, button_text));
+    assert_eq!(dot(checked | hover), Paint::Solid(button_text));
+    assert_eq!(circle(checked | pressed), look(face, face));
+    assert_eq!(dot(checked | pressed), Paint::Solid(button_text));
 }
 
 // ---------------------------------------------------------------------------

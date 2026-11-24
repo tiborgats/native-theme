@@ -733,7 +733,7 @@
             "disabled"
           ],
           "indicator": {
-            "fill": "#f9f9f900"
+            "fill": "#010101"
           }
         },
         {
@@ -1008,7 +1008,7 @@
             "disabled"
           ],
           "indicator": {
-            "fill": "#f9f9f900"
+            "fill": "#010101"
           }
         },
         {
@@ -1017,6 +1017,73 @@
           ],
           "indicator": {
             "fill": "#060606"
+          }
+        },
+        {
+          "states": [
+            "hover"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#050505"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "not_states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#060606",
+            "stroke": {
+              "width": 1.0,
+              "color": "#060606"
+            }
+          }
+        },
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#030303",
+            "stroke": {
+              "width": 1.0,
+              "color": "#040404"
+            }
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#030303",
+            "stroke": {
+              "width": 1.0,
+              "color": "#030303"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#070707"
+            }
           }
         },
         {
@@ -1047,6 +1114,24 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover",
+            "checked"
+          ],
+          "dot": {
+            "fill": "#040404"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "dot": {
+            "fill": "#040404"
+          }
+        },
         {
           "states": [
             "disabled"
