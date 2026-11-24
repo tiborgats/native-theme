@@ -16,6 +16,7 @@ use super::states::{
     BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateLine, StateSource,
     TextSource, Unstated, state_borders, write_states_with,
 };
+use super::variants::mark_widths;
 use crate::convert::{Rgba, button_padding_outside, clamp_length, padding_with_line, to_color32};
 use crate::{Note, Role};
 
@@ -664,23 +665,20 @@ fn checkbox(
         notes,
     );
     // The check mark is a line in the state's `fg_stroke` (`egui/src/widgets/checkbox.rs:151-158`,
-    // `check_stroke` from `widget_style.rs:131`, `:188`), so its width is the stroke width, one in
-    // every state (§6.1); the radio's dot takes only the stroke's colour (`radio_button.rs:97-103`).
-    if let Some(width) = k
-        .mark_width
-        .map(|(v, path)| length(path, v, own.visuals.widgets.inactive.fg_stroke.width, notes))
-    {
-        let w = &mut s.visuals.widgets;
-        for e in [
-            &mut w.noninteractive,
-            &mut w.inactive,
-            &mut w.hovered,
-            &mut w.active,
-            &mut w.open,
-        ] {
-            e.fg_stroke.width = width;
-        }
-    }
+    // `check_stroke` from `widget_style.rs:131`, `:188`), so its width is the stroke width, under
+    // the pointer and pressed the width the theme states for the state, else what `unstated`
+    // gives for the width at rest (§6.1); the radio's dot takes only the stroke's colour
+    // (`radio_button.rs:97-103`).
+    let [rest, hover, press] = k.mark_width;
+    let rest =
+        rest.map(|(v, path)| length(path, v, own.visuals.widgets.inactive.fg_stroke.width, notes));
+    mark_widths(
+        &mut s.visuals.widgets,
+        rest,
+        [hover, press],
+        cx.unstated,
+        notes,
+    );
     if let Some(c) = k.label.color {
         s.visuals.override_text_color = Some(to_color32(c)); // the label (B4)
     }

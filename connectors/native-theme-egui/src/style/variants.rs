@@ -278,8 +278,8 @@ pub(crate) fn selected_cell(
 /// pressed the fill the theme states for that state, else what `unstated` gives for the fill at
 /// rest; its outline colour drawn over the fill of each entry ([`Line::over`]), and under the
 /// pointer and pressed the outline the theme states for that state, else what `unstated` gives
-/// ([`state_borders`]); its mark's width at rest in every entry, one in every state (§6.1),
-/// and under the pointer and pressed the width the theme states for that state.
+/// ([`state_borders`]); its mark's width at rest, and under the pointer and pressed the width
+/// the theme states for that state, else what `unstated` gives for the width at rest (§6.1).
 pub(crate) fn marked_box(
     w: &mut egui::style::Widgets,
     k: &MarkedBox,
@@ -329,15 +329,39 @@ pub(crate) fn marked_box(
     );
     // The mark is a line in the state's `fg_stroke` (`egui/src/widgets/checkbox.rs:151-158`).
     let [rest, hover, press] = k.mark_width;
-    if let Some((width, path)) = rest {
-        for e in every_entry(w) {
-            e.fg_stroke.width = length(path, width, e.fg_stroke.width, notes);
+    let rest = rest.map(|(width, path)| length(path, width, w.inactive.fg_stroke.width, notes));
+    mark_widths(w, rest, [hover, press], unstated, notes);
+}
+
+/// A check mark's width laid over `w`, the mark a line in the state's `fg_stroke`: `rest` at
+/// rest; under the pointer and pressed the width the theme states for the state, else what
+/// `unstated` gives for the width at rest; with no width at rest, only the stated ones.
+pub(crate) fn mark_widths(
+    w: &mut egui::style::Widgets,
+    rest: Option<f32>,
+    [hover, press]: [Read<f32>; 2],
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let own_width = |e: &WidgetVisuals| e.fg_stroke.width;
+    let hovered = match hover {
+        Some((width, path)) => Some(length(path, width, w.hovered.fg_stroke.width, notes)),
+        None => rest.map(|rest| unstated.hovered(rest, own_width)),
+    };
+    let active = match press {
+        Some((width, path)) => Some(length(path, width, w.active.fg_stroke.width, notes)),
+        None => rest.map(|rest| unstated.active(rest, hovered.unwrap_or(rest), own_width)),
+    };
+    if let Some(rest) = rest {
+        for e in [&mut w.noninteractive, &mut w.inactive, &mut w.open] {
+            e.fg_stroke.width = rest;
         }
     }
-    for (e, state) in [(&mut w.hovered, hover), (&mut w.active, press)] {
-        if let Some((width, path)) = state {
-            e.fg_stroke.width = length(path, width, e.fg_stroke.width, notes);
-        }
+    if let Some(hovered) = hovered {
+        w.hovered.fg_stroke.width = hovered;
+    }
+    if let Some(active) = active {
+        w.active.fg_stroke.width = active;
     }
 }
 

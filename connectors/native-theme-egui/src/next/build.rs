@@ -378,6 +378,15 @@ fn state_icon_color(icon: &IconStyle) -> Option<Rgba> {
     reads::state_icon(icon).map(rgba)
 }
 
+/// An icon's stroke width where a rule states it for the queried state, read at `home`.
+fn state_mark_width(icon: &IconStyle, home: &'static str) -> Read<f32> {
+    icon.from_state
+        .contains(IconStated::STROKE_WIDTH)
+        .then_some(icon.stroke_width)
+        .flatten()
+        .map(|v| (v, home))
+}
+
 /// A text style's hovered and pressed colours where a rule states them for the state, the
 /// text style `at` gives for a state.
 fn hover_press_text(at: impl Fn(WidgetState) -> TextStyle) -> [Option<Rgba>; 2] {
@@ -559,10 +568,19 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "checkbox.indicator(PRESSED).stroke.width",
                 ),
             ],
-            mark_width: k
-                .checkmark(S::NONE)
-                .stroke_width
-                .map(|v| (v, "checkbox.checkmark(NONE).stroke_width")),
+            mark_width: [
+                k.checkmark(S::NONE)
+                    .stroke_width
+                    .map(|v| (v, "checkbox.checkmark(NONE).stroke_width")),
+                state_mark_width(
+                    &k.checkmark(S::HOVER),
+                    "checkbox.checkmark(HOVER).stroke_width",
+                ),
+                state_mark_width(
+                    &k.checkmark(S::PRESSED),
+                    "checkbox.checkmark(PRESSED).stroke_width",
+                ),
+            ],
             label: text(&k.label(S::NONE), "checkbox.label(NONE).size_px"),
             indicator: indicator.min_size[0].map(|v| (v, "checkbox.indicator(NONE).min_size[0]")),
             label_gap: Some((k.label_gap, "checkbox.label_gap")),

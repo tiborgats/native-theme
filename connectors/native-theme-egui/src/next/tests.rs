@@ -711,11 +711,23 @@ fn the_checked_boxs_stated_outline_width_is_drawn() -> Result<(), Box<dyn std::e
     Ok(())
 }
 
-/// The checked box's and the mixed box's mark take the width a rule states for their flag in
-/// every entry, and under the pointer the width a rule states for `HOVER` asked alone, the
-/// combined state's (spec §2, `from_state`); with no rule for `HOVER`, the resting width.
+/// The checked box's and the mixed box's mark take the width a rule states for their flag at
+/// rest, and under the pointer the width a rule states for `HOVER` asked alone, the
+/// combined state's (spec §2, `from_state`); with no rule for `HOVER` or `PRESSED`, egui's own
+/// width for the state where egui's changes between rest and that state, else the resting width
+/// (§10, rule 0): egui strokes the mark in the state's `fg_stroke` (egui 0.37.0
+/// `src/theme/default_style.rs`, `StyleProvider<CheckboxStyle>`), and its own entries widen
+/// that stroke under the pointer and on a press (`src/style.rs`, `Widgets::light`).
 #[test]
 fn a_marks_stated_width_is_read_per_state() -> Result<(), Box<dyn std::error::Error>> {
+    let stock = egui::Theme::Light.default_style().visuals.widgets;
+    let own = |e: &egui::style::WidgetVisuals, rest: f32| {
+        if e.fg_stroke.width == stock.inactive.fg_stroke.width {
+            rest
+        } else {
+            e.fg_stroke.width
+        }
+    };
     for flag in ["checked", "indeterminate"] {
         let rest = format!(
             "[[widgets.checkbox.rules]]\nstates = [\"{flag}\"]\ncheckmark.stroke_width = 3.0\n"
@@ -742,16 +754,50 @@ fn a_marks_stated_width_is_read_per_state() -> Result<(), Box<dyn std::error::Er
             for (name, e) in [
                 ("noninteractive", &w.noninteractive),
                 ("inactive", &w.inactive),
-                ("hovered", &w.hovered),
-                ("active", &w.active),
                 ("open", &w.open),
             ] {
                 assert_eq!(e.fg_stroke.width, 3.0, "{key} {flag}: the {name} mark");
             }
+            assert_eq!(
+                w.hovered.fg_stroke.width,
+                own(&stock.hovered, 3.0),
+                "{key} {flag}: egui's own hovered mark"
+            );
+            assert_eq!(
+                w.active.fg_stroke.width,
+                own(&stock.active, 3.0),
+                "{key} {flag}: egui's own pressed mark"
+            );
             let w = marks(&hover)?;
             assert_eq!(w.inactive.fg_stroke.width, 3.0, "{key} {flag}: at rest");
             assert_eq!(w.hovered.fg_stroke.width, 5.0, "{key} {flag}: hovered");
-            assert_eq!(w.active.fg_stroke.width, 3.0, "{key} {flag}: pressed");
+            assert_eq!(
+                w.active.fg_stroke.width,
+                own(&stock.active, 3.0),
+                "{key} {flag}: pressed"
+            );
+        }
+    }
+    // The unchecked box's cell, which the checked one starts from: the width a rule states for
+    // `PRESSED`, and under the pointer egui's own where the preset states one at rest.
+    let press =
+        "[[widgets.checkbox.rules]]\nstates = [\"pressed\"]\ncheckmark.stroke_width = 4.0\n";
+    for &(key, preset) in PRESETS {
+        let atlas = patched_light(preset, press)?;
+        let w = &atlas
+            .scheme(egui::Theme::Light)
+            .cell(crate::Role::Checkbox, crate::RoleVariant::Normal)
+            .visuals
+            .widgets;
+        assert_eq!(w.active.fg_stroke.width, 4.0, "{key}: the pressed mark");
+        let r = Theme::preset(preset).resolve(&ThemeContext::light());
+        if let Some(rest) = r.checkbox.checkmark(WidgetState::NONE).stroke_width {
+            assert_eq!(w.inactive.fg_stroke.width, rest, "{key}: the resting mark");
+            assert_eq!(
+                w.hovered.fg_stroke.width,
+                own(&stock.hovered, rest),
+                "{key}: egui's own hovered mark"
+            );
         }
     }
     Ok(())

@@ -536,6 +536,16 @@ fn part_stated(part: &PartStyle, bit: PartStated, state: WidgetState) -> bool {
     }
 }
 
+/// Whether an icon's stroke width is stated for `state`: by a rule for the state
+/// (`from_state`), or, at rest, by the theme.
+fn icon_width_stated(icon: &IconStyle, state: WidgetState) -> bool {
+    if state == WidgetState::NONE {
+        icon.stated.contains(IconStated::STROKE_WIDTH)
+    } else {
+        icon.from_state.contains(IconStated::STROKE_WIDTH)
+    }
+}
+
 /// A part's stroke colour for `state` as the builder reads it: at rest the stated line
 /// (`build::edge`), in a state also a stroke stated as none, transparent (`build::state_line`).
 fn line_value(part: &PartStyle, state: WidgetState) -> Option<HomeValue> {
@@ -584,7 +594,8 @@ impl ColorAt for IconStyle {
 }
 
 /// The [`Home`] `<widget>.<part>(<STATE>).<property>`, `property` a part's `fill`,
-/// `stroke.color` or `stroke.width`, or a text style's or an icon's `color`; `<STATE>` one
+/// `stroke.color` or `stroke.width`, a text style's or an icon's `color`, or an icon's
+/// `stroke_width`; `<STATE>` one
 /// state or several joined by `|`.
 macro_rules! home {
     (@at $w:ident . $p:ident ($($s:ident)|+) . $($prop:ident).+, $stated:expr, $value:expr) => {
@@ -644,6 +655,23 @@ macro_rules! home {
             }
         )
     };
+    ($w:ident . $p:ident ($($s:ident)|+) . stroke_width) => {
+        home!(
+            @at $w.$p($($s)|+).stroke_width,
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                icon_width_stated(&r.$w.$p(s), s)
+            },
+            |r: &ResolvedTheme| {
+                let s = $(WidgetState::$s)|+;
+                let icon = r.$w.$p(s);
+                icon_width_stated(&icon, s)
+                    .then_some(icon.stroke_width)
+                    .flatten()
+                    .map(HomeValue::Width)
+            }
+        )
+    };
     ($w:ident . $p:ident ($($s:ident)|+) . color) => {
         home!(
             @at $w.$p($($s)|+).color,
@@ -670,6 +698,8 @@ impl Home {
         let (state, property) = rest.split_once(").").ok_or(self.path)?;
         let value = if property.starts_with("stroke.") {
             "stroke = { width = 3.0, color = \"#ff00ff\" }".to_owned()
+        } else if property == "stroke_width" {
+            "stroke_width = 3.0".to_owned()
         } else {
             format!("{property} = \"#ff00ff\"")
         };
@@ -1347,6 +1377,14 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         &[M, T],
         ".visuals.widgets.active.fg_stroke.color",
         home!(checkbox.checkmark(PRESSED).color),
+    ),
+    // the check mark is a line in the state's `fg_stroke`, which egui's own entries widen under
+    // the pointer (egui 0.37.0 `src/style.rs`, `Widgets::light`, `Widgets::dark`)
+    r0(
+        "Checkbox",
+        &[K, A, M3],
+        ".visuals.widgets.hovered.fg_stroke.width",
+        home!(checkbox.checkmark(HOVER).stroke_width),
     ),
     r0(
         "ComboBox",
