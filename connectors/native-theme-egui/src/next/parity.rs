@@ -1472,6 +1472,21 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         ".corner_radius.*",
         home!(card.container(NONE).corners),
     ),
+    // ios-13's text field: WebKit's `border: 1px solid -apple-system-secondary-label`
+    // (html.css:457-466 at WebKit 31adf9d), its width in every state, its colour where no rule
+    // for the state restates it.
+    s(
+        "Input",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,active,open}.bg_stroke.width",
+        home!(input.field(NONE).stroke.width),
+    ),
+    s(
+        "Input",
+        &[I],
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
+        home!(input.field(NONE).stroke.color),
+    ),
     // ios-13's empty box at rest: WebKit's -webkit-control-background, systemBackground
     // (RenderThemeIOS.mm:1391, :1395, :1027 at WebKit 31adf9d).
     s(

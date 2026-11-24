@@ -731,6 +731,9 @@ const CHECKBOX_BORDER_DISABLED_OPACITY: f32 = 0.3;
 // `button.border.line_width`: (WebKit) an iOS button's `border: 1px solid
 // -webkit-control-background` (html.css:889)
 const BUTTON_BORDER_WIDTH: f32 = 1.0;
+// `input.border.line_width`, `text_area.border.line_width`: (WebKit) an iOS input's and text
+// area's `border: 1px solid -apple-system-secondary-label` (html.css:457-466)
+const FIELD_BORDER_WIDTH: f32 = 1.0;
 // `defaults.focus_ring_width`: 0.7.2 ios-13.toml (uncited)
 const FOCUS_RING_WIDTH: f32 = 2.0;
 // `defaults.focus_ring_offset`: 0.7.2 ios-13.toml (uncited)
@@ -1880,8 +1883,8 @@ fn window(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -
 }
 
 /// The text field (`field`) or the text area: the window's background in
-/// the default border at the default radius, no shadow (the text area
-/// takes the field's border and shadow: 0.7.2's `text_area.border.*` is
+/// WebKit's 1 px `secondaryLabel` border at the default radius, no shadow
+/// (the text area takes the field's shadow: 0.7.2's `text_area.border.*` is
 /// `input.border.*` where unstated), the text field of the HIG's least
 /// height; the hovered and the focused outline the
 /// accent's, disabled its own fill. The text in the window's text,
@@ -1893,9 +1896,11 @@ fn input(
     layout: &LayoutMetrics,
     text_field: bool,
 ) -> InputWidget {
+    // (WebKit) an iOS input's and text area's `border: 1px solid -apple-system-secondary-label`
+    // (html.css:457-466), where 0.7.2 took the uncited default line.
+    let rest_border = PartProp::Stroke(Stroke::uniform(FIELD_BORDER_WIDTH, c.muted));
     let field = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.background)])
-        .base(border(roles, layout))
+        .base([fill(c.background), rest_border.clone()])
         .base([
             corners(layout.corner_radius),
             // `input.border.shadow_enabled`: docs/inheritance-rules.toml ([wrong_safety_nets]): the
@@ -1910,10 +1915,7 @@ fn input(
         // (WebKit) a pressed field keeps its rest border: html.css has no :active rule for it
         // (its border html.css:466) and paintTextFieldDecorations reads no state
         // (RenderThemeIOS.mm:271-292); stated for `PRESSED` (spec §2, `from_state`).
-        .rule(
-            RuleSelector::on(WidgetState::PRESSED),
-            border(roles, layout),
-        )
+        .rule(RuleSelector::on(WidgetState::PRESSED), [rest_border])
         .rule(
             RuleSelector::on(WidgetState::FOCUSED),
             [outline(layout, roles.accent.fill)],

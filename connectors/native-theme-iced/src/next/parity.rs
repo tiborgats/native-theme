@@ -1571,6 +1571,85 @@ const IOS_CHECK_DISABLED: [Stated; 4] = [
 /// disabled radio status).
 const IOS_RADIO: [Stated; 8] = indicator_outline!(radio);
 
+/// A disabled text field's outline, `field(NONE)`'s stroke laid over the
+/// field's disabled fill (`field(DISABLED)` where a rule for DISABLED states
+/// one, else the fill at rest), then faded by the field's disabled opacity,
+/// as `crate::styles::text_input_from` draws it.
+#[cfg(feature = "widgets")]
+fn field_disabled_line(w: &native_theme::next::InputWidget) -> Option<Value> {
+    use native_theme::next::PartStated;
+    let line =
+        super::borders::line_or_none(&w.field(WidgetState::NONE), "the stated stroke").ok()?;
+    let disabled = w.field(WidgetState::DISABLED);
+    let fill = if disabled.from_state.contains(PartStated::FILL) {
+        super::fill_of(&disabled)?
+    } else {
+        super::fill_of(&w.field(WidgetState::NONE))?
+    };
+    let color = line.over(fill);
+    Some(Value::Color(w.disabled_opacity.map_or(color, |opacity| {
+        crate::styles::faded(color, opacity)
+    })))
+}
+
+/// The field outlines, which alone read [`field_disabled_line`], are
+/// compared with the `widgets` feature only: no value without it.
+#[cfg(not(feature = "widgets"))]
+fn field_disabled_line(_: &native_theme::next::InputWidget) -> Option<Value> {
+    None
+}
+
+/// A text field's outline (`$w.field(NONE)`, ios-13's WebKit border): its
+/// width in every status, the builder keeping the rest width (`InputSource`'s
+/// `border`), and its colour at rest and disabled ([`field_disabled_line`]);
+/// hovered and focused the colour the theme states for the state, which
+/// 0.7.2 states alike.
+macro_rules! field_outline {
+    ($w:ident) => {
+        [
+            set(at!(NONE), Field::BorderWidth, home!(width, $w.field(NONE))),
+            set(at!(NONE), Field::BorderColor, home!(stroke, $w.field(NONE))),
+            set(at!(HOVER), Field::BorderWidth, home!(width, $w.field(NONE))),
+            set(
+                at!(FOCUSED),
+                Field::BorderWidth,
+                home!(width, $w.field(NONE)),
+            ),
+            set(
+                at!(FOCUSED | HOVER),
+                Field::BorderWidth,
+                home!(width, $w.field(NONE)),
+            ),
+            set(
+                at!(DISABLED),
+                Field::BorderWidth,
+                home!(width, $w.field(NONE)),
+            ),
+            set(
+                at!(DISABLED),
+                Field::BorderColor,
+                Home {
+                    path: concat!(
+                        stringify!($w),
+                        ".field(NONE).stroke over ",
+                        stringify!($w),
+                        ".field(DISABLED).fill, faded by ",
+                        stringify!($w),
+                        ".disabled_opacity"
+                    ),
+                    value: |t| field_disabled_line(&t.$w),
+                },
+            ),
+        ]
+    };
+}
+
+/// ios-13's text field's outline ([`field_outline`]).
+const IOS_INPUT_OUTLINE: [Stated; 7] = field_outline!(input);
+
+/// ios-13's text area's outline ([`field_outline`]).
+const IOS_TEXT_AREA_OUTLINE: [Stated; 7] = field_outline!(text_area);
+
 /// A drop-down field's outline at rest, under the pointer and open
 /// (`combo_box.field`): its stroke at rest and under the pointer, open the
 /// width at rest (iced's own colour, no rule for OPEN), and open under the
@@ -1932,6 +2011,22 @@ const DIFFERENCES: &[Difference] = &[
     // drew it.
     field("text_input", MACOS, LineAlign::Inside),
     field("text_editor", MACOS, LineAlign::Inside),
+    // input.field(NONE) and text_area.field(NONE): ios-13 states WebKit's
+    // `border: 1px solid -apple-system-secondary-label` (html.css:457-466
+    // at WebKit 31adf9d; native-theme/tests/next_homes.toml, rows
+    // input.border.* and text_area.border.*, listed differences).
+    stated_fields(
+        "text_input",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&IOS_INPUT_OUTLINE],
+    ),
+    stated_fields(
+        "text_editor",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&IOS_TEXT_AREA_OUTLINE],
+    ),
     // tooltip.panel, dialog.panel, progress_bar.track(NONE).
     inside("tooltip", MACOS_WINDOWS),
     inside("dialog", MACOS_WINDOWS),
@@ -3186,6 +3281,73 @@ impl Fields for iced_widget::pane_grid::Style {
 }
 
 #[cfg(feature = "widgets")]
+impl AtState for iced_widget::text_input::Status {
+    fn at(&self) -> WidgetState {
+        let hovered = |on| flag_if(on, WidgetState::HOVER);
+        match *self {
+            Self::Active => WidgetState::NONE,
+            Self::Hovered => WidgetState::HOVER,
+            Self::Focused { is_hovered } => WidgetState::FOCUSED | hovered(is_hovered),
+            Self::Disabled => WidgetState::DISABLED,
+        }
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl AtState for iced_widget::text_editor::Status {
+    fn at(&self) -> WidgetState {
+        let hovered = |on| flag_if(on, WidgetState::HOVER);
+        match *self {
+            Self::Active => WidgetState::NONE,
+            Self::Hovered => WidgetState::HOVER,
+            Self::Focused { is_hovered } => WidgetState::FOCUSED | hovered(is_hovered),
+            Self::Disabled => WidgetState::DISABLED,
+        }
+    }
+}
+
+/// A text field's style: its border's width, and its colour laid over the
+/// field's fill as the 0.8.0 builder lays it.
+#[cfg(feature = "widgets")]
+macro_rules! field_fields {
+    ($style:ty, $name:literal) => {
+        impl Fields for $style {
+            fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+                match field {
+                    Field::BorderWidth => self.border.width = width_of(field, &value)?,
+                    Field::BorderColor => {
+                        self.border.color = match value {
+                            Value::Color(color) => color,
+                            _ => line_over(
+                                field,
+                                &value,
+                                crate::styles::painted(Some(self.background)),
+                            )?,
+                        };
+                    }
+                    Field::Background
+                    | Field::HandleBackground
+                    | Field::TextColor
+                    | Field::IconColor
+                    | Field::InnerRadius
+                    | Field::Separator
+                    | Field::PickedSplitColor
+                    | Field::HoveredSplitColor
+                    | Field::Radius
+                    | Field::RailFill => return no_field(field, $name),
+                }
+                Ok(())
+            }
+        }
+    };
+}
+
+#[cfg(feature = "widgets")]
+field_fields!(iced_widget::text_input::Style, "text_input::Style");
+#[cfg(feature = "widgets")]
+field_fields!(iced_widget::text_editor::Style, "text_editor::Style");
+
+#[cfg(feature = "widgets")]
 impl AtState for iced_widget::pick_list::Status {
     fn at(&self) -> WidgetState {
         let hovered = |on| flag_if(on, WidgetState::HOVER);
@@ -3496,14 +3658,16 @@ fn compare_styles(
             Status::Disabled,
         ];
         let i = InputSource::of(&old.input, &old.input.border, &old.defaults);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "text_input",
             o::text_input(old),
             n::text_input(new),
             |l: Listed| o::text_input_from(&i.listed(l)),
-            field
+            field,
+            WidgetState::NONE
         );
     }
     {
@@ -3516,14 +3680,16 @@ fn compare_styles(
             Status::Disabled,
         ];
         let i = InputSource::of(&old.input, &old.text_area.border, &old.defaults);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "text_editor",
             o::text_editor(old),
             n::text_editor(new),
             |l: Listed| o::text_editor_from(&i.listed(l)),
-            field
+            field,
+            WidgetState::NONE
         );
     }
 

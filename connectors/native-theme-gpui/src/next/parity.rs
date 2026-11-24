@@ -659,7 +659,94 @@ const DIFFERENCES: &[Difference] = &[
         reason: "as geometry::select's on each: the combo box trigger's frame is the select's \
                  (crate::geometry::combobox), its border combo_box.field(NONE)'s stroke width",
     },
+    Difference {
+        leaf: "geometry::input",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 edges the text field in the default border width (0.5 px, \
+                 uncited); the 0.8.0 preset states the border WebKit's iOS style sheet gives an \
+                 input, `border: 1px solid -apple-system-secondary-label` (html.css:457-466 at \
+                 WebKit 31adf9d; native-theme/tests/next_homes.toml, rows input.border.color \
+                 and input.border.line_width, listed differences), so the refinement's border \
+                 is input.field(NONE)'s stroke width, 1 px; the refinement carries no border \
+                 colour in either model, and every other field of it is equal",
+    },
+    Difference {
+        leaf: "geometry::text_area",
+        presets: &["ios-13"],
+        reason: "as geometry::input's: WebKit's rule gives a text area the same border \
+                 (html.css:457-466; native-theme/tests/next_homes.toml, rows \
+                 text_area.border.color and text_area.border.line_width, listed differences), \
+                 so the refinement's border is text_area.field(NONE)'s stroke width, 1 px",
+    },
+    Difference {
+        leaf: INPUT_OUTLINE,
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13 outlines the text field in the default border colour (the \
+                 separator, #c6c6c8 / #38383a, uncited); the 0.8.0 preset states WebKit's \
+                 `border: 1px solid -apple-system-secondary-label` (html.css:457-466 at WebKit \
+                 31adf9d), secondaryLabel #3c3c4399 / #ebebf599 \
+                 (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, \
+                 :147 at WebKit de320ba; native-theme/tests/next_homes.toml, row \
+                 input.border.color, a listed difference), so the input slot, its token and \
+                 its stored config string are input.field(NONE)'s stroke colour \
+                 (input_outline_of); every other leaf of the theme is equal",
+    },
 ];
+
+/// The leaf of [`DIFFERENCES`]' entry for the text field's outline: the
+/// `ThemeColor` slot `input`, its token and its stored config string,
+/// compared by [`input_as_old`].
+const INPUT_OUTLINE: &str = "to_theme: input";
+
+/// The text field's outline as the connector reads it for the `input` slot
+/// (`to_theme`): `input.field(NONE)`'s stroke colour, the form of
+/// [`INPUT_OUTLINE`]'s entries; `None` where it is unstated.
+fn input_outline_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
+    let field = new.input.field(native_theme::next::WidgetState::NONE);
+    super::stroke_color(&field, "input.field(NONE).stroke.color").ok()
+}
+
+/// `theme` with its `input` slot as `from`'s, where `theme` holds the
+/// outline the preset states, `stated`, light then dark
+/// ([`input_outline_of`]): the colour and the token of the theme's mode,
+/// and the stored config string of each scheme whose `stated` is given; the
+/// colours compared by their hex strings, as an upstream rebuild of the
+/// theme from its stored config (`Theme::change`) round-trips them. `None`
+/// where `theme` does not hold it, or where it is `from`'s, the listed
+/// difference then describing nothing.
+fn input_as_old(
+    theme: &GpuiTheme,
+    from: &GpuiTheme,
+    stated: [Option<Hsla>; 2],
+) -> Option<GpuiTheme> {
+    let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
+    let [light, dark] = stated;
+    let own = if theme.is_dark() { dark } else { light }?;
+    if hex(theme.colors.input) != hex(own)
+        || hex(from.colors.input) == hex(own)
+        || theme.tokens.input != ThemeToken::from(theme.colors.input)
+    {
+        return None;
+    }
+    let mut patched = theme.clone();
+    patched.colors.input = from.colors.input;
+    patched.tokens.input = from.tokens.input;
+    for (config, source, stated) in [
+        (&mut patched.light_theme, &from.light_theme, light),
+        (&mut patched.dark_theme, &from.dark_theme, dark),
+    ] {
+        let Some(stated) = stated else {
+            continue;
+        };
+        if config.colors.input != hex(stated) {
+            return None;
+        }
+        let mut stored = (**config).clone();
+        stored.colors.input = source.colors.input.clone();
+        *config = std::rc::Rc::new(stored);
+    }
+    Some(patched)
+}
 
 /// The leaf of [`DIFFERENCES`]' entries for the splitter's resize handles:
 /// `ResizableTheme`'s `handle` and `active_handle`, compared by
@@ -1176,6 +1263,29 @@ fn compare_theme(
         }
         None => new_theme,
     };
+    let new_theme = match report.listed(INPUT_OUTLINE) {
+        Some(listed) => {
+            report.count(INPUT_OUTLINE);
+            let stated = input_outline_of(new);
+            let stated = if is_dark {
+                [None, stated]
+            } else {
+                [stated, None]
+            };
+            match input_as_old(&new_theme, &old_theme, stated) {
+                Some(patched) => patched,
+                None => {
+                    report.failures.push(format!(
+                        "{}: {INPUT_OUTLINE}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 input {:?}, 0.8.0 input {:?}",
+                        report.label, listed.reason, old_theme.colors.input, new_theme.colors.input
+                    ));
+                    new_theme
+                }
+            }
+        }
+        None => new_theme,
+    };
     let failures = report.failures.len();
     let config = |t: &GpuiTheme, own: bool| {
         if is_dark == own {
@@ -1409,16 +1519,19 @@ fn compare_mapped<T: PartialEq + Debug>(
     }
 }
 
-/// Compare a combo box trigger's refinement, `geometry::select` or
-/// `geometry::combobox`: where [`DIFFERENCES`] lists `leaf` for the preset,
-/// 0.7.2's refinement with its border widths as `combo_box.field(NONE)`'s
-/// stroke width gives them, the widths differing from 0.7.2's.
-fn compare_combo_trigger(
+/// Compare a field's framed refinement, `geometry::select`,
+/// `geometry::combobox` (the frame `combo_box.field(NONE)`), `geometry::input`
+/// or `geometry::text_area` (`input.field(NONE)`, `text_area.field(NONE)`):
+/// where [`DIFFERENCES`] lists `leaf` for the preset, 0.7.2's refinement with
+/// its border widths as the frame's stroke width at `width_home` gives them,
+/// the widths differing from 0.7.2's.
+fn compare_field_frame(
     report: &mut Report,
     leaf: &'static str,
     o: gpui::StyleRefinement,
     new_refinement: super::Mapped<gpui::StyleRefinement>,
-    new: &native_theme::next::ResolvedTheme,
+    field: &native_theme::next::PartStyle,
+    width_home: &'static str,
 ) {
     let Some(n) = report.mapped(leaf, new_refinement) else {
         return;
@@ -1426,16 +1539,12 @@ fn compare_combo_trigger(
     match report.listed(leaf) {
         Some(listed) => {
             use gpui::Styled as _;
-            use native_theme::next::WidgetState;
             report.count(leaf);
-            let field = new.combo_box.field(WidgetState::NONE);
-            let stated = super::stroke_width(&field, "combo_box.field(NONE).stroke.width")
-                .ok()
-                .map(|width| {
-                    gpui::StyleRefinement::default()
-                        .border(px(width))
-                        .border_widths
-                });
+            let stated = super::stroke_width(field, width_home).ok().map(|width| {
+                gpui::StyleRefinement::default()
+                    .border(px(width))
+                    .border_widths
+            });
             let mut corrected = o.clone();
             corrected.border_widths = n.border_widths.clone();
             if o.border_widths == n.border_widths
@@ -1657,22 +1766,40 @@ fn compare_builders(
     builder!(report, old, new, scrollbar_gutter);
     builder!(report, old, new, input_group_button);
     builder!(report, old, new, editor);
-    builder!(report, old, new, input);
-    builder!(report, old, new, text_area);
+    let none = native_theme::next::WidgetState::NONE;
+    compare_field_frame(
+        report,
+        "geometry::input",
+        crate::geometry::input(Native::unscaled(old)),
+        super::builders::input(new),
+        &new.input.field(none),
+        "input.field(NONE).stroke.width",
+    );
+    compare_field_frame(
+        report,
+        "geometry::text_area",
+        crate::geometry::text_area(Native::unscaled(old)),
+        super::builders::text_area(new),
+        &new.text_area.field(none),
+        "text_area.field(NONE).stroke.width",
+    );
     builder!(report, old, new, input_height);
-    compare_combo_trigger(
+    let combo_box = new.combo_box.field(none);
+    compare_field_frame(
         report,
         "geometry::select",
         crate::geometry::select(Native::unscaled(old)),
         super::builders::select(new),
-        new,
+        &combo_box,
+        "combo_box.field(NONE).stroke.width",
     );
-    compare_combo_trigger(
+    compare_field_frame(
         report,
         "geometry::combobox",
         crate::geometry::combobox(Native::unscaled(old)),
         super::builders::combobox(new),
-        new,
+        &combo_box,
+        "combo_box.field(NONE).stroke.width",
     );
     fill_builder!(report, old, new, input_fill);
     fill_builder!(report, old, new, combo_box_fill);
@@ -2279,7 +2406,10 @@ fn every_listed_difference_names_a_covered_preset() {
 /// pressed fills of each scheme ([`button_states_of`]), with the button
 /// state slots of [`BUTTON_STATES`] as that theme's ([`button_states_as`]),
 /// or as a failure where they are not what the connector derives from the
-/// fills. Where `handles` is given, the resize handles of gpui-base's global
+/// fills; where `input` is given, that theme and the 0.8.0 preset's text
+/// field outline of each scheme ([`input_outline_of`]), with the `input`
+/// slot as that theme's ([`input_as_old`]), or as a failure where it is not
+/// the stated outline. Where `handles` is given, the resize handles of gpui-base's global
 /// and of the base overrides are given as 0.7.2's of the same scheme, or as
 /// a failure where they are not the 0.8.0 preset's homes
 /// ([`resize_handles_of`], [`DIFFERENCES`]' [`RESIZE_HANDLES`] entries) or
@@ -2288,6 +2418,7 @@ fn installed(
     cx: &gpui::App,
     row_hover_listed: Option<[Option<Hsla>; 2]>,
     button_states: Option<(&GpuiTheme, SchemeStates)>,
+    input: Option<(&GpuiTheme, [Option<Hsla>; 2])>,
     handles: Option<SchemeHandles>,
 ) -> (Vec<(&'static str, String)>, GpuiTheme) {
     let styled = GpuiTheme::global(cx);
@@ -2305,6 +2436,11 @@ fn installed(
                 format!("{BUTTON_STATES}: not what the connector derives from the preset")
             })
         }
+        None => Ok(theme),
+    });
+    let patched = patched.and_then(|theme| match input {
+        Some((from, stated)) => input_as_old(&theme, from, stated)
+            .ok_or_else(|| format!("{INPUT_OUTLINE}: not the text field's stated outline")),
         None => Ok(theme),
     });
     let styled_debug = patched.map_or_else(|failure| failure, |theme| format!("{theme:?}"));
@@ -2368,7 +2504,7 @@ type SchemeHandles = [((Option<Hsla>, Option<Hsla>), Option<(Hsla, Hsla)>); 2];
 /// for the 0.7.2 side, and for the 0.8.0 side what the 0.7.2 side installed,
 /// whose styled themes the push button's hovered and pressed slots are
 /// patched from where [`DIFFERENCES`]' [`BUTTON_STATES`] entry names the
-/// preset.
+/// preset, and the `input` slot where its [`INPUT_OUTLINE`] entry does.
 fn apply_both(
     cx: &mut gpui::TestAppContext,
     key: &str,
@@ -2425,6 +2561,21 @@ fn apply_both(
         .and_then(|old| old.get(at))
         .map(|(_, from)| (from, states))
     };
+    let outlines = {
+        let mut schemes = themes
+            .iter()
+            .map(|(_, (_, _, _, new))| input_outline_of(new));
+        [schemes.next().flatten(), schemes.next().flatten()]
+    };
+    let input = |at: usize| {
+        old.filter(|_| {
+            DIFFERENCES
+                .iter()
+                .any(|d| d.leaf == INPUT_OUTLINE && d.presets.contains(&key))
+        })
+        .and_then(|old| old.get(at))
+        .map(|(_, from)| (from, outlines))
+    };
     let handles_listed = next
         && DIFFERENCES
             .iter()
@@ -2441,9 +2592,11 @@ fn apply_both(
         Some(_) => return Err(format!("{key}: {RESIZE_HANDLES}: a scheme is missing")),
         None => None,
     };
-    let after = cx.update(|cx| installed(cx, row_hover_listed, button_states(0), handles));
+    let after =
+        cx.update(|cx| installed(cx, row_hover_listed, button_states(0), input(0), handles));
     cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
-    let switched = cx.update(|cx| installed(cx, row_hover_listed, button_states(1), handles));
+    let switched =
+        cx.update(|cx| installed(cx, row_hover_listed, button_states(1), input(1), handles));
     Ok([after, switched])
 }
 

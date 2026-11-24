@@ -1435,6 +1435,10 @@ homes = [
 [[row]]
 key = "input.border.color"
 homes = ["input.field(NONE).stroke.color"]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 outlines the text field in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba)"
+difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" } }
 
 [[row]]
 key = "input.border.corner_radius"
@@ -1444,6 +1448,10 @@ note = "Corners::uniform(radius)"
 [[row]]
 key = "input.border.line_width"
 homes = ["input.field(NONE).stroke.width"]
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 outlines the text field in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba)"
+difference_values = { "ios-13" = 1.0 }
 
 [[row]]
 key = "input.border.shadow_enabled"
@@ -1472,6 +1480,10 @@ homes = ["input.field(NONE).padding.left"]
 key = "text_area.border.color"
 homes = ["text_area.field(NONE).stroke.color"]
 note = "0.7.2 R-W: unset = input.border's"
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 outlines the text area in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba)"
+difference_values = { "ios-13" = { light = "#3c3c4399", dark = "#ebebf599" } }
 
 [[row]]
 key = "text_area.border.corner_radius"
@@ -1482,6 +1494,10 @@ note = "Corners::uniform(radius); 0.7.2 R-W: unset = input.border's"
 key = "text_area.border.line_width"
 homes = ["text_area.field(NONE).stroke.width"]
 note = "0.7.2 R-W: unset = input.border's"
+difference_presets = ["ios-13"]
+difference_reason = "0.7.2's ios-13 outlines the text area in the default line (the separator at 0.5, uncited); 0.8.0 states the border WebKit's iOS style sheet gives an input and a text area, `1px solid -apple-system-secondary-label`"
+difference_citation = "ios-13: html.css:457-466 at WebKit 31adf9d (`border: 1px solid -apple-system-secondary-label`); secondaryLabel rgba(60,60,67,0.6) / rgba(235,235,245,0.6) (LayoutTests/platform/ios-18/fast/css/ios/system-color-for-css-value-expected.txt:145, :147 at WebKit de320ba)"
+difference_values = { "ios-13" = 1.0 }
 
 [[row]]
 key = "text_area.border.shadow_enabled"

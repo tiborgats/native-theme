@@ -458,8 +458,8 @@
       "base": {
         "fill": "#ffffff",
         "stroke": {
-          "width": 0.5,
-          "color": "#c6c6c8"
+          "width": 1.0,
+          "color": "#3c3c4399"
         },
         "corners": 10.0,
         "shadows": "none",
@@ -486,8 +486,8 @@
           ],
           "field": {
             "stroke": {
-              "width": 0.5,
-              "color": "#c6c6c8"
+              "width": 1.0,
+              "color": "#3c3c4399"
             }
           }
         },
@@ -558,8 +558,8 @@
       "base": {
         "fill": "#ffffff",
         "stroke": {
-          "width": 0.5,
-          "color": "#c6c6c8"
+          "width": 1.0,
+          "color": "#3c3c4399"
         },
         "corners": 10.0,
         "shadows": "none"
@@ -582,8 +582,8 @@
           ],
           "field": {
             "stroke": {
-              "width": 0.5,
-              "color": "#c6c6c8"
+              "width": 1.0,
+              "color": "#3c3c4399"
             }
           }
         },
