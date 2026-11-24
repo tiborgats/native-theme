@@ -5366,6 +5366,11 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       white at 75 % mixed 50 % with transparent (`_toggle-group.scss:118`), which the preset does not state (a segment
       states the normal toggle's ring at 0, `:63`, checked or not); OSD and opaque buttons, card buttons and boxed
       rows have no part of their own (`_buttons.scss:116`, `:158`, `:334`, `_lists.scss:344`).
+      The same gap on **windows-11** (2026-11-24): WinUI's CheckBox and RadioButton set `FocusVisualMargin`
+      -7,-3,-7,-3, the focus visual round the whole control, its indicator and its label (`docs/platform-facts.md`
+      §2.1.5, `focus_ring_offset`; `CheckBox_themeresources.xaml:275` at microsoft-ui-xaml 8463f45), not round the
+      indicator; with no part for that box the check box and the radio keep the Button's global ring (offset 1),
+      drawn round the indicator.
 - [ ] [0.8.x] **windows-11**: a checked toolbar button's label has no checked colour (window text on the accent fill);
       under an explicit accent the selection text stays white (1.72:1 on #ffb900); `colors.info`'s origin stays `Native`
       when only an explicit accent sets it; under high contrast with a palette kept, high-contrast colours no palette
