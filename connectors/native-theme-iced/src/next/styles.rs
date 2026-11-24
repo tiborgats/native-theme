@@ -17,8 +17,8 @@ use super::borders::{
     flagged, line, line_or_none, outline, outline_or_iced, radius, state_line, stroke_width,
 };
 use super::{
-    Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, text_color_of,
-    to_color,
+    Mapped, Unmapped, fill, fill_of, state_fill, state_text_color, stated, text_color,
+    text_color_of, to_color,
 };
 use crate::styles::{
     self as old, ButtonSource, CheckFills, CheckboxSource, ExpanderSource, InputSource, Layer,
@@ -1201,74 +1201,77 @@ pub fn pane_grid(
     ))
 }
 
-/// [`crate::styles::tooltip`].
+/// [`crate::styles::tooltip`]: the panel's fill, the text colour and the
+/// panel's border, each iced's own container's (`container::Style::default()`:
+/// no fill, the inherited text colour, no line and square corners) where the
+/// theme leaves it unstated (spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no panel fill or text colour.
+/// [`super::Unmapped`] where the panel's border is stated in a form iced
+/// cannot draw (a per-side stroke, a concentric radius).
 pub fn tooltip(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let t = &r.tooltip;
     Ok(old::panel_from(
-        fill(&t.panel, "tooltip.panel.fill")?,
-        Some(text_color(&t.text, "tooltip.text.color")?),
-        Some(outline!(t.panel, "tooltip.panel")?),
+        fill_of(&t.panel),
+        text_color_of(&t.text),
+        Some(outline_or_iced!(t.panel, "tooltip.panel")?),
     ))
 }
 
-/// [`crate::styles::container_card`]. The card's border is iced's own where
-/// the theme states none (the table of homes, `card.border.*`:
-/// `unstated_if_unset`).
+/// [`crate::styles::container_card`]: the card's fill and border, each iced's
+/// own container's where the theme states none (the table of homes,
+/// `card.border.*`: `unstated_if_unset`; spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no card fill.
+/// [`super::Unmapped`] where the card's border is stated in a form iced
+/// cannot draw.
 pub fn container_card(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let card = r.card.container(WidgetState::NONE);
     Ok(old::panel_from(
-        fill(&card, "card.container(NONE).fill")?,
+        fill_of(&card),
         None,
         Some(outline_or_iced!(card, "card.container(NONE)")?),
     ))
 }
 
-/// [`crate::styles::dialog`].
+/// [`crate::styles::dialog`]: the panel's fill, the body colour and the
+/// panel's border, each iced's own container's where the theme leaves it
+/// unstated (spec §10, rule 0).
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no panel fill or body colour.
+/// [`super::Unmapped`] where the panel's border is stated in a form iced
+/// cannot draw.
 pub fn dialog(
     r: &ResolvedTheme,
 ) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
     let d = &r.dialog;
     Ok(old::panel_from(
-        fill(&d.panel, "dialog.panel.fill")?,
-        Some(text_color(&d.body, "dialog.body.color")?),
-        Some(outline!(d.panel, "dialog.panel")?),
+        fill_of(&d.panel),
+        text_color_of(&d.body),
+        Some(outline_or_iced!(d.panel, "dialog.panel")?),
     ))
 }
 
-/// [`crate::styles::toolbar`].
-///
-/// # Errors
-///
-/// [`super::Unmapped`] where the theme states no bar fill or button label
-/// colour.
+/// [`crate::styles::toolbar`]: the bar's fill and the button label's colour,
+/// each iced's own container's where the theme leaves it unstated (spec
+/// §10, rule 0).
+#[must_use = "this returns the style function; it does not apply it"]
 pub fn toolbar(
     r: &ResolvedTheme,
-) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let t = &r.toolbar;
-    Ok(old::panel_from(
-        fill(&t.bar(WidgetState::NONE), "toolbar.bar(NONE).fill")?,
-        Some(text_color(
-            &t.button_label(WidgetState::NONE),
-            "toolbar.button_label(NONE).color",
-        )?),
+    old::panel_from(
+        fill_of(&t.bar(WidgetState::NONE)),
+        text_color_of(&t.button_label(WidgetState::NONE)),
         None::<Outline>,
-    ))
+    )
 }
 
 /// [`crate::styles::application`]: the fill of a normal window's frame.

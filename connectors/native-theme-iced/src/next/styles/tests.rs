@@ -1985,3 +1985,137 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> TestResult {
     );
     Ok(())
 }
+
+/// iced's own container's look, which a panel keeps per property where the
+/// theme leaves it unstated: no fill, the inherited text colour, no line
+/// and square corners (`container::Style::default()`).
+fn iced_container() -> iced_widget::container::Style {
+    iced_widget::container::Style::default()
+}
+
+/// The tooltip and the dialog keep iced's own container's look per property
+/// (spec §10, rule 0), not as a whole: with the panel's fill unstated, no
+/// fill and the theme's text colour and border; with the text colour
+/// unstated, the inherited one and the theme's fill; with the panel's
+/// stroke and corners unstated, iced's own border and the theme's fill.
+#[test]
+fn a_tooltip_and_a_dialog_keep_iceds_own_per_property() -> TestResult {
+    let unfilled = |part: &mut native_theme::next::PartStyle| {
+        part.stated = part.stated.difference(PartStated::FILL);
+    };
+    let unlined = |part: &mut native_theme::next::PartStyle| {
+        part.stated = part
+            .stated
+            .difference(PartStated::STROKE | PartStated::CORNERS);
+    };
+    let uncoloured = |text: &mut native_theme::next::TextStyle| {
+        text.stated = text.stated.difference(TextStated::COLOR);
+    };
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let tooltip = super::tooltip(&r)?(&theme);
+        let dialog = super::dialog(&r)?(&theme);
+        let iced = iced_container();
+
+        let mut t = r.clone();
+        unfilled(&mut t.tooltip.panel);
+        unfilled(&mut t.dialog.panel);
+        let (tip, dlg) = (super::tooltip(&t)?(&theme), super::dialog(&t)?(&theme));
+        assert_eq!(tip.background, iced.background, "{preset:?} tooltip fill");
+        assert_eq!(
+            tip.text_color, tooltip.text_color,
+            "{preset:?} tooltip text"
+        );
+        assert_eq!(dlg.background, iced.background, "{preset:?} dialog fill");
+        assert_eq!(dlg.text_color, dialog.text_color, "{preset:?} dialog text");
+
+        let mut t = r.clone();
+        uncoloured(&mut t.tooltip.text);
+        uncoloured(&mut t.dialog.body);
+        let (tip, dlg) = (super::tooltip(&t)?(&theme), super::dialog(&t)?(&theme));
+        assert_eq!(tip.text_color, iced.text_color, "{preset:?} tooltip text");
+        assert_eq!(
+            tip.background, tooltip.background,
+            "{preset:?} tooltip fill"
+        );
+        assert_eq!(dlg.text_color, iced.text_color, "{preset:?} dialog text");
+        assert_eq!(dlg.background, dialog.background, "{preset:?} dialog fill");
+
+        let mut t = r.clone();
+        unlined(&mut t.tooltip.panel);
+        unlined(&mut t.dialog.panel);
+        let (tip, dlg) = (super::tooltip(&t)?(&theme), super::dialog(&t)?(&theme));
+        assert_eq!(tip.border, iced.border, "{preset:?} tooltip border");
+        assert_eq!(
+            tip.background, tooltip.background,
+            "{preset:?} tooltip fill"
+        );
+        assert_eq!(dlg.border, iced.border, "{preset:?} dialog border");
+        assert_eq!(dlg.background, dialog.background, "{preset:?} dialog fill");
+    }
+    Ok(())
+}
+
+/// The toolbar keeps iced's own container's look per property (spec §10,
+/// rule 0): a stated bar fill is drawn whether or not the theme states the
+/// button label's colour, and a stated label colour whether or not it
+/// states the fill, each unstated one iced's own.
+#[test]
+fn a_toolbar_keeps_iceds_own_per_property() -> TestResult {
+    let filled = ThemePatch::new()
+        .toolbar(ToolbarRule::new().bar(PartPatch::new().fill(Paint::Solid(DISTINCT))));
+    let lettered =
+        ThemePatch::new().toolbar(ToolbarRule::new().button_label(TextPatch::new().color(LABEL)));
+    let iced = iced_container();
+    for (preset, r) in every_preset_with(&filled) {
+        let theme = to_theme(&r)?;
+        let bar = super::toolbar(&r)(&theme);
+        assert_eq!(
+            background_color(bar.background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        let label = super::text_color_of(&r.toolbar.button_label(WidgetState::NONE));
+        assert_eq!(bar.text_color, label.or(iced.text_color), "{preset:?}");
+    }
+    for (preset, r) in every_preset_with(&lettered) {
+        let theme = to_theme(&r)?;
+        let bar = super::toolbar(&r)(&theme);
+        assert_eq!(bar.text_color, Some(to_color(LABEL)), "{preset:?}");
+        let fill = super::fill_of(&r.toolbar.bar(WidgetState::NONE));
+        assert_eq!(
+            background_color(bar.background),
+            fill.or(background_color(iced.background)),
+            "{preset:?}"
+        );
+    }
+    Ok(())
+}
+
+/// The card keeps iced's own container's look per property (spec §10,
+/// rule 0): a stated fill is drawn with the theme's border, iced's own
+/// where the theme states none, and a card whose border is iced's own still
+/// draws its stated fill.
+#[test]
+fn a_card_keeps_iceds_own_per_property() -> TestResult {
+    use native_theme::next::CardRule;
+    let filled = ThemePatch::new()
+        .card(CardRule::new().container(PartPatch::new().fill(Paint::Solid(DISTINCT))));
+    for (preset, r) in every_preset_with(&filled) {
+        let theme = to_theme(&r)?;
+        let card = super::container_card(&r)?(&theme);
+        assert_eq!(
+            background_color(card.background),
+            Some(to_color(DISTINCT)),
+            "{preset:?}"
+        );
+        let container = r.card.container(WidgetState::NONE);
+        if !container
+            .stated
+            .intersects(PartStated::STROKE | PartStated::CORNERS)
+        {
+            assert_eq!(card.border, iced_container().border, "{preset:?}");
+        }
+    }
+    Ok(())
+}

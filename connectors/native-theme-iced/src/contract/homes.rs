@@ -1080,7 +1080,7 @@ impl NextReading {
         x.style(
             s,
             "styles::toolbar",
-            next_styles::toolbar(r).map(statusless),
+            Ok(statusless(next_styles::toolbar(r))),
             &[()],
             container_texts,
         );

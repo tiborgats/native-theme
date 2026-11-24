@@ -6937,7 +6937,7 @@ fn toolbar(state: &State) -> Element<'_, Message> {
     let bar = container(row![items, space().height(floor)].align_y(iced::Center))
         .padding(padding)
         .width(Fill)
-        .next_style(iced_next::styles::toolbar(r), |bar, style| bar.style(style));
+        .style(iced_next::styles::toolbar(r));
     tagged(
         "chrome.toolbar",
         column![
@@ -27119,8 +27119,9 @@ mod tests {
     /// alike), `tooltip.panel.padding` plus the stroke where all four sides are
     /// alike (kde-breeze's 3 and 1, macos-monterey's 4 and 0.5), iced's own
     /// where they are not (adwaita, windows-11); four sides of 6 a patch
-    /// states give 6 plus the stroke, and with the panel's fill unstated the
-    /// bubble is iced's own, which draws no border, so the side alone.
+    /// states give 6 plus the stroke, and so they do with the panel's fill
+    /// unstated, the bubble keeping the theme's border (iced's own fill
+    /// only, spec §10, rule 0).
     #[test]
     fn every_tooltip_takes_a_uniform_stated_padding_on_the_0_8_0_model() -> Result<(), String> {
         let patch = |toml: &str| {
@@ -27157,11 +27158,11 @@ mod tests {
             }
             patched.tooltip.panel.stated =
                 patched.tooltip.panel.stated.difference(PartStated::FILL);
-            if iced_next::styles::tooltip(&patched).is_ok() {
-                failures.push(format!("{preset}: an unfilled panel still has its style"));
-            } else if next_tooltip_padding(&patched) != Some(6.0) {
+            if iced_next::styles::tooltip(&patched).is_err() {
+                failures.push(format!("{preset}: an unfilled panel loses its style"));
+            } else if next_tooltip_padding(&patched) != stroke.map(|width| 6.0 + width) {
                 failures.push(format!(
-                    "{preset}: iced's own bubble gives {:?}",
+                    "{preset}: the unfilled bubble, its border the theme's, gives {:?}",
                     next_tooltip_padding(&patched)
                 ));
             }

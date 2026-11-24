@@ -3438,7 +3438,7 @@ fn compare_styles(
     let panel = |fill, label: Option<_>, border| {
         move |a: LineAlign| {
             surface(o::panel_from(
-                to_color(fill),
+                Some(to_color(fill)),
                 label.map(to_color),
                 Some(Outline::of(border).aligned(a)),
             ))
@@ -3479,7 +3479,7 @@ fn compare_styles(
         themes,
         "toolbar",
         surface(o::toolbar(old)),
-        n::toolbar(new).map(surface),
+        Ok::<_, super::Unmapped>(surface(n::toolbar(new))),
         [()]
     );
     plain!(

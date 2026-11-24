@@ -3589,7 +3589,7 @@ pub fn tooltip(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let t = &resolved.tooltip;
     panel_from(
-        to_color(t.background_color),
+        Some(to_color(t.background_color)),
         Some(to_color(t.font.color)),
         Some(Outline::of(&t.border)),
     )
@@ -3597,21 +3597,22 @@ pub fn tooltip(
 
 /// The surfaces [`tooltip`], [`container_card`], [`dialog`] and [`toolbar`]
 /// paint, of what they read: the fill, the label colour, and the border on
-/// the fill, each `None` that keeps `container::Style::default()`'s.
+/// the fill (on no fill where `panel` is `None`), each `None` that keeps
+/// `container::Style::default()`'s.
 pub(crate) fn panel_from(
-    panel: Color,
+    panel: Option<Color>,
     label: Option<Color>,
     border: Option<Outline>,
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
-    let border = border.map(|border| border.over(panel));
+    let border = border.map(|border| border.over(panel.unwrap_or(Color::TRANSPARENT)));
 
     move |_theme| {
         let iced = Style::default();
         Style {
             text_color: label.or(iced.text_color),
-            background: Some(Background::Color(panel)),
+            background: panel.map(Background::Color).or(iced.background),
             border: border.unwrap_or(iced.border),
             shadow: iced.shadow,
             snap: iced.snap,
@@ -3639,7 +3640,7 @@ pub fn container_card(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let c = &resolved.card;
     panel_from(
-        to_color(c.background_color),
+        Some(to_color(c.background_color)),
         None,
         Some(Outline::of(&c.border)),
     )
@@ -4254,7 +4255,7 @@ pub fn dialog(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let d = &resolved.dialog;
     panel_from(
-        to_color(d.background_color),
+        Some(to_color(d.background_color)),
         Some(to_color(d.body_font.color)),
         Some(Outline::of(&d.border)),
     )
@@ -4285,7 +4286,7 @@ pub fn toolbar(
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     let t = &resolved.toolbar;
     panel_from(
-        to_color(t.background_color),
+        Some(to_color(t.background_color)),
         Some(to_color(t.font.color)),
         None,
     )
