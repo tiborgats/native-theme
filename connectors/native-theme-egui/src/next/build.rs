@@ -5,9 +5,9 @@
 //! rule 0); a place a note names is the home's.
 
 use native_theme::next::{
-    ButtonQuery, CheckboxWidget, Color, CornerRadius, FocusKind, FocusTrigger, IconStated,
-    IconStyle, ListQuery, Orientation, PartStated, PartStyle, Preset, ResolvedTheme, Stroke,
-    StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
+    ButtonQuery, CheckboxWidget, Color, CornerRadius, FocusIndicator, FocusKind, FocusTrigger,
+    IconStated, IconStyle, ListQuery, Orientation, PartStated, PartStyle, Preset, ResolvedTheme,
+    Stroke, StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
 };
 
 use super::{Mapped, Unmapped, padding_of, radius_of, reads, stroke_width_of};
@@ -1317,8 +1317,148 @@ pub(crate) fn sources(
         variants: variant_source(r, notes),
         frames: frame_source(r, inactive, notes),
         focus_ring: focus_ring_source(r)?,
+        part_rings: Some(part_ring_sources(r, notes)),
         rule_0: true,
     })
+}
+
+/// The homes of a focus indicator's fields, which a note names where egui cannot draw them:
+/// the global ring's (`focus_ring`), or a part's own (`PartStyle.focus`) at the state the part
+/// is asked at.
+pub(crate) struct RingHomes {
+    kind: &'static str,
+    stroke_width: &'static str,
+    offset: &'static str,
+    inner_stroke: &'static str,
+    inner_width: &'static str,
+    corners: &'static str,
+}
+
+/// The [`RingHomes`] of the indicator at `$p` followed by `$at`.
+macro_rules! ring_homes {
+    ($p:literal, $at:literal) => {
+        RingHomes {
+            kind: concat!($p, $at, ".kind"),
+            stroke_width: concat!($p, $at, ".stroke.width"),
+            offset: concat!($p, $at, ".offset"),
+            inner_stroke: concat!($p, $at, ".inner_stroke"),
+            inner_width: concat!($p, $at, ".inner_stroke.width"),
+            corners: concat!($p, $at, ".corners"),
+        }
+    };
+}
+
+/// The global ring's homes.
+const GLOBAL_RING: RingHomes = ring_homes!("focus_ring", "");
+
+/// The [`RingHomes`] of the part `$p`'s own ring asked at `FOCUSED` and at `FOCUS_VISIBLE`.
+macro_rules! part_ring_homes {
+    ($p:literal) => {
+        [
+            ring_homes!($p, "(FOCUSED).focus"),
+            ring_homes!($p, "(FOCUS_VISIBLE).focus"),
+        ]
+    };
+}
+
+/// The part whose fill and stroke a role's cell reads, asked at `state`, with the homes of its
+/// own ring's fields at `FOCUSED` and at `FOCUS_VISIBLE` (README, the focus ring's table); `None`
+/// for a role that draws no focusable part, whose widgets take the global ring.
+fn focus_part(
+    r: &ResolvedTheme,
+    role: crate::Role,
+    state: WidgetState,
+) -> Option<(PartStyle, [RingHomes; 2])> {
+    use crate::Role as R;
+    Some(match role {
+        R::Button => (r.button.body(state), part_ring_homes!("button.body")),
+        R::Input => (r.input.field(state), part_ring_homes!("input.field")),
+        R::Checkbox => (
+            r.checkbox.indicator(state),
+            part_ring_homes!("checkbox.indicator"),
+        ),
+        R::Slider => (r.slider.thumb(state), part_ring_homes!("slider.thumb")),
+        R::Tab => (r.tab.tab(state), part_ring_homes!("tab.tab")),
+        R::Switch => (r.switch.track(state), part_ring_homes!("switch.track")),
+        R::ComboBox => (
+            r.combo_box.field(state),
+            part_ring_homes!("combo_box.field"),
+        ),
+        R::SegmentedControl => (
+            r.segmented_control.segment(state),
+            part_ring_homes!("segmented_control.segment"),
+        ),
+        R::Expander => (
+            r.expander.header(state),
+            part_ring_homes!("expander.header"),
+        ),
+        R::Menu => (r.menu.item(state), part_ring_homes!("menu.item")),
+        R::List => (r.list.row(state), part_ring_homes!("list.row")),
+        R::Toolbar => (r.toolbar.button(state), part_ring_homes!("toolbar.button")),
+        R::Sidebar => (r.sidebar.item(state), part_ring_homes!("sidebar.item")),
+        _ => return None,
+    })
+}
+
+/// What each role's part ([`focus_part`]) states of its own ring in each variant, asked at
+/// `FOCUSED` for a focus that followed no key press and at `FOCUS_VISIBLE` for one that did (spec
+/// §2, `FocusIndicator`), a checked check box's (`Selected`, `SelectedDisabled`) with `CHECKED`:
+/// none where the part states none, the ring where it states one egui can draw, and where it
+/// states one egui cannot draw, none and a [`Note::Unmapped`] at the field's home.
+fn part_ring_sources(r: &ResolvedTheme, notes: &mut Vec<Note>) -> crate::style::PartRingSources {
+    use crate::plugin::PartRingSource;
+    use crate::{Role, RoleVariant};
+
+    let mut rings = crate::style::PartRingSources::default();
+    for (row, role) in rings.iter_mut().zip(Role::all()) {
+        for (slot, variant) in row.iter_mut().zip(crate::roles::VARIANTS) {
+            let checked = *role == Role::Checkbox
+                && matches!(
+                    variant,
+                    RoleVariant::Selected | RoleVariant::SelectedDisabled
+                );
+            let extra = if checked {
+                WidgetState::CHECKED
+            } else {
+                WidgetState::NONE
+            };
+            let at = [WidgetState::FOCUSED, WidgetState::FOCUS_VISIBLE];
+            for (ring, focus) in slot.iter_mut().zip(at) {
+                let Some((part, homes)) = focus_part(r, *role, focus | extra) else {
+                    continue;
+                };
+                if !part.stated.contains(PartStated::FOCUS) {
+                    continue;
+                }
+                let [pointer, keyboard] = &homes;
+                let homes = if focus == WidgetState::FOCUSED {
+                    pointer
+                } else {
+                    keyboard
+                };
+                *ring = match part.focus.as_deref() {
+                    None => PartRingSource::None,
+                    Some(f) if matches!(f.stroke, Stroke::Complex(_)) => {
+                        push_note(
+                            notes,
+                            Note::Unmapped {
+                                path: homes.stroke_width,
+                            },
+                        );
+                        PartRingSource::None
+                    }
+                    Some(f) => match indicator_source(f, homes) {
+                        Ok(src) => PartRingSource::Ring(src),
+                        Err(Unmapped(path)) => {
+                            push_note(notes, Note::Unmapped { path });
+                            PartRingSource::None
+                        }
+                    },
+                };
+            }
+        }
+    }
+    rings
 }
 
 /// [`FocusRingSource`] of the 0.8.0 model: the ring's stroke where it is one stroke of one
@@ -1336,11 +1476,20 @@ pub(crate) fn sources(
 /// the container's radius; a continuous curve is drawn as the circular corner of its radius
 /// (spec §10, rule 2).
 pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
+    indicator_source(&r.focus_ring, &GLOBAL_RING)
+}
+
+/// [`focus_ring_source`] of the indicator `ring`, the homes of its fields `homes`: the global
+/// ring's, or a part's own.
+///
+/// # Errors
+///
+/// As [`focus_ring_source`], at `homes`.
+fn indicator_source(ring: &FocusIndicator, homes: &RingHomes) -> Mapped<FocusRingSource> {
     use crate::plugin::RingCorners;
 
-    let ring = &r.focus_ring;
     if ring.kind != FocusKind::Ring {
-        return Err(Unmapped("focus_ring.kind"));
+        return Err(Unmapped(homes.kind));
     }
     let (color, width) = match &ring.stroke {
         Stroke::None => (None, Some(0.0)),
@@ -1349,10 +1498,8 @@ pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
     };
     let inner = match &ring.inner_stroke {
         Stroke::None => None,
-        Stroke::Uniform { color, width, .. } => {
-            Some((rgba(*color), (*width, "focus_ring.inner_stroke.width")))
-        }
-        _ => return Err(Unmapped("focus_ring.inner_stroke")),
+        Stroke::Uniform { color, width, .. } => Some((rgba(*color), (*width, homes.inner_width))),
+        _ => return Err(Unmapped(homes.inner_stroke)),
     };
     let corners = match ring.corners.map(|c| c.radius) {
         None => None,
@@ -1370,14 +1517,15 @@ pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
             bottom_left,
         ])),
         Some(CornerRadius::Pill) => Some(RingCorners::Pill),
-        Some(_) => return Err(Unmapped("focus_ring.corners")),
+        Some(_) => return Err(Unmapped(homes.corners)),
     };
     Ok(FocusRingSource {
         color,
-        width: width.map(|v| (v, "focus_ring.stroke.width")),
-        offset: Some((ring.offset, "focus_ring.offset")),
+        width: width.map(|v| (v, homes.stroke_width)),
+        offset: Some((ring.offset, homes.offset)),
         keyboard_only: ring.trigger == Some(FocusTrigger::KeyboardOnly),
         inner,
         corners,
+        corners_path: homes.corners,
     })
 }

@@ -727,6 +727,39 @@ listed here, and a value the theme leaves unstated is egui's own
   ring: `next::to_theme` returns `Unmapped("focus_ring.kind")` for it; a
   ring or second ring stated per side is `Unmapped`, and so are concentric
   corners, which need the container's radius.
+- **A part's own focus ring.** Where the part a role's cell reads its fill
+  and stroke from states a ring of its own (`PartStyle.focus`, spec §2
+  `FocusIndicator`), the plugin strokes that ring in place of
+  `focus_ring` round a widget in the role's scope (`native_scope`,
+  `native_set_style`), on the same geometry, shown as its own `trigger`
+  says; where the part states none, no ring; where it states nothing, the
+  global ring. The part is asked at `FOCUS_VISIBLE` for a focus that
+  followed a key press, else at `FOCUSED`, a checked check box's
+  (`RoleVariant::Selected`) with `CHECKED`:
+
+  | Role | Part |
+  |---|---|
+  | `Button` | `button.body` |
+  | `Input` | `input.field` |
+  | `Checkbox` | `checkbox.indicator` |
+  | `Slider` | `slider.thumb` |
+  | `Tab` | `tab.tab` |
+  | `Switch` | `switch.track` |
+  | `ComboBox` | `combo_box.field` |
+  | `SegmentedControl` | `segmented_control.segment` |
+  | `Expander` | `expander.header` |
+  | `Menu` | `menu.item` |
+  | `List` | `list.row` |
+  | `Toolbar` | `toolbar.button` |
+  | `Sidebar` | `sidebar.item` |
+
+  Every other role, and a scope `native_set_style_with_ring` styled, takes
+  the global ring. egui has no radio role: a `RadioButton` in a
+  `Role::Checkbox` scope takes `checkbox.indicator`'s ring, and
+  `radio.indicator`'s own is not drawn. A part's ring egui cannot draw (a
+  fill, an underline, a stroke stated per side, concentric corners) is
+  none, reported as a `Note::Unmapped` at its home in `ThemeAtlas::notes`
+  (`button.body(FOCUSED).focus.kind`, ...).
 - **A stroke per side.** egui strokes a rect with one `Stroke`, one width
   and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
   `RectShape::stroke`). Where the theme states a part's stroke per side

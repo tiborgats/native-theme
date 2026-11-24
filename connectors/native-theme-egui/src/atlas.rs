@@ -139,6 +139,10 @@ pub(crate) struct SchemeStyles {
     /// The ring the install plugin paints (spec §6.18); `None` for a zero or non-finite width or a
     /// non-finite offset, which paints no ring.
     pub(crate) focus_ring: Option<FocusRing>,
+    /// `part_rings[role.index()][variant.index()]`: the ring the part a role's cell reads states
+    /// of its own, which the install plugin paints in place of `focus_ring` round a widget in
+    /// that cell's scope.
+    pub(crate) part_rings: [[crate::plugin::PartRings; 4]; 25],
     /// What [`ThemeAtlas::menu_bar_modifier`] writes over the `Role::Menu` cell.
     pub(crate) menu_bar: crate::style::roles::MenuBarTitles,
 }
@@ -152,6 +156,17 @@ impl SchemeStyles {
             .get(role.index())
             .and_then(|row| row.get(variant.index()))
             .unwrap_or(&self.base)
+    }
+
+    /// The rings of a role's part in a variant ([`SchemeStyles::part_rings`]); the indices are
+    /// below 25 and 4 by construction, and the scheme's ring is the fallback the lint-free `get`
+    /// needs, never reached.
+    pub(crate) fn part_rings(&self, role: Role, variant: RoleVariant) -> crate::plugin::PartRings {
+        self.part_rings
+            .get(role.index())
+            .and_then(|row| row.get(variant.index()))
+            .copied()
+            .unwrap_or_default()
     }
 
     /// The frame of a surface; the index is below 11 by construction (`SURFACES`), and

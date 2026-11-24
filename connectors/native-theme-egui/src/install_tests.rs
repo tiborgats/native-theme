@@ -4675,3 +4675,186 @@ fn egui_s_own_row_height_stands_on_all_but_macos_monterey() {
         assert_eq!(got, want);
     }
 }
+
+/// The 0.8.0 kde-breeze with `patch` laid over it, its atlas installed with a probe after it.
+fn next_ring_harness(
+    patch: native_theme::next::ThemePatch,
+) -> (egui::Context, ThemeAtlas, LayerProbe) {
+    use native_theme::next::{Preset, ThemeContext};
+    let theme = native_theme::next::Theme::preset(Preset::KdeBreeze).with_patch(patch);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx));
+    let atlas = crate::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)
+        .expect("the patched kde-breeze maps");
+    let ctx = bare_context();
+    atlas.install(&ctx);
+    let probe = LayerProbe::default();
+    ctx.add_plugin(probe.clone());
+    (ctx, atlas, probe)
+}
+
+/// A ring of `width` in magenta at `offset`, of `kind`.
+fn magenta_ring(
+    kind: native_theme::next::FocusKind,
+    width: f32,
+    offset: f32,
+) -> Option<Arc<native_theme::next::FocusIndicator>> {
+    use native_theme::next::{Color, FocusIndicator, Stroke};
+    Some(Arc::new(FocusIndicator::new(
+        kind,
+        Stroke::uniform(width, Color::new(1.0, 0.0, 1.0, 1.0)),
+        Stroke::None,
+        offset,
+        None,
+        None,
+    )))
+}
+
+/// FR4: where the part a role's cell reads states a ring of its own at the focused state, the
+/// plugin paints it round a widget in that role's scope in place of the global ring, on the
+/// same geometry (the widget's rect grown by the ring's offset); a role whose part states none
+/// paints none; another role keeps the global ring.
+#[test]
+fn a_parts_own_ring_is_drawn_in_place_of_the_global_one() {
+    use crate::plugin::PartRing;
+    use native_theme::next::{
+        ButtonRule, CheckboxRule, FocusKind, PartPatch, ThemePatch, WidgetState,
+    };
+    let patch = || {
+        ThemePatch::new()
+            .button(
+                ButtonRule::new()
+                    .states(WidgetState::FOCUSED)
+                    .body(PartPatch::new().focus(magenta_ring(FocusKind::Ring, 3.0, 1.0))),
+            )
+            .checkbox(
+                CheckboxRule::new()
+                    .states(WidgetState::FOCUSED)
+                    .indicator(PartPatch::new().focus(None)),
+            )
+    };
+    for role in [Role::Button, Role::Tab, Role::Checkbox] {
+        let (ctx, atlas, probe) = next_ring_harness(patch());
+        let theme = ctx.theme();
+        let global = *atlas
+            .focus_ring(theme)
+            .expect("kde-breeze states a focus ring");
+        let PartRing::Own(Some(own)) = atlas
+            .scheme(theme)
+            .part_rings(Role::Button, RoleVariant::Normal)
+            .keyboard
+        else {
+            panic!("the button's body states its own ring");
+        };
+        assert_eq!((own.stroke.width, own.offset), (3.0, 1.0));
+        assert_ne!(
+            own.stroke, global.stroke,
+            "the test could not tell the rings apart"
+        );
+        let mut show = |ui: &mut egui::Ui| {
+            in_window(ui, |ui| {
+                ui.native_scope(role, RoleVariant::Normal, |ui| ui.button("b"))
+                    .inner
+            })
+        };
+        let first = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+        watch(&probe, &[first.layer_id]);
+        let focused = pass_ui(&ctx, tab_press(), &mut show);
+        assert!(focused.has_focus(), "{role:?}: Tab focuses the button");
+        let seen = seen(&probe);
+        let (owns, globals) = (
+            rings_on(&seen, first.layer_id, own.stroke),
+            rings_on(&seen, first.layer_id, global.stroke),
+        );
+        match role {
+            Role::Button => {
+                assert_eq!(globals.len(), 0, "the global ring is not drawn");
+                assert_eq!(
+                    owns.iter().map(|r| r.rect).collect::<Vec<_>>(),
+                    [focused.rect.expand(own.offset)],
+                    "the body's own ring, on the ring's geometry"
+                );
+            }
+            Role::Tab => {
+                assert_eq!(owns.len(), 0, "the tab states no ring of its own");
+                assert_eq!(globals.len(), 1, "the global ring");
+            }
+            _ => assert_eq!(
+                (owns.len(), globals.len()),
+                (0, 0),
+                "the indicator states none"
+            ),
+        }
+    }
+}
+
+/// FR4: a part's own ring is asked at `FOCUS_VISIBLE` for a focus that followed a key press
+/// and at `FOCUSED` for another (which `FOCUS_VISIBLE` holds too), a checked check box's with
+/// `CHECKED`; one egui cannot draw (a fill) is none, noted unmapped at its home.
+#[test]
+fn a_parts_own_ring_is_read_at_the_focus_s_state() {
+    use crate::plugin::PartRing;
+    use native_theme::next::{
+        ButtonRule, CheckboxRule, FocusKind, PartPatch, ThemePatch, WidgetState,
+    };
+    let ring = |kind| PartPatch::new().focus(magenta_ring(kind, 2.0, 0.0));
+    let patch = ThemePatch::new()
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::FOCUS_VISIBLE)
+                .body(ring(FocusKind::Ring)),
+        )
+        .checkbox(
+            CheckboxRule::new()
+                .states(WidgetState::FOCUSED | WidgetState::CHECKED)
+                .indicator(ring(FocusKind::Ring)),
+        )
+        .tab(
+            native_theme::next::TabRule::new()
+                .states(WidgetState::FOCUSED)
+                .tab(ring(FocusKind::Fill)),
+        );
+    let (ctx, atlas, _) = next_ring_harness(patch);
+    let rings = |role, variant| atlas.scheme(ctx.theme()).part_rings(role, variant);
+    let own = |ring: PartRing| matches!(ring, PartRing::Own(Some(_)));
+    let button = rings(Role::Button, RoleVariant::Normal);
+    assert_eq!(
+        button.pointer,
+        PartRing::Global,
+        "a pointer focus asks at FOCUSED"
+    );
+    assert!(
+        own(button.keyboard),
+        "a keyboard focus asks at FOCUS_VISIBLE"
+    );
+    let checked = rings(Role::Checkbox, RoleVariant::Selected);
+    assert!(
+        own(checked.pointer) && own(checked.keyboard),
+        "the checked box's"
+    );
+    assert_eq!(
+        rings(Role::Checkbox, RoleVariant::Normal),
+        crate::plugin::PartRings::default(),
+        "the unchecked box states none"
+    );
+    let tab = rings(Role::Tab, RoleVariant::Normal);
+    assert_eq!(
+        (tab.pointer, tab.keyboard),
+        (PartRing::Own(None), PartRing::Own(None))
+    );
+    for at in ["FOCUSED", "FOCUS_VISIBLE"] {
+        let path = format!("tab.tab({at}).focus.kind");
+        assert!(
+            atlas
+                .notes()
+                .iter()
+                .any(|note| matches!(note, crate::Note::Unmapped { path: p } if *p == path)),
+            "{path} noted unmapped"
+        );
+    }
+}
