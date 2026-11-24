@@ -106,7 +106,34 @@ impl Difference {
             ..self
         }
     }
+
+    /// This entry with a disabled check box's stroke left to iced
+    /// ([`States::disabled_stroke`]), for `reason`.
+    const fn disabled_stroke(self, reason: &'static [&'static str]) -> Self {
+        Self {
+            listed: Listed {
+                states: States {
+                    disabled_stroke: true,
+                    ..self.listed.states
+                },
+                ..self.listed
+            },
+            reason,
+            ..self
+        }
+    }
 }
+
+/// The reason of a disabled check box whose stroke the 0.8.0 theme states
+/// nothing for.
+const DISABLED_STROKE: &str = "the theme states no stroke for the disabled check box: 0.7.2's \
+     connector drew a disabled box in its outline at rest, checked or not; the 0.8.0 theme has \
+     no rule for DISABLED that states checkbox.indicator's stroke (the from_state bit clear \
+     when queried with DISABLED alone), and iced's own check box recolours its border when \
+     disabled (iced_widget 0.14.2 src/checkbox.rs, fn primary: background.weak for \
+     background.strong unchecked, background.strong for primary.base checked), so its colour \
+     is iced's own for the status, its width the theme's at rest, which iced does not change \
+     (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
 
 /// A `Style` field the 0.8.0 preset states at a home where 0.7.2's
 /// resolver gave another value: in the statuses of state `at` (the
@@ -377,8 +404,8 @@ pub(crate) enum Added {
 /// [`crate::styles::in_state`] gives it: the hovered and the pressed fill,
 /// stroke and label, a focused field's and an open drop-down's stroke, a
 /// switch's hovered thumb, a slider's filled rail under the pointer and
-/// dragged, and a checked button's fill (`checked`: drawn as the primary
-/// button's, spec §10, rule 0a).
+/// dragged, a checked button's fill (`checked`: drawn as the primary
+/// button's, spec §10, rule 0a), and a disabled check box's stroke.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct States {
     pub hover_fill: bool,
@@ -392,6 +419,7 @@ pub(crate) struct States {
     pub hover_thumb: bool,
     pub rail: bool,
     pub checked: bool,
+    pub disabled_stroke: bool,
 }
 
 impl States {
@@ -408,6 +436,7 @@ impl States {
         hover_thumb: false,
         rail: false,
         checked: false,
+        disabled_stroke: false,
     };
 }
 
@@ -1324,71 +1353,19 @@ macro_rules! indicator_outline {
 /// checked one, the hovered box as at rest ([`indicator_outline`]).
 const IOS_CHECK: [Stated; 8] = indicator_outline!(checkbox);
 
-/// A disabled check box's outline, `checkbox.indicator(state)`'s stroke
-/// (`state` `NONE` or `CHECKED`, the box at rest), laid over the box's
-/// disabled fill (`indicator(DISABLED|state)` where a rule for DISABLED
-/// states one, else the fill at rest), the two faded as one widget over the
-/// window by `checkbox.disabled_opacity` (`crate::styles::checkbox_from`).
-#[cfg(feature = "widgets")]
-fn disabled_outline(t: &native_theme::next::ResolvedTheme, state: WidgetState) -> Option<Value> {
-    let c = &t.checkbox;
-    let line = super::borders::line_or_none(&c.indicator(state), "the stated stroke").ok()?;
-    let disabled = c
-        .indicator(WidgetState::DISABLED)
-        .from_state
-        .contains(native_theme::next::PartStated::FILL);
-    let fill = if disabled {
-        super::fill_of(&c.indicator(WidgetState::DISABLED.union(state)))?
-    } else {
-        super::fill_of(&c.indicator(state))?
-    };
-    Some(Value::Faded {
-        color: line.over(fill),
-        under: Some(fill),
-        ground: super::to_color(t.colors.window.background?),
-        opacity: c.disabled_opacity,
-    })
-}
-
-/// The style functions, which alone read [`disabled_outline`], are
-/// compared with the `widgets` feature only: no value without it.
-#[cfg(not(feature = "widgets"))]
-fn disabled_outline(_: &native_theme::next::ResolvedTheme, _: WidgetState) -> Option<Value> {
-    None
-}
-
-/// [`disabled_outline`] of the box not checked.
-const CHECK_DISABLED_OUTLINE: Home = Home {
-    path: "checkbox.indicator(NONE).stroke over checkbox.indicator(DISABLED).fill, faded as \
-           one over colors.window.background by checkbox.disabled_opacity",
-    value: |t| disabled_outline(t, WidgetState::NONE),
-};
-
-/// [`disabled_outline`] of the checked box.
-const CHECKED_DISABLED_OUTLINE: Home = Home {
-    path: "checkbox.indicator(CHECKED).stroke over checkbox.indicator(DISABLED|CHECKED).fill, \
-           faded as one over colors.window.background by checkbox.disabled_opacity",
-    value: |t| disabled_outline(t, WidgetState::CHECKED),
-};
-
-/// ios-13's disabled check box: the outline at rest, checked or not, faded
-/// with the box ([`disabled_outline`]).
-const IOS_CHECK_DISABLED: [Stated; 4] = [
+/// ios-13's disabled check box: the outline's width at rest, checked or
+/// not; its colour, which no rule for DISABLED states, is iced's own
+/// ([`DISABLED_STROKE`]).
+const IOS_CHECK_DISABLED: [Stated; 2] = [
     set(
         at!(DISABLED),
         Field::BorderWidth,
         home!(width, checkbox.indicator(NONE)),
     ),
-    set(at!(DISABLED), Field::BorderColor, CHECK_DISABLED_OUTLINE),
     set(
         at!(DISABLED | CHECKED),
         Field::BorderWidth,
         home!(width, checkbox.indicator(CHECKED)),
-    ),
-    set(
-        at!(DISABLED | CHECKED),
-        Field::BorderColor,
-        CHECKED_DISABLED_OUTLINE,
     ),
 ];
 
@@ -1787,32 +1764,47 @@ const DIFFERENCES: &[Difference] = &[
     // The FS4 presets state kde-breeze's hovered box as 0.7.2 drew it,
     // adwaita's and material-3's hovered stroke, windows-11's hovered fill
     // and stroke, and material-3's disabled label (`label(DISABLED)`).
+    // No preset states the disabled box's stroke (`indicator(DISABLED)`),
+    // which is then iced's own.
     stated_fields(
         "checkbox",
         &["ios-13"],
         LineAlign::Outside,
         &[&IOS_CHECK, &IOS_CHECK_DISABLED],
-    ),
+    )
+    .disabled_stroke(&[STATED, DISABLED_STROKE]),
     stated_fields(
         "checkbox",
         &["adwaita"],
         LineAlign::Outside,
         &[&CHECK_HOVER_STROKES],
-    ),
-    stated_fields("checkbox", &["material-3"], LineAlign::Outside, &[M3_CHECK]),
-    inside("checkbox", &["macos-monterey"]),
+    )
+    .disabled_stroke(&[STATED, DISABLED_STROKE]),
+    stated_fields("checkbox", &["material-3"], LineAlign::Outside, &[M3_CHECK])
+        .disabled_stroke(&[STATED, DISABLED_STROKE]),
+    inside("checkbox", &["macos-monterey"]).disabled_stroke(&[INSIDE, DISABLED_STROKE]),
     stated_fields(
         "checkbox",
         &["windows-11"],
         LineAlign::Inside,
         &[W11_CHECK_HOVER],
-    ),
+    )
+    .disabled_stroke(&[INSIDE, STATED, DISABLED_STROKE]),
     hover(
         "checkbox",
         &["macos-tahoe"],
         LineAlign::Inside,
         hovered(true, true, false),
-    ),
+    )
+    .disabled_stroke(&[INSIDE, HOVER, DISABLED_STROKE]),
+    Difference {
+        leaf: "checkbox",
+        presets: &["kde-breeze"],
+        listed: Listed::aligned(LineAlign::Outside),
+        stated: &[],
+        reason: &[],
+    }
+    .disabled_stroke(&[DISABLED_STROKE]),
     hover(
         "radio",
         &["kde-breeze"],

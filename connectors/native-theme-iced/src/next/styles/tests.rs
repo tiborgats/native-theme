@@ -511,6 +511,58 @@ fn a_checked_rule_alone_leaves_the_hovered_state_to_iceds_change() -> TestResult
     Ok(())
 }
 
+/// A disabled check box, checked or not, is stroked in what a rule for
+/// `DISABLED` states (asked with that flag alone, spec §2, `from_state`);
+/// where none does, its border colour is iced's own change, which iced's
+/// own box makes when disabled (iced_widget 0.14.2 `checkbox::primary`:
+/// `background.weak` unchecked, `background.strong` checked), the theme's
+/// at rest where iced's palette makes none, and its width the theme's at
+/// rest. The box is not faded here (no disabled opacity).
+#[test]
+fn a_disabled_check_box_is_stroked_as_stated_else_iceds_own() -> TestResult {
+    use iced_widget::checkbox::{Status, primary};
+    const DISABLED_STROKE: Color = Color::new(0.7, 0.1, 0.2, 1.0);
+    let base = ThemePatch::new().checkbox(
+        CheckboxRule::new().indicator(
+            PartPatch::new()
+                .fill(Paint::Solid(DISTINCT))
+                .stroke(Stroke::uniform(2.0, LABEL)),
+        ),
+    );
+    let stated = base.clone().checkbox(
+        CheckboxRule::new()
+            .states(WidgetState::DISABLED)
+            .indicator(PartPatch::new().stroke(Stroke::uniform(2.0, DISABLED_STROKE))),
+    );
+    let mut iceds = 0;
+    for (patch, rule) in [(&base, false), (&stated, true)] {
+        for (preset, mut r) in every_preset_with(patch) {
+            r.checkbox.disabled_opacity = None;
+            let theme = to_theme(&r)?;
+            let style = super::checkbox(&r)?;
+            for is_checked in [false, true] {
+                let what = format!("{preset:?} checked {is_checked} rule {rule}");
+                let status = Status::Disabled { is_checked };
+                let border = style(&theme, status).border;
+                let own_rest = primary(&theme, Status::Active { is_checked }).border;
+                let own = primary(&theme, status).border;
+                let expected = if rule {
+                    to_color(DISABLED_STROKE)
+                } else if own.color != own_rest.color {
+                    iceds += 1;
+                    own.color
+                } else {
+                    to_color(LABEL)
+                };
+                assert_eq!(border.color, expected, "{what}");
+                assert_eq!(border.width, 2.0, "{what}");
+            }
+        }
+    }
+    assert!(iceds > 0, "iced's own disabled border covered");
+    Ok(())
+}
+
 /// The disabled fill and label a button with no disabled opacity shows:
 /// the disabled fill the theme states, with its disabled label or the label
 /// at rest faded as iced fades it; or, where it states no disabled fill,

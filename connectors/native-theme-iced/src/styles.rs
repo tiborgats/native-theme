@@ -1888,6 +1888,12 @@ pub(crate) struct CheckboxSource {
     /// options.
     pub disabled_background: Option<Color>,
     pub checked_disabled_background: Option<Color>,
+    /// The stroke of a disabled box unchecked and checked, where the theme
+    /// states one for the state; `None` where it states none, the stroke
+    /// then as [`Outline::in_state`] gives it against iced's own box at
+    /// rest and disabled.
+    pub disabled_border: Option<Line>,
+    pub checked_disabled_border: Option<Line>,
     pub disabled_opacity: Option<f32>,
     /// The check mark.
     pub mark: Color,
@@ -1901,13 +1907,17 @@ pub(crate) struct CheckboxSource {
 }
 
 impl CheckboxSource {
-    /// The 0.7.2 model's reads.
+    /// The 0.7.2 model's reads: a disabled box keeps its outline at rest,
+    /// which says whether it is checked.
     pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let c = &resolved.checkbox;
+        let fills = CheckFills::of(c);
         Self {
-            fills: CheckFills::of(c),
+            fills,
             disabled_background: c.disabled_background.map(to_color),
             checked_disabled_background: c.disabled_background.map(to_color),
+            disabled_border: Some(fills.unchecked_border),
+            checked_disabled_border: Some(fills.checked_border),
             disabled_opacity: Some(c.disabled_opacity),
             mark: to_color(c.indicator_color),
             disabled_mark: None,
@@ -1918,12 +1928,19 @@ impl CheckboxSource {
         }
     }
 
-    /// [`CheckFills::listed`] of the box's fills, for the parity test's
-    /// expected values.
+    /// [`CheckFills::listed`] of the box's fills, and its disabled strokes
+    /// where they lie as `listed` says, unset where it names them, for the
+    /// parity test's expected values.
     #[cfg(test)]
     pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let line = |l: Option<Line>| {
+            l.map(|l| l.aligned(listed.align))
+                .filter(|_| !listed.states.disabled_stroke)
+        };
         Self {
             fills: self.fills.listed(listed),
+            disabled_border: line(self.disabled_border),
+            checked_disabled_border: line(self.checked_disabled_border),
             ..self
         }
     }
@@ -1956,6 +1973,7 @@ pub(crate) fn checkbox_from(
     // (`docs/platform-facts.md` §2.1.6): the box keeps its enabled look.
     let disabled = c.disabled_background;
     let checked_disabled = c.checked_disabled_background;
+    let (disabled_border, checked_disabled_border) = (c.disabled_border, c.checked_disabled_border);
     let opacity = c.disabled_opacity;
 
     let mark = c.mark;
@@ -2004,14 +2022,30 @@ pub(crate) fn checkbox_from(
             // so the mark takes the one foreground the platform states for
             // everything it dims -- the same field the disabled label takes.
             // With no disabled fill stated the box is its enabled self. A
-            // disabled mark the theme states is drawn in its own colour. The
-            // box is then faded by `checkbox.disabled_opacity` as one widget
-            // over the ground: the border and the mark on the fill.
+            // disabled mark the theme states is drawn in its own colour. A
+            // disabled stroke the theme states is drawn; one it leaves
+            // unstated is as `Outline::in_state` gives it against iced's own
+            // box, which recolours its border when disabled (iced_widget
+            // 0.14.2 `src/checkbox.rs`, `primary`: `background.weak` for
+            // `background.strong` unchecked, `background.strong` for
+            // `primary.base` checked). The box is then faded by
+            // `checkbox.disabled_opacity` as one widget over the ground: the
+            // border and the mark on the fill.
             Status::Disabled { is_checked } => {
-                let (at_rest, line, disabled) = if is_checked {
-                    (fills.checked, fills.checked_border, checked_disabled)
+                let (at_rest, line, stated_line, disabled) = if is_checked {
+                    (
+                        fills.checked,
+                        fills.checked_border,
+                        checked_disabled_border,
+                        checked_disabled,
+                    )
                 } else {
-                    (fills.unchecked, fills.unchecked_border, disabled)
+                    (
+                        fills.unchecked,
+                        fills.unchecked_border,
+                        disabled_border,
+                        disabled,
+                    )
                 };
                 let (background, mark) = match disabled {
                     Some(fill) => (fill, disabled_label),
@@ -2019,12 +2053,20 @@ pub(crate) fn checkbox_from(
                 };
                 let mark = disabled_mark.filter(|_| is_checked).unwrap_or(mark);
                 let fill = composite_over(background, ground);
+                let (_, own_rest, _) = own(Status::Active { is_checked });
+                let (_, own_disabled, _) = own(status);
+                let rest = Outline {
+                    line,
+                    width: border_width,
+                    radius: own_rest.radius,
+                };
+                let border = rest.in_state(stated_line, background, (own_rest, own_disabled));
                 (
                     fade(ground, background),
-                    fade(fill, line.over(background)),
+                    fade(fill, border.color),
                     Some(fade(ground, disabled_label)),
                     fade(fill, mark),
-                    line.width(border_width),
+                    border.width,
                 )
             }
         };

@@ -476,6 +476,16 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
             PartStated::FILL,
             |p| fill(p, "checkbox.indicator(DISABLED|CHECKED).fill"),
         )?,
+        disabled_border: state_line(
+            &c.indicator(WidgetState::DISABLED),
+            "checkbox.indicator(DISABLED).stroke.color",
+        )?,
+        checked_disabled_border: flagged(
+            &c.indicator(WidgetState::DISABLED),
+            &c.indicator(WidgetState::DISABLED | WidgetState::CHECKED),
+            PartStated::STROKE,
+            |p| line_or_none(p, "checkbox.indicator(DISABLED|CHECKED).stroke.color"),
+        )?,
         disabled_opacity: c.disabled_opacity,
         mark: to_color(mark.color),
         disabled_mark: {
@@ -497,7 +507,10 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
 }
 
 /// [`crate::styles::checkbox`]: a disabled box faded as one widget over the
-/// window.
+/// window, stroked in what a rule for `DISABLED` states
+/// (`checkbox.indicator(DISABLED)`, `indicator(DISABLED|CHECKED)` checked),
+/// else in iced's own disabled border colour where iced's own box changes
+/// it (spec §2, `from_state`; §10, rule 0).
 ///
 /// # Errors
 ///
@@ -526,6 +539,8 @@ pub fn checkbox_over(
 }
 
 /// [`crate::styles::radio`]: the radio's own indicator, dot and label.
+/// iced's radio has no disabled status (iced_widget 0.14.2 `src/radio.rs`,
+/// `Status`), so `radio.indicator(DISABLED)` has no receiver.
 ///
 /// # Errors
 ///
