@@ -3657,10 +3657,9 @@ fn update_inner(state: &mut State, message: Message) {
 
 fn view(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
-    let btn_pad = native_theme_iced::button_padding(resolved);
     let inp_pad = native_theme_iced::input_padding(resolved);
 
-    let content = content_panel(state, btn_pad, inp_pad);
+    let content = content_panel(state, inp_pad);
     let content = tagged("chrome.content", content);
     let body: Element<'_, Message> = if state.side_panel_visible {
         let body = row![
@@ -3725,12 +3724,12 @@ fn view(state: &State) -> Element<'_, Message> {
 /// scrolls, inside the installed 0.8.0 theme's `layout.window_margin`
 /// (a container's own padding, none, where that is unstated), its scroll bar
 /// `iced_next::styles::scrollbar` in `iced_next::styles::scrollable`.
-fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'_, Message> {
+fn content_panel(state: &State, inp_pad: Padding) -> Element<'_, Message> {
     let r = state.next_shown();
     let window = r.layout.window_margin.map_or(Padding::ZERO, Padding::from);
     let tab_content: Element<'_, Message> = match state.active_tab {
         Tab::Basic => view_basic(state),
-        Tab::Buttons => view_buttons(state, btn_pad),
+        Tab::Buttons => view_buttons(state),
         Tab::Inputs => view_inputs(state, inp_pad),
         Tab::Selection => view_selection(state),
         Tab::Range => view_range(state),
@@ -7683,6 +7682,15 @@ fn next_button_floor(r: &native_theme::next::ResolvedTheme) -> iced::Size {
         }
         Err(_) => none,
     }
+}
+
+/// A push button's padding on the installed 0.8.0 theme,
+/// `native_theme_iced::next::button_padding`, the padding inside the
+/// border of `button.body(NONE)` (iced's `button::DEFAULT_PADDING` on a side
+/// it leaves unstated); iced's own, `button::DEFAULT_PADDING`, where the
+/// body's stroke is one iced cannot take (a stroke per side).
+fn next_button_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    iced_next::button_padding(r).unwrap_or(button::DEFAULT_PADDING)
 }
 
 /// A Basic text field's padding on the installed 0.8.0 theme,
@@ -13882,9 +13890,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     // the padding round it, on the installed 0.8.0 theme.
     let button_label = next.button.label(WidgetState::NONE);
     let btn_min = next_button_floor(next);
-    // iced's own padding, `button::DEFAULT_PADDING`, where the body's
-    // stroke is one iced cannot take.
-    let btn_pad = iced_next::button_padding(next).unwrap_or(button::DEFAULT_PADDING);
+    let btn_pad = next_button_padding(next);
     // A push button of the page: the label tagged `<id>.label`, the button
     // `id`.
     let push = |id: &'static str,
@@ -15944,6 +15950,20 @@ fn button_min_size_row(resolved: &native_theme::theme::ResolvedTheme) -> String 
     )
 }
 
+/// [`button_min_size_row`] on the installed 0.8.0 theme, the Buttons page's:
+/// `button.body(NONE).min_size`, each axis "unstated" where the theme states
+/// no least size on it.
+fn next_button_min_size_row(r: &native_theme::next::ResolvedTheme) -> String {
+    let axis = |v: Option<f32>| v.map_or_else(|| "unstated".to_owned(), |v| format!("{v:.0}px"));
+    let [width, height] = r.button.body(WidgetState::NONE).min_size;
+    format!(
+        "{} x {}, button.body(NONE).min_size: at_least(label, next_button_floor), the least \
+         size less next_button_padding; no floor on an unstated axis",
+        axis(width),
+        axis(height)
+    )
+}
+
 /// The Widget Info of the Buttons page's primary row: the primary button at
 /// rest and under the pointer.
 fn button_info(state: &State) -> String {
@@ -15951,16 +15971,15 @@ fn button_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
     let label = font_row("button.font", &resolved.button.font);
-    let min_size = button_min_size_row(resolved);
+    let min_size = next_button_min_size_row(state.next_shown());
     let config = [
         ("border-radius", radius_s.as_str()),
         ("min size", min_size.as_str()),
         (
             "padding",
-            "button_padding — each side button.border.padding states, plus \
-             button.border.line_width (the theme's padding lies inside the border, \
-             which iced paints over its padding); iced's button::DEFAULT_PADDING \
-             for the others",
+            "next_button_padding — the padding inside button.body(NONE)'s border, \
+             native_theme_iced::next::button_padding; iced's button::DEFAULT_PADDING on a \
+             side it leaves unstated, and on every side where the body's stroke is per side",
         ),
         ("shadow", "iced's own — the model has no shadow geometry"),
         ("label", label.as_str()),
@@ -16039,7 +16058,7 @@ fn disabled_buttons_info(state: &State) -> String {
         },
         resolved.button.disabled_opacity
     );
-    let min_size = button_min_size_row(resolved);
+    let min_size = next_button_min_size_row(state.next_shown());
     widget_tooltip(
         "Disabled Buttons",
         &colours,
@@ -16051,18 +16070,22 @@ fn disabled_buttons_info(state: &State) -> String {
     )
 }
 
-fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
+fn view_buttons(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
+    let next = state.next_shown();
+    let gap = Gaps::from_next(&next.layout);
+    let typography = &next.typography;
 
-    // `button.min_width` and `button.min_height`, as a floor under every
-    // label, as the Basic page's push buttons take them and every
-    // Buttons-page button of the gpui showcase does (`geometry::button`).
-    let btn_min = native_theme_iced::button_content_min_size(resolved);
-    let apply_pad =
-        |b: button::Button<'a, Message>| -> button::Button<'a, Message> { b.padding(btn_pad) };
+    // A push button of the page as the Basic page's are, on the installed
+    // 0.8.0 theme: its label in `button.label(NONE)` on at least
+    // [`next_button_floor`], `button.body(NONE).min_size` less the padding,
+    // as every Buttons-page button of the gpui showcase is
+    // (`geometry::button`), padded by [`next_button_padding`]; its class's
+    // colours still the 0.7.2 style's.
+    let button_label = next.button.label(WidgetState::NONE);
+    let btn_min = next_button_floor(next);
+    let btn_pad = next_button_padding(next);
+    let title = |label: &'static str| text(label).next_text(next_section_title(next), typography);
     let [
         primary,
         secondary,
@@ -16076,91 +16099,83 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
         click_me,
     ] = probes::BUTTONS.map(|(id, _)| id);
 
-    let header = section_header(
+    let header = next_section_header(
         "Buttons",
         "Interactive button styles from the resolved theme",
-        resolved,
-        ts,
-        a11y,
-        gap.widget,
+        state,
     );
+    let pressed = Message::ButtonPressed;
 
     let primary_row = hoverable(
         UnlistedKey::Button,
         column![
-            text("Primary Actions").role(section_title(ts), resolved, a11y),
+            title("Primary Actions"),
             row![
                 probe(
                     primary,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Primary").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .on_press(Message::ButtonPressed)
-                        .style(styles::button_primary(resolved))
-                    ),
+                    button(at_least(
+                        text("Primary").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .on_press(pressed.clone())
+                    .style(styles::button_primary(resolved)),
                 ),
                 probe(
                     secondary,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Secondary").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .on_press(Message::ButtonPressed)
-                        .style(styles::button(resolved))
-                    ),
+                    button(at_least(
+                        text("Secondary").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .on_press(pressed.clone())
+                    .style(styles::button(resolved)),
                 ),
                 probe(
                     success,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Success").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .on_press(Message::ButtonPressed)
-                        .style(styles::button_success(resolved))
-                    ),
+                    button(at_least(
+                        text("Success").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .on_press(pressed.clone())
+                    .style(styles::button_success(resolved)),
                 ),
                 probe(
                     warning,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Warning").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .on_press(Message::ButtonPressed)
-                        .style(styles::button_warning(resolved))
-                    ),
+                    button(at_least(
+                        text("Warning").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .on_press(pressed.clone())
+                    .style(styles::button_warning(resolved)),
                 ),
                 probe(
                     danger,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Danger").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .on_press(Message::ButtonPressed)
-                        .style(styles::button_danger(resolved))
-                    ),
+                    button(at_least(
+                        text("Danger").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .on_press(pressed.clone())
+                    .style(styles::button_danger(resolved)),
                 ),
                 probe(
                     text_style,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Text Style").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .on_press(Message::ButtonPressed)
-                        .style(styles::button_link(resolved))
-                    ),
+                    button(at_least(
+                        text("Text Style").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .on_press(pressed.clone())
+                    .style(styles::button_link(resolved)),
                 ),
             ]
             .spacing(gap.widget),
@@ -16172,41 +16187,38 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let disabled_row = hoverable(
         UnlistedKey::DisabledButtons,
         column![
-            text("Disabled State").role(section_title(ts), resolved, a11y),
-            text("Buttons without on_press are rendered as disabled:").body(resolved, a11y),
+            title("Disabled State"),
+            text("Buttons without on_press are rendered as disabled:").next_body(next),
             row![
                 probe(
                     disabled_primary,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Disabled Primary").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .style(styles::button_primary(resolved))
-                    ),
+                    button(at_least(
+                        text("Disabled Primary").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .style(styles::button_primary(resolved)),
                 ),
                 probe(
                     disabled_secondary,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Disabled Secondary").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .style(styles::button(resolved))
-                    ),
+                    button(at_least(
+                        text("Disabled Secondary").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .style(styles::button(resolved)),
                 ),
                 probe(
                     disabled_danger,
                     Length::Shrink,
-                    apply_pad(
-                        button(at_least(
-                            text("Disabled Danger").typeset(&resolved.button.font, a11y),
-                            btn_min
-                        ))
-                        .style(styles::button_danger(resolved))
-                    ),
+                    button(at_least(
+                        text("Disabled Danger").next_text(&button_label, typography),
+                        btn_min
+                    ))
+                    .padding(btn_pad)
+                    .style(styles::button_danger(resolved)),
                 ),
             ]
             .spacing(gap.widget),
@@ -16218,33 +16230,35 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let counter_text = format!("Button presses this session: {}", state.button_press_count);
 
     let interactive = column![
-        text("Interactive Demo").role(section_title(ts), resolved, a11y),
+        title("Interactive Demo"),
         row![
             probe(
                 click_me,
                 Length::Shrink,
-                apply_pad(
-                    button(at_least(
-                        text("Click me!").typeset(&resolved.button.font, a11y),
-                        btn_min
-                    ))
-                    .on_press(Message::ButtonPressed)
-                    .style(styles::button_primary(resolved))
-                ),
+                button(at_least(
+                    text("Click me!").next_text(&button_label, typography),
+                    btn_min
+                ))
+                .padding(btn_pad)
+                .on_press(pressed)
+                .style(styles::button_primary(resolved)),
             ),
-            text(counter_text).body(resolved, a11y),
+            text(counter_text).next_body(next),
         ]
         .spacing(gap.widget)
         .align_y(iced::Center),
     ]
     .spacing(gap.widget);
 
+    // The rules between the groups `separator.thickness` thick, their
+    // colour still `styles::rule`'s.
+    let divider = || rule::horizontal(next.separator.thickness).style(styles::rule(resolved));
     column![
         header,
         primary_row,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        divider(),
         disabled_row,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        divider(),
         interactive,
     ]
     .spacing(gap.section)
@@ -20738,13 +20752,6 @@ fn next_line_box(typography: &Typography, style: &TextStyle) -> f32 {
 /// [`page_title`] on the 0.8.0 model: `typography.title1`, or the body
 /// style where the theme defines none (`native_theme_iced::next::text_scale`,
 /// the table of homes' `text_scale.dialog_title`).
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 fn next_page_title(r: &native_theme::next::ResolvedTheme) -> &TextStyle {
     native_theme_iced::next::text_scale(r).dialog_title
 }
@@ -21532,6 +21539,25 @@ fn section_header<'a>(
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
     ]
     .spacing(widget_gap)
+    .into()
+}
+
+/// [`section_header`] on the installed 0.8.0 theme: the title in
+/// [`next_page_title`], the description in `typography.body`, a
+/// `layout.widget_gap` apart (none where unstated), over a rule
+/// `separator.thickness` thick, its colour still `styles::rule`'s.
+fn next_section_header<'a>(
+    title: &'a str,
+    description: &'a str,
+    state: &'a State,
+) -> Element<'a, Message> {
+    let next = state.next_shown();
+    column![
+        text(title).next_text(next_page_title(next), &next.typography),
+        text(description).next_body(next),
+        rule::horizontal(next.separator.thickness).style(styles::rule(&state.current_resolved)),
+    ]
+    .spacing(Gaps::from_next(&next.layout).widget)
     .into()
 }
 
@@ -26079,39 +26105,36 @@ mod tests {
 
     /// Button labels, inputs and body text are drawn at the theme's sizes.
     /// iced fixes its default text size when the renderer is created, so text
-    /// given no size is drawn at iced's default under every theme.
+    /// given no size is drawn at iced's default under every theme. The
+    /// Buttons page's label and description in the installed 0.8.0 theme's
+    /// line boxes ([`next_line_box`]) of `button.label(NONE)` and
+    /// `typography.body`; the Inputs page's field on the 0.7.2 theme.
     #[test]
     fn text_bearing_widgets_take_the_theme_sizes() {
         for preset in ["kde-breeze", "adwaita"] {
-            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            let button_line = line_of(resolved.button.font.size);
-            // Body text is laid out at the theme's line height.
-            let body_line = resolved.defaults.font.size * resolved.defaults.line_height;
-            let input_height =
-                line_of(resolved.input.font.size) + native_theme_iced::input_padding(&resolved).y();
             // The OS's text-scaling factor is left out: the sizes compared are
             // the theme's own.
-            let mut state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                accessibility: native_theme_iced::AccessibilityPreferences::default(),
-                active_tab: Tab::Buttons,
-                ..State::default()
-            };
+            let mut state = page_state(preset, Tab::Buttons);
+            let next = state.next_shown();
+            let button_line =
+                next_line_box(&next.typography, &next.button.label(WidgetState::NONE));
+            let body_line = next_line_box(&next.typography, &next.typography.body);
+            let resolved = &state.current_resolved;
+            let input_height =
+                line_of(resolved.input.font.size) + native_theme_iced::input_padding(resolved).y();
 
             let mut ui = interface(&state);
             let label = height_of(&mut ui, "Primary");
             assert!(
                 (label - button_line).abs() < 0.01,
-                "{preset}: a button label is {label}px tall, button.font gives {button_line}px"
+                "{preset}: a button label is {label}px tall, button.label(NONE) gives \
+                 {button_line}px"
             );
             let body = height_of(&mut ui, "Interactive button styles from the resolved theme");
             assert!(
                 (body - body_line).abs() < 0.01,
-                "{preset}: a page description is {body}px tall, defaults.font gives {body_line}px"
+                "{preset}: a page description is {body}px tall, typography.body gives \
+                 {body_line}px"
             );
             drop(ui);
 
@@ -28392,13 +28415,15 @@ mod tests {
     /// are `layout.widget_gap` apart ([`Gaps`]), none where it is unstated,
     /// as on the Basic page, where the showcase's own 12 px stood: under
     /// every bundled preset in both modes, the Buttons page's Click me!
-    /// button and its counter, the Range page's slider and its value, and
-    /// the Display page's first two tooltip buttons.
+    /// button and its counter (the installed 0.8.0 theme's gap), the Range
+    /// page's slider and its value, and the Display page's first two
+    /// tooltip buttons (the 0.7.2 theme's).
     #[test]
     fn the_pages_rows_are_a_widget_gap_apart() {
         for (preset, dark) in every_preset_in_both_modes() {
             let mut state = loaded(preset, dark);
             let gap = state.layout.widget_gap.unwrap_or_default();
+            let next_gap = state.next_shown().layout.widget_gap.unwrap_or_default();
             let mut gaps = Vec::new();
 
             state.active_tab = Tab::Buttons;
@@ -28414,6 +28439,7 @@ mod tests {
             gaps.push((
                 "Click me! and its counter",
                 counter.x - (click.x + click.width),
+                next_gap,
             ));
             drop(ui);
 
@@ -28428,6 +28454,7 @@ mod tests {
             gaps.push((
                 "the slider and its value",
                 shown.x - (slider.x + slider.width),
+                gap,
             ));
             drop(ui);
 
@@ -28438,13 +28465,14 @@ mod tests {
             gaps.push((
                 "the first two tooltip buttons",
                 second.x - (first.x + first.width),
+                gap,
             ));
 
-            for (what, drawn) in gaps {
+            for (what, drawn, want) in gaps {
                 assert!(
-                    near(drawn, gap),
+                    near(drawn, want),
                     "{preset} (dark: {dark}): {what} are {drawn}px apart, want \
-                     layout.widget_gap's {gap}px"
+                     layout.widget_gap's {want}px"
                 );
             }
         }
@@ -29189,68 +29217,164 @@ mod tests {
         );
     }
 
-    /// M9-155: every button of the Buttons page is laid out at the minimum
-    /// size the theme states (`button.min_width` and `.min_height`), or at
-    /// its own size where its label, padded, is larger, as the Basic page's
-    /// push buttons are and every Buttons-page button of the gpui showcase
-    /// is through `geometry::button`. kde-breeze states 82 by 32, which a
-    /// short label such as "Primary" falls short of; material-3 with its
-    /// minimum raised to 120 by 48 holds both floors beyond kde-breeze.
+    /// M9-155: every button of the Buttons page is laid out at the least
+    /// size the installed 0.8.0 theme states (`button.body(NONE).min_size`),
+    /// or at its own size where its label, padded
+    /// ([`next_button_padding`]), is larger, as the Basic page's push
+    /// buttons are and every Buttons-page button of the gpui showcase is
+    /// through `geometry::button`; and the Widget Info names that size.
+    /// kde-breeze states a least size a short label such as "Primary" falls
+    /// short of; material-3 with, on the 0.8.0 theme only, a least size of
+    /// 120 by 48, wider and taller than every label here, holds both floors
+    /// under a second font and padding.
     #[test]
-    fn the_buttons_page_takes_the_stated_minimum_size() {
-        let cases = [
-            ("kde-breeze", None),
-            ("adwaita", None),
-            ("material-3", None),
-            // A raised minimum, wider and taller than every label here, so
-            // both floors hold under a second font and padding.
-            ("material-3", Some((120.0, 48.0))),
-        ];
-        for (preset, raised) in cases {
-            let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            if let Some((width, height)) = raised {
-                resolved.button.min_width = width;
-                resolved.button.min_height = height;
+    fn the_buttons_page_takes_the_stated_minimum_size() -> Result<(), String> {
+        let raise = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.button.rules]]\nbody.min_size = [120.0, 48.0]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        for (preset, raised) in [
+            ("kde-breeze", false),
+            ("adwaita", false),
+            ("material-3", false),
+            ("material-3", true),
+        ] {
+            let mut state = page_state(preset, Tab::Buttons);
+            if raised {
+                splice_next(&mut state, |r| r.apply_patch(&raise));
+                let old = &state.current_resolved.button;
+                if old.min_width == 120.0 || old.min_height == 48.0 {
+                    return Err("the splice states 0.7.2's least size".into());
+                }
             }
-            let r = resolved.clone();
-            let pad = native_theme_iced::button_padding(&r);
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                accessibility: native_theme_iced::AccessibilityPreferences::default(),
-                active_tab: Tab::Buttons,
-                ..State::default()
-            };
+            let next = state.next_shown();
+            let [min_width, min_height] = next.button.body(WidgetState::NONE).min_size;
+            if raised && (min_width, min_height) != (Some(120.0), Some(48.0)) {
+                return Err(format!(
+                    "the patch gives {min_width:?} x {min_height:?}, not 120 x 48"
+                ));
+            }
+            let pad = next_button_padding(next);
             let mut ui = interface(&state);
             for (id, label) in probes::BUTTONS {
                 let button = probe_bounds(&mut ui, id);
                 let text = height_of(&mut ui, label);
-                assert!(
-                    button.width >= r.button.min_width - 0.01,
-                    "{preset}: {label:?} is {}px wide, button.min_width is {}px",
-                    button.width,
-                    r.button.min_width
-                );
-                let expected = r.button.min_height.max(text + pad.y());
-                assert!(
-                    (button.height - expected).abs() < 0.01,
-                    "{preset}: {label:?} is {}px tall, expected {expected}px",
-                    button.height
-                );
+                if let Some(min) = min_width
+                    && button.width < min - 0.01
+                {
+                    return Err(format!(
+                        "{preset}: {label:?} is {}px wide, under its least width {min}px",
+                        button.width
+                    ));
+                }
+                let content = text + pad.y();
+                let expected = min_height.map_or(content, |min| min.max(content));
+                if (button.height - expected).abs() > 0.01 {
+                    return Err(format!(
+                        "{preset}: {label:?} is {}px tall, expected {expected}px",
+                        button.height
+                    ));
+                }
             }
+            drop(ui);
+            let axis =
+                |v: Option<f32>| v.map_or_else(|| "unstated".to_owned(), |v| format!("{v:.0}px"));
             let want = format!(
-                "min size: {:.0} x {:.0}px, button.min_width x button.min_height",
-                r.button.min_width, r.button.min_height
+                "min size: {} x {}, button.body(NONE).min_size",
+                axis(min_width),
+                axis(min_height)
             );
             for info in [button_info(&state), disabled_buttons_info(&state)] {
-                assert!(
-                    info.lines().any(|line| line.trim().starts_with(&want)),
-                    "{preset}: the info does not say {want:?}:\n{info}"
-                );
+                if !info.lines().any(|line| line.trim().starts_with(&want)) {
+                    return Err(format!("{preset}: the info does not say {want:?}:\n{info}"));
+                }
             }
+        }
+        Ok(())
+    }
+
+    /// The Buttons page lays itself out on the installed 0.8.0 theme alone
+    /// ([`view_buttons`], [`next_section_header`]): kde-breeze with, on the
+    /// 0.8.0 theme only, a 20 px button label on a 30 px line, a button body
+    /// padded 7 on every side and at least 150 wide, a 13 px widget gap, a
+    /// 19 px section gap and a 4 px separator draws each button at least
+    /// 150 wide and its label's line and padding tall, the buttons of a row
+    /// 13 apart, and the first group's title 13 + 4 + 19 px under the
+    /// header's description.
+    #[test]
+    fn the_buttons_page_lays_out_on_the_0_8_0_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.button.rules]]\nlabel.size_px = 20.0\nlabel.line_height = 30.0\n\
+             body.padding = { top = 7.0, right = 7.0, bottom = 7.0, left = 7.0 }\n\
+             body.min_size = [150.0, \"none\"]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = page_state("kde-breeze", Tab::Buttons);
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.layout.widget_gap = Some(13.0);
+            r.layout.section_gap = Some(19.0);
+            r.separator.thickness = 4.0;
+        });
+        let old = &state.current_resolved;
+        if old.button.min_width >= 150.0
+            || old.button.font.size == 20.0
+            || state.layout.widget_gap == Some(13.0)
+            || state.layout.section_gap == Some(19.0)
+            || old.separator.line_width == 4.0
+        {
+            return Err("the splice states 0.7.2's sizes".into());
+        }
+        let pad = next_button_padding(state.next_shown());
+        if pad == native_theme_iced::button_padding(old) {
+            return Err(format!("the 0.8.0 padding {pad:?} is 0.7.2's"));
+        }
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let mut ui = interface(&state);
+        let label = height_of(&mut ui, "Primary");
+        if !near(label, 30.0) {
+            faults.push(format!("the Primary label is {label}px tall, not 30"));
+        }
+        let rects: Vec<Rectangle> = probes::BUTTONS
+            .iter()
+            .map(|(id, _)| probe_bounds(&mut ui, id))
+            .collect();
+        for (rect, (_, name)) in rects.iter().zip(probes::BUTTONS) {
+            if rect.width < 150.0 - 0.01 || !near(rect.height, 30.0 + pad.y()) {
+                faults.push(format!(
+                    "{name}: {rect:?}, not at least 150 wide and {} tall",
+                    30.0 + pad.y()
+                ));
+            }
+        }
+        if let [primary, secondary, ..] = rects.as_slice()
+            && !near(secondary.x - (primary.x + primary.width), 13.0)
+        {
+            faults.push(format!("Primary and Secondary: {primary:?}, {secondary:?}"));
+        }
+        let found = texts(&mut ui);
+        let at = |label: &str| {
+            found
+                .iter()
+                .find(|(content, _)| content == label)
+                .map(|(_, bounds)| *bounds)
+        };
+        match (
+            at("Interactive button styles from the resolved theme"),
+            at("Primary Actions"),
+        ) {
+            (Some(description), Some(title))
+                if near(
+                    title.y - (description.y + description.height),
+                    13.0 + 4.0 + 19.0,
+                ) => {}
+            pair => faults.push(format!("the description and the first title: {pair:?}")),
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:#?}"))
         }
     }
 
@@ -39315,36 +39439,60 @@ mod tests {
         assert_eq!(listed_value(&state, "theme_variant.icon_set").colour, None);
     }
 
-    /// The user's text-scaling factor reaches every text alike: at 1.5, a
-    /// button label and body text are both drawn at 1.5 times the theme's size.
+    /// The user's text-scaling factor reaches every text alike: at 1.5, the
+    /// Buttons page's label and description, which the installed 0.8.0 theme
+    /// sets (`button.label(NONE)`, `typography.body`), are both set at 1.5
+    /// times their size at 1, to the theme's whole-pixel rounding, each
+    /// drawn in its scaled style's line box ([`next_line_box`]), taller than
+    /// at 1.
     #[test]
     fn text_scales_by_the_text_scaling_factor() {
         let factor = 1.5;
-        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
+        let description = "Interactive button styles from the resolved theme";
+        let mut state = page_state("kde-breeze", Tab::Buttons);
+        let sizes = |state: &State| {
+            let next = state.next_shown();
+            (
+                next.button.label(WidgetState::NONE).size_px,
+                next.typography.body.size_px,
+            )
         };
-        let button_line = line_of(resolved.button.font.size * factor);
-        let body_line = resolved.defaults.font.size * factor * resolved.defaults.line_height;
-        let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
-        accessibility.text_scaling_factor = factor;
-        let state = State {
-            current_theme: theme,
-            current_resolved: resolved,
-            accessibility,
-            active_tab: Tab::Buttons,
-            ..State::default()
+        let heights = |state: &State| {
+            let mut ui = interface(state);
+            (
+                height_of(&mut ui, "Primary"),
+                height_of(&mut ui, description),
+            )
         };
-        let mut ui = interface(&state);
-        let label = height_of(&mut ui, "Primary");
+        let (label_size_at_1, body_size_at_1) = sizes(&state);
+        let (label_at_1, body_at_1) = heights(&state);
+        let _ = update(&mut state, Message::TextScaleSelected(TextScale(factor)));
+        let (label_size, body_size) = sizes(&state);
+        // kde-breeze rounds each size to a whole pixel after scaling it
+        // (spec §6, the KDE preset's
+        // `at_text_scale_2_every_font_size_is_doubled_before_qt_s_rounding`):
+        // half a pixel at 1.5 and half a pixel at 1 times the factor apart
+        // from the size at 1 scaled at most.
+        let slack = 0.5 + 0.5 * factor;
         assert!(
-            (label - button_line).abs() < 0.01,
-            "at {factor}: a button label is {label}px tall, button.font scaled gives {button_line}px"
+            (label_size - factor * label_size_at_1).abs() <= slack
+                && (body_size - factor * body_size_at_1).abs() <= slack,
+            "at {factor}: the label is {label_size}px ({label_size_at_1}px at 1), the body \
+             {body_size}px ({body_size_at_1}px at 1)"
         );
-        let body = height_of(&mut ui, "Interactive button styles from the resolved theme");
+        let next = state.next_shown();
+        let button_line = next_line_box(&next.typography, &next.button.label(WidgetState::NONE));
+        let body_line = next_line_box(&next.typography, &next.typography.body);
+        let (label, body) = heights(&state);
         assert!(
-            (body - body_line).abs() < 0.01,
-            "at {factor}: a page description is {body}px tall, defaults.font scaled gives {body_line}px"
+            (label - button_line).abs() < 0.01 && label > label_at_1,
+            "at {factor}: a button label is {label}px tall, {label_at_1}px at 1; its scaled line \
+             box is {button_line}px"
+        );
+        assert!(
+            (body - body_line).abs() < 0.01 && body > body_at_1,
+            "at {factor}: a page description is {body}px tall, {body_at_1}px at 1; its scaled \
+             line box is {body_line}px"
         );
     }
 
