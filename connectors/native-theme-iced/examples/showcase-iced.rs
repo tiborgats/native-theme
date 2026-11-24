@@ -15903,43 +15903,96 @@ fn off_thumb_size(s: &native_theme::theme::ResolvedSwitchTheme) -> String {
     }
 }
 
-/// The Widget Info of the Selection page's switch, the connector's.
+/// The size rows of a switch's Widget Info as [`next_switch`] draws it on
+/// `r`, the installed 0.8.0 theme: the track, the thumb on and off and the
+/// label gap, each with the home it comes from. Where the connector cannot
+/// draw it, iced's own toggler: its track `Toggler::DEFAULT_SIZE` tall and
+/// twice as wide (iced_widget 0.14.2 `src/toggler.rs`, `layout`), its thumb
+/// its style's, with what the theme lacks.
+fn next_switch_rows(r: &native_theme::next::ResolvedTheme) -> [(&'static str, String); 5] {
+    let gap = match r.switch.label_gap {
+        Some(gap) => format!("{gap:.0}px, switch.label_gap"),
+        None => format!(
+            "{TOGGLER_LABEL_GAP:.0}px, iced's toggler's own (Toggler::DEFAULT_SIZE / 2): \
+             switch.label_gap unstated"
+        ),
+    };
+    let s = &r.switch;
+    let px = |v: Option<f32>| v.map_or_else(|| "unstated".to_owned(), |v| format!("{v:.0}px"));
+    match iced_next::switch::<Message, iced::Renderer>(r, false, None) {
+        Ok(_) => {
+            let [width, height] = s.track(WidgetState::NONE).min_size;
+            let [on, _] = s.thumb(WidgetState::CHECKED).min_size;
+            let [off, _] = s.thumb(WidgetState::NONE).min_size;
+            [
+                (
+                    "track",
+                    format!(
+                        "{} x {}, switch.track(NONE).min_size",
+                        px(width),
+                        px(height)
+                    ),
+                ),
+                (
+                    "on thumb size",
+                    format!("{}, switch.thumb(CHECKED).min_size[0]", px(on)),
+                ),
+                (
+                    "off thumb size",
+                    format!("{}, switch.thumb(NONE).min_size[0]", px(off)),
+                ),
+                (
+                    "thumb inset",
+                    "half the difference of the track's and the thumb's heights; flush with \
+                     the ends where it overhangs the track"
+                        .to_owned(),
+                ),
+                ("label gap", gap),
+            ]
+        }
+        Err(unmapped) => {
+            let why = unmapped.to_string();
+            let own = iced::widget::Toggler::<'static, Message>::DEFAULT_SIZE;
+            [
+                (
+                    "track",
+                    format!(
+                        "{:.0} x {own:.0}px, iced's own toggler (2 x Toggler::DEFAULT_SIZE): {why}",
+                        2.0 * own
+                    ),
+                ),
+                ("on thumb size", format!("iced's own toggler's: {why}")),
+                ("off thumb size", format!("iced's own toggler's: {why}")),
+                ("thumb inset", format!("iced's own toggler's: {why}")),
+                ("label gap", gap),
+            ]
+        }
+    }
+}
+
+/// The Widget Info of the Selection page's switch, the connector's
+/// ([`next_switch`]).
 fn switch_info(state: &State) -> String {
     let resolved = &state.current_resolved;
-    let on_thumb = format!(
-        "{:.0}px, switch.thumb_diameter",
-        resolved.switch.thumb_diameter
+    let sizes = next_switch_rows(state.next_shown());
+    let mut config: Vec<(&str, &str)> = sizes
+        .iter()
+        .map(|(what, value)| (*what, value.as_str()))
+        .collect();
+    let label = format!(
+        "{} -- the model states no font for a switch",
+        font_row("defaults.font", &resolved.defaults.font)
     );
-    let off_thumb = off_thumb_size(&resolved.switch);
+    config.extend([("track radius", "switch.track_radius"), ("label", &label)]);
     widget_tooltip(
-        "Switch (native_theme_iced::switch)",
+        "Switch (native_theme_iced::next::switch)",
         &toggler_paints(state),
-        &[
-            ("track", "switch.track_width x switch.track_height"),
-            ("on thumb size", &on_thumb),
-            ("off thumb size", &off_thumb),
-            (
-                "thumb inset",
-                "half the difference of the track's and the thumb's heights",
-            ),
-            ("track radius", "switch.track_radius"),
-            (
-                "label",
-                format!(
-                    "{} -- the model states no font for a switch",
-                    font_row("defaults.font", &resolved.defaults.font)
-                )
-                .as_str(),
-            ),
-        ],
-        &[
-            (
-                "widget",
-                "iced's toggler lays its track out 2 x its height (toggler.rs:287): \
-                 a widget of the connector's instead, in styles::toggler's colours",
-            ),
-            ("label gap", "the model states none: iced's toggler's"),
-        ],
+        &config,
+        &[(
+            "widget",
+            "iced's toggler lays its track out 2 x its height (toggler.rs:287): \
+             a widget of the connector's instead, in styles::toggler's colours",
+        )],
     )
 }
 
@@ -16609,18 +16662,52 @@ fn checkbox_info(state: &State) -> String {
 fn radio_info(state: &State) -> String {
     use radio::Status;
     let resolved = &state.current_resolved;
-    let c = &resolved.checkbox;
-    let label_gap_s = format!("{:.0}px", c.label_gap);
-    // `checkbox.radio_indicator_width` where the theme sizes the radio apart
-    // (platform-facts.md:1243), the checkbox's `indicator_width` where not.
-    let indicator_width_s = format!(
-        "{:.0}px",
-        c.radio_indicator_width.unwrap_or(c.indicator_width)
+    // The gap, the circle and the dot [`next_radio`] lays the radios out by
+    // on the installed 0.8.0 theme: `iced_next::radio`'s `Radio::spacing`
+    // and `Radio::size` and the dot it lays over the circle, where the theme
+    // states its size; iced's own radio, `Radio::DEFAULT_SPACING` and
+    // `Radio::DEFAULT_SIZE` (iced_widget 0.14.2 `src/radio.rs`), where the
+    // connector cannot dress it. Unstated or not dressed, the dot is iced's
+    // own, half the circle (radio.rs:409).
+    let next = state.next_shown();
+    type IcedRadio = iced::widget::Radio<'static, Message>;
+    let own = |value: f32, name: &str, why: &str| format!("{value:.0}px, iced's own {name}: {why}");
+    let (own_size, own_spacing) = (IcedRadio::DEFAULT_SIZE, IcedRadio::DEFAULT_SPACING);
+    // Whether the connector dresses the page's radios: one built as
+    // [`view_selection`] builds them, handed to [`next_radio`].
+    let radio_label = next.radio.label(WidgetState::NONE);
+    let (_, dressed) = next_radio(
+        next,
+        || {
+            radio("", Fruit::Apple, None, Message::FruitSelected)
+                .text_size(radio_label.size_px)
+                .next_font(&radio_label, |radio, font| radio.font(font))
+        },
+        false,
     );
-    // `checkbox.radio_dot_diameter` (platform-facts.md:1241), which
-    // `native_theme_iced::radio` draws over iced's radio; unstated, the dot is
-    // iced's own, half the circle (radio.rs:409).
-    let dot_s = c.radio_dot_diameter.map(|d| format!("{d:.0}px"));
+    let (label_gap_s, indicator_width_s, dot_s) = if dressed {
+        (
+            format!("{:.0}px, radio.label_gap", next.radio.label_gap),
+            match next.radio.indicator(WidgetState::NONE).min_size[0] {
+                Some(width) => format!("{width:.0}px, radio.indicator(NONE).min_size[0]"),
+                None => own(
+                    own_size,
+                    "Radio::DEFAULT_SIZE",
+                    "radio.indicator(NONE).min_size[0] unstated",
+                ),
+            },
+            next.radio.dot(WidgetState::NONE).min_size[0]
+                .filter(|d| d.is_finite() && *d >= 0.0)
+                .map(|d| format!("{d:.0}px, radio.dot(NONE).min_size[0]")),
+        )
+    } else {
+        let why = "the theme lacks a value iced_next::radio needs";
+        (
+            own(own_spacing, "Radio::DEFAULT_SPACING", why),
+            own(own_size, "Radio::DEFAULT_SIZE", why),
+            None,
+        )
+    };
     let mut sizes = vec![
         ("label gap", label_gap_s.as_str()),
         ("indicator diameter", indicator_width_s.as_str()),
@@ -16631,9 +16718,13 @@ fn radio_info(state: &State) -> String {
     ];
     match &dot_s {
         Some(dot) => sizes.push(("dot diameter", dot.as_str())),
-        None => unthemed.push((
+        None if dressed => unthemed.push((
             "dot diameter",
             "the theme states none: iced's own, half the circle (radio.rs:409)",
+        )),
+        None => unthemed.push((
+            "dot diameter",
+            "iced's own radio: its own dot, half the circle (radio.rs:409)",
         )),
     }
     let label_s = font_row("checkbox.font", &resolved.checkbox.font);
@@ -16898,20 +16989,24 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         .into(),
     );
 
-    // The radios' labels in `radio.label(NONE)` on the installed 0.8.0
-    // theme; their circle, dot, gap and colours still
-    // `native_theme_iced::radio`'s, which draws them together.
+    // The radios as the Basic page's are, on the installed 0.8.0 theme
+    // ([`next_radio`]): `iced_next::radio` draws the circle, the dot, the
+    // gap and their colours together, iced's own radio where the theme
+    // lacks a value it needs; their labels in `radio.label(NONE)`.
     let radio_label = next.radio.label(WidgetState::NONE);
     let radio_line = iced::Pixels(next_line_box(typography, &radio_label));
     let option = |label: &'static str, fruit: Fruit| {
-        native_theme_iced::radio(
-            resolved,
-            radio(label, fruit, state.selected_fruit, Message::FruitSelected)
-                .text_size(radio_label.size_px)
-                .text_line_height(radio_line)
-                .next_font(&radio_label, |radio, font| radio.font(font)),
+        next_radio(
+            next,
+            || {
+                radio(label, fruit, state.selected_fruit, Message::FruitSelected)
+                    .text_size(radio_label.size_px)
+                    .text_line_height(radio_line)
+                    .next_font(&radio_label, |radio, font| radio.font(font))
+            },
             state.selected_fruit == Some(fruit),
         )
+        .0
     };
     let radios = hoverable(
         UnlistedKey::Radios,
@@ -16944,12 +17039,13 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         .into(),
     );
 
-    // The page's switch is the connector's, whose track takes
-    // `switch.track_width`, labelled as the Basic page's are. iced's own
-    // toggler stays shown below it, so the widget iced offers is on show
-    // under the theme too, its track twice its height. Their labels in
-    // `typography.body` on the installed 0.8.0 theme (the model states no
-    // font for a switch); the switch, and the toggler's size, whose
+    // The page's switch is the connector's on the installed 0.8.0 theme, as
+    // the Basic page's ([`next_switch`]): its track
+    // `switch.track(NONE).min_size`, its label `switch.label_gap` past it,
+    // the gap iced's toggler leaves where unstated. iced's own toggler stays
+    // shown below it, so the widget iced offers is on show under the theme
+    // too, its track twice its height. Their labels in `typography.body`
+    // (the model states no font for a switch); the toggler's size, whose
     // `styles::toggler` padding ratio sizes its thumb, still the 0.7.2
     // theme's.
     let switch = hoverable(
@@ -16958,15 +17054,16 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             probe(
                 probes::TOGGLER,
                 Length::Shrink,
-                native_theme_iced::switch(
-                    resolved,
+                next_switch(
+                    next,
                     state.toggler_enabled,
                     Some(Message::TogglerToggled(!state.toggler_enabled)),
-                ),
+                )
+                .0,
             ),
             text("Feature flag enabled").next_body(next),
         ]
-        .spacing(TOGGLER_LABEL_GAP)
+        .spacing(next.switch.label_gap.unwrap_or(TOGGLER_LABEL_GAP))
         .align_y(iced::Alignment::Center)
         .into(),
     );
@@ -25265,13 +25362,10 @@ mod tests {
 
     /// Constructors a connector function dresses itself, as
     /// `(constructor, the style it applies, the function)`:
-    /// `native_theme_iced::radio(resolved, radio(..), ..)` applies
-    /// `styles::radio` with the platform's geometry and dot (`src/lib.rs`);
     /// [`next_radio`]`(next, || radio(..), ..)` hands the radio its closure
     /// builds to `iced_next::radio`, which applies the 0.8.0
-    /// `styles::radio`.
+    /// `styles::radio` with the platform's geometry and dot.
     const CONNECTOR_DRESSED: &[(&str, &str, &str)] = &[
-        ("radio", "styles::radio", "native_theme_iced::radio"),
         ("radio", "styles::radio", "next_radio"),
         (
             "toggler",
@@ -29525,9 +29619,11 @@ mod tests {
     /// 20 px in a field at least 50 tall, a 19 px caption on a 29 px line, a
     /// 13 px widget gap, a 19 px section gap and a 4 px separator draws the
     /// check box 30 tall, its label's line, and 20 px wider with a 31 px box
-    /// 27 px from its label; the radio's row its label's 30 px line (or the
-    /// 0.7.2 circle `native_theme_iced::radio` still draws, where taller);
-    /// the switch's label 23 tall; the drop-down and the combo box
+    /// 27 px from its label; with a 33 px radio circle 11 px from its label,
+    /// the radio's row 33 tall ([`next_radio`]), and 20 px wider with a 43 px
+    /// circle 21 px from it; with a 50 x 26 switch track, 20 px thumbs and a
+    /// 15 px label gap, the switch 50 x 26 ([`next_switch`]) and its label
+    /// 15 px past it; the switch's label 23 tall; the drop-down and the combo box
     /// `max(20 × line_height_multiplier, 50 − padding) + padding` tall
     /// ([`next_drop_down_padding`], [`next_combo_field_padding`]); a
     /// caption 29 tall; and the first group's title 13 + 4 + 19 px under the
@@ -29539,17 +29635,23 @@ mod tests {
             "[[widgets.checkbox.rules]]\nindicator.min_size = [21.0, 21.0]\n\
              label.size_px = 20.0\nlabel.line_height = 30.0\n\
              [[widgets.radio.rules]]\nlabel.size_px = 20.0\nlabel.line_height = 30.0\n\
-             [[widgets.combo_box.rules]]\nfield.min_size = [\"none\", 50.0]\nlabel.size_px = 20.0\n",
+             indicator.min_size = [33.0, 33.0]\n\
+             [[widgets.combo_box.rules]]\nfield.min_size = [\"none\", 50.0]\nlabel.size_px = 20.0\n\
+             [[widgets.switch.rules]]\ntrack.min_size = [50.0, 26.0]\n\
+             thumb.min_size = [20.0, 20.0]\n",
         )
         .map_err(|error| format!("the patch: {error:?}"))?;
         let widened = native_theme::next::ThemePatch::from_toml(
-            "[[widgets.checkbox.rules]]\nindicator.min_size = [31.0, 31.0]\n",
+            "[[widgets.checkbox.rules]]\nindicator.min_size = [31.0, 31.0]\n\
+             [[widgets.radio.rules]]\nindicator.min_size = [43.0, 43.0]\n",
         )
         .map_err(|error| format!("the second patch: {error:?}"))?;
         let mut state = page_state("kde-breeze", Tab::Selection);
         splice_next(&mut state, |r| {
             r.apply_patch(&patch);
             r.checkbox.label_gap = 17.0;
+            r.radio.label_gap = 11.0;
+            r.switch.label_gap = Some(15.0);
             r.typography.body.line_height = 23.0;
             r.typography.body.stated = r.typography.body.stated.union(TextStated::LINE_HEIGHT);
             if let Some(caption) = r.typography.caption.as_mut() {
@@ -29576,6 +29678,13 @@ mod tests {
             || state.layout.widget_gap == Some(13.0)
             || state.layout.section_gap == Some(19.0)
             || old.separator.line_width == 4.0
+            || [33.0, 43.0].contains(
+                &old.checkbox
+                    .radio_indicator_width
+                    .unwrap_or(old.checkbox.indicator_width),
+            )
+            || [old.switch.track_width, old.switch.track_height] == [50.0, 26.0]
+            || TOGGLER_LABEL_GAP == 15.0
         {
             return Err("the splice states 0.7.2's sizes, or no caption".into());
         }
@@ -29604,13 +29713,22 @@ mod tests {
                 .find(|(content, _)| content.starts_with(label))
                 .map(|(_, bounds)| *bounds)
         };
-        // The radio's row: its label's line, or the 0.7.2 circle
-        // `native_theme_iced::radio` still draws where that is taller.
-        let c = &old.checkbox;
-        let radio_height = 30.0_f32.max(c.radio_indicator_width.unwrap_or(c.indicator_width));
+        // The radio's row: the 33 px circle, taller than its label's 30 px
+        // line.
         let apple = probe_bounds(&mut ui, probes::RADIO_APPLE);
-        if !near(apple.height, radio_height) {
-            faults.push(format!("Apple is {apple:?}, not {radio_height} tall"));
+        if !near(apple.height, 33.0) {
+            faults.push(format!("Apple is {apple:?}, not 33 tall"));
+        }
+        // The switch: its 50 x 26 track, its label 15 px past it.
+        let switch = probe_bounds(&mut ui, probes::TOGGLER);
+        if !near(switch.width, 50.0) || !near(switch.height, 26.0) {
+            faults.push(format!("the switch is {switch:?}, not 50 x 26"));
+        }
+        match at("Feature flag enabled") {
+            Some(label) if near(label.x - switch.x - switch.width, 15.0) => {}
+            label => faults.push(format!(
+                "the switch's label {label:?}, not 15 past {switch:?}"
+            )),
         }
         drop(ui);
         // The check box, which iced's simulator finds by its label as a
@@ -29626,6 +29744,7 @@ mod tests {
         let narrow = check_box(&state);
         splice_next(&mut state, |r| {
             r.checkbox.label_gap = 27.0;
+            r.radio.label_gap = 21.0;
             r.apply_patch(&widened);
         });
         if next_check_box_size(state.next_shown()) != 31.0 {
@@ -29635,6 +29754,14 @@ mod tests {
             (Some(narrow), Some(wide))
                 if near(narrow.height, 30.0) && near(wide.width - narrow.width, 20.0) => {}
             pair => faults.push(format!("the check box at 21 + 17 and at 31 + 27: {pair:?}")),
+        }
+        // The radio 20 px wider where its circle is 10 px wider and 10 px
+        // further from the label.
+        let wide_apple = probe_bounds(&mut interface(&state), probes::RADIO_APPLE);
+        if !near(wide_apple.width - apple.width, 20.0) || !near(wide_apple.height, 43.0) {
+            faults.push(format!(
+                "the radio at 33 + 11, {apple:?}, and at 43 + 21, {wide_apple:?}"
+            ));
         }
         for (label, want) in [("Feature flag enabled", 23.0), ("Checked: ", 29.0)] {
             match at(label) {
@@ -35331,7 +35458,10 @@ mod tests {
     /// `drawn_with_is_what_the_pages_draw_with` reads in the page's code.
     /// Every colour row of such an info is a row of one of them.
     const DRAWN_WITH: &[(&str, &[&str])] = &[
-        ("Switch (native_theme_iced::switch)", &["styles::toggler"]),
+        (
+            "Switch (native_theme_iced::next::switch)",
+            &["styles::toggler"],
+        ),
         ("iced's Toggler", &["styles::toggler"]),
         ("Button (Primary)", &["styles::button_primary"]),
         (
@@ -35379,12 +35509,16 @@ mod tests {
     /// The widget functions a page draws a widget through, and the style
     /// function each draws it with: the connector's switch with
     /// `styles::toggler_over` over the window background, `styles::toggler`'s
-    /// colours there (lib.rs `switch`); its radio with `styles::radio`
-    /// (lib.rs `radio`); the showcase's tooltips, all built by
-    /// [`showcase_tooltip`], with `styles::tooltip`.
+    /// colours there (lib.rs `switch`), on the 0.8.0 model through
+    /// [`next_switch`] (`next/mod.rs` `switch`, the 0.8.0
+    /// `styles::toggler_over`); its radio, on the 0.8.0 model, through
+    /// [`next_radio`] (`next/mod.rs` `radio`, the 0.8.0 `styles::radio`);
+    /// the showcase's tooltips, all built by [`showcase_tooltip`], with
+    /// `styles::tooltip`.
     const DRAWN_THROUGH: &[(&str, &str)] = &[
         ("native_theme_iced::switch", "styles::toggler"),
-        ("native_theme_iced::radio", "styles::radio"),
+        ("next_switch", "styles::toggler"),
+        ("next_radio", "styles::radio"),
         ("showcase_tooltip", "styles::tooltip"),
     ];
 
@@ -35596,7 +35730,7 @@ mod tests {
             "styles::button_danger.background (Disabled)",
         ),
         (
-            "Switch (native_theme_iced::switch)",
+            "Switch (native_theme_iced::next::switch)",
             "styles::toggler.foreground (Active { is_toggled: false })",
         ),
         (
@@ -36311,17 +36445,63 @@ mod tests {
         infos.iter().find(|info| info.lines().next() == Some(title))
     }
 
-    /// M9-087: the switches' infos size the off thumb as it is drawn,
+    /// M9-087: the switches' infos size the off thumb as it is drawn. The
+    /// connector's switch, drawn on the installed 0.8.0 theme
+    /// ([`next_switch`]), gives the seat it is drawn at under every preset
+    /// the Theme row installs, in both modes: its off thumb
+    /// `switch.thumb(NONE).min_size[0]`, its on thumb
+    /// `switch.thumb(CHECKED).min_size[0]`, or iced's own toggler where the
+    /// connector cannot draw it. iced's toggler, still on the 0.7.2 theme:
     /// `switch.unchecked_thumb_diameter` where the theme states one (16
-    /// against material-3's 24), the on thumb's elsewhere; iced's toggler
-    /// takes it as its padding ratio where it fits the track.
+    /// against material-3's 24), the on thumb's elsewhere, as its padding
+    /// ratio where it fits the track.
     #[test]
     fn the_switch_infos_size_the_off_thumb_as_drawn() {
+        let mut failures = Vec::new();
+        for preset in installed_presets() {
+            for dark in [false, true] {
+                let mut state = basic_installed(preset, dark);
+                let r = state.next_shown().clone();
+                let rows = match (
+                    iced_next::switch::<Message, iced::Renderer>(&r, false, None),
+                    next_switch_seat(&r),
+                ) {
+                    (Ok(_), Some(seat)) => vec![
+                        format!(
+                            "  off thumb size: {:.0}px, switch.thumb(NONE).min_size[0]",
+                            seat.thumb_off
+                        ),
+                        format!(
+                            "  on thumb size: {:.0}px, switch.thumb(CHECKED).min_size[0]",
+                            seat.thumb_on
+                        ),
+                    ],
+                    (Ok(_), None) => {
+                        failures.push(format!("{preset} (dark: {dark}): drawn without a seat"));
+                        continue;
+                    }
+                    (Err(unmapped), _) => {
+                        vec![format!(
+                            "  off thumb size: iced's own toggler's: {unmapped}"
+                        )]
+                    }
+                };
+                let infos = built_infos(&mut state);
+                let title = "Switch (native_theme_iced::next::switch)";
+                let info = info_titled(&infos, title);
+                for row in rows {
+                    if !info.is_some_and(|info| info.lines().any(|l| l == row)) {
+                        failures.push(format!(
+                            "{preset} (dark: {dark}): {title} has no {row:?}: {info:?}"
+                        ));
+                    }
+                }
+            }
+        }
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             ..State::default()
         };
-        let mut failures = Vec::new();
         for preset in native_theme::theme::Theme::list_presets() {
             for dark in [false, true] {
                 let choice = ThemeChoice::Preset(preset.key.to_owned());
@@ -36337,24 +36517,22 @@ mod tests {
                 };
                 let fits = s.track_height > 0.0 && (0.0..=s.track_height).contains(&off);
                 let infos = built_infos(&mut state);
-                for title in ["Switch (native_theme_iced::switch)", "iced's Toggler"] {
-                    let line = info_titled(&infos, title).and_then(|info| {
-                        info.lines().find(|l| l.starts_with("  off thumb size: "))
-                    });
-                    let holds = line.is_some_and(|l| {
-                        if title == "iced's Toggler" && !fits {
-                            l.contains(&format!("{off:.0}px ({leaf}"))
-                                && l.ends_with(" track: iced's own padding ratio")
-                        } else {
-                            l.contains(&format!("{off:.0}px, {leaf}"))
-                        }
-                    });
-                    if !holds {
-                        failures.push(format!(
-                            "{} (dark: {dark}): {title}: {line:?}, drawn {off}px ({leaf})",
-                            preset.key
-                        ));
+                let title = "iced's Toggler";
+                let line = info_titled(&infos, title)
+                    .and_then(|info| info.lines().find(|l| l.starts_with("  off thumb size: ")));
+                let holds = line.is_some_and(|l| {
+                    if fits {
+                        l.contains(&format!("{off:.0}px, {leaf}"))
+                    } else {
+                        l.contains(&format!("{off:.0}px ({leaf}"))
+                            && l.ends_with(" track: iced's own padding ratio")
                     }
+                });
+                if !holds {
+                    failures.push(format!(
+                        "{} (dark: {dark}): {title}: {line:?}, drawn {off}px ({leaf})",
+                        preset.key
+                    ));
                 }
             }
         }
