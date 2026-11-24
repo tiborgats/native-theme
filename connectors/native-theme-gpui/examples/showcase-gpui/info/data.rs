@@ -586,7 +586,15 @@ pub fn native_table_row(r: &NextTheme, t: &Theme, selected: bool, cells: &str) -
                     ),
                 )
             }
-            _ => info,
+            _ => match super::state_stroke_unmapped(
+                &r.list.highlight(WidgetState::HOVER),
+                "list.highlight(HOVER).stroke",
+                "hover",
+                "a hovered row has no outline (demo::TableLook, hover_edge)",
+            ) {
+                Some(text) => info.config("hovered edge", text),
+                None => info,
+            },
         }
     };
     grid_lines(info, r, "a line down the first column's right edge")

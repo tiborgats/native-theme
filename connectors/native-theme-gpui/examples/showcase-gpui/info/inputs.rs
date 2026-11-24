@@ -41,6 +41,15 @@ pub fn input_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetInfo 
             Some(width),
             "showcase",
         ));
+    let info = match super::state_stroke_unmapped(
+        &r.input.field(WidgetState::HOVER),
+        "input.field(HOVER).stroke",
+        "hover",
+        "the field keeps its edge at rest under the pointer (demo::FieldSurface)",
+    ) {
+        Some(text) => info.config("hovered edge", text),
+        None => info,
+    };
     let unstroked = matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None);
     surface(info, width, unstroked, "input")
 }
@@ -65,6 +74,15 @@ pub fn text_area_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetI
             Some(width),
             "showcase",
         ));
+    let info = match super::state_stroke_unmapped(
+        &r.text_area.field(WidgetState::HOVER),
+        "text_area.field(HOVER).stroke",
+        "hover",
+        "the field keeps its edge at rest under the pointer (demo::FieldSurface)",
+    ) {
+        Some(text) => info.config("hovered edge", text),
+        None => info,
+    };
     let unstroked = matches!(r.text_area.field(WidgetState::NONE).stroke, Stroke::None);
     surface(info, width, unstroked, "text_area")
 }
@@ -455,6 +473,9 @@ pub fn native_number_input(
     // rest and focus (spec §10, rule 0).
     let drawn = Some(width);
     let focus = state_stroke_color_of(&r.input.field(WidgetState::FOCUSED));
+    // A focused edge a rule states in a form gpui cannot draw is not
+    // mapped, and the frame keeps upstream's ring (demo::state_stroke_unmapped).
+    let focus_unmapped = crate::demo::state_stroke_unmapped(&r.input.field(WidgetState::FOCUSED));
     let info = if width <= 0.0 {
         if matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None) {
             info.config("edge", "none: input.field(NONE).stroke is none")
@@ -473,7 +494,14 @@ pub fn native_number_input(
             .or(edge_claim(
                 "edge, focused: no focused edge stated, so upstream's",
                 "ring",
-                focus.is_none().then_some(t.ring),
+                (focus.is_none() && !focus_unmapped).then_some(t.ring),
+                drawn,
+                "gpui-component/input/number_input.rs:231",
+            ))
+            .or(edge_claim(
+                "edge, focused: the focused edge not mapped, so upstream's",
+                "ring",
+                focus_unmapped.then_some(t.ring),
                 drawn,
                 "gpui-component/input/number_input.rs:231",
             )),
@@ -508,11 +536,45 @@ pub fn native_number_input(
             .or(edge_claim(
                 "focused edge, none stated: upstream's",
                 "ring",
-                focus.is_none().then_some(t.ring),
+                (focus.is_none() && !focus_unmapped).then_some(t.ring),
+                drawn,
+                "gpui-component/input/number_input.rs:231",
+            ))
+            .or(edge_claim(
+                "focused edge, not mapped: upstream's",
+                "ring",
+                focus_unmapped.then_some(t.ring),
                 drawn,
                 "gpui-component/input/number_input.rs:231",
             )),
         )
+    };
+    let (focus_line, hover_line) = if width > 0.0 {
+        (
+            super::state_stroke_unmapped(
+                &r.input.field(WidgetState::FOCUSED),
+                "input.field(FOCUSED).stroke",
+                "focused",
+                "the focused frame is edged in upstream's ring, as gpui-component's NumberInput edges its own (input/number_input.rs, NumberInput::render)",
+            ),
+            super::state_stroke_unmapped(
+                &r.input.field(WidgetState::HOVER),
+                "input.field(HOVER).stroke",
+                "hover",
+                "the frame keeps its edge at rest under the pointer (demo::FieldSurface)",
+            )
+            .filter(|_| !focused),
+        )
+    } else {
+        (None, None)
+    };
+    let info = match focus_line {
+        Some(text) => info.config("focused edge", text),
+        None => info,
+    };
+    let info = match hover_line {
+        Some(text) => info.config("hovered edge", text),
+        None => info,
     };
     // The step buttons take upstream's colours, through the homes its
     // tokens carry under a 0.8.0 theme: secondary_foreground is the button
@@ -2279,6 +2341,15 @@ pub fn combo_fill(
                     "showcase",
                 ))
                 .next_geometry("combo_box_fill");
+            let info = match super::state_stroke_unmapped(
+                &r.combo_box.field(WidgetState::HOVER),
+                "combo_box.field(HOVER).stroke",
+                "hover",
+                "the trigger keeps combo_box.field(NONE)'s edge under the pointer (demo::ComboLook::hover_edges)",
+            ) {
+                Some(text) => info.config("hovered edge", text),
+                None => info,
+            };
             info.config("fill", "geometry::combo_box_fill's combo_box.field(NONE).fill, and combo_box.field(HOVER).fill over it under the pointer where a rule states it, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.field(NONE)'s stroke, none where it is 0 wide, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where a rule states it, combo_box.field(HOVER).stroke.color in place of that edge under the pointer, none where the rule states no stroke, for the same reason: the showcase then draws the edge on an element under the trigger, combo_box.field(NONE)'s at rest, and leaves the trigger's own transparent, so the focused trigger's ring edge stays over it")
         }
         Some((_, Err(home))) => unstated_combo_fill(info, t, combobox, home),

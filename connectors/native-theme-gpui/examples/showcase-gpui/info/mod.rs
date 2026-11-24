@@ -102,6 +102,24 @@ pub fn edge_claim(
     stated_claim(role, field, colour.filter(|_| drawn), cited_at)
 }
 
+/// The line saying that a rule states `part`'s stroke, `home`, for the
+/// `state` state in a form gpui cannot draw (`demo::state_stroke_unmapped`):
+/// the home is not mapped, not unstated, and the widget draws `drawn` in its
+/// place; `None` where the stroke is stated in a form gpui draws, or not for
+/// the state.
+pub fn state_stroke_unmapped(
+    part: &native_theme::next::PartStyle,
+    home: &str,
+    state: &str,
+    drawn: &str,
+) -> Option<String> {
+    crate::demo::state_stroke_unmapped(part).then(|| {
+        format!(
+            "not mapped: a rule states {home} for the {state} state in a form gpui cannot draw (not one stroke of one colour, nor none), so {drawn}"
+        )
+    })
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Note {
     pub what: &'static str,

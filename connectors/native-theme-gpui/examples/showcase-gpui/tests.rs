@@ -26947,6 +26947,104 @@ fn a_menu_row_stroke_gpui_cannot_draw_for_a_state_is_reported_unmapped() -> Resu
     Ok(())
 }
 
+/// A hovered field's, drop-down trigger's and table row's stroke a rule
+/// states for the hover state in a form gpui cannot draw (`Stroke::Complex`,
+/// a stroke per side) is reported unmapped at its home, not left unsaid
+/// (`info::state_stroke_unmapped`, `demo::state_stroke_unmapped`): kde-breeze
+/// light as stated says it of none; patched to stroke `input.field(HOVER)`,
+/// `text_area.field(HOVER)`, `combo_box.field(HOVER)` and
+/// `list.highlight(HOVER)` per side by a rule for the hover state, the
+/// input's and the text area's surface, the drop-down's fill and a table
+/// row's info each say "not mapped" with the home.
+#[test]
+fn a_hover_stroke_gpui_cannot_draw_is_reported_unmapped_at_its_home() -> Result<(), String> {
+    use crate::info::{WidgetInfo, data, inputs};
+    use native_theme::next::{
+        ComboBoxRule, InputRule, ListRule, PartPatch, Preset, Stroke, StrokeAlign, StrokeSide,
+        Theme as NextTheme, ThemeContext, ThemePatch, WidgetState,
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let t = native_theme_gpui::next::to_theme(&r).map_err(|u| u.home().to_string())?;
+    let notes = |r: &native_theme::next::ResolvedTheme| {
+        [
+            note_of(
+                &inputs::input_surface(WidgetInfo::new("Input"), r, 1.).config,
+                "hovered edge",
+            )
+            .map(str::to_string),
+            note_of(
+                &inputs::text_area_surface(WidgetInfo::new("TextArea"), r, 1.).config,
+                "hovered edge",
+            )
+            .map(str::to_string),
+            note_of(
+                &inputs::combo_fill(WidgetInfo::new("Select"), &t, Some(r), false).config,
+                "hovered edge",
+            )
+            .map(str::to_string),
+            note_of(
+                &data::native_table_row(r, &t, false, "a").config,
+                "hovered edge",
+            )
+            .map(str::to_string),
+        ]
+    };
+    let unmapped =
+        |note: &Option<String>| note.as_deref().is_some_and(|n| n.starts_with("not mapped"));
+    let stated = notes(&r);
+    assert!(
+        !stated.iter().any(unmapped),
+        "kde-breeze light's stated hover strokes are reported unmapped: {stated:?}"
+    );
+    let side = StrokeSide::default();
+    let sides = Stroke::sides(
+        side.clone(),
+        side.clone(),
+        side.clone(),
+        side,
+        StrokeAlign::Inside,
+    );
+    let per_side = PartPatch::new().stroke(sides);
+    r.apply_patch(
+        &ThemePatch::new()
+            .input(
+                InputRule::new()
+                    .states(WidgetState::HOVER)
+                    .field(per_side.clone()),
+            )
+            .text_area(
+                InputRule::new()
+                    .states(WidgetState::HOVER)
+                    .field(per_side.clone()),
+            )
+            .combo_box(
+                ComboBoxRule::new()
+                    .states(WidgetState::HOVER)
+                    .field(per_side.clone()),
+            )
+            .list(
+                ListRule::new()
+                    .states(WidgetState::HOVER)
+                    .highlight(per_side),
+            ),
+    );
+    let patched = notes(&r);
+    for (note, home) in patched.iter().zip([
+        "input.field(HOVER).stroke",
+        "text_area.field(HOVER).stroke",
+        "combo_box.field(HOVER).stroke",
+        "list.highlight(HOVER).stroke",
+    ]) {
+        assert!(
+            note.as_deref().is_some_and(|n| n.starts_with(&format!(
+                "not mapped: a rule states {home} for the hover state"
+            ))),
+            "{home}, stated per side for the hover state, is not reported unmapped: {note:?}"
+        );
+    }
+    Ok(())
+}
+
 /// A hovered menu row, in the menus (`demo::MenuLook`) and the Overlays
 /// page's rows (`demo::MenuRowsLook`), is filled and lettered in what a rule
 /// states for `menu.item(HOVER)` and `menu.item_label(HOVER)` (spec §2,

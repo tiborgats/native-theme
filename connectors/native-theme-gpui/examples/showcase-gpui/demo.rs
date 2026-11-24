@@ -4100,8 +4100,15 @@ fn button_turning(
         button_theme(cx),
     );
     if kind != asked {
+        let unmapped = button_theme(cx)
+            .is_some_and(|r| state_stroke_unmapped(&r.button.body(WidgetState::HOVER)));
+        let why = if unmapped {
+            "button.body(HOVER).stroke is not mapped: a rule states it for the hover state in a form gpui cannot draw (not one stroke of one colour, nor none)"
+        } else {
+            "the installed theme having no rule that states a hovered button's stroke, button.body(HOVER).stroke.color, or no value gpui can take at a home geometry::button reads"
+        };
         let built_as = format!(
-            "{} asked for, built as {}: variants::bordered_button gives no variant, the installed theme having no rule that states a hovered button's stroke, button.body(HOVER).stroke.color, in a form gpui can take, or no value gpui can take at a home geometry::button reads (native-theme-gpui/next/variants.rs, bordered_button)",
+            "{} asked for, built as {}: variants::bordered_button gives no variant, {why} (native-theme-gpui/next/variants.rs, bordered_button)",
             asked.name(),
             kind.name()
         );
@@ -6374,6 +6381,16 @@ fn list_hover_text(cx: &App, selected: bool, row_info: &mut WidgetInfo) -> Optio
 fn list_hover_edge(cx: &App, shown: bool, row_info: &mut WidgetInfo) -> Option<(Hsla, Pixels)> {
     use native_theme_gpui::next::state_stroke_color_of;
     let r = next_resolved(cx)?;
+    if let Some(text) = info::state_stroke_unmapped(
+        &r.list.highlight(WidgetState::HOVER),
+        "list.highlight(HOVER).stroke",
+        "hover",
+        "a hovered row has no outline, as a ListItem's own hover sets its fill alone (list/list_item.rs:229-235)",
+    )
+    .filter(|_| shown)
+    {
+        *row_info = std::mem::take(row_info).config("hovered edge", text);
+    }
     let width = info::stroke_width_of(&r.list.highlight(WidgetState::HOVER))?;
     let claim = info::edge_claim(
         "hovered edge",
