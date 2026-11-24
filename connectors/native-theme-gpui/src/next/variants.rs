@@ -6,8 +6,8 @@
 //! returning the same value, or the [`Unmapped`](super::Unmapped) source it
 //! lacks.
 //!
-//! [`crate::variants::ghost_button`] reads only gpui-component's installed
-//! theme, which both models fill, so it has no counterpart here. Each
+//! [`ghost_button`] adds to [`crate::variants::ghost_button`], which reads
+//! only the installed theme, the flat button's hovered outline. Each
 //! variant below takes, as its 0.7.2 counterpart does, its other colours from
 //! that installed theme.
 
@@ -80,6 +80,29 @@ fn own_toolbar_states(cx: &App) -> ToolbarButtonStates {
 /// no rule of the theme states the default button's fill.
 pub fn default_button(r: &ResolvedTheme, cx: &App) -> Mapped<Option<ButtonCustomVariant>> {
     Ok(default_button_from(builders::default_button_states(r)?, cx))
+}
+
+/// [`crate::variants::ghost_button`], from the 0.8.0 model, with the flat
+/// button's hovered outline, `button.body(HOVER; variant=Flat).stroke.color`,
+/// as its colour where a rule states it for the state; with none, the 0.7.2
+/// variant as it is.
+///
+/// Upstream draws a custom variant's colour as the border in every state and
+/// mixes it toward transparent into the fill at rest, with no border width
+/// (gpui-component 0.10.0 `button/button.rs:1044`, `:727-732`), so an
+/// outlined variant goes with its companion
+/// [`geometry::ghost_button_rest`](super::geometry::ghost_button_rest),
+/// refined after [`geometry::button`](super::geometry::button): it hides both
+/// at rest and lays the border out inside the button's padding. Until a
+/// preset states a flat rule, a flat query returns the push button's rule
+/// (spec §1, "Axis values without data"), so the outline is the push
+/// button's hovered stroke.
+pub fn ghost_button(r: &ResolvedTheme, cx: &App) -> Mapped<ButtonCustomVariant> {
+    let variant = crate::variants::ghost_button(cx);
+    Ok(match builders::ghost_hover_border(r)? {
+        Some(edge) => variant.color(edge),
+        None => variant,
+    })
 }
 
 #[cfg(test)]
@@ -183,8 +206,77 @@ mod tests {
         });
     }
 
-    /// Every public function of [`crate::variants`] but `ghost_button` has
-    /// one here.
+    /// A ghost button whose flat hovered outline a rule states (kde-breeze's
+    /// push button's, a flat query with no flat rule returning the push
+    /// button's rule) takes it as its variant's colour, over 0.7.2's
+    /// variant; a patched flat rule's outline replaces it; and the rest
+    /// refinement lays out that rule's width inside the push button's
+    /// padding, with a transparent fill and border. (Every bundled preset
+    /// states a hovered push button stroke, so none leaves the outline
+    /// unstated.)
+    #[gpui::test]
+    fn a_stated_flat_hover_outline_edges_the_ghost(cx: &mut TestAppContext) {
+        use native_theme::next::{
+            ButtonRule, ButtonVariant, Color, PartPatch, Stroke, ThemePatch, WidgetState,
+        };
+        const GREEN: Color = Color::rgb(0.0, 1.0, 0.0);
+        cx.update(|cx| {
+            gpui_component::init(cx);
+            for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+                let mut r = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+                assert_eq!(super::super::apply(&r, cx), Ok(()));
+                let push = builders::hover_border(&r);
+                assert!(
+                    matches!(push, Ok(Some(_))),
+                    "kde-breeze {:?} states no hovered push button stroke, so this proves \
+                     nothing",
+                    ctx.scheme
+                );
+                assert_eq!(builders::ghost_hover_border(&r), push, "{:?}", ctx.scheme);
+                assert_eq!(
+                    ghost_button(&r, cx),
+                    push.map(|edge| match edge {
+                        Some(edge) => crate::variants::ghost_button(cx).color(edge),
+                        None => crate::variants::ghost_button(cx),
+                    }),
+                    "{:?}",
+                    ctx.scheme
+                );
+                r.apply_patch(
+                    &ThemePatch::new().button(
+                        ButtonRule::new()
+                            .variant(ButtonVariant::Flat)
+                            .states(WidgetState::HOVER)
+                            .body(PartPatch::new().stroke(Stroke::uniform(3.0, GREEN))),
+                    ),
+                );
+                assert_eq!(super::super::apply(&r, cx), Ok(()));
+                assert_eq!(
+                    ghost_button(&r, cx),
+                    Ok(crate::variants::ghost_button(cx).color(super::super::hsla(GREEN))),
+                    "{:?}",
+                    ctx.scheme
+                );
+                let padding = super::super::padding_of(&r.button.body(WidgetState::NONE));
+                assert!(
+                    padding.iter().all(|side| side.is_some_and(|v| v > 3.0)),
+                    "kde-breeze {:?} pads its push button by no more than the patched width \
+                     on some side, so the padding kept proves nothing",
+                    ctx.scheme
+                );
+                assert_eq!(
+                    super::super::geometry::ghost_button_rest(&r),
+                    Ok(crate::geometry::toolbar_button_rest_from(
+                        true, 3.0, padding
+                    )),
+                    "{:?}",
+                    ctx.scheme
+                );
+            }
+        });
+    }
+
+    /// Every public function of [`crate::variants`] has one here.
     #[test]
     fn every_variant_has_a_counterpart() {
         let here: Vec<&str> = include_str!("variants.rs")
@@ -192,12 +284,14 @@ mod tests {
             .filter_map(|line| line.strip_prefix("pub fn "))
             .filter_map(|rest| rest.split(['(', '<']).next())
             .collect();
-        let old: Vec<&str> = include_str!("../variants.rs")
+        let mut here = here;
+        here.sort_unstable();
+        let mut old: Vec<&str> = include_str!("../variants.rs")
             .lines()
             .filter_map(|line| line.strip_prefix("pub fn "))
             .filter_map(|rest| rest.split(['(', '<']).next())
-            .filter(|name| *name != "ghost_button")
             .collect();
+        old.sort_unstable();
         assert!(
             !old.is_empty() && here == old,
             "0.7.2 {old:?}, 0.8.0 {here:?}"

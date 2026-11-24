@@ -12,8 +12,8 @@ use gpui::{Hsla, Pixels, StyleRefinement, px};
 use gpui_component::Size;
 use gpui_component::dialog::DialogEntrance;
 use native_theme::next::{
-    DecorationKind, DialogEntranceStyle, IconStated, PartStated, PartStyle, ResolvedTheme, Stroke,
-    TextStated, WidgetState,
+    ButtonQuery, DecorationKind, DialogEntranceStyle, IconStated, PartStated, PartStyle,
+    ResolvedTheme, Stroke, TextStated, WidgetState,
 };
 
 use super::{
@@ -870,6 +870,37 @@ pub(crate) fn default_button_states(r: &ResolvedTheme) -> Mapped<Option<DefaultB
         )?,
         hover_frame: default_hover_frame(&b.body(WidgetState::HOVER), &default)?,
     }))
+}
+
+/// The flat button's hovered outline, the edge of
+/// [`super::variants::ghost_button`]'s variant:
+/// `button.body(HOVER; variant=Flat).stroke.color`, a soft option, where a
+/// rule states it for the state (module doc of `next`), else `None`. A rule
+/// that names no variant is the flat button's too (spec §1, "Axis values
+/// without data"), so a theme that states no flat rule gives it the push
+/// button's hovered stroke.
+pub(crate) fn ghost_hover_border(r: &ResolvedTheme) -> Mapped<Option<Hsla>> {
+    state_stroke_color(
+        &r.button.body(ButtonQuery::flat().state(WidgetState::HOVER)),
+        "button.body(HOVER; variant=Flat).stroke.color",
+    )
+}
+
+/// [`super::geometry::ghost_button_rest`]: where [`ghost_hover_border`]
+/// states the outline, a transparent fill and a transparent border of the
+/// hovered flat body's stroke width, each stated side of the push button's
+/// padding, which [`button`] gives the Button, less that width
+/// ([`geometry::toolbar_button_rest_from`]); nothing where it states none.
+pub(crate) fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    if ghost_hover_border(r)?.is_none() {
+        return Ok(StyleRefinement::default());
+    }
+    let hovered = r.button.body(ButtonQuery::flat().state(WidgetState::HOVER));
+    Ok(geometry::toolbar_button_rest_from(
+        true,
+        stroke_width(&hovered, "button.body(HOVER; variant=Flat).stroke.width")?,
+        padding_of(&r.button.body(WidgetState::NONE)),
+    ))
 }
 
 #[cfg(test)]

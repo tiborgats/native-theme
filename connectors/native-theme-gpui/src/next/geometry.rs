@@ -133,6 +133,22 @@ pub fn combo_box_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleRefineme
     builders::combo_box_fill(r, disabled)
 }
 
+/// The rest state of a flat `Button` built on
+/// [`next::variants::ghost_button`](super::variants::ghost_button), a 0.8.0
+/// builder with no 0.7.2 one, whose ghost has no outline: where a rule
+/// states the flat button's hovered outline,
+/// `button.body(HOVER; variant=Flat).stroke.color`, a transparent fill and a
+/// transparent border of that hovered stroke's width, each stated side of
+/// `button.body(NONE)`'s padding less that width, floored at 0; nothing
+/// where none does. As [`crate::geometry::toolbar_button_rest`] for the
+/// toolbar's outline: upstream draws the variant's colour as the border in
+/// every state and mixes it into the fill at rest, with no border width for
+/// a custom variant, so this hides both at rest and lays the border out, the
+/// Button keeping the size [`button`], which it is refined after, gives it.
+pub fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::ghost_button_rest(r)
+}
+
 #[cfg(test)]
 mod tests {
     use native_theme::next::{Preset, Theme, ThemeContext};
@@ -210,6 +226,7 @@ mod tests {
                 title_bar_inactive(&r, &inactive),
                 builders::title_bar_inactive(&r, &inactive)
             );
+            assert_eq!(ghost_button_rest(&r), builders::ghost_button_rest(&r));
             for disabled in [false, true] {
                 assert_eq!(input_fill(&r, disabled), builders::input_fill(&r, disabled));
                 assert_eq!(
