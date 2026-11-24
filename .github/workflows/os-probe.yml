@@ -1228,6 +1228,36 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         if: runner.os == 'macOS'
+      # This job's own VM's accessibility settings, appearance and accent, read
+      # as the probe job's record step reads them (a value, `absent` where the
+      # image sets none, or what the read said where it failed), into
+      # settings.txt; the host reads them again in its [accessibility] table.
+      - name: Record the image's accessibility settings (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=switch-label-out
+          mkdir -p "$out"
+          for setting in "com.apple.universalaccess reduceTransparency" \
+                         "com.apple.universalaccess increaseContrast" \
+                         "com.apple.universalaccess reduceMotion" \
+                         "com.apple.universalaccess differentiateWithoutColor" \
+                         "-g AppleReduceDesktopTinting" \
+                         "-g AppleInterfaceStyle" \
+                         "-g AppleAccentColor" \
+                         "-g AppleHighlightColor" \
+                         "-g AppleKeyboardUIMode"; do
+            set -- $setting
+            value="$(defaults read "$1" "$2" 2>&1)"
+            if [ $? -ne 0 ]; then
+              case "$value" in
+                *"does not exist"*|*"Could not find key"*) value=absent ;;
+                *) value="unreadable: $value" ;;
+              esac
+            fi
+            echo "$1 $2: $value"
+          done | tee "$out/settings.txt"
       - name: Build and run
         if: runner.os == 'macOS'
         timeout-minutes: 20

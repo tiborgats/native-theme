@@ -24,11 +24,24 @@
 // while held, then released; the DisclosureGroup's chevron and its label
 // likewise, each hovered and pressed at its centre as the rest capture shows
 // it (disclosureParts, recorded as [[disclosure_parts]]); the cursor parked
-// right of the window between.
-// Writes <out-dir>/switch-label.toml (the environment, the system colours in
-// sRGB per appearance, each item's frame and view tree in the window frame's
-// points from its top left, each capture) and <out-dir>/<appearance>/<state>.png.
-// Exits 1 where a step failed (each failure is listed in the TOML).
+// between on the middle of the content view's left margin (`inset / 2` from
+// its left edge, half its height down, left of every item), where hitTest:
+// gives the content view itself. Every event is posted only where
+// `NSWindow.windowNumber(at:belowWindowWithWindowNumber: 0)` at its point,
+// read just before, gives the host's window; else that target (or the park)
+// is a failure and nothing more is posted. The hover and press section runs
+// only in a key window of an active application. The window accepts
+// mouse-moved events, and a local event monitor (it returns each event
+// unchanged) records every mouse-moved, -entered, -exited, left-down and
+// left-up event the application receives: its type, window number, point
+// and the class of the view hitTest: finds there; each capture lists those
+// received since the post before it (`events`), and each release those after
+// the mouse-up ([[release]]).
+// Writes <out-dir>/switch-label.toml (the environment, the accessibility
+// settings, the system colours in sRGB per appearance, each item's frame and
+// view tree in the window frame's points from its top left, each capture) and
+// <out-dir>/<appearance>/<state>.png. Exits 1 where a step failed (each
+// failure is listed in the TOML).
 
 import AppKit
 import SwiftUI
@@ -113,7 +126,8 @@ func tree(_ root: NSView, window: NSWindow) -> [String] {
             line += ", bezel_style = \(button.bezelStyle.rawValue), button_state = \(button.state.rawValue)"
         }
         if let field = view as? NSTextField {
-            line += ", font_pt = \(number(field.font?.pointSize ?? 0)), font = \(quoted(field.font?.fontName ?? "absent"))"
+            line += ", font_pt = \(field.font.map { number($0.pointSize) } ?? quoted("absent"))"
+            line += ", font = \(quoted(field.font?.fontName ?? "absent"))"
             line += ", text_color = \(field.textColor.map(srgb) ?? quoted("absent"))"
         }
         lines.append(line + " }")
@@ -150,13 +164,19 @@ func firstSwitch(_ root: NSView) -> NSSwitch? {
     return nil
 }
 
-/// The CG global point (the main display's top left, y down) of a rect's
-/// centre in `window`.
+/// The AppKit screen point (y up) of a rect's centre in `window`.
 @MainActor
-func globalCentre(_ rect: CGRect, window: NSWindow) -> CGPoint {
+func screenCentre(_ rect: CGRect, window: NSWindow) -> CGPoint {
     let screen = window.convertToScreen(rect)
-    let height = NSScreen.screens.first?.frame.height ?? 0
-    return CGPoint(x: screen.midX, y: height - screen.midY)
+    return CGPoint(x: screen.midX, y: screen.midY)
+}
+
+/// An AppKit screen point as a CG global point (the main display's top left,
+/// y down); nil where there is no screen.
+@MainActor
+func quartz(_ point: CGPoint) -> CGPoint? {
+    guard let height = NSScreen.screens.first?.frame.height else { return nil }
+    return CGPoint(x: point.x, y: height - point.y)
 }
 
 func post(_ type: CGEventType, at point: CGPoint) -> Bool {
@@ -164,6 +184,17 @@ func post(_ type: CGEventType, at point: CGPoint) -> Bool {
     else { return false }
     event.post(tap: .cghidEventTap)
     return true
+}
+
+func eventName(_ type: NSEvent.EventType) -> String {
+    switch type {
+    case .mouseMoved: return "mouseMoved"
+    case .mouseEntered: return "mouseEntered"
+    case .mouseExited: return "mouseExited"
+    case .leftMouseDown: return "leftMouseDown"
+    case .leftMouseUp: return "leftMouseUp"
+    default: return "type \(type.rawValue)"
+    }
 }
 
 func capture(windowNumber: Int, to path: String) -> String? {
@@ -189,8 +220,36 @@ final class Host: NSObject, NSApplicationDelegate {
     let out: String
     var window: NSWindow?
     var items: [Item] = []
+    var monitor: Any?
+    /// The mouse events received since the last `drain`, each an inline
+    /// table; read and written on the main thread only.
+    var events: [String] = []
 
     init(out: String) { self.out = out }
+
+    /// Records `event` (the local monitor's): its type, window number and,
+    /// in the host's window, its point in the window frame's points from its
+    /// top left and the class of the view hitTest: finds there.
+    @MainActor
+    func record(_ event: NSEvent) {
+        var line = "{ type = \(quoted(eventName(event.type))), window_number = \(event.windowNumber)"
+        if let window, event.windowNumber == window.windowNumber {
+            let at = event.locationInWindow
+            let hit = window.contentView?.superview?.hitTest(at)
+            line += ", location_pt = [\(number(at.x)), \(number(window.frame.height - at.y))]"
+            line += ", hit = \(quoted(hit.map { String(describing: type(of: $0)) } ?? "absent"))"
+        } else {
+            line += ", location_pt = \(quoted("absent: not in the host's window")), hit = \(quoted("absent"))"
+        }
+        events.append(line + " }")
+    }
+
+    /// An AppKit screen point in the window frame's points from its top left.
+    @MainActor
+    func frameTopLeft(_ screen: CGPoint, window: NSWindow) -> CGPoint {
+        let base = window.convertPoint(fromScreen: screen)
+        return CGPoint(x: base.x, y: window.frame.height - base.y)
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let items = makeItems()
@@ -211,8 +270,15 @@ final class Host: NSObject, NSApplicationDelegate {
             content.addSubview(item.view)
         }
         window.contentView = content
+        window.acceptsMouseMovedEvents = true
         self.window = window
         self.items = items
+        monitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.mouseMoved, .mouseEntered, .mouseExited, .leftMouseDown, .leftMouseUp]
+        ) { [weak self] event in
+            MainActor.assumeIsolated { self?.record(event) }
+            return event
+        }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
@@ -271,9 +337,9 @@ final class Host: NSObject, NSApplicationDelegate {
         return (part(first, chevronEnd), part(labelStart, labelEnd))
     }
 
-    /// Where `target` is hovered and pressed, in CG global points: a Toggle's
-    /// NSSwitch centre; the DisclosureGroup's chevron's or label's centre
-    /// (disclosureParts of `restPNG`).
+    /// Where `target` is hovered and pressed, in AppKit screen points: a
+    /// Toggle's NSSwitch centre; the DisclosureGroup's chevron's or label's
+    /// centre (disclosureParts of `restPNG`).
     @MainActor
     func targetPoint(_ target: String, restPNG: String) -> CGPoint? {
         guard let window else { return nil }
@@ -281,12 +347,40 @@ final class Host: NSObject, NSApplicationDelegate {
             guard let parts = disclosureParts(restPNG) else { return nil }
             let rect = target == "disclosure_chevron" ? parts.chevron : parts.label
             let inWindow = CGRect(x: rect.minX, y: window.frame.height - rect.maxY, width: rect.width, height: rect.height)
-            return globalCentre(inWindow, window: window)
+            return screenCentre(inWindow, window: window)
         }
         guard let item = items.first(where: { $0.name == target }), let toggle = firstSwitch(item.view) else {
             return nil
         }
-        return globalCentre(toggle.convert(toggle.bounds, to: nil), window: window)
+        return screenCentre(toggle.convert(toggle.bounds, to: nil), window: window)
+    }
+
+    /// Where the cursor is parked, in AppKit screen points: the middle of the
+    /// content view's left margin, `inset / 2` from its left edge and half
+    /// its height down, where hitTest: gives the content view itself; the
+    /// TOML lines of the reads, and the reason where it cannot be parked.
+    @MainActor
+    func parkPoint() -> (point: CGPoint?, lines: String, reason: String?) {
+        guard let window else { return (nil, "", "the host has no window") }
+        guard let content = window.contentView else { return (nil, "", "the window has no content view") }
+        let local = CGPoint(x: inset / 2, y: content.bounds.height / 2)
+        let inWindow = content.convert(local, to: nil)
+        let hit = content.superview?.hitTest(inWindow)
+        let hitName = hit.map { String(describing: type(of: $0)) } ?? "absent"
+        let lines = "park_point_in_content_pt = [\(number(local.x)), \(number(local.y))]\n"
+            + "view_at_park_point = \(quoted(hitName))\n"
+        guard let hit, hit === content else {
+            return (nil, lines, "hitTest: at the park point gives \(hitName), not the content view")
+        }
+        return (window.convertPoint(toScreen: inWindow), lines, nil)
+    }
+
+    /// The events recorded since the last call, which it clears.
+    @MainActor
+    func drain() -> [String] {
+        let drained = events
+        events = []
+        return drained
     }
 
     /// The pass, off the main thread (the main thread keeps running the
@@ -307,20 +401,39 @@ final class Host: NSObject, NSApplicationDelegate {
         }
         if !keyed { failures.append("the window did not become key in an active application within 10 s") }
         let manager = FileManager.default
-        let (windowNumber, park, environment, colours, itemLines) = onMain {
-            () -> (Int, CGPoint, String, String, String) in
-            guard let window = self.window else { return (0, .zero, "", "", "") }
-            let parkRect = CGRect(x: window.frame.width + 150, y: window.frame.height / 2, width: 1, height: 1)
+        let setup: (windowNumber: Int, park: CGPoint?, parkReason: String?, text: String)? = onMain {
+            guard let window = self.window else { return nil }
+            let park = self.parkPoint()
             let info = ProcessInfo.processInfo
+            let workspace = NSWorkspace.shared
+            var accents: [String] = []
+            for name in [NSAppearance.Name.aqua, .darkAqua] {
+                NSAppearance(named: name)?.performAsCurrentDrawingAppearance {
+                    accents.append("\(name.rawValue) = \(srgb(.controlAccentColor))")
+                }
+            }
+            let defaults = UserDefaults.standard
             let environment = """
                 [environment]
                 os = \(quoted(info.operatingSystemVersionString))
                 backing_scale = \(number(window.backingScaleFactor))
                 window_frame_pt = \(rectText(window.frame))
-                screen_frame_pt = \(rectText(NSScreen.screens.first?.frame ?? .zero))
+                screen_frame_pt = \(NSScreen.screens.first.map { rectText($0.frame) } ?? quoted("absent"))
                 active = \(NSApp.isActive)
                 key = \(window.isKeyWindow)
+                accepts_mouse_moved_events = \(window.acceptsMouseMovedEvents)
                 item_size_pt = [\(number(itemWidth)), \(number(itemHeight))]
+                \(park.lines)
+                [accessibility]
+                reduce_transparency = \(workspace.accessibilityDisplayShouldReduceTransparency)
+                increase_contrast = \(workspace.accessibilityDisplayShouldIncreaseContrast)
+                differentiate_without_color = \(workspace.accessibilityDisplayShouldDifferentiateWithoutColor)
+                reduce_motion = \(workspace.accessibilityDisplayShouldReduceMotion)
+                invert_colors = \(workspace.accessibilityDisplayShouldInvertColors)
+                effective_appearance = \(quoted(NSApp.effectiveAppearance.name.rawValue))
+                apple_interface_style = \(quoted(defaults.string(forKey: "AppleInterfaceStyle") ?? "absent"))
+                apple_accent_color = \(quoted(defaults.object(forKey: "AppleAccentColor").map { "\($0)" } ?? "absent"))
+                control_accent_color = { \(accents.joined(separator: ", ")) }
 
                 """
             var colours = ""
@@ -358,9 +471,35 @@ final class Host: NSObject, NSApplicationDelegate {
 
                     """
             }
-            return (window.windowNumber, globalCentre(parkRect, window: window), environment, colours, itemLines)
+            return (window.windowNumber, park.point, park.reason, environment + colours + itemLines)
         }
-        _ = post(.mouseMoved, at: park)
+        guard let setup else {
+            failures.append("the host has no window")
+            return finish("", captures: [], notes: notes, failures: failures)
+        }
+        let windowNumber = setup.windowNumber
+        /// Posts `type` at `screen` (AppKit screen points) where the window
+        /// there is the host's; else, or where it cannot be posted, the reason.
+        func postOwn(_ type: CGEventType, at screen: CGPoint, what: String) -> String? {
+            let (under, point): (Int, CGPoint?) = onMain {
+                (NSWindow.windowNumber(at: screen, belowWindowWithWindowNumber: 0), quartz(screen))
+            }
+            guard under == windowNumber else {
+                return "\(what): the window at the point is window \(under), not the host's \(windowNumber): not posted"
+            }
+            guard let point else { return "\(what): no screen to convert the point to: not posted" }
+            return post(type, at: point) ? nil : "\(what): the event was not made"
+        }
+        var pointer = keyed
+        if !keyed { notes.append("not hovered or pressed: the window is not key in an active application") }
+        if let reason = setup.parkReason {
+            failures.append("park: \(reason): nothing is hovered or pressed")
+            pointer = false
+        }
+        if pointer, let park = setup.park, let reason = postOwn(.mouseMoved, at: park, what: "park") {
+            failures.append("\(reason): nothing is hovered or pressed")
+            pointer = false
+        }
         for name in [NSAppearance.Name.aqua, .darkAqua] {
             let folder = "\(out)/\(name.rawValue)"
             do {
@@ -375,9 +514,18 @@ final class Host: NSObject, NSApplicationDelegate {
             Thread.sleep(forTimeInterval: 1.5)
             func shoot(_ state: String, target: String, point: CGPoint?, held: Bool) {
                 let path = "\(folder)/\(state).png"
-                let (active, key) = onMain { (NSApp.isActive, self.window?.isKeyWindow ?? false) }
+                let (active, key, events, at): (Bool, Bool, [String], String) = onMain {
+                    let at: String
+                    if let point, let window = self.window {
+                        let local = self.frameTopLeft(point, window: window)
+                        let global = quartz(point).map { "[\(number($0.x)), \(number($0.y))]" } ?? quoted("absent")
+                        at = "target_pt = [\(number(local.x)), \(number(local.y))]\nmouse_global_pt = \(global)"
+                    } else {
+                        at = "target_pt = \(quoted("parked"))\nmouse_global_pt = \(quoted("parked"))"
+                    }
+                    return (NSApp.isActive, self.window?.isKeyWindow ?? false, self.drain(), at)
+                }
                 if let reason = capture(windowNumber: windowNumber, to: path) { failures.append("\(state): \(reason)") }
-                let at = point.map { "[\(number($0.x)), \(number($0.y))]" } ?? quoted("parked")
                 captures.append(
                     """
                     [[capture]]
@@ -385,16 +533,17 @@ final class Host: NSObject, NSApplicationDelegate {
                     state = \(quoted(state))
                     target = \(quoted(target))
                     file = \(quoted("\(name.rawValue)/\(state).png"))
-                    mouse_global_pt = \(at)
+                    \(at)
                     button_held = \(held)
                     active = \(active)
                     key = \(key)
+                    events = [\(events.joined(separator: ", "))]
 
                     """)
             }
             shoot("normal", target: "none", point: nil, held: false)
             let parts: String = onMain {
-                guard let parts = self.disclosureParts("\(folder)/normal.png") else { return "absent" }
+                guard let parts = self.disclosureParts("\(folder)/normal.png") else { return quoted("absent") }
                 return "{ chevron_pt = \(rectText(parts.chevron)), label_pt = \(rectText(parts.label)) }"
             }
             captures.append(
@@ -406,28 +555,62 @@ final class Host: NSObject, NSApplicationDelegate {
 
                 """)
             for target in ["toggle_off", "toggle_on", "disclosure_chevron", "disclosure_label"] {
+                guard pointer, let park = setup.park else { break }
                 let centre: CGPoint? = onMain { self.targetPoint(target, restPNG: "\(folder)/normal.png") }
                 guard let centre else {
                     notes.append("\(name.rawValue) \(target): no control in its view tree to aim at, not hovered or pressed")
                     continue
                 }
-                if !post(.mouseMoved, at: centre) { failures.append("\(target): mouse-moved event not made") }
+                let what = "\(name.rawValue) \(target)"
+                if let reason = postOwn(.mouseMoved, at: centre, what: "\(what) hover") {
+                    failures.append("\(reason): nothing more is hovered or pressed")
+                    pointer = false
+                    break
+                }
                 Thread.sleep(forTimeInterval: 1.0)
                 shoot("hovered_\(target)", target: target, point: centre, held: false)
-                if !post(.leftMouseDown, at: centre) { failures.append("\(target): mouse-down event not made") }
+                if let reason = postOwn(.leftMouseDown, at: centre, what: "\(what) press") {
+                    failures.append("\(reason): nothing more is hovered or pressed")
+                    pointer = false
+                    break
+                }
                 Thread.sleep(forTimeInterval: 0.6)
                 shoot("pressed_\(target)", target: target, point: centre, held: true)
-                if !post(.leftMouseUp, at: centre) { failures.append("\(target): mouse-up event not made") }
+                if let reason = postOwn(.leftMouseUp, at: centre, what: "\(what) release") {
+                    failures.append("\(reason): nothing more is hovered or pressed")
+                    pointer = false
+                    break
+                }
                 Thread.sleep(forTimeInterval: 0.3)
-                _ = post(.mouseMoved, at: park)
+                if let reason = postOwn(.mouseMoved, at: park, what: "\(what) park") {
+                    failures.append("\(reason): nothing more is hovered or pressed")
+                    pointer = false
+                }
                 Thread.sleep(forTimeInterval: 0.8)
+                let events: [String] = onMain { self.drain() }
+                captures.append(
+                    """
+                    [[release]]
+                    appearance = \(quoted(name.rawValue))
+                    target = \(quoted(target))
+                    events = [\(events.joined(separator: ", "))]
+
+                    """)
             }
         }
-        let text = environment + colours + itemLines + captures.joined(separator: "\n")
+        return finish(setup.text, captures: captures, notes: notes, failures: failures)
+    }
+
+    /// Writes switch-label.toml from `text` (the environment, the colours and
+    /// the items), `captures`, `notes` and `failures`; true where a step
+    /// failed.
+    nonisolated func finish(_ text: String, captures: [String], notes: [String], failures: [String]) -> Bool {
+        var failures = failures
+        let whole = text + captures.joined(separator: "\n")
             + "notes = [\(notes.map(quoted).joined(separator: ", "))]\n"
             + "failures = [\(failures.map(quoted).joined(separator: ", "))]\n"
         do {
-            try text.write(toFile: "\(out)/switch-label.toml", atomically: true, encoding: .utf8)
+            try whole.write(toFile: "\(out)/switch-label.toml", atomically: true, encoding: .utf8)
         } catch {
             failures.append("write switch-label.toml: \(error)")
         }
