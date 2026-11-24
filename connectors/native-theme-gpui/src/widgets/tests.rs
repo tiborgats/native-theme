@@ -6555,8 +6555,9 @@ fn a_tab_ring_offset_or_corners_the_inset_cannot_place_is_unmapped() {
 
 /// A disabled checked box's mark is read at its own home where a rule states
 /// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`), not
-/// in the label's disabled colour; a theme that states none keeps 0.7.2's
-/// reading, the label's disabled colour where a disabled fill is stated.
+/// in the label's disabled colour; a theme that states none takes
+/// gpui-component's own treatment, the enabled mark at half alpha (spec §10,
+/// rule 0), not the label's disabled colour.
 #[test]
 fn a_disabled_mark_is_read_at_its_own_home() -> crate::next::Mapped<()> {
     use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
@@ -6573,7 +6574,15 @@ fn a_disabled_mark_is_read_at_its_own_home() -> crate::next::Mapped<()> {
 
         let kde = NextTheme::preset(Preset::KdeBreeze).resolve(&ctx);
         let look = CheckboxLook::next_of(&kde, true, true)?;
-        assert_eq!(look.mark, look.label, "{ctx:?}");
+        let enabled = CheckboxLook::next_of(&kde, true, false)?;
+        assert_eq!(
+            look.mark,
+            enabled
+                .mark
+                .opacity(super::checkbox::DISABLED_INDICATOR_ALPHA),
+            "{ctx:?}"
+        );
+        assert_ne!(look.mark, look.label, "{ctx:?}");
     }
     Ok(())
 }
@@ -6782,6 +6791,143 @@ fn a_disabled_indicator_takes_the_fill_stated_for_the_disabled_state() -> crate:
             crate::next::hsla(sentinel),
             "patched, enabled, radio {radio}, checked {checked}"
         );
+    }
+    Ok(())
+}
+
+/// Where a 0.8.0 preset states no rule for a state of a property
+/// gpui-component's own control changes in that state, the theme-drawn
+/// control draws gpui-component's own treatment of it (spec §10, rule 0): a
+/// disabled check box's and radio's label in `muted_foreground`
+/// (`colors.window.foreground_muted`), their disabled mark the enabled one at
+/// half its alpha, a disabled switch's track the enabled one at half its
+/// alpha, and a hovered tab's label the selected tab's
+/// (`tab_active_foreground`). At least one case on the seven presets differs
+/// from the value at rest, which the looks drew before.
+#[test]
+fn an_unstated_state_takes_gpui_components_own_treatment() -> crate::next::Mapped<()> {
+    use native_theme::next::{
+        PartStated, Preset, TextStated, Theme as NextTheme, ThemeContext, WidgetState,
+    };
+    let half = |c: gpui::Hsla| c.opacity(super::checkbox::DISABLED_INDICATOR_ALPHA);
+    let half_track = |c: gpui::Hsla| c.opacity(super::switch::DISABLED_TRACK_ALPHA);
+    let (mut checked_cases, mut differing) = (0, 0);
+    for preset in Preset::ALL {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = NextTheme::preset(*preset).resolve(&ctx);
+            let name = format!("{preset:?} {:?}", ctx.scheme);
+            for radio in [false, true] {
+                let look = |checked, disabled| {
+                    if radio {
+                        CheckboxLook::next_radio(&r, checked, disabled)
+                    } else {
+                        CheckboxLook::next_of(&r, checked, disabled)
+                    }
+                };
+                let (Ok(enabled), Ok(off)) = (look(true, false), look(true, true)) else {
+                    continue;
+                };
+                let label = if radio {
+                    r.radio.label(WidgetState::DISABLED)
+                } else {
+                    r.checkbox.label(WidgetState::DISABLED)
+                };
+                if !label.from_state.contains(TextStated::COLOR) {
+                    let muted = crate::next::hsla(crate::next::stated(
+                        r.colors.window.foreground_muted,
+                        "colors.window.foreground_muted",
+                    )?);
+                    assert_eq!(off.label, muted, "{name} radio {radio}: disabled label");
+                    checked_cases += 1;
+                    differing += usize::from(enabled.label != muted);
+                }
+                let mark_ruled = if radio {
+                    r.radio
+                        .dot(WidgetState::DISABLED)
+                        .from_state
+                        .contains(PartStated::FILL)
+                } else {
+                    r.checkbox
+                        .checkmark(WidgetState::DISABLED)
+                        .from_state
+                        .contains(native_theme::next::IconStated::COLOR)
+                };
+                if !mark_ruled {
+                    assert_eq!(off.mark, half(enabled.mark), "{name} radio {radio}: mark");
+                    checked_cases += 1;
+                    differing += usize::from(enabled.mark.a > 0.);
+                }
+            }
+            if !r
+                .switch
+                .track(WidgetState::DISABLED)
+                .from_state
+                .contains(PartStated::FILL)
+            {
+                for checked in [false, true] {
+                    let (Ok(enabled), Ok(off)) = (
+                        SwitchLook::next_of(&r, checked, false),
+                        SwitchLook::next_of(&r, checked, true),
+                    ) else {
+                        continue;
+                    };
+                    assert_eq!(
+                        off.track,
+                        half_track(enabled.track),
+                        "{name} {checked}: track"
+                    );
+                    checked_cases += 1;
+                    differing += usize::from(enabled.track.a > 0.);
+                }
+            }
+            if !r
+                .tab
+                .label(WidgetState::HOVER)
+                .from_state
+                .contains(TextStated::COLOR)
+                && let Ok(tab) = TabLook::next_of(&r)
+            {
+                assert_eq!(tab.hover_text, tab.active_text, "{name}: hovered tab label");
+                checked_cases += 1;
+                differing += usize::from(tab.idle_text != tab.active_text);
+            }
+        }
+    }
+    assert!(
+        checked_cases > 0 && differing > 0,
+        "{checked_cases} cases, {differing} differing from rest"
+    );
+    Ok(())
+}
+
+/// A rule stated for the state is drawn in place of gpui-component's own
+/// treatment: a patched hovered tab label and disabled switch track.
+#[test]
+fn a_stated_state_is_drawn_over_gpui_components_own_treatment() -> crate::next::Mapped<()> {
+    use native_theme::next::{
+        Color, Paint, PartPatch, Preset, SwitchRule, TabRule, TextPatch, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let sentinel = Color::from_srgb8(0x12, 0x34, 0x56, 0xff);
+    let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    r.apply_patch(
+        &ThemePatch::new()
+            .tab(
+                TabRule::new()
+                    .states(WidgetState::HOVER)
+                    .label(TextPatch::new().color(sentinel)),
+            )
+            .switch(
+                SwitchRule::new()
+                    .states(WidgetState::DISABLED)
+                    .track(PartPatch::new().fill(Paint::Solid(sentinel))),
+            ),
+    );
+    let colour = crate::next::hsla(sentinel);
+    assert_eq!(TabLook::next_of(&r)?.hover_text, colour);
+    for checked in [false, true] {
+        assert_eq!(SwitchLook::next_of(&r, checked, true)?.track, colour);
+        assert_ne!(SwitchLook::next_of(&r, checked, false)?.track, colour);
     }
     Ok(())
 }

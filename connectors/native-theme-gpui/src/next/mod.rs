@@ -336,7 +336,7 @@ pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped
 
 /// A text style's colour where a rule states it for the queried state, as
 /// [`text_color`] reads it; `None` where none does.
-fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+pub(crate) fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
     state_option(
         state_text_color_of(text),
         text.from_state.contains(TextStated::COLOR),

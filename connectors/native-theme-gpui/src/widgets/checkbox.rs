@@ -359,8 +359,8 @@ impl CheckboxLook {
                         &label(WidgetState::NONE),
                         at("checkbox.label(NONE).color", "radio.label(NONE).color"),
                     )?,
-                    disabled_text: text_color(
-                        &label(WidgetState::DISABLED),
+                    disabled_text: disabled_label(
+                        (r, disabled, &label(WidgetState::DISABLED)),
                         at(
                             "checkbox.label(DISABLED).color",
                             "radio.label(DISABLED).color",
@@ -398,19 +398,19 @@ impl CheckboxLook {
                             .from_state
                             .contains(PartStated::FILL)
                         {
-                            Some(part_fill(
+                            part_fill(
                                 &dot(WidgetState::DISABLED | WidgetState::CHECKED),
                                 "radio.dot(DISABLED|CHECKED).fill",
-                            )?)
+                            )?
                         } else {
-                            None
+                            mark.opacity(DISABLED_INDICATOR_ALPHA)
                         }
                     } else {
-                        let mark = |state| r.checkbox.checkmark(state);
                         checked_disabled_mark(
-                            &mark(WidgetState::DISABLED),
-                            &mark(WidgetState::DISABLED | WidgetState::CHECKED),
+                            &r.checkbox.checkmark(WidgetState::DISABLED),
+                            &r.checkbox.checkmark(DISABLED_CHECKED),
                         )?
+                        .unwrap_or(mark.opacity(DISABLED_INDICATOR_ALPHA))
                     },
                     disabled_border: if indicator(WidgetState::DISABLED)
                         .from_state
@@ -464,15 +464,10 @@ impl CheckboxLook {
             (true, None) => enabled_border.opacity(DISABLED_INDICATOR_ALPHA),
             (false, _) => enabled_border,
         };
-        // Disabled, the mark where a rule states it for `DISABLED`; else, where
-        // the platform's disabled look is a fill of its own, the label's
-        // disabled colour, as 0.7.2 draws it; where it is the control's
-        // opacity alone, the mark itself.
-        let (mark, label) = match (disabled, c.disabled_fill, c.disabled_mark) {
-            (true, _, Some(mark)) => (mark, c.disabled_text),
-            (true, Some(_), None) => (c.disabled_text, c.disabled_text),
-            (true, None, None) => (c.mark, c.disabled_text),
-            (false, ..) => (c.mark, c.label),
+        let (mark, label) = if disabled {
+            (c.disabled_mark, c.disabled_text)
+        } else {
+            (c.mark, c.label)
         };
         let opacity = super::next_disabled_opacity(disabled, c.disabled_opacity);
         let hover_border = c.hover_border.filter(|_| !disabled);
@@ -572,8 +567,9 @@ struct CheckboxReads {
     radius: f32,
     mark_stroke: Option<f32>,
     label_gap: f32,
-    /// The mark disabled (checked), where a rule states it for `DISABLED`.
-    disabled_mark: Option<Hsla>,
+    /// The mark disabled (checked): where a rule states it for `DISABLED`,
+    /// that one, else gpui-component's own treatment of the enabled mark.
+    disabled_mark: Hsla,
 }
 
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
@@ -769,6 +765,36 @@ pub(super) fn checked_disabled_mark(
         ));
     }
     Ok(Some(crate::next::hsla(checked.color)))
+}
+
+/// A disabled, checked control's state.
+const DISABLED_CHECKED: native_theme::next::WidgetState =
+    native_theme::next::WidgetState::DISABLED.union(native_theme::next::WidgetState::CHECKED);
+
+/// A disabled check box's or radio's label, `label` the label at `DISABLED`
+/// of the theme `r`, its home `home`: where a rule states its colour for
+/// `DISABLED`, that one; else gpui-component's own disabled label,
+/// `muted_foreground` (gpui-component 0.10.0 checkbox.rs:292, :391-393;
+/// radio.rs:268-270), which the connector colours from
+/// `colors.window.foreground_muted` (spec §10, rule 0). An enabled control
+/// (`disabled` false) does not draw it, and gets the label as queried.
+fn disabled_label(
+    (r, disabled, label): (
+        &native_theme::next::ResolvedTheme,
+        bool,
+        &native_theme::next::TextStyle,
+    ),
+    home: &'static str,
+) -> Mapped<Hsla> {
+    use native_theme::next::TextStated;
+    if label.from_state.contains(TextStated::COLOR) || !disabled {
+        return crate::next::text_color(label, home);
+    }
+    crate::next::stated(
+        r.colors.window.foreground_muted,
+        "colors.window.foreground_muted",
+    )
+    .map(crate::next::hsla)
 }
 
 fn stroked_check(

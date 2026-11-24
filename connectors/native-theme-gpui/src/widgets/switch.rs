@@ -181,9 +181,9 @@ impl SwitchLook {
     /// The look of a switch of a 0.8.0 theme, `checked` or not, `disabled` or
     /// not, each field read at its home: the track and the thumb at the
     /// switch's state (`switch.track` and `switch.thumb` at `CHECKED` where
-    /// checked and `DISABLED` where disabled, where a theme without a rule
-    /// for a disabled state gives the enabled part, the disabled colour's
-    /// `None`), the hovered track's fill where a rule states it, the track's
+    /// checked and `DISABLED` where disabled; a track with no fill ruled for
+    /// `DISABLED` is gpui-component's own disabled one, [`DISABLED_TRACK_ALPHA`]
+    /// of the enabled), the hovered track's fill where a rule states it, the track's
     /// and the thumb's strokes (the colour at the state, the width at rest; no
     /// stroke is no outline), the track's minimum size and corners, the
     /// thumb's minimum width at the checked state, the label's colour
@@ -257,8 +257,8 @@ impl SwitchLook {
             Self::from_reads(
                 &SwitchReads {
                     base,
-                    track: fill(
-                        &s.track(state),
+                    track: track_at(
+                        (s, state, base),
                         at([
                             "switch.track(NONE).fill",
                             "switch.track(CHECKED).fill",
@@ -496,6 +496,35 @@ fn next_label(
         }
     };
     Ok((colour, home))
+}
+
+/// The alpha gpui-component draws a disabled switch's track at, the enabled
+/// track's, checked or not (gpui-component 0.10.0 switch.rs:192, :285): what
+/// a 0.8.0 theme's disabled track is where no rule states its fill for
+/// `DISABLED` (spec §10, rule 0).
+pub(super) const DISABLED_TRACK_ALPHA: f32 = 0.5;
+
+/// The track's fill of the switch `s` at `state`, its home `home`, `base` the
+/// enabled track at the switch's checked state: disabled, where no rule
+/// states the track's fill for `DISABLED`, gpui-component's own disabled
+/// track, `base` at [`DISABLED_TRACK_ALPHA`]; else the fill at `state`.
+fn track_at(
+    (s, state, base): (
+        &native_theme::next::SwitchWidget,
+        native_theme::next::WidgetState,
+        Hsla,
+    ),
+    home: &'static str,
+) -> Mapped<Hsla> {
+    use native_theme::next::{PartStated, WidgetState};
+    let ruled = s
+        .track(WidgetState::DISABLED)
+        .from_state
+        .contains(PartStated::FILL);
+    if state.contains(WidgetState::DISABLED) && !ruled {
+        return Ok(base.opacity(DISABLED_TRACK_ALPHA));
+    }
+    fill(&s.track(state), home)
 }
 
 impl SwitchLook {

@@ -257,7 +257,7 @@ impl TabLook {
     /// the bar's `tab.bar(NONE)` fill; an unselected tab's `tab.tab(NONE)`
     /// fill, minimum size and padding and its `tab.label(NONE)` colour; a
     /// hovered one's fill where a rule states it for `HOVER`, and its label's
-    /// colour; the selected tab's `tab.tab(SELECTED)` fill, its stroke where
+    /// colour (the selected tab's where unruled); the selected tab's `tab.tab(SELECTED)` fill, its stroke where
     /// stated (no outline where not), its corners where stated (gpui-component's
     /// square ones where not) and its label's colour; the selected tab's
     /// indicator, `tab.indicator(SELECTED)`, its fill where stated and its
@@ -283,7 +283,7 @@ impl TabLook {
                 idle: fill(&tab, "tab.tab(NONE).fill")?,
                 idle_text: text_color(&t.label(WidgetState::NONE), "tab.label(NONE).color")?,
                 hover: state_fill(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")?,
-                hover_text: text_color(&t.label(WidgetState::HOVER), "tab.label(HOVER).color")?,
+                hover_text: hover_label(t, "tab.label(HOVER).color")?,
                 active: fill(&selected, "tab.tab(SELECTED).fill")?,
                 active_text: text_color(
                     &t.label(WidgetState::SELECTED),
@@ -404,6 +404,19 @@ fn selected_outline(part: &native_theme::next::PartStyle) -> Mapped<(Hsla, f32)>
             *width,
         )),
         _ => Err(Unmapped("tab.tab(SELECTED).stroke")),
+    }
+}
+
+/// A hovered tab's label colour of the tab bar `t`, its home `home`: where a
+/// rule states it for `HOVER`, that one; else gpui-component's own hovered
+/// label, `tab_active_foreground` (gpui-component 0.10.0 tab/tab.rs:219-222,
+/// `TabVariant::hovered`), which the connector colours from the selected
+/// tab's label, `tab.label(SELECTED).color` (spec §10, rule 0).
+fn hover_label(t: &native_theme::next::TabWidget, home: &'static str) -> Mapped<Hsla> {
+    use native_theme::next::WidgetState;
+    match crate::next::state_text_color(&t.label(WidgetState::HOVER), home)? {
+        Some(hover) => Ok(hover),
+        None => text_color(&t.label(WidgetState::SELECTED), "tab.label(SELECTED).color"),
     }
 }
 
