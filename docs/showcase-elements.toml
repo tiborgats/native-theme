@@ -131,11 +131,14 @@
 #
 # On the 0.8.0 model a row is an entry of `homes`, `<home> <value>`, the home evaluated by a typed
 # query on `native_theme::next::ResolvedTheme`. A row shows: the value where stated; "not stated"
-# where the `stated` bit is clear or the global is `null`, and where the query has a state and the
-# property's `from_state` bit is clear (docs/v0.8.0-spec.md §2); the stated form's text where the
-# property is stated in a shape the path does not address (`stroke` "none", a per-side stroke),
-# never "not stated" there; an error for an unknown name. Units from the property's kind (a small
-# table for globals and metrics).
+# where the `stated` bit is clear or the global is `null` (the theme does not state it at all);
+# where the query has a state and the property is stated but its `from_state` bit is clear (the
+# value comes from the part's base or a rule requiring no state, not a rule for that state,
+# docs/v0.8.0-spec.md §2), the query's value marked as stated at rest, `<value> (stated at rest)`
+# (a statement about the theme; what a toolkit draws there is the route line's business);
+# the stated form's text where the property is stated in a shape the path does not address
+# (`stroke` "none", a per-side stroke), never "not stated" there; an error for an unknown name.
+# Units from the property's kind (a small table for globals and metrics).
 #
 # ---------------------------------------------------------------------------------------------
 # How a showcase reads the list

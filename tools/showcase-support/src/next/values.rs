@@ -16,11 +16,16 @@
 //! `WindowState::default()`; a text part or a global text style named whole
 //! (`button.label(NONE)`, `typography.body`) is the whole text style. Where
 //! the query has a state, the style is masked first: a property that no rule
-//! requiring a state wrote (its `from_state` bit clear) is not stated
-//! (spec §2), the sizes by their `MIN_SIZE` and `MAX_SIZE` bits and a text's
-//! `defined_size` with its `SIZE_PX`. The style is then serialised as the
-//! form serialises a part and walked as the rest is; an item of a list is
-//! read by its index (`min_size[0]`).
+//! requiring a state wrote (its `from_state` bit clear) is not stated for that
+//! state (spec §2), the sizes by their `MIN_SIZE` and `MAX_SIZE` bits and a
+//! text's `defined_size` with its `SIZE_PX`. Such a property that the
+//! query's style states (on the part's base or by a rule requiring no state)
+//! is its value there marked [`STATED_AT_REST`], `<value> (stated at rest)`:
+//! a statement about the theme, which states it and nothing for that state;
+//! what a toolkit draws there is the route line's. A text style named whole
+//! is shown masked. The style is serialised as the form serialises a part
+//! and walked as the rest is; an item of a list is read by its index
+//! (`min_size[0]`).
 //!
 //! The text is the one the three showcases agreed (the list's header, "The
 //! Widget Info format"): a colour as `native_theme::next::Color` prints it; a
@@ -31,8 +36,10 @@
 //! not normal, each part the theme leaves unstated as [`NOT_STATED`]; a
 //! boolean, a name or an enum as it prints. [`NOT_STATED`] where the theme
 //! states nothing: a property whose `stated` bit is clear, a size that is
-//! `None`, a global that is `null`, a part that states nothing. A property
-//! stated in a shape the home's path does not address (a stroke of `none` or
+//! `None`, a global that is `null`, a part that states nothing; a value
+//! stated only at rest under a query with a state is marked
+//! [`STATED_AT_REST`] (above), never [`NOT_STATED`]. A property stated in a
+//! shape the home's path does not address (a stroke of `none` or
 //! one per side, read at `stroke.color`) is that stated form's text, never
 //! [`NOT_STATED`]. A home of no known name is an error. A text style's family,
 //! of a whole text style or a `*.family` home, is the label the showcase's
@@ -48,6 +55,10 @@ use native_theme::next::{
 };
 
 use crate::values::{LeafValue, NOT_STATED, number};
+
+/// The marker after a value that a query with a state shows as the part
+/// states it at rest (module doc): `<value> (stated at rest)`.
+pub const STATED_AT_REST: &str = "(stated at rest)";
 
 /// A text style's font as the serialised form states it, which the family
 /// lookup is handed: the family, and the weight and the slant where the
@@ -91,12 +102,29 @@ pub fn home_value(
         dotted => Some(dotted.strip_prefix('.').ok_or_else(unknown)?),
     };
     let (widget, part) = head.split_once('.').ok_or_else(unknown)?;
-    let style = if widget == "window" {
-        window_style(theme, part, query)?
+    let path = format!("{head}({query})");
+    let (style, state) = if widget == "window" {
+        (window_style(theme, part, query)?, WidgetState::NONE)
     } else {
         ruled_style(theme, widget, part, query)?.ok_or_else(unknown)?
     };
-    style_value(&format!("{head}({query})"), &style, property, family).ok_or_else(unknown)?
+    if state == WidgetState::NONE {
+        return style_value(&path, &style, property, family).ok_or_else(unknown)?;
+    }
+    let masked = style.clone().masked_to_its_states();
+    let value = style_value(&path, &masked, property, family).ok_or_else(unknown)??;
+    if property.is_none() || value.text != NOT_STATED {
+        return Ok(value);
+    }
+    let rest = style_value(&path, &style, property, family).ok_or_else(unknown)??;
+    Ok(if rest.text == NOT_STATED {
+        value
+    } else {
+        LeafValue {
+            text: format!("{} {STATED_AT_REST}", rest.text),
+            colour: rest.colour,
+        }
+    })
 }
 
 /// A part's style as a query or a getter returns it, by the part's kind.
@@ -238,15 +266,16 @@ fn window_style(theme: &ResolvedTheme, getter: &str, query: &str) -> Result<Styl
 }
 
 /// The style of `widget`'s ruled part `part` for `query` (the list's header,
-/// `<widget>.<part>(<query>)`), masked where the query has a state (module
-/// doc); `None` where the widget has no such ruled part, an error where the
-/// query does not parse or has an axis the widget's query lacks.
+/// `<widget>.<part>(<query>)`) as the query returns it, unmasked, and the
+/// query's state, by which [`home_value`] masks it (module doc); `None` where
+/// the widget has no such ruled part, an error where the query does not
+/// parse or has an axis the widget's query lacks.
 pub fn ruled_style(
     theme: &ResolvedTheme,
     widget: &str,
     part: &str,
     query: &str,
-) -> Result<Option<Styled>, String> {
+) -> Result<Option<(Styled, WidgetState)>, String> {
     let q = Query::parse(query)?;
     let style = match (widget, part) {
         ("button", "body") => Styled::Part(theme.button.body(q.button()?)),
@@ -331,11 +360,7 @@ pub fn ruled_style(
         ("expander", "arrow") => Styled::Icon(theme.expander.arrow(q.style()?)),
         _ => return Ok(None),
     };
-    Ok(Some(if q.state == WidgetState::NONE {
-        style
-    } else {
-        style.masked_to_its_states()
-    }))
+    Ok(Some((style, q.state)))
 }
 
 /// `property` of `style`, the part at `path` (`button.label(NONE)`), or the
@@ -1084,31 +1109,89 @@ mod tests {
     }
 
     /// Under a query with a state, a property no rule requiring a state
-    /// wrote is not stated, a size included; one such a rule wrote reads
-    /// as the query returns it. At the rest state nothing is masked.
+    /// wrote is its value at rest, marked as stated at rest, a size
+    /// included; one such a rule wrote reads as the query returns it; a text
+    /// style named whole is masked. At the rest state nothing is masked or
+    /// marked.
     #[test]
     fn a_state_shows_only_what_its_rules_wrote() -> Result {
         let (r, json) = kde_breeze_light()?;
         let value = |home: &str| text(&r, &json, home);
+        let at_rest =
+            |home: &str| -> Result<String> { Ok(format!("{} {STATED_AT_REST}", value(home)?)) };
         let hover = r.button.body(WidgetState::HOVER);
         assert!(hover.from_state.contains(PartStated::FILL));
         assert!(!hover.from_state.contains(PartStated::CORNERS));
+        assert!(!hover.from_state.contains(PartStated::MIN_SIZE));
         let Paint::Solid(fill) = hover.fill else {
             return Err("kde-breeze's hovered button has no solid fill".into());
         };
         assert_eq!(value("button.body(HOVER).fill")?, fill.to_string());
-        assert_eq!(value("button.body(HOVER).corners")?, NOT_STATED);
-        assert_eq!(value("button.body(HOVER).min_size[0]")?, NOT_STATED);
         assert_ne!(value("button.body(NONE).corners")?, NOT_STATED);
+        assert!(!value("button.body(NONE).corners")?.contains(STATED_AT_REST));
+        assert_eq!(
+            value("button.body(HOVER).corners")?,
+            at_rest("button.body(NONE).corners")?
+        );
+        assert_ne!(value("button.body(NONE).min_size[0]")?, NOT_STATED);
+        assert_eq!(
+            value("button.body(HOVER).min_size[0]")?,
+            at_rest("button.body(NONE).min_size[0]")?
+        );
         let label = r.button.label(WidgetState::HOVER);
         assert!(label.from_state.contains(TextStated::COLOR));
         assert!(!label.from_state.contains(TextStated::SIZE_PX));
         assert_eq!(value("button.label(HOVER).color")?, label.color.to_string());
-        assert_eq!(value("button.label(HOVER).size_px")?, NOT_STATED);
+        assert_eq!(
+            value("button.label(HOVER).size_px")?,
+            at_rest("button.label(NONE).size_px")?
+        );
         assert_eq!(
             value("button.label(HOVER)")?,
             format!("{NOT_STATED} {NOT_STATED} {NOT_STATED}")
         );
+        Ok(())
+    }
+
+    /// On a theme patched to state a button body's opacity on its base and
+    /// again by a rule for the hovered state: queried pressed (no rule for
+    /// that state writes it), the opacity is the base's, marked as stated at
+    /// rest; queried hovered, the rule's, unmarked; at rest, the base's,
+    /// unmarked. A property the theme does not state stays not stated under
+    /// a state.
+    #[test]
+    fn a_value_stated_only_at_rest_is_marked() -> Result {
+        use native_theme::next::{ButtonRule, PartPatch, ThemePatch};
+
+        let mut r = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        r.apply_patch(
+            &ThemePatch::new()
+                .button(ButtonRule::new().body(PartPatch::new().opacity(0.25)))
+                .button(
+                    ButtonRule::new()
+                        .states(WidgetState::HOVER)
+                        .body(PartPatch::new().opacity(0.75)),
+                ),
+        );
+        let json = theme_json(&r)?;
+        let value = |home: &str| text(&r, &json, home);
+        let pressed = r.button.body(WidgetState::PRESSED);
+        assert!(pressed.stated.contains(PartStated::OPACITY));
+        assert!(!pressed.from_state.contains(PartStated::OPACITY));
+        assert!(
+            r.button
+                .body(WidgetState::HOVER)
+                .from_state
+                .contains(PartStated::OPACITY)
+        );
+        assert_eq!(
+            value("button.body(PRESSED).opacity")?,
+            format!("0.25 {STATED_AT_REST}")
+        );
+        assert_eq!(value("button.body(HOVER).opacity")?, "0.75");
+        assert_eq!(value("button.body(NONE).opacity")?, "0.25");
+        assert!(!pressed.stated.contains(PartStated::TRANSFORM));
+        assert_eq!(value("button.body(PRESSED).transform")?, NOT_STATED);
         Ok(())
     }
 

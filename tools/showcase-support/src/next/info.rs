@@ -58,7 +58,7 @@ mod tests {
 
     use native_theme::next::{Preset, Theme, ThemeContext};
 
-    use crate::next::values::theme_json;
+    use crate::next::values::{STATED_AT_REST, theme_json};
     use crate::values::NOT_STATED;
 
     type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -380,9 +380,11 @@ mod tests {
 
     /// On the seven presets, light and dark, each plain row's 0.8.0 text
     /// (its home's) equals the 0.7.2 text (its leaf's, under the same
-    /// preset and scheme); a home the 0.8.0 model leaves unstated or states
-    /// as none where 0.7.2 shows a value is reported, not failed. Each
-    /// (preset, scheme, home, leaf) is counted once.
+    /// preset and scheme), a row marked as stated at rest where its text
+    /// without the marker does; a home the 0.8.0 model leaves unstated or
+    /// states as none where 0.7.2 shows a value, and a marked row where
+    /// 0.7.2 shows "not stated" (a change of form), are reported, not
+    /// failed. Each (preset, scheme, home, leaf) is counted once.
     #[test]
     fn plain_rows_read_as_in_0_7_2() -> Result {
         use native_theme::ResolutionContext;
@@ -396,6 +398,8 @@ mod tests {
         let (mut equal, mut not_plain) = (0_usize, 0_usize);
         let mut differ = Vec::new();
         let mut unstated = Vec::new();
+        let mut marked = 0_usize;
+        let mut new_form = Vec::new();
         for (name, preset, font_dpi) in PRESETS {
             for (mode, context) in [
                 (ColorMode::Light, ThemeContext::light()),
@@ -449,12 +453,19 @@ mod tests {
                             )
                             .text;
                             let line = format!("{name} {mode:?} {home} `{new}` / {leaf} `{was}`");
-                            if new == was {
-                                equal += 1;
-                            } else if new.contains(NOT_STATED) || new == "none" {
-                                unstated.push(line);
-                            } else {
-                                differ.push(line);
+                            let unmarked = new.strip_suffix(&format!(" {STATED_AT_REST}"));
+                            if unmarked.is_some() {
+                                marked += 1;
+                            }
+                            match unmarked {
+                                Some(text) if text == was => equal += 1,
+                                Some(_) if was == NOT_STATED => new_form.push(line),
+                                Some(_) => differ.push(line),
+                                None if new == was => equal += 1,
+                                None if new.contains(NOT_STATED) || new == "none" => {
+                                    unstated.push(line);
+                                }
+                                None => differ.push(line),
                             }
                         }
                     }
@@ -462,10 +473,14 @@ mod tests {
             }
         }
         println!(
-            "plain rows equal: {equal}; differ: {}; new \"not stated\" or \"none\": {}; not plain: {not_plain}",
+            "plain rows equal: {equal}; differ: {}; marked stated at rest: {marked}; stated at rest where 0.7.2 not stated: {}; new \"not stated\" or \"none\": {}; not plain: {not_plain}",
             differ.len(),
+            new_form.len(),
             unstated.len()
         );
+        for line in &new_form {
+            println!("stated at rest, 0.7.2 not stated: {line}");
+        }
         for line in &unstated {
             println!("new not stated: {line}");
         }
