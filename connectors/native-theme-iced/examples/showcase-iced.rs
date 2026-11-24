@@ -10817,6 +10817,26 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         // ---- switch ----
+        ("switch", "track_width_px") if under("basic.switches.") => {
+            "next_switch: iced_next::switch's track, switch.track(NONE).min_size[0] wide; iced's \
+             own toggler where the theme lacks a size it needs"
+                .into()
+        }
+        ("switch", "track_height_px") if under("basic.switches.") => {
+            "next_switch: iced_next::switch's track, switch.track(NONE).min_size[1] tall; iced's \
+             own toggler where the theme lacks a size it needs"
+                .into()
+        }
+        ("switch", "thumb_diameter_px") if under("basic.switches.") => {
+            "next_switch: the thumb on, switch.thumb(CHECKED).min_size[0], inset by half the \
+             height difference; flush with the ends where it overhangs the track"
+                .into()
+        }
+        ("switch", "unchecked_thumb_diameter_px") if under("basic.switches.") => {
+            "next_switch: the thumb off, switch.thumb(NONE).min_size[0], inset by half the height \
+             difference"
+                .into()
+        }
         ("switch", "track_width_px" | "track_height_px") => {
             "native_theme_iced::switch: the track's width and height".into()
         }
@@ -11227,6 +11247,23 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "padding_inside_border: the button's padding, the side plus the line width".into()
         }
         // ---- slider, progress bar, spinner ----
+        ("slider", "track_height_px") if under("basic.slider.") => {
+            "styles::slider: the rail's width; next_slider_sizes: the rail the parts lay out, \
+             slider.track(NONE; orientation=Horizontal).min_size[1], iced's own 4 \
+             (ICED_SLIDER_RAIL) where unstated"
+                .into()
+        }
+        ("slider", "thumb_diameter_px") if under("basic.slider.") => {
+            "styles::slider: a circle handle of half of it; next_slider_sizes: Slider::height and \
+             the thumb the parts lay out, slider.thumb(NONE).min_size[0], iced's own 14 \
+             (ICED_SLIDER_HANDLE) where unstated"
+                .into()
+        }
+        ("progress_bar", "track_height_px") if under("basic.progress_bar.") => {
+            "next_progress_girth: ProgressBar::girth, progress_bar.track(NONE).min_size[1], iced's \
+             own (ProgressBar::DEFAULT_GIRTH) where unstated"
+                .into()
+        }
         ("slider", "track_height_px") => "styles::slider: the rail's width".into(),
         ("slider", "thumb_border_line_width_px")
             if resolved.slider.thumb_border_line_width.is_none() =>
@@ -11585,8 +11622,18 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              line height (next_line_box); basic_table: the row grown to hold it"
                 .into()
         }
+        ("defaults", "line_height") if under("basic.switches.") => {
+            "next_body: the label's line box, typography.body's size by \
+             typography.line_height_multiplier where it states no line height (next_line_box)"
+                .into()
+        }
         ("defaults", "line_height") => {
             "the text's LineHeight::Relative (native_theme_iced::line_height)".into()
+        }
+        ("defaults", "font") if under("basic.switches.") => {
+            "next_body: the label's size and font, typography.body; switch.label_gap past the \
+             switch, iced's own toggler gap (TOGGLER_LABEL_GAP) where unstated"
+                .into()
         }
         ("defaults", "font") => "the text's size and theme_font".into(),
         ("defaults", "font.family") => "theme_font: the role's family".into(),
@@ -14116,12 +14163,11 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
     );
 
     // The slider's rail and handle as iced draws them (iced_widget 0.14.2
-    // `src/slider.rs:446-515`): the rail `slider.track_height` tall across
-    // the width, centred; the handle a circle `slider.thumb_diameter` across
-    // at the value's offset; the filled rail from the start to the handle's
+    // `src/slider.rs:446-515`): the rail [`next_slider_sizes`]' tall across
+    // the width, centred; the handle a circle its diameter across at the
+    // value's offset; the filled rail from the start to the handle's
     // centre.
-    let sl = &resolved.slider;
-    let (rail, handle) = (sl.track_height, sl.thumb_diameter);
+    let (rail, handle) = next_slider_sizes(next);
     let slider_value = state.basic_slider / 100.0;
     let rail_rect = move |b: iced::Rectangle| {
         iced::Rectangle::new(
@@ -14170,7 +14216,7 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
             "basic.progress_bar.bar",
             progress_bar(0.0..=100.0, BASIC_PROGRESS)
                 .length(Length::Fixed(BASIC_WIDTH))
-                .girth(Length::Fixed(resolved.progress_bar.track_height))
+                .girth(Length::Fixed(next_progress_girth(next)))
                 .style(styles::progress_bar(resolved)),
         )
         .part("basic.progress_bar.bar.fill", |l| {
@@ -14183,55 +14229,40 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         .into(),
     );
 
-    // The connector's switch, whose track takes `switch.track_width`: iced's
-    // toggler draws every track twice its height. The model states no font
-    // and no label gap for a switch: the label is body text, at the gap
-    // iced's toggler leaves. A disabled switch's label is the disabled text
+    // The connector's switch on the installed 0.8.0 theme ([`next_switch`]),
+    // whose track takes `switch.track(NONE).min_size[0]`: iced's toggler
+    // draws every track twice its height. The label is body text,
+    // `typography.body`, `switch.label_gap` past the switch, the gap iced's
+    // toggler leaves where unstated. A disabled switch's label is the disabled text
     // colour, faded with the switch by `switch.disabled_opacity`, as the gpui
     // and egui switches draw it (docs/platform-facts.md §2.1.6).
     let disabled_label = disabled_switch_label(resolved);
-    // The thumb inside the track as `native_theme_iced::switch` seats it:
-    // `switch.thumb_diameter` across on, `unchecked_thumb_diameter` off where
-    // the theme states one, inset by half the difference of the two heights,
-    // at the track's right end while on; a thumb taller than the track
-    // overhangs it, flush with its ends, and the switch is the thumb's height.
-    let sw = &resolved.switch;
-    let seat = move |on: bool| {
-        let thumb = if on {
-            sw.thumb_diameter
-        } else {
-            sw.unchecked_thumb_diameter.unwrap_or(sw.thumb_diameter)
-        };
-        (thumb, ((sw.track_height - thumb) / 2.0).max(0.0))
-    };
+    let switch_gap = next.switch.label_gap.unwrap_or(TOGGLER_LABEL_GAP);
     let switch = |id: &'static str,
                   probe_id: &'static str,
                   on: bool,
                   label: &'a str,
                   enabled: bool|
      -> Element<'a, Message> {
-        let label = text(label).body(resolved, a11y);
+        let label = text(label).next_body(next);
         let parts = |name: &str| listed_part(id, name);
+        let (drawn, seat) = next_switch(next, on, enabled.then_some(Message::BasicHeld));
         let mut control = tagged(
             id,
             row![
-                probe(
-                    probe_id,
-                    Length::Shrink,
-                    native_theme_iced::switch(resolved, on, enabled.then_some(Message::BasicHeld)),
-                ),
+                probe(probe_id, Length::Shrink, drawn),
                 if enabled {
                     label
                 } else {
                     label.color(disabled_label)
                 },
             ]
-            .spacing(TOGGLER_LABEL_GAP)
+            .spacing(switch_gap)
             .align_y(iced::Alignment::Center),
         );
-        if let Some(track) = parts("track") {
+        if let Some((track, seat)) = parts("track").zip(seat) {
             // The track, centred in the switch on its axis.
-            let height = sw.track_height;
+            let height = seat.track_height;
             control = control.part(track, move |layout| {
                 node_at(layout, &[0]).map(|switch| {
                     let b = switch.bounds();
@@ -14245,8 +14276,8 @@ fn view_basic<'a>(state: &'a State) -> Element<'a, Message> {
         if let Some(label) = parts("label") {
             control = control.node(label, &[1]);
         }
-        if let Some(thumb_id) = parts("thumb") {
-            let (thumb, thumb_inset) = seat(on);
+        if let Some((thumb_id, seat)) = parts("thumb").zip(seat) {
+            let (thumb, thumb_inset) = seat.thumb(on);
             control = control.part(thumb_id, move |layout| {
                 node_at(layout, &[0]).map(|switch| {
                     let t = switch.bounds();
@@ -15260,6 +15291,99 @@ fn next_radio<'a>(
         Ok(dressed) => (dressed, true),
         Err(_) => (build().into(), false),
     }
+}
+
+/// Where a Basic switch's track and thumb lie, as
+/// `native_theme_iced::next::switch` seats them: the track
+/// `switch.track(NONE).min_size[1]` tall, the thumb
+/// `switch.thumb(CHECKED).min_size[0]` across on and
+/// `switch.thumb(NONE).min_size[0]` off.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct SwitchSeat {
+    track_height: f32,
+    thumb_on: f32,
+    thumb_off: f32,
+}
+
+impl SwitchSeat {
+    /// The thumb's diameter, on or off, and its inset: half the difference
+    /// of the track's and the thumb's heights, at the track's right end
+    /// while on; a thumb taller than the track overhangs it, flush with its
+    /// ends, and the switch is the thumb's height.
+    fn thumb(self, on: bool) -> (f32, f32) {
+        let thumb = if on { self.thumb_on } else { self.thumb_off };
+        (thumb, ((self.track_height - thumb) / 2.0).max(0.0))
+    }
+}
+
+/// The seat of a switch on the installed 0.8.0 theme ([`SwitchSeat`]);
+/// `None` where a size it needs is unstated.
+fn next_switch_seat(r: &native_theme::next::ResolvedTheme) -> Option<SwitchSeat> {
+    let s = &r.switch;
+    let [_, track_height] = s.track(WidgetState::NONE).min_size;
+    let [thumb_on, _] = s.thumb(WidgetState::CHECKED).min_size;
+    let [thumb_off, _] = s.thumb(WidgetState::NONE).min_size;
+    Some(SwitchSeat {
+        track_height: track_height?,
+        thumb_on: thumb_on?,
+        thumb_off: thumb_off?,
+    })
+}
+
+/// A Basic switch, `on`, sending `on_toggle` when pressed: dressed by
+/// `native_theme_iced::next::switch` on `r`, the installed 0.8.0 theme, at
+/// the platform's size, with its seat ([`next_switch_seat`]); where the
+/// theme lacks a value the connector needs, iced's own toggler at its own
+/// size, in `iced_next::styles::toggler`'s colours where the theme gives
+/// them, and no seat (spec §10, rule 0).
+fn next_switch<'a>(
+    r: &native_theme::next::ResolvedTheme,
+    on: bool,
+    on_toggle: Option<Message>,
+) -> (Element<'a, Message>, Option<SwitchSeat>) {
+    match iced_next::switch(r, on, on_toggle.clone()) {
+        Ok(dressed) => (dressed, next_switch_seat(r)),
+        Err(_) => (
+            toggler(on)
+                .on_toggle_maybe(on_toggle.map(|message| move |_: bool| message.clone()))
+                .next_style(iced_next::styles::toggler(r), |toggler, style| {
+                    toggler.style(style)
+                })
+                .into(),
+            None,
+        ),
+    }
+}
+
+/// The Basic slider's rail height and handle diameter on the installed
+/// 0.8.0 theme, `slider.track(NONE; orientation=Horizontal).min_size[1]`
+/// and `slider.thumb(NONE).min_size[0]`; iced's own where unstated
+/// ([`ICED_SLIDER_RAIL`], [`ICED_SLIDER_HANDLE`]).
+fn next_slider_sizes(r: &native_theme::next::ResolvedTheme) -> (f32, f32) {
+    let s = &r.slider;
+    let horizontal = StyleQuery::new(WidgetState::NONE).orientation(Orientation::Horizontal);
+    let [_, rail] = s.track(horizontal).min_size;
+    let [handle, _] = s.thumb(WidgetState::NONE).min_size;
+    (
+        rail.unwrap_or(ICED_SLIDER_RAIL),
+        handle.unwrap_or(ICED_SLIDER_HANDLE),
+    )
+}
+
+/// iced's own slider rail, 4 tall (iced_widget 0.14.2 `src/slider.rs`,
+/// `default`: `rail.width`).
+const ICED_SLIDER_RAIL: f32 = 4.0;
+
+/// iced's own slider handle, a circle of radius 7, 14 across (iced_widget
+/// 0.14.2 `src/slider.rs`, `default`: `HandleShape::Circle { radius: 7.0 }`).
+const ICED_SLIDER_HANDLE: f32 = 14.0;
+
+/// The Basic progress bar's girth on the installed 0.8.0 theme,
+/// `progress_bar.track(NONE).min_size[1]`; iced's own,
+/// `ProgressBar::DEFAULT_GIRTH`, where unstated.
+fn next_progress_girth(r: &native_theme::next::ResolvedTheme) -> f32 {
+    r.progress_bar.track(WidgetState::NONE).min_size[1]
+        .unwrap_or(iced::widget::ProgressBar::<'static, Theme>::DEFAULT_GIRTH)
 }
 
 /// The check mark's line on the installed 0.8.0 theme,
@@ -20267,13 +20391,6 @@ trait Typeset {
     fn next_text(self, style: &TextStyle, typography: &Typography) -> Self;
     /// `body` on the 0.8.0 model: [`next_text`](Typeset::next_text) in
     /// `typography.body`.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups call it as they move to the 0.8.0 model"
-        )
-    )]
     fn next_body(self, r: &native_theme::next::ResolvedTheme) -> Self;
 }
 
@@ -29159,6 +29276,95 @@ mod tests {
         }
     }
 
+    /// The Basic page's slider, progress bar and switches follow the
+    /// installed 0.8.0 theme alone: kde-breeze with a patch that states, on
+    /// the 0.8.0 theme only, a 9 px rail and a 22 px thumb for the slider, a
+    /// 13 px track for the progress bar, a 50 × 26 px track, a 20 px thumb
+    /// and a 15 px label gap for the switch, and a 20 px body text spliced
+    /// in, lays them out at those sizes: the slider as tall as its thumb,
+    /// its parts the rail and the thumb; the bar 13 tall; the switch its
+    /// track, the thumb inset by 3, the label 15 past the switch and the
+    /// body's line box tall.
+    #[test]
+    fn the_basic_range_and_switches_take_the_0_8_0_geometry() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.slider.rules]]\ntrack.min_size = [\"none\", 9.0]\n\
+             thumb.min_size = [22.0, 22.0]\n\
+             [[widgets.progress_bar.rules]]\ntrack.min_size = [\"none\", 13.0]\n\
+             [widgets.switch]\nlabel_gap = 15.0\n\
+             [[widgets.switch.rules]]\ntrack.min_size = [50.0, 26.0]\n\
+             thumb.min_size = [20.0, 20.0]\n",
+        )
+        .map_err(|error| format!("the patch: {error:?}"))?;
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            active_tab: Tab::Basic,
+            ..State::default()
+        };
+        if !state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light,
+        ) {
+            return Err("kde-breeze does not install".into());
+        }
+        let old_typography = state.next_shown().typography.clone();
+        splice_next(&mut state, |r| {
+            r.apply_patch(&patch);
+            r.typography.body.size_px = 20.0;
+            r.typography.body.line_height = 26.0;
+        });
+        let r = state.next_shown().clone();
+        let old = &state.current_resolved;
+        if [old.slider.track_height, old.slider.thumb_diameter] == [9.0, 22.0]
+            || old.progress_bar.track_height == 13.0
+            || [old.switch.track_width, old.switch.track_height] == [50.0, 26.0]
+        {
+            return Err("the patch states 0.7.2's sizes".into());
+        }
+        let line = next_line_box(&r.typography, &r.typography.body);
+        if line == next_line_box(&old_typography, &old_typography.body) {
+            return Err("the body's line box is unpatched".into());
+        }
+        let (switch, laid) = recording(|| {
+            let mut ui = interface(&state);
+            let switch = probe_bounds(&mut ui, probes::BASIC_SWITCH_ON);
+            let _ = texts(&mut ui);
+            (switch, surveyed_layout())
+        });
+        let mut faults = Vec::new();
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let height = |b: &Rectangle| b.height;
+        let width = |b: &Rectangle| b.width;
+        let inset = |b: &Rectangle| switch.x + switch.width - b.x - b.width;
+        let gap = |b: &Rectangle| b.x - switch.x - switch.width;
+        type Measure<'m> = &'m dyn Fn(&Rectangle) -> f32;
+        let checks: [(&str, &str, Measure<'_>, f32); 9] = [
+            ("basic.slider.control", "height", &height, 22.0),
+            ("basic.slider.control.track", "height", &height, 9.0),
+            ("basic.slider.control.thumb", "width", &width, 22.0),
+            ("basic.progress_bar.bar", "height", &height, 13.0),
+            ("basic.switches.on.track", "height", &height, 26.0),
+            ("basic.switches.on.thumb", "width", &width, 20.0),
+            ("basic.switches.on.thumb", "inset", &inset, 3.0),
+            ("basic.switches.on.label", "gap", &gap, 15.0),
+            ("basic.switches.on.label", "height", &height, line),
+        ];
+        for (id, what, got, want) in checks {
+            match laid.get(id) {
+                Some(bounds) if near(got(bounds), want) => {}
+                bounds => faults.push(format!("{id}'s {what}: {bounds:?}, not {want}")),
+            }
+        }
+        if !near(switch.width, 50.0) || !near(switch.height, 26.0) {
+            faults.push(format!("the switch is {switch:?}, not 50 x 26"));
+        }
+        if faults.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{faults:?}"))
+        }
+    }
+
     /// Every text the Basic page lays out, with its bounds.
     fn texts(ui: &mut Simulator<'_, Message>) -> Vec<(String, Rectangle)> {
         let mut found = Vec::new();
@@ -29479,7 +29685,7 @@ mod tests {
     /// 24 px, which its label and iced_aw's padding outgrow; windows-11's
     /// 40 px, which holds them).
     #[test]
-    fn basic_composites_take_the_stated_sizes() {
+    fn basic_composites_take_the_stated_sizes() -> Result<(), String> {
         for preset in [
             "kde-breeze",
             "material-3",
@@ -29572,21 +29778,24 @@ mod tests {
             );
 
             // The switch is its track, or as tall as its thumb where that
-            // overhangs the track (kde-breeze, docs/platform-facts.md §2.21).
-            let sw = &r.switch;
-            let off_thumb = sw.unchecked_thumb_diameter.unwrap_or(sw.thumb_diameter);
-            for (id, thumb) in [
-                (probes::BASIC_SWITCH_OFF, off_thumb),
-                (probes::BASIC_SWITCH_ON, sw.thumb_diameter),
-                (probes::BASIC_SWITCH_DISABLED, sw.thumb_diameter),
+            // overhangs the track (kde-breeze, docs/platform-facts.md §2.21),
+            // on the installed 0.8.0 theme ([`next_switch_seat`]).
+            let next = state.next_shown();
+            let seat = next_switch_seat(next).ok_or(format!("{preset} states no switch seat"))?;
+            let [track_width, _] = next.switch.track(WidgetState::NONE).min_size;
+            let track_width = track_width.ok_or(format!("{preset} states no track width"))?;
+            for (id, on) in [
+                (probes::BASIC_SWITCH_OFF, false),
+                (probes::BASIC_SWITCH_ON, true),
+                (probes::BASIC_SWITCH_DISABLED, true),
             ] {
                 let switch = probe_bounds(&mut ui, id);
-                let height = sw.track_height.max(thumb);
+                let (thumb, _) = seat.thumb(on);
+                let height = seat.track_height.max(thumb);
                 assert!(
-                    (switch.width - sw.track_width).abs() < 0.01
+                    (switch.width - track_width).abs() < 0.01
                         && (switch.height - height).abs() < 0.01,
-                    "{preset}: {id} is {switch:?}, expected {} x {height}",
-                    sw.track_width,
+                    "{preset}: {id} is {switch:?}, expected {track_width} x {height}",
                 );
             }
 
@@ -29616,6 +29825,7 @@ mod tests {
                 inset.top
             );
         }
+        Ok(())
     }
 
     /// The page and inspector tab rows frame the open tab only, with
