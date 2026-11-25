@@ -14041,9 +14041,9 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
 
 /// Widget Info's listed font rows name the family gpui draws, as the
 /// inspector's Theme tab does: `typography.body.family` and the family part
-/// of `typography.body` and of `typography.monospace` are
-/// `status::family_label` of the 0.8.0 theme's stated family and
-/// `font_family`'s, under windows-11 set directly.
+/// of `typography.body`, of the switch's `switch.label(NONE)` and of
+/// `typography.monospace` are `status::family_label` of the 0.8.0 theme's
+/// stated family and `font_family`'s, under windows-11 set directly.
 /// Conditioned on the host: where the system lacks "Segoe UI" or "Cascadia
 /// Mono" and the platform names a substitute (fontconfig, feature
 /// `system-fonts`), the rows name it; elsewhere the label is the stated name
@@ -14068,6 +14068,7 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
         label(&r.typography.body.family),
         label(&r.typography.monospace.family),
     );
+    let switch = label(&r.switch.label(native_theme::next::WidgetState::NONE).family);
     let mut value = |id: &str, home: &str| {
         let row = read(&mut cx, &showcase, |_, cx| {
             let look = PanelLook::of(cx)?;
@@ -14086,7 +14087,8 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
         body
     );
     for (id, home, label) in [
-        ("basic.switches.off", "typography.body", &body),
+        ("basic.typography.body", "typography.body", &body),
+        ("basic.switches.off", "switch.label(NONE)", &switch),
         ("basic.typography.monospace", "typography.monospace", &mono),
     ] {
         let font = value(id, home);

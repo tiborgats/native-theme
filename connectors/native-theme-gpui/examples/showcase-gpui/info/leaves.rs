@@ -947,11 +947,6 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     ),
     (
         "",
-        &["colors.disabled_text"],
-        "gpui: not read by widgets::Switch, whose disabled label is switch.label(DISABLED).color where a rule states it, else gpui-component's own muted_foreground, colors.window.foreground_muted (SwitchLook::next_of)",
-    ),
-    (
-        "",
         &["focus_ring.stroke.color"],
         "gpui: the ring the theme-drawn Checkbox, Radio, Slider and Switch draw over the control, as stated, and the TabBar inside its focused tab (widgets/mod.rs, FocusRing::next_of, FocusRing::next_indicator), each in place of a part's own ring where the theme states one, PartStyle.focus of checkbox.indicator, radio.indicator, switch.track, slider.thumb or tab.tab (widgets/mod.rs, part_focus); and ThemeColor ring (colors.rs, ring_colour: opaque where the band is off): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style). gpui-component's widgets draw that ring 3px wide with its alpha set to 0.5, whatever the colour's own (gpui-component/styled.rs:12, FOCUS_RING_OPACITY; :250-298, focus_style), and the Tab draws another, 2px inset at the full colour, on keyboard focus only (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)",
     ),
@@ -976,11 +971,6 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "gpui: family, size, line box, weight and slant on the Label, each where stated (demo::type_line)",
     ),
     (
-        "basic.switches",
-        &["typography.body"],
-        "gpui: not read by widgets::Switch, which letters its label in switch.label(NONE)'s family, size, weight and slant where stated, else gpui-component's own, text_sm in the window's font (SwitchLabelFont::next_of)",
-    ),
-    (
         "",
         &["typography.body"],
         "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:725, font_size; :735, font_family)",
@@ -989,11 +979,6 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "basic.typography",
         &["typography.body.color"],
         "gpui: the Label's text colour (demo::type_line)",
-    ),
-    (
-        "basic.switches",
-        &["typography.body.color"],
-        "gpui: widgets::Switch's label where the theme states no switch.label(NONE).color: gpui-component's own, the window's text, colors.window.foreground (SwitchLook::next_of)",
     ),
     (
         "",
@@ -2461,6 +2446,26 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
         "gpui: next::geometry::status_bar'stext colour",
     ),
     // --- switch: widgets::Switch ---------------------------------------------------
+    (
+        "",
+        &["switch.label(NONE)"],
+        "gpui: switch.label(NONE), the label's family, size, weight and slant, each where stated; else gpui-component's own, text_sm in the window's font (SwitchLabelFont::next_of)",
+    ),
+    (
+        "",
+        &["switch.label(NONE).color"],
+        "gpui: switch.label(NONE).color, the off label's colour where stated; else gpui-component's own, the window's text, colors.window.foreground (SwitchLook::next_of)",
+    ),
+    (
+        "",
+        &["switch.label(CHECKED).color"],
+        "gpui: switch.label(CHECKED).color, the on label's colour where stated; else gpui-component's own, the window's text, colors.window.foreground (SwitchLook::next_of)",
+    ),
+    (
+        "",
+        &["switch.label(DISABLED|CHECKED).color"],
+        "gpui: switch.label(DISABLED).color (DISABLED|CHECKED on), a disabled switch's label where a rule states it for DISABLED; else gpui-component's own muted_foreground, colors.window.foreground_muted (SwitchLook::next_of)",
+    ),
     (
         "",
         &["switch.track(CHECKED).fill"],
