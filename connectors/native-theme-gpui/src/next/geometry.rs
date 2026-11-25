@@ -182,19 +182,28 @@ mod tests {
                 );
                 let t = &r.toolbar;
                 assert_eq!(
-                    super::super::state_fill_of(&t.button(WidgetState::CHECKED)),
-                    None,
+                    super::super::state_fill_of(
+                        &t.button(WidgetState::CHECKED),
+                        "toolbar.button(CHECKED).fill"
+                    ),
+                    Ok(None),
                     "macos-tahoe {:?} states a checked toolbar fill",
                     ctx.scheme
                 );
                 assert_eq!(super::super::apply(&r, cx), Ok(()));
                 let own = Hsla::from(cx.theme().tokens.secondary_active);
                 let pressed = [
-                    super::super::state_fill_of(&t.button(WidgetState::PRESSED)),
-                    super::super::state_fill_of(&r.button.body(WidgetState::PRESSED)),
+                    super::super::state_fill_of(
+                        &t.button(WidgetState::PRESSED),
+                        "toolbar.button(PRESSED).fill",
+                    ),
+                    super::super::state_fill_of(
+                        &r.button.body(WidgetState::PRESSED),
+                        "button.body(PRESSED).fill",
+                    ),
                 ];
                 assert!(
-                    !pressed.contains(&Some(own)),
+                    !pressed.contains(&Ok(Some(own))),
                     "macos-tahoe {:?}: a pressed fill is the selected ghost's, so this proves \
                      nothing",
                     ctx.scheme

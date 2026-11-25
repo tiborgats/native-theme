@@ -101,19 +101,35 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 
 /// A part's fill, where stated as one colour.
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
-    stated(fill_of(part), home)
+    stated(fill_color(part), home)
 }
 
-/// A part's fill as `fill` reads it, `None` where it is not stated, or
-/// stated as a layered paint with no fallback colour: for a reader that
-/// shows the toolkit's own there (spec §10, rule 0), as the showcase's
-/// Widget Info does. A fill stated as none is transparent, and a layered
-/// paint gives its fallback colour (spec §10, rule 2).
-pub fn fill_of(part: &PartStyle) -> Option<Hsla> {
+/// A part's fill as [`fill`] reads it, `None` where it is not stated or
+/// has no single colour.
+pub(crate) fn fill_color(part: &PartStyle) -> Option<Hsla> {
     fill_color_of(part).map(hsla)
 }
 
-/// A part's stated fill as one colour of the model, as [`fill_of`] reads it.
+/// A part's fill as the builders draw it, `None` where it is not stated:
+/// gpui-component's own there (spec §10, rule 0). A fill stated as none is
+/// transparent, and a layered paint gives its fallback colour (spec §10,
+/// rule 2: each solid layer its colour, each material its fallback, the
+/// topmost opaque one).
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` where the fill is stated as layers that are all
+/// gradients, which have no single colour for gpui to paint (spec §10,
+/// rule 4), never gpui-component's own in their place.
+pub fn fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+    if part.stated.contains(PartStated::FILL) {
+        fill(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// A part's stated fill as one colour of the model, as [`fill`] reads it.
 fn fill_color_of(part: &PartStyle) -> Option<Color> {
     if !part.stated.contains(PartStated::FILL) {
         return None;
@@ -248,17 +264,6 @@ pub fn text_color_of(text: &TextStyle) -> Option<Hsla> {
         .then(|| hsla(text.color))
 }
 
-/// A part's fill where a rule states it for the queried state (its
-/// `from_state` bit), as [`fill`] reads it; `None` where none does, a soft
-/// option's unset value.
-pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    state_option(
-        state_fill_of(part),
-        part.from_state.contains(PartStated::FILL),
-        home,
-    )
-}
-
 /// A state's soft option as a `Mapped` form reads it through its `_of`
 /// read: the value where it gives one; where it gives none, unset if no
 /// rule states the property for the queried state (`ruled` false), and
@@ -271,17 +276,23 @@ fn state_option(value: Option<Hsla>, ruled: bool, home: &'static str) -> Mapped<
     }
 }
 
-/// A part's fill as `state_fill` reads it, `None` where no rule states it
-/// for the queried state, or it is stated in a form gpui cannot paint (not
-/// one colour). The rule is for some flag of the query, not a given one
-/// (spec §2, `from_state`): a reader that keeps the toolkit's own treatment
-/// of one flag over a value stated for another queries with that flag
-/// alone.
-pub fn state_fill_of(part: &PartStyle) -> Option<Hsla> {
-    part.from_state
-        .contains(PartStated::FILL)
-        .then(|| fill_of(part))
-        .flatten()
+/// A part's fill as [`fill_of`] reads it, where a rule states it for the
+/// queried state (its `from_state` bit); `None` where none does, a soft
+/// option's unset value. The rule is for some flag of the query, not a
+/// given one (spec §2, `from_state`): a reader that keeps the toolkit's own
+/// treatment of one flag over a value stated for another queries with that
+/// flag alone.
+///
+/// # Errors
+///
+/// [`Unmapped`] at `home` where the fill is stated as layers that are all
+/// gradients (spec §10, rule 4).
+pub fn state_fill_of(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+    if part.from_state.contains(PartStated::FILL) {
+        fill(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
 }
 
 /// A part's stroke colour as `state_stroke_color` reads it, a stroke stated
@@ -311,16 +322,6 @@ pub fn state_text_color_of(text: &TextStyle) -> Option<Hsla> {
         .contains(TextStated::COLOR)
         .then(|| text_color_of(text))
         .flatten()
-}
-
-/// A part's fill where the theme states it, as [`fill`] reads it; `None`
-/// where it states none, and the toolkit's own stays (spec §10, rule 0).
-pub(crate) fn stated_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    if part.stated.contains(PartStated::FILL) {
-        fill(part, home).map(Some)
-    } else {
-        Ok(None)
-    }
 }
 
 /// A part's stroke colour where a rule states it for the queried state, as
@@ -445,8 +446,7 @@ fn thumb_at_rest(r: &ResolvedTheme) -> Mapped<Hsla> {
 /// unstated, gpui-component's own `scrollbar_thumb` in `upstream`, which
 /// gpui-base's own thumb also takes (spec §10, rule 0).
 fn rest_thumb_fill(thumb: &PartStyle, upstream: &ThemeColor) -> Mapped<Hsla> {
-    Ok(stated_fill(thumb, "scrollbar.thumb(UNFOCUSED_VIEW).fill")?
-        .unwrap_or(upstream.scrollbar_thumb))
+    Ok(fill_of(thumb, "scrollbar.thumb(UNFOCUSED_VIEW).fill")?.unwrap_or(upstream.scrollbar_thumb))
 }
 
 /// The opacity of `accent` gpui-component gives `list_hover` where a
@@ -464,7 +464,7 @@ pub(crate) const UPSTREAM_LIST_HOVER_ACCENT_OPACITY: f32 = 0.6;
 /// writes there (`colors::assign_core`).
 fn list_row_hover(r: &ResolvedTheme) -> Mapped<Hsla> {
     let home = "list.highlight(HOVER).fill";
-    match stated_fill(&r.list.highlight(WidgetState::HOVER), home)? {
+    match fill_of(&r.list.highlight(WidgetState::HOVER), home)? {
         Some(hover) => Ok(hover),
         None => Ok(menu_hover_fill(r)?.opacity(UPSTREAM_LIST_HOVER_ACCENT_OPACITY)),
     }
@@ -512,7 +512,7 @@ fn menu_hover_label(
     if let Some(stated) = state_text_color(label, "menu.item_label(HOVER).color")? {
         return Ok(stated);
     }
-    if state_fill(item, "menu.item(HOVER).fill")?.is_some() {
+    if state_fill_of(item, "menu.item(HOVER).fill")?.is_some() {
         return text_color(rest, "menu.item_label(NONE).color");
     }
     Ok(upstream)
@@ -559,10 +559,10 @@ fn button_pressed_fill(
 }
 
 /// A part's fill where a rule states it for the queried state
-/// ([`state_fill`]), else `upstream`, gpui-component's own (spec §10,
+/// ([`state_fill_of`]), else `upstream`, gpui-component's own (spec §10,
 /// rule 0).
 fn state_fill_or(part: &PartStyle, home: &'static str, upstream: Hsla) -> Mapped<Hsla> {
-    Ok(state_fill(part, home)?.unwrap_or(upstream))
+    Ok(state_fill_of(part, home)?.unwrap_or(upstream))
 }
 
 /// The slice's colours of a 0.8.0 resolved theme.
@@ -1288,7 +1288,7 @@ pub(crate) fn scrollbar_geometry(r: &ResolvedTheme) -> Mapped<ScrollbarGeometry>
         border: hsla(stated(r.colors.window.border, "colors.window.border")?),
         thumb: thumb_at_rest(r)?,
         thumb_hover: fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
-        thumb_active: state_fill(
+        thumb_active: state_fill_of(
             &s.thumb(WidgetState::PRESSED),
             "scrollbar.thumb(PRESSED).fill",
         )?,
@@ -1364,20 +1364,20 @@ mod tests {
             Err(Unmapped("gradient"))
         );
         assert_eq!(
-            state_fill(&painted(Paint::None, true), "none")?,
+            state_fill_of(&painted(Paint::None, true), "none")?,
             Some(transparent)
         );
         assert_eq!(
-            state_fill(&painted(layered.clone(), true), "layered")?,
+            state_fill_of(&painted(layered.clone(), true), "layered")?,
             Some(hsla(BLUE))
         );
         assert_eq!(
-            state_fill(&painted(gradient, true), "gradient"),
+            state_fill_of(&painted(gradient, true), "gradient"),
             Err(Unmapped("gradient"))
         );
-        assert_eq!(state_fill(&painted(Paint::None, false), "none")?, None);
+        assert_eq!(state_fill_of(&painted(Paint::None, false), "none")?, None);
         assert_eq!(
-            stated_fill(&painted(layered.clone(), false), "layered")?,
+            fill_of(&painted(layered.clone(), false), "layered")?,
             Some(hsla(BLUE))
         );
         assert_eq!(
@@ -1390,8 +1390,175 @@ mod tests {
         );
         let mut unstated = painted(Paint::None, false);
         unstated.stated = PartStated::default();
-        assert_eq!(fill_of(&unstated), None);
-        assert_eq!(stated_fill(&unstated, "unstated")?, None);
+        assert_eq!(fill_of(&unstated, "unstated")?, None);
+        assert_eq!(state_fill_of(&unstated, "unstated")?, None);
+        Ok(())
+    }
+
+    /// A fill a theme states as layers that are all gradients has no single
+    /// colour for gpui to paint: [`fill_of`] and [`state_fill_of`] report it
+    /// `Unmapped` at the home they are given (spec §10, rule 4), not `None`,
+    /// the unstated fill gpui-component's own takes, and so do the builders
+    /// that read it.
+    #[test]
+    fn an_all_gradient_fill_is_unmapped() -> Result<(), serde_json::Error> {
+        use native_theme::next::{
+            BlendMode, ButtonRule, InputRule, PaintLayer, PartPatch, Preset, Theme, ThemeContext,
+            ThemePatch, ToolbarRule,
+        };
+
+        let linear = PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: Vec::new().into(),
+            blend: BlendMode::Normal,
+        };
+        let radial = PaintLayer::RadialGradient {
+            center: [0.5, 0.5],
+            radius: 1.0,
+            stops: Vec::new().into(),
+            blend: BlendMode::Normal,
+        };
+        let solid = PaintLayer::Solid {
+            color: RED,
+            blend: BlendMode::Normal,
+        };
+        let gradient = Paint::layers(vec![linear.clone()]);
+        let fill = PartPatch::new().fill(gradient);
+        let patch = ThemePatch::new()
+            .button(ButtonRule::new().body(fill.clone()))
+            .button(ButtonRule::new().states(WidgetState::HOVER).body(fill))
+            .toolbar(
+                ToolbarRule::new()
+                    .bar(PartPatch::new().fill(Paint::layers(vec![linear.clone(), radial]))),
+            )
+            .input(
+                InputRule::new().field(PartPatch::new().fill(Paint::layers(vec![solid, linear]))),
+            );
+        let r = Theme::preset(Preset::KdeBreeze)
+            .with_patch(patch)
+            .resolve(&ThemeContext::light());
+        assert_eq!(
+            fill_of(&r.button.body(WidgetState::NONE), "at rest"),
+            Err(Unmapped("at rest"))
+        );
+        assert_eq!(
+            state_fill_of(&r.button.body(WidgetState::HOVER), "hovered"),
+            Err(Unmapped("hovered"))
+        );
+        assert_eq!(
+            fill_of(&r.toolbar.bar(WidgetState::NONE), "two gradients"),
+            Err(Unmapped("two gradients"))
+        );
+        assert_eq!(
+            fill_of(
+                &r.input.field(WidgetState::NONE),
+                "a solid under a gradient"
+            ),
+            Ok(Some(hsla(RED)))
+        );
+        assert!(to_theme(&r).is_err());
+        let found = unpaintable_fills(&serde_json::to_value(&r)?);
+        assert_eq!(
+            found.len(),
+            3,
+            "the walk of no_bundled_preset_states_a_fill_gpui_cannot_paint does not find the \
+             planted gradients, one layer and two, and only them: {found:#?}"
+        );
+        assert!(
+            found.iter().any(|path| path.starts_with(".toolbar.")),
+            "the walk misses the fill of two gradient layers: {found:#?}"
+        );
+        Ok(())
+    }
+
+    /// The paths of the fills in `v`, a resolved theme's serialised form,
+    /// that are stated as layers with no solid or material layer, which
+    /// have no single colour for gpui to paint (`Paint::fallback_color`):
+    /// a fill's value is a colour or `"none"`, one layer's map (its `kind`)
+    /// or an array of layers; a map without a `kind` is a part named
+    /// `fill`, walked into.
+    fn unpaintable_fills(v: &serde_json::Value) -> Vec<String> {
+        fn walk(v: &serde_json::Value, path: &str, out: &mut Vec<String>) {
+            let has_colour = |layers: &[serde_json::Value]| {
+                layers.iter().any(|layer| {
+                    matches!(
+                        layer.get("kind").and_then(serde_json::Value::as_str),
+                        Some("solid" | "material")
+                    )
+                })
+            };
+            match v {
+                serde_json::Value::Object(map) => {
+                    for (key, child) in map {
+                        let at = format!("{path}.{key}");
+                        if key == "fill" {
+                            let layers = match child {
+                                serde_json::Value::Array(layers) => Some(layers.as_slice()),
+                                serde_json::Value::Object(layer) if layer.contains_key("kind") => {
+                                    Some(std::slice::from_ref(child))
+                                }
+                                _ => None,
+                            };
+                            if layers.is_some_and(|layers| !has_colour(layers)) {
+                                out.push(at.clone());
+                            }
+                        }
+                        walk(child, &at, out);
+                    }
+                }
+                serde_json::Value::Array(items) => {
+                    for (ix, item) in items.iter().enumerate() {
+                        walk(item, &format!("{path}[{ix}]"), out);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let mut out = Vec::new();
+        walk(v, "", &mut out);
+        out
+    }
+
+    /// No bundled preset, light or dark, in an active or an inactive
+    /// window, at normal or high contrast, with transparency reduced or not
+    /// (the showcase's preferences), states a fill as layers that are all
+    /// gradients, on any part,
+    /// at rest or by a state rule: where one did, [`fill_of`] and
+    /// [`state_fill_of`], the readers the connector and the showcase take
+    /// every fill through, would be `Unmapped` there and the widget
+    /// gpui-component's own. Every fill the resolved theme states is read
+    /// off its serialised form (the golden snapshots'), each part's base and
+    /// rules; [`an_all_gradient_fill_is_unmapped`] proves the walk finds a
+    /// planted one.
+    #[test]
+    fn no_bundled_preset_states_a_fill_gpui_cannot_paint() -> Result<(), serde_json::Error> {
+        use native_theme::next::{Preset, Theme, ThemeContext};
+        let mut unpaintable = Vec::new();
+        for preset in Preset::ALL {
+            for mut ctx in [ThemeContext::light(), ThemeContext::dark()] {
+                for active in [true, false] {
+                    for contrast in [Contrast::Normal, Contrast::High] {
+                        for reduced in [false, true] {
+                            ctx.window_active = active;
+                            ctx.contrast = contrast;
+                            ctx.reduced_transparency = reduced;
+                            let r = Theme::preset(*preset).resolve(&ctx);
+                            let at = format!(
+                                "{preset:?} {:?}, active {active}, {contrast:?} contrast, \
+                                 reduced transparency {reduced}",
+                                ctx.scheme
+                            );
+                            unpaintable.extend(
+                                unpaintable_fills(&serde_json::to_value(&r)?)
+                                    .into_iter()
+                                    .map(|fill| format!("{at}: {fill}")),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        assert!(unpaintable.is_empty(), "{unpaintable:#?}");
         Ok(())
     }
 
@@ -1400,8 +1567,11 @@ mod tests {
     /// gpui-component's own treatment.
     #[test]
     fn a_pressed_button_fill_without_a_state_rule_is_unset() -> Mapped<()> {
-        assert_eq!(state_fill(&filled(RED, false), "pressed")?, None);
-        assert_eq!(state_fill(&filled(RED, true), "pressed")?, Some(hsla(RED)));
+        assert_eq!(state_fill_of(&filled(RED, false), "pressed")?, None);
+        assert_eq!(
+            state_fill_of(&filled(RED, true), "pressed")?,
+            Some(hsla(RED))
+        );
         Ok(())
     }
 
@@ -1419,7 +1589,7 @@ mod tests {
                 border: hsla(BLUE),
                 thumb: hsla(BLUE),
                 thumb_hover: hsla(GREEN),
-                thumb_active: state_fill(pressed, "scrollbar.thumb(PRESSED).fill")?,
+                thumb_active: state_fill_of(pressed, "scrollbar.thumb(PRESSED).fill")?,
             })
         };
         let unset = geometry_of(&source(&filled(RED, false))?);
@@ -1467,8 +1637,8 @@ mod tests {
         let checked = crate::geometry::button_checked_from(
             state_text_color(&label, "checked label")?,
             hsla(GREEN),
-            state_fill(&filled(RED, false), "checked body")?,
-            state_fill(&filled(BLUE, true), "pressed body")?,
+            state_fill_of(&filled(RED, false), "checked body")?,
+            state_fill_of(&filled(BLUE, true), "pressed body")?,
         );
         assert_eq!(
             checked,
@@ -1625,7 +1795,7 @@ mod tests {
                 let r = Theme::preset(preset).resolve(&ThemeContext::default().with_scheme(scheme));
                 let b = &r.button;
                 let rest = fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?;
-                let pressed = state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED)")?
+                let pressed = state_fill_of(&b.body(WidgetState::PRESSED), "button.body(PRESSED)")?
                     .ok_or(Unmapped("button.body(PRESSED).fill, for the state"))?;
                 if crate::colors::over(rest, rest) != rest {
                     layered_would_differ += 1;
@@ -1810,7 +1980,8 @@ mod tests {
                 let mut r =
                     Theme::preset(*preset).resolve(&ThemeContext::default().with_scheme(scheme));
                 let b = &r.button;
-                if state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?.is_some()
+                if state_fill_of(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?
+                    .is_some()
                 {
                     continue;
                 }
@@ -1874,7 +2045,7 @@ mod tests {
                         tc.secondary_active,
                     ),
                 ] {
-                    let stated = state_fill(&b.body(flat.state(state)), "flat")?;
+                    let stated = state_fill_of(&b.body(flat.state(state)), "flat")?;
                     assert_eq!(
                         slot,
                         stated.unwrap_or(own),

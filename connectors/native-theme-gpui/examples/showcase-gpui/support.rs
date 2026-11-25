@@ -447,6 +447,30 @@ pub(crate) fn next_color<
     })
 }
 
+/// The home a drawing site hands the connector's fill readers. A drawing
+/// site draws gpui-component's own where the reader is `Unmapped` and shows
+/// no error, so the home is not read there; Widget Info names it.
+const DRAWN_FILL: &str = "a fill a showcase drawing site reads";
+
+/// A part's fill as the page draws it: `next::fill_of`'s colour where the
+/// theme states one, `None` where it is unstated, or stated as layers that
+/// are all gradients (`Unmapped`, spec §10 rule 4), gpui-component's own
+/// then drawn there.
+pub(crate) fn drawn_fill(part: &native_theme::next::PartStyle) -> Option<gpui::Hsla> {
+    native_theme_gpui::next::fill_of(part, DRAWN_FILL)
+        .ok()
+        .flatten()
+}
+
+/// A part's fill as the page draws it in a state a rule states it for,
+/// `next::state_fill_of`'s colour; `None` where no rule states it, or it is
+/// `Unmapped` (spec §10 rule 4), gpui-component's own then drawn there.
+pub(crate) fn drawn_state_fill(part: &native_theme::next::PartStyle) -> Option<gpui::Hsla> {
+    native_theme_gpui::next::state_fill_of(part, DRAWN_FILL)
+        .ok()
+        .flatten()
+}
+
 /// Applies a geometry refinement when one is available; the widget keeps
 /// upstream's geometry otherwise.
 /// `.next_native(cx, next::geometry::button)`: the builder's refinement when

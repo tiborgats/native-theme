@@ -76,14 +76,124 @@ impl Swatch for Hsla {
     }
 }
 
-/// The claim of a colour the theme may leave unstated, `None` where it does.
-pub fn stated_claim(
+/// A colour a claim of a colour the theme may leave unstated is built from:
+/// `Some` where the theme states it, `None` where it does not; or a fill as
+/// the connector reads it (`next::fill_of`, `next::state_fill_of`), which is
+/// [`Unmapped`] at its home where the theme states it as layers that are
+/// all gradients, which have no single colour for gpui to paint (spec §10,
+/// rule 4).
+pub trait StatedColour {
+    /// The claim built from it: an `Option<ColorClaim>`, or for a fill a
+    /// [`FillClaim`].
+    type Claim;
+    /// The claim of `role` that `make` builds from the colour; `None` where
+    /// the colour is unstated or `drawn` is false.
+    fn claim_with(
+        self,
+        role: &'static str,
+        drawn: bool,
+        make: impl FnOnce(Hsla) -> ColorClaim,
+    ) -> Self::Claim;
+}
+
+impl<T: Swatch> StatedColour for Option<T> {
+    type Claim = Option<ColorClaim>;
+    fn claim_with(
+        self,
+        _role: &'static str,
+        drawn: bool,
+        make: impl FnOnce(Hsla) -> ColorClaim,
+    ) -> Option<ColorClaim> {
+        self.filter(|_| drawn).map(|colour| make(colour.hsla()))
+    }
+}
+
+impl<T: Swatch> StatedColour for Mapped<Option<T>> {
+    type Claim = FillClaim;
+    fn claim_with(
+        self,
+        role: &'static str,
+        drawn: bool,
+        make: impl FnOnce(Hsla) -> ColorClaim,
+    ) -> FillClaim {
+        FillClaim {
+            role,
+            read: self.map(|colour| colour.claim_with(role, drawn, make)),
+            own: None,
+        }
+    }
+}
+
+/// The claim of a fill the connector reads (`next::fill_of`,
+/// `next::state_fill_of`): `Ok` with the claim, `None` where the theme
+/// states no fill or none is drawn; or the home the theme states the fill
+/// at in a form gpui cannot paint, which [`WidgetInfo::colors`] writes as
+/// `role`'s line ([`WidgetInfo::fill_unmapped`]) in place of a swatch.
+/// `own` is the toolkit's colour the widget draws where the theme states no
+/// fill gpui can paint, if it draws one ([`FillClaim::or_own`]). The
+/// default is the claim of no fill, for a widget no 0.8.0 theme dresses.
+#[derive(Clone, Debug, PartialEq)]
+pub struct FillClaim {
+    pub role: &'static str,
+    pub read: Mapped<Option<ColorClaim>>,
+    pub own: Option<ColorClaim>,
+}
+
+impl Default for FillClaim {
+    fn default() -> Self {
+        Self {
+            role: "",
+            read: Ok(None),
+            own: None,
+        }
+    }
+}
+
+impl FillClaim {
+    /// The claim where the widget draws `own`, the toolkit's colour, where
+    /// the theme states no fill gpui can paint: `own`'s swatch in place of
+    /// an unstated fill's, and beside the line of one gpui cannot paint.
+    pub fn or_own(self, own: ColorClaim) -> Self {
+        Self {
+            own: Some(own),
+            ..self
+        }
+    }
+}
+
+/// What [`WidgetInfo::colors`] adds: colour claims, or a fill's
+/// ([`FillClaim`]), whose `Unmapped` it writes as a line.
+pub trait Claims {
+    fn add_to(self, info: WidgetInfo) -> WidgetInfo;
+}
+
+impl<I: IntoIterator<Item = ColorClaim>> Claims for I {
+    fn add_to(self, mut info: WidgetInfo) -> WidgetInfo {
+        info.colors.extend(self);
+        info
+    }
+}
+
+impl Claims for FillClaim {
+    fn add_to(self, info: WidgetInfo) -> WidgetInfo {
+        match self.read {
+            Ok(Some(claim)) => info.color(claim),
+            Ok(None) => self.own.add_to(info),
+            Err(unmapped) => self.own.add_to(info).fill_unmapped(self.role, unmapped),
+        }
+    }
+}
+
+/// The claim of a colour the theme may leave unstated, `None` where it
+/// does; for a fill a [`FillClaim`], which carries the home the theme
+/// states it at in a form gpui cannot paint.
+pub fn stated_claim<C: StatedColour>(
     role: &'static str,
     field: &'static str,
-    colour: Option<impl Swatch>,
+    colour: C,
     cited_at: &'static str,
-) -> Option<ColorClaim> {
-    colour.map(|colour| claim(role, field, colour.hsla(), cited_at))
+) -> C::Claim {
+    colour.claim_with(role, true, |colour| claim(role, field, colour, cited_at))
 }
 
 /// The claim of a line in `colour` drawn `width` wide, `None` where either
@@ -91,15 +201,15 @@ pub fn stated_claim(
 /// (a text area's hovered edge is `input.hover_border_color` at
 /// `text_area.border.line_width`); the caller's config line names it, or
 /// says `none: <table>.border.line_width is 0`.
-pub fn edge_claim(
+pub fn edge_claim<C: StatedColour>(
     role: &'static str,
     field: &'static str,
-    colour: Option<impl Swatch>,
+    colour: C,
     width: Option<f32>,
     cited_at: &'static str,
-) -> Option<ColorClaim> {
+) -> C::Claim {
     let drawn = width.is_some_and(|width| width > 0.0);
-    stated_claim(role, field, colour.filter(|_| drawn), cited_at)
+    colour.claim_with(role, drawn, |colour| claim(role, field, colour, cited_at))
 }
 
 /// The line saying that a rule states `part`'s stroke, `home`, for the
@@ -161,9 +271,8 @@ impl WidgetInfo {
         self.colors.push(claim);
         self
     }
-    pub fn colors(mut self, claims: impl IntoIterator<Item = ColorClaim>) -> Self {
-        self.colors.extend(claims);
-        self
+    pub fn colors(self, claims: impl Claims) -> Self {
+        claims.add_to(self)
     }
     pub fn config(mut self, what: &'static str, text: impl Into<String>) -> Self {
         self.config.push(Note {
@@ -207,6 +316,30 @@ impl WidgetInfo {
                 unstated.home()
             ),
         )
+    }
+    /// The "fill" line for the fill `what` names where the installed 0.8.0 theme
+    /// states it at `unmapped`'s home as layers that are all gradients,
+    /// which have no single colour for gpui to paint: the widget draws
+    /// gpui-component's own there, and the line says so in place of a
+    /// swatch (spec §10, rule 4: a limit is reported, not dropped).
+    pub fn fill_unmapped(self, what: &'static str, unmapped: Unmapped) -> Self {
+        self.config(
+            "fill",
+            format!(
+                "{what}, gpui-component's own: the theme states no value gpui can take at {}",
+                unmapped.home()
+            ),
+        )
+    }
+    /// [`Self::fill_unmapped`]'s line for `what` where `read`, a fill the
+    /// connector reads, is `Unmapped`; `self` unchanged where it gives a
+    /// colour or none: for a site that decides on the fill as the page draws
+    /// it and claims no swatch of it.
+    pub fn fill_read<T>(self, what: &'static str, read: &Mapped<T>) -> Self {
+        match read {
+            Ok(_) => self,
+            Err(unmapped) => self.fill_unmapped(what, *unmapped),
+        }
     }
     /// The "variant" line for the `next::variants` builder named `builder`
     /// where the installed 0.8.0 theme states the value at `unstated`'s home

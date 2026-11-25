@@ -358,7 +358,10 @@ pub fn native_table_frame(r: &NextTheme, rows: usize) -> WidgetInfo {
         .colors(stated_claim(
             "bg",
             "list.container(NONE).fill",
-            fill_of(&r.list.container(WidgetState::NONE)),
+            fill_of(
+                &r.list.container(WidgetState::NONE),
+                "list.container(NONE).fill",
+            ),
             "native-theme-gpui/next/builders.rs:146",
         ))
         .colors(edge_claim(
@@ -404,7 +407,7 @@ pub fn native_table_header(r: &NextTheme, columns: &str) -> WidgetInfo {
         .colors(stated_claim(
             "bg",
             "list.header(NONE).fill",
-            fill_of(&r.list.header(WidgetState::NONE)),
+            fill_of(&r.list.header(WidgetState::NONE), "list.header(NONE).fill"),
             "showcase",
         ))
         .colors(stated_claim(
@@ -413,22 +416,36 @@ pub fn native_table_header(r: &NextTheme, columns: &str) -> WidgetInfo {
             text_color_of(&r.list.header_label(WidgetState::NONE)),
             "showcase",
         ));
-    let hovered = state_fill_of(&r.list.header(WidgetState::HOVER));
-    let pressed = state_fill_of(&r.list.header(WidgetState::PRESSED));
+    let hovered = state_fill_of(
+        &r.list.header(WidgetState::HOVER),
+        "list.header(HOVER).fill",
+    )
+    .is_ok_and(|fill| fill.is_some());
+    let pressed = state_fill_of(
+        &r.list.header(WidgetState::PRESSED),
+        "list.header(PRESSED).fill",
+    )
+    .is_ok_and(|fill| fill.is_some());
     let info = info
         .colors(stated_claim(
             "hovered section bg",
             "list.header(HOVER).fill",
-            state_fill_of(&r.list.header(WidgetState::HOVER)),
+            state_fill_of(
+                &r.list.header(WidgetState::HOVER),
+                "list.header(HOVER).fill",
+            ),
             "showcase",
         ))
         .colors(stated_claim(
             "pressed section bg",
             "list.header(PRESSED).fill",
-            state_fill_of(&r.list.header(WidgetState::PRESSED)),
+            state_fill_of(
+                &r.list.header(WidgetState::PRESSED),
+                "list.header(PRESSED).fill",
+            ),
             "showcase",
         ));
-    let info = if pressed.is_none() && hovered.is_some() {
+    let info = if !pressed && hovered {
         info.config(
             "pressed section bg",
             "the hovered section's fill, list.header(HOVER).fill: no rule states list.header(PRESSED).fill, and a pressed section is under the pointer",
@@ -436,16 +453,19 @@ pub fn native_table_header(r: &NextTheme, columns: &str) -> WidgetInfo {
     } else {
         info
     };
-    let sections = if hovered.is_some() || pressed.is_some() {
+    let sections = if hovered || pressed {
         "each of the two is filled on its own while hovered (list.header(HOVER).fill) and while pressed (list.header(PRESSED).fill, else the hovered fill), rounded by the frame's inner radius where it meets the frame; gpui-component's own table header has no hover or pressed state (gpui-component/table/state.rs, render_th), so the showcase draws it"
     } else {
         "none hovered or pressed: no rule states list.header(HOVER).fill or list.header(PRESSED).fill, so a section keeps the header's fill, as gpui-component's own table header, which has no hover or pressed state, does (gpui-component/table/state.rs, render_th)"
     };
     let lines = "a line inside its bottom edge, under the header, and one down the first column's right edge, laid over the header's and a section's fill; the second section, the last, has none of its own (platform-facts §2.15)";
     let info = info.config("sections", sections);
-    let info = match fill_of(&r.list.header_separator(WidgetState::NONE)) {
-        Some(_) => section_lines(info, r, lines),
-        None => grid_lines(info, r, lines),
+    let info = match fill_of(
+        &r.list.header_separator(WidgetState::NONE),
+        "list.header_separator(NONE).fill",
+    ) {
+        Ok(None) => grid_lines(info, r, lines),
+        Ok(Some(_)) | Err(_) => section_lines(info, r, lines),
     };
     info.config(
         "font",
@@ -479,7 +499,10 @@ pub fn native_table_row(r: &NextTheme, t: &Theme, selected: bool, cells: &str) -
             .colors(stated_claim(
                 "bg",
                 "list.highlight(SELECTED).fill",
-                fill_of(&r.list.highlight(WidgetState::SELECTED)),
+                fill_of(
+                    &r.list.highlight(WidgetState::SELECTED),
+                    "list.highlight(SELECTED).fill",
+                ),
                 "showcase",
             ))
             .colors(stated_claim(
@@ -526,7 +549,10 @@ pub fn native_table_row(r: &NextTheme, t: &Theme, selected: bool, cells: &str) -
             .colors(stated_claim(
                 "bg, the frame's",
                 "list.container(NONE).fill",
-                fill_of(&r.list.container(WidgetState::NONE)),
+                fill_of(
+                    &r.list.container(WidgetState::NONE),
+                    "list.container(NONE).fill",
+                ),
                 "showcase",
             ))
             .colors(stated_claim(
@@ -535,14 +561,21 @@ pub fn native_table_row(r: &NextTheme, t: &Theme, selected: bool, cells: &str) -
                 text_color_of(&r.list.item_label(WidgetState::NONE)),
                 "showcase",
             ));
-        let info = match fill_of(&r.list.highlight(WidgetState::HOVER)) {
-            Some(_) => info.colors(stated_claim(
+        let hovered = fill_of(
+            &r.list.highlight(WidgetState::HOVER),
+            "list.highlight(HOVER).fill",
+        );
+        let info = match hovered {
+            Ok(Some(_)) | Err(_) => info.colors(stated_claim(
                 "hovered bg",
                 "list.highlight(HOVER).fill",
-                fill_of(&r.list.highlight(WidgetState::HOVER)),
+                fill_of(
+                    &r.list.highlight(WidgetState::HOVER),
+                    "list.highlight(HOVER).fill",
+                ),
                 "showcase",
             )),
-            None => info
+            Ok(None) => info
                 .color(claim(
                     "hovered bg",
                     "list_hover",
@@ -623,7 +656,10 @@ fn section_lines(info: WidgetInfo, r: &NextTheme, where_drawn: &str) -> WidgetIn
         info.colors(stated_claim(
             "section line",
             "list.header_separator(NONE).fill",
-            fill_of(&r.list.header_separator(WidgetState::NONE)),
+            fill_of(
+                &r.list.header_separator(WidgetState::NONE),
+                "list.header_separator(NONE).fill",
+            ),
             "showcase",
         ))
         .config(
@@ -759,7 +795,7 @@ fn list_fill(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
         Some(r) => info.colors(stated_claim(
             "fill",
             "list.container(NONE).fill",
-            fill_of(&r.list.container(WidgetState::NONE)),
+            fill_of(&r.list.container(WidgetState::NONE), "list.container(NONE).fill"),
             "native-theme-gpui/next/builders.rs:146",
         )),
         None => info.not_themeable("fill", "none: no native theme is installed, or it states no value gpui can take at a home geometry::list reads, so geometry::list, which paints list.container(NONE).fill on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),

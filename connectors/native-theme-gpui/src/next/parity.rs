@@ -1127,14 +1127,25 @@ const SCROLLBAR_THUMB_HOVER: &str = "to_theme: scrollbar_thumb_hover";
 /// base overrides alike.
 const SCROLLBAR_THUMB_STATES: &str = "ScrollbarGeometry: the hovered and the dragged thumb";
 
+/// A part's fill where a rule states it for the queried state, as
+/// [`super::state_fill_of`] reads it; `None` where none does, or where it
+/// has no single colour, which no bundled preset compared here states
+/// (`no_bundled_preset_states_a_fill_gpui_cannot_paint`).
+fn state_fill(part: &native_theme::next::PartStyle) -> Option<Hsla> {
+    part.from_state
+        .contains(native_theme::next::PartStated::FILL)
+        .then(|| super::fill_color(part))
+        .flatten()
+}
+
 /// The scroll bar thumb's fills the theme states for HOVER and PRESSED, the
 /// form of [`SCROLLBAR_THUMB_STATES`]' entries; `None` where either is
 /// unstated.
 fn thumb_states_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
     use native_theme::next::WidgetState;
     Some((
-        super::state_fill_of(&new.scrollbar.thumb(WidgetState::HOVER))?,
-        super::state_fill_of(&new.scrollbar.thumb(WidgetState::PRESSED))?,
+        state_fill(&new.scrollbar.thumb(WidgetState::HOVER))?,
+        state_fill(&new.scrollbar.thumb(WidgetState::PRESSED))?,
     ))
 }
 
@@ -1165,7 +1176,7 @@ fn flat_fill_of(
     state: native_theme::next::WidgetState,
 ) -> Option<Hsla> {
     let flat = native_theme::next::ButtonQuery::flat();
-    super::state_fill_of(&new.button.body(flat.state(state)))
+    state_fill(&new.button.body(flat.state(state)))
 }
 
 /// The flat button's hovered and pressed fills ([`flat_fill_of`]), which
@@ -1208,9 +1219,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     StatedSlot {
         leaf: SCROLLBAR_THUMB_HOVER,
         what: "the hovered scroll bar thumb's stated fill",
-        of: |new| {
-            super::state_fill_of(&new.scrollbar.thumb(native_theme::next::WidgetState::HOVER))
-        },
+        of: |new| state_fill(&new.scrollbar.thumb(native_theme::next::WidgetState::HOVER)),
         color: |c| c.scrollbar_thumb_hover,
         token: |t| t.scrollbar_thumb_hover,
         config: |c| c.scrollbar_thumb_hover.clone(),
@@ -1277,7 +1286,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     StatedSlot {
         leaf: TAB_FILL,
         what: "the unselected tab's stated fill",
-        of: |new| super::fill_of(&new.tab.tab(native_theme::next::WidgetState::NONE)),
+        of: |new| super::fill_color(&new.tab.tab(native_theme::next::WidgetState::NONE)),
         color: |c| c.tab,
         token: |t| t.tab,
         config: |c| c.tab.clone(),
@@ -1290,7 +1299,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     StatedSlot {
         leaf: TAB_ACTIVE,
         what: "the selected tab's stated fill",
-        of: |new| super::fill_of(&new.tab.tab(native_theme::next::WidgetState::SELECTED)),
+        of: |new| super::fill_color(&new.tab.tab(native_theme::next::WidgetState::SELECTED)),
         color: |c| c.tab_active,
         token: |t| t.tab_active,
         config: |c| c.tab_active.clone(),
@@ -1318,7 +1327,7 @@ const STATED_SLOTS: &[StatedSlot] = &[
     StatedSlot {
         leaf: SIDEBAR_FILL,
         what: "the sidebar's stated fill",
-        of: |new| super::fill_of(&new.sidebar.container(native_theme::next::WidgetState::NONE)),
+        of: |new| super::fill_color(&new.sidebar.container(native_theme::next::WidgetState::NONE)),
         color: |c| c.sidebar,
         token: |t| t.sidebar,
         config: |c| c.sidebar.clone(),
@@ -1401,7 +1410,7 @@ const RESIZE_HANDLES: &str = "ResizableTheme: the handle and the active handle";
 
 /// The splitter's handle at rest and hovered, `splitter.handle(NONE)`'s and
 /// `splitter.handle(HOVER)`'s fills as the connector reads a fill
-/// ([`super::fill_of`]), where both are stated, the hovered one by a state
+/// ([`super::fill_color`]), where both are stated, the hovered one by a state
 /// rule: the form [`DIFFERENCES`]' [`RESIZE_HANDLES`] entries describe;
 /// `None` where they are not.
 fn resize_handles_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
@@ -1412,8 +1421,8 @@ fn resize_handles_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, H
         return None;
     }
     Some((
-        super::fill_of(&s.handle(WidgetState::NONE))?,
-        super::fill_of(&hovered)?,
+        super::fill_color(&s.handle(WidgetState::NONE))?,
+        super::fill_color(&hovered)?,
     ))
 }
 
@@ -1516,9 +1525,9 @@ fn button_states_of(new: &native_theme::next::ResolvedTheme) -> Option<ButtonSta
     use native_theme::next::{ButtonQuery, WidgetState};
     let b = &new.button;
     let of = |query: ButtonQuery| {
-        let hover = super::state_fill_of(&b.body(query.state(WidgetState::HOVER)))?;
-        let pressed = super::state_fill_of(&b.body(query.state(WidgetState::PRESSED)))?;
-        (super::fill_of(&b.body(query)) == Some(hover)).then_some((hover, pressed))
+        let hover = state_fill(&b.body(query.state(WidgetState::HOVER)))?;
+        let pressed = state_fill(&b.body(query.state(WidgetState::PRESSED)))?;
+        (super::fill_color(&b.body(query)) == Some(hover)).then_some((hover, pressed))
     };
     Some(ButtonStates {
         push: of(ButtonQuery::new(WidgetState::NONE))?,
@@ -1637,10 +1646,10 @@ fn popover_radius_of(new: &native_theme::next::ResolvedTheme) -> Option<f32> {
 
 /// A hovered list row's fill where a rule states it for `HOVER`,
 /// `list.highlight(HOVER).fill` as the connector reads a state's fill
-/// ([`super::state_fill_of`]): the form of [`ROW_HOVER`]'s entries on a
+/// ([`state_fill`]): the form of [`ROW_HOVER`]'s entries on a
 /// preset that states it; `None` where none does, gpui-component's own then.
 fn row_hover_of(new: &native_theme::next::ResolvedTheme) -> Option<Hsla> {
-    super::state_fill_of(&new.list.highlight(native_theme::next::WidgetState::HOVER))
+    state_fill(&new.list.highlight(native_theme::next::WidgetState::HOVER))
 }
 
 /// The leaf of [`DIFFERENCES`]' entry for a hovered list or table row: the
@@ -2388,14 +2397,14 @@ fn compare_builders(
                 let b = &new.button;
                 let unstated = old.button.checked_background.is_none()
                     && old.button.checked_text_color.is_none()
-                    && super::state_fill_of(&b.body(WidgetState::CHECKED)).is_none()
+                    && state_fill(&b.body(WidgetState::CHECKED)).is_none()
                     && super::state_text_color_of(&b.label(WidgetState::CHECKED)).is_none();
                 let pressed = super::text_color_of(&b.label(WidgetState::PRESSED)).map(|text| {
                     crate::geometry::button_checked_from(
                         None,
                         text,
                         None,
-                        super::state_fill_of(&b.body(WidgetState::PRESSED)),
+                        state_fill(&b.body(WidgetState::PRESSED)),
                     )
                 });
                 if !unstated || n.background.is_none() || pressed.as_ref() != Some(&n) {
@@ -2573,7 +2582,7 @@ fn compare_builders(
                     }
                     if MEASURED_CARD_FILL.contains(&report.preset) {
                         use native_theme::next::WidgetState;
-                        e.background = super::fill_of(&new.card.container(WidgetState::NONE))
+                        e.background = super::fill_color(&new.card.container(WidgetState::NONE))
                             .and_then(|fill| gpui::StyleRefinement::default().bg(fill).background);
                     }
                     e
@@ -2598,7 +2607,7 @@ fn compare_builders(
                 use native_theme::next::WidgetState;
                 report.count(accordion_hover);
                 let o = crate::geometry::accordion_hover(Native::unscaled(old));
-                let stated = super::state_fill_of(&new.expander.header(WidgetState::HOVER));
+                let stated = state_fill(&new.expander.header(WidgetState::HOVER));
                 let restated = RESTATED_ACCORDION_HOVER.contains(&report.preset);
                 if old.expander.hover_background.is_some() != restated
                     || n == o
@@ -2669,8 +2678,7 @@ fn compare_builders(
                 use native_theme::next::WidgetState;
                 report.count(toolbar_checked);
                 let o = crate::geometry::toolbar_button_checked(Native::unscaled(old));
-                let unstated =
-                    super::state_fill_of(&new.toolbar.button(WidgetState::CHECKED)).is_none();
+                let unstated = state_fill(&new.toolbar.button(WidgetState::CHECKED)).is_none();
                 let own = super::flat_button_states(new)
                     .ok()
                     .map(|(_, pressed)| pressed);
@@ -2698,8 +2706,8 @@ fn compare_builders(
                 use native_theme::next::WidgetState;
                 report.count(toolbar_states);
                 let t = &new.toolbar;
-                let hover = super::state_fill_of(&t.button(WidgetState::HOVER));
-                let active = super::state_fill_of(&t.button(WidgetState::PRESSED));
+                let hover = state_fill(&t.button(WidgetState::HOVER));
+                let active = state_fill(&t.button(WidgetState::PRESSED));
                 let mut corrected = o;
                 corrected.hover = n.hover;
                 corrected.active = n.active;
@@ -3507,11 +3515,14 @@ fn next_apply_installs_what_apply_installs(cx: &mut gpui::TestAppContext) {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
-/// The names of the top-level `pub fn`s of the source `src` that return a
-/// [`super::Mapped`], each after `module::`.
+/// The names of the top-level `pub fn`s of the source `src` that take a
+/// resolved theme, `r`, and return a [`super::Mapped`], each after
+/// `module::`. The readers of one part's fill, `fill_of` and
+/// `state_fill_of`, are asked of every fill a preset states instead
+/// (`no_bundled_preset_states_a_fill_gpui_cannot_paint`).
 fn mapped_fns(module: &str, src: &str) -> Vec<String> {
     src.lines()
-        .filter(|line| line.contains("-> Mapped<"))
+        .filter(|line| line.contains("-> Mapped<") && line.contains("(r: &ResolvedTheme"))
         .filter_map(|line| line.strip_prefix("pub fn "))
         .filter_map(|rest| rest.split(['(', '<']).next())
         .map(|name| format!("{module}::{name}"))

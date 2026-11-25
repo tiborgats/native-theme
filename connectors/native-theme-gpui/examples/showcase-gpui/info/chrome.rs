@@ -12,7 +12,7 @@ use super::{
     state_stroke_color_of, stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{PanelToggle, Severity, SheetSide};
-use crate::support::ChromeIcon;
+use crate::support::{ChromeIcon, drawn_state_fill};
 
 /// The window's `TitleBar` (spec §2.1, §3.4, S8), reading `label`: the
 /// window's title bar where the window was granted client-side decorations.
@@ -253,20 +253,28 @@ pub fn menu_bar(
         ),
     };
     let info = WidgetInfo::new("Menu bar");
-    let fill = native.and_then(|r| fill_of(&r.menu_bar.bar(WidgetState::NONE)));
+    let fill = native.map(|r| {
+        fill_of(
+            &r.menu_bar.bar(WidgetState::NONE),
+            "menu_bar.bar(NONE).fill",
+        )
+    });
     let info = match (native, fill) {
-        (Some(r), Some(_)) => info
+        (Some(_), Some(Err(unmapped))) => info
+            .color(claim("bg (the window's)", "background", t.background, "showcase"))
+            .fill_unmapped("bar bg", unmapped),
+        (Some(r), Some(Ok(Some(_)))) => info
             .colors(stated_claim(
                 "bg",
                 "menu_bar.bar(NONE).fill",
-                fill_of(&r.menu_bar.bar(WidgetState::NONE)),
+                fill_of(&r.menu_bar.bar(WidgetState::NONE), "menu_bar.bar(NONE).fill"),
                 "showcase",
             ))
             .config(
                 "fill",
                 "menu_bar.bar(NONE).fill, the menu bar's own fill (platform-facts §2.6, §2.13: Breeze fills it as the toolbar, the one tools area it paints)",
             ),
-        (Some(_), None) => info
+        (Some(_), _) => info
             .color(claim("bg (the window's)", "background", t.background, "showcase"))
             .config(
                 "fill",
@@ -375,13 +383,13 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
     let hovered = m.item(WidgetState::HOVER);
     let rest = m.item(WidgetState::NONE);
     let panel = m.panel(WidgetState::NONE);
-    let bar_hover = next::state_fill_of(&bar.item(WidgetState::HOVER));
-    let bar_open = next::state_fill_of(&bar.item(WidgetState::OPEN));
+    let bar_hover = drawn_state_fill(&bar.item(WidgetState::HOVER));
+    let bar_open = next::state_fill_of(&bar.item(WidgetState::OPEN), "menu_bar.item(OPEN).fill");
     let bar_hover_text = next::state_text_color_of(&bar.item_label(WidgetState::HOVER));
     let bar_open_text = next::state_text_color_of(&bar.item_label(WidgetState::OPEN));
     let edge = next::state_stroke_color_of(&hovered);
     let edge_width = stroke_width_of(&hovered).filter(|width| *width > 0.0);
-    let active = next::state_fill_of(&m.item(WidgetState::PRESSED));
+    let active = drawn_state_fill(&m.item(WidgetState::PRESSED));
     let active_text = next::state_text_color_of(&m.item_label(WidgetState::PRESSED));
     let look = crate::demo::MenuLook::next_of(r, t);
     let rows = look.rows();
@@ -411,7 +419,9 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
     // A hovered item's fill and text where a rule states them for the hover
     // state, else what gpui-component paints, the accent the connector
     // writes (demo::menu_hover_of).
-    let hover_stated = state_fill_of(&hovered).is_some();
+    let hover_fill = state_fill_of(&hovered, "menu.item(HOVER).fill");
+    let hover_stated = matches!(hover_fill, Ok(Some(_)));
+    let info = info.fill_read("hovered item", &hover_fill);
     let hover_text_from = match (
         state_text_color_of(&m.item_label(WidgetState::HOVER)).is_some(),
         hover_stated,
@@ -420,27 +430,39 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
         (false, true) => HoverText::AtRest,
         (false, false) => HoverText::Accent,
     };
-    let info = match (bar_hover, hover_stated) {
-        (None, true) => info.colors(stated_claim(
+    let info = match (bar_hover, hover_fill) {
+        (None, Ok(Some(_))) => info.colors(stated_claim(
             "hovered title, hovered item",
             "menu.item(HOVER).fill",
-            state_fill_of(&r.menu.item(WidgetState::HOVER)),
+            state_fill_of(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill"),
             "showcase",
         )),
-        (None, false) => info.color(claim(
+        (None, Ok(None)) => info.color(claim(
             "hovered title, hovered item, none stated: gpui-component's own",
             "accent",
             t.accent,
             "showcase",
         )),
-        (Some(_), true) => info.colors(stated_claim(
-            "hovered item",
-            "menu.item(HOVER).fill",
-            state_fill_of(&r.menu.item(WidgetState::HOVER)),
+        (None, Err(_)) => info.color(claim(
+            "hovered title, hovered item, gpui-component's own",
+            "accent",
+            t.accent,
             "showcase",
         )),
-        (Some(_), false) => info.color(claim(
+        (Some(_), Ok(Some(_))) => info.colors(stated_claim(
+            "hovered item",
+            "menu.item(HOVER).fill",
+            state_fill_of(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill"),
+            "showcase",
+        )),
+        (Some(_), Ok(None)) => info.color(claim(
             "hovered item, none stated: gpui-component's own",
+            "accent",
+            t.accent,
+            "showcase",
+        )),
+        (Some(_), Err(_)) => info.color(claim(
+            "hovered item, gpui-component's own",
             "accent",
             t.accent,
             "showcase",
@@ -488,13 +510,24 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
     // own, a selected Ghost button: its fill secondary_active, its text the
     // title's at rest (demo::MenuLook).
     let info = match bar_open {
-        Some(_) => info.colors(stated_claim(
-            "open title",
-            "menu_bar.item(OPEN).fill",
-            state_fill_of(&r.menu_bar.item(WidgetState::OPEN)),
-            "showcase",
-        )),
-        None => info.color(claim(
+        Ok(Some(_)) | Err(_) => info.colors(
+            stated_claim(
+                "open title",
+                "menu_bar.item(OPEN).fill",
+                state_fill_of(
+                    &r.menu_bar.item(WidgetState::OPEN),
+                    "menu_bar.item(OPEN).fill",
+                ),
+                "showcase",
+            )
+            .or_own(claim(
+                "open title, gpui-component's own selected Ghost",
+                "secondary_active",
+                t.secondary_active,
+                "gpui-component/button/button.rs:1346",
+            )),
+        ),
+        Ok(None) => info.color(claim(
             "open title, none stated: gpui-component's own selected Ghost",
             "secondary_active",
             t.secondary_active,
@@ -523,7 +556,10 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
         .colors(stated_claim(
             "hovered title",
             "menu_bar.item(HOVER).fill",
-            state_fill_of(&r.menu_bar.item(WidgetState::HOVER)),
+            state_fill_of(
+                &r.menu_bar.item(WidgetState::HOVER),
+                "menu_bar.item(HOVER).fill",
+            ),
             "showcase",
         ))
         .colors(stated_claim(
@@ -542,7 +578,10 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
         .colors(stated_claim(
             "pressed item",
             "menu.item(PRESSED).fill",
-            state_fill_of(&r.menu.item(WidgetState::PRESSED)),
+            state_fill_of(
+                &r.menu.item(WidgetState::PRESSED),
+                "menu.item(PRESSED).fill",
+            ),
             "showcase",
         ))
         .colors(stated_claim(
@@ -625,28 +664,47 @@ fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
     };
     let [top, _, bottom, _] = next::padding_of(&rest);
     let [panel_top, _, panel_bottom, _] = next::padding_of(&panel);
-    let info = match fill_of(&panel) {
-        Some(_) => info.colors(stated_claim(
-            "menu bg",
-            "menu.panel(NONE).fill",
-            fill_of(&r.menu.panel(WidgetState::NONE)),
-            "showcase",
-        )),
-        None => info.color(claim(
+    let info = match fill_of(&panel, "menu.panel(NONE).fill") {
+        Ok(Some(_)) | Err(_) => info.colors(
+            stated_claim(
+                "menu bg",
+                "menu.panel(NONE).fill",
+                fill_of(&r.menu.panel(WidgetState::NONE), "menu.panel(NONE).fill"),
+                "showcase",
+            )
+            .or_own(claim(
+                "menu bg, the popup's own",
+                "popover",
+                t.popover,
+                "gpui-component/styled.rs:190",
+            )),
+        ),
+        Ok(None) => info.color(claim(
             "menu bg, none stated: the popup's own",
             "popover",
             t.popover,
             "gpui-component/styled.rs:190",
         )),
     };
-    let info = match fill_of(&m.separator(WidgetState::NONE)) {
-        Some(_) => info.colors(stated_claim(
-            "menu separator",
-            "menu.separator(NONE).fill",
-            fill_of(&r.menu.separator(WidgetState::NONE)),
-            "showcase",
-        )),
-        None => info.color(claim(
+    let info = match fill_of(&m.separator(WidgetState::NONE), "menu.separator(NONE).fill") {
+        Ok(Some(_)) | Err(_) => info.colors(
+            stated_claim(
+                "menu separator",
+                "menu.separator(NONE).fill",
+                fill_of(
+                    &r.menu.separator(WidgetState::NONE),
+                    "menu.separator(NONE).fill",
+                ),
+                "showcase",
+            )
+            .or_own(claim(
+                "menu separator, gpui-component's own",
+                "border",
+                t.border,
+                "showcase",
+            )),
+        ),
+        Ok(None) => info.color(claim(
             "menu separator, none stated",
             "border",
             t.border,
@@ -1719,22 +1777,28 @@ pub fn resize_handle(
             "a 1px line, upstream's HANDLE_SIZE: no native theme is installed, so there is no splitter.divider_width (resizable/resize_handle.rs, HANDLE_SIZE)",
         ),
     };
-    let hover = native.and_then(|r| {
-        stated_claim(
-            "line under the pointer",
-            "splitter.handle(HOVER).fill",
-            fill_of(&r.splitter.handle(WidgetState::HOVER)),
-            "showcase",
-        )
-    });
-    let info = match hover {
-        Some(hover) => info
+    let hover = native
+        .map(|r| {
+            stated_claim(
+                "line under the pointer",
+                "splitter.handle(HOVER).fill",
+                fill_of(
+                    &r.splitter.handle(WidgetState::HOVER),
+                    "splitter.handle(HOVER).fill",
+                ),
+                "showcase",
+            )
+        })
+        .unwrap_or_default();
+    let info = match hover.read {
+        Err(unmapped) => info.fill_unmapped("hover", unmapped),
+        Ok(Some(hover)) => info
             .color(hover)
             .config(
                 "hover",
                 "splitter.handle(HOVER).fill under the pointer, through the group the handle is named in (resizable/resize_handle.rs, ResizeHandle); while it is pressed, active_handle, which the connector fills with the same colour",
             ),
-        None => info.not_themeable(
+        Ok(None) => info.not_themeable(
             "hover",
             "none: a hovered handle keeps its resting colour, upstream's own; no native theme states a splitter.handle(HOVER).fill to paint (resizable/resize_handle.rs, ResizeHandleState)",
         ),
@@ -2237,26 +2301,30 @@ pub fn preference_switch(
         (false, false) => "off",
     });
     let native = native.filter(|r| next::variants::switch_color(r).is_ok());
-    let on = native.and_then(|r| {
-        stated_claim(
-            "track",
-            "switch.track(CHECKED).fill",
-            fill_of(&r.switch.track(WidgetState::CHECKED)),
-            "showcase",
-        )
-    });
+    let on = native
+        .map(|r| {
+            stated_claim(
+                "track",
+                "switch.track(CHECKED).fill",
+                fill_of(
+                    &r.switch.track(WidgetState::CHECKED),
+                    "switch.track(CHECKED).fill",
+                ),
+                "showcase",
+            )
+        })
+        .unwrap_or_default();
     let info = match (checked, disabled, on) {
         (_, true, _) => info.not_themeable(
             "disabled",
             "the row at half opacity (setting/item.rs, SettingItem), and the track at half alpha within it (gpui-component/switch.rs, Switch)",
         ),
-        (true, false, Some(on)) => info.color(on),
-        (true, false, None) => info.color(claim(
+        (true, false, on) => info.colors(on.or_own(claim(
             "track",
             "primary",
             t.primary,
             "gpui-component/switch.rs:186",
-        )),
+        ))),
         (false, false, _) => info.color(claim(
             "track",
             "switch",

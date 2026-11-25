@@ -28,7 +28,9 @@ use crate::app::Showcase;
 use crate::demo::TabBarKind;
 use crate::elements;
 use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, next_stated};
-use crate::support::{NativeStyled, frame_drawer, next_metric, with_gap, with_padding};
+use crate::support::{
+    NativeStyled, drawn_state_fill, frame_drawer, next_metric, with_gap, with_padding,
+};
 use crate::{
     INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
     INSPECTOR_TOKENS_NOTE, demo, probe,
@@ -748,12 +750,11 @@ impl PanelLook {
             copy_radius: next::radius_of(&body)
                 .map_or(theme.radius, |radius| gpui::px(radius.max(0.))),
             copy_hover: (
-                next::state_fill_of(&r.button.body(WidgetState::HOVER))
-                    .unwrap_or(theme.button_hover),
+                drawn_state_fill(&r.button.body(WidgetState::HOVER)).unwrap_or(theme.button_hover),
                 colour(&r.button.label(WidgetState::HOVER)).unwrap_or(theme.button_foreground),
             ),
             copy_active: (
-                next::state_fill_of(&r.button.body(WidgetState::PRESSED))
+                drawn_state_fill(&r.button.body(WidgetState::PRESSED))
                     .unwrap_or(theme.button_active),
                 colour(&r.button.label(WidgetState::PRESSED)).unwrap_or(theme.button_foreground),
             ),

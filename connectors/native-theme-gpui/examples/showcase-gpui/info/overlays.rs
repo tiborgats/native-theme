@@ -17,7 +17,7 @@ use crate::demo::{
     ButtonKind, ButtonState, FrameFrom, MenuRowsLook, MenuRowsParts, Overlay, SAMPLE_MENU,
     SheetSide,
 };
-use crate::support::SampleIcon;
+use crate::support::{SampleIcon, drawn_fill, drawn_state_fill};
 
 /// The page's Button that opens `overlay`, refined by `geometry::button`
 /// from `native` where given; its geometry line is recorded by
@@ -473,14 +473,14 @@ pub fn menu_row(
         look,
     );
     let unstated: Vec<&str> = [
-        ("menu.panel(NONE).fill", fill_of(&parts.panel).is_none()),
+        ("menu.panel(NONE).fill", drawn_fill(&parts.panel).is_none()),
         (
             "menu.item_label(NONE).color",
             text_color_of(&parts.label).is_none(),
         ),
         (
             "menu.item(HOVER).fill",
-            state_fill_of(&parts.hovered).is_none(),
+            drawn_state_fill(&parts.hovered).is_none(),
         ),
         (
             "menu.item_label(HOVER).color",
@@ -521,7 +521,7 @@ pub fn menu_row(
 fn hover_text_from(parts: &MenuRowsParts) -> HoverText {
     match (
         state_text_color_of(&parts.hovered_label).is_some(),
-        state_fill_of(&parts.hovered).is_some(),
+        drawn_state_fill(&parts.hovered).is_some(),
     ) {
         (true, _) => HoverText::Stated,
         (false, true) => HoverText::AtRest,
@@ -542,16 +542,17 @@ fn menu_row_look(
 ) -> WidgetInfo {
     let (frame_width, frame_from) = (look.frame_width.0.as_f32(), look.frame_width.1);
     let info = info
-        .color(
-            r.and_then(|r| {
+        .colors(
+            r.map(|r| {
                 stated_claim(
                     "bg (the frame's)",
                     "menu.panel(NONE).fill",
-                    fill_of(&r.menu.panel(WidgetState::NONE)),
+                    fill_of(&r.menu.panel(WidgetState::NONE), "menu.panel(NONE).fill"),
                     "showcase",
                 )
             })
-            .unwrap_or_else(|| claim("bg (the frame's)", "popover", t.popover, "showcase")),
+            .unwrap_or_default()
+            .or_own(claim("bg (the frame's)", "popover", t.popover, "showcase")),
         )
         .color(
             r.and_then(|r| {
@@ -571,16 +572,17 @@ fn menu_row_look(
                 )
             }),
         )
-        .color(
-            r.and_then(|r| {
+        .colors(
+            r.map(|r| {
                 stated_claim(
                     "hover",
                     "menu.item(HOVER).fill",
-                    state_fill_of(&r.menu.item(WidgetState::HOVER)),
+                    state_fill_of(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill"),
                     "showcase",
                 )
             })
-            .unwrap_or_else(|| claim("hover", "accent", t.accent, "showcase")),
+            .unwrap_or_default()
+            .or_own(claim("hover", "accent", t.accent, "showcase")),
         )
         .color(
             match (r, hover_text_from(parts)) {
@@ -639,14 +641,20 @@ fn menu_row_look(
                 "showcase",
             )
         }))
-        .colors(r.and_then(|r| {
-            stated_claim(
-                "pressed item",
-                "menu.item(PRESSED).fill",
-                state_fill_of(&r.menu.item(WidgetState::PRESSED)),
-                "showcase",
-            )
-        }))
+        .colors(
+            r.map(|r| {
+                stated_claim(
+                    "pressed item",
+                    "menu.item(PRESSED).fill",
+                    state_fill_of(
+                        &r.menu.item(WidgetState::PRESSED),
+                        "menu.item(PRESSED).fill",
+                    ),
+                    "showcase",
+                )
+            })
+            .unwrap_or_default(),
+        )
         .colors(r.and_then(|r| {
             stated_claim(
                 "pressed item text",

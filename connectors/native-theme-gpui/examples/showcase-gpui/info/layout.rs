@@ -270,7 +270,10 @@ pub fn next_group_box(
             info.colors(stated_claim(
                 "fill",
                 "card.container(NONE).fill",
-                fill_of(&r.card.container(WidgetState::NONE)),
+                fill_of(
+                    &r.card.container(WidgetState::NONE),
+                    "card.container(NONE).fill",
+                ),
                 "native-theme-gpui/next/builders.rs:750",
             )),
             t,
@@ -478,7 +481,10 @@ pub fn card(t: &Theme, native: Option<&NextTheme>, container_margin: Option<Pixe
             info.colors(stated_claim(
                 "fill",
                 "card.container(NONE).fill",
-                fill_of(&r.card.container(WidgetState::NONE)),
+                fill_of(
+                    &r.card.container(WidgetState::NONE),
+                    "card.container(NONE).fill",
+                ),
                 "native-theme-gpui/next/builders.rs:750",
             )),
             t,
@@ -856,14 +862,19 @@ pub fn native_expander(
     } else {
         info
     };
-    let info = match stated_claim(
+    let hover = stated_claim(
         "hovered title",
         "expander.header(HOVER).fill",
-        state_fill_of(&r.expander.header(WidgetState::HOVER)),
+        state_fill_of(
+            &r.expander.header(WidgetState::HOVER),
+            "expander.header(HOVER).fill",
+        ),
         "showcase",
-    ) {
-        Some(hover) => info.color(hover),
-        None => info.not_themeable(
+    );
+    let info = match hover.read {
+        Ok(Some(hover)) => info.color(hover),
+        Err(unmapped) => info.fill_unmapped(hover.role, unmapped),
+        Ok(None) => info.not_themeable(
             "hover",
             "none: no rule states expander.header(HOVER).fill, and upstream's title row has no hover style of its own (gpui-component/accordion.rs, AccordionItem::hover)",
         ),
@@ -1067,13 +1078,13 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
         .colors(stated_claim(
             "bar",
             "tab.bar(NONE).fill",
-            fill_of(&r.tab.bar(WidgetState::NONE)),
+            fill_of(&r.tab.bar(WidgetState::NONE), "tab.bar(NONE).fill"),
             "native-theme-gpui/widgets/tab_bar.rs:282",
         ))
         .colors(stated_claim(
             "unselected tab",
             "tab.tab(NONE).fill",
-            fill_of(&r.tab.tab(WidgetState::NONE)),
+            fill_of(&r.tab.tab(WidgetState::NONE), "tab.tab(NONE).fill"),
             "native-theme-gpui/widgets/tab_bar.rs:283",
         ))
         .colors(stated_claim(
@@ -1085,7 +1096,7 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
         .colors(stated_claim(
             "selected tab",
             "tab.tab(SELECTED).fill",
-            fill_of(&r.tab.tab(WidgetState::SELECTED)),
+            fill_of(&r.tab.tab(WidgetState::SELECTED), "tab.tab(SELECTED).fill"),
             "native-theme-gpui/widgets/tab_bar.rs:287",
         ))
         .colors(stated_claim(
@@ -1110,7 +1121,7 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
         .colors(stated_claim(
             "hovered unselected tab, in place of its fill, over the bar",
             "tab.tab(HOVER).fill",
-            state_fill_of(&r.tab.tab(WidgetState::HOVER)),
+            state_fill_of(&r.tab.tab(WidgetState::HOVER), "tab.tab(HOVER).fill"),
             "native-theme-gpui/widgets/tab_bar.rs:285",
         ))
         .colors(
@@ -1135,8 +1146,11 @@ pub fn native_tab_row(t: &Theme, r: &NextTheme, variant: &'static str) -> Widget
         .colors(stated_claim(
             "selected tab's line",
             "tab.indicator(SELECTED).fill",
-            look.indicator
-                .and(fill_of(&r.tab.indicator(WidgetState::SELECTED))),
+            fill_of(
+                &r.tab.indicator(WidgetState::SELECTED),
+                "tab.indicator(SELECTED).fill",
+            )
+            .map(|fill| look.indicator.and(fill)),
             "native-theme-gpui/widgets/tab_bar.rs:306",
         ));
     let [top, right, bottom, left] = padding_of(&r.tab.tab(WidgetState::NONE));
@@ -1429,13 +1443,17 @@ pub(crate) fn segmented_lines(
             "none, as upstream's segmented TabBar draws none: the theme states no segmented_control.track(NONE).stroke gpui can draw (tab/tab_bar.rs, TabBar::render); the track is rounded by {radius}"
         ),
     };
-    let separators = match s.separator_line() {
-        None => "none, as upstream's segmented TabBar draws no line between its segments: the theme states no segmented_control.separator(NONE).fill (tab/tab_bar.rs, TabBar::render)".to_string(),
-        Some((_, width)) if width > 0.0 => format!(
+    let separators = match (s.separator, s.separator_line()) {
+        (Err(unmapped), _) => format!(
+            "none, as upstream's segmented TabBar draws no line between its segments: the theme states no value gpui can take at {} (tab/tab_bar.rs, TabBar::render; spec §10, rule 4)",
+            unmapped.home()
+        ),
+        (Ok(_), None) => "none, as upstream's segmented TabBar draws no line between its segments: the theme states no segmented_control.separator(NONE).fill (tab/tab_bar.rs, TabBar::render)".to_string(),
+        (Ok(_), Some((_, width))) if width > 0.0 => format!(
             "segmented_control.separator_width, {}px, in segmented_control.separator(NONE).fill between segments",
             px_text(width)
         ),
-        Some(_) => "none: segmented_control.separator_width is 0".to_string(),
+        (Ok(_), Some(_)) => "none: segmented_control.separator_width is 0".to_string(),
     };
     [size, font, border, separators]
 }
@@ -1455,33 +1473,33 @@ pub fn segmented(
     let info = match native {
         Some(r) => {
             let s = SegmentedLook::next_of(r);
-            let track = stated_claim("track", "segmented_control.track(NONE).fill", fill_of(&r.segmented_control.track(WidgetState::NONE)), "showcase")
-                .unwrap_or_else(|| claim("track", "tab_bar_segmented", t.tab_bar_segmented, "showcase"));
+            let track = stated_claim("track", "segmented_control.track(NONE).fill", fill_of(&r.segmented_control.track(WidgetState::NONE), "segmented_control.track(NONE).fill"), "showcase")
+                .or_own(claim("track", "tab_bar_segmented", t.tab_bar_segmented, "showcase"));
             let label = stated_claim("label", "segmented_control.label(NONE).color", text_color_of(&r.segmented_control.label(WidgetState::NONE)), "showcase")
                 .unwrap_or_else(|| claim("label", "tab_foreground", t.tab_foreground, "showcase"));
-            let selected_fill = stated_claim("selected segment", "segmented_control.segment(SELECTED).fill", fill_of(&r.segmented_control.segment(WidgetState::SELECTED)), "showcase")
-                .unwrap_or_else(|| claim("selected segment", "background", t.background, "showcase"));
+            let selected_fill = stated_claim("selected segment", "segmented_control.segment(SELECTED).fill", fill_of(&r.segmented_control.segment(WidgetState::SELECTED), "segmented_control.segment(SELECTED).fill"), "showcase")
+                .or_own(claim("selected segment", "background", t.background, "showcase"));
             let selected_label = stated_claim("selected label", "segmented_control.label(SELECTED).color", text_color_of(&r.segmented_control.label(WidgetState::SELECTED)), "showcase")
                 .unwrap_or_else(|| claim("selected label", "tab_active_foreground", t.tab_active_foreground, "showcase"));
             let hovered_label = stated_claim("hovered label", "segmented_control.label(HOVER).color", state_text_color_of(&r.segmented_control.label(WidgetState::HOVER)), "showcase")
                 .unwrap_or_else(|| claim("hovered label", "tab_active_foreground", t.tab_active_foreground, "showcase"));
             // The line left of every segment but the first, where one is drawn.
-            let separators = s.separator_line().map(|(_, width)| {
-                let lines = (labels.len() > 1).then_some(width);
-                edge_claim("separators", "segmented_control.separator(NONE).fill", fill_of(&r.segmented_control.separator(WidgetState::NONE)), lines, "showcase")
-            });
+            let lines = (labels.len() > 1).then_some(s.separator_width.max(0.0));
+            let separators = edge_claim("separators", "segmented_control.separator(NONE).fill", fill_of(&r.segmented_control.separator(WidgetState::NONE), "segmented_control.separator(NONE).fill"), lines, "showcase");
             let info = WidgetInfo::new("Segmented control")
                 .variant("drawn by the showcase")
-                .color(track)
+                .colors(track)
                 .color(label)
-                .color(selected_fill)
+                .colors(selected_fill)
                 .color(selected_label)
                 .color(hovered_label)
                 .colors(edge_claim("border", "segmented_control.track(NONE).stroke.color", stroke_color_of(&r.segmented_control.track(WidgetState::NONE)), s.frame_width(), "showcase"))
-                .colors(separators.flatten());
-            let info = match stated_claim("hovered segment", "segmented_control.segment(HOVER).fill", state_fill_of(&r.segmented_control.segment(WidgetState::HOVER)), "showcase") {
-                Some(hover) => info.color(hover),
-                None => info.not_themeable("hover", "none: no rule states segmented_control.segment(HOVER).fill, and upstream's unselected segment keeps a transparent fill under the pointer (tab/tab.rs, TabVariant::hovered)"),
+                .colors(separators);
+            let hover = stated_claim("hovered segment", "segmented_control.segment(HOVER).fill", state_fill_of(&r.segmented_control.segment(WidgetState::HOVER), "segmented_control.segment(HOVER).fill"), "showcase");
+            let info = match hover.read {
+                Ok(Some(hover)) => info.color(hover),
+                Err(unmapped) => info.fill_unmapped(hover.role, unmapped),
+                Ok(None) => info.not_themeable("hover", "none: no rule states segmented_control.segment(HOVER).fill, and upstream's unselected segment keeps a transparent fill under the pointer (tab/tab.rs, TabVariant::hovered)"),
             };
             let [size, font, border, separators] = segmented_lines(&s, &r.typography, t);
             info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.segment(SELECTED).fill, segment(HOVER).fill and the labels' colours would have no receiver there")
