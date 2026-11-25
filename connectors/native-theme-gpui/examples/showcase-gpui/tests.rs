@@ -3296,6 +3296,71 @@ fn the_page_tabs_navigate(cx: &mut TestAppContext) {
     }
 }
 
+/// The page row's menu Button is the 0.8.0 ghost
+/// (`next::variants::ghost_button`, `support::ghost_variant`): under
+/// kde-breeze light, which states the flat button's hovered outline, it is
+/// edged in `button.body(HOVER; variant=Flat).stroke.color` under the
+/// pointer, and in no colour at rest, where
+/// `next::geometry::ghost_button_rest` makes the edge transparent (spec §10,
+/// rule 0).
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_page_tabs_menu_draws_the_flat_hover_outline(cx: &mut TestAppContext) {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    use native_theme_gpui::next::state_stroke_color_of;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let outline = next_theme(&mut cx, &showcase).and_then(|r| {
+        state_stroke_color_of(&r.button.body(ButtonQuery::flat().state(WidgetState::HOVER)))
+    });
+    assert!(
+        outline.is_some_and(|c| !c.is_transparent()),
+        "kde-breeze light states no flat hover outline, so this test proves nothing"
+    );
+    let Some(outline) = outline else { return };
+    let menu = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui
+            .read(cx)
+            .layout_drawn()
+            .get("chrome.page_tabs.menu")
+            .copied()
+    });
+    assert!(menu.is_some(), "the page row's menu Button is not laid out");
+    let Some(menu) = menu else { return };
+    let edges = |cx: &mut VisualTestContext| -> Vec<gpui::Hsla> {
+        cx.update(|window, _| {
+            let bounds = menu.scale(window.scale_factor());
+            scene_quads(window)
+                .into_iter()
+                .filter(|q| {
+                    q.bounds.left() >= bounds.left()
+                        && q.bounds.top() >= bounds.top()
+                        && q.bounds.right() <= bounds.right()
+                        && q.bounds.bottom() <= bounds.bottom()
+                        && q.border_widths.top.0 > 0.
+                        && !q.border_color.is_transparent()
+                })
+                .map(|q| q.border_color)
+                .collect()
+        })
+    };
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        edges(&mut cx),
+        Vec::<gpui::Hsla>::new(),
+        "the page row's menu Button is edged at rest"
+    );
+    hover(&mut cx, menu.center());
+    draw(&mut cx);
+    let hovered = edges(&mut cx);
+    assert!(
+        hovered.contains(&outline),
+        "the hovered page row's menu Button is edged in {hovered:?}, not \
+         button.body(HOVER; variant=Flat).stroke.color {outline:?}"
+    );
+}
+
 /// The page row's menu icon, the chosen set's ChevronDown, is
 /// `next::geometry::icon_size_small` of the installed 0.8.0 theme as every
 /// other small icon is (M9-015), and the row's info names that builder while

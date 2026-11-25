@@ -1,5 +1,6 @@
 //! What the Buttons page's widgets report about themselves (spec §3.4).
 
+use gpui::Hsla;
 use gpui_component::{Colorize as _, Size, theme::Theme};
 use native_theme::next::{
     ButtonQuery, PartStated, PartStyle, ResolvedTheme as NextTheme, WidgetState,
@@ -366,6 +367,9 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
 /// `native`, the resting body's stroke at rest and upstream's colour under
 /// the pointer at that stroke's width, which replaces upstream's: none at 0.
 fn edge(t: &Theme, kind: ButtonKind, native: Option<&NextTheme>) -> Vec<ColorClaim> {
+    if kind == ButtonKind::Ghost && ghost_outline(native).is_some() {
+        return Vec::new();
+    }
     let width = native.and_then(|r| stroke_width_of(&r.button.body(WidgetState::NONE)));
     if width.is_some_and(|width| width <= 0.0) {
         return Vec::new();
@@ -416,6 +420,40 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&NextTheme>) -> Vec<ColorCla
         _ => None,
     };
     rest.into_iter().chain(hovered).collect()
+}
+
+/// The outline of a Ghost Button built with
+/// `native_theme_gpui::next::variants::ghost_button` under `native` and
+/// refined by `next::geometry::ghost_button_rest`, as its colour and width:
+/// `button.body(HOVER; variant=Flat).stroke.color` where a rule states it
+/// for the state, the variant's colour, at the refinement's width, the
+/// hovered flat body's stroke width; `None` where no rule states it, or the
+/// width is 0.
+fn ghost_outline(native: Option<&NextTheme>) -> Option<(Hsla, f32)> {
+    let hovered = native?
+        .button
+        .body(ButtonQuery::flat().state(WidgetState::HOVER));
+    let width = stroke_width_of(&hovered).filter(|&width| width > 0.0)?;
+    Some((state_stroke_color_of(&hovered)?, width))
+}
+
+/// `info` with the line of the [`ghost_outline`] `native` states: upstream
+/// paints the variant's colour as the border under the pointer and while
+/// pressed (button/button.rs, ButtonVariant::border_color, Custom arm), and
+/// the refinement makes it transparent at rest. A line, not a claim: the
+/// claim gates read no query with axis values.
+fn ghost_outline_line(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
+    match ghost_outline(native) {
+        Some((colour, width)) => info.config(
+            "outline",
+            format!(
+                "button.body(HOVER; variant=Flat).stroke.color {}, {}px wide, under the pointer and while pressed: next::variants::ghost_button's colour, which upstream paints as the border (button/button.rs, ButtonVariant::border_color, Custom arm), at next::geometry::ghost_button_rest's width; none at rest, where that refinement makes the border transparent",
+                super::as_rgba(colour),
+                px_text(width)
+            ),
+        ),
+        None => info,
+    }
 }
 
 /// `info` with what a Button of `kind` paints at rest, its [`edge`], and
@@ -577,6 +615,7 @@ pub fn button(
     };
     let info = if styled {
         info.not_themeable("edge", match (state, native) {
+                (_, native) if kind == ButtonKind::Ghost && ghost_outline(native).is_some() => "none at rest: next::geometry::ghost_button_rest, refined after geometry::button, replaces its border with a transparent one of the hovered flat body's stroke width, which upstream replays over the selected and disabled styles; under the pointer and pressed the variant's colour, button.body(HOVER; variant=Flat).stroke.color (button/button.rs, ButtonVariant::border_color, Custom arm; RenderOnce for Button)".to_string(),
                 (_, Some(r)) if stroke_width_of(&r.button.body(WidgetState::NONE)).is_some_and(|width| width <= 0.0) => "none in any state: button.body(NONE).stroke.width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)".to_string(),
                 (ButtonState::Idle, _) => format!("button.body(NONE).stroke.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
                     ButtonKind::Default | ButtonKind::DefaultOutline => "input",
@@ -607,7 +646,7 @@ pub fn button(
     };
     let info = match kind {
         ButtonKind::Default => info.instance("variant", "no variant method, so ButtonVariant::Default -- the button family, whose own edge colour is input, not border (button/button.rs, ButtonVariant::border_color)"),
-        ButtonKind::Ghost => ghost_variant(info),
+        ButtonKind::Ghost => ghost_outline_line(ghost_variant(info), native),
         ButtonKind::Bordered => info.instance("variant", "native_theme_gpui::variants::bordered_button: a custom variant with the Default Button's text, hover and press colours (button_foreground, button_hover, button_active) and button.hover_border_color as its border, which upstream's Default variant draws in input (button/button.rs, ButtonVariant::border_color). A custom variant fills itself at rest with its border colour mixed toward transparent (button/button.rs, ButtonVariant::bg_color), so the showcase gives the Button ThemeColor button, the Default Button's rest fill. Built only where the theme states a hover border; elsewhere the Button is the Default variant"),
         ButtonKind::Link => info
             .not_themeable("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)")
@@ -873,16 +912,20 @@ fn one_label(info: WidgetInfo, hovered: &str) -> WidgetInfo {
 }
 
 /// The variant line of a Ghost Button built with
-/// `native_theme_gpui::variants::ghost_button`, and its one label.
+/// `native_theme_gpui::next::variants::ghost_button`, and its one label.
 fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
-    one_label(info, "button.label(HOVER; variant=Flat).color").instance("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu's hover fill (`menu.hover_background`), not a button hover")
+    one_label(info, "button.label(HOVER; variant=Flat).color").instance("variant", "native_theme_gpui::next::variants::ghost_button: native_theme_gpui::variants::ghost_button, flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background, and the flat button's hovered outline, button.body(HOVER; variant=Flat).stroke.color, as its colour where a rule states it for the state; with none, or where no 0.8.0 theme is installed or it states that outline in a form gpui cannot take, variants::ghost_button as it is (support::ghost_variant). Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu's hover fill (`menu.hover_background`), not a button hover")
 }
 
-/// `info` with what the page's Ghost Button paints, unrefined, and its
-/// variant line: the status bar's side-panel toggle is that Ghost too, and
-/// takes it from here so the two cannot drift apart.
-pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
-    ghost_variant(colours(info, t, ButtonKind::Ghost, None))
+/// `info` with what the page's Ghost Button paints, unrefined but for
+/// `next::geometry::ghost_button_rest`, under the installed 0.8.0 theme
+/// `native`, and its variant line: the status bar's side-panel toggle is
+/// that Ghost too, and takes it from here so the two cannot drift apart.
+pub(super) fn native_ghost(info: WidgetInfo, t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
+    ghost_outline_line(
+        ghost_variant(colours(info, t, ButtonKind::Ghost, None)),
+        native,
+    )
 }
 
 /// The variant line of a tool Button built with
@@ -1215,7 +1258,7 @@ fn toolbar_checked_colors(
                     "selected bg",
                     "secondary_active",
                     t.secondary_active,
-                    "native-theme-gpui/next/mod.rs:736",
+                    "native-theme-gpui/next/mod.rs:745",
                 )),
                 _ => None,
             };

@@ -345,6 +345,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
         "where a rule states toolbar.button(HOVER).stroke.color, a transparent fill and a transparent border button.body(NONE).stroke.width wide, and each padding side button.body(NONE) states less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where no rule states the outline",
     ),
     (
+        "ghost_button_rest",
+        "where a rule states button.body(HOVER; variant=Flat).stroke.color, the colour next::variants::ghost_button gives its custom variant, a transparent fill and a transparent border that hovered flat body's stroke width wide, and each padding side button.body(NONE) states less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where no rule states the outline",
+    ),
+    (
         "toolbar_button_checked",
         "toolbar.button(CHECKED).fill and button.label(CHECKED).color (button.label(PRESSED).color where no rule states that for the checked state) on a selected toolbar Button built on next::variants::toolbar_button; where no rule states the checked fill, gpui-component's own selected ghost's, secondary_active (button/button.rs, ButtonVariant::selected, Ghost arm), with no text colour, not a pressed fill of the theme's (spec §10, rule 0a): a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style. Its border colour is toolbar.button(CHECKED).stroke.color where a rule states it, at toolbar_button_rest's width, and stays under the pointer and pressed, where a selected Button takes no hover or press style",
     ),

@@ -872,7 +872,7 @@ pub fn panel_toggle(
             "the ghost variant's active colour while selected, and no hover or press style: upstream paints a selected Button with its variant's selected style, and its hover style, which it registers on every Button, only on one that is neither disabled, loading nor selected (button/button.rs, ButtonVariant::selected; RenderOnce for Button)",
         )
     } else {
-        super::buttons::native_ghost(info, t).not_themeable(
+        super::buttons::native_ghost(info, t, native).not_themeable(
             "fill",
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
         )

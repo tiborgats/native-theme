@@ -367,6 +367,19 @@ pub(crate) fn toolbar_variant(cx: &App) -> (ButtonCustomVariant, ToolVariant) {
     }
 }
 
+/// The flat buttons' variant for the installed 0.8.0 theme,
+/// `next::variants::ghost_button`, edged in the flat button's hovered
+/// outline where a rule states it; where no theme is installed, or it states
+/// that outline in a form gpui cannot take, `variants::ghost_button`, the
+/// variant that builder starts from. A Button of it is refined by
+/// `next::geometry::ghost_button_rest` after its box, which fails for the
+/// same home and then says so in the Button's info.
+pub(crate) fn ghost_variant(cx: &App) -> ButtonCustomVariant {
+    next_resolved(cx)
+        .and_then(|r| native_theme_gpui::next::variants::ghost_button(r, cx).ok())
+        .unwrap_or_else(|| native_theme_gpui::variants::ghost_button(cx))
+}
+
 /// The installed 0.8.0 theme resolved for an inactive window
 /// ([`NextInactive`]), or `None` before `native_theme_gpui::next::apply` ran.
 pub(crate) fn next_inactive(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {

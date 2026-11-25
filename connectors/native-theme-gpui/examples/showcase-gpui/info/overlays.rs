@@ -359,7 +359,7 @@ pub fn hover_card(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
         )
         .instance(
             "trigger",
-            "variants::ghost_button, the flat button's native state colours, on a Button that reports the HoverCard. Its own colours are the Buttons page's Ghost Button's",
+            "next::variants::ghost_button, the flat button's native state colours and hovered outline, on a Button that reports the HoverCard. Its own colours are the Buttons page's Ghost Button's",
         )
         .instance(
             "anchor",

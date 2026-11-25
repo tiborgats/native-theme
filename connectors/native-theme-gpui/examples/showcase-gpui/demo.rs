@@ -114,9 +114,9 @@ use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, next_native_
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
-    SampleListDelegate, SampleTableDelegate, contrast_held, demo_border_width, next_geometry,
-    next_inactive, next_metric, next_resolved, next_value, refined, requested_preferences,
-    toolbar_variant, with_gap, with_padding,
+    SampleListDelegate, SampleTableDelegate, contrast_held, demo_border_width, ghost_variant,
+    next_geometry, next_inactive, next_metric, next_resolved, next_value, refined,
+    requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -1885,7 +1885,9 @@ pub(crate) struct PanelToggle<'a> {
 }
 
 /// A small Ghost `Button` for the status bar -- built with
-/// `variants::ghost_button`, not the toolbar's variant -- dispatching its action,
+/// `next::variants::ghost_button` ([`ghost_variant`]) and, while not
+/// selected, refined by `next::geometry::ghost_button_rest` after its box,
+/// not the toolbar's variant -- dispatching its action,
 /// selected while its panel is open, its icon of the chosen icon theme at
 /// `geometry::icon_size_small` and its tooltip showing the action's key
 /// binding. Where the icon theme has no icon for it, it shows its tooltip's
@@ -1924,14 +1926,24 @@ pub(crate) fn panel_toggle(
     let button = refined(
         ButtonKind::Ghost.apply(Button::new(id), cx).small(),
         tool_button_box(cx).as_ref(),
-    )
-    .selected(open)
-    .toggled(open)
-    .map(|button| match icon {
-        Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
-        None => labelled(ui, cx, button, id, tooltip),
-    })
-    .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
+    );
+    // Selected, it is not refined at rest: upstream replays the refinement
+    // over the selected style (button/button.rs, RenderOnce for Button), so
+    // `ghost_button_rest`'s transparent fill would hide the selected one, and
+    // a selected Button takes no hover or press style to outline.
+    let button = if open {
+        button
+    } else {
+        ButtonKind::Ghost.at_rest(button, cx, &mut button_info)
+    };
+    let button = button
+        .selected(open)
+        .toggled(open)
+        .map(|button| match icon {
+            Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
+            None => labelled(ui, cx, button, id, tooltip),
+        })
+        .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(
         button,
@@ -2456,7 +2468,17 @@ fn native_tab_bar(
     let on_click: TabClick = Rc::new(on_click);
     let on_tab = on_click.clone();
     let tool_box = tool_button_box(cx);
-    let ghost = variants::ghost_button(cx);
+    let ghost = ghost_variant(cx);
+    let menu_rest = menu
+        .then(|| {
+            info::next_native_value(
+                cx,
+                next::geometry::ghost_button_rest,
+                "ghost_button_rest",
+                &mut bar_info,
+            )
+        })
+        .flatten();
     let menu = menu.then(|| {
         // The chosen set's ChevronDown at `next::geometry::icon_size_small`
         // (its own size where the theme states no `icons.sizes.small`, spec
@@ -2473,8 +2495,11 @@ fn native_tab_bar(
         let caret =
             Caret::new(Size::XSmall).text_color(cx.theme().secondary_foreground.opacity(0.75));
         refined(
-            Button::new("page-tabs-menu").xsmall().custom(ghost),
-            tool_box.as_ref(),
+            refined(
+                Button::new("page-tabs-menu").xsmall().custom(ghost),
+                tool_box.as_ref(),
+            ),
+            menu_rest.as_ref(),
         )
         .accessibility_label("Pages")
         .map(|button| match menu_icon {
@@ -3879,7 +3904,8 @@ pub(crate) enum ButtonKind {
     Success,
     Warning,
     Info,
-    /// `native_theme_gpui::variants::ghost_button`, not upstream's `.ghost()`.
+    /// `native_theme_gpui::next::variants::ghost_button`
+    /// ([`ghost_variant`]), not upstream's `.ghost()`.
     Ghost,
     /// `native_theme_gpui::variants::bordered_button`, filled with `ThemeColor`
     /// `button` at rest; built only where that returns `Some`
@@ -3923,7 +3949,7 @@ impl ButtonKind {
             Self::Warning => button.warning(),
             // By path: `InfoExt::info` is in scope too.
             Self::Info => ButtonVariants::info(button),
-            Self::Ghost => button.custom(variants::ghost_button(cx)),
+            Self::Ghost => button.custom(ghost_variant(cx)),
             Self::Bordered => match bordered(cx) {
                 Some(v) => button.custom(v).bg(cx.theme().button),
                 None => button,
@@ -3932,6 +3958,24 @@ impl ButtonKind {
             Self::Text => button.text(),
             Self::DefaultOutline => button.outline(),
             Self::PrimaryOutline => button.primary().outline(),
+        }
+    }
+    /// `button`, of this kind and refined by its box, at rest: a Ghost
+    /// refined by `next::geometry::ghost_button_rest`, which hides the
+    /// variant's outline at rest and lays it out inside the box, `info`
+    /// given its line; any other kind as it is. Not for a selected Button:
+    /// upstream replays the refinement over the selected style, whose fill
+    /// its transparent one would hide.
+    pub(crate) fn at_rest(self, button: Button, cx: &App, info: &mut WidgetInfo) -> Button {
+        match self {
+            Self::Ghost => next_native_info(
+                button,
+                cx,
+                next::geometry::ghost_button_rest,
+                "ghost_button_rest",
+                info,
+            ),
+            _ => button,
         }
     }
     /// The kind a Button asked for as `self` is built as under the installed
@@ -4150,6 +4194,7 @@ fn button_turning(
         "button",
         &mut button_info,
     );
+    let button = kind.at_rest(button, cx, &mut button_info);
     // The platform's disabled pair, which upstream's disabled style replays
     // the caller's refinement over (button/button.rs:830-836); a Button that
     // is not disabled must not take it, since it lands at rest too (:764).
@@ -7541,6 +7586,7 @@ pub(crate) fn built_tooltip_button(
         "button",
         &mut tooltip_info,
     );
+    let button = kind.at_rest(button, cx, &mut tooltip_info);
     let button = labelled(ui, cx, button, id, label);
     let style = info::next_native_value(cx, next::geometry::tooltip, "tooltip", &mut tooltip_info);
     let content = info::next_native_value(
@@ -9471,20 +9517,16 @@ pub(crate) fn overlay_button(
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let mut button_info = info::overlays::trigger(cx.theme(), overlay, button_theme(cx));
-    let button = labelled(
-        ui,
+    let kind = overlay.button_kind();
+    let button = next_native_info(
+        kind.apply(Button::new(id), cx),
         cx,
-        next_native_info(
-            overlay.button_kind().apply(Button::new(id), cx),
-            cx,
-            next::geometry::button,
-            "button",
-            &mut button_info,
-        ),
-        id,
-        label,
-    )
-    .on_click(on_click);
+        next::geometry::button,
+        "button",
+        &mut button_info,
+    );
+    let button = kind.at_rest(button, cx, &mut button_info);
+    let button = labelled(ui, cx, button, id, label).on_click(on_click);
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
 }
@@ -9777,19 +9819,15 @@ pub(crate) fn hover_card(
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
     let mut card_info = info::overlays::hover_card(cx.theme(), popover_theme(cx));
-    let trigger = labelled(
-        ui,
+    let trigger = next_native_info(
+        ButtonKind::Ghost.apply(Button::new("overlays-hover-card-trigger"), cx),
         cx,
-        next_native_info(
-            ButtonKind::Ghost.apply(Button::new("overlays-hover-card-trigger"), cx),
-            cx,
-            next::geometry::button,
-            "button",
-            &mut card_info,
-        ),
-        "overlays-hover-card-trigger",
-        "KDE Breeze",
+        next::geometry::button,
+        "button",
+        &mut card_info,
     );
+    let trigger = ButtonKind::Ghost.at_rest(trigger, cx, &mut card_info);
+    let trigger = labelled(ui, cx, trigger, "overlays-hover-card-trigger", "KDE Breeze");
     let card = next_native_info(
         HoverCard::new(id),
         cx,
