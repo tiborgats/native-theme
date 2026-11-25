@@ -622,13 +622,39 @@ const SELECTED_ROW_UNFOCUSED_TEXT: &str = "egui: per call, the selected row's te
      the window is not focused, list.item_label's query with UNFOCUSED_VIEW where a rule states \
      it for that state (pages::basic::RowLook::of)";
 
+/// The route of a home of the primary button's own variant: egui reads none of them.
+const PRIMARY_VARIANT_UNREAD: &str = "not reachable: the primary button is egui's selected \
+     Button in the button scope (pages::basic, primary), outlined and rounded as the push \
+     button, by button.body(NONE) and its hovered and pressed states";
+
+/// The route of the scroll bar thumb's corners, which the atlas writes as the scroll bar scope's
+/// radius, which no `mapping.toml` row holds.
+const THUMB_CORNERS: &str = "egui: the scroll bar scope's corner_radius, the thumb's and its \
+     trough's, where stated; else layout.corner_radius's (native-theme-egui next/build.rs, \
+     thumb_radius; style/derived.rs, scrollbar_radii)";
+/// The route of the thumb's corners in a view without the focus.
+const UNFOCUSED_THUMB_CORNERS: &str = "not reachable: egui rounds the thumb alike whether its view \
+     has the focus or not, by scrollbar.thumb(NONE).corners (native-theme-egui next/build.rs, \
+     thumb_radius)";
+
+/// The route of the segmented control's separator colour on a divider: the companion crate's
+/// control draws its dividers in its outline's colour.
+const SEGMENT_DIVIDER_UNREAD: &str = "not reachable: native-theme-egui-widgets SegmentedControl \
+     (docs/archive/todo_egui-widgets-spec.md §4.4) paints its dividers in its outline's colour, \
+     the scope's segmented_control.track(NONE).stroke.color (native-theme-egui-widgets \
+     segmented_control.rs, Outline::paint_lines)";
+
 /// The homes a page applies per call where `mapping.toml`'s row names a style field the
 /// connector writes, or none, by element id (a prefix, for the rows) and home: the List's and
 /// the table's frames, which `pages::basic::list_frame` paints, the rows whose fills
 /// `pages::basic::inner_corners` rounds where they meet a frame, the selected rows' unfocused
 /// look and a hovered list row's outline, which `pages::basic::RowLook::of` takes, the hover
 /// outline the Basic table's rows never take, the menu bar's fill, which
-/// `chrome::menu_panel` paints, and the text selection the Theme row's `ComboBox` has none of.
+/// `chrome::menu_panel` paints, the side-panel toggle's checked look, which `chrome::ghost_button`
+/// lays over egui's selected button, the scroll bar thumb's corners, which the atlas writes, the
+/// primary button's own variant and the segmented control's separator colour, which egui reads
+/// none of, and
+/// the text selection the Theme row's `ComboBox` has none of.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "basic.list.frame",
@@ -732,6 +758,77 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "chrome.menu_bar",
         "menu_bar.bar(NONE).fill",
         "egui: per call, the menu bar panel's fill (chrome::menu_panel)",
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(NONE; variant=Primary).stroke.color",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(HOVER; variant=Primary).stroke.color",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(PRESSED; variant=Primary).stroke.color",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(NONE; variant=Primary).corners",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "basic.buttons.primary",
+        "button.body(NONE; variant=Primary).stroke.width",
+        PRIMARY_VARIANT_UNREAD,
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.body(CHECKED).fill",
+        "egui: per call, the toggle's fill while the side panel is open, \
+         button.body(CHECKED; variant=Flat).fill where a rule states it for CHECKED, else egui's \
+         own selected button's, visuals.selection.bg_fill (chrome::ghost_button, \
+         chrome::toggle_checked)",
+    ),
+    (
+        "chrome.status_bar.toggle",
+        "button.label(CHECKED).color",
+        "egui: per call, the toggle's label colour while the side panel is open, \
+         button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED, else \
+         egui's own selected button's, visuals.selection.stroke; an icon shown in the label's \
+         place keeps the colour it loads in (chrome::ghost_button, chrome::toggle_checked)",
+    ),
+    (
+        "basic.list.scrollbar",
+        "scrollbar.thumb(NONE).corners",
+        THUMB_CORNERS,
+    ),
+    (
+        "basic.list.scrollbar.thumb",
+        "scrollbar.thumb(NONE).corners",
+        THUMB_CORNERS,
+    ),
+    (
+        "basic.list.scrollbar",
+        "scrollbar.thumb(UNFOCUSED_VIEW).corners",
+        UNFOCUSED_THUMB_CORNERS,
+    ),
+    (
+        "basic.list.scrollbar.thumb",
+        "scrollbar.thumb(UNFOCUSED_VIEW).corners",
+        UNFOCUSED_THUMB_CORNERS,
+    ),
+    (
+        "basic.segmented.divider_1",
+        "segmented_control.separator(NONE).fill",
+        SEGMENT_DIVIDER_UNREAD,
+    ),
+    (
+        "basic.segmented.divider_2",
+        "segmented_control.separator(NONE).fill",
+        SEGMENT_DIVIDER_UNREAD,
     ),
     (
         "chrome.side_panel.settings.theme",

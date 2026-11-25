@@ -901,6 +901,62 @@ fn the_page_menu_lists_and_shows_every_page() {
     assert_eq!(harness.state().settings.page, Page::ThemeMap);
 }
 
+/// The side-panel toggle while the panel is open is checked (spec §10, rule 0a): under
+/// kde-breeze, which states the flat button's checked fill, it is painted in
+/// `button.body(CHECKED; variant=Flat).fill`, not in the flat button's pressed fill, and its
+/// Widget Info routes that home to the call that paints it.
+#[test]
+fn the_open_side_panels_toggle_is_painted_checked() -> Result<(), String> {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().side_panel_visible,
+        "the side panel opens shown"
+    );
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme is installed")?;
+    let flat = |state| ButtonQuery::flat().with_state(state);
+    let checked = crate::demo::drawn_state_fill(&r.button.body(flat(WidgetState::CHECKED)))
+        .ok_or("kde-breeze states no checked flat fill")?;
+    let pressed = crate::demo::drawn_state_fill(&r.button.body(flat(WidgetState::PRESSED)));
+    assert_ne!(
+        Some(checked),
+        pressed,
+        "the two fills are one, so this proves nothing"
+    );
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.element.as_deref() == Some("chrome.status_bar.toggle"))
+        .map(|record| record.rect)
+        .ok_or("the toggle records nothing")?;
+    let fills: Vec<egui::Color32> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape) if shape.rect == rect => Some(shape.fill),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(fills, [checked], "the toggle's frame at {rect:?}");
+    let manifest = Manifest::parse(MANIFEST)?;
+    let how = crate::info::listed_how(
+        &manifest,
+        "chrome.status_bar.toggle",
+        "button.body(CHECKED).fill",
+        &[],
+    );
+    assert!(how.contains("chrome::ghost_button"), "{how}");
+    Ok(())
+}
+
 /// §13.2: three ways to hide and show the side panel; the dragged width survives.
 #[test]
 fn the_side_panel_toggle_hides_and_shows_it() {
@@ -3593,29 +3649,19 @@ fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gap
         .next_resolved(egui::Theme::Light)
         .map(|r| (r.layout.widget_gap, r.toolbar.item_gap));
     assert_eq!(gaps, Some((None, None)));
-    // The Palette row, between Theme and Mode, is no element of the list: its label and its
-    // drop-down are found by their records.
-    let records = harness.state().registry.records();
-    let record = |kind: &str, nth: usize| {
-        records
-            .iter()
-            .filter(|r| r.info.kind == kind)
-            .nth(nth)
-            .map(|r| (kind.to_owned(), r.rect))
-    };
     let placed = |id: &str| Some((id.to_owned(), place_of(&harness, id)));
     let stack = [
         placed("chrome.side_panel.settings.theme_label"),
         placed("chrome.side_panel.settings.theme"),
-        record("Label · theme setting", 1),
-        record("ComboBox · Palette", 0),
+        placed("chrome.side_panel.settings.palette_label"),
+        placed("chrome.side_panel.settings.palette"),
         placed("chrome.side_panel.settings.mode_label"),
         placed("chrome.side_panel.settings.mode"),
         placed("chrome.side_panel.settings.icon_theme_label"),
         placed("chrome.side_panel.settings.icon_theme"),
     ];
     let stack: Option<Vec<(String, egui::Rect)>> = stack.into_iter().collect();
-    let stack = stack.ok_or("the Palette row's label and drop-down are recorded")?;
+    let stack = stack.ok_or("a settings row is not placed")?;
     for pair in stack.windows(2) {
         let [(above_id, above), (below_id, below)] = pair else {
             continue;

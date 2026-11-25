@@ -1165,6 +1165,75 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
+/// `info` with what the status bar's side-panel toggle paints while it is
+/// on, a selected Button of `demo::ghost_checked_variant` under the
+/// installed 0.8.0 theme `native` (`demo::panel_toggle`): its fill and text
+/// `button.body(CHECKED; variant=Flat).fill` and
+/// `button.label(CHECKED; variant=Flat).color` where a rule states each for
+/// the state, each named in a note, else claimed as
+/// [`native_ghost_selected`] claims it, gpui-component's own selected
+/// ghost's (spec §10, rule 0a).
+pub(super) fn native_ghost_checked(
+    info: WidgetInfo,
+    t: &Theme,
+    native: Option<&NextTheme>,
+) -> WidgetInfo {
+    let checked = ButtonQuery::flat().state(WidgetState::CHECKED);
+    let fill = native.and_then(|r| {
+        state_fill_of(
+            &r.button.body(checked),
+            "button.body(CHECKED; variant=Flat).fill",
+        )
+        .ok()
+        .flatten()
+    });
+    // A checked fill gpui cannot take leaves the whole toggle the plain
+    // ghost (`demo::panel_toggle`).
+    let unmapped = native.is_some_and(|r| {
+        state_fill_of(
+            &r.button.body(checked),
+            "button.body(CHECKED; variant=Flat).fill",
+        )
+        .is_err()
+    });
+    let text = native
+        .filter(|_| !unmapped)
+        .and_then(|r| state_text_color_of(&r.button.label(checked)));
+    // The claim gate reads no home with an axis value, so a stated checked
+    // colour is named in a note, which the Widget Info rows' homes repeat.
+    let info = match fill {
+        Some(fill) => info.instance(
+            "selected bg",
+            format!(
+                "button.body(CHECKED; variant=Flat).fill {}, the checked variant's active colour (demo::ghost_checked_variant)",
+                super::as_rgba(fill)
+            ),
+        ),
+        None => info.color(claim(
+            "selected bg",
+            "secondary_active",
+            t.secondary_active,
+            "native-theme-gpui/variants.rs:64",
+        )),
+    };
+    let info = match text {
+        Some(text) => info.instance(
+            "text",
+            format!(
+                "button.label(CHECKED; variant=Flat).color {}, the checked variant's foreground (demo::ghost_checked_variant)",
+                super::as_rgba(text)
+            ),
+        ),
+        None => info.color(claim(
+            "text",
+            "secondary_foreground",
+            t.secondary_foreground,
+            "native-theme-gpui/variants.rs:62",
+        )),
+    };
+    ghost_variant(info)
+}
+
 /// Where a checked tool Button's fill comes from, as [`toolbar_checked`]
 /// claims it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -925,9 +925,9 @@ pub fn panel_toggle(
         (false, false) => "Ghost, labelled",
     });
     let info = if open {
-        super::buttons::native_ghost_selected(info, t).not_themeable(
+        super::buttons::native_ghost_checked(info, t, native).not_themeable(
             "fill",
-            "the ghost variant's active colour while selected, and no hover or press style: upstream paints a selected Button with its variant's selected style, and its hover style, which it registers on every Button, only on one that is neither disabled, loading nor selected (button/button.rs, ButtonVariant::selected; RenderOnce for Button)",
+            "the checked variant's active colour while selected, and no hover or press style: upstream paints a selected Button with its variant's selected style, and its hover style, which it registers on every Button, only on one that is neither disabled, loading nor selected (button/button.rs, ButtonVariant::selected; RenderOnce for Button)",
         )
     } else {
         super::buttons::native_ghost(info, t, native).not_themeable(

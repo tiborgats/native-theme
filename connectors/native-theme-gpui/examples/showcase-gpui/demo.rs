@@ -1891,6 +1891,45 @@ pub(crate) struct PanelToggle<'a> {
 /// `geometry::icon_size_small` and its tooltip showing the action's key
 /// binding. Where the icon theme has no icon for it, it shows its tooltip's
 /// text instead, never another icon theme's icon. The icon is the Button's
+/// The flat buttons' variant for a toggle that is on, checked (spec §10,
+/// rule 0a), under the installed 0.8.0 theme `r`:
+/// `next::variants::ghost_button`, its `active` colour
+/// `button.body(CHECKED; variant=Flat).fill` and its `foreground`
+/// `button.label(CHECKED; variant=Flat).color` where a rule states each for
+/// the state, since upstream fills a selected custom variant with its
+/// `active` colour and letters it in its `foreground` (gpui-component 0.10.0
+/// `button/button.rs:1332-1360`, `selected`). Where none does, each stays the
+/// ghost's, gpui-component's own selected ghost's (`secondary_active`,
+/// `secondary_foreground`), as `next::geometry::toolbar_button_checked` takes
+/// it for the checked tool button, never another state's stated value.
+fn ghost_checked_variant(
+    r: &native_theme::next::ResolvedTheme,
+    cx: &App,
+) -> next::Mapped<ButtonCustomVariant> {
+    let checked = native_theme::next::ButtonQuery::flat().state(WidgetState::CHECKED);
+    let variant = next::variants::ghost_button(r, cx)?;
+    let variant = match next::state_fill_of(
+        &r.button.body(checked),
+        "button.body(CHECKED; variant=Flat).fill",
+    )? {
+        Some(fill) => variant.active(fill),
+        None => variant,
+    };
+    Ok(match next::state_text_color_of(&r.button.label(checked)) {
+        Some(color) => variant.foreground(color),
+        None => variant,
+    })
+}
+
+/// A small Ghost `Button` for the status bar -- built with
+/// `next::variants::ghost_button` ([`ghost_variant`]) and, while not
+/// selected, refined by `next::geometry::ghost_button_rest` after its box,
+/// not the toolbar's variant; while selected, checked, built with
+/// [`ghost_checked_variant`] -- dispatching its action,
+/// selected while its panel is open, its icon of the chosen icon theme at
+/// `geometry::icon_size_small` and its tooltip showing the action's key
+/// binding. Where the icon theme has no icon for it, it shows its tooltip's
+/// text instead, never another icon theme's icon. The icon is the Button's
 /// child, not its `icon`, for the reason `toolbar_button` gives.
 pub(crate) fn panel_toggle(
     ui: &Entity<InfoRegistry>,
@@ -1922,10 +1961,25 @@ pub(crate) fn panel_toggle(
         glyph_at(icon, size)
     });
     let dispatched = action.boxed_clone();
-    let button = refined(
-        ButtonKind::Ghost.apply(Button::new(id), cx).small(),
-        tool_button_box(cx).as_ref(),
-    );
+    // Open, the toggle is checked (spec §10, rule 0a): the flat button's
+    // checked colours where a rule states them, else gpui-component's own
+    // selected ghost's ([`ghost_checked_variant`]).
+    let base = if open {
+        match next_resolved(cx).map(|r| ghost_checked_variant(r, cx)) {
+            Some(Ok(checked)) => Button::new(id).custom(checked),
+            Some(Err(unmapped)) => {
+                button_info = button_info.instance(
+                    "checked colours",
+                    format!("{unmapped}: gpui-component's own selected ghost is drawn"),
+                );
+                ButtonKind::Ghost.apply(Button::new(id), cx)
+            }
+            None => ButtonKind::Ghost.apply(Button::new(id), cx),
+        }
+    } else {
+        ButtonKind::Ghost.apply(Button::new(id), cx)
+    };
+    let button = refined(base.small(), tool_button_box(cx).as_ref());
     // Selected, it is not refined at rest: upstream replays the refinement
     // over the selected style (button/button.rs, RenderOnce for Button), so
     // `ghost_button_rest`'s transparent fill would hide the selected one, and

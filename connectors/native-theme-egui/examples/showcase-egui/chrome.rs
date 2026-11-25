@@ -501,29 +501,54 @@ fn chrome_button_image(
     }
 }
 
+/// The side-panel toggle while on, a flat button that is checked (spec §10, rule 0a): the
+/// colours a rule of the installed 0.8.0 theme states for the checked state, each asked with
+/// that flag alone, `button.body(CHECKED; variant=Flat).fill` and
+/// `button.label(CHECKED; variant=Flat).color`; each `None` where none does, and so egui's own
+/// selected button's (`Button::selected`, egui-0.37.0 `src/theme/default_style.rs`:
+/// `visuals.selection`'s fill and stroke). Neither falls back to another state's.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct ToggleChecked {
+    pub(crate) fill: Option<egui::Color32>,
+    pub(crate) text: Option<egui::Color32>,
+}
+
+/// [`ToggleChecked`] of the installed 0.8.0 theme `r`; both `None` without one.
+pub(crate) fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleChecked {
+    let at = native_theme::next::ButtonQuery::flat().with_state(WidgetState::CHECKED);
+    ToggleChecked {
+        fill: r.and_then(|r| demo::drawn_state_fill(&r.button.body(at))),
+        text: r.and_then(|r| next::state_text_color_of(&r.button.label(at))),
+    }
+}
+
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
 /// for a `Ui` made Ghost with `demo::ghost`: unframed at rest (`frame_when_inactive(false)`) and
-/// filled on hover; while `selected`, filled with the pressed fill of that `Ui` — in a flat
-/// button's scope (`demo::flat`), `button.body(PRESSED; variant=Flat).fill` — as
-/// native-theme-gpui's `ghost_button` fills with its `active` colour
-/// (`connectors/native-theme-gpui/src/variants.rs:59-65`), not with the selected button's
-/// accent. Its icon where the set has one, else its tooltip's text as its label, as gpui's
+/// filled on hover. A toggle that is on (`checked`) is egui's selected button, framed in every
+/// state, with the checked colours [`toggle_checked`] reads laid over it where the theme states
+/// them; its label lettered in the checked text colour, an icon in its place keeping the colour
+/// it loads in. Its icon where the set has one, else its tooltip's text as its label, as gpui's
 /// (`showcase-gpui/demo.rs:1367-1370`).
 fn ghost_button(
-    ui: &egui::Ui,
     image: Option<egui::Image<'static>>,
     label: &'static str,
-    selected: bool,
+    checked: Option<ToggleChecked>,
 ) -> egui::Button<'static> {
-    let button = match image {
-        Some(image) => egui::Button::image(image),
-        None => egui::Button::new(label),
-    }
-    .frame_when_inactive(false);
-    if selected {
-        button.fill(ui.visuals().widgets.active.weak_bg_fill)
-    } else {
-        button
+    let text = checked.and_then(|on| on.text);
+    let button = match (image, text) {
+        (Some(image), _) => egui::Button::image(image),
+        (None, Some(color)) => egui::Button::new(egui::RichText::new(label).color(color)),
+        (None, None) => egui::Button::new(label),
+    };
+    match checked {
+        None => button.frame_when_inactive(false),
+        Some(on) => {
+            let button = button.selected(true).frame_when_inactive(true);
+            match on.fill {
+                Some(fill) => button.fill(fill),
+                None => button,
+            }
+        }
     }
 }
 
@@ -602,7 +627,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                     .scope(|ui| {
                         demo::next_tool_button(ui, padding);
                         bar.add(registry, ui, kind, |ui| {
-                            let r = ui.add(ghost_button(ui, image, label, false));
+                            let r = ui.add(ghost_button(image, label, None));
                             r.widget_info(|| {
                                 egui::WidgetInfo::labeled(egui::Role::Button, true, label)
                             });
@@ -764,13 +789,14 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 .map_or(line, |size| demo::tool_button_height(ui, size, top));
             ui.spacing_mut().interact_size.y = line.max(toggle);
             ui.horizontal(|ui| {
+                let label = "Toggle Side Panel";
+                let open = app.side_panel_visible;
+                let checked = open.then(|| toggle_checked(app.atlas.next_shown(ui.ctx())));
                 let App {
                     registry,
                     side_panel_visible,
                     ..
                 } = app;
-                let label = "Toggle Side Panel";
-                let open = *side_panel_visible;
                 let kind = ghost_kind(image.is_some(), open);
                 let drawn = image.is_some().then_some(icon_size).flatten();
                 let mut flat = Vec::new();
@@ -783,7 +809,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     |ui| {
                         demo::next_tool_button(ui, padding);
                         flat = demo::flat(ui);
-                        let r = ui.add(ghost_button(ui, image, label, open));
+                        let r = ui.add(ghost_button(image, label, checked));
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::Role::Button, true, open, label)
                         });
@@ -792,6 +818,27 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 );
                 registry.ghost_last();
                 registry.flat_last(&flat);
+                // Where the theme states no checked colour, what the toggle that is on is drawn
+                // in instead.
+                if checked.is_some_and(|on| on.fill.is_none()) {
+                    registry.note_last(
+                        "fill while on",
+                        &format!(
+                            "not stated by the theme (button.body(CHECKED; variant=Flat).fill): {}",
+                            crate::pages::basic::ToggleOn::OWN_FILL
+                        ),
+                    );
+                }
+                if checked.is_some_and(|on| on.text.is_none()) && drawn.is_none() {
+                    registry.note_last(
+                        "text colour while on",
+                        &format!(
+                            "not stated by the theme (button.label(CHECKED; variant=Flat).color): \
+                             {}",
+                            crate::pages::basic::ToggleOn::OWN_TEXT
+                        ),
+                    );
+                }
                 if icon_size.is_none() {
                     registry.note_last(
                         "icon size",
@@ -1136,9 +1183,8 @@ fn setting_label(
 /// and the bundled palettes, [`crate::app::palette_rows`]), Mode (`ComboBox` of System, Light
 /// and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the gpui
 /// showcase's theme settings (`showcase-gpui/demo.rs:1620-1645`, `chrome.rs:254-299`), the
-/// Palette row between Theme and Mode as there. The Palette row is no element of the list,
-/// which has no palette row; its label's hover text says what the pages still on the 0.7.2
-/// model show under a palette ([`crate::app::PALETTE_TOOLTIP`]).
+/// Palette row between Theme and Mode as there. The Palette row's label's hover text says what
+/// the pages still on the 0.7.2 model show under a palette ([`crate::app::PALETTE_TOOLTIP`]).
 fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
     let ctx = ui.ctx().clone();
     let theme = ctx.theme();
@@ -1205,7 +1251,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Palette",
-            element: None,
+            element: Some("chrome.side_panel.settings.palette"),
             kind: "ComboBox · Palette",
             row_kind: "Palette row",
             rows: &palette_rows,

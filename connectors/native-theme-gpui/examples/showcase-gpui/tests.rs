@@ -5205,10 +5205,11 @@ fn the_status_bars_item_gap_note_names_the_widget_gap(cx: &mut TestAppContext) {
 }
 
 /// The fill the panel toggle tagged `selector` paints with the pointer
-/// elsewhere: the ghost variant's active colour while it is selected
-/// (button/button.rs:1337, `colors.active`, which `variants::ghost_button`
-/// fills with `secondary_active`), and none at rest -- the variant is
-/// transparent there.
+/// elsewhere: the checked variant's active colour while it is selected
+/// (button/button.rs:1337, `colors.active`, which
+/// `demo::ghost_checked_variant` fills with the flat button's
+/// checked fill where a rule states it, else `secondary_active`), and none
+/// at rest -- the variant is transparent there.
 fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
     // The status bar's middle region holds nothing, so no widget there is
     // hovered.
@@ -5218,9 +5219,22 @@ fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpu
     painted_fill(cx, selector)
 }
 
-/// What a selected panel toggle is filled with.
-fn selected_fill(cx: &mut VisualTestContext) -> gpui::Hsla {
-    cx.update(|_w, cx| Theme::global(cx).secondary_active)
+/// What a selected panel toggle is filled with under the installed theme:
+/// `button.body(CHECKED; variant=Flat).fill` where a rule states it, else
+/// gpui-component's own selected ghost's `secondary_active` (spec §10, rule
+/// 0a).
+fn selected_fill(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> gpui::Hsla {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    let checked = next_theme(cx, showcase).and_then(|r| {
+        drawn_state_fill(
+            &r.button
+                .body(ButtonQuery::flat().state(WidgetState::CHECKED)),
+        )
+    });
+    match checked {
+        Some(fill) => fill,
+        None => cx.update(|_w, cx| Theme::global(cx).secondary_active),
+    }
 }
 
 /// Whether `inner` lies within `outer`, to a hundredth of a pixel.
@@ -5249,7 +5263,7 @@ fn the_side_panel_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
         within(toggle, bounds_of(&mut cx, CHROME_STATUS_BAR)),
         "the side-panel toggle at {toggle:?} is not in the status bar"
     );
-    let selected = selected_fill(&mut cx);
+    let selected = selected_fill(&mut cx, &showcase);
     assert_eq!(
         toggle_fill(&mut cx, CHROME_SIDE_PANEL_TOGGLE),
         Some(selected),
@@ -24262,6 +24276,71 @@ fn an_unstated_layout_spaces_no_page(cx: &mut TestAppContext) {
         x2 - (x1 + w1),
         px(0.),
         "the Basic page spaces its columns where the theme states no section_gap"
+    );
+}
+
+/// The side-panel toggle while the panel is open is checked (spec §10, rule
+/// 0a): under kde-breeze light, which states the flat button's checked fill
+/// apart from its pressed one, it is painted in
+/// `button.body(CHECKED; variant=Flat).fill`
+/// (`demo::ghost_checked_variant`), not in the selected ghost's
+/// `secondary_active`, which the connector installs from the pressed fill.
+#[gpui::test]
+fn the_open_side_panels_toggle_is_painted_checked(cx: &mut TestAppContext) {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.side_panel_visible),
+        "the side panel is not open at start"
+    );
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "kde-breeze: no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let flat = |state| ButtonQuery::flat().state(state);
+    let checked = drawn_state_fill(&r.button.body(flat(WidgetState::CHECKED)));
+    let pressed = drawn_state_fill(&r.button.body(flat(WidgetState::PRESSED)));
+    assert!(
+        checked.is_some() && checked != pressed,
+        "kde-breeze no longer states a checked flat fill apart from the pressed one, so this \
+         test proves nothing"
+    );
+    let dump = cx.update(|window, cx| crate::layout_dump(showcase.read(cx), window, cx));
+    let toggle = &dump["elements"]["chrome.status_bar.toggle"];
+    let at = |k: &str| toggle[k].as_f64().map(|v| v as f32);
+    let rect = (at("x"), at("y"), at("w"), at("h"));
+    assert!(
+        rect.0.is_some() && rect.1.is_some() && rect.2.is_some() && rect.3.is_some(),
+        "the layout dump holds no chrome.status_bar.toggle: {dump:#}"
+    );
+    let (Some(x), Some(y), Some(w), Some(h)) = rect else {
+        return;
+    };
+    let painted = cx.update(|window, _cx| {
+        let scale = window.scale_factor();
+        let (left, top) = (x * scale, y * scale);
+        let (right, bottom) = ((x + w) * scale, (y + h) * scale);
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                q.bounds.left().0 >= left - 0.5
+                    && q.bounds.top().0 >= top - 0.5
+                    && q.bounds.right().0 <= right + 0.5
+                    && q.bounds.bottom().0 <= bottom + 0.5
+                    && !q.background.is_transparent()
+            })
+            .max_by(|a, b| {
+                let area = |q: &gpui::Quad| q.bounds.size.width.0 * q.bounds.size.height.0;
+                area(a).total_cmp(&area(b))
+            })
+            .and_then(|q| q.background.as_solid())
+    });
+    assert_eq!(
+        painted, checked,
+        "the open side panel's toggle is not filled with button.body(CHECKED; variant=Flat).fill"
     );
 }
 
