@@ -957,6 +957,170 @@ fn the_open_side_panels_toggle_is_painted_checked() -> Result<(), String> {
     Ok(())
 }
 
+/// The fills of the frames painted on the side-panel toggle's rect.
+fn toggle_frame_fills(harness: &Harness<'_, App>) -> Result<Vec<egui::Color32>, String> {
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|record| record.info.element.as_deref() == Some("chrome.status_bar.toggle"))
+        .map(|record| record.rect)
+        .ok_or("the toggle records nothing")?;
+    Ok(harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape) if shape.rect == rect => Some(shape.fill),
+            _ => None,
+        })
+        .collect())
+}
+
+/// The side-panel toggle while the panel is open, under a theme that states no checked flat
+/// fill or label (macos-monterey light states neither), is egui's own selected button
+/// (`Button::selected`, spec §10, rule 0a): its frame is filled as the suggested-action button
+/// beside the Basic page's toggle, egui's selected one too, not in the flat button's pressed
+/// fill, and its Widget Info names egui's own under *Not themeable*.
+#[test]
+fn an_unstated_checked_toggle_is_egui_s_selected_button_not_the_pressed_one() -> Result<(), String>
+{
+    use crate::pages::basic::{ToggleOn, toggle_on_at};
+    use native_theme::next::{ButtonQuery, WidgetState};
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-monterey");
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().side_panel_visible,
+        "the side panel opens shown"
+    );
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme is installed")?
+        .clone();
+    let flat = |state| ButtonQuery::flat().with_state(state);
+    assert_eq!(
+        toggle_on_at(Some(&r), flat(WidgetState::CHECKED)),
+        ToggleOn {
+            fill: None,
+            text: None
+        },
+        "macos-monterey light states a checked flat colour, so this proves nothing"
+    );
+    let (selected, _) = button_paint(
+        &harness,
+        "button (suggested action)",
+        "Primary",
+        "basic.buttons.primary",
+    )?;
+    let pressed = crate::demo::drawn_state_fill(&r.button.body(flat(WidgetState::PRESSED)));
+    assert_ne!(
+        pressed,
+        Some(selected),
+        "the flat button's pressed fill is the selected button's, so this proves nothing"
+    );
+    assert_eq!(
+        toggle_frame_fills(&harness)?,
+        [selected],
+        "the open side panel's toggle is not egui's selected button"
+    );
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.status_bar.toggle",
+            &[
+                "button.body(CHECKED; variant=Flat).fill",
+                ToggleOn::OWN_FILL
+            ]
+        ),
+        "the toggle's info does not name egui's own selected fill: {:?}",
+        element_notes(&harness, "chrome.status_bar.toggle")
+    );
+    Ok(())
+}
+
+/// The side-panel toggle while the panel is open letters its label in
+/// `button.label(CHECKED; variant=Flat).color` where a rule states it, and in egui's own selected
+/// button's text colour, the suggested-action button's, where none does, never the flat button's
+/// pressed label (spec §10, rule 0a): on macos-monterey light, which states no checked flat
+/// colour, unpatched and with that label patched to the theme's `colors.window.border`. A
+/// freedesktop icon theme no host has ([`ABSENT_ICON_THEME`]) has the toggle show its label.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_open_toggle_letters_its_label_in_the_checked_or_the_selected_colour() -> Result<(), String> {
+    use crate::pages::basic::toggle_on_at;
+    use native_theme::next::{
+        ButtonQuery, ButtonRule, ButtonVariant, TextPatch, ThemePatch, WidgetState,
+    };
+    const LABEL: &str = "Toggle Side Panel";
+    const ID: &str = "chrome.status_bar.toggle";
+    let flat = |state| ButtonQuery::flat().with_state(state);
+    let labelled = |harness: &mut Harness<'static, App>| {
+        harness.state_mut().settings.icon =
+            IconSetChoice::Freedesktop(ABSENT_ICON_THEME.to_owned());
+        harness.run_steps(SETTLE);
+        assert!(
+            harness.state().side_panel_visible,
+            "the side panel opens shown"
+        );
+    };
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-monterey");
+    labelled(&mut harness);
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme is installed")?
+        .clone();
+    assert_eq!(
+        toggle_on_at(Some(&r), flat(WidgetState::CHECKED)).text,
+        None,
+        "macos-monterey light states a checked flat label, so this proves nothing"
+    );
+    let (_, selected) = button_paint(
+        &harness,
+        "button (suggested action)",
+        "Primary",
+        "basic.buttons.primary",
+    )?;
+    let pressed =
+        native_theme_egui::next::state_text_color_of(&r.button.label(flat(WidgetState::PRESSED)));
+    assert_ne!(
+        pressed,
+        Some(selected),
+        "the flat button's pressed label is the selected button's, so this proves nothing"
+    );
+    assert_eq!(
+        painted_label_colour(&harness, LABEL, ID),
+        Some(selected),
+        "unstated, the open toggle's label is not egui's selected button's"
+    );
+    let (mut harness, r) = open_patched(Page::Basic, egui::Theme::Light, "macos-monterey", |r| {
+        Some(
+            ThemePatch::new().button(
+                ButtonRule::new()
+                    .variant(ButtonVariant::Flat)
+                    .states(WidgetState::CHECKED)
+                    .label(TextPatch::new().color(r.colors.window.border?)),
+            ),
+        )
+    })?;
+    labelled(&mut harness);
+    let stated = toggle_on_at(Some(&r), flat(WidgetState::CHECKED)).text;
+    assert!(
+        stated.is_some_and(|stated| stated != selected),
+        "the patched checked flat label {stated:?} is the selected button's, so this proves nothing"
+    );
+    assert_eq!(
+        painted_label_colour(&harness, LABEL, ID),
+        stated,
+        "the open toggle's label is not button.label(CHECKED; variant=Flat).color"
+    );
+    Ok(())
+}
+
 /// §13.2: three ways to hide and show the side panel; the dragged width survives.
 #[test]
 fn the_side_panel_toggle_hides_and_shows_it() {
@@ -2320,10 +2484,17 @@ fn button_paint(
     Ok((fill, label))
 }
 
+/// The Basic page's toggle's colours while on under `r` (`pages::basic::toggle_on_at`, asked
+/// with the checked flag alone).
+fn toggle_on(r: Option<&native_theme::next::ResolvedTheme>) -> crate::pages::basic::ToggleOn {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    crate::pages::basic::toggle_on_at(r, ButtonQuery::new(WidgetState::CHECKED))
+}
+
 /// The first bundled preset whose 0.8.0 theme, light, states neither checked colour of the
-/// toggle (`pages::basic::toggle_on`), with that theme.
+/// toggle (`pages::basic::toggle_on_at`), with that theme.
 fn unchecked_preset() -> Result<(&'static str, native_theme::next::ResolvedTheme), String> {
-    use crate::pages::basic::{ToggleOn, toggle_on};
+    use crate::pages::basic::ToggleOn;
     use native_theme::next::{Preset, Theme, ThemeContext};
     let none = ToggleOn {
         fill: None,
@@ -2340,12 +2511,12 @@ fn unchecked_preset() -> Result<(&'static str, native_theme::next::ResolvedTheme
 
 /// Under a preset whose 0.8.0 theme states no checked colours (`button.body(CHECKED).fill`,
 /// `button.label(CHECKED).color`), the Basic page's "On" toggle is egui's own selected button
-/// (`pages::basic::toggle_on`, spec §10 rules 0 and 0a): painted in the fill and the label
+/// (`pages::basic::toggle_on_at`, spec §10 rules 0 and 0a): painted in the fill and the label
 /// colour of the suggested-action button beside it, egui's selected one too, not in another
 /// state's colours, and its Widget Info names egui's own under *Not themeable* (M9-111).
 #[test]
 fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() -> Result<(), String> {
-    use crate::pages::basic::{ToggleOn, toggle_on};
+    use crate::pages::basic::ToggleOn;
     use native_theme::next::WidgetState;
     let (key, r) = unchecked_preset()?;
     let mut harness = open_page_under(Page::Basic, egui::Theme::Light, key);
@@ -2420,7 +2591,7 @@ fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() -> Result<(), Str
     Ok(())
 }
 
-/// `toggle_on` asks each home with the checked flag alone and takes no other state's colours:
+/// `toggle_on_at` asks each home with the checked flag alone and takes no other state's colours:
 /// without a 0.8.0 theme, and under a theme stating no checked colour, nothing (egui's own
 /// selected button); under a patched `button.body(CHECKED).fill` and `button.label(CHECKED)
 /// .color`, magenta, on a preset stating no checked colour, the Basic page's "On" toggle is
@@ -2428,7 +2599,7 @@ fn the_toggle_that_is_on_names_the_home_its_fill_is_drawn_in() -> Result<(), Str
 /// patched one and the label egui's selected button's, the suggested-action button's beside it.
 #[test]
 fn the_toggle_takes_the_checked_colours_alone() -> Result<(), String> {
-    use crate::pages::basic::{ToggleOn, toggle_on};
+    use crate::pages::basic::ToggleOn;
     use native_theme::next::{ButtonRule, Paint, PartPatch, TextPatch, ThemePatch, WidgetState};
     assert_eq!(
         toggle_on(None),

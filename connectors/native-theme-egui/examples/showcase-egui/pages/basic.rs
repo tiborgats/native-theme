@@ -639,9 +639,9 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         }
     });
     // A toggle button: `Off` a button at rest, `On` the same button held on: egui's own selected
-    // button (`Button::selected`), with the checked colours [`toggle_on`] reads laid over it per
+    // button (`Button::selected`), with the checked colours [`toggle_on_at`] reads laid over it per
     // call where the theme states them (spec §10, rule 0).
-    let on = toggle_on(r);
+    let on = toggle_on_at(r, native_theme::next::ButtonQuery::new(NextState::CHECKED));
     let (on_fill, on_text) = (on.fill, on.text);
     // A dialog's default button, the one Enter activates: where the theme gives it a look of its
     // own, per call, since `Button::fill` and `Button::stroke` override egui's on-hover effects,
@@ -708,32 +708,19 @@ fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
         ui.ctx().data_mut(|d| d.insert_temp(state_key, now));
     });
     // Where the theme states no checked colour, what the toggle is drawn in instead.
-    if on.fill.is_none() {
-        reg.note_element(
-            "basic.buttons.toggle_on",
-            "fill while on",
-            &format!(
-                "not stated by the theme (button.body(CHECKED).fill): {}",
-                ToggleOn::OWN_FILL
-            ),
-        );
-    }
-    if on.text.is_none() {
-        reg.note_element(
-            "basic.buttons.toggle_on",
-            "text colour while on",
-            &format!(
-                "not stated by the theme (button.label(CHECKED).color): {}",
-                ToggleOn::OWN_TEXT
-            ),
-        );
+    let unstated = [
+        on.fill_note("button.body(CHECKED).fill"),
+        on.text_note("button.label(CHECKED).color"),
+    ];
+    for (what, note) in unstated.into_iter().flatten() {
+        reg.note_element("basic.buttons.toggle_on", what, &note);
     }
 }
 
-/// The Basic page's toggle button while on: the colours a rule of the installed 0.8.0 theme
-/// states for the checked state, each `None` where none does, and so egui's own selected
-/// button's.
-#[derive(Debug, PartialEq)]
+/// A toggle button while on, the Basic page's or the status bar's side-panel toggle: the colours
+/// a rule of the installed 0.8.0 theme states for the checked state, each `None` where none
+/// does, and so egui's own selected button's.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct ToggleOn {
     pub(crate) fill: Option<egui::Color32>,
     pub(crate) text: Option<egui::Color32>,
@@ -746,19 +733,45 @@ impl ToggleOn {
     /// What an unstated checked text colour is drawn in.
     pub(crate) const OWN_TEXT: &'static str =
         "egui's own selected button text (Button::selected: visuals.selection.stroke)";
+
+    /// The note naming what the fill is drawn in where the theme leaves it unstated at `home`,
+    /// as `(what, text)`; `None` where it states it.
+    pub(crate) fn fill_note(&self, home: &str) -> Option<(&'static str, String)> {
+        self.fill.is_none().then(|| {
+            (
+                "fill while on",
+                format!("not stated by the theme ({home}): {}", Self::OWN_FILL),
+            )
+        })
+    }
+
+    /// The note naming what the text is drawn in where the theme leaves its colour unstated at
+    /// `home`, as `(what, text)`; `None` where it states it.
+    pub(crate) fn text_note(&self, home: &str) -> Option<(&'static str, String)> {
+        self.text.is_none().then(|| {
+            (
+                "text colour while on",
+                format!("not stated by the theme ({home}): {}", Self::OWN_TEXT),
+            )
+        })
+    }
 }
 
-/// The toggle button's colours while on, of the installed 0.8.0 theme `r`
-/// (docs/platform-facts.md §2.3), each asked with the checked flag alone: the fill a rule states
-/// for `button.body(CHECKED)`, the text colour a rule states for `button.label(CHECKED)`. Neither
-/// falls back to another state's: what the theme leaves unstated, and both without an installed
-/// 0.8.0 theme, is egui's own way of drawing a button that is on, its selected button
-/// (`Button::selected`, egui-0.37.0 `src/theme/default_style.rs`: `visuals.selection`'s fill
-/// and stroke), as the connector themes it (spec §10, rules 0 and 0a).
-pub(crate) fn toggle_on(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
+/// A toggle button's colours while on, of the installed 0.8.0 theme `r`
+/// (docs/platform-facts.md §2.3), each asked with `on`, a query with the checked flag alone: the
+/// fill a rule states for `button.body(on)`, the text colour a rule states for
+/// `button.label(on)`. Neither falls back to another state's: what the theme leaves unstated,
+/// and both without an installed 0.8.0 theme, is egui's own way of drawing a button that is on,
+/// its selected button (`Button::selected`, egui-0.37.0 `src/theme/default_style.rs`:
+/// `visuals.selection`'s fill and stroke), as the connector themes it (spec §10, rules 0 and
+/// 0a).
+pub(crate) fn toggle_on_at(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    on: native_theme::next::ButtonQuery,
+) -> ToggleOn {
     ToggleOn {
-        fill: r.and_then(|r| demo::drawn_state_fill(&r.button.body(NextState::CHECKED))),
-        text: r.and_then(|r| next::state_text_color_of(&r.button.label(NextState::CHECKED))),
+        fill: r.and_then(|r| demo::drawn_state_fill(&r.button.body(on))),
+        text: r.and_then(|r| next::state_text_color_of(&r.button.label(on))),
     }
 }
 
@@ -1579,26 +1592,12 @@ fn icon_buttons(
                 }
                 unsized_note(reg);
                 if on {
-                    for (what, home, unstated, own) in [
-                        (
-                            "fill while on",
-                            "toolbar.button(CHECKED).fill",
-                            look.fill.is_none(),
-                            ToggleOn::OWN_FILL,
-                        ),
-                        (
-                            "text colour while on",
-                            "button.label(CHECKED).color",
-                            look.text.is_none(),
-                            ToggleOn::OWN_TEXT,
-                        ),
-                    ] {
-                        if unstated {
-                            reg.note_last(
-                                what,
-                                &format!("not stated by the theme ({home}): {own}"),
-                            );
-                        }
+                    let unstated = [
+                        look.fill_note("toolbar.button(CHECKED).fill"),
+                        look.text_note("button.label(CHECKED).color"),
+                    ];
+                    for (what, note) in unstated.into_iter().flatten() {
+                        reg.note_last(what, &note);
                     }
                 }
                 reg.tag(id, &response);
@@ -1618,7 +1617,7 @@ fn icon_buttons(
 /// `button.label(CHECKED).color`, the checked button text (the table of homes'
 /// `toolbar.button_checked_background` and `button.checked_text_color`). Neither falls back to
 /// another state's: what the theme leaves unstated, and both without an installed 0.8.0 theme,
-/// is egui's own selected button's, as the toggle's ([`toggle_on`], spec §10, rules 0 and 0a).
+/// is egui's own selected button's, as the toggle's ([`toggle_on_at`], spec §10, rules 0 and 0a).
 pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
     ToggleOn {
         fill: r.and_then(|r| demo::drawn_state_fill(&r.toolbar.button(NextState::CHECKED))),

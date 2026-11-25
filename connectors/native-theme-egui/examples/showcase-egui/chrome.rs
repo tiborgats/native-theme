@@ -12,6 +12,7 @@ use crate::{
     LEFT_PANEL_WIDTH,
     app::{App, ModeChoice, Page, ThemeChoice},
     demo::{self, PanelSeams, Registry},
+    pages::basic::{ToggleOn, toggle_on_at},
     pages::inner_extent,
 };
 
@@ -501,25 +502,15 @@ fn chrome_button_image(
     }
 }
 
-/// The side-panel toggle while on, a flat button that is checked (spec §10, rule 0a): the
-/// colours a rule of the installed 0.8.0 theme states for the checked state, each asked with
-/// that flag alone, `button.body(CHECKED; variant=Flat).fill` and
-/// `button.label(CHECKED; variant=Flat).color`; each `None` where none does, and so egui's own
-/// selected button's (`Button::selected`, egui-0.37.0 `src/theme/default_style.rs`:
-/// `visuals.selection`'s fill and stroke). Neither falls back to another state's.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct ToggleChecked {
-    pub(crate) fill: Option<egui::Color32>,
-    pub(crate) text: Option<egui::Color32>,
-}
-
-/// [`ToggleChecked`] of the installed 0.8.0 theme `r`; both `None` without one.
-pub(crate) fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleChecked {
-    let at = native_theme::next::ButtonQuery::flat().with_state(WidgetState::CHECKED);
-    ToggleChecked {
-        fill: r.and_then(|r| demo::drawn_state_fill(&r.button.body(at))),
-        text: r.and_then(|r| next::state_text_color_of(&r.button.label(at))),
-    }
+/// The side-panel toggle while on, a flat button that is checked (spec §10, rule 0a): its
+/// colours, `button.body(CHECKED; variant=Flat).fill` and
+/// `button.label(CHECKED; variant=Flat).color` where a rule states each for that flag alone, as
+/// the Basic page's toggle reads its own ([`ToggleOn`], `pages::basic::toggle_on_at`).
+fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> ToggleOn {
+    toggle_on_at(
+        r,
+        native_theme::next::ButtonQuery::flat().with_state(WidgetState::CHECKED),
+    )
 }
 
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
@@ -532,7 +523,7 @@ pub(crate) fn toggle_checked(r: Option<&native_theme::next::ResolvedTheme>) -> T
 fn ghost_button(
     image: Option<egui::Image<'static>>,
     label: &'static str,
-    checked: Option<ToggleChecked>,
+    checked: Option<ToggleOn>,
 ) -> egui::Button<'static> {
     let text = checked.and_then(|on| on.text);
     let button = match (image, text) {
@@ -820,24 +811,15 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 registry.flat_last(&flat);
                 // Where the theme states no checked colour, what the toggle that is on is drawn
                 // in instead.
-                if checked.is_some_and(|on| on.fill.is_none()) {
-                    registry.note_last(
-                        "fill while on",
-                        &format!(
-                            "not stated by the theme (button.body(CHECKED; variant=Flat).fill): {}",
-                            crate::pages::basic::ToggleOn::OWN_FILL
-                        ),
-                    );
-                }
-                if checked.is_some_and(|on| on.text.is_none()) && drawn.is_none() {
-                    registry.note_last(
-                        "text colour while on",
-                        &format!(
-                            "not stated by the theme (button.label(CHECKED; variant=Flat).color): \
-                             {}",
-                            crate::pages::basic::ToggleOn::OWN_TEXT
-                        ),
-                    );
+                let unstated = checked.map(|on| {
+                    [
+                        on.fill_note("button.body(CHECKED; variant=Flat).fill"),
+                        on.text_note("button.label(CHECKED; variant=Flat).color")
+                            .filter(|_| drawn.is_none()),
+                    ]
+                });
+                for (what, note) in unstated.into_iter().flatten().flatten() {
+                    registry.note_last(what, &note);
                 }
                 if icon_size.is_none() {
                     registry.note_last(
