@@ -45952,12 +45952,16 @@ mod tests {
                     ]);
                 }
                 // A selector reports the row's texts where the row lays them
-                // out, before the strip's scroll moves them.
+                // out, before the strip's scroll moves them. iced rounds a
+                // scrollable's translation to a whole pixel
+                // (`State::translation`, scrollable.rs, iced_widget 0.14.2),
+                // so a fractional offset, as other fonts' tab widths give
+                // (CI's runner), is scrolled to its rounded value.
                 let scrolled = match ui.find(selector::id(TAB_STRIP_ID)) {
                     Ok(selector::Target::Scrollable { translation, .. }) => translation.x,
                     _ => 0.0,
                 };
-                if (scrolled - offset).abs() > 0.01 {
+                if (scrolled - offset.round()).abs() > 0.01 {
                     faults.push(format!(
                         "{preset} {open:?}: the strip is scrolled {scrolled}, asked {offset}"
                     ));
