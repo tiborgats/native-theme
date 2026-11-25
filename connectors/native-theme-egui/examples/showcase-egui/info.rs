@@ -709,7 +709,8 @@ const FLAT_PRESSED_EDGE: &str = "egui: per call, the flat button's outline press
 /// look and a hovered list row's outline, which `pages::basic::RowLook::of` takes, the hover
 /// outline the Basic table's rows never take, the menu bar's fill, which
 /// `chrome::menu_panel` paints, the side-panel toggle's checked look, which `chrome::ghost_button`
-/// lays over egui's selected button, the flat buttons' hovered and pressed outlines, which
+/// lays over egui's selected button, the Basic page's edit switch's checked fill and label, which
+/// `pages::basic::edit_look_at` hands it per state, the flat buttons' hovered and pressed outlines, which
 /// `next::flat_button` lays over their scope, the scroll bar thumb's corners, which the atlas writes, the
 /// primary button's own outline, which `pages::basic` hands its button, the segmented control's
 /// separator colour, which the companion crate's control paints its dividers in, the primary
@@ -859,6 +860,26 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
          button.label(CHECKED; variant=Flat).color where a rule states it for CHECKED, else \
          egui's own selected button's, visuals.selection.stroke; an icon shown in the label's \
          place keeps the colour it loads in (chrome::ghost_button, chrome::toggle_checked)",
+    ),
+    (
+        "basic.icons.edit",
+        "toolbar.button(CHECKED).fill",
+        "egui: per call, Button::fill, the edit switch's fill while on, in the state of its \
+         previous response: where a rule states it for CHECKED, at rest this, under the pointer \
+         toolbar.button(HOVER|CHECKED).fill and pressed toolbar.button(PRESSED|CHECKED).fill; \
+         else egui's own selected button's in every state, visuals.selection.bg_fill \
+         (pages::basic::edit_look_at, native-theme-egui next::toolbar_button_checked)",
+    ),
+    (
+        "basic.icons.edit",
+        "button.label(CHECKED).color",
+        "egui: per call, the edit switch's label colour while on, where no rule states \
+         toolbar.button_label(CHECKED).color, in every state; where one does, that one at rest, \
+         toolbar.button_label(HOVER|CHECKED).color under the pointer and \
+         toolbar.button_label(PRESSED|CHECKED).color pressed; else egui's own selected button's, \
+         visuals.selection.stroke. Its icon loads in it where the theme states no \
+         toolbar.button_icon(<state>|CHECKED).color (pages::basic::edit_look_at, \
+         demo::tool_icon_color)",
     ),
     (
         "chrome.status_bar.toggle",

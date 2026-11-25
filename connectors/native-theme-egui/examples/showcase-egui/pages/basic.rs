@@ -1504,10 +1504,13 @@ fn tool_pen(r: &ResolvedTheme, state: NextState) -> Option<egui::Stroke> {
 /// `toolbar.button_icon(NONE).size` of the installed 0.8.0 theme ([`demo::tool_icon_size`]; where it
 /// states none, each button's label in place of its icon, which its Widget Info names), in the
 /// toolbar's scope, its items the scope's `item_spacing.x` apart (`toolbar.item_gap`, else the
-/// connector's `layout.widget_gap`, else egui's own), each a tool button
-/// ([`demo::next_tool_button`]). Edit is an edit-mode switch (`DemoState::basic_edit`), on at
-/// start: while on it is egui's selected button (`Button::selected`) in the colours of
-/// [`edit_look`], each one the theme leaves unstated egui's own, which its Widget Info names; and
+/// connector's `layout.widget_gap`, else egui's own), each a toolbar button
+/// ([`demo::next_toolbar_button`]: filled at rest where `toolbar.button(NONE).fill` is stated),
+/// its icon loaded in `toolbar.button_icon(<state>).color` where stated, in the state of its
+/// previous response ([`demo::tool_icon_color`]). Edit is an edit-mode switch
+/// (`DemoState::basic_edit`), on at start: while on it is egui's selected button
+/// (`Button::selected`) in the colours of [`edit_look_at`] for the state of its previous
+/// response, each one the theme leaves unstated egui's own, which its Widget Info names; and
 /// lined in the pen a rule states for the checked state at rest (`toolbar.button(CHECKED)`),
 /// under the pointer (`CHECKED | HOVER`) and pressed (`CHECKED | PRESSED`), each unstated one the
 /// scope's own ([`tool_pen`]).
@@ -1556,14 +1559,18 @@ fn icon_buttons(
                     (IconRole::ActionPaste, "Paste", "basic.icons.paste"),
                     (IconRole::ActionDelete, "Delete", "basic.icons.delete"),
                 ] {
-                    let image = image_at(ui, role);
-                    let drawn = image.is_some();
+                    let key = egui::Id::unique(("basic state", id));
+                    let was = demo::previous_state(ui, key);
+                    let (mut drawn, mut filled) = (false, false);
                     wrap_before(ui, id);
                     let response = ui
                         .scope(|ui| {
                             // One line, as `text_button`'s label.
                             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                            demo::next_tool_button(ui, padding);
+                            filled = demo::next_toolbar_button(ui, padding, r);
+                            let tint = demo::tool_icon_color(r, was, false);
+                            let image = demo::loaded_in(ui, tint, |ui| image_at(ui, role));
+                            drawn = image.is_some();
                             bar.add(reg, ui, "icon button", |ui| {
                                 let button = match image {
                                     Some(image) => Button::image(image),
@@ -1577,7 +1584,8 @@ fn icon_buttons(
                             })
                         })
                         .inner;
-                    reg.ghost_last();
+                    demo::remember_state(ui, key, was, &response);
+                    reg.tool_rest_last(filled);
                     unsized_note(reg);
                     reg.tag(id, &response);
                     remember_width(ui, id, response.rect);
@@ -1588,13 +1596,15 @@ fn icon_buttons(
                 // The edit-mode switch: the one toolbar button that is ever checked.
                 let id = "basic.icons.edit";
                 let on = state.basic_edit;
-                let look = edit_look(r);
-                let mut drawn = false;
+                let key = egui::Id::unique(("basic state", id));
+                let was = demo::previous_state(ui, key);
+                let (fill, text) = edit_look_at(r, was);
+                let (mut drawn, mut filled) = (false, false);
                 wrap_before(ui, id);
                 let response = ui
                     .scope(|ui| {
                         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                        demo::next_tool_button(ui, padding);
+                        filled = demo::next_toolbar_button(ui, padding, r);
                         // E9: while on, the pens a rule states for the checked state at rest,
                         // under the pointer and pressed. `Button::fill` leaves the stroke to the
                         // scope; only `Button::stroke` overrides it
@@ -1612,12 +1622,15 @@ fn icon_buttons(
                             }
                         }
                         // The text while on, egui's selected button's where unstated, before the
-                        // icon is loaded in the scope's text colour.
+                        // icon is loaded in the scope's text colour, or in the icon colour the
+                        // theme states for the state.
                         if on {
                             let own = ui.visuals().selection.stroke.color;
-                            ui.visuals_mut().override_text_color = Some(look.text.unwrap_or(own));
+                            ui.visuals_mut().override_text_color = Some(text.unwrap_or(own));
                         }
-                        let image = image_at(ui, IconRole::ActionEdit);
+                        let tint = demo::tool_icon_color(r, was, on);
+                        let image =
+                            demo::loaded_in(ui, tint, |ui| image_at(ui, IconRole::ActionEdit));
                         drawn = image.is_some();
                         let kind = if on {
                             "icon button, checked"
@@ -1630,7 +1643,7 @@ fn icon_buttons(
                                 None => Button::new("Edit"),
                             }
                             .selected(on);
-                            let button = match look.fill.filter(|_| on) {
+                            let button = match fill.filter(|_| on) {
                                 Some(fill) => button.fill(fill),
                                 None => button,
                             };
@@ -1642,15 +1655,17 @@ fn icon_buttons(
                         })
                     })
                     .inner;
+                demo::remember_state(ui, key, was, &response);
                 if response.clicked() {
                     state.basic_edit = !on;
                 }
                 // Not at rest transparent while it is on.
                 if !on {
-                    reg.ghost_last();
+                    reg.tool_rest_last(filled);
                 }
                 unsized_note(reg);
                 if on {
+                    let look = edit_look(r);
                     let unstated = [
                         look.fill_note("toolbar.button(CHECKED).fill"),
                         look.text_note(
@@ -1689,6 +1704,28 @@ pub(crate) fn edit_look(r: Option<&ResolvedTheme>) -> ToggleOn {
             next::state_text_color_of(&r.toolbar.button_label(NextState::CHECKED))
                 .or_else(|| next::state_text_color_of(&r.button.label(NextState::CHECKED)))
         }),
+    }
+}
+
+/// The Basic page's edit-mode switch's fill and text colour while on, in the state `(hovered,
+/// pressed)` of its previous response, of the installed 0.8.0 theme `r`: where a rule states
+/// `toolbar.button(CHECKED)`'s fill, `(HOVER|CHECKED)`'s under the pointer and
+/// `(PRESSED|CHECKED)`'s pressed, and the labels likewise from `toolbar.button_label`
+/// (`next::toolbar_button_checked`), as egui's selected button takes neither state of its own
+/// (spec §10, rule 0); each unstated one [`edit_look`]'s, the same in every state, as egui's own
+/// selected look is, and both [`edit_look`]'s where `next::toolbar_button_checked` reports a fill
+/// stated in a form egui cannot paint (`Unmapped`, which the Theme tab lists).
+pub(crate) fn edit_look_at(
+    r: Option<&ResolvedTheme>,
+    (hovered, pressed): (bool, bool),
+) -> (Option<egui::Color32>, Option<egui::Color32>) {
+    let look = edit_look(r);
+    match r.and_then(|r| next::toolbar_button_checked(r).ok()) {
+        Some(checked) => {
+            let (fill, text) = checked.at(hovered, pressed);
+            (fill.or(look.fill), text.or(look.text))
+        }
+        None => (look.fill, look.text),
     }
 }
 

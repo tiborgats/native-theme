@@ -13655,6 +13655,196 @@ fn the_basic_edit_button_is_lettered_in_the_toolbars_checked_label() -> Result<(
     Ok(())
 }
 
+/// Whether a rectangle filled in `fill`, with no texture, is painted inside the place `id`.
+fn filled_in(harness: &Harness<'_, App>, id: &str, fill: egui::Color32) -> bool {
+    let Some(place) = harness.state().registry.places().get(id).copied() else {
+        return false;
+    };
+    harness
+        .output()
+        .shapes
+        .iter()
+        .any(|clipped| match &clipped.shape {
+            egui::Shape::Rect(r) => {
+                r.fill == fill && r.brush.is_none() && place.contains_rect(r.rect)
+            }
+            _ => false,
+        })
+}
+
+/// The Basic page's edit-mode switch while on, under the pointer and pressed, takes the fill and
+/// the label macos-monterey light states for the checked toolbar button in that state, in the
+/// state of its previous response (`pages::basic::edit_look_at`, `next::toolbar_button_checked`):
+/// at rest `toolbar.button(CHECKED)`'s #dfdfdf and label #424242, hovered `(HOVER|CHECKED)`'s
+/// #c6c6c6 and #343434, pressed `(PRESSED|CHECKED)`'s #b9b9b9 and #343434, the toolbar-bezel
+/// button as an on toggle (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
+/// `aqua.{normal,hovered,pressed}.toolbar_toggle_on` `fill`, `label`;
+/// native-theme/src/next/presets/macos.rs, `toolbar_checked_off_accent`,
+/// `toolbar_checked_label`), not egui's selected fill in every state.
+#[test]
+fn the_basic_edit_button_takes_the_checked_toolbar_buttons_hovered_and_pressed_looks()
+-> Result<(), String> {
+    let grey = |v: u8| egui::Color32::from_rgb(v, v, v);
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-monterey");
+    harness.state_mut().settings.icon = IconSetChoice::Freedesktop("no-such-icon-theme".into());
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().demo_state.basic_edit,
+        "Edit is not on at start"
+    );
+    harness.remove_cursor();
+    harness.run_steps(3);
+    let id = "basic.icons.edit";
+    let look = |harness: &Harness<'_, App>, fill: u8, text: u8, what: &str| {
+        assert!(
+            filled_in(harness, id, grey(fill)),
+            "Edit while on, {what}, is not filled in #{fill:02x}{fill:02x}{fill:02x}"
+        );
+        assert_eq!(
+            painted_label_colour(harness, "Edit", id),
+            Some(grey(text)),
+            "Edit while on, {what}: its label"
+        );
+    };
+    look(&harness, 0xdf, 0x42, "at rest");
+    let at = harness
+        .state()
+        .registry
+        .places()
+        .get(id)
+        .copied()
+        .ok_or("basic.icons.edit is not placed")?
+        .center();
+    harness.hover_at(at);
+    harness.run_steps(3);
+    look(&harness, 0xc6, 0x34, "hovered");
+    harness.drag_at(at);
+    harness.run_steps(3);
+    look(&harness, 0xb9, 0x34, "pressed");
+    Ok(())
+}
+
+/// A toolbar button at rest is filled and rounded as `toolbar.button(NONE)` states, on the
+/// Basic page's icon row and in the chrome's toolbar: macos-tahoe light's rest capsule, #ffffff,
+/// a pill, egui's largest radius (os-probe run 45634379188, macOS 26, toolbar states sheet,
+/// `aqua.normal.toolbar_button` `fill`, `*.normal.toolbar_image` `box`;
+/// native-theme/src/next/presets/macos.rs, `toolbar_button_rest`, `toolbar_button_corners`),
+/// not the Ghost's transparent one; kde-breeze, which states no rest fill, keeps the Ghost.
+#[test]
+fn a_toolbar_button_at_rest_is_the_stated_capsule() -> Result<(), String> {
+    let capsule = |harness: &Harness<'_, App>, id: &str| {
+        let Some(place) = harness.state().registry.places().get(id).copied() else {
+            return false;
+        };
+        harness
+            .output()
+            .shapes
+            .iter()
+            .any(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) => {
+                    r.fill == egui::Color32::WHITE
+                        && r.corner_radius == egui::CornerRadius::same(u8::MAX)
+                        && place.contains_rect(r.rect)
+                }
+                _ => false,
+            })
+    };
+    let ids = ["basic.icons.copy", "chrome.toolbar.command_palette"];
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-tahoe");
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    for id in ids {
+        assert!(
+            capsule(&harness, id),
+            "macos-tahoe light: {id} at rest is not the white capsule"
+        );
+        assert!(
+            every_record_notes(&harness, id, &[crate::demo::TOOL_REST_NOTE.0]),
+            "macos-tahoe light: {id}'s record does not note its rest"
+        );
+    }
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "kde-breeze");
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    for id in ids {
+        assert!(
+            !capsule(&harness, id),
+            "kde-breeze light: {id} at rest is filled, though the theme states no rest fill"
+        );
+        assert!(
+            every_record_notes(&harness, id, &[crate::demo::GHOST_NOTE.0]),
+            "kde-breeze light: {id}'s record does not note it Ghost"
+        );
+    }
+    Ok(())
+}
+
+/// A toolbar button's icon is loaded in `toolbar.button_icon(<state>).color` where the theme
+/// states it, in the state of its previous response: macos-monterey light's #676767 at rest and
+/// #666666 hovered, and at rest while checked the resting one, as no rule states another
+/// (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
+/// `aqua.{normal,hovered}.toolbar_image` `ink`; native-theme/src/next/presets/macos.rs,
+/// `toolbar_icon`); kde-breeze states none, and the icon keeps the colour it is loaded in. So
+/// the Basic page's Copy, a bundled Material icon, is painted from another texture under the
+/// pointer than at rest.
+#[test]
+fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() -> Result<(), String> {
+    use crate::demo::tool_icon_color;
+    use native_theme::next::{Preset, Theme, ThemeContext};
+    let grey = |v: u8| Some(egui::Color32::from_rgb(v, v, v));
+    let monterey = Theme::preset(Preset::MacosMonterey).resolve(&ThemeContext::light());
+    let r = Some(&monterey);
+    assert_eq!(tool_icon_color(r, (false, false), false), grey(0x67));
+    assert_eq!(tool_icon_color(r, (true, false), false), grey(0x66));
+    assert_eq!(tool_icon_color(r, (false, false), true), grey(0x67));
+    let breeze = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    assert_eq!(tool_icon_color(Some(&breeze), (true, false), false), None);
+    assert_eq!(tool_icon_color(None, (false, false), false), None);
+
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, "macos-monterey");
+    harness.state_mut().settings.icon = IconSetChoice::Material;
+    harness.run_steps(SETTLE);
+    harness.remove_cursor();
+    harness.run_steps(3);
+    let id = "basic.icons.copy";
+    let place = harness
+        .state()
+        .registry
+        .places()
+        .get(id)
+        .copied()
+        .ok_or("basic.icons.copy is not placed")?;
+    let textures = |harness: &Harness<'_, App>| -> Vec<egui::TextureId> {
+        harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if place.contains_rect(r.rect) => {
+                    r.brush.as_ref().map(|b| b.fill_texture_id)
+                }
+                _ => None,
+            })
+            .collect()
+    };
+    let rest = textures(&harness);
+    harness.hover_at(place.center());
+    harness.run_steps(3);
+    let hovered = textures(&harness);
+    assert!(
+        rest.len() == 1 && hovered.len() == 1,
+        "Copy's icon is not painted once: at rest {rest:?}, hovered {hovered:?}"
+    );
+    assert_ne!(
+        rest, hovered,
+        "Copy's icon is painted from one texture at rest and hovered, though the theme states \
+         another icon colour hovered"
+    );
+    Ok(())
+}
+
 /// The Basic page's icon buttons on the 0.8.0 model, under every bundled preset in light: Copy,
 /// Paste and Delete stand the toolbar scope's item gap apart, `toolbar.item_gap` where the theme
 /// states it, else `layout.widget_gap`, which the connector's base style carries, and so no

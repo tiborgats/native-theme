@@ -868,3 +868,15 @@ connector = "iced"
 name = "next::flat_button"
 kind = "absent"
 reason = "egui's flat button: egui draws a `Button::frame_when_inactive(false)` unframed at rest and in its scope's hovered and `active` entries (egui 0.37.0 src/theme/default_style.rs:77-87), and the atlas has no cell for the flat variant, so the function lays `button.body(<state>; variant=Flat)` over a scope's visuals per call (connectors/native-theme-egui/src/next/mod.rs, `flat_button`'s doc). iced takes a button's look from the style function the application hands it (connectors/native-theme-iced/src/next/styles.rs, `button` and its siblings), so a flat button there is a style function, not a lay-over of a scope; the iced connector has none for the flat variant yet"
+
+[[exception]]
+connector = "gpui"
+name = "next::toolbar_button_checked"
+kind = "absent"
+reason = "egui's checked toolbar button: egui fills and letters a `Button::selected` from `visuals.selection` in every state (egui 0.37.0 src/theme/default_style.rs, `StyleProvider<ButtonStyle>`), so no scope gives it a hovered or pressed look, and the function returns `toolbar.button(CHECKED)`, `(HOVER|CHECKED)` and `(PRESSED|CHECKED)`'s fills and labels for the application to hand `Button::fill` per call from the button's previous response (connectors/native-theme-egui/src/next/mod.rs, `toolbar_button_checked`'s doc). A selected gpui-component Button takes no hover or press style (gpui-component 0.10.0 src/button/button.rs), so gpui has no hovered or pressed look to hand it (connectors/native-theme-gpui/src/geometry.rs, `toolbar_button_checked`'s doc)"
+
+[[exception]]
+connector = "iced"
+name = "next::toolbar_button_checked"
+kind = "absent"
+reason = "egui's checked toolbar button: egui fills and letters a `Button::selected` from `visuals.selection` in every state (egui 0.37.0 src/theme/default_style.rs, `StyleProvider<ButtonStyle>`), so no scope gives it a hovered or pressed look, and the function returns `toolbar.button(CHECKED)`, `(HOVER|CHECKED)` and `(PRESSED|CHECKED)`'s fills and labels for the application to hand `Button::fill` per call from the button's previous response (connectors/native-theme-egui/src/next/mod.rs, `toolbar_button_checked`'s doc). iced hands the style function a button's status, so its checked toolbar button's look per status is the style function's (connectors/native-theme-iced/src/next/styles.rs, `toolbar_button`)"

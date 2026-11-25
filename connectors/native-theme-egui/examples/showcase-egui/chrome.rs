@@ -651,12 +651,15 @@ fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
 /// (`toolbar.item_gap`, else the connector's `layout.widget_gap`, else [`TOOLBAR_GAP`]), the
 /// row as tall as the scope's `interact_size.y` — `toolbar.bar(NONE).min_size[1]` less the
 /// bar's padding where the theme states a bar height (connector spec §6.10), less `shrink`, the
-/// room the panel's margin grew by in [`chrome_bar`]. Each is a tool button
-/// (`demo::next_tool_button`): Ghost, transparent at rest, padded by
-/// `button.body(NONE).padding`, and hovered and pressed in the scope's own fills and outlines.
+/// room the panel's margin grew by in [`chrome_bar`]. Each is a toolbar button
+/// (`demo::next_toolbar_button`): filled at rest in `toolbar.button(NONE).fill` where the theme
+/// states it, else Ghost, transparent at rest, padded by `button.body(NONE).padding`, and
+/// hovered and pressed in the scope's own fills and outlines.
 /// The icons are gpui's: `SquareTerminal` and `RotateCw` by their names in the chosen set,
 /// Settings by its role, loaded as the Icons page loads them — a freedesktop icon from the
-/// chosen theme in the text colour, a bundled key tinted it (§9.2, §10.4).
+/// chosen theme in the text colour, a bundled key tinted it (§9.2, §10.4), or in the colour
+/// `toolbar.button_icon(<state>).color` states for the state of the button's previous response
+/// (`demo::tool_icon_color`).
 fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
     let chosen = app.chosen_icons();
     let App {
@@ -698,15 +701,25 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                     "chrome.toolbar.preferences",
                 ),
             ] {
-                let image = icon_size
-                    .and_then(|size| chrome_button_image(icon_cache, ui, icon, &chosen, size));
-                let kind = ghost_kind(image.is_some(), false);
-                let drawn = image.is_some().then_some(icon_size).flatten();
+                let key = egui::Id::unique(("chrome state", id));
+                let was = demo::previous_state(ui, key);
+                let (mut drawn, mut filled) = (None, false);
                 let response = ui
                     .scope(|ui| {
-                        demo::next_tool_button(ui, padding);
+                        filled = demo::next_toolbar_button(ui, padding, r);
+                        let tint = demo::tool_icon_color(r, was, false);
+                        let image = demo::loaded_in(ui, tint, |ui| {
+                            icon_size.and_then(|size| {
+                                chrome_button_image(icon_cache, ui, icon, &chosen, size)
+                            })
+                        });
+                        let kind = ghost_kind(image.is_some(), false);
+                        drawn = image.is_some().then_some(icon_size).flatten();
                         bar.add(registry, ui, kind, |ui| {
-                            let r = ui.add(ghost_button(image, label, None));
+                            // framed at rest where the theme fills it at rest
+                            let button =
+                                ghost_button(image, label, None).frame_when_inactive(filled);
+                            let r = ui.add(button);
                             r.widget_info(|| {
                                 egui::WidgetInfo::labeled(egui::Role::Button, true, label)
                             });
@@ -714,7 +727,8 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                         })
                     })
                     .inner;
-                registry.ghost_last();
+                demo::remember_state(ui, key, was, &response);
+                registry.tool_rest_last(filled);
                 if icon_size.is_none() {
                     registry.note_last(
                         "icon size",

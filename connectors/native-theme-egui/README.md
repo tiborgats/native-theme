@@ -313,9 +313,12 @@ column-header section where the theme states them (`None` otherwise), for a
 header the application paints, since egui_extras' header row has no hover. A
 leaf that needs no conversion is read from the `ResolvedTheme` itself
 (`ThemeAtlas::resolved_for`). A button in the toolbar
-role is a flat tool button: the role colours its hover and press and leaves its rest
-to the button. Make it flat with `Button::frame_when_inactive(false)`, or in a scope
-whose resting fill and border colour are transparent; both keep its size.
+role is a flat tool button: the role colours its hover and press, and at rest fills and
+rounds it as `toolbar.button(NONE)` states (macos-tahoe's capsule), leaving the rest to the
+button where the theme states none; its `RoleVariant::Disabled` cell fills a disabled one as
+a rule states `toolbar.button(DISABLED)`'s fill. Make it flat with
+`Button::frame_when_inactive(false)`, or in a scope whose resting fill and border colour are
+transparent; both keep its size, and both hide a stated rest fill.
 
 ## Fonts
 
@@ -820,6 +823,24 @@ listed here, and a value the theme leaves unstated is egui's own
   the whole band is drawn in the band's mean colour where the platform shows
   the fill under its inner half only (src/style/line.rs). An opaque stroke
   is drawn exactly in every alignment.
+- **A checked toolbar button hovered or pressed.** egui fills and letters
+  a selected `Button` from `visuals.selection` in every state
+  (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`),
+  so no cell gives a checked tool button the hovered and pressed fills and
+  labels a theme states (`toolbar.button(HOVER|CHECKED)`,
+  `(PRESSED|CHECKED)`, macOS). `next::toolbar_button_checked` returns them
+  with the resting ones where a rule states `toolbar.button(CHECKED)`'s
+  fill (its label `toolbar.button_label(CHECKED)`'s), for the application
+  to hand `Button::fill` and `RichText::color`, which override every
+  on-hover effect, in the state of the button's previous response
+  (`CheckedToolButton::at`); where none does, egui's own selected look
+  stays.
+- **A tool button's icon colour.** An egui image is loaded in its colour
+  (`IconKey::tint`) and painted with no state of its own, so no cell tints
+  a tool button's icon. The application loads it in
+  `toolbar.button_icon(<state>).color` where the theme states it, in the
+  state of the button's previous response; where it states none, the icon
+  keeps the colour it is loaded in.
 - **A flat button's narrower hovered or pressed outline.** egui lays a
   button out at the inner margin `button_padding + expansion −
   bg_stroke.width` of its state (`egui-0.37.0/src/theme/default_style.rs`,

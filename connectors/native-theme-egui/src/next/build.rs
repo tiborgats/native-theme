@@ -16,8 +16,8 @@ use crate::convert::Rgba;
 use crate::plugin::FocusRingSource;
 use crate::style::base::{BaseSource, ButtonStates, DropShadow, Read, Sides};
 use crate::style::cells::{
-    ButtonCell, CellSource, CheckboxCell, ComboBoxCell, DialogCell, ExpanderCell, InputCell,
-    ListCell, MenuCell, Outline, PanelCell, PanelEdge, ProgressBarCell, ScrollbarCell,
+    ButtonCell, Capsule, CellSource, CheckboxCell, ComboBoxCell, DialogCell, ExpanderCell,
+    InputCell, ListCell, MenuCell, Outline, PanelCell, PanelEdge, ProgressBarCell, ScrollbarCell,
     SegmentedControlCell, SeparatorCell, SidebarCell, SliderCell, SpinnerCell, SplitterCell,
     SwitchCell, TabCell, Text, ToolbarCell,
 };
@@ -883,6 +883,10 @@ pub(crate) fn cell_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> CellSourc
             },
             bar_height: bar.min_size[1].map(|v| (v, "toolbar.bar(NONE).min_size[1]")),
             item_gap: tool.item_gap.map(|v| (v, "toolbar.item_gap")),
+            rest: Capsule {
+                fill: fill_at(&tool.button(S::NONE), "toolbar.button(NONE).fill", notes),
+                radius: radius_at(&tool.button(S::NONE), "toolbar.button(NONE).corners", notes),
+            },
             button_fill: [
                 state_fill(&tool.button(S::HOVER), "toolbar.button(HOVER).fill", notes),
                 state_fill(
@@ -1408,6 +1412,17 @@ pub(crate) fn variant_source(r: &ResolvedTheme, notes: &mut Vec<Note>) -> Varian
         menu: state_text_color(&r.menu.item_label(S::DISABLED)),
         list: state_text_color(&r.list.item_label(S::DISABLED)),
         link: state_text_color(&r.link.label(S::DISABLED)),
+        toolbar: {
+            let part = r.toolbar.button(S::DISABLED);
+            Capsule {
+                fill: state_fill_at(&part, "toolbar.button(DISABLED).fill", notes),
+                radius: if part.from_state.contains(PartStated::CORNERS) {
+                    radius_at(&part, "toolbar.button(DISABLED).corners", notes)
+                } else {
+                    None
+                },
+            }
+        },
     }
 }
 

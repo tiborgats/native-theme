@@ -278,6 +278,16 @@ impl Registry {
                 .push((GHOST_NOTE.0, GHOST_NOTE.1.to_string()));
         });
     }
+    /// Note on the last record, a toolbar button ([`next_toolbar_button`]), how it is drawn at
+    /// rest: where `filled`, its border transparent and its fill the theme's
+    /// ([`TOOL_REST_NOTE`]); else a Ghost button ([`Self::ghost_last`]).
+    pub(crate) fn tool_rest_last(&mut self, filled: bool) {
+        if filled {
+            self.note_last(TOOL_REST_NOTE.0, TOOL_REST_NOTE.1);
+        } else {
+            self.ghost_last();
+        }
+    }
 }
 
 /// `note`, a note of the atlas, as a line of prose naming the value's home or the family, as
@@ -332,6 +342,12 @@ pub(crate) const FLAT_FOCUS_NOTE: (&str, &str) = (
 pub(crate) const GHOST_NOTE: (&str, &str) = (
     "fill and border at rest",
     "transparent, the border's width kept: a Ghost button, as gpui-component's (gpui-component 0.9.1 src/button/button.rs:1027, :1117)",
+);
+
+/// What a toolbar button the theme fills at rest is drawn in at rest, beside its fill.
+pub(crate) const TOOL_REST_NOTE: (&str, &str) = (
+    "border at rest",
+    "transparent, the border's width kept, as a Ghost button's; its fill toolbar.button(NONE).fill, which the theme states",
 );
 
 /// Make the rest of `ui` Ghost: the resting entry's fill and border colour transparent, the
@@ -1775,7 +1791,9 @@ type DrawnPart = (
 /// Every fill the showcase's own drawing sites read ([`DrawnPart`]): the menu bar
 /// (`chrome::menu_panel`), the selected tab's line (`next_indicator_line`), the Icons page's
 /// skeleton, the toggle's and the edit switch's checked fills (`pages::basic::toggle_on_at`,
-/// `edit_look`), the side-panel toggle's, a flat button's (`chrome::toggle_checked`), the Basic
+/// `edit_look`), the edit switch's hovered and pressed ones (`next::toolbar_button_checked`), a
+/// toolbar button's at rest ([`next_toolbar_button`]), the side-panel toggle's, a flat button's
+/// (`chrome::toggle_checked`), the Basic
 /// list's and the table's frames (`list_frame`), their rows and
 /// highlights in each state the page draws them in (`RowLook::of`: the window focused or not,
 /// selected or not, and the list's hovered or not; the table's rows are never hovered), and the
@@ -1806,6 +1824,15 @@ const DRAWN_FILLS: &[DrawnPart] = {
         }),
         ("toolbar.button(CHECKED).fill", true, |r| {
             r.toolbar.button(S::CHECKED)
+        }),
+        ("toolbar.button(HOVER|CHECKED).fill", false, |r| {
+            r.toolbar.button(H | S::CHECKED)
+        }),
+        ("toolbar.button(PRESSED|CHECKED).fill", false, |r| {
+            r.toolbar.button(P | S::CHECKED)
+        }),
+        ("toolbar.button(NONE).fill", false, |r| {
+            r.toolbar.button(S::NONE)
         }),
         ("list.container(NONE).fill", false, |r| {
             r.list.container(q(Plain, S::NONE))
@@ -1953,6 +1980,96 @@ pub(crate) fn next_tool_button(ui: &mut egui::Ui, [top, _, _, left]: [Option<f32
     let spacing = ui.spacing_mut();
     spacing.button_padding = egui::vec2(left.unwrap_or(own.x), top.unwrap_or(own.y));
     spacing.interact_size.y = 0.0;
+}
+
+/// Make the rest of `ui`, a «toolbar» scope, a toolbar button's: a tool button
+/// ([`next_tool_button`]) filled at rest in `toolbar.button(NONE).fill` where the installed 0.8.0
+/// theme `r` states it ([`drawn_fill`]), as the connector's toolbar cell fills the scope's resting
+/// entry, and Ghost, transparent, where it states none. Returns whether it is filled at rest, so
+/// that a `Button::frame_when_inactive(false)` is framed at rest there. Its corners are the
+/// scope's, `toolbar.button(NONE).corners` where stated.
+pub(crate) fn next_toolbar_button(
+    ui: &mut egui::Ui,
+    padding: [Option<f32>; 4],
+    r: Option<&native_theme::next::ResolvedTheme>,
+) -> bool {
+    next_tool_button(ui, padding);
+    let rest = r.and_then(|r| drawn_fill(&r.toolbar.button(native_theme::next::WidgetState::NONE)));
+    if let Some(fill) = rest {
+        ui.visuals_mut().widgets.inactive.weak_bg_fill = fill;
+    }
+    rest.is_some()
+}
+
+/// The hovered and pressed state of the widget `key` names in its previous response, as
+/// [`remember_state`] kept it in the page's memory; neither before its first response.
+pub(crate) fn previous_state(ui: &egui::Ui, key: egui::Id) -> (bool, bool) {
+    ui.ctx()
+        .data(|d| d.get_temp::<(bool, bool)>(key))
+        .unwrap_or_default()
+}
+
+/// Keep `response`'s hovered and pressed state under `key` for the next pass, `was` the one
+/// [`previous_state`] gave this pass; where it changed, one more pass, which draws the look of the
+/// state it is in now.
+pub(crate) fn remember_state(
+    ui: &egui::Ui,
+    key: egui::Id,
+    was: (bool, bool),
+    response: &egui::Response,
+) {
+    let now = (response.hovered(), response.is_pointer_button_down_on());
+    if now != was {
+        ui.ctx().request_repaint();
+    }
+    ui.ctx().data_mut(|d| d.insert_temp(key, now));
+}
+
+/// The colour `toolbar.button_icon(<state>).color` of the installed 0.8.0 theme `r` states for a
+/// toolbar button's icon in the state `(hovered, pressed)` of its previous response, with
+/// `CHECKED` where `checked`: pressed `PRESSED`, else hovered `HOVER`, else at rest; `None` where
+/// it states none, or none is installed, and the icon keeps the colour it is loaded in. Never the
+/// label's: no rule makes the icon take it.
+pub(crate) fn tool_icon_color(
+    r: Option<&native_theme::next::ResolvedTheme>,
+    (hovered, pressed): (bool, bool),
+    checked: bool,
+) -> Option<egui::Color32> {
+    use native_theme::next::{IconStated, WidgetState};
+    let state = if pressed {
+        WidgetState::PRESSED
+    } else if hovered {
+        WidgetState::HOVER
+    } else {
+        WidgetState::NONE
+    };
+    let state = if checked {
+        state | WidgetState::CHECKED
+    } else {
+        state
+    };
+    let icon = r?.toolbar.button_icon(state);
+    icon.stated
+        .contains(IconStated::COLOR)
+        .then(|| native_theme_egui::next::to_color32(icon.color))
+}
+
+/// What `load` gives in `ui` with the text colour `colour` where it is `Some`, so that an icon it
+/// loads ([`role_image`], [`named_image`]), which takes the `Ui`'s text colour, is loaded in that
+/// colour; `ui`'s own text colour stays after it.
+pub(crate) fn loaded_in<T>(
+    ui: &mut egui::Ui,
+    colour: Option<egui::Color32>,
+    load: impl FnOnce(&egui::Ui) -> T,
+) -> T {
+    let Some(colour) = colour else {
+        return load(ui);
+    };
+    let own = ui.visuals().override_text_color;
+    ui.visuals_mut().override_text_color = Some(colour);
+    let loaded = load(ui);
+    ui.visuals_mut().override_text_color = own;
+    loaded
 }
 
 /// The height egui gives an icon-only tool button with a `size` tall icon in a `Role::Button`

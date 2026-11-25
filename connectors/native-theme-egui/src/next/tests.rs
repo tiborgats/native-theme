@@ -85,6 +85,64 @@ fn a_checked_macos_toolbar_button_takes_the_stated_checked_fill() {
     }
 }
 
+/// A checked toolbar button on either macOS preset takes, at rest, under the pointer and
+/// pressed, the fills and labels the preset states for `toolbar.button(CHECKED)`,
+/// `(HOVER|CHECKED)` and `(PRESSED|CHECKED)` and their labels, the toolbar-bezel button's as an
+/// on toggle (os-probe run 45634379188, `controls-toolbar_states_sheet.toml`,
+/// `*.{normal,hovered,pressed}.toolbar_toggle_on` `fill`, `label`;
+/// native-theme/src/next/presets/macos.rs, `toolbar_checked_off_accent`,
+/// `toolbar_checked_on_accent`, `toolbar_checked_label`), picked by the previous response's
+/// state; ios-13, which states neither for `CHECKED`, none, and egui's own selected look stays.
+#[test]
+fn a_checked_macos_toolbar_button_takes_its_stated_hovered_and_pressed_looks()
+-> Result<(), super::Unmapped> {
+    let rgb = |[r, g, b]: [u8; 3]| egui::Color32::from_rgb(r, g, b);
+    let white = [0xff; 3];
+    for (preset, ctx, fill, text) in [
+        (
+            Preset::MacosMonterey,
+            ThemeContext::light(),
+            [[0xdf; 3], [0xc6; 3], [0xb9; 3]],
+            [[0x42; 3], [0x34; 3], [0x34; 3]],
+        ),
+        (
+            Preset::MacosMonterey,
+            ThemeContext::dark(),
+            [[0x41; 3], [0x5a; 3], [0x67; 3]],
+            [[0xec; 3], [0xef; 3], [0xf0; 3]],
+        ),
+        (
+            Preset::MacosTahoe,
+            ThemeContext::light(),
+            [[0x00, 0x7a, 0xff], [0x00, 0x6d, 0xf2], [0x00, 0x61, 0xe6]],
+            [white; 3],
+        ),
+        (
+            Preset::MacosTahoe,
+            ThemeContext::dark(),
+            [[0x00, 0x7a, 0xff], [0x14, 0x8e, 0xff], [0x23, 0x9d, 0xff]],
+            [white; 3],
+        ),
+    ] {
+        let at = format!("{preset:?} {:?}", ctx.scheme);
+        let look = super::toolbar_button_checked(&Theme::preset(preset).resolve(&ctx))?;
+        assert_eq!(look.fill, Some(fill.map(rgb)), "{at}");
+        assert_eq!(look.text, Some(text.map(rgb)), "{at}");
+        let [rest, hover, press] =
+            [0, 1, 2].map(|i| (fill.get(i).copied().map(rgb), text.get(i).copied().map(rgb)));
+        assert_eq!(look.at(false, false), rest, "{at} at rest");
+        assert_eq!(look.at(true, false), hover, "{at} hovered");
+        assert_eq!(look.at(true, true), press, "{at} pressed");
+        assert_eq!(look.at(false, true), press, "{at} pressed off the pointer");
+    }
+    let ios = super::toolbar_button_checked(
+        &Theme::preset(Preset::Ios13).resolve(&ThemeContext::light()),
+    )?;
+    assert_eq!((ios.fill, ios.text), (None, None), "ios-13");
+    assert_eq!(ios.at(true, true), (None, None), "ios-13 pressed");
+    Ok(())
+}
+
 /// A stated uniform stroke gives its colour and width in every alignment; a
 /// per-side stroke gives neither, which egui cannot draw as one stroke.
 #[test]
@@ -1293,6 +1351,75 @@ fn a_tool_button_and_a_menu_item_draw_their_stated_widths() -> Result<(), Box<dy
         .widgets;
     assert_eq!(menu.hovered.bg_stroke, egui::Stroke::new(2.0, magenta));
     assert_eq!(menu.open.bg_stroke, egui::Stroke::new(2.0, magenta));
+    Ok(())
+}
+
+/// A tool button at rest is filled and rounded as `toolbar.button(NONE)` states, in the
+/// toolbar's `Normal` cell, and disabled filled as a rule states `toolbar.button(DISABLED)`'s
+/// fill, in its `Disabled` cell: macos-tahoe's rest capsule, #ffffff light and #252525 dark, a
+/// pill, disabled unchanged; macos-monterey's disabled button none, transparent, its rest fill
+/// unstated and so the base style's (spec §10, rule 0). Measured, os-probe run 45634379188,
+/// toolbar states sheet, `*.normal.toolbar_button` and `*.normal.toolbar_button_disabled`
+/// `fill`, `*.normal.toolbar_toggle_on` `box` (native-theme/src/next/presets/macos.rs,
+/// `toolbar_button_rest`, `toolbar_button_corners`).
+#[test]
+fn a_tool_buttons_rest_and_disabled_capsule_is_drawn_as_stated()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{Role, RoleVariant};
+    let tahoe = atlas_of(&Theme::preset(Preset::MacosTahoe))?;
+    for (scheme, fill) in [
+        (egui::Theme::Light, egui::Color32::WHITE),
+        (egui::Theme::Dark, egui::Color32::from_rgb(0x25, 0x25, 0x25)),
+    ] {
+        let styles = tahoe.scheme(scheme);
+        let w = &styles
+            .cell(Role::Toolbar, RoleVariant::Normal)
+            .visuals
+            .widgets;
+        assert_eq!(
+            w.inactive.weak_bg_fill, fill,
+            "macos-tahoe {scheme:?} at rest"
+        );
+        for e in [&w.inactive, &w.hovered, &w.active, &w.open] {
+            assert_eq!(
+                e.corner_radius,
+                egui::CornerRadius::same(u8::MAX),
+                "macos-tahoe {scheme:?}"
+            );
+        }
+        let d = &styles
+            .cell(Role::Toolbar, RoleVariant::Disabled)
+            .visuals
+            .widgets;
+        assert_eq!(
+            d.inactive.weak_bg_fill, fill,
+            "macos-tahoe {scheme:?} disabled"
+        );
+    }
+    let monterey = atlas_of(&Theme::preset(Preset::MacosMonterey))?;
+    for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+        let styles = monterey.scheme(scheme);
+        assert_eq!(
+            styles
+                .cell(Role::Toolbar, RoleVariant::Normal)
+                .visuals
+                .widgets
+                .inactive
+                .weak_bg_fill,
+            styles.base.visuals.widgets.inactive.weak_bg_fill,
+            "macos-monterey {scheme:?} at rest: the base style's"
+        );
+        assert_eq!(
+            styles
+                .cell(Role::Toolbar, RoleVariant::Disabled)
+                .visuals
+                .widgets
+                .inactive
+                .weak_bg_fill,
+            egui::Color32::TRANSPARENT,
+            "macos-monterey {scheme:?} disabled"
+        );
+    }
     Ok(())
 }
 

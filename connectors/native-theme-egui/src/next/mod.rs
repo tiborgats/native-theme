@@ -481,6 +481,86 @@ pub fn toolbar_button_checked_border_color(r: &ResolvedTheme) -> Mapped<Option<C
     }
 }
 
+/// A checked toolbar button's look per call, for the `Button::selected` the
+/// application draws it as in a `Role::Toolbar` scope: egui fills and
+/// letters a selected button from `visuals.selection` in every state (egui
+/// 0.37.0 `src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`), so
+/// no scope gives it a hovered or a pressed look, and `Button::fill` and
+/// `RichText::color` override every on-hover effect
+/// (`src/widgets/button.rs`, `Button::fill`). Each array holds the value at
+/// rest, under the pointer and pressed, picked by [`CheckedToolButton::at`]
+/// from the button's previous response.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct CheckedToolButton {
+    /// `toolbar.button(CHECKED)`, `(CHECKED | HOVER)` and `(CHECKED |
+    /// PRESSED)`'s fill; `None` where no rule states `CHECKED`'s, and egui's
+    /// own selected fill stays in every state.
+    pub fill: Option<[Color32; 3]>,
+    /// `toolbar.button_label(CHECKED)`, `(CHECKED | HOVER)` and `(CHECKED |
+    /// PRESSED)`'s colour; `None` where no rule states `CHECKED`'s, and
+    /// egui's own selected text stays in every state.
+    pub text: Option<[Color32; 3]>,
+}
+
+impl CheckedToolButton {
+    /// The fill and the label colour in the state of the button's previous
+    /// response: pressed, the pressed one's; else hovered, the hovered one's;
+    /// else the resting one's.
+    #[must_use]
+    pub fn at(&self, hovered: bool, pressed: bool) -> (Option<Color32>, Option<Color32>) {
+        let pick = |values: [Color32; 3]| {
+            let [rest, hover, press] = values;
+            if pressed {
+                press
+            } else if hovered {
+                hover
+            } else {
+                rest
+            }
+        };
+        (self.fill.map(pick), self.text.map(pick))
+    }
+}
+
+/// A checked toolbar button's fills and label colours at rest, under the
+/// pointer and pressed ([`CheckedToolButton`]). Each is asked with the
+/// checked flag alone first: where a rule states `toolbar.button(CHECKED)`'s
+/// fill, the hovered and pressed fills are the theme's answers for
+/// `(CHECKED | HOVER)` and `(CHECKED | PRESSED)`; where none does, none,
+/// and egui's own selected look stays (spec §10, rules 0 and 0a). The label
+/// colours likewise, from `toolbar.button_label`.
+///
+/// # Errors
+///
+/// [`Unmapped`] where a fill is stated as layers that are all gradients, or
+/// a state the checked fill or label is stated for states none of its own
+/// egui can take.
+pub fn toolbar_button_checked(r: &ResolvedTheme) -> Mapped<CheckedToolButton> {
+    let t = &r.toolbar;
+    let hover = WidgetState::HOVER | WidgetState::CHECKED;
+    let press = WidgetState::PRESSED | WidgetState::CHECKED;
+    let state_fill = |state, home| stated(fill_of(&t.button(state), home)?, home);
+    let fill = match toolbar_button_checked_background(r)? {
+        Some(rest) => Some([
+            rest,
+            state_fill(hover, "toolbar.button(HOVER|CHECKED).fill")?,
+            state_fill(press, "toolbar.button(PRESSED|CHECKED).fill")?,
+        ]),
+        None => None,
+    };
+    let state_text = |state, home| stated(text_color_of(&t.button_label(state)), home);
+    let text = match state_text_color_of(&t.button_label(WidgetState::CHECKED)) {
+        Some(rest) => Some([
+            rest,
+            state_text(hover, "toolbar.button_label(HOVER|CHECKED).color")?,
+            state_text(press, "toolbar.button_label(PRESSED|CHECKED).color")?,
+        ]),
+        None => None,
+    };
+    Ok(CheckedToolButton { fill, text })
+}
+
 // ---------------------------------------------------------------------------
 // The focus ring
 // ---------------------------------------------------------------------------
