@@ -260,6 +260,24 @@ const DIFFERENCES: &[Difference] = &[
                  :33)",
     },
     Difference {
+        leaf: "CheckboxLook::of",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 states no disabled fill, so a disabled box keeps its rest or checked \
+                 fill; 0.8.0 states the measured disabled box (os-probe run 45345116763, macOS \
+                 15 and 26, `*.normal.checkbox_disabled_{off,on}` `fill`; \
+                 native-theme/tests/next_homes.toml, row checkbox.disabled_background, a listed \
+                 difference): macos-monterey #ffffff80 / #ffffff15 checked or not, macos-tahoe \
+                 #0000000d / #ffffff0d unchecked and #0076f470 / #0982ff70 checked on the \
+                 default accent; the look reads them at checkbox.indicator(DISABLED).fill and \
+                 checkbox.indicator(DISABLED|CHECKED).fill",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio",
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "as the check box's (CheckboxLook::of): the disabled radio button's circle is \
+                 filled as the box (the same run, `*.normal.radio_disabled_{off,on}` `fill`)",
+    },
+    Difference {
         leaf: "CheckboxLook::radio",
         presets: &["material-3"],
         reason: "0.7.2 fills a checked or disabled radio button as its check box and draws \

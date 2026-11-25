@@ -117,18 +117,28 @@ fn a_checked_indicator_keeps_its_fill_under_the_pointer() {
     );
 }
 
-/// The radio's states were not measured, so no rule states its hovered
-/// fill: it is the rest fill, not 0.7.2's uncited hover fill.
+/// The radio button takes the check box's measured fills: hovered as at
+/// rest, pressed and checked pressed the check box's, stated.
 #[test]
-fn an_unchecked_radio_s_hovered_fill_is_left_unstated() {
+fn a_radio_takes_the_check_box_s_fills() {
     for (preset, theme) in every_theme() {
         let hovered = theme.radio.indicator(WidgetState::HOVER);
-        assert!(!hovered.from_state.contains(PartStated::FILL), "{preset:?}");
+        assert!(hovered.from_state.contains(PartStated::FILL), "{preset:?}");
         assert_eq!(
             hovered.fill,
             theme.radio.indicator(WidgetState::NONE).fill,
             "{preset:?}"
         );
+        for state in [
+            WidgetState::PRESSED,
+            WidgetState::CHECKED | WidgetState::PRESSED,
+        ] {
+            assert_eq!(
+                theme.radio.indicator(state).fill,
+                theme.checkbox.indicator(state).fill,
+                "{preset:?} {state:?}"
+            );
+        }
     }
 }
 
@@ -1302,6 +1312,54 @@ fn the_pressed_fills_measured_on_the_default_accent_drop_under_another() {
             assert_ne!(pressed(&theme), measured, "{scheme:?} {how}");
         }
     }
+}
+
+/// The disabled checked box's and circle's fill measured on macOS 26's
+/// default accent drops under another accent, and they keep their checked
+/// fill disabled; macOS 15's, which is not on the accent, stays.
+#[test]
+fn the_disabled_checked_fill_measured_on_the_default_accent_drops_under_another() -> TestResult {
+    let checked_disabled = WidgetState::CHECKED | WidgetState::DISABLED;
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let tahoe = constants(Preset::MacosTahoe, scheme);
+        let monterey = constants(Preset::MacosMonterey, scheme);
+        let on_accent = tahoe
+            .checkbox_checked_disabled
+            .ok_or("macos-tahoe states no disabled checked fill")?;
+        let off_accent = monterey
+            .checkbox_checked_disabled_off_accent
+            .ok_or("macos-monterey states no disabled checked fill")?;
+        let tahoe_alone = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+        let tahoe_red = Theme::preset(Preset::MacosTahoe)
+            .with_accent(hex(RED))
+            .resolve(&ctx);
+        let monterey_red = Theme::preset(Preset::MacosMonterey)
+            .with_accent(hex(RED))
+            .resolve(&ctx);
+        assert_eq!(
+            solid(&tahoe_alone.checkbox.indicator(checked_disabled).fill),
+            Some(on_accent),
+            "{scheme:?}"
+        );
+        for indicator in [
+            tahoe_red.checkbox.indicator(checked_disabled),
+            tahoe_red.radio.indicator(checked_disabled),
+        ] {
+            assert_eq!(
+                indicator.fill,
+                tahoe_red.checkbox.indicator(WidgetState::CHECKED).fill,
+                "{scheme:?}"
+            );
+        }
+        for indicator in [
+            monterey_red.checkbox.indicator(checked_disabled),
+            monterey_red.radio.indicator(checked_disabled),
+        ] {
+            assert_eq!(solid(&indicator.fill), Some(off_accent), "{scheme:?}");
+        }
+    }
+    Ok(())
 }
 
 /// The same pressed fills under a system accent ([`lay_system_over`]): a

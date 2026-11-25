@@ -283,6 +283,22 @@ struct SchemeColors {
     /// `None` where no single colour was read or another accent is laid
     /// over ([`drop_accent_measurements`]).
     checkbox_checked_pressed: Option<Color>,
+    /// The unchecked box's or circle's fill disabled.
+    checkbox_disabled: Color,
+    /// The disabled box's or circle's edge, checked or not; `#00000000`
+    /// where no edge shows.
+    checkbox_disabled_border: Color,
+    /// The checked box's or circle's fill disabled where the generation
+    /// draws it on the accent, measured on the default accent; `None` where
+    /// it does not or another accent is laid over
+    /// ([`drop_accent_measurements`]).
+    checkbox_checked_disabled: Option<Color>,
+    /// The checked box's or circle's fill disabled, measured, where the
+    /// generation does not draw it on the accent; `None` where it does.
+    checkbox_checked_disabled_off_accent: Option<Color>,
+    /// The disabled check mark's and dot's colour; `None` where it was not
+    /// read.
+    checkbox_disabled_mark: Option<Color>,
     input_background: Color,
     caret: Color,
     input_disabled: Option<Color>,
@@ -481,6 +497,23 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // gradient (its edges #0072eb…, at rest #1485ff…), no single colour (the same run,
     // `*.pressed.checkbox_on` `edge_*`)
     checkbox_checked_pressed: None,
+    // `checkbox.indicator(DISABLED).fill`: white at alpha 128/255, the box's and the circle's
+    // (measured, os-probe run 45345116763, macOS 15, `*.normal.checkbox_disabled_off`,
+    // `*.normal.radio_disabled_off` `fill`)
+    checkbox_disabled: srgb8(0xffff_ff80),
+    // `checkbox.indicator(DISABLED).stroke`: #d1d1d180 on the sides and the bottom (top #bbbbbb80),
+    // checked or not; the circle's #d0d0d07c (top #bbbbbb7c) (measured, the same run,
+    // `*.normal.checkbox_disabled_{off,on}`, `*.normal.radio_disabled_off` `edge_*`)
+    checkbox_disabled_border: srgb8(0xd1d1_d180),
+    checkbox_checked_disabled: None,
+    // `checkbox.indicator(DISABLED|CHECKED).fill`: not the accent: the unchecked one's white at
+    // alpha 128/255 (measured, the same run, `*.normal.checkbox_disabled_on`,
+    // `*.normal.radio_disabled_on` `fill`)
+    checkbox_checked_disabled_off_accent: Some(srgb8(0xffff_ff80)),
+    // `checkbox.checkmark(DISABLED|CHECKED).color`, `radio.dot(DISABLED|CHECKED).fill`: #01010140
+    // (measured, the same run, `*.normal.checkbox_disabled_on`, `*.normal.radio_disabled_on`
+    // `label`)
+    checkbox_disabled_mark: Some(srgb8(0x0101_0140)),
     // `input.background_color`: platform-facts.md (§2.4): textBackgroundColor, probe
     input_background: srgb8(0xffff_ffff),
     // `input.caret_color`: platform-facts.md (§2.4): textInsertionPointColor, probe, the same in
@@ -756,6 +789,22 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `checkbox.indicator(CHECKED|PRESSED).fill`: not stated: a gradient (its edges #2277ed…, at
     // rest #1664da…), no single colour (`*.pressed.checkbox_on` `edge_*`)
     checkbox_checked_pressed: None,
+    // `checkbox.indicator(DISABLED).fill`: white at alpha 21/255, the box's and the circle's
+    // (measured, os-probe run 45345116763, macOS 15, `*.normal.checkbox_disabled_off`,
+    // `*.normal.radio_disabled_off` `fill`)
+    checkbox_disabled: srgb8(0xffff_ff15),
+    // `checkbox.indicator(DISABLED).stroke`: none: every edge pixel is within 6 alpha levels of the
+    // fill (#ffffff17 to #ffffff1b; the circle's #ffffff18, #f6f6f61c), so no line of its own shows
+    // (measured, the same run, `*.normal.{checkbox,radio}_disabled_{off,on}` `edge_*`)
+    checkbox_disabled_border: srgb8(0x0000_0000),
+    checkbox_checked_disabled: None,
+    // `checkbox.indicator(DISABLED|CHECKED).fill`: not the accent: the unchecked one's white at
+    // alpha 21/255 (measured, the same run, `*.normal.checkbox_disabled_on`,
+    // `*.normal.radio_disabled_on` `fill`)
+    checkbox_checked_disabled_off_accent: Some(srgb8(0xffff_ff15)),
+    // The disabled mark and dot: not stated: not read (the same run, `*.normal.checkbox_disabled_on`,
+    // `*.normal.radio_disabled_on` `label` non_uniform_fill)
+    checkbox_disabled_mark: None,
     // `input.background_color`: platform-facts.md (§2.4): textBackgroundColor, probe
     input_background: srgb8(0x1e1e_1eff),
     // `input.caret_color`: platform-facts.md (§2.4): textInsertionPointColor, probe
@@ -1042,6 +1091,21 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `checkbox.indicator(CHECKED|PRESSED).fill`: #006be1, at rest #0077f9, on the default accent
     // (measured, the same run, `*.pressed.checkbox_on` `fill`)
     checkbox_checked_pressed: Some(srgb8(0x006b_e1ff)),
+    // `checkbox.indicator(DISABLED).fill`: black at alpha 13/255, the box's and the circle's
+    // (measured, os-probe run 45345116763, macOS 26, `*.normal.checkbox_disabled_off`,
+    // `*.normal.radio_disabled_off` `fill`)
+    checkbox_disabled: srgb8(0x0000_000d),
+    // `checkbox.indicator(DISABLED).stroke`: none: every edge pixel is the fill, checked or not
+    // (measured, the same run, `*.normal.{checkbox,radio}_disabled_{off,on}` `edge_*`)
+    checkbox_disabled_border: srgb8(0x0000_0000),
+    // `checkbox.indicator(DISABLED|CHECKED).fill`: #0076f470, on the default accent (measured, the
+    // same run, `*.normal.checkbox_disabled_on`, `*.normal.radio_disabled_on` `fill`)
+    checkbox_checked_disabled: Some(srgb8(0x0076_f470)),
+    checkbox_checked_disabled_off_accent: None,
+    // `checkbox.checkmark(DISABLED|CHECKED).color`, `radio.dot(DISABLED|CHECKED).fill`: #fefefe80
+    // (measured, the same run, `*.normal.checkbox_disabled_on`, `*.normal.radio_disabled_on`
+    // `label`)
+    checkbox_disabled_mark: Some(srgb8(0xfefe_fe80)),
     // `input.background_color`: platform-facts.md (§2.4): textBackgroundColor, probe
     input_background: srgb8(0xffff_ffff),
     // `input.caret_color`: platform-facts.md (§2.4): textInsertionPointColor, probe
@@ -1316,6 +1380,21 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `checkbox.indicator(CHECKED|PRESSED).fill`: #1f8aff, at rest #077dff, on the default accent
     // (measured, the same run, `*.pressed.checkbox_on` `fill`)
     checkbox_checked_pressed: Some(srgb8(0x1f8a_ffff)),
+    // `checkbox.indicator(DISABLED).fill`: white at alpha 13/255, the box's and the circle's
+    // (measured, os-probe run 45345116763, macOS 26, `*.normal.checkbox_disabled_off`,
+    // `*.normal.radio_disabled_off` `fill`)
+    checkbox_disabled: srgb8(0xffff_ff0d),
+    // `checkbox.indicator(DISABLED).stroke`: none: every edge pixel is the fill, checked or not
+    // (measured, the same run, `*.normal.{checkbox,radio}_disabled_{off,on}` `edge_*`)
+    checkbox_disabled_border: srgb8(0x0000_0000),
+    // `checkbox.indicator(DISABLED|CHECKED).fill`: #0982ff70, on the default accent (measured, the
+    // same run, `*.normal.checkbox_disabled_on`, `*.normal.radio_disabled_on` `fill`)
+    checkbox_checked_disabled: Some(srgb8(0x0982_ff70)),
+    checkbox_checked_disabled_off_accent: None,
+    // `checkbox.checkmark(DISABLED|CHECKED).color`, `radio.dot(DISABLED|CHECKED).fill`: #fdffff80
+    // (measured, the same run, `*.normal.checkbox_disabled_on`, `*.normal.radio_disabled_on`
+    // `label`)
+    checkbox_disabled_mark: Some(srgb8(0xfdff_ff80)),
     // `input.background_color`: platform-facts.md (§2.4): textBackgroundColor, probe
     input_background: srgb8(0x1e1e_1eff),
     // `input.caret_color`: platform-facts.md (§2.4): textInsertionPointColor, probe
@@ -2728,9 +2807,12 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
 /// force, not the preset's, and does not restore them, which leaves the
 /// unmeasured rest fill rather than a colour measured for another accent.
 /// It also drops the selected tab's fill measured on the default accent,
-/// which then takes the accent's fill, as the checked box's does.
+/// which then takes the accent's fill, as the checked box's does, and the
+/// disabled checked box's and circle's fill measured on it, which then keep
+/// their checked fill disabled.
 fn drop_accent_measurements(c: &mut SchemeColors) {
     c.checkbox_checked_pressed = None;
+    c.checkbox_checked_disabled = None;
     c.slider_fill_pressed = None;
     c.sidebar_pressed = None;
     c.tab_selected = None;
@@ -3175,7 +3257,8 @@ fn button(
 /// shadow, of an exact size; hovered and pressed, the fills `states` gives;
 /// checked, the accent (0.7.2: `checkbox.checked_background` is
 /// `defaults.accent_color` where unstated) in the default line (0.7.2:
-/// `checkbox.border.color` is `defaults.border.color` where unstated).
+/// `checkbox.border.color` is `defaults.border.color` where unstated);
+/// disabled, the scheme's disabled fills and edge.
 fn indicator(
     c: &SchemeColors,
     g: &Generation,
@@ -3192,6 +3275,12 @@ fn indicator(
     let pressed_edge = c
         .checkbox_pressed_border
         .map_or_else(|| rest_edge.clone(), |color| outline(layout, color));
+    // Disabled, the measured fills and edge (os-probe run 45345116763, macOS 15 and 26,
+    // `*.normal.{checkbox,radio}_disabled_{off,on}` `fill`, `edge_*`); checked, where neither a
+    // fill on the accent nor one off it is stated, the checked fill as at rest.
+    let checked_disabled = c
+        .checkbox_checked_disabled_off_accent
+        .or(c.checkbox_checked_disabled);
     RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.checkbox_unchecked),
@@ -3218,6 +3307,19 @@ fn indicator(
                 .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED)),
             states.checked_pressed.map(fill),
         )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED).except(WidgetState::CHECKED),
+            [fill(c.checkbox_disabled)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [outline(layout, c.checkbox_disabled_border)],
+        )
+        .rules(
+            checked_disabled
+                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED)),
+            checked_disabled.map(fill),
+        )
 }
 
 /// The fills [`indicator`] states for the hovered, the pressed and the
@@ -3227,6 +3329,16 @@ struct IndicatorFills {
     hover: Option<Color>,
     pressed: Option<Color>,
     checked_pressed: Option<Color>,
+}
+
+/// The fills of the check box and the radio button, which AppKit draws
+/// alike: hovered, the unchecked fill; pressed, the scheme's pressed fills.
+fn check_fills(c: &SchemeColors) -> IndicatorFills {
+    IndicatorFills {
+        hover: Some(c.checkbox_unchecked),
+        pressed: Some(c.checkbox_pressed),
+        checked_pressed: c.checkbox_checked_pressed,
+    }
 }
 
 /// The label of a check box or a radio button: the UI font in its colour;
@@ -3241,7 +3353,8 @@ fn check_label(roles: &ColorRoles, typography: &Typography) -> RuleBuilder<TextS
 
 /// The check box: [`indicator`] with the default corners, a check mark in
 /// the accent's text (0.7.2: `checkbox.indicator_color` is
-/// `defaults.accent_text_color` where unstated), [`check_label`].
+/// `defaults.accent_text_color` where unstated), disabled in the scheme's
+/// disabled mark where it states one, [`check_label`].
 fn checkbox(
     c: &SchemeColors,
     g: &Generation,
@@ -3260,15 +3373,16 @@ fn checkbox(
             [WidgetState::HOVER, WidgetState::PRESSED].map(RuleSelector::on),
             [mark],
         )
+        .rules(
+            c.checkbox_disabled_mark
+                .map(|_| RuleSelector::on(WidgetState::DISABLED)),
+            c.checkbox_disabled_mark.map(IconProp::Color),
+        )
         .build();
     // Hovered, the box's fill as at rest (`*.hovered.checkbox_off`, `…checkbox_on` differ in 0
     // pixels), where 0.7.2 macos-monterey.toml states an uncited hover fill (#e0e0e5 / #444446);
     // pressed, the measured fills.
-    let states = IndicatorFills {
-        hover: Some(c.checkbox_unchecked),
-        pressed: Some(c.checkbox_pressed),
-        checked_pressed: c.checkbox_checked_pressed,
-    };
+    let states = check_fills(c);
     CheckboxWidget::new(
         WidgetOrigin::Native,
         indicator(c, g, roles, layout, states)
@@ -3284,6 +3398,7 @@ fn checkbox(
 
 /// The radio button: [`indicator`] (0.7.2 states no corners for it), a dot
 /// of the preset's diameter in the accent's text (`checkbox.indicator_color`),
+/// disabled in the scheme's disabled mark where it states one,
 /// [`check_label`].
 fn radio(
     c: &SchemeColors,
@@ -3299,15 +3414,20 @@ fn radio(
             PartProp::MinSize([dot_size; 2]),
             PartProp::MaxSize([dot_size; 2]),
         ])
+        .rules(
+            c.checkbox_disabled_mark
+                .map(|_| RuleSelector::on(WidgetState::DISABLED)),
+            c.checkbox_disabled_mark.map(fill),
+        )
         .build();
-    // The radio's states were not measured: its hovered fill is left unstated, not 0.7.2's
-    // uncited `checkbox.hover_background` (#e0e0e5 / #444446), which the check box measured in
-    // the same run contradicts (os-probe run 45198750893: hovered, the box as at rest).
-    let states = IndicatorFills {
-        hover: None,
-        pressed: None,
-        checked_pressed: None,
-    };
+    // The check box's fills: hovered, the circle as at rest, not 0.7.2's uncited
+    // `checkbox.hover_background` (#e0e0e5 / #444446); pressed, the check box's pressed fill;
+    // checked and pressed, the check box's where one colour was read (os-probe run 45345116763,
+    // macOS 15 and 26: `*.hovered.radio_off` and `…radio_on` differ from the normal capture in 0
+    // pixels; `*.pressed.radio_off` `fill` #f2f2f2 / #ffffff5c on macOS 15, #00000030 / #ffffff30
+    // on macOS 26, `*.pressed.radio_on` `fill` #006be1 / #1f8aff on macOS 26, on macOS 15 a
+    // gradient, its edges #157deb… / #3384f4…).
+    let states = check_fills(c);
     RadioWidget::new(
         WidgetOrigin::Native,
         indicator(c, g, roles, layout, states).build(),

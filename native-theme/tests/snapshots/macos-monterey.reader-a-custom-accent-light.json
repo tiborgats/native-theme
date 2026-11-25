@@ -708,6 +708,37 @@
               "color": "#00000019"
             }
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff80"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#d1d1d180"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff80"
+          }
         }
       ]
     },
@@ -730,6 +761,14 @@
           ],
           "checkmark": {
             "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "checkmark": {
+            "color": "#01010140"
           }
         }
       ]
@@ -784,6 +823,7 @@
             "hover"
           ],
           "indicator": {
+            "fill": "#ffffff",
             "stroke": {
               "width": 0.5,
               "color": "#d6d6d6"
@@ -795,6 +835,7 @@
             "pressed"
           ],
           "indicator": {
+            "fill": "#f2f2f2",
             "stroke": {
               "width": 0.5,
               "color": "#c7c7c7"
@@ -812,6 +853,37 @@
               "color": "#00000019"
             }
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff80"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#d1d1d180"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff80"
+          }
         }
       ]
     },
@@ -826,7 +898,17 @@
           6.0,
           6.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "disabled"
+          ],
+          "dot": {
+            "fill": "#01010140"
+          }
+        }
+      ]
     },
     "label": {
       "base": {

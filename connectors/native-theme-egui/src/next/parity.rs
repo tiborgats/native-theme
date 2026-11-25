@@ -930,7 +930,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     ),
     s(
         "Checkbox/SelectedDisabled",
-        &[K, W, M3, I],
+        &[K, W, T, M3, I],
         ".visuals.widgets.inactive.fg_stroke.color",
         home!(checkbox.checkmark(DISABLED | CHECKED).color),
     ),
@@ -1154,16 +1154,56 @@ const STATED_ON_A_PRESET: &[Difference] = &[
     // the checked box's outline, which the disabled checked cell keeps, over its disabled fill
     s(
         "Checkbox/SelectedDisabled",
-        &[W, I],
+        &[W, M, T, I],
         ".visuals.widgets.inactive.bg_stroke.color",
         home!(checkbox.indicator(CHECKED).stroke.color),
     ),
-    // the disabled checked box's own fill (M2.FS4a3)
+    // the disabled checked box's own fill (M2.FS4a3; macOS, os-probe run 45345116763)
     s(
         "Checkbox/SelectedDisabled",
-        &[K, W, I],
+        &[K, W, M, T, I],
         ".visuals.widgets.inactive.bg_fill",
         home!(checkbox.indicator(DISABLED | CHECKED).fill),
+    ),
+    // the macOS disabled box's measured fill and edge (os-probe run 45345116763,
+    // `*.normal.checkbox_disabled_off` `fill`, `edge_*`)
+    s(
+        "Checkbox/Disabled",
+        &[M, T],
+        ".visuals.widgets.inactive.bg_fill",
+        home!(checkbox.indicator(DISABLED).fill),
+    ),
+    s(
+        "Checkbox/Disabled",
+        &[M, T],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        home!(checkbox.indicator(DISABLED).stroke.color),
+    ),
+    // macos-monterey's disabled checked mark: the measured one where read (light, `label`
+    // #01010140), else the disabled text, which the cell letters the mark in over a stated
+    // disabled fill (`style::variants::selected_disabled_cell`)
+    s(
+        "Checkbox/SelectedDisabled",
+        &[M],
+        ".visuals.widgets.inactive.fg_stroke.color",
+        Home {
+            path: "checkbox.checkmark(DISABLED|CHECKED).color",
+            stated: |r: &ResolvedTheme| {
+                let s = WidgetState::DISABLED | WidgetState::CHECKED;
+                r.checkbox.checkmark(s).color_stated(s) || r.checkbox.label(s).color_stated(s)
+            },
+            value: |r: &ResolvedTheme| {
+                let s = WidgetState::DISABLED | WidgetState::CHECKED;
+                let mark = r.checkbox.checkmark(s);
+                let label = r.checkbox.label(s);
+                let color = if mark.color_stated(s) {
+                    mark.color()
+                } else {
+                    label.color_stated(s).then(|| label.color()).flatten()
+                };
+                color.map(HomeValue::Color)
+            },
+        },
     ),
     // ios-13's check box at full opacity disabled (WebKit's `opacity: initial`, M2.FS4a3)
     s(

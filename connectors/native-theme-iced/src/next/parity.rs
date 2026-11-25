@@ -490,16 +490,6 @@ const HOVER: &str = "the theme states no value for the hovered widget: 0.7.2 lea
      alone), and the connector keeps iced's own style for that status (docs/v0.8.0-spec.md \
      §2, from_state; §10, rule 0)";
 
-/// The reason of macos-monterey's hovered radio fill, which 0.7.2 states.
-const MONTEREY_RADIO_HOVER: &str = "the hovered radio's fill: 0.7.2's macos-monterey states \
-     checkbox.hover_background #e0e0e5 / #444446, uncited, which its connector drew on the \
-     radio button too; the 0.8.0 preset states no rule for radio.indicator(HOVER).fill (not \
-     measured; the check box measured in the same run draws hovered as at rest, os-probe run \
-     45198750893, macOS 15, `*.hovered.checkbox_off` differs from the normal capture in 0 \
-     pixels, docs/evidence/os-probe/2026-11-23-run-45198750893/ on m2-fs4c; \
-     native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed difference, \
-     \"unstated\" there), so the fill is iced's own for the status, as HOVER's other options";
-
 /// The reason of ios-13's hovered box and circle, whose fill 0.7.2 states.
 const IOS_BOX_HOVER: &str = "the hovered box's and circle's fill: 0.7.2's ios-13 states \
      checkbox.hover_background #d1d1d6 / #3a3a3c, uncited, which its connector drew on the \
@@ -1296,6 +1286,34 @@ const TAHOE_CHECK_HOVER: [Stated; 4] = [
     CHECK_HOVER_STROKES[1],
 ];
 
+/// The macOS radio button under the pointer, as the check box (os-probe run
+/// 45345116763, `*.hovered.radio_off`, `…radio_on` differ from the normal
+/// capture in 0 pixels): the unselected circle's fill and the selected
+/// one's (`indicator(HOVER|CHECKED)` where the rule for HOVER states it),
+/// the strokes over them.
+const MACOS_RADIO_HOVER: [Stated; 4] = [
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, radio.indicator(HOVER)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::Background,
+        home!(fill, radio.indicator(HOVER | CHECKED) by HOVER),
+    ),
+    set(
+        at!(HOVER),
+        Field::BorderColor,
+        home!(stroke, radio.indicator(HOVER)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::BorderColor,
+        home!(stroke, radio.indicator(HOVER | CHECKED) by HOVER),
+    ),
+];
+
 /// The expander header's hovered and pressed fill (`expander.header(HOVER)`,
 /// `header(PRESSED)`).
 const EXPANDER_FILLS: [Stated; 2] = [
@@ -1579,6 +1597,46 @@ const CHECKED_DISABLED: [Stated; 3] = [
         at!(DISABLED | CHECKED),
         Field::IconColor,
         CHECKED_DISABLED_MARK,
+    ),
+];
+
+/// The mark of a disabled checked box whose disabled fill the theme states:
+/// [`CHECKED_DISABLED_MARK`] where it states the disabled mark, else the
+/// disabled label's colour on the checked box's disabled fill, faded as one
+/// widget over the window.
+const CHECKED_DISABLED_MARK_OR_LABEL: Home = Home {
+    path: "checkbox.checkmark(DISABLED|CHECKED).color, else checkbox.label(DISABLED).color, \
+           on checkbox.indicator(DISABLED|CHECKED).fill, faded as one over \
+           colors.window.background by checkbox.disabled_opacity",
+    value: |t| {
+        (CHECKED_DISABLED_MARK.value)(t).or_else(|| {
+            let color = super::text_color_of(&t.checkbox.label(WidgetState::DISABLED))?;
+            disabled_mark(t, WidgetState::DISABLED.union(WidgetState::CHECKED), color)
+        })
+    },
+};
+
+/// The macOS disabled check box (os-probe run 45345116763,
+/// `*.normal.checkbox_disabled_{off,on}`): the measured fills, the rest and
+/// checked outlines over them, the marks on them.
+const MACOS_CHECK_DISABLED: [Stated; 6] = [
+    set(at!(DISABLED), Field::Background, CHECK_DISABLED_FILL),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::Background,
+        CHECKED_DISABLED_FILL,
+    ),
+    set(at!(DISABLED), Field::BorderColor, CHECK_DISABLED_OUTLINE),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::BorderColor,
+        CHECKED_DISABLED_OUTLINE,
+    ),
+    set(at!(DISABLED), Field::IconColor, CHECK_DISABLED_MARK),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::IconColor,
+        CHECKED_DISABLED_MARK_OR_LABEL,
     ),
 ];
 
@@ -2352,14 +2410,17 @@ const DIFFERENCES: &[Difference] = &[
         "checkbox",
         &["macos-monterey"],
         LineAlign::Inside,
-        &[&[
-            set(
-                at!(HOVER),
-                Field::Background,
-                home!(fill, checkbox.indicator(HOVER)),
-            ),
-            CHECK_HOVER_STROKES[0],
-        ]],
+        &[
+            &[
+                set(
+                    at!(HOVER),
+                    Field::Background,
+                    home!(fill, checkbox.indicator(HOVER)),
+                ),
+                CHECK_HOVER_STROKES[0],
+            ],
+            &MACOS_CHECK_DISABLED,
+        ],
     ),
     stated_fields(
         "checkbox",
@@ -2373,20 +2434,22 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Inside,
         hovered(false, true, false),
     )
-    .stating(&[&TAHOE_CHECK_HOVER], &[INSIDE, HOVER, STATED]),
+    .stating(
+        &[&TAHOE_CHECK_HOVER, &MACOS_CHECK_DISABLED],
+        &[INSIDE, HOVER, STATED],
+    ),
     hover(
         "radio",
         &["kde-breeze"],
         LineAlign::Outside,
         hovered(true, true, false),
     ),
-    hover(
+    stated_fields(
         "radio",
-        &["macos-monterey"],
+        &["macos-monterey", "macos-tahoe"],
         LineAlign::Inside,
-        hovered(true, true, true),
-    )
-    .stating(&[], &[INSIDE, HOVER, MONTEREY_RADIO_HOVER]),
+        &[&MACOS_RADIO_HOVER],
+    ),
     stated_fields(
         "radio",
         &["windows-11"],
@@ -2404,12 +2467,6 @@ const DIFFERENCES: &[Difference] = &[
         ],
     ),
     stated_fields("radio", &["material-3"], LineAlign::Outside, &[&M3_RADIO]),
-    hover(
-        "radio",
-        &["macos-tahoe"],
-        LineAlign::Inside,
-        hovered(true, true, true),
-    ),
     hover(
         "radio",
         &["ios-13"],

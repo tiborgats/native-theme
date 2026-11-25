@@ -736,6 +736,37 @@
           "indicator": {
             "fill": "#1f8aff"
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff0d"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000000"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0982ff70"
+          }
         }
       ]
     },
@@ -758,6 +789,14 @@
           ],
           "checkmark": {
             "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "checkmark": {
+            "color": "#fdffff80"
           }
         }
       ]
@@ -812,6 +851,7 @@
             "hover"
           ],
           "indicator": {
+            "fill": "#ffffff19",
             "stroke": {
               "width": 0.5,
               "color": "#00000000"
@@ -823,6 +863,7 @@
             "pressed"
           ],
           "indicator": {
+            "fill": "#ffffff30",
             "stroke": {
               "width": 0.5,
               "color": "#00000000"
@@ -840,6 +881,46 @@
               "color": "#ffffff19"
             }
           }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#1f8aff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "not_states": [
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#ffffff0d"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "indicator": {
+            "stroke": {
+              "width": 0.5,
+              "color": "#00000000"
+            }
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "indicator": {
+            "fill": "#0982ff70"
+          }
         }
       ]
     },
@@ -854,7 +935,17 @@
           5.0,
           5.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "disabled"
+          ],
+          "dot": {
+            "fill": "#fdffff80"
+          }
+        }
+      ]
     },
     "label": {
       "base": {

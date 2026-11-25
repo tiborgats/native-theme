@@ -6034,16 +6034,17 @@ fn a_focused_control_draws_a_next_themes_ring(cx: &mut TestAppContext) {
 
 /// A disabled checked box's mark is read at its own home where a rule states
 /// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`;
-/// kde-breeze: the Disabled View text), not in the label's disabled colour,
-/// and a radio button's dot likewise; a theme that states none (the macOS
-/// presets) gets gpui-component's own disabled mark, the checked mark at
-/// half its opacity (spec §10, rule 0).
+/// kde-breeze: the Disabled View text; macos-tahoe: the measured mark), not in
+/// the label's disabled colour, and a radio button's dot likewise; a theme
+/// that states none (macos-monterey dark, whose mark was not read) gets
+/// gpui-component's own disabled mark, the checked mark at half its opacity
+/// (spec §10, rule 0).
 #[test]
 fn a_disabled_mark_is_read_at_its_own_home() -> crate::next::Mapped<()> {
     use native_theme::next::{IconStated, Preset, Theme as NextTheme, ThemeContext, WidgetState};
     let disabled = WidgetState::DISABLED | WidgetState::CHECKED;
     for ctx in [ThemeContext::light(), ThemeContext::dark()] {
-        for preset in [Preset::Material3, Preset::KdeBreeze] {
+        for preset in [Preset::Material3, Preset::KdeBreeze, Preset::MacosTahoe] {
             let r = NextTheme::preset(preset).resolve(&ctx);
             let stated = crate::next::hsla(r.checkbox.checkmark(disabled).color);
             let look = CheckboxLook::next_of(&r, true, true)?;
@@ -6057,20 +6058,18 @@ fn a_disabled_mark_is_read_at_its_own_home() -> crate::next::Mapped<()> {
             dot,
             "{ctx:?}"
         );
-
-        let mac = NextTheme::preset(Preset::MacosMonterey).resolve(&ctx);
-        assert!(
-            !mac.checkbox
-                .checkmark(WidgetState::DISABLED)
-                .from_state
-                .contains(IconStated::COLOR),
-            "{ctx:?}"
-        );
-        let enabled = CheckboxLook::next_of(&mac, true, false)?;
-        let look = CheckboxLook::next_of(&mac, true, true)?;
-        assert_eq!(look.mark, enabled.mark.opacity(0.5), "{ctx:?}");
-        assert_ne!(look.mark, enabled.mark, "{ctx:?}");
     }
+    let mac = NextTheme::preset(Preset::MacosMonterey).resolve(&ThemeContext::dark());
+    assert!(
+        !mac.checkbox
+            .checkmark(WidgetState::DISABLED)
+            .from_state
+            .contains(IconStated::COLOR)
+    );
+    let enabled = CheckboxLook::next_of(&mac, true, false)?;
+    let look = CheckboxLook::next_of(&mac, true, true)?;
+    assert_eq!(look.mark, enabled.mark.opacity(0.5));
+    assert_ne!(look.mark, enabled.mark);
     Ok(())
 }
 
