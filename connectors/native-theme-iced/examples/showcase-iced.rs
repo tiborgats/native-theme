@@ -8723,14 +8723,21 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo<native_t
 /// Whether Widget Info lists the element of id `id` by its 0.8.0 homes, a
 /// row per home routed by [`home_route`], rather than by its 0.7.2 leaves:
 /// the Basic list's, the Basic table's and the Basic page's tabs' elements,
-/// the page tabs' and the inspector's tab rows and tabs, and the window
-/// menus' elements.
+/// the page tabs' and the inspector's tab rows and tabs, the window menus'
+/// elements, and the single-line fields' ([`single_line_field`]).
 fn home_keyed(id: &str) -> bool {
     id.starts_with("basic.list.")
         || id.starts_with("basic.table.")
         || id.starts_with("basic.tabs.")
         || tab_element(id)
         || id.starts_with("chrome.menu")
+        || single_line_field(id)
+}
+
+/// Whether the list's id `id` names an element of the Basic page's
+/// single-line fields, the text inputs' and the number input's groups.
+fn single_line_field(id: &str) -> bool {
+    id.starts_with("basic.text_inputs.") || id.starts_with("basic.number_input.")
 }
 
 /// The keys of `element`'s Widget Info rows, which [`iced_route`] routes:
@@ -11094,20 +11101,27 @@ const SPINNER_NOT_DRAWN: &str = "not drawn: native_theme_iced::next::spinner dra
                                  where colors.window.foreground is unstated or \
                                  spinner.period_ms is 0";
 
-/// Widget Info's line for the focus-ring leaf `leaf` (`focus_ring_color`,
-/// `_width_px`, `_offset_px`, `_keyboard_only`) of a focused field of
-/// `part`, as [`next_focus_ring`] draws the ring on the installed 0.8.0
-/// theme `r`: the indicator `iced_next::part_focus` picks for the part read
-/// at `FOCUSED`, the part's own or the global ring, named at its home;
-/// painted over the field by `native_theme_iced::next::focus_ring`, a ring
-/// inset at the field's edge as a band over the field (FR2); not drawn
-/// where the part states it has none, the theme states no ring, or the
-/// connector maps none (`next::Unmapped`). `None` for another leaf.
+/// Widget Info's line for the focus ring's home `home`
+/// (`focus_ring.stroke.color`, `.stroke.width`, `.offset`, `.trigger`) of a
+/// focused field of `part`, as [`next_focus_ring`] draws the ring on the
+/// installed 0.8.0 theme `r`: the indicator `iced_next::part_focus` picks
+/// for the part read at `FOCUSED`, the part's own or the global ring, named
+/// at its home; painted over the field by
+/// `native_theme_iced::next::focus_ring`, a ring inset at the field's edge
+/// as a band over the field (FR2); not drawn where the part states it has
+/// none, the theme states no ring, or the connector maps none
+/// (`next::Unmapped`). `None` for another home.
 fn focus_ring_route(
     r: &native_theme::next::ResolvedTheme,
     part: RingPart,
-    leaf: &str,
+    home: &str,
 ) -> Option<String> {
+    let field_home = home.strip_prefix("focus_ring.").filter(|field| {
+        matches!(
+            *field,
+            "stroke.color" | "stroke.width" | "offset" | "trigger"
+        )
+    })?;
     let field = part.part(r, WidgetState::FOCUSED);
     let Some((ring, homes)) = iced_next::part_focus(r, &field, part.homes()) else {
         return Some(format!(
@@ -11131,30 +11145,73 @@ fn focus_ring_route(
     } else {
         "round the field, painted over it"
     };
-    let line = match leaf {
-        "focus_ring_color" => format!("the ring's colour, {home}.stroke.color, {over}"),
-        "focus_ring_width_px" => format!("the ring's width, {home}.stroke.width, {over}"),
-        "focus_ring_offset_px" if inset => {
-            format!("{home}.offset, minus the ring's width: the ring {over}")
-        }
-        "focus_ring_offset_px" => format!(
+    let line = match field_home {
+        "stroke.color" => format!("the ring's colour, {home}.stroke.color, {over}"),
+        "stroke.width" => format!("the ring's width, {home}.stroke.width, {over}"),
+        "offset" if inset => format!("{home}.offset, minus the ring's width: the ring {over}"),
+        "offset" => format!(
             "how far out from the field's edge the ring's inner edge lies (in where negative), \
              {home}.offset, its curves the field's radius grown as much"
         ),
-        "focus_ring_keyboard_only"
-            if ring.trigger == Some(native_theme::next::FocusTrigger::KeyboardOnly) =>
-        {
-            format!(
-                "the ring only for a focus that followed a key press ({home}.trigger), \
-                 decided when the field gains the focus"
-            )
+        _ if ring.trigger == Some(native_theme::next::FocusTrigger::KeyboardOnly) => format!(
+            "the ring only for a focus that followed a key press ({home}.trigger), decided \
+             when the field gains the focus"
+        ),
+        _ => format!("the ring on any focus ({home}.trigger does not say keyboard only)"),
+    };
+    Some(format!("native_theme_iced::next::focus_ring: {line}"))
+}
+
+/// The route of the home `home` of a Basic page's single-line field, a
+/// text input or the number input ([`single_line_field`]): the field's text, line box, padding, border and opacity as
+/// `iced_next::styles::text_input` and the showcase's helpers draw them,
+/// naming what each reads. `None` for a home none of them reads: the
+/// focused field's ring ([`focus_ring_route`]) and the colours, whose
+/// routes are the export's ([`colour_home_route`]).
+fn input_home_route(home: &str) -> Option<String> {
+    if let Some(side) = home.strip_prefix("input.field(NONE).padding.") {
+        return Some(format!(
+            "next_input_padding: TextInput::padding, input.field(NONE).padding.{side} plus its \
+             stroke width, iced's own (text_input::DEFAULT_PADDING) where unstated"
+        ));
+    }
+    let route = match home {
+        "input.text(NONE)" => "TextInput size and font: input.text(NONE)'s size and font",
+        "input.field(NONE).min_size[1]" => {
+            "next_control_line: TextInput::line_height, the line box that fills \
+             input.field(NONE).min_size[1] inside next_input_padding; input.text(NONE)'s line \
+             box (next_line_box) where unstated"
         }
-        "focus_ring_keyboard_only" => {
-            format!("the ring on any focus ({home}.trigger does not say keyboard only)")
+        "typography.line_height_multiplier" => {
+            "next_control_line: the field's line box, input.text(NONE)'s size by \
+             typography.line_height_multiplier where it states no line height (next_line_box), \
+             grown to fill input.field(NONE).min_size[1] inside the padding"
+        }
+        "input.field(NONE).corners" => {
+            "iced_next::styles::text_input: text_input::Style::border.radius, \
+             input.field(NONE).corners, iced's own where unstated"
+        }
+        "input.field(NONE).stroke.width" => {
+            "iced_next::styles::text_input: text_input::Style::border.width, \
+             input.field(NONE).stroke.width where the stroke is stated, iced's own where unstated"
+        }
+        "input.field(NONE).shadows" => {
+            "not reachable: iced's text_input::Style has no shadow (background, border, icon, \
+             placeholder, value, selection)"
+        }
+        "input.disabled_opacity" => {
+            "iced_next::styles::text_input: the Disabled fill and border, and the value where \
+             input.text(DISABLED).color is stated, faded by input.disabled_opacity; not faded \
+             where it is unstated, as iced's own disabled field is not"
+        }
+        "caret.blink_on_ms" | "caret.blink_off_ms" | "caret.blink_timeout_ms" => {
+            "not reachable: iced blinks the caret 500ms shown and 500ms hidden, a private \
+             constant, and never stops (text_input.rs, CURSOR_BLINK_INTERVAL_MILLIS; \
+             text_editor.rs, Focus)"
         }
         _ => return None,
     };
-    Some(format!("native_theme_iced::next::focus_ring: {line}"))
+    Some(route.to_owned())
 }
 
 /// [`colour_route`] of the colour home `home` of `element`: the rows of its
@@ -11187,12 +11244,24 @@ fn colour_home_route(
 /// [`list_shape_route`]'s; the Basic table's colours are [`table_route`]'s,
 /// its fonts, lengths and hover homes [`table_layout_route`]'s; a tab row's
 /// and a tab's [`tab_home_route`]'s, after what a tab's state shows it not
-/// drawing ([`shown_tab_route`]). One muted line of Widget Info.
+/// drawing ([`shown_tab_route`]); the window menus' [`menu_home_route`]'s;
+/// the focused field's ring [`focus_ring_route`]'s, before the export,
+/// whose rows draw no ring, and a single-line field's text, lengths and
+/// border [`input_home_route`]'s. One muted line of Widget Info.
 fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
     let id = element.id.as_str();
     let r = state.next_shown();
     if let Some(line) = tab_open(state, id).and_then(|open| shown_tab_route(id, home, open)) {
         return line.to_owned();
+    }
+    if id.starts_with("basic.text_inputs.focused")
+        && let Some(line) = focus_ring_route(r, RingPart::Input, home)
+    {
+        return if line.starts_with("not drawn") {
+            line
+        } else {
+            format!("iced: {line}")
+        };
     }
     let installed = state.installed_combination();
     if let Some(line) = colour_home_route(element, home, Shown::of(state), installed.as_deref()) {
@@ -11219,6 +11288,8 @@ fn home_route(state: &State, element: &ShowcaseElement, home: &str) -> String {
         tab_home_route(r, id, home)
     } else if under("chrome.menu") {
         menu_home_route(r, id, home)
+    } else if single_line_field(id) {
+        input_home_route(home)
     } else {
         None
     };
@@ -11327,18 +11398,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 (native_theme_iced::next::spinner)"
             .to_owned();
     }
-    // The Basic page's focused field, the one element whose leaves are the
-    // ring's ([`focus_ring_route`]).
-    if let Some(line) = leaf
-        .strip_prefix("defaults.")
-        .and_then(|field| focus_ring_route(state.next_shown(), RingPart::Input, field))
-    {
-        return if line.starts_with("not drawn") {
-            line
-        } else {
-            format!("iced: {line}")
-        };
-    }
     // The edit-mode switch while it is on, which
     // `iced_next::styles::toolbar_button` draws checked.
     let checked = id == "basic.icons.edit" && state.basic_edit;
@@ -11364,8 +11423,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         };
     }
     let under = |prefix: &str| id.starts_with(prefix);
-    // The Basic page's single-line fields, on the 0.8.0 model.
-    let basic_field = under("basic.text_inputs.") || under("basic.number_input.");
     // The flat buttons, drawn in `ghost_button`: the page tabs' menu, the
     // side-panel toggle and Widget Info's Copy.
     let ghost = under("chrome.page_tabs.menu")
@@ -11472,45 +11529,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              (next_line_box) and font"
                 .into()
         }
-        ("input", "font") if basic_field => {
-            "TextInput size and font: input.text(NONE)'s size and font".into()
-        }
-        ("input", "min_height_px") if basic_field => {
-            "next_control_line: TextInput::line_height, the line box that fills \
-             input.field(NONE).min_size[1] inside next_input_padding; input.text(NONE)'s line \
-             box (next_line_box) where unstated"
-                .into()
-        }
-        ("input", f) if side(f).is_some() && basic_field => {
-            "next_input_padding: TextInput::padding, the side of input.field(NONE).padding plus \
-             its stroke width, iced's own (text_input::DEFAULT_PADDING) where unstated"
-                .into()
-        }
         ("text_area", f) if side(f).is_some() && under("basic.text_area.") => {
             "next_text_area_padding: TextEditor::padding, the side of text_area.field(NONE).padding \
              plus its stroke width, iced's own 5 (ICED_TEXT_EDITOR_PADDING) where unstated"
-                .into()
-        }
-        ("input", "font") => "Text input size and theme_font (family, weight)".into(),
-        ("input", "min_height_px") => {
-            "control_line_height: the line box that fills it inside the padding".into()
-        }
-        ("input", "disabled_opacity") => {
-            "styles::text_input: the Disabled colours' alpha times it".into()
-        }
-        ("input", "border.corner_radius_px") => {
-            "styles::text_input: text_input::Style::border.radius".into()
-        }
-        ("input", "border.line_width_px") => {
-            "styles::text_input: text_input::Style::border.width".into()
-        }
-        ("input", f) if side(f).is_some() => {
-            "input_padding: TextInput::padding, the side plus the line width".into()
-        }
-        ("input", "caret_blink_on_ms" | "caret_blink_off_ms" | "caret_blink_timeout_ms") => {
-            "not reachable: iced blinks the caret 500ms shown and 500ms hidden, a private \
-             constant, and never stops (text_input.rs, CURSOR_BLINK_INTERVAL_MILLIS; \
-             text_editor.rs, Focus)"
                 .into()
         }
         ("text_area", "border.corner_radius_px") => {
@@ -11523,7 +11544,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "text_area_padding: TextEditor::padding, the side plus the line width".into()
         }
         (
-            "button" | "input" | "text_area" | "combo_box" | "tooltip" | "card",
+            "button" | "text_area" | "combo_box" | "tooltip" | "card",
             "border.shadow_enabled",
         ) => {
             "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
@@ -12160,12 +12181,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "text_line_height: the label's line box, checkbox.label(NONE)'s or radio.label(NONE)'s \
              size by typography.line_height_multiplier where it states no line height \
              (next_line_box)"
-                .into()
-        }
-        ("defaults", "line_height") if basic_field => {
-            "next_control_line: the field's line box, input.text(NONE)'s size by \
-             typography.line_height_multiplier where it states no line height (next_line_box), \
-             grown to fill input.field(NONE).min_size[1] inside the padding"
                 .into()
         }
         ("defaults", "line_height") if under("basic.text_area.") => {
@@ -39974,7 +39989,7 @@ mod tests {
         }
     }
 
-    /// The focused field's focus-ring leaves route to what draws the ring on
+    /// The focused field's focus-ring homes route to what draws the ring on
     /// the installed 0.8.0 theme (M8 T16, M9-172, FR2):
     /// `native_theme_iced::next::focus_ring`, which paints it over the
     /// field, as a band over the field where the ring is inset at its edge
@@ -39991,11 +40006,11 @@ mod tests {
         let Some(element) = elements::element("basic.text_inputs.focused") else {
             return Err("basic.text_inputs.focused is not listed".into());
         };
-        let leaves = [
-            "defaults.focus_ring_color",
-            "defaults.focus_ring_width_px",
-            "defaults.focus_ring_offset_px",
-            "defaults.focus_ring_keyboard_only",
+        let homes = [
+            "focus_ring.stroke.color",
+            "focus_ring.stroke.width",
+            "focus_ring.offset",
+            "focus_ring.trigger",
         ];
         let drawn_by = "iced: native_theme_iced::next::focus_ring: ";
         for (preset, band) in [
@@ -40005,16 +40020,16 @@ mod tests {
             ("kde-breeze", false),
         ] {
             let state = loaded(preset, false);
-            for leaf in leaves {
-                if !element.leaves.iter().any(|l| l == leaf) {
-                    return Err(format!("{leaf} is not listed"));
+            for home in homes {
+                if !route_keys(element).iter().any(|h| h == home) {
+                    return Err(format!("{home} is not listed"));
                 }
-                let route = iced_route(&state, element, leaf);
+                let route = iced_route(&state, element, home);
                 if !route.starts_with(drawn_by) || !route.contains("focus_ring.") {
-                    return Err(format!("{preset} {leaf}: {route}"));
+                    return Err(format!("{preset} {home}: {route}"));
                 }
             }
-            let width = iced_route(&state, element, "defaults.focus_ring_width_px");
+            let width = iced_route(&state, element, "focus_ring.stroke.width");
             if width.contains("a band over the field") != band {
                 return Err(format!("{preset}: the ring inset {band}: {width}"));
             }
@@ -40026,7 +40041,7 @@ mod tests {
                 .with_patch(patch)
                 .resolve(&next_context(None, false, &prefs))
         };
-        let width = "focus_ring_width_px";
+        let width = "focus_ring.stroke.width";
         let r = resolve(ThemePatch::new());
         let ring = r.focus_ring.clone();
         let own = resolve(ThemePatch::new().input(
@@ -40067,8 +40082,10 @@ mod tests {
                 return Err(format!("{what}: {route}"));
             }
         }
-        if focus_ring_route(&r, RingPart::Input, "focus_ring_inner").is_some() {
-            return Err("a leaf not the ring's has a ring route".into());
+        for other in ["focus_ring.inner", "input.field(NONE).corners"] {
+            if focus_ring_route(&none, RingPart::Input, other).is_some() {
+                return Err(format!("{other}, a home not the ring's, has a ring route"));
+            }
         }
         Ok(())
     }
