@@ -1949,7 +1949,7 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
     button_checked_from(
         b.checked_text_color.map(rgba_to_hsla),
-        rgba_to_hsla(b.active_text_color),
+        Some(rgba_to_hsla(b.active_text_color)),
         b.checked_background.map(rgba_to_hsla),
         b.active_background.map(rgba_to_hsla),
     )
@@ -1957,14 +1957,19 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
 
 /// [`button_checked`] of the checked label colour and fill, each `None`
 /// where the theme states none, and the pressed ones, which stand in for
-/// them there.
+/// them there; where neither label is given the refinement sets no text
+/// colour, and upstream's selected label stands. The 0.8.0 builder gives no
+/// pressed pair (spec §10, rule 0a).
 pub(crate) fn button_checked_from(
     checked_text: Option<Hsla>,
-    pressed_text: Hsla,
+    pressed_text: Option<Hsla>,
     checked_fill: Option<Hsla>,
     pressed_fill: Option<Hsla>,
 ) -> StyleRefinement {
-    let r = StyleRefinement::default().text_color(checked_text.unwrap_or(pressed_text));
+    let r = match checked_text.or(pressed_text) {
+        Some(color) => StyleRefinement::default().text_color(color),
+        None => StyleRefinement::default(),
+    };
     match checked_fill.or(pressed_fill) {
         Some(fill) => r.bg(fill),
         None => r,

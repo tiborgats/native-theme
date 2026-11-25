@@ -220,6 +220,51 @@ mod tests {
         }
     }
 
+    /// A checked button whose checked fill and label no rule states
+    /// (macos-monterey states neither, its checked toggle unmeasured) is
+    /// refined with neither, so gpui-component's own selected look stands,
+    /// not with the pressed pair the preset states (spec §10, rule 0a).
+    #[test]
+    fn an_unstated_checked_button_takes_no_pressed_pair() {
+        use native_theme::next::WidgetState;
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(Preset::MacosMonterey).resolve(&ctx);
+            let b = &r.button;
+            assert_eq!(
+                super::super::state_fill_of(
+                    &b.body(WidgetState::CHECKED),
+                    "button.body(CHECKED).fill"
+                ),
+                Ok(None),
+                "macos-monterey {:?} states a checked fill",
+                ctx.scheme
+            );
+            assert_eq!(
+                super::super::state_text_color_of(&b.label(WidgetState::CHECKED)),
+                None,
+                "macos-monterey {:?} states a checked label",
+                ctx.scheme
+            );
+            assert!(
+                matches!(
+                    super::super::state_fill_of(
+                        &b.body(WidgetState::PRESSED),
+                        "button.body(PRESSED).fill"
+                    ),
+                    Ok(Some(_))
+                ),
+                "macos-monterey {:?} states no pressed fill, so this proves nothing",
+                ctx.scheme
+            );
+            assert_eq!(
+                button_checked(&r),
+                Ok(StyleRefinement::default()),
+                "macos-monterey {:?}",
+                ctx.scheme
+            );
+        }
+    }
+
     /// A checked toolbar button whose checked fill no rule states (ios-13
     /// states none) is filled as gpui-component's own selected ghost, with
     /// `tokens.secondary_active` as `apply` installs it, not with a pressed

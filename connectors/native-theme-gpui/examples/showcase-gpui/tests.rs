@@ -20603,13 +20603,10 @@ fn the_speech_indicator_fills_a_stop_button_while_capturing(cx: &mut TestAppCont
 /// The Basic page's toggle button that is on says in its "state" line what
 /// it is painted with, under each platform preset's 0.8.0 theme: filled with
 /// `button.body(CHECKED).fill` where a rule states it, else with
-/// `button.body(PRESSED).fill` where one states that, else with
-/// gpui-component's own `button_active`; lettered in
-/// `button.label(CHECKED).color` where a rule states it, else in
-/// `button.label(PRESSED).color`. The presets show the stated fills; no
-/// bundled preset leaves both unstated since macos-tahoe states its checked
-/// button, so `the_toggle_state_line_names_upstreams_fill_where_none_is_stated`
-/// tests that branch on the line's builder.
+/// gpui-component's own `button_active`, never the pressed fill (spec §10,
+/// rule 0a); lettered in `button.label(CHECKED).color` where a rule states
+/// it, else in gpui-component's own `button_foreground`. macos-monterey
+/// states neither, so both branches are shown.
 #[gpui::test]
 fn a_toggle_buttons_state_line_names_what_it_is_painted_with(cx: &mut TestAppContext) {
     use native_theme::next::WidgetState;
@@ -20635,15 +20632,13 @@ fn a_toggle_buttons_state_line_names_what_it_is_painted_with(cx: &mut TestAppCon
                 let checked = native_theme_gpui::next::geometry::button_checked(r).is_ok();
                 let fill = if drawn_state_fill(&b.body(WidgetState::CHECKED)).is_some() {
                     "filled with button.body(CHECKED).fill and"
-                } else if drawn_state_fill(&b.body(WidgetState::PRESSED)).is_some() {
-                    "filled with button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill and"
                 } else {
                     "filled with gpui-component's own button_active token:"
                 };
                 let text = if state_text_color_of(&b.label(WidgetState::CHECKED)).is_some() {
                     "lettered in button.label(CHECKED).color"
                 } else {
-                    "lettered in button.label(PRESSED).color, where no rule states button.label(CHECKED).color"
+                    "lettered in gpui-component's own button_foreground: no rule states button.label(CHECKED).color, so geometry::button_checked sets no text colour, not the pressed label"
                 };
                 (checked, fill, text)
             })
@@ -20671,7 +20666,7 @@ fn a_toggle_buttons_state_line_names_what_it_is_painted_with(cx: &mut TestAppCon
         );
         fills_seen.push(fill);
     }
-    for branch in ["CHECKED", "PRESSED"] {
+    for branch in ["CHECKED", "button_active"] {
         assert!(
             fills_seen.iter().any(|fill| fill.contains(branch)),
             "no platform preset takes the {branch} fill, so that branch of the state line goes untested: {fills_seen:?}"
@@ -20680,26 +20675,23 @@ fn a_toggle_buttons_state_line_names_what_it_is_painted_with(cx: &mut TestAppCon
 }
 
 /// The toggle button's state line names gpui-component's own `button_active`
-/// fill where the theme states neither the checked nor the pressed fill, as
-/// a user theme may; and each stated fill and label where one is.
+/// fill and `button_foreground` label where the theme states no checked fill
+/// or label, as a user theme may, never a pressed one; and each stated fill
+/// and label where one is.
 #[test]
 fn the_toggle_state_line_names_upstreams_fill_where_none_is_stated() {
     use crate::demo::toggle_state_line;
-    let none = toggle_state_line(false, false, false);
+    let none = toggle_state_line(false, false);
     assert!(
         none.starts_with("selected: on, filled with gpui-component's own button_active token:")
-            && none.ends_with("lettered in button.label(PRESSED).color, where no rule states button.label(CHECKED).color"),
+            && none.ends_with("lettered in gpui-component's own button_foreground: no rule states button.label(CHECKED).color, so geometry::button_checked sets no text colour, not the pressed label")
+            && !none.contains("button.body(PRESSED)"),
         "{none}"
     );
-    let pressed = toggle_state_line(false, true, true);
+    let checked = toggle_state_line(true, true);
     assert!(
-        pressed.contains("filled with button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill and")
-            && pressed.ends_with("lettered in button.label(CHECKED).color"),
-        "{pressed}"
-    );
-    let checked = toggle_state_line(true, true, false);
-    assert!(
-        checked.contains("filled with button.body(CHECKED).fill and"),
+        checked.contains("filled with button.body(CHECKED).fill and")
+            && checked.ends_with("lettered in button.label(CHECKED).color"),
         "{checked}"
     );
 }

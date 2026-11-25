@@ -28,12 +28,12 @@ pub const HOW: &[(&str, &[&str], &str)] = &[
     (
         "basic.buttons.toggle_on",
         &["button.body(PRESSED).fill"],
-        "gpui: next::geometry::button_checked's bg where button.body(CHECKED).fill is unstated (demo::toggle_button)",
+        "not drawn: where button.body(CHECKED).fill is unstated next::geometry::button_checked sets no fill and gpui-component's own selected fill, button_active, stands, not the pressed fill (spec §10, rule 0a; button/button.rs, ButtonVariant::selected; demo::toggle_button)",
     ),
     (
         "basic.buttons.toggle_on",
         &["button.label(PRESSED).color"],
-        "gpui: next::geometry::button_checked's text colour where button.label(CHECKED).color is unstated (demo::toggle_button)",
+        "not drawn: where button.label(CHECKED).color is unstated next::geometry::button_checked sets no text colour and gpui-component's own selected label, button_foreground, stands, not the pressed label (spec §10, rule 0a; button/button.rs, ButtonVariant::selected; demo::toggle_button)",
     ),
     (
         "basic.buttons.toggle_on",

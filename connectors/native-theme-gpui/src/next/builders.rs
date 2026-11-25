@@ -84,10 +84,11 @@ pub(crate) fn button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ))
 }
 
-/// [`crate::geometry::button_checked`]: `button.checked_text_color`,
-/// `button.checked_background` and `button.active_background`, soft options,
-/// where a rule states them for their state (module doc of `next`), else
-/// unset, so the pressed pair stands in as on the 0.7.2 path.
+/// [`crate::geometry::button_checked`]: `button.checked_text_color` and
+/// `button.checked_background`, soft options, where a rule states them for
+/// `CHECKED` (module doc of `next`), else unset, so gpui-component's own
+/// selected label and fill stand (`ButtonVariant::selected`): never the
+/// pressed pair the 0.7.2 path stands in with (spec §10, rule 0a).
 pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let b = &r.button;
     Ok(geometry::button_checked_from(
@@ -95,12 +96,9 @@ pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
             &b.label(WidgetState::CHECKED),
             "button.label(CHECKED).color",
         )?,
-        text_color(
-            &b.label(WidgetState::PRESSED),
-            "button.label(PRESSED).color",
-        )?,
+        None,
         state_fill_of(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
-        state_fill_of(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
+        None,
     ))
 }
 

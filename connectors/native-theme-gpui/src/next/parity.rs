@@ -771,16 +771,13 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["macos-monterey"],
         reason: "neither model states a checked toggle on macos-monterey (a checked toggle in \
                  a key window of macOS 12-15 draws a gradient, pending U141 in \
-                 docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd), so the refinement is \
-                 the pressed pair that stands in for it (crate::geometry::button_checked); the \
-                 0.8.0 preset states the measured pressed fill, #f0f0f0 / #ffffff5c, and the \
-                 light scheme's measured pressed label, #242424 (the same file, \
-                 `button.body.fill` and `button.label.text.fill` states [pressed]; os-probe run \
-                 41006842699, macOS 15; native-theme/tests/next_homes.toml, rows \
-                 button.active_background and button.active_text_color, listed differences), \
-                 where 0.7.2 gives its soft option #d6d6db / #4e4e50 and the rest label; so the \
-                 refinement's background and text colour are those of button.body(PRESSED) and \
-                 button.label(PRESSED)",
+                 docs/facts/macos/button.toml on v0.8.0-rc1 at 78ee0efd), so 0.7.2's \
+                 refinement is the pressed pair that stands in for it \
+                 (crate::geometry::button_checked), its soft option #d6d6db / #4e4e50 and the \
+                 rest label; 0.8.0's takes no other state's fill or label for an unstated \
+                 CHECKED (docs/v0.8.0-spec.md §10, rule 0a) and sets neither, so \
+                 gpui-component's own selected fill and label stand (gpui-component 0.10.0 \
+                 button/button.rs, ButtonVariant::selected): the refinement is empty",
     },
     Difference {
         leaf: "geometry::toolbar_button_checked",
@@ -1495,7 +1492,8 @@ fn resize_handles_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, H
 }
 
 /// The presets of [`DIFFERENCES`]' `geometry::button_checked` entries on
-/// which no model states a checked toggle, so the pressed pair stands in.
+/// which no model states a checked toggle, so 0.7.2's pressed pair stands in
+/// and 0.8.0 sets nothing.
 const PRESSED_STANDS_IN: &[&str] = &["macos-monterey"];
 
 /// The presets of [`DIFFERENCES`]' `geometry::button` entries whose push
@@ -2479,15 +2477,8 @@ fn compare_builders(
                     && old.button.checked_text_color.is_none()
                     && state_fill(&b.body(WidgetState::CHECKED)).is_none()
                     && super::state_text_color_of(&b.label(WidgetState::CHECKED)).is_none();
-                let pressed = super::text_color_of(&b.label(WidgetState::PRESSED)).map(|text| {
-                    crate::geometry::button_checked_from(
-                        None,
-                        text,
-                        None,
-                        state_fill(&b.body(WidgetState::PRESSED)),
-                    )
-                });
-                if !unstated || n.background.is_none() || pressed.as_ref() != Some(&n) {
+                let pressed = old.button.active_background.is_some();
+                if !unstated || !pressed || n != gpui::StyleRefinement::default() {
                     report.failures.push(format!(
                         "{}: {button_checked}: the listed difference ({}) no longer \
                          describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",

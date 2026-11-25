@@ -1636,7 +1636,7 @@ mod tests {
         assert_eq!(state_text_color(&label, "checked label")?, None);
         let checked = crate::geometry::button_checked_from(
             state_text_color(&label, "checked label")?,
-            hsla(GREEN),
+            Some(hsla(GREEN)),
             state_fill_of(&filled(RED, false), "checked body")?,
             state_fill_of(&filled(BLUE, true), "pressed body")?,
         );

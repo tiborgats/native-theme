@@ -11190,12 +11190,13 @@ fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
 /// A toggle button that is on: a Default Button reading `label`, refined by
 /// `geometry::button`, shown selected, and refined by
 /// `geometry::button_checked` -- filled with `button.body(CHECKED).fill` and
-/// lettered in `button.label(CHECKED).color`, the pressed pair where no rule
-/// states them for the state. Upstream's selected style would fill it with its
-/// `button_active` token and letter it in `button_foreground`
-/// (button/button.rs, `ButtonVariant::selected`); the Button replays the
-/// caller's style over that state (button/button.rs, `RenderOnce for
-/// Button`, `styles.selected`), so these win.
+/// lettered in `button.label(CHECKED).color`, each where a rule states it for
+/// the state. Upstream's selected style fills it with its `button_active`
+/// token and letters it in `button_foreground` (button/button.rs,
+/// `ButtonVariant::selected`), which stand where no rule does (spec §10,
+/// rule 0a); the Button replays the caller's style over that state
+/// (button/button.rs, `RenderOnce for Button`, `styles.selected`), so the
+/// stated ones win.
 pub(crate) fn toggle_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -11230,7 +11231,6 @@ pub(crate) fn toggle_button(
             "state",
             toggle_state_line(
                 drawn_state_fill(&b.body(WidgetState::CHECKED)).is_some(),
-                drawn_state_fill(&b.body(WidgetState::PRESSED)).is_some(),
                 next::state_text_color_of(&b.label(WidgetState::CHECKED)).is_some(),
             ),
         );
@@ -11241,25 +11241,18 @@ pub(crate) fn toggle_button(
 }
 
 /// The toggle button's "state" line: what its checked fill and label are
-/// painted with, from which of `button.body(CHECKED).fill`,
-/// `button.body(PRESSED).fill` and `button.label(CHECKED).color` the theme
-/// states.
-pub(crate) fn toggle_state_line(
-    checked_fill: bool,
-    pressed_fill: bool,
-    checked_label: bool,
-) -> String {
+/// painted with, from which of `button.body(CHECKED).fill` and
+/// `button.label(CHECKED).color` the theme states.
+pub(crate) fn toggle_state_line(checked_fill: bool, checked_label: bool) -> String {
     let fill = if checked_fill {
         "button.body(CHECKED).fill"
-    } else if pressed_fill {
-        "button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill"
     } else {
-        "gpui-component's own button_active token: the theme states neither button.body(CHECKED).fill nor button.body(PRESSED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands (button/button.rs, ButtonVariant::selected)"
+        "gpui-component's own button_active token: no rule states button.body(CHECKED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands, not the pressed fill (button/button.rs, ButtonVariant::selected; spec §10, rule 0a)"
     };
     let text = if checked_label {
         "button.label(CHECKED).color"
     } else {
-        "button.label(PRESSED).color, where no rule states button.label(CHECKED).color"
+        "gpui-component's own button_foreground: no rule states button.label(CHECKED).color, so geometry::button_checked sets no text colour, not the pressed label"
     };
     format!("selected: on, filled with {fill} and lettered in {text}")
 }
