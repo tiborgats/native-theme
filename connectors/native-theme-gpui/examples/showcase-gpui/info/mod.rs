@@ -475,7 +475,7 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ("icon_size_toolbar", "toolbar.button_icon(NONE).size"),
     (
         "toolbar_button_rest",
-        "where a rule states toolbar.button(HOVER).stroke.color, a transparent fill and a transparent border button.body(NONE).stroke.width wide, and each padding side button.body(NONE) states less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where no rule states the outline",
+        "where a rule states toolbar.button(HOVER).stroke.color, a transparent fill and a transparent border button.body(NONE).stroke.width wide, and each padding side button.body(NONE) states less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where no rule states the outline. Then toolbar.button(NONE).fill as the fill and toolbar.button(NONE).corners as the radius, each where stated, which upstream replays over the selected and disabled styles and its hover and press styles lie over",
     ),
     (
         "ghost_button_rest",

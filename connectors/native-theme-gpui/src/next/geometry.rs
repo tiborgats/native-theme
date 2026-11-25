@@ -20,10 +20,10 @@
 //! the connector's parity test lists the difference with its reason. A
 //! stroke is drawn as the crate's README says under *Limits*.
 
-use gpui::{Pixels, StyleRefinement};
+use gpui::{Hsla, Pixels, StyleRefinement};
 use gpui_component::Size;
 use gpui_component::dialog::DialogEntrance;
-use native_theme::next::ResolvedTheme;
+use native_theme::next::{ResolvedTheme, WidgetState};
 
 use super::{Mapped, builders};
 
@@ -149,6 +149,27 @@ pub fn ghost_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     builders::ghost_button_rest(r)
 }
 
+/// The disabled state of a toolbar `Button` built on
+/// [`next::variants::toolbar_button`](super::variants::toolbar_button), a
+/// 0.8.0 builder with no 0.7.2 one, applied after [`toolbar_button_rest`]:
+/// `toolbar.button(DISABLED)`'s fill and corners, each where a rule states
+/// it for the state; nothing where none does, and the rest refinement, which
+/// upstream replays over the disabled style, stands. A disabled Button only.
+pub fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    builders::toolbar_button_disabled(r)
+}
+
+/// The colour of a toolbar Button's icon in `state`, a 0.8.0 builder with no
+/// 0.7.2 one: `toolbar.button_icon(NONE).color` at rest where stated,
+/// `toolbar.button_icon(state).color` in another state where a rule states
+/// it for the state; `None` where neither, and the icon keeps the Button's
+/// text colour. Give it to the `Icon` (`Styled::text_color`) of a Button
+/// built in `state`: an `Icon` takes one colour, so it stays under the
+/// pointer and pressed (the crate's README, *Limits*).
+pub fn toolbar_button_icon_color(r: &ResolvedTheme, state: WidgetState) -> Option<Hsla> {
+    builders::toolbar_button_icon_color(r, state)
+}
+
 #[cfg(test)]
 mod tests {
     use native_theme::next::{Preset, Theme, ThemeContext};
@@ -218,6 +239,101 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// The macOS toolbar button's capsule at rest and disabled:
+    /// macos-tahoe's rest fill #ffffff / #252525 and pill corners, its
+    /// disabled fill the same capsule; macos-monterey no rest fill, 5 px
+    /// corners, and no fill disabled (os-probe run 45634379188, toolbar
+    /// states sheet, as the presets state them).
+    #[test]
+    fn a_macos_toolbar_button_takes_its_rest_and_disabled_capsule() {
+        use gpui::{Styled as _, px};
+        use native_theme::next::Color;
+        let rgb = |rgb: u32| {
+            let [_, red, green, blue] = rgb.to_be_bytes();
+            super::super::hsla(Color::from_srgb8(red, green, blue, u8::MAX))
+        };
+        let tahoe_radius = StyleRefinement::default()
+            .rounded(px(super::super::PILL_RADIUS))
+            .corner_radii;
+        let monterey_radius = StyleRefinement::default().rounded(px(5.0)).corner_radii;
+        for (ctx, capsule) in [
+            (ThemeContext::light(), 0xffffff_u32),
+            (ThemeContext::dark(), 0x252525),
+        ] {
+            let tahoe = Theme::preset(Preset::MacosTahoe).resolve(&ctx);
+            let rest = toolbar_button_rest(&tahoe);
+            let want = StyleRefinement::default().bg(rgb(capsule)).background;
+            assert_eq!(
+                rest.as_ref().map(|s| (&s.background, &s.corner_radii)),
+                Ok((&want, &tahoe_radius)),
+                "macos-tahoe {:?}",
+                ctx.scheme
+            );
+            assert_eq!(
+                toolbar_button_disabled(&tahoe).map(|s| s.background),
+                Ok(want),
+                "macos-tahoe {:?}",
+                ctx.scheme
+            );
+            let monterey = Theme::preset(Preset::MacosMonterey).resolve(&ctx);
+            let rest = toolbar_button_rest(&monterey);
+            assert_eq!(
+                rest.as_ref().map(|s| (&s.background, &s.corner_radii)),
+                Ok((&None, &monterey_radius)),
+                "macos-monterey {:?}",
+                ctx.scheme
+            );
+            assert_eq!(
+                toolbar_button_disabled(&monterey).map(|s| s.background),
+                Ok(StyleRefinement::default()
+                    .bg(super::super::hsla(Color::TRANSPARENT))
+                    .background),
+                "macos-monterey {:?}",
+                ctx.scheme
+            );
+        }
+    }
+
+    /// A toolbar button's icon is tinted in the colour the macOS presets
+    /// state at rest, the image-only button's glyph (os-probe run
+    /// 45634379188, `controls-toolbar_states_sheet.toml`,
+    /// `aqua.normal.toolbar_image` `ink`): macos-monterey #676767 / #aeaeae,
+    /// macos-tahoe #4d4d4d / #e9e9e9; checked and disabled, which no rule
+    /// states, it is not tinted, and keeps the Button's text colour; nor on
+    /// kde-breeze, which states no icon colour.
+    #[test]
+    fn a_toolbar_buttons_icon_takes_the_stated_icon_colour() {
+        use native_theme::next::Color;
+        let rgb = |rgb: u32| {
+            let [_, red, green, blue] = rgb.to_be_bytes();
+            super::super::hsla(Color::from_srgb8(red, green, blue, u8::MAX))
+        };
+        for (preset, light, dark) in [
+            (Preset::MacosMonterey, 0x676767_u32, 0xaeaeae_u32),
+            (Preset::MacosTahoe, 0x4d4d4d, 0xe9e9e9),
+        ] {
+            for (ctx, want) in [(ThemeContext::light(), light), (ThemeContext::dark(), dark)] {
+                let r = Theme::preset(preset).resolve(&ctx);
+                assert_eq!(
+                    toolbar_button_icon_color(&r, WidgetState::NONE),
+                    Some(rgb(want)),
+                    "{preset:?} {:?}",
+                    ctx.scheme
+                );
+                for state in [WidgetState::CHECKED, WidgetState::DISABLED] {
+                    assert_eq!(
+                        toolbar_button_icon_color(&r, state),
+                        None,
+                        "{preset:?} {:?} {state:?}",
+                        ctx.scheme
+                    );
+                }
+            }
+        }
+        let kde = Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+        assert_eq!(toolbar_button_icon_color(&kde, WidgetState::NONE), None);
     }
 
     /// A checked button whose checked fill and label no rule states

@@ -23592,6 +23592,54 @@ fn a_hovered_tool_button_with_no_stated_fill_is_gpui_components_own(cx: &mut Tes
     }
 }
 
+/// A tool button's icon is tinted in `toolbar.button_icon(NONE).color`
+/// where the theme states it, and its info says so: kde-breeze states none,
+/// and its Basic page's Copy icon button has no "icon colour" line; patched
+/// to state one, it names that colour. The checked edit button is not tinted
+/// at rest's colour: no rule states `toolbar.button_icon(CHECKED).color`.
+#[gpui::test]
+fn a_tool_buttons_icon_takes_the_stated_icon_colour(cx: &mut TestAppContext) {
+    use native_theme::next::{Color, IconPatch, ThemePatch, ToolbarRule};
+    let line = |info: &Option<crate::info::WidgetInfo>| {
+        info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "icon colour")
+                .map(|n| n.text.clone())
+        })
+    };
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let info = settle_on(&mut cx, &showcase, "basic-icon-copy");
+    assert_eq!(
+        line(&info),
+        None,
+        "kde-breeze states no icon colour: {info:?}"
+    );
+    let red = Color::rgb(1.0, 0.0, 0.0);
+    install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(ThemePatch::new().toolbar(ToolbarRule::new().button_icon(IconPatch::new().color(red))))
+    });
+    let info = settle_on(&mut cx, &showcase, "basic-icon-copy");
+    let copy = line(&info);
+    assert!(
+        copy.as_deref()
+            .is_some_and(|l| l.starts_with("toolbar.button_icon(NONE).color #ff0000, ")),
+        "the Copy icon button's info does not name the stated icon colour: {copy:?}"
+    );
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.basic_edit),
+        "the edit button is not checked at start"
+    );
+    let info = settle_on(&mut cx, &showcase, "basic-icon-edit");
+    assert_eq!(
+        line(&info),
+        None,
+        "the checked edit button's icon is tinted though no rule states its checked colour"
+    );
+}
+
 /// The Basic page's edit-mode switch is checked at start and a click
 /// switches it: under kde-breeze light and windows-11 light it is filled
 /// with `toolbar.button(CHECKED).fill` and its info, titled a checked

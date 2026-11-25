@@ -800,8 +800,28 @@ const DIFFERENCES: &[Difference] = &[
                  toolbar.button(CHECKED).stroke stated as none, as that toggle draws no outline \
                  (the same run, `toolbar_bezel_fitted-toolbar_states_sheet.toml` \
                  `*.toolbar_toggle_on` `edge_*`; next_homes.toml, row \
-                 toolbar.button_checked_border_color, a listed difference); every other field \
-                 of the refinement is equal",
+                 toolbar.button_checked_border_color, a listed difference). The checked \
+                 button's hovered and pressed fills the presets state, toolbar.button(CHECKED | \
+                 HOVER).fill and toolbar.button(CHECKED | PRESSED).fill, and their labels, are \
+                 not drawn: a selected Button takes no hover or press style (gpui-component \
+                 0.10.0 button/button.rs:733, :758; the crate's README, Limits), so the checked \
+                 fill and label stay under the pointer and pressed. Every other field of the refinement is \
+                 equal",
+    },
+    Difference {
+        leaf: "geometry::toolbar_button_rest",
+        presets: &["kde-breeze", "macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 states no toolbar button corners or rest fill of its own, so its \
+                 refinement sets neither; the 0.8.0 presets state the toolbar button's corners, \
+                 toolbar.button(NONE).corners, kde-breeze 5 px, the push button frame's (Breeze \
+                 Frame_FrameRadius, breezemetrics.h at breeze f0b1d75, as the preset cites it), \
+                 macos-monterey 5 px and macos-tahoe a capsule, drawn as the full radius, and \
+                 macos-tahoe the rest capsule's fill, toolbar.button(NONE).fill #ffffff / \
+                 #252525 (os-probe run 45634379188, macOS 15 and 26, \
+                 `toolbar_bezel_fitted-toolbar_states_sheet.toml` `corner_*`, toolbar states \
+                 sheet `*.normal.toolbar_button` `fill`), so the refinement's corner radii are \
+                 those and its background that fill (docs/v0.8.0-spec.md §10, rule 0); every \
+                 other field of the refinement is equal",
     },
     Difference {
         leaf: "geometry::toolbar_button_checked",
@@ -2737,7 +2757,40 @@ fn compare_builders(
         None => builder!(report, old, new, toolbar),
     }
     builder!(report, old, new, icon_size_toolbar);
-    builder!(report, old, new, toolbar_button_rest);
+    let toolbar_rest = "geometry::toolbar_button_rest";
+    match report.listed(toolbar_rest) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(toolbar_rest, super::builders::toolbar_button_rest(new))
+            {
+                use gpui::Styled as _;
+                use native_theme::next::WidgetState;
+                report.count(toolbar_rest);
+                let o = crate::geometry::toolbar_button_rest(Native::unscaled(old));
+                let rest = new.toolbar.button(WidgetState::NONE);
+                let radii = super::radius_of(&rest)
+                    .map(|r| gpui::StyleRefinement::default().rounded(px(r)).corner_radii);
+                let background = match super::fill_color(&rest) {
+                    Some(fill) => gpui::StyleRefinement::default().bg(fill).background,
+                    None => o.background.clone(),
+                };
+                let mut corrected = o.clone();
+                corrected.background = n.background.clone();
+                corrected.corner_radii = n.corner_radii.clone();
+                if radii != Some(n.corner_radii.clone())
+                    || background != n.background
+                    || corrected != n
+                    || o == n
+                {
+                    report.failures.push(format!(
+                        "{}: {toolbar_rest}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, toolbar_button_rest),
+    }
     let toolbar_checked = "geometry::toolbar_button_checked";
     match report.listed(toolbar_checked) {
         Some(listed) => {

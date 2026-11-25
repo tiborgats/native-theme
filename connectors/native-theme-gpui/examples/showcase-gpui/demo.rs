@@ -1679,7 +1679,12 @@ pub(crate) fn toolbar_button(
             "icon_size_toolbar",
             &mut button_info,
         );
-        glyph_at(icon, size)
+        tool_icon_tinted(
+            cx,
+            glyph_at(icon, size),
+            WidgetState::NONE,
+            &mut button_info,
+        )
     });
     let dispatched = action.boxed_clone();
     let button = next_native_info(
@@ -1793,7 +1798,12 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
             "icon_size_toolbar",
             &mut button_info,
         );
-        glyph_at(icon, size)
+        tool_icon_tinted(
+            cx,
+            glyph_at(icon, size),
+            WidgetState::NONE,
+            &mut button_info,
+        )
     });
     let button = next_native_info(
         refined(
@@ -11187,6 +11197,37 @@ fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
     next_padded(style, sides, None::<Pixels>, None)
 }
 
+/// A tool button's icon `glyph`, built in `state`, in the colour
+/// `next::geometry::toolbar_button_icon_color` gives the installed 0.8.0
+/// theme for it, `toolbar.button_icon`'s; as it is where that gives none, or
+/// before `next::apply` ran: the Button's text colour then, and an image its
+/// own. Its info says so in an "icon colour" line.
+fn tool_icon_tinted(
+    cx: &App,
+    glyph: Glyph,
+    state: WidgetState,
+    button_info: &mut WidgetInfo,
+) -> Glyph {
+    match next_value(cx, |r| next::geometry::toolbar_button_icon_color(r, state)).flatten() {
+        Some(colour) if !matches!(glyph, Glyph::Raster(..)) => {
+            let home = if state == WidgetState::NONE {
+                "toolbar.button_icon(NONE).color"
+            } else {
+                "toolbar.button_icon(state).color, a rule stating it for the state"
+            };
+            *button_info = button_info.clone().instance(
+                "icon colour",
+                format!(
+                    "{home} {}, given the Icon by next::geometry::toolbar_button_icon_color: an Icon takes one colour, so it stays under the pointer and pressed (native-theme-gpui README, Limits)",
+                    as_rgba(colour)
+                ),
+            );
+            glyph.text_color(colour)
+        }
+        _ => glyph,
+    }
+}
+
 /// A toggle button that is on: a Default Button reading `label`, refined by
 /// `geometry::button`, shown selected, and refined by
 /// `geometry::button_checked` -- filled with `button.body(CHECKED).fill` and
@@ -11389,7 +11430,12 @@ pub(crate) fn icon_button(
             "icon_size_toolbar",
             &mut button_info,
         );
-        glyph_at(icon, size)
+        let state = if selected {
+            WidgetState::CHECKED
+        } else {
+            WidgetState::NONE
+        };
+        tool_icon_tinted(cx, glyph_at(icon, size), state, &mut button_info)
     });
     let button = next_native_info(
         refined(

@@ -970,6 +970,27 @@ concentric radius (`CornerRadius::Concentric`, the container's radius less an
 inset, which a builder does not know), are reported as unmapped; no preset
 states either.
 
+**A checked button looks the same hovered and pressed.** gpui-component
+gives a selected `Button` no hover or press style: it registers its hover and
+active styles only while the Button is not selected (gpui-component 0.10.0
+`src/button/button.rs:733`, `:758`), and replays the caller's refinement over
+its selected style (`:836-842`). So a checked button, the push button
+(`next::geometry::button_checked`) and the toolbar's
+(`next::geometry::toolbar_button_checked`), is drawn in its checked fill,
+label and pen under the pointer and pressed too, and a fill or label the theme
+states for `CHECKED | HOVER` or `CHECKED | PRESSED` (the macOS presets state
+both for the toolbar button) is not drawn; the connector draws nothing of its
+own in its place.
+
+**A toolbar button's icon takes one colour.** gpui-component's `Button` gives
+its icon no colour of its own: an `Icon` is drawn in the colour it is given
+(`src/icon.rs`, `Styled for Icon`), else in the Button's text colour.
+`next::geometry::toolbar_button_icon_color` gives `toolbar.button_icon`'s
+colour for the state a Button is built in, at rest, checked or disabled; an
+`Icon` keeps it under the pointer and pressed, so a hovered or pressed icon
+colour the theme states (the macOS presets state a hovered one) is not
+drawn.
+
 **An expander's edge keeps gpui-component's width.** `next::geometry::accordion`
 gives the edge's colour (and a width of 0 where the stroke is stated as none),
 but not a stated visible width: its one refinement lands on the `Accordion`,
