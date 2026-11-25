@@ -87,8 +87,10 @@ pub(crate) fn button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// [`crate::geometry::button_checked`]: `button.checked_text_color` and
 /// `button.checked_background`, soft options, where a rule states them for
 /// `CHECKED` (module doc of `next`), else unset, so gpui-component's own
-/// selected label and fill stand (`ButtonVariant::selected`): never the
-/// pressed pair the 0.7.2 path stands in with (spec §10, rule 0a).
+/// selected label and fill stand (gpui-component 0.10.0 `button/button.rs`,
+/// `ButtonVariant::selected`): never the pressed pair the 0.7.2 path stands
+/// in with, `button.active_text_color` and `button.active_background`, since
+/// which state looks like which is the theme's to state (spec §10, rule 0a).
 pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let b = &r.button;
     Ok(geometry::button_checked_from(
@@ -648,17 +650,11 @@ pub(crate) fn icon_size_toolbar(r: &ResolvedTheme) -> Mapped<Size> {
     Ok(geometry::icon_size(icon.size))
 }
 
-/// [`crate::geometry::toolbar_button_rest`]: `toolbar.button_hover_border_color`
-/// at the hovered toolbar button's stroke, a soft option, where a rule states
-/// it for the state (module doc of `next`); the push button's stroke width
-/// and padding; and the toolbar button's own fill and corners at rest,
-/// `toolbar.button(NONE)`'s, each where stated (spec §10, rule 0), the fill
-/// over the outline's transparent one. Upstream replays the refinement over
-/// the selected and disabled styles (gpui-component 0.10.0
-/// `button/button.rs:834-850`), and its hover and press styles lie over it.
+/// [`crate::geometry::toolbar_button_rest`]: `toolbar.button_hover_border_color` at the
+/// hovered toolbar button's stroke, a soft option, where a rule states it for the state (module
+/// doc of `next`); the push button's stroke width and padding; in [`toolbar_capsule`].
 pub(crate) fn toolbar_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let body = r.button.body(WidgetState::NONE);
-    let rest = r.toolbar.button(WidgetState::NONE);
     let style = geometry::toolbar_button_rest_from(
         state_stroke_color(
             &r.toolbar.button(WidgetState::HOVER),
@@ -668,57 +664,7 @@ pub(crate) fn toolbar_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> 
         stroke_width(&body, "button.body(NONE).stroke.width")?,
         padding_of(&body),
     );
-    let style = match fill_of(&rest, "toolbar.button(NONE).fill")? {
-        Some(fill) => style.bg(fill),
-        None => style,
-    };
-    Ok(if rest.stated.contains(PartStated::CORNERS) {
-        style.rounded(px(radius(&rest, "toolbar.button(NONE).corners")?.max(0.0)))
-    } else {
-        style
-    })
-}
-
-/// The disabled state of a toolbar `Button` built on
-/// [`crate::variants::toolbar_button`], applied after
-/// [`toolbar_button_rest`]: `toolbar.button(DISABLED)`'s fill and corners,
-/// each where a rule states it for `DISABLED` (module doc of `next`), else
-/// unset, so the rest refinement upstream replays over the disabled style
-/// (gpui-component 0.10.0 `button/button.rs:846-850`) stands, the theme's
-/// value at rest (spec §10, rule 0). A disabled Button only: upstream
-/// replays the refinement at rest too.
-pub(crate) fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
-    let disabled = r.toolbar.button(WidgetState::DISABLED);
-    let style = match state_fill_of(&disabled, "toolbar.button(DISABLED).fill")? {
-        Some(fill) => StyleRefinement::default().bg(fill),
-        None => StyleRefinement::default(),
-    };
-    Ok(if disabled.from_state.contains(PartStated::CORNERS) {
-        style.rounded(px(
-            radius(&disabled, "toolbar.button(DISABLED).corners")?.max(0.0)
-        ))
-    } else {
-        style
-    })
-}
-
-/// The colour a toolbar Button's icon is tinted in, in `state`:
-/// `toolbar.button_icon(NONE).color` at rest where stated; in another state
-/// `toolbar.button_icon(state).color` where a rule states it for the state
-/// (module doc of `next`); else `None`, and the icon keeps the colour it is
-/// drawn in, the Button's text colour, which gpui-component changes for the
-/// selected and disabled styles (spec §10, rule 0). An `Icon` takes one
-/// colour (gpui-component 0.10.0 `src/icon.rs`, `Styled for Icon`), so the
-/// tint of the state a Button is built in stays under the pointer and
-/// pressed.
-pub(crate) fn toolbar_button_icon_color(r: &ResolvedTheme, state: WidgetState) -> Option<Hsla> {
-    let icon = r.toolbar.button_icon(state);
-    let bits = if state == WidgetState::NONE {
-        icon.stated
-    } else {
-        icon.from_state
-    };
-    bits.contains(IconStated::COLOR).then(|| hsla(icon.color))
+    toolbar_capsule(r, style)
 }
 
 /// [`crate::geometry::toolbar_button_checked`]: each soft option where a rule
@@ -979,6 +925,67 @@ pub(crate) fn ghost_button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement>
     );
     style.background = None;
     Ok(style.border_color(color))
+}
+
+/// `style`, [`toolbar_button_rest`]'s, laid in the toolbar button's own fill
+/// and corners at rest, `toolbar.button(NONE)`'s, each where stated (spec
+/// §10, rule 0), the fill over the outline's transparent one. Upstream
+/// replays the refinement over the selected and disabled styles
+/// (gpui-component 0.10.0 `button/button.rs:834-850`), and its hover and
+/// press styles lie over it.
+fn toolbar_capsule(r: &ResolvedTheme, style: StyleRefinement) -> Mapped<StyleRefinement> {
+    let rest = r.toolbar.button(WidgetState::NONE);
+    let style = match fill_of(&rest, "toolbar.button(NONE).fill")? {
+        Some(fill) => style.bg(fill),
+        None => style,
+    };
+    Ok(if rest.stated.contains(PartStated::CORNERS) {
+        style.rounded(px(radius(&rest, "toolbar.button(NONE).corners")?.max(0.0)))
+    } else {
+        style
+    })
+}
+
+/// The disabled state of a toolbar `Button` built on
+/// [`crate::variants::toolbar_button`], applied after
+/// [`toolbar_button_rest`]: `toolbar.button(DISABLED)`'s fill and corners,
+/// each where a rule states it for `DISABLED` (module doc of `next`), else
+/// unset, so the rest refinement upstream replays over the disabled style
+/// (gpui-component 0.10.0 `button/button.rs:846-850`) stands, the theme's
+/// value at rest (spec §10, rule 0). A disabled Button only: upstream
+/// replays the refinement at rest too.
+pub(crate) fn toolbar_button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let disabled = r.toolbar.button(WidgetState::DISABLED);
+    let style = match state_fill_of(&disabled, "toolbar.button(DISABLED).fill")? {
+        Some(fill) => StyleRefinement::default().bg(fill),
+        None => StyleRefinement::default(),
+    };
+    Ok(if disabled.from_state.contains(PartStated::CORNERS) {
+        style.rounded(px(
+            radius(&disabled, "toolbar.button(DISABLED).corners")?.max(0.0)
+        ))
+    } else {
+        style
+    })
+}
+
+/// The colour a toolbar Button's icon is tinted in, in `state`:
+/// `toolbar.button_icon(NONE).color` at rest where stated; in another state
+/// `toolbar.button_icon(state).color` where a rule states it for the state
+/// (module doc of `next`); else `None`, and the icon keeps the colour it is
+/// drawn in, the Button's text colour, which gpui-component changes for the
+/// selected and disabled styles (spec §10, rule 0). An `Icon` takes one
+/// colour (gpui-component 0.10.0 `src/icon.rs`, `Styled for Icon`), so the
+/// tint of the state a Button is built in stays under the pointer and
+/// pressed.
+pub(crate) fn toolbar_button_icon_color(r: &ResolvedTheme, state: WidgetState) -> Option<Hsla> {
+    let icon = r.toolbar.button_icon(state);
+    let bits = if state == WidgetState::NONE {
+        icon.stated
+    } else {
+        icon.from_state
+    };
+    bits.contains(IconStated::COLOR).then(|| hsla(icon.color))
 }
 
 #[cfg(test)]
